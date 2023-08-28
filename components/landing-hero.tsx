@@ -30,7 +30,7 @@ export const LandingHero = () => {
           <p>Leisure Life Vacations is a full service travel agency that specializes in all-inclusive vacation cruises.</p>
         </div>
         <div>
-          <Link href={isSignedIn ? "/dashboard" : "sigh-up"}>
+          <Link href={isSignedIn ? "/dashboard" : "sign-up"}>
             <Button variant="premium" className='p-4 font-semibold rounded-full md:text-lg md:p-6'> 
               Search Cruises
             </Button>
