@@ -7,7 +7,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(req:Request, res: Response) {
   //const { userId } = auth();
-  const body = await req.json();
+  try {
+    const body = await req.json();
   const { data } = body;
   const {incCT,sm, sd, tm, td, d, l,  n, r ,rd, rt, s, v} = data;
   
@@ -15,4 +16,8 @@ export async function POST(req:Request, res: Response) {
 
   const results = await search(url);
   return NextResponse.json(results);
+  } catch (error: any) {
+    return new Response(error.message, { status: 500 });
+  }
+  
 }
