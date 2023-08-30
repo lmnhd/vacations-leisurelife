@@ -113,8 +113,9 @@ const SearchPage = () => {
       data: search.allVals,
     });
     // const response = await axios({ method: "post", url: "/api/vtg", data: {}})
+    //if (!response.data) { return;}
     console.log(response.data);
-    if(typeof response.data === "string"){
+    if(typeof response.data !== "object"){
       toast.error("Please adjust your search and try again.");
       return;
     }
@@ -429,7 +430,7 @@ const SearchPage = () => {
         </div>
       </FormProvider>
       <div className="flex flex-col items-center">
-          {searchResults && searchResults.map((result: any, index:number) => {
+          {typeof searchResults !== "string" && searchResults.map((result: any, index:number) => {
             return <SearchResults
             region={result.region}
             searchResults={result.deals}
