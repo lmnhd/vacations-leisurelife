@@ -14,12 +14,7 @@ import { FreeCounter } from "./free-counter";
 const montserrat = Montserrat({ weight: "600", subsets: ["latin"] });
 
 const routes = [
-  {
-    label: "Home",
-    icon: Home,
-    href: "/dashboard",
-    color: "text-sky-500",
-  },
+  
   {
     label: "Promotions",
     icon: BadgeDollarSign,
@@ -54,7 +49,7 @@ const Sidebar = ({
  } : SidebarProps) => {
   const pathName = usePathname()
   return (
-    <div className=" space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white">
+    <div className="flex flex-col h-full py-4 space-y-4 text-white bg-primary">
       <div className="flex-1 px-1 py-2">
         <Link href="/dashboard" className="flex items-center mb-14">
           <div className="relative w-2/3 h-12 mr-4 text-white">
@@ -77,9 +72,9 @@ const Sidebar = ({
           ))}
         </div>
       </div>
-      <FreeCounter
+      {/* <FreeCounter
       apiLimitCount={apiLimitCount}
-      />
+      /> */}
     </div>
   );
 };
