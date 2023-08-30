@@ -5,9 +5,9 @@ import searchParams from "../(dashboard)/(routes)/search/searchParams.json";
 import { Passenger } from "../utils/BookingInfo2";
 
 const passengerReducer = (state, action) => {
-  console.log(action);
+  //console.log(action);
   const { value, type } = action;
-  console.log(`value: ${value}, type: ${type}, state: ${state}`);
+  //console.log(`value: ${value}, type: ${type}, state: ${state}`);
   switch (type) {
     case "SET_PAX":
       return {
@@ -207,7 +207,7 @@ export const BookingProvider = ({ children }) => {
   const [header, setHeader] = useState("Search Cruises");
   const [buttonVisible, setButtonVisible] = useState(false);
 
-  console.log(curPassenger);
+  //console.log(curPassenger);
   return (
     <BookingContext.Provider
       value={{

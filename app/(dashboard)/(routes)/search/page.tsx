@@ -97,7 +97,7 @@ const SearchPage = () => {
   ];
   const updateSearch = async (newval: string, nameOfVal: string) => {
     //shipSelect.current.value = 0
-    console.log(nameOfVal + " : " + newval);
+    //console.log(nameOfVal + " : " + newval);
     let newSearchOBJ = {};
 
     if (nameOfVal == "l") {
@@ -143,7 +143,7 @@ const SearchPage = () => {
         testArr.push(val.lineID);
       }
     });
-    console.log(arr);
+    //console.log(arr);
     // setLineIDs(arr);
     return (
       <>
