@@ -23,7 +23,7 @@ import Photos from "@/components/vtg/trip/photos";
 // import { Button, Icon, Image, List, Segment } from "semantic-ui-react";
 // import { useParams } from "next/navigation";
 
-async function TripResult({ params: { ship, num } }: any) {
+ function TripResult({ params: { ship, num } }: any) {
   const url: string = `/api/vtgTrip`;
   const fetcher: Fetcher<any> = (url: string) =>
     fetch(url, {

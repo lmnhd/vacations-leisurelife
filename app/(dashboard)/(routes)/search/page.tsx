@@ -11,10 +11,10 @@ export default function SearchPage() {
   const [loadingState, setLoadingState] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    setSearchResults([{ region: "LOADING", deals: [] }]);
-    console.log(searchResults);
-  }, []);
+//   useEffect(() => {
+//     setSearchResults([{ region: "LOADING", deals: [] }]);
+//     console.log(searchResults);
+//   }, []);
 
   return (
     <div className="p-2">
