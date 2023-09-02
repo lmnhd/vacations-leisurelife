@@ -17,6 +17,8 @@ export async function POST(req:Request, res: Response) {
   const url = `https://www.vacationstogo.com/ticker.cfm?incCT=${incCT}&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=${s}&n=${n}&d=${d}&v=${v}&sd=${sd}&td=${td}&rd=${rd}&rt=${rt}`
 
   const results = await search(url);
+  //console.log(results);
+  //return NextResponse.json("checking");
   return NextResponse.json(results);
   } catch (error: any) {
     return new Response(error.message, { status: 500 });

@@ -62,7 +62,7 @@ const Sidebar = ({
         <div className="space-y-1">
           {routes.map((route) => (
             <Link 
-            className={cn("text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition", pathName === route.href && "bg-white/10")}
+            className={cn("text-sm group flex p-3 text-white w-full justify-start font-medium cursor-pointer hover:text-red-500 hover:bg-white/10 rounded-lg transition", pathName === route.href && "bg-white/10")}
             href={route.href} key={route.href}>
               <div className="flex items-center flex-1">
                 <route.icon className={cn("w-6 h-6 mr-4", route.color)} />

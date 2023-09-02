@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer, useState, createContext } from "react";
-import searchParams from "../(dashboard)/(routes)/search/searchParams.json";
+import searchParams from "@/components/vtg/searchParams.json";
 import { Passenger } from "../utils/BookingInfo2";
 
 const passengerReducer = (state, action) => {

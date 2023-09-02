@@ -1,14 +1,19 @@
 import Link from "next/link";
 import  PropertyRating  from "@/components/PropertyRating";
+import Image from "next/image";
+import { shipLogos } from "@/app/utils/shiplogos";
+import SearchResultsSkeleton from "./search-results-skel";
 
 type props = {
     searchResults: any;
     region: string;
 }
 export function SearchResults({searchResults, region, ...props}:props) {
-  const resultLableStyle = "";
+  const resultLableStyle = "text-xs";
   const resultValueStyle = "";
+  
   return (
+    region !== 'LOADING'  ?  
     <div className="flex flex-col ">
         <h1
         className="py-6 text-2xl font-bold text-center font-body text-primary"
@@ -22,26 +27,36 @@ export function SearchResults({searchResults, region, ...props}:props) {
             a.line.localeCompare(b.line);
           })
           .map((result: any, i: number) => {
+            const logo = shipLogos(result.line);
             return (
               <li
-                className="rounded-md shadow-md"
+                className="my-8 rounded-md shadow-md md:my-2"
                 key={i}
                 //onClick={() => setLoading(true)}
               >
                 <Link
-                  href={`/searchresult/${String(result.fdeal).replace(
+                  href={`/tripresult/${String(result.fdeal).replace(
                     "#",
                     ""
                   )}/${result.shipId}`}
                 >
                   {true && (
-                    <div className="text-muted-foreground ">
-                      <div className="grid grid-cols-3 py-4 bg-primary-foreground">
-                        <p className="mx-6 text-lg font-bold font-body">
-                          {result.ship}
-                        </p>
-                        <p className="text-xl font-bold text-center">{i + 1}</p>
-                        <p className="h-full mr-4 text-lg text-right">
+                    <div className="border-2 text-muted-foreground ">
+                      <div className="grid items-center h-40 grid-cols-3 text-sm md:h-auto bg-primary-foreground">
+                        <div className="flex items-center justify-between gap-3 md:mx-4 bg-primary">
+                          <p className="text-lg font-semibold text-primary-foreground font-body">
+                          {result.line} {result.ship.replace(result.line, "")}
+                          </p>
+                          <div className="hidden md:block">
+                            <PropertyRating color="text-primary-foreground"
+                            rating={result.rating}
+                            showNumber={false}
+                            className=""
+                            />
+                          </div>
+                        </div>
+                        <p className="font-bold text-center ">#{i + 1}</p>
+                        <p className="h-full text-lg font-bold text-center md:mr-4 bg-primary text-primary-foreground">
                           {result.date}{" "}
                         </p>
                       </div>
@@ -49,13 +64,26 @@ export function SearchResults({searchResults, region, ...props}:props) {
                       className="flex flex-wrap text-sm justify-evenly"
                     //   className="grid grid-cols-3 gap-4 p-6 my-6 align-middle // md:grid-cols-6 md:gap-1"
                       >
+                        {logo &&
                         <div className="search-result-item">
+                          <Image
+                            alt={result.line}
+                            src={logo}
+                            width={100}
+                            height={100}
+                          />
+                        </div>}
+                        {/* <div className="search-result-item">
                           <p className={resultLableStyle}>CRUISE</p>
                           <p className={resultValueStyle}>{result.fdeal}</p>
+                        </div> */}
+                         <div className="search-result-item">
+                          <p className={resultLableStyle}>LINE</p>
+                          <p className={resultValueStyle}>{result.line}</p>
                         </div>
                         <div className="search-result-item">
-                          <p className={resultLableStyle}>NIGHTS</p>
-                          <p className={resultValueStyle}>{result.nights}</p>
+                          <p className={resultLableStyle}>LENGTH</p>
+                          <p className={resultValueStyle}>{result.nights} nights</p>
                         </div>
 
                         <div className="search-result-item">
@@ -66,25 +94,22 @@ export function SearchResults({searchResults, region, ...props}:props) {
                           <p className={resultLableStyle}>RETURN</p>
                           <p className={resultValueStyle}>{result.toPort}</p>
                         </div>
-                        <div className="search-result-item">
-                          <p className={resultLableStyle}>LINE</p>
-                          <p className={resultValueStyle}>{result.line}</p>
-                        </div>
-                        <div className="search-result-item">
+                       
+                        {/* <div className="search-result-item">
                           <p className={resultLableStyle}>SHIP</p>
                           <p className={resultValueStyle}>{result.ship}</p>
-                        </div>
-                        <div className="search-result-item">
+                        </div> */}
+                        {/* <div className="search-result-item">
                           <p className={resultLableStyle}>DATE</p>
                           <p className={resultValueStyle}>{result.date}</p>
-                        </div>
+                        </div> */}
                         <div className="search-result-item">
                           <p className={resultLableStyle}>RATING</p>
                           <PropertyRating rating={result.rating} />
                         </div>
                         <div className="search-result-item">
                           <p className={resultLableStyle}>PRICE</p>
-                          <p className={resultValueStyle}>Starting at <strong>{result.ourPrice}</strong> Per-Cabin</p>
+                          <p className={resultValueStyle}>Starting at <strong>{result.ourPrice}</strong> Per-Person</p>
                         </div>
                       </div>
                     </div>
@@ -96,6 +121,7 @@ export function SearchResults({searchResults, region, ...props}:props) {
             );
           })}
       </ul>
-    </div>
-  );
+    </div> : <SearchResultsSkeleton />
+     
+  )
 }
