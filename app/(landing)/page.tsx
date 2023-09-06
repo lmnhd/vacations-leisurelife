@@ -21,11 +21,11 @@ export default async function LandingPage(){
     return (
     <div className="h-full" >
         <LandingNavbar />
-        {/* <img 
+        <img 
         alt="header"
         
         src={images[0].src}
-        /> */}
+        />
       
         {/* <Slick/> */}
         {/* <LandingHero />
