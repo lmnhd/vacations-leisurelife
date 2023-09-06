@@ -73,11 +73,12 @@ async function getImageUrlsForDestinatioinCB(destinationText = "Visit Africa"){
 }
 
 export async function checkPixaBay(searchString,numImages = 1){
+    console.log(`Getting ${numImages} images for ${searchString}`)
     let result = []
     const url = `https://pixabay.com/images/search/${searchString}/`
     const data = await fetch(url);
     const resultData = await data.text();
-    //console.log(resultData);
+    console.log(resultData);
     const $ = load(resultData);
     const images = $("img");
     console.log(images.length);
