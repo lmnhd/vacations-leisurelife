@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 
 import axios from "axios";
 import { SearchResults } from "@/components/vtg/search-results";
+import { Container1, Container1Header } from "../containers/container1";
+import LogoStrip from "@/components/logoStrip"
 
 const sParams: any = searchParams;
 const allShipsOBJ = {
@@ -49,7 +51,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
     setButtonVisible,
   } = useContext(BookingContext);
   const formstyle1 =
-    "formgroup shadow-md rounded-md bg-primary text-primary w-72";
+    "formgroup shadow-md rounded-md bg-primary text-primary text-center w-72";
   const resultLableStyle = "font-serif  text-center  align-center";
   const resultValueStyle = "text-center text-white";
   const fieldColorOn = `bg-blue-500 text-white`;
@@ -252,20 +254,24 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
     );
   };
   return (
-    <div className="flex flex-col items-center justify-between space-y-12 ">
-      <div>
-        <h1 className="flex justify-center w-full text-2xl font-bold text-center text-primary">
-          Cruise Search
-        </h1>
+    <div className="flex flex-col items-center justify-between gap-4  ">
+      <div className="md:flex items-center justify-between w-full mx-3 shadow-sm"
+      >
+        
+       
+          <Container1Header headerText="Cruise Search"/>
         <p className="text-muted-foreground">
           Search hundreds of Cruise ship departures based on your preferences
         </p>
+        
+       
       </div>
       <FormProvider
         {...methods}
 
         //className={`z-50 items-center w-full pb-4 mx-auto border-b-200`}
       >
+        <LogoStrip/>
         <div className="">
           <div className="flex flex-wrap items-center justify-center w-full gap-2 px-3 mx-auto align-middle md:mb-0">
             {Object.keys(sParams).map((key, index) => {
@@ -344,7 +350,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
                           name={finalValName}
                           render={() => (
                             <FormItem>
-                              <FormLabel className="text-primary-foreground">
+                              <FormLabel className="text-primary-foreground text-center font-light mx-auto">
                                 {label}
                               </FormLabel>
                               <Select

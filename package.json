@@ -33,6 +33,7 @@
     "crisp-sdk-web": "^1.0.21",
     "eslint": "8.47.0",
     "eslint-config-next": "13.4.13",
+    "json-loader": "^0.5.7",
     "lucide-react": "^0.263.1",
     "next": "13.4.13",
     "openai": "^4.0.1",

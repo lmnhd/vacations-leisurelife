@@ -32,6 +32,26 @@ const logoNamesUpper = [
     'ROYAL',
 
 ]
+export function getAllLogos(includesDefault = false){
+    return [
+        Carnival,
+        Celebrity,
+        Costa,
+        Virgin,
+        Cunard,
+        Disney,
+        Holland,
+        MSC,
+        Norwegian,
+        Oceania,
+        Princess,
+        Royal,
+        
+    ]
+}
+export function getDefaultLogo(){
+    return Default;
+}
 export const shipLogos = (finderText:string) => {
     for (let i = 0; i < logoNamesUpper.length; i++) {
         if (finderText.toUpperCase().includes(logoNamesUpper[i])) {

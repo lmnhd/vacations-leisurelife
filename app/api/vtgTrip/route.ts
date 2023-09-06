@@ -11,11 +11,9 @@ export async function POST(req:Request, res: Response) {
  // const { userId } = auth();
   try {
     const body = await req.json();
-    console.log("VTGTRIP CALL :",body)
-  // const { data } = body;
+   
    const {num, ship} = body;
-  // console.log(num)
-  // console.log(ship)
+
   
   
 

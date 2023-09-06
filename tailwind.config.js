@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+// import 'slick-carousel/slick/slick.css'
+// import 'slick-carousel/slick/slick-theme.css'
 module.exports = {
   darkMode: ["class"],
   content: [
