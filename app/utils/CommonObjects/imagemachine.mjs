@@ -75,36 +75,36 @@ async function getImageUrlsForDestinatioinCB(destinationText = "Visit Africa"){
 export async function checkPixaBay(searchString,numImages = 1){
     console.log(`Getting ${numImages} images for ${searchString}`)
     let result = []
-    const url = `https://pixabay.com/images/search/${searchString}/`
-    const data = await fetch(url);
-    const resultData = await data.text();
-    console.log(resultData);
-    const $ = load(resultData);
-    const images = $("img");
-    console.log(images.length);
-    const links = []
-    images.each(function(index, element){
-        const src = $(element).attr("src");
-        let alt = $(element).attr("alt");
-        if(alt == undefined){alt = searchString} 
-        const obj = {}
+//     const url = `https://pixabay.com/images/search/${searchString}/`
+//     const data = await fetch(url);
+//     const resultData = await data.text();
+//     console.log(resultData);
+//     const $ = load(resultData);
+//     const images = $("img");
+//     console.log(images.length);
+//     const links = []
+//     images.each(function(index, element){
+//         const src = $(element).attr("src");
+//         let alt = $(element).attr("alt");
+//         if(alt == undefined){alt = searchString} 
+//         const obj = {}
 
-        if(src !== undefined ){
-            console.log(src);
-            if(src.includes('.jpg')){
-                obj.src = src;
-                obj.alt = alt;
-            console.log(obj);
-            result.push(obj);
-            }
+//         if(src !== undefined ){
+//             console.log(src);
+//             if(src.includes('.jpg')){
+//                 obj.src = src;
+//                 obj.alt = alt;
+//             console.log(obj);
+//             result.push(obj);
+//             }
            
-}})
-    for(let i = 0; i < numImages; i++){
-        const itemNum = getRandomNumberBetween(0,result.length);
-        links.push(result[itemNum]);
-    }
-    //console.log(links);
-    result = links;
+// }})
+//     for(let i = 0; i < numImages; i++){
+//         const itemNum = getRandomNumberBetween(0,result.length);
+//         links.push(result[itemNum]);
+//     }
+//     //console.log(links);
+//     result = links;
     return result;
 }
 
