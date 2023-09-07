@@ -75,40 +75,11 @@ async function getImageUrlsForDestinatioinCB(destinationText = "Visit Africa"){
 
 export async function checkPixaBay(searchString,numImages = 1){
     console.log(`Getting ${numImages} images for ${searchString}`)
-    let result = []
-    const url = `https://google.com/` 
-    console.log(url);
-    // const url = `https://pixabay.com/images/search/${searchString}/`
-   // const data = await fetch(url);
-   const data = await axios.get(_baseURL);
-    //const resultData = await data.text();
-    console.log(data.data);
-//     const $ = load(resultData);
-//     const images = $("img");
-//     console.log(images.length);
-//     const links = []
-//     images.each(function(index, element){
-//         const src = $(element).attr("src");
-//         let alt = $(element).attr("alt");
-//         if(alt == undefined){alt = searchString} 
-//         const obj = {}
-
-//         if(src !== undefined ){
-//             console.log(src);
-//             if(src.includes('.jpg')){
-//                 obj.src = src;
-//                 obj.alt = alt;
-//             console.log(obj);
-//             result.push(obj);
-//             }
-           
-// }})
-//     for(let i = 0; i < numImages; i++){
-//         const itemNum = getRandomNumberBetween(0,result.length);
-//         links.push(result[itemNum]);
-//     }
-//     //console.log(links);
-//     result = links;
+    const testURL = 'https://pixabay.com/'
+    const testing = await fetch(testURL)
+    const resultData = await testing.text();
+    let result = [resultData]
+    console.log(result);
     return result;
 }
 
@@ -123,5 +94,5 @@ console.log(JSON.stringify(result));
 
 //await GetCBDestinatioinImages('antarctica')
 //await checkPixaBay();
-// const result = await checkPixaBay('antarctica map',7)
+//  const result = await checkPixaBay('antarctica map',7)
 // console.log(result);
