@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 import destinations from '../destinations.json' assert { type: "json" };
+import axios from "axios";
 
 const baseURL = "https://www.cruisebrothers.com/destinations";
 const _baseURL = "https://www.cruisebrothers.com";
@@ -78,9 +79,10 @@ export async function checkPixaBay(searchString,numImages = 1){
     const url = `https://google.com/` 
     console.log(url);
     // const url = `https://pixabay.com/images/search/${searchString}/`
-    // const data = await fetch(url);
-    // const resultData = await data.text();
-    // console.log(resultData);
+   // const data = await fetch(url);
+   const data = await axios.get(url);
+    //const resultData = await data.text();
+    console.log(data);
 //     const $ = load(resultData);
 //     const images = $("img");
 //     console.log(images.length);
