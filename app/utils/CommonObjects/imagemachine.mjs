@@ -77,7 +77,7 @@ export async function checkPixaBay(searchString,numImages = 1){
     console.log(`Getting ${numImages} images for ${searchString}`)
     const testURL = 'https://pixabay.com/'
     const testing = await fetch(testURL)
-    const resultData = await testing.text();
+    const resultData = (await testing.text()).substring(0,300);
     let result = [resultData]
     console.log(result);
     return result;
