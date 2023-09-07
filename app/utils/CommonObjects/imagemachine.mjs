@@ -3,10 +3,10 @@ import fs from "fs";
 import path from "path";
 
 import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
+//import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 
-puppeteer.use(StealthPlugin())
+//puppeteer.use(StealthPlugin())
 
 import destinations from '../destinations.json' assert { type: "json" };
 import axios from "axios";
@@ -115,6 +115,6 @@ console.log(JSON.stringify(result));
 }
 
 //await GetCBDestinatioinImages('antarctica')
-await checkPixaBay();
+//await checkPixaBay();
 //  const result = await checkPixaBay('antarctica map',7)
 // console.log(result);
