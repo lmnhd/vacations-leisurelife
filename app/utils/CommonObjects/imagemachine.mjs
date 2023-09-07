@@ -80,9 +80,9 @@ export async function checkPixaBay(searchString,numImages = 1){
     console.log(url);
     // const url = `https://pixabay.com/images/search/${searchString}/`
    // const data = await fetch(url);
-   const data = await axios.get(url);
+   const data = await axios.get(_baseURL);
     //const resultData = await data.text();
-    console.log(data);
+    console.log(data.data);
 //     const $ = load(resultData);
 //     const images = $("img");
 //     console.log(images.length);
