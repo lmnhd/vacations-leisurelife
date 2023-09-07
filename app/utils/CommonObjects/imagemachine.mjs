@@ -2,6 +2,12 @@ import { load } from "cheerio";
 import fs from "fs";
 import path from "path";
 
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+
+puppeteer.use(StealthPlugin())
+
 import destinations from '../destinations.json' assert { type: "json" };
 import axios from "axios";
 
@@ -74,12 +80,28 @@ async function getImageUrlsForDestinatioinCB(destinationText = "Visit Africa"){
 }
 
 export async function checkPixaBay(searchString,numImages = 1){
+    let result = [];
+    let html = ""
     console.log(`Getting ${numImages} images for ${searchString}`)
-    const testURL = 'https://pixabay.com/'
-    const testing = await fetch(testURL)
-    const resultData = (await testing.text()).substring(0,300);
-    let result = [resultData]
-    console.log(result);
+    const testURL = 'https://pixabay.com/images/search/alaska/'
+    puppeteer.launch({ headless: "new" }).then(async browser => {
+        const page = await browser.newPage();
+        await page.goto(testURL);
+        new Promise(resolve => setTimeout(resolve, 5000));
+        const content = await page.content();
+        const $ = load(content);
+         html = $("html").text();
+         const body = $("body").text();
+        console.log(body.substring(0,3000));
+
+        await browser.close();
+
+    }
+    );
+    // const testing = await fetch(testURL)
+    // const resultData = (await testing.text()).substring(0,300);
+    // let result = [resultData]
+    // console.log(result);
     return result;
 }
 
@@ -93,6 +115,6 @@ console.log(JSON.stringify(result));
 }
 
 //await GetCBDestinatioinImages('antarctica')
-//await checkPixaBay();
+await checkPixaBay();
 //  const result = await checkPixaBay('antarctica map',7)
 // console.log(result);
