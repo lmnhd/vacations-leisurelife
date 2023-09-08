@@ -43,7 +43,7 @@ const tips = [
         
     }
 ]
-export default function FeaturesToolTip({options}:{options:ToolTipsProps}) {
+export default function FeaturesToolTip({options}:{options:any}) {
   return (
     <div className='h-10 w-full flex justify-start border-b shadow gap-3 bg-gray-200'>
         {tips.map((tip,index) => {
