@@ -6,6 +6,9 @@ const nextConfig = {
       "www.vacationstogo.com",
       "assets.vacationstogo.com",
       "www.cruisebrothers.com",
+      "images.pexels.com",
+      "https://www.pexels.com",
+      "www.pexels.com"
     ],
   },
   experimental: {

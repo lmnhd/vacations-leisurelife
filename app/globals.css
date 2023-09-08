@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 
+
  
 @layer base {
   :root {
@@ -101,5 +102,6 @@
 .search-result-item > p:nth-child(2) {
   @apply p-0 font-sans text-center text-muted-foreground ;
 }
+
 
 

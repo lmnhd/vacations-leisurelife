@@ -35,7 +35,7 @@ async function getDestinationsList(){
    fs.writeFileSync("destinations.json",JSON.stringify(result)) ;
 
 }
-function getRandomNumberBetween(min,max){
+export function getRandomNumberBetween(min,max){
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 function getDestinationParamArrayCB(destString){

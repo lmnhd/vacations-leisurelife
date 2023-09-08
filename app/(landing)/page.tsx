@@ -1,27 +1,36 @@
 import { LandingContent } from "@/components/landing-content";
 import { LandingHero } from "@/components/landing-hero";
 import { LandingNavbar } from "@/components/landing-navbar";
-import { checkPixaBay } from "@/app/utils/CommonObjects/imagemachine.mjs"
+//import { checkPixaBay } from "@/app/utils/CommonObjects/imagemachine.mjs"
+import {createClient} from 'pexels'
+import {getRandomNumberBetween} from '@/app/utils/CommonObjects/imagemachine.mjs'
+import Image from "next/image";
+import heroImage from '@/public/two-2413470_1920.jpg'
+
+
+//https://www.istockphoto.com/photo/tropical-paradise-gm155375632-19833254
 
 
 
 
 export default async function LandingPage(){
-    const images = await checkPixaBay("carnival cruise",5)
-     console.log(images)
+   
+
+
    
     return (
-    <div className="h-full" >
+    <div className="" >
         <LandingNavbar />
-        {/* <img 
-        alt="header"
-        
-        src={images[0].src}
+        {/* <Image 
+        alt="ship"
+        width={2000}
+        height={800}
+        src={heroImage}
         /> */}
       
         {/* <Slick/> */}
-        {/* <LandingHero />
-        <LandingContent/> */}
+        <LandingHero />
+        <LandingContent/>
     </div>
     )
 }
