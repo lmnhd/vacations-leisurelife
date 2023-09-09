@@ -6,15 +6,35 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
 
 model UserApiLimit {
-  id        String     @id @default(cuid())
-  userId    String @unique
-  count    Int @default(0)
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  count     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PexelPhotoResource {
+  id              String @id @default(cuid())
+  searchQuery     String
+  width           Int
+  height          Int
+  url             String
+  alt             String
+  avgColor        String
+  photographer    String
+  photographerUrl String
+  srcOriginal     String
+  srcLarge2x      String
+  srcLarge        String
+  srcMedium       String
+  srcSmall        String
+  srcPortrait     String
+  srcLandscape    String
+  srcTiny         String
 }

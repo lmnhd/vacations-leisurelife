@@ -21,15 +21,8 @@ export default async function LandingPage(){
     return (
     <div className="" >
         <LandingNavbar />
-        {/* <Image 
-        alt="ship"
-        width={2000}
-        height={800}
-        src={heroImage}
-        /> */}
-      
-        {/* <Slick/> */}
-        <LandingHero />
+        
+        {/* <LandingHero /> */}
         <LandingContent/>
     </div>
     )

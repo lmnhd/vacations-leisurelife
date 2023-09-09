@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardTitle } from "./ui/card";
 import PromotionTile, {PromotionTileProps} from '@/components/promotion-tile'
-import pexelmachine from '@/app/utils/CommonObjects/pexelmachine'
+import CBDestinationPicksTiles from "./cb/cbdestinationpickstile";
 
 
 
@@ -80,23 +80,17 @@ const promotionsTest:PromotionTileProps[] = [
 ];
 
 export const LandingContent = async () => {
-  const photos:any = await pexelmachine(6,'promotion map')
- console.log(photos)
-  promotionsTest.forEach((promotion,index) => {
-    //console.log(photos.photos[index])
-    promotion.imageSrc = photos.photos[index].src.medium
-  })
  
-  //console.log(promotionsTest)
 
   return (
   <>
 
      <div 
-     className="bg-primary/50 hover:bg-gradient-to-br hover:from-lime-400/70 hover:via-lime-500  hover:to-lime-400/70"
+     //className="bg-primary/50 hover:bg-gradient-to-br hover:from-lime-400/70 hover:via-lime-500  hover:to-lime-400/70"
      //className="px-10 pb-20 bg-primary hover:bg-gradient-to-r hover:from-primary-foreground/70 hover:via-primary/70 hover:to-primary-foreground/70 transition-all ease-in-out duration-500 "
      >
-       <h2 className="mb-10 text-4xl font-extrabold text-center text-white">
+      <CBDestinationPicksTiles/>
+       {/* <h2 className="mb-10 text-4xl font-extrabold text-center text-white">
          Testimonials
        </h2>
        <div className="flex flex-wrap justify-evenly gap-3">
@@ -109,7 +103,7 @@ export const LandingContent = async () => {
             />
           );
         })}
-       </div>
+       </div> */}
      </div>
     </>
   );
