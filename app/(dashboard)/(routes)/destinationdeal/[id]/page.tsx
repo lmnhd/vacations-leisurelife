@@ -98,7 +98,7 @@ async function createPageOBJ(id: string) {
       "destinationdeal" + pick.id,
       task.task,
       //task.task //use to delete first
-      //task.task == 'mainImage' ? task.task : ''
+      //task.task == 'bodyText' ? task.task : ''
     );
     //console.log("response = ", response);
     result[task.task] = response;
