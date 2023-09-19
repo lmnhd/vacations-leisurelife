@@ -20,7 +20,7 @@ interface ItineraryItem {
   portImage?: string;
 }
 
-export interface PickPageComponentProps {
+interface PickPageComponentProps {
   title?: string; ///a creative title for this trip
   subtitle?: string; /// supporting text for the title
   mainImage?: string; ///a search term for a main image
@@ -106,7 +106,7 @@ async function createPageOBJ(id: string) {
 
   return result;
 }
-export async function getData(id: string) {
+async function getData(id: string) {
   let data: any = {};
   //const data1 = await cbPicks();
   const res = await createPageOBJ(id);
