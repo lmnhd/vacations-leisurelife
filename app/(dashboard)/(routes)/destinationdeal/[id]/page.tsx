@@ -9,7 +9,7 @@ import { getGoogleImage } from "@/app/utils/CommonObjects/googleimage";
 import { aiAssistBackOff } from "@/app/utils/api";
 import { Container1Header } from "@/components/containers/container1";
 import { CBPickData } from "@/components/cb/cbdestinationpickstile.jsx";
-import { CleanText } from "@/app/utils/cleanText";
+import { CleanText } from "@/app/utils/CleanText.js";
 
 import { Pi } from "lucide-react";
 //import { type } from "os";
