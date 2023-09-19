@@ -111,5 +111,5 @@ export async function cbPick(pickID) {
 }
 
 export function pickID(pick) {
-  return String(`${pick.what}-${pick.when}`).replaceAll(" ", "");
+  return String(`${pick.what}-${pick.when}`).replaceAll(" ", "").replaceAll('.','');
 }
