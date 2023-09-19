@@ -69,7 +69,7 @@ export async function aiAssistBackOff(
     const response:string = await backOff(() => aiAssist(instructions,data,componentId,functionId,deleteData)) 
     return response;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     //return error;
   }
 }
