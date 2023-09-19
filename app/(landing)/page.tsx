@@ -22,7 +22,7 @@ export default async function LandingPage(){
     <div className="" >
         <LandingNavbar />
         
-        {/* <LandingHero /> */}
+        <LandingHero />
         <LandingContent/>
     </div>
     )

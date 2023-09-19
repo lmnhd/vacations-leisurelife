@@ -77,6 +77,22 @@ interface PexelPhotoResult {
 export function getRandomNumberBetween(min:number,max:number){
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
+export function getOnlyUniqueRandomNumbersBetween(num:number){
+  const min = 0;
+  const max = num;
+  const res:any[] = []
+  while(res.length < num){
+    const random = getRandomNumberBetween(min,max);
+    if(!res.includes(random)){
+      res.push(random)
+    }
+  }
+  return res;
+}
+export async function shuffleArray(array:any[]){
+  const res = array.sort(() => Math.random() - 0.5);
+  return res;
+}
 //TO DO
 function cacheSearchedImages() {}
 async function storeImageData(data: PexelPhotoResource, query: string) {
@@ -193,6 +209,6 @@ export default async (
     })
     .catch((err) => console.log(err));
   console.log(photoResults.photos.length + " images retrieved");
-
-  return mapPexelImagesToNewObjectArray(photoResults.photos,query);
+const res = await mapPexelImagesToNewObjectArray(photoResults.photos,query);
+  return res;
 };

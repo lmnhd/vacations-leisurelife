@@ -19,6 +19,19 @@ model UserApiLimit {
   updatedAt DateTime @updatedAt
 }
 
+model GoogleImageResource {
+  id              String @id @default(cuid())
+  searchQuery     String
+  type            String
+  width           Int
+  height          Int
+  url             String
+  thumbnail       String
+  description     String
+  parentPage      String
+  ignore          Boolean @default(false)
+}
+
 model PexelPhotoResource {
   id              String @id @default(cuid())
   searchQuery     String
@@ -37,4 +50,13 @@ model PexelPhotoResource {
   srcPortrait     String
   srcLandscape    String
   srcTiny         String
+}
+
+model AIAssist {
+  id       String  @id @default(cuid())
+  componentId String
+  functionId  String
+  prompt   String  @db.LongText
+  response String  @db.Text
+  ignore   Boolean @default(false)
 }

@@ -1,36 +1,4 @@
-import fs from "fs";
 import { load } from "cheerio";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const paramsJSON = "/SearchData/SearchParams.json";
-import axios, { all } from "axios";
-
-export async function getCBSpecials() {
-  const specials = [];
-  //const resultList = await axios.get("https://www.cruisebrothers.com/specials");
-const res = (await fetch("https://www.cruisebrothers.com/specials"));
-const resultList = await res.text();
-//console.log(resultList);
-  const $ = load(resultList);
-
-  const list = $(".sr-specials").find("li");
-//console.log(list.text());
-  list.each(function (index, element) {
-    let obj = {};
-    obj.header = $(this).find("h3").text().trim();
-    obj.link = $(this).find("a").attr("href");
-    obj.message = $(this).text().trim();
-
-    specials.push(obj);
-
-  });
-  //console.log(specials);
-  return specials;
-}
 
 export async function cbPicks() {
   const url = "https://www.cruisebrothers.com/the-brothers-picks";
@@ -59,15 +27,15 @@ export async function cbPicks() {
     }
 
     if (j == 0) {
-      obj.img = ''
+      obj.img = "";
       if (!String(check).trim().includes("Destination:")) {
         //console.log("skipping");
         j = -1;
       } else {
         obj.destination = $(child).text();
-        const img = $(child).find("img")
+        const img = $(child).find("img");
         const src = `${baseURL}${img.attr("src")}`;
-        if(img.length > 0) {
+        if (img.length > 0) {
           obj.img = src;
         }
       }
@@ -81,16 +49,15 @@ export async function cbPicks() {
       }
     }
     if (j == 2) {
-      if($(child).find("img").length > 0){
+      if ($(child).find("img").length > 0) {
         const src = `${baseURL}${$(child).find("img").attr("src")}`;
         obj.img = src;
         if (obj.img == undefined || obj.img == "") {
           j++;
         }
-        }else{
-          j++
+      } else {
+        j++;
       }
-     
     }
     if (j == 3) {
       if (!String(check).trim().includes("When:")) {
@@ -115,7 +82,7 @@ export async function cbPicks() {
     if (j == 8) {
       obj.other = $(child).text().trim();
       j = -1;
-      obj.id = rowNum;
+      obj.id = pickID(obj);
       arr.push(obj);
       obj = {};
       rowNum++;
@@ -129,4 +96,20 @@ export async function cbPicks() {
   return arr;
 }
 
+export async function cbPick(pickID) {
+  console.log(pickID);
+  const picks = await cbPicks();
+  for (let index = 0; index < picks.length; index++) {
+    const pick = picks[index];
+    //console.log(pick);
+    if (pick.id == pickID) {
+      console.log(pick.id)
+      return pick;
+    }
+  }
+  return null;
+}
 
+export function pickID(pick) {
+  return String(`${pick.what}-${pick.when}`).replaceAll(" ", "");
+}
