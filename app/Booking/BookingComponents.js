@@ -334,7 +334,7 @@ export const Passenger = ({ curPassenger, index }) => {
               className="grid grid-flow-col   justify-evenly  "
               >
                   {curPassenger.amenityChoices.map((amenityChoice) => {
-                    return <div className="grid grid-cols-2 align-middle justify-items-center items-center border-1">
+                    return <div key={amenityChoice} className="grid grid-cols-2 align-middle justify-items-center items-center border-1">
                         <label className="text-center text-xs">{amenityChoice}</label>
                         <Checkbox
                         key={amenityChoice}

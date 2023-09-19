@@ -142,6 +142,7 @@ export default function GeneralBooking() {
               const label = getLabel(subField)
               return (
                 <Input
+                key={subI}
                   className={classNames}
                   type="text"
                   placeholder={label}
@@ -165,6 +166,7 @@ export default function GeneralBooking() {
           return (
             
               <Input
+              key={i}
               className={classNames}
                 type="number"
                 control="input"
@@ -219,8 +221,9 @@ export default function GeneralBooking() {
           console.log(typeof fieldValues.Passenger[field]);
           console.log(label);
           return (
-            <Form.Field width={"10"}>
+            <Form.Field width={"10"} key={i}>
               <Select
+              key={i}
                 labeled
                 fluid
                 className={classNames}
@@ -244,7 +247,7 @@ export default function GeneralBooking() {
           console.log(typeof fieldValues.Passenger[field]);
           console.log(label);
           return (
-            <div className="">
+            <div className="" key={field}>
               <Label
                 content={label}
                 className={`w-full`}
