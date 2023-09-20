@@ -46,7 +46,7 @@ export class Passenger {
   ];
   docInfo = new DocumentInfo();
   amenities = [];
-  amenityChoices = ["Drink Package", "On Board Credits", "WiFi", "Excursions","Dining Specials"];
+  amenityChoices = ["Drink Package", "On Board Credits", "WiFi", "Trip Excursions","Dining Specials"];
 
   //cabinType = null;
 

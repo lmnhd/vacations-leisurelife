@@ -103,5 +103,16 @@
   @apply p-0 font-sans text-center text-muted-foreground ;
 }
 
+.booking-select,.booking-input {
+  @apply w-full  rounded-md border-0
+}
+
+.book-form-ship-info {
+  @apply bg-gray-100 md:ml-5 md:mr-5 border-b-2
+}
+.booking-section {
+  @apply py-10
+}
+
 
 

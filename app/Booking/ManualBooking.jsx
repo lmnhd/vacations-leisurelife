@@ -1,6 +1,7 @@
+"use client";
 import { useContext } from "react";
-import { Passenger } from "./BookingComponents";
-import { BookingContext } from "./BookingContext";
+import { Passenger } from "./BookingComponents.jsx";
+import { BookingContext } from "../contexts/BookingContext";
 
 export default function ManualBooking() {
   const {
@@ -23,7 +24,7 @@ export default function ManualBooking() {
   return (
     <div>
       {currentTrip && (
-        <div className="text-center my-5">
+        <div className="text-center w-full ">
           <BookFormShipWrapper
             header="Cruise Line"
             text={currentTrip.mainInfo.cruiseLine}

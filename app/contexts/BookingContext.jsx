@@ -1,12 +1,17 @@
 "use client";
 
-import { useReducer, useState, createContext } from "react";
+import { useReducer, useState, createContext, useEffect } from "react";
+import { useRouter } from 'next/navigation'
 import searchParams from "@/components/vtg/searchParams.json";
 import { Passenger } from "../utils/BookingInfo2";
+import { SignIn, useAuth, useUser } from "@clerk/nextjs";
+import { resolve } from "path";
+import { set } from "zod";
 
 const passengerReducer = (state, action) => {
   //console.log(action);
   const { value, type } = action;
+  
   //console.log(`value: ${value}, type: ${type}, state: ${state}`);
   switch (type) {
     case "SET_PAX":
@@ -179,13 +184,41 @@ const passengerReducer = (state, action) => {
 export const BookingContext = createContext();
 
 export const BookingProvider = ({ children }) => {
-  const pass = new Passenger();
-  const [passengers, setPassengers] = useState([pass]);
+  
+  const router = useRouter()
+  let pass = new Passenger();
+  
+  
+
+  
+  
+  
+  
+   
+  
+  
   const [searchResults, setSearchResults] = useState([]);
   const [currentTrip, setCurrentTrip] = useState(null);
+  const [passengers, setPassengers] = useState([pass]);
   const [curPassenger, setCurPassenger] = useReducer(passengerReducer, pass);
   const [showingResults, setShowingResults] = useState(false);
   const params = searchParams;
+  const { isLoaded, isSignedIn, user } = useUser();
+  
+  console.log('isLoaded = ',isLoaded)
+  useEffect(() => {
+    console.log('useEffect Called and isLoaded = ',isLoaded)
+    // if (user) {
+    //   pass.email = user.emailAddresses[0].emailAddress;
+    //   pass.firstName = user.firstName;
+    //   pass.lastName = user.lastName;
+    //   //pass.phone1 = user.phoneNumbers[0].phoneNumber;
+    // }
+    // console.log('user = ',user)
+    // setPassengers([pass]);
+    
+  }, [pass])
+  
   const [search, setSearch] = useState({
     allVals: {
       incCT: "y",
@@ -206,8 +239,13 @@ export const BookingProvider = ({ children }) => {
   });
   const [header, setHeader] = useState("Search Cruises");
   const [buttonVisible, setButtonVisible] = useState(false);
-
+  
   //console.log(curPassenger);
+  if(!isLoaded){return null}else{
+    // pass.email = user.emailAddresses[0].emailAddress;
+    //   pass.firstName = user.firstName;
+    //   pass.lastName = user.lastName;
+  }
   return (
     <BookingContext.Provider
       value={{
@@ -233,4 +271,8 @@ export const BookingProvider = ({ children }) => {
       {children}
     </BookingContext.Provider>
   );
+//  }else{
+//  return <SignIn />
+//  }
+  
 };

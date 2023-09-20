@@ -97,17 +97,26 @@ export async function cbPicks() {
 }
 
 export async function cbPick(pickID) {
-  console.log(pickID);
-  const picks = await cbPicks();
-  for (let index = 0; index < picks.length; index++) {
-    const pick = picks[index];
-    //console.log(pick);
-    if (pick.id == pickID) {
-      console.log(pick.id)
-      return pick;
-    }
-  }
-  return null;
+  console.log('cbPick',pickID)
+  
+  return new Promise(async (resolve, reject) => { 
+    const picks = await cbPicks();
+  console.log('loaded picks => ');
+  const result = picks.find((pick) => {
+    return pick.id == pickID
+  })
+  resolve(result);
+  })
+  
+  // for (let index = 0; index < picks.length; index++) {
+  //   const pick = picks[index];
+  //   //console.log(pick);
+  //   if (pick.id == pickID) {
+  //     console.log('FOUND PICK => ',pick.id)
+  //     return pick;
+  //   }
+  // }
+  // return result;
 }
 
 export function pickID(pick) {

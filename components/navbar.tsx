@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import ManualBooking from '@/app/Booking/ManualBooking'
 
 const Navbar = async () => {
   const user: User | null = await currentUser();
@@ -22,17 +23,18 @@ const Navbar = async () => {
             Hi {user.firstName} !
           </div>
         )}
-        <div className="flex items-end gap-8 justify-center shadow-sm">
-          <Dialog>
-            <DialogTrigger className="bg-primary-foreground text-sm font-extralight p-1 hover:bg-pink-500 hover:text-white text-slate-700">Request Booking</DialogTrigger>
-            <DialogContent>
+        <div className="flex items-end gap-8 justify-center shadow-sm o">
+          <Dialog modal  >
+            <DialogTrigger className="bg-primary-foreground text-sm font-extralight p-1 hover:bg-pink-500 hover:text-white text-slate-700 overflow-auto">Request Booking</DialogTrigger>
+            <DialogContent  className="w-5/6 h-screen overflow-auto">
               <DialogHeader>
-                <DialogTitle>Are you sure absolutely sure?</DialogTitle>
+                <DialogTitle>Booking Information</DialogTitle>
                 <DialogDescription>
-                  This action cannot be undone. This will permanently delete
-                  your account and remove your data from our servers.
+                  Please provide us with your booking information and we will get back to you as soon as possible.
                 </DialogDescription>
+                
               </DialogHeader>
+              <ManualBooking />
             </DialogContent>
           </Dialog>
 

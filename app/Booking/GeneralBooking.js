@@ -1,6 +1,6 @@
 import { useState } from "react";
-import searchParams from "../../searchCruiseAPI/searchParams.json";
-import { BookingInfo, passenger } from "./BookingInfo";
+// import searchParams from "../../searchCruiseAPI/searchParams.json";
+// import { BookingInfo, passenger } from "./BookingInfo";
 import {
   CabinType,
   Gender,

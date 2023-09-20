@@ -43,21 +43,21 @@ const tools = [
     icon: BadgeDollarSign,
     color: "text-violet-500",
     bgColor: "bg-violet-500/10",
-    href: "/dashboard",
+    href: "/promotions",
   },
   {
     label: "Cruise News",
     icon: Newspaper,
     color: "text-violet-500",
     bgColor: "bg-violet-500/10",
-    href: "/dashboard",
+    href: "/news",
   },
   {
     label: "Search Cruises",
     icon: Search,
     color: "text-violet-500",
     bgColor: "bg-violet-500/10",
-    href: "/dashboard",
+    href: "/search",
   },
 ];
 export default function DashBoardPage() {

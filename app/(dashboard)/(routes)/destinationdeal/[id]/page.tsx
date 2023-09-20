@@ -83,10 +83,11 @@ const gptTasks: gptTask[] = [
 ];
 async function createPageOBJ(id: string) {
   console.log("id = ", id)
-  const decodedURI = decodeURIComponent(id);
+  const decodedURI = decodeURIComponent(id.replaceAll('%C3%82%C2%A0','%C2%A0').replaceAll('%C4%80%C2%A0','%C2%A0'));
   console.log("decodedURI = ", decodedURI);
   const pick = await cbPick(decodedURI);
-  console.log("pick = ", pick);
+  
+  console.log("(PAGE):pick = ", pick);
   thisPick = pick;
   const result: any = {};
   const dataText = JSON.stringify(pick);
