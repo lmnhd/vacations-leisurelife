@@ -33,7 +33,7 @@ const BookingFormField = ({
     <div
       className={`booking-form-field grid grid-flow-row justify-items-center ${width}`}
     >
-      <label className="bg-gray-100 w-full font-semibold rounded-md">
+      <label className="bg-gray-100 w-full font-semibold rounded-none">
         <span>
           {label}
           {required && <i className="text-red-500 font-body"> * </i>}
@@ -53,7 +53,7 @@ export const Passenger = ({ curPassenger, index }) => {
     watch,
     formState: { errors },
   } = useForm();
-  const [open, setOpen] = useState(0);
+  const [open, setOpen] = useState(1);
   const handleOpen = (value) => setOpen(open === value ? 0 : value);
 
   const update = (value, type) => {
@@ -88,18 +88,21 @@ export const Passenger = ({ curPassenger, index }) => {
   // }
   return (
     <form onSubmit={handleSubmit(onSubmit)} className=" mb-10 ">
-      <input
-        type="submit"
-        className="w-full bg-blue-500 p-6 sticky top-0 z-50 hover:cursor-pointer hover:bg-green-500"
-      />
-      <h1>Passenger #{index ? index + 1 : 1}</h1>
+      <div className="flex sticky top-0 z-50">
+       
+        <div className="flex flex-col items-center">
+
+          <h1>Passenger #{index ? index + 1 : 1}</h1>
+          <p className="text-blue-600 underline">{curPassenger.firstName}</p>
+        </div>
+      </div>
 
       <Accordion open={open === 1} className="">
         <AccordionHeader onClick={() => handleOpen(1)}>
           Main Info
         </AccordionHeader>
         <AccordionBody className="">
-          <div className="booking-section  bg-blue-300  flex flex-row gap-4 flex-wrap justify-evenly border-t-4 border-b-4 ">
+          <div className="booking-section  flex flex-row gap-4 flex-wrap justify-evenly border-t-4 border-b-4 ">
             <BookingFormField label="Pax Type">
               <Select
                 value={curPassenger.paxType}

@@ -2,6 +2,10 @@
 import { useContext } from "react";
 import { Passenger } from "./BookingComponents.jsx";
 import { BookingContext } from "../contexts/BookingContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { PlusCircleIcon } from "lucide-react";
+import { Passenger as passenger } from "../utils/BookingInfo2";
 
 export default function ManualBooking() {
   const {
@@ -10,6 +14,8 @@ export default function ManualBooking() {
     curPassenger,
     setCurPassenger,
     currentTrip,
+    setPassengerIndex,
+    passengerIndex,
   } = useContext(BookingContext);
   const BookFormShipWrapper = ({ header, text }) => {
     return (
@@ -21,8 +27,20 @@ export default function ManualBooking() {
       </div>
     );
   };
+  const addPassenger = () => {
+    setPassengers([...passengers, new passenger()]);
+  };
+  const setIndex = (index) => {
+    console.log("index = ", index);
+    setPassengerIndex(index);
+  }
+  
   return (
     <div>
+      {/* <Button
+          //type="submit"
+          className="mx-auto w-20 rounded-sm bg-blue-500 p-4  hover:cursor-pointer hover:bg-green-500"
+        >SUBMIT</Button> */}
       {currentTrip && (
         <div className="text-center w-full ">
           <BookFormShipWrapper
@@ -43,11 +61,45 @@ export default function ManualBooking() {
           />
           <BookFormShipWrapper
             header="Dates"
-            text={`${currentTrip.itinerary.dates[0].date} - ${currentTrip.itinerary.dates[currentTrip.itinerary.dates.length - 1].date}`}
+            text={`${currentTrip.itinerary.dates[0].date} - ${
+              currentTrip.itinerary.dates[
+                currentTrip.itinerary.dates.length - 1
+              ].date
+            }`}
           />
         </div>
       )}
-      <Passenger curPassenger={curPassenger} index={0} />
+
+      <Tabs defaultValue={1}>
+        <TabsList className="grid grid-flow-col gap-3 w-fit items-center justify-center mx-auto">
+          {passengers.map((passenger, index) => {
+            return (
+            
+                <TabsTrigger 
+                value={index + 1}
+                //onClick={setIndex(index)}
+                >Passenger {index + 1}</TabsTrigger>
+              
+            );
+          })}
+          {/* <TabsTrigger value={1}>Passenger 1</TabsTrigger>
+          <TabsTrigger value={2}>Passenger 2</TabsTrigger> */}
+          <PlusCircleIcon
+            onClick={addPassenger}
+            className="w-6 h-6 hover:cursor-pointer hover:text-red-300 text-green-700"
+          />
+        </TabsList>
+
+        {passengers.map((passenger, index) => {
+          return (
+            <TabsContent value={index + 1} onFocus={() => setIndex(index)}>
+              <Passenger curPassenger={passenger} index={index} />
+            </TabsContent>
+          );
+        })}
+        {/* <Passenger curPassenger={curPassenger} index={0} /> */}
+      </Tabs>
+      {/* <Passenger curPassenger={curPassenger} index={0} /> */}
     </div>
   );
 }

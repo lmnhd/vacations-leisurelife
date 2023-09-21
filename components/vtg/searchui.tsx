@@ -271,7 +271,9 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
 
         //className={`z-50 items-center w-full pb-4 mx-auto border-b-200`}
       >
-        <LogoStrip/>
+        <div
+        className="hidden md:block"
+        ><LogoStrip/></div>
         <div className="">
           <div className="flex flex-wrap items-center justify-center w-full gap-2 px-3 mx-auto align-middle md:mb-0">
             {Object.keys(sParams).map((key, index) => {

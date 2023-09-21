@@ -35,12 +35,13 @@ export const LandingHero = () => {
                       "Cruise Deals",
                       "Travel Packages",
                       "Themed Cruises",
-                      "Group Cruises",
+                      "Group Travel",
+                      "Unique Destinations",
                       "Luxury Cruises",
                     ],
                     autoStart: true,
                     loop: true,
-                    delay: 50,
+                    delay: 20,
                     deleteSpeed: 50,
                   }}
                 />

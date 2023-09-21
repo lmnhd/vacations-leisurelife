@@ -159,19 +159,19 @@ export default async function DestinationDealPage({ params: { id } }: any) {
   // }
   return (
     <>
-      <div className="flex flex-col mx-6 text-left space-y-8 my-6 border-b-2 border-gray-400">
-        <div className="grid grid-flow-col justify-center items-center -mt-10">
+      <div className="flex flex-col md:mx-6 text-left space-y-8 my-6 border-b-2 border-gray-400">
+        <div className="flex flex-col md:grid md:grid-flow-col justify-center items-center md:-mt-10">
           <Image
             src={shipLogos(data.title)}
-            width={50}
-            height={50}
+            width={100}
+            height={100}
             alt="data.tile"
           />
           <Container1Header
             headerText={data.title.replaceAll('"', "") || "nothing"}
           />
         </div>
-        <div className="flex flex-row">
+        <div className="flex flex-col md:flex-row ">
           <div className="flex flex-col">
             <p>{data.mainImage}</p>
             <img
@@ -199,10 +199,10 @@ export default async function DestinationDealPage({ params: { id } }: any) {
           <br />
         </div>
         <div className="flex flex-col gap-4">
-          <div className="mr-auto text-left underline text-sm col-span-2">
+          <div className="text-center md:mr-auto md:text-left underline text-sm col-span-2">
             {data.subtitle}
           </div>
-          <div className="font-extra-light text-sm space-y-3 w-1/3">
+          <div className="font-extra-light text-sm space-y-3 md:w-1/3">
             <p className="flex gap-4 border-b-2">
               <DollarSign color="blue" size={16} />
               Starting at {data.price} per person!

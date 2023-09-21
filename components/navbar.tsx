@@ -23,10 +23,10 @@ const Navbar = async () => {
             Hi {user.firstName} !
           </div>
         )}
-        <div className="flex items-end gap-8 justify-center shadow-sm o">
+        <div className="flex items-end gap-8 justify-center shadow-sm ">
           <Dialog modal  >
             <DialogTrigger className="bg-primary-foreground text-sm font-extralight p-1 hover:bg-pink-500 hover:text-white text-slate-700 overflow-auto">Request Booking</DialogTrigger>
-            <DialogContent  className="w-5/6 h-screen overflow-auto">
+            <DialogContent  className="h-screen w-[600px] max-w-[1200px] overflow-auto">
               <DialogHeader>
                 <DialogTitle>Booking Information</DialogTitle>
                 <DialogDescription>

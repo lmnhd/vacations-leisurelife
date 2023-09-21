@@ -5,74 +5,84 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-
+import LLVCard from "../../../../public/leisure_life_card.png"
 import {ArrowRight,Music4, LayoutDashboard,MessageSquare,ImageIcon, Home, BadgeDollarSign, Newspaper,Search, PartyPopper } from "lucide-react";
 import Image from "next/image";
+import LogoStrip from "@/components/logoStrip";
 
 const tools = [
+  // {
+  //   label: "Conversation",
+  //   icon: Home,
+  //   color: "text-violet-500",
+  //   bgColor: "bg-violet-500/10",
+  //   href: "/conversation",
+  // },
+  // {
+  //   label: "Code",
+  //   icon: Home,
+  //   color: "text-green-500",
+  //   bgColor: "bg-green-500/10",
+  //   href: "/code",
+  // },
+  // {
+  //   label: "Image",
+  //   icon: ImageIcon,
+  //   color: "text-red-500",
+  //   bgColor: "bg-red-500/10",
+  //   href: "/image",
+  // },
+  // {
+  //   label: "Music",
+  //   icon: Music4,
+  //   color: "text-blue-500",
+  //   bgColor: "bg-blue-500/10",
+  //   href: "/music",
+  // },
   {
-    label: "Conversation",
-    icon: Home,
-    color: "text-violet-500",
+    label: "Search Cruises",
+    icon: Search,
+    color: "text-purple-500",
     bgColor: "bg-violet-500/10",
-    href: "/conversation",
-  },
-  {
-    label: "Code",
-    icon: Home,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    href: "/code",
-  },
-  {
-    label: "Image",
-    icon: ImageIcon,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
-    href: "/image",
-  },
-  {
-    label: "Music",
-    icon: Music4,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    href: "/music",
+    href: "/search",
   },
   {
     label: "Promotions",
     icon: BadgeDollarSign,
-    color: "text-violet-500",
+    color: "text-green-500",
     bgColor: "bg-violet-500/10",
     href: "/promotions",
   },
   {
     label: "Cruise News",
     icon: Newspaper,
-    color: "text-violet-500",
+    color: "text-orange-500",
     bgColor: "bg-violet-500/10",
     href: "/news",
   },
   {
-    label: "Search Cruises",
-    icon: Search,
-    color: "text-violet-500",
+    label: "Specialty/Themed Cruises",
+    icon: Newspaper,
+    color: "text-pink-500",
     bgColor: "bg-violet-500/10",
-    href: "/search",
+    href: "/themes",
   },
+  
 ];
 export default function DashBoardPage() {
   const router = useRouter();
   return (
     <div>
       <div className="mb-8 space-y-4">
-        <h2 className="text-2xl font-bold text-center md:text-4xl">
-          Explore the world with us.
+        <h2 className="text-2xl font-bold text-center mt-10 md:text-4xl">
+          Let us help you find the perfect cruise!
         </h2>
+        <Image src={LLVCard} alt="LLV Card" width={500} height={500} />
         <p className="text-sm font-light text-center text-muted-foreground md:text-lg">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
+          Here are some options to help you get started...
         </p>
       </div>
-      <div className="px-4 space-y-4 md:px-20 lg:px-32">
+      <div className="px-4 space-y-4 md:px-20 lg:px-32 my-12">
         {tools.map((tool) => (
           <Card
             onClick={() => router.push(tool.href)}
@@ -90,6 +100,7 @@ export default function DashBoardPage() {
           </Card>
         ))}
       </div>
+      <LogoStrip size={300}/>
     </div>
   );
 }

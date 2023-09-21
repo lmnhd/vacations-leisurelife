@@ -104,7 +104,7 @@
 }
 
 .booking-select,.booking-input {
-  @apply w-full  rounded-md border-0
+  @apply w-full  rounded-none border-2
 }
 
 .book-form-ship-info {
