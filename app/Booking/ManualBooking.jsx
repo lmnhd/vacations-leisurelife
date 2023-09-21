@@ -77,6 +77,7 @@ export default function ManualBooking() {
             
                 <TabsTrigger 
                 value={index + 1}
+                key={index}
                 //onClick={setIndex(index)}
                 >Passenger {index + 1}</TabsTrigger>
               
@@ -92,7 +93,7 @@ export default function ManualBooking() {
 
         {passengers.map((passenger, index) => {
           return (
-            <TabsContent value={index + 1} onFocus={() => setIndex(index)}>
+            <TabsContent key={index} value={index + 1} onFocus={() => setIndex(index)}>
               <Passenger curPassenger={passenger} index={index} />
             </TabsContent>
           );

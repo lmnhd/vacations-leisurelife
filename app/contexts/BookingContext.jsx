@@ -210,25 +210,9 @@ export const BookingProvider = ({ children }) => {
         return state;
     }
   };
-  const { isLoaded, isSignedIn, user } = useUser();
-  // const router = useRouter()
   let pass = new Passenger();
+  const { isLoaded, isSignedIn, user } = useUser();
   
-  
-
-  
-  if(!isLoaded){return null}else{
-    if(user){
-      // pass.email = user.emailAddresses[0].emailAddress;
-      // pass.firstName = user.firstName;
-      // pass.lastName = user.lastName;
-    }
-    
-      
-  }
-  
-  
-   
   
   const [passengerIndex, setPassengerIndex] = useState(0);
   const [searchResults, setSearchResults] = useState([]);
@@ -236,13 +220,6 @@ export const BookingProvider = ({ children }) => {
   const [passengers, setPassengers] = useState([pass]);
   const [curPassenger, setCurPassenger] = useReducer(passengerReducer, passengers);
   const [showingResults, setShowingResults] = useState(false);
-  
-  const params = searchParams;
-  
-  
-  console.log('isLoaded = ',isLoaded)
-  
-  
   const [search, setSearch] = useState({
     allVals: {
       incCT: "y",
@@ -263,23 +240,24 @@ export const BookingProvider = ({ children }) => {
   });
   const [header, setHeader] = useState("Search Cruises");
   const [buttonVisible, setButtonVisible] = useState(false);
-  useEffect(() => {
-    console.log('useEffect Called and isLoaded = ',isLoaded)
-    // if (user) {
-    //   pass.email = user.emailAddresses[0].emailAddress;
-    //   pass.firstName = user.firstName;
-    //   pass.lastName = user.lastName;
-    //   //pass.phone1 = user.phoneNumbers[0].phoneNumber;
-    // }
-    // console.log('user = ',user)
-    // setPassengers([pass]);
-    
-  }, [])
-  //console.log(curPassenger);
+  
 
   
+  if(!isLoaded){return null}else{
+    if(user){
+      // pass.email = user.emailAddresses[0].emailAddress;
+      // pass.firstName = user.firstName;
+      // pass.lastName = user.lastName;
+    }
+    
+      
+  }
   
- 
+  console.log('isLoaded = ',isLoaded)
+  
+  const params = searchParams;
+  //console.log(curPassenger);
+
   return (
     <BookingContext.Provider
       value={{
