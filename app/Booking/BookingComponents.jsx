@@ -21,6 +21,7 @@ import {
 } from "@material-tailwind/react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { Button } from "@/components/ui/button";
 
 
 const BookingFormField = ({
@@ -43,25 +44,47 @@ const BookingFormField = ({
     </div>
   );
 };
-export const Passenger = ({ curPassenger, index }) => {
+export const Passenger = (
+  { 
+    curPassenger, 
+    //index, 
+    passengers, 
+    removePassenger, 
+    //register, 
+    //errors, 
+    passengerIndex,
+    onFormSubmit,
+     ...props }) => {
   
 
   const { setCurPassenger, currentTrip } = useContext(BookingContext);
+  console.log('curPassenger = ', curPassenger);
+  console.log('passengers[passengerIndex] = ', passengers[passengerIndex]);
+  console.log('passengers = ', passengers);
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm();
+  } = useForm(
+    curPassenger,
+     //{ mode: "onBlur" }
+     );
+
+  // const onFormSubmit = (data) => {
+   
+  //   //console.log(data);
+  //   console.log(passengers)
+  // };
   const [open, setOpen] = useState(1);
   const handleOpen = (value) => setOpen(open === value ? 0 : value);
 
   const update = (value, type) => {
-    setCurPassenger({ value, type: type });
+    setCurPassenger({ value, type: type, passengerIndex: passengerIndex });
   };
-  const onSubmit = (data) => {
-    console.log(curPassenger);
-  };
+  // const onSubmit = (data) => {
+  //   console.log(curPassenger);
+  // };
   //console.log(curPassenger);
   let cabins = curPassenger.cabinTypeFields;
 
@@ -87,13 +110,33 @@ export const Passenger = ({ curPassenger, index }) => {
   //   update(user.primaryEmailAddress.emailAddress, "SET_EMAIL");
   // }
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className=" mb-10 ">
-      <div className="flex sticky top-0 z-50">
+    
+    <form 
+    onSubmit={handleSubmit(onFormSubmit)} 
+    className=" mb-10 "
+    {...props}
+    >
+      <input
+          type="submit"
+          //onClick={() => console.log(passengers)}
+          className="mx-auto w-20 rounded-sm bg-blue-500 p-4  hover:cursor-pointer hover:bg-green-500"
+          content="Submit"
+        />
+      <div className="flex sticky top-0 z-50 justify-between">
        
         <div className="flex flex-col items-center">
 
-          <h1>Passenger #{index ? index + 1 : 1}</h1>
+          <h1>Passenger #{passengerIndex ? passengerIndex + 1 : 1}</h1>
           <p className="text-blue-600 underline">{curPassenger.firstName}</p>
+        </div>
+        <div>
+          {passengers.length > 1 && 
+          <Button 
+          onClick={() => removePassenger(index)}
+          color={`red`} 
+          className="rounded-sm text-black border-2 shadow-sm "
+          >REMOVE {curPassenger.firstName  ? curPassenger.firstName : 'Passenger ' + (passengerIndex+1)}
+          </Button>}
         </div>
       </div>
 
@@ -152,6 +195,7 @@ export const Passenger = ({ curPassenger, index }) => {
                 placeholder={`First Name`}
                 //defaultValue={user.firstName}
                 //label={subField}
+                //name={`firstName${passengerIndex}`}
                 name={`firstName`}
                 onChangeCapture={(e) =>
                   update(e.target.value, "SET_FIRST_NAME")
@@ -159,7 +203,7 @@ export const Passenger = ({ curPassenger, index }) => {
                 //onChangeCapture={(e) => {console.log(e.target.value)}}
                 //onChange={(e) => {console.log(e)}}
                 value={curPassenger.firstName}
-                {...register("firstName", { required: true, maxLength: 20 })}
+                {...register(`firstName`, { required: true, maxLength: 20 })}
               />
               {errors.firstName?.type === "required" && (
                 <p role="alert">First name is required</p>
@@ -188,7 +232,7 @@ export const Passenger = ({ curPassenger, index }) => {
                   update(e.target.value, "SET_LAST_NAME")
                 }
                 value={curPassenger.lastName}
-                {...register("lastName", { required: true, maxLength: 20 })}
+                 {...register("lastName", { required: true, maxLength: 20 })}
               />
               {errors.lastName?.type === "required" && (
                 <p role="alert">Last name is required</p>
@@ -200,12 +244,12 @@ export const Passenger = ({ curPassenger, index }) => {
                 type="number"
                 placeholder={`Please Enter Age`}
                 //label={subField}
-                name={`age`}
+                name={`age-${passengerIndex}`}
                 onChangeCapture={(e, d) => update(e.target.value, "SET_AGE")}
                 value={curPassenger.age}
                 min="2"
                 max="120"
-                {...register("age", {
+                {...register(`age-${passengerIndex}`, {
                   required: true,
                   min: 2,
                   max: 120,
@@ -220,11 +264,12 @@ export const Passenger = ({ curPassenger, index }) => {
                 type="text"
                 placeholder={`Email Address`}
                 //label={subField}
+                //name={`email-${passengerIndex}`}
                 name={`email`}
                 onChangeCapture={(e, d) => update(e.target.value, "SET_EMAIL")}
-                value={curPassenger.email}
-                //defaultValue={user.primaryEmailAddress.emailAddress}
-                {...register("email", {
+                value={passengers.email}
+                
+                {...register(`email`, {
                   required: "Email is required",
                   pattern: /^\S+@\S+$/i,
                 })}
@@ -238,14 +283,14 @@ export const Passenger = ({ curPassenger, index }) => {
                 placeholder={`Phone 1`}
                 required={true}
                 //label={subField}
-                name="phone1"
+                name={`phone1-${passengerIndex}`}
                 // id={`phone1`}
-                //pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}"
-                pattern="^[0-9]? ?\([0-9]{3}\) [0-9]{3}-[0-9]{4}"
+                pattern="\+?[1]? ?\(?[0-9]{3}\)? [0-9]{3}\-? ?[0-9]{4}"
+                //pattern="^[0-9]? ?\([0-9]{3}\) [0-9]{3}-[0-9]{4}"
                 onChange={(e) => update(e, "SET_PHONE_1")}
-                //onChange={(e) => console.log(e)}
-                //  {...register("phone1", { required: true })}
-                value={curPassenger.phone1}
+                // onChange={(e) => console.log(e)}
+                //   {...register(`phone1-${passengerIndex}`, { required: true })}
+                // value={curPassenger.phone1}
               />
             </BookingFormField>
             <BookingFormField label="Phone 2">
@@ -269,7 +314,7 @@ export const Passenger = ({ curPassenger, index }) => {
                 //label={subField}
                 name={`vipNumber`}
                 onChange={(e, d) => update(e.target.value, "SET_VIP_NUMBER")}
-                value={curPassenger.middleName}
+                value={curPassenger.vipNumber}
               />
             </BookingFormField>
             <BookingFormField label="Fare Code">
@@ -376,6 +421,8 @@ export const Passenger = ({ curPassenger, index }) => {
                 name={`address1`}
                 onChange={(e, d) => update(e.target.value, "SET_ADDRESS_1")}
                 value={curPassenger.address.address1}
+                  
+                // {...register(`address1`, { required: true})}
               />
             </BookingFormField>
             <BookingFormField label="Street Address 2:">

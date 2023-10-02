@@ -114,5 +114,5 @@
   @apply py-10
 }
 
-
+::-webkit-scrollbar {display:none;}
 
