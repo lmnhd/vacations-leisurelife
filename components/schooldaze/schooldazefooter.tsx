@@ -5,15 +5,15 @@ import Image from "next/image";
 
 export default function Schooldazefooter() {
   return (
-    <div className="grid items-center space-y-10 justify-around text-center md:h-48 px-2 text-sm text-white bg-black md:flex-wrap md:items-end md:justify-between md:flex pb-4 ">
-      <div className="flex justify-between w-full gap-4 text-xs items-center md:w-5/6 mx-auto">
+    <div className="grid items-center justify-around h-48 px-2 pb-4 space-y-10 text-sm text-center text-white bg-black border-t-2 md:h-32 md:flex-wrap md:items-end md:justify-between md:flex border-primary/20 ">
+      <div className="flex items-center justify-between w-full gap-4 mx-auto text-xs md:w-5/6">
         <div>
           <p>Sponsored By</p>
           <Image src={llvLogo} alt="LLV Logo" width={130} height={100} />
         </div>
-        <div className="flex flex-col gap-2 items-center justify-center">
+        <div className="flex flex-col items-center justify-center gap-2">
           <p>&copy;2023 Leisure Life Vacations</p>
-          <p>2280 Shepard St. Jacksonville FL</p>
+          <p>2280 Shepard St. Jacksonville, FL. 32211</p>
           <p>Contact : {process.env.REACT_APP_LLV_PHONE}</p>
         </div>
         <div>
@@ -27,7 +27,7 @@ export default function Schooldazefooter() {
         </div>
       </div>
 
-      {/* <div className='flex justify-between gap-4 text-xs items-center'>
+      {/* <div className='flex items-center justify-between gap-4 text-xs'>
         <p>Powered By</p>
             <Image
             src={cbLogo}

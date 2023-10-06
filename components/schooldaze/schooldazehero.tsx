@@ -41,7 +41,7 @@ export default function Schooldazehero() {
         className="flex items-center justify-center"
         />
         <div className="flex flex-col items-center justify-around w-5/6 mx-auto space-y-1 shadow-sm ">
-          <div className="flex flex-col justify-center w-full text-2xl text-center text-yellow-500  border-b-2 border-gray-500/40 md:pb-6 sm:py-3 ">
+          <div className="flex flex-col justify-center w-full pt-4 md:text-2xl text-center text-yellow-500  border-b-2 border-gray-500/40 md:pb-6 sm:py-3 ">
             <p>NOVEMBER 21, 2024</p>
             <p>3 NIGHTS</p>
 
@@ -51,7 +51,7 @@ export default function Schooldazehero() {
                 <p>*PORT CANAVERAL, FL</p>
                 <p>*NASSAU, OCEAN CAY</p>
               </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col pb-4 ">
              
               <div className="text-lg text-white">
                 <h2 className="my-2 font-normal">Cabin Prices</h2>
@@ -84,7 +84,7 @@ export default function Schooldazehero() {
         </div>
       </div>
       <div
-      className="flex flex-row flex-wrap text-center items-center  justify-between w-full mx-auto bg-black text-yellow-500 font-extralight"
+      className="hidden md:flex flex-row flex-wrap text-center items-center  gap-5 justify-between w-full mx-auto bg-black text-yellow-500 font-extralight"
       ><p>#HBCU</p> <p>#90’s</p> <p>#GenX</p> <p>#HipHop</p> <p>#Throwback</p> <p>#MSC</p></div>
       <div className="w-full text-sm text-center bg-white font-extralight">
         <p>Prices are per-person based on double occupancy</p>

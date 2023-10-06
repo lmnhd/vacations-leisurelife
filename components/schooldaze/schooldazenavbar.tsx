@@ -24,8 +24,8 @@ export const Schooldazenavbar = () => {
             alt="Logo" src={logo} 
             width={150} height={150}
             />
-            <h1 className={cn("text-2xl font-extralight text-primary   font-sans", font.className)}>
-            HBCU PARTY AT SEA!
+            <h1 className={cn("md:text-2xl font-extralight text-primary   font-sans", font.className)}>
+            REUNION PARTY AT SEA!
           </h1>
           </div>
           
