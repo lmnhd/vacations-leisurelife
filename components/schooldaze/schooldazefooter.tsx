@@ -14,7 +14,8 @@ export default function Schooldazefooter() {
         <div className="flex flex-col items-center justify-center gap-2">
           <p>&copy;2023 Leisure Life Vacations</p>
           <p>2280 Shepard St. Jacksonville, FL. 32211</p>
-          <p>Contact : {process.env.REACT_APP_LLV_PHONE}</p>
+          <p>Contact : admin@LeisureLifeVacations.net</p>
+          <p>{process.env.REACT_APP_LLV_PHONE}</p>
         </div>
         <div>
           <p>Powered By</p>
