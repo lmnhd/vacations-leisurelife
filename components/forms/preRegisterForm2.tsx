@@ -390,7 +390,7 @@ export default function PreRegisterForm2() {
             Sign me up!
           </Button>
           <div className="text-xs text-red-500 opacity-0 group-hover:opacity-100"> {formErrors.map((err, index) => {
-            return <p className="" key={err.path + index}>
+            return <p className="" key={`${err.path}${index}`}>
               {err.path[0]?.replace('cabins','cabin')} {String(Number(err.path[1]) +1).replaceAll('NaN','')} {err.path[2]?.replace('passengers','passenger')} {String(Number(err.path[3]) +1).replaceAll('NaN','')} {err.path[4]?.replace('dob','date of birth')}...{err.message}</p>
           })}</div>
           </div>
