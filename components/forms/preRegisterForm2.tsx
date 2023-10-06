@@ -135,7 +135,7 @@ export default function PreRegisterForm2() {
               firstName: "",
               lastName: "",
               //gender: "",
-              dob: "",
+              dob: new Date(),
 
               email: "",
               phone: "",
@@ -153,7 +153,7 @@ export default function PreRegisterForm2() {
               firstName: "",
               lastName: "",
               //gender: "",
-              dob: "",
+              dob: new Date(),
 
               email: "",
               phone: "",
@@ -224,8 +224,8 @@ export default function PreRegisterForm2() {
                 paxType: "adult",
                 firstName: "",
                 lastName: "",
-                //gender: "",
-                dob: "",
+                gender: "male",
+                dob: new Date(),
 
                 email: "",
                 phone: "",
