@@ -21,27 +21,27 @@ export default function Schooldazehero() {
   return (
     <div>
       <div className="flex flex-col items-center px-10 mx-auto py-4  space-y-3 shadow-sm bg-gradient-to-b? from-black  via-yellow-500 to-black">
-        <p className="md:hidden md:mr-auto font-sans text-xl md:text-4xl font-normal text-black shadow-sm"
+        <p className="font-sans text-xl font-normal text-black shadow-sm md:hidden md:mr-auto md:text-4xl"
         >
           Join us for a SCHOOL-DAZE
         </p>
-        <h1 className="hidden md:block md:mr-auto font-sans text-xl md:text-5xl font-bold text-primary text-black">
+        <h1 className="hidden font-sans text-xl font-bold text-black md:block md:mr-auto md:text-5xl text-primary">
           Join us for a SCHOOL-DAZE ...
         </h1>
-        <h1 className="md:ml-auto font-sans text-center  text-2xl md:text-4xl font-semibold md:text-right text-black ">
+        <h1 className="font-sans text-2xl font-semibold text-center text-black md:ml-auto md:text-4xl md:text-right ">
           THROWBACK COLLEGE EXPERIENCE
         </h1>
-        <h2 className="font-sans text-md md:text-2xl text-center md:text-left text-primary uppercase">
+        <h2 className="font-sans text-center uppercase text-md md:text-2xl md:text-left text-primary">
           with enrichment, performances & school pride events!
         </h2>
       </div>
      
-      <div className="md:grid grid-cols-2 bg-black">
+      <div className="grid-cols-2 bg-black md:grid">
         <Image src={Seashore} alt="seashore" width={700} height={700} 
         className="flex items-center justify-center"
         />
         <div className="flex flex-col items-center justify-around w-5/6 mx-auto space-y-1 shadow-sm ">
-          <div className="flex flex-col justify-center w-full pt-4 md:text-2xl text-center text-yellow-500  border-b-2 border-gray-500/40 md:pb-6 sm:py-3 ">
+          <div className="flex flex-col justify-center w-full pt-4 text-center text-yellow-500 border-b-2 md:text-2xl border-gray-500/40 md:pb-6 sm:py-3 ">
             <p>NOVEMBER 21, 2024</p>
             <p>3 NIGHTS</p>
 
@@ -84,7 +84,7 @@ export default function Schooldazehero() {
         </div>
       </div>
       <div
-      className="hidden md:flex flex-row flex-wrap text-center items-center  gap-5 justify-between w-full mx-auto bg-black text-yellow-500 font-extralight"
+      className="flex-row flex-wrap items-center justify-between hidden w-full gap-5 mx-auto text-center text-yellow-500 bg-black md:flex font-extralight"
       ><p>#HBCU</p> <p>#90’s</p> <p>#GenX</p> <p>#HipHop</p> <p>#Throwback</p> <p>#MSC</p></div>
       <div className="w-full text-sm text-center bg-white font-extralight">
         <p>Prices are per-person based on double occupancy</p>
