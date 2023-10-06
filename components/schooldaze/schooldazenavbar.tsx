@@ -15,18 +15,18 @@ export const Schooldazenavbar = () => {
   const { isSignedIn } = useAuth();
 
   return (
-    <nav className="p-4 flex flex-col items-center bg-black justify-center">
+    <nav className="flex flex-col items-center justify-center p-4 bg-gradient-to-bl? bg-black from-red-950 via-black to-red-950">
       <Link href="/" className="flex flex-col ">
           <div 
-          className="flex flex-row h-20 mr-4 items-center justify-between gap-2"
+          className="flex flex-row items-center justify-between h-20 gap-2 mr-4 bg-opacity-50 rounded-lg bg-blend-color-dodge"
           >
             <Image  
             alt="Logo" src={logo} 
             width={150} height={150}
             />
-            <h1 className={cn("md:text-2xl font-extralight text-primary   font-sans", font.className)}>
+            {/* <h1 className={cn("md:text-xs font-extralight text-red-500   font-sans", font.className)}>
             REUNION PARTY AT SEA!
-          </h1>
+          </h1> */}
           </div>
           
       </Link>
