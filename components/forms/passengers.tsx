@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { watch } from "fs";
 import { PreRegisterForm2Values } from "./preRegisterForm2";
@@ -46,6 +47,8 @@ export interface Passenger
   paxType: string;
   firstName: string;
   lastName: string;
+  gender: string;
+  dob: string;
   email: string;
   phone: string;
   school: string;
@@ -53,75 +56,9 @@ export interface Passenger
   state: string;
   zip: string;
   method: ContactMethod;
+  loyalty:string;
 }
-const PassengerField = ({
-  label,
-  name,
-  description,
-  register,
-  cabinIndex,
-  index,
-  rules,
-  form,
-  item,
-  children,
-  errors,
-}: {
-  label: string;
-  name: string;
-  description: string;
-  cabinIndex: number;
-  index: number;
-  rules?: object;
-  form: any;
-  item: any;
-  register: any;
-  children?: React.ReactNode;
-  errors: any;
-}) => {
-  return (
-    <FormField
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel 
-          className="text-sm font-medium text-yellow-500"
-          htmlFor={name}>{label}</FormLabel>
-          <FormControl>
-            {children ? (
-              children
-            ) : (
-              <Input
-                 className={`h-5`}
-                
-                {...register(
-                  `cabins.${cabinIndex}.passengers.${index}.${name}`,
-                  rules
-                )}
-                ref={null}
-                onChange={(e) => {
-                  console.log(
-                    `cabins.${cabinIndex}.passengers.${index}.${name}`,
-                    e.target.value
-                  );
-                  form.setValue(
-                    `cabins.${cabinIndex}.passengers.${index}.${name}`,
-                    e.target.value,
-                    { shouldValidate: true }
-                  );
-                }}
-              />
-            )}
-          </FormControl>
-          <FormDescription className="text-xs">{description}</FormDescription>
-          <FormMessage>
-            {errors?.cabins?.[cabinIndex]?.passengers?.[index]?.[name]?.message}
-          </FormMessage>
-        </FormItem>
-      )}
-    />
-  );
-};
+
 export default function Passengers({
   cabinIndex,
   control,
@@ -134,7 +71,11 @@ export default function Passengers({
   const { fields, append, remove } = useFieldArray({
     control,
     name: `cabins.${cabinIndex}.passengers`, // unique name for your Field Array
+    
+    
+    
   });
+  const [names, setNames] = React.useState<string[]>([]);
   const className = "";
   useEffect(() => {
     if (fields.length < numPassengers) {
@@ -143,325 +84,460 @@ export default function Passengers({
     if (fields.length > numPassengers) {
       removePassenger();
     }
+     
   }, [numPassengers]);
+  const PassengerField = ({
+    required,
+    label,
+    name,
+    description,
+    register,
+    preRegistered = false,
+    cabinIndex,
+    index,
+    rules,
+    form,
+    item,
+    children,
+    errors,
+  }: {
+    required?: boolean;
+    label: string | null;
+    name: string;
+    description: string;
+    cabinIndex: number;
+    index: number;
+    rules?: object;
+    form: any;
+    item: any;
+    register: any;
+    preRegistered?: boolean;
+    children?: React.ReactNode;
+    errors: any;
+  }) => {
+    return (
+      <FormField
+        name={name}
+        render={({ field }) => (
+          <FormItem>
+            {label && <FormLabel 
+            className="text-sm font-medium text-yellow-500"
+            htmlFor={name}>{label}{required && <span className="text-xl text-red-700">*</span>}</FormLabel>}
+            <FormControl>
+              {children ? (
+                children
+              ) : (
+                <Input
+                   className={`h-5`}
+                  
+                  { ...register(
+                    `cabins.${cabinIndex}.passengers.${index}.${name}`,
+                    rules,
+                    //{shouldValidate: true}
+                  )}
+                  //ref={null}
+                  // onChange={(e) => {
+                  //   console.log(
+                  //     `cabins.${cabinIndex}.passengers.${index}.${name}`,
+                  //     e.target.value
+                  //   );
+                   
+                  //   form.setValue(
+                  //     `cabins.${cabinIndex}.passengers.${index}.${name}`,
+                  //     e.target.value
+                  //     ,
+                  //     { shouldValidate: true }
+                  //   );
+                  // }}
+                />
+              )}
+            </FormControl>
+             {errors?.cabins?.[cabinIndex]?.passengers?.[index]?.[name] ? <FormMessage>
+              {errors?.cabins?.[cabinIndex]?.passengers?.[index]?.[name]?.message}
+            </FormMessage> :
+            <FormDescription className="text-xs">{description}</FormDescription>}
+           
+          </FormItem>
+        )}
+      />
+    );
+  };
   const addPassenger = () => {
     append({
       id: `${cabinIndex}-${fields.length}`,
       paxType: "adult",
       firstName: "",
       lastName: "",
+      gender: "",
+      dob: "",
+      
       email: "",
       phone: "",
       school: "",
+
       city: "",
       state: "",
       zip: "",
-      method: ContactMethod.email,
-    });
+      method: 'email',
+      loyalty: ""
+    },{shouldFocus: true});
   };
   const removePassenger = () => {
     remove(fields.length - 1);
   };
   return (
-    <div>
-      {fields.map((item, index) => {
-        return (
-          <div className="flex flex-col h-64 overflow-y-auto" key={item.id}>
-            {/* PASSENGER TYPE */}
-            <PassengerField
-              label="passenger type"
-              name={`paxType`}
-              description="Is this passenger an adult or a child?"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{ required: "Pax Type is required" }}
-              item={item}
-              errors={errors}
+    <Tabs defaultValue="passenger1"
+    className=""
+    >
+      <TabsList className="grid items-start justify-start w-full grid-flow-col bg-transparent">
+        {fields.map((item, index) => {
+          return (
+            <TabsTrigger
+              key={item.id}
+              value={`passenger${index + 1}`}
+              className="h-5"
+              onClick={() => setNames([''])}
             >
-              <Select
-                //defaultValue={(item as Passenger).paxType}
-                onValueChange={(value) => {
-                  console.log(value);
-                  form.setValue(
-                    `cabins.${cabinIndex}.passengers.${index}.paxType`,
-                    value,
-                    { shouldValidate: true }
-                  );
-                }}
-                value={form.getValues(
-                  `cabins.${cabinIndex}.passengers.${index}.paxType`
-                )}
-                {...register(
-                  `cabins.${cabinIndex}.passengers.${index}.paxType`
-                )}
+              {form.getValues(`cabins.${cabinIndex}.passengers.${index}.firstName`) || `Passenger ${index + 1}`}
+              {/* {(item as Passenger).firstName || `Passenger ${index + 1}`}  */}
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+      
+      <div>
+        {fields.map((item, index) => {
+          return (
+            <TabsContent 
+            value={`passenger${index + 1}`} 
+            key={item.id}
+            className="overflow-y-auto md:h-64"
+            //className="flex flex-col h-64 overflow-y-auto" key={item.id}
+            >
+              {/* PASSENGER TYPE */}
+              <PassengerField
+                label={null}
+                name={`paxType`}
+                description="Is this passenger an adult or a child?"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "Pax Type is required" }}
+                item={item}
+                errors={errors}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="adult">Adult</SelectItem>
-                    <SelectItem value="child">Child</SelectItem>
-                    <SelectItem value="senior">Senior</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </PassengerField>
-            {/* FIRST NAME */}
-            <PassengerField
-              label="first name"
-              name={`firstName`}
-              description="First name of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{ required: "First Name is required" }}
-              item={item}
-              errors={errors}
-            />
-            {/* LAST NAME */}
-            <PassengerField
-              label="last name"
-              name={`lastName`}
-              description="Last name of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{ required: "Last Name is required" }}
-              item={item}
-              errors={errors}
-            />
-            {/* EMAIL */}
-            <PassengerField
-              label="email"
-              name={`email`}
-              description="Email of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{ required: "Email is required", pattern: /^\S+@\S+$/i }}
-              item={item}
-              errors={errors}
-            />
-            {/* PHONE */}
-            {/* <Controller
-            name="phone"
-            control={control}
-            rules={{ required: "Phone is required", validate: (value:any) => isValidPhoneNumber(value) }}
-            render={({ field: { onChange, value } }) => (
-                <PhoneInput
-                value={value}
-                onChange={onChange}
-                defaultCountry="US"
-                id="phone-input"
-                />
-            )}
-            /> */}
-            {/* {errors?.cabins?.[cabinIndex]?.passengers?.[index].phone?.message && (
-            <FormMessage>
-                {errors?.cabins?.[cabinIndex]?.passengers?.[index].phone?.message}
-            </FormMessage>
-            )} */}
-            <PassengerField
-              label="phone"
-              name={`phone`}
-              description="Phone of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{
-                required: "Phone is required",
-                validate: (value: any) => {
-                  return false;
-                },
-              }}
-              item={item}
-              errors={errors}
-            >
-              <div>
-                <PhoneInput
-                  {...register(`cabins.${cabinIndex}.passengers.${index}.phone`, {
-                    required: { value: true, message: "Phone is required" },
-                    maxLength: { value: 20, message: "Phone is too long" },
-                    minLength: { value: 10, message: "Phone is too short" },
-                    // validate: (value:any) => isValidPhoneNumber(value) || "Invalid phone number"
-                  })}
-                  value={form.getValues(
-                    `cabins.${cabinIndex}.passengers.${index}.phone`
-                  )}
-                  onChange={(e) => {
+                <Select
+                  //defaultValue={(item as Passenger).paxType}
+                  onValueChange={(value) => {
+                    console.log(value);
                     form.setValue(
-                      `cabins.${cabinIndex}.passengers.${index}.phone`,
-                      e
+                      `cabins.${cabinIndex}.passengers.${index}.paxType`,
+                      value,
+                      { shouldValidate: true }
                     );
-                    console.log(e);
                   }}
-                  defaultCountry="US"
-                  id="phone"
-                />
-                
-              </div>
-            </PassengerField>
-            {/* METHOD */}
-            <PassengerField
-              label="contact method"
-              name={`method`}
-              description="Preferred method of contact"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              rules={{ required: "Method is required" }}
-              item={item}
-              errors={errors}
-            >
-              <Select
-                //defaultValue={(item as Passenger).paxType}
-                onValueChange={(value) => {
-                  console.log(value);
-                  form.setValue(
-                    `cabins.${cabinIndex}.passengers.${index}.method`,
-                    value,
-                    { shouldValidate: true }
-                  );
-                }}
-                value={form.getValues(
-                  `cabins.${cabinIndex}.passengers.${index}.method`
-                )}
-                {...register(
-                  `cabins.${cabinIndex}.passengers.${index}.method`
-                )}
+                  value={form.getValues(
+                    `cabins.${cabinIndex}.passengers.${index}.paxType`
+                  )}
+                  {...register(
+                    `cabins.${cabinIndex}.passengers.${index}.paxType`
+                  )}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="adult">Adult</SelectItem>
+                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="senior">Senior</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </PassengerField>
+              {/* FIRST NAME */}
+              <PassengerField
+                label="first name"
+                name={`firstName`}
+                description="First name of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "First Name is required" }}
+                item={item}
+                errors={errors}
+                required={true}
+              />
+              {/* LAST NAME */}
+              <PassengerField
+                label="last name"
+                name={`lastName`}
+                description="Last name of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "Last Name is required" }}
+                item={item}
+                errors={errors}
+                required={true}
+              />
+              <PassengerField
+                label="gender"
+                name={`gender`}
+                description="gender of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "gender is required" }}
+                item={item}
+                errors={errors}
+                required={true}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="phone">Phone</SelectItem>
-                    <SelectItem value="text">Text</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </PassengerField>
-            {/* SCHOOL */}
-            <PassengerField
-              label="school"
-              name={`school`}
-              description="College you are representing"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              //rules={{ required: "School is required" }}
-              item={item}
-              errors={errors}
-            />
-            {/* CITY */}
-            <PassengerField
-              label="city"
-              name={`city`}
-              description="City of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              //rules={{ required: "City is required" }}
-              item={item}
-              errors={errors}
-            />
-            {/* STATE */}
-            <PassengerField
-              label="state"
-              name={`state`}
-              description="State of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              //rules={{ required: "State is required" }}
-              item={item}
-              errors={errors}
-            />
-            {/* ZIP */}
-            <PassengerField
-              label="zip"
-              name={`zip`}
-              description="Zip of passenger"
-              cabinIndex={cabinIndex}
-              index={index}
-              form={form}
-              register={register}
-              //rules={{ required: "Zip is required" }}
-              item={item}
-              errors={errors}
-
-            />
-            
-
-            {/* </PassengerField> */}
-
-            {/* <input
-                        className={`${className}`}
-                        
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.firstName` as const)}
-                       
-
-                        defaultValue={(item as Passenger).firstName} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.lastName` as const)}
-                        defaultValue={(item as Passenger).lastName} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.email` as const)}
-                        defaultValue={(item as Passenger).email} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.phone` as const)}
-                        defaultValue={(item as Passenger).phone} // make sure to set up defaultValue
-                    />
+                <Select
+                  //defaultValue={(item as Passenger).paxType}
+                  onValueChange={(value) => {
+                    console.log(value);
+                    form.setValue(
+                      `cabins.${cabinIndex}.passengers.${index}.gender`,
+                      value,
+                      { shouldValidate: true }
+                    );
+                  }}
+                  value={form.getValues(
+                    `cabins.${cabinIndex}.passengers.${index}.gender`
+                  )}
+                  {...register(
+                    `cabins.${cabinIndex}.passengers.${index}.gender`
+                  )}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup >
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectGroup>
                     
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.city` as const)}
-                        defaultValue={(item as Passenger).city} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.state` as const)}
-                        defaultValue={(item as Passenger).state} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.zip` as const)}
-                        defaultValue={(item as Passenger).zip} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.school` as const)}
-                        defaultValue={(item as Passenger).school} // make sure to set up defaultValue
-                    />
-                    <input
-                         className={`${className}`}
-                        {...register(`cabins.${cabinIndex}.passengers.${index}.method` as const)}
-                        defaultValue={(item as Passenger).method} // make sure to set up defaultValue
-                    /> */}
-            {/* <button type="button" onClick={() => remove(index)}>
-                        Delete
-                    </button> */}
-          </div>
-        );
-      })}
-    </div>
+                  </SelectContent>
+                </Select>
+              </PassengerField>
+
+              {/* DOB */}
+              <PassengerField
+                label="date of birth"
+                name={`dob`}
+                description="Date of birth"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: true}}
+                item={item}
+                errors={errors}
+                required={true}
+              >
+                <Input
+                required
+                  type="date"
+                  {...register(
+                    `cabins.${cabinIndex}.passengers.${index}.dob`,
+                    {
+                      required: "Date of birth is required",
+                      // validate: (value: any) => {
+                      //   return false;
+                      // },
+                    }
+                  )}
+                  // onChange={(e) => {
+                  //   console.log(
+                  //     `cabins.${cabinIndex}.passengers.${index}.dob`,
+                  //     e.target.value
+                  //   );
+                  //   form.setValue(
+                  //     `cabins.${cabinIndex}.passengers.${index}.dob`,
+                  //     e.target.value,
+                  //     { shouldValidate: true }
+                  //   );
+                  // }}
+                />
+              </PassengerField>
+
+              {/* EMAIL */}
+              <PassengerField
+                label="email"
+                name={`email`}
+                description="Email of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "Email is required", pattern: /^\S+@\S+$/i }}
+                item={item}
+                errors={errors}
+                required={true}
+              />
+              
+              <PassengerField
+                label="phone"
+                name={`phone`}
+                description="Phone of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{
+                  required: "Phone is required",
+                  validate: (value: any) => {
+                    return false;
+                  },
+                }}
+                item={item}
+                errors={errors}
+                required={true}
+                preRegistered={true}  
+              >
+                <div>
+                  <PhoneInput
+                    {...register(`cabins.${cabinIndex}.passengers.${index}.phone`, {
+                      required: { value: true, message: "Phone is required" },
+                      maxLength: { value: 20, message: "Phone is too long" },
+                      minLength: { value: 10, message: "Phone is too short" },
+                      // validate: (value:any) => isValidPhoneNumber(value) || "Invalid phone number"
+                    })}
+                    value={form.getValues(
+                      `cabins.${cabinIndex}.passengers.${index}.phone`
+                    )}
+                    onChange={(e) => {
+                      form.setValue(
+                        `cabins.${cabinIndex}.passengers.${index}.phone`,
+                        e
+                      );
+                      console.log(e);
+                    }}
+                    defaultCountry="US"
+                    id="phone"
+                  />
+        
+                </div>
+              </PassengerField>
+              {/* METHOD */}
+              <PassengerField
+                label="contact method"
+                name={`method`}
+                description="Preferred method of contact"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                rules={{ required: "Method is required" }}
+                item={item}
+                errors={errors}
+              >
+                <Select
+                  //defaultValue={(item as Passenger).paxType}
+                  onValueChange={(value) => {
+                    console.log(value);
+                    form.setValue(
+                      `cabins.${cabinIndex}.passengers.${index}.method`,
+                      value,
+                      { shouldValidate: true }
+                    );
+                  }}
+                  value={form.getValues(
+                    `cabins.${cabinIndex}.passengers.${index}.method`
+                  )}
+                  {...register(
+                    `cabins.${cabinIndex}.passengers.${index}.method`
+                  )}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </PassengerField>
+              {/* SCHOOL */}
+              <PassengerField
+                label="school"
+                name={`school`}
+                description="College you are representing"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                //rules={{ required: "School is required" }}
+                item={item}
+                errors={errors}
+              />
+              {/* CITY */}
+              <PassengerField
+                label="city"
+                name={`city`}
+                description="City of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                //rules={{ required: "City is required" }}
+                item={item}
+                errors={errors}
+              />
+              {/* STATE */}
+              <PassengerField
+                label="state"
+                name={`state`}
+                description="State of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                //rules={{ required: "State is required" }}
+                item={item}
+                errors={errors}
+              />
+              {/* ZIP */}
+              <PassengerField
+                label="zip"
+                name={`zip`}
+                description="Zip of passenger"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                //rules={{ required: "Zip is required" }}
+                item={item}
+                errors={errors}
+              />
+              {/* loyalty */}
+              <PassengerField
+                label="loyalty #"
+                name={`zip`}
+                description="cruise line loyalty #"
+                cabinIndex={cabinIndex}
+                index={index}
+                form={form}
+                register={register}
+                //rules={{ required: "Zip is required" }}
+                item={item}
+                errors={errors}
+              />
+        
+              
+            </TabsContent>
+          );
+        })}
+      </div>
+    </Tabs>
   );
 }

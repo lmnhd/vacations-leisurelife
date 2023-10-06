@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { DevTool } from "@hookform/devtools";
@@ -29,6 +30,7 @@ import { FieldValues, useFieldArray, useForm } from "react-hook-form";
 import { type } from "os";
 import Stepper from "./input/stepper";
 import Cabins from "./cabins";
+import axios from "axios";
 
 // Party name
 // # Cabins in party
@@ -62,18 +64,28 @@ const schema = z.object({
         z.object({
           id: z.string(),
           paxType: z.string().optional(),
-          firstName: z.string({
-            required_error: "First name is required",
-            invalid_type_error: "First name must be a string",
-          }),
-          lastName: z.string({required_error: "Last name required"}).min(2).max(50),
+          firstName: z
+            .string({
+              required_error: "First name is required",
+              invalid_type_error: "First name must be a string",
+              coerce: true
+            })
+            .min(2)
+            .max(50),
+          lastName: z
+            .string({ required_error: "Last name required" })
+            .min(2)
+            .max(50),
+            gender: z.enum(['male','female'] as const),
+            dob: z.coerce.date(),
           email: z.string().email(),
-          phone: z.string(),
+          phone: z.string().min(10),
           school: z.string().optional(),
-          city: z.string().min(2).max(50).optional(),
-          state: z.string().min(2).max(50).optional(),
-          zip: z.string().min(5).max(5).optional(),
+          city: z.string().optional(),
+          state: z.string().optional(),
+          zip: z.string().optional(),
           method: z.string(),
+          loyalty: z.string().optional(),
         })
       ),
     })
@@ -91,41 +103,83 @@ export type PreRegisterForm2Values = z.infer<typeof schema>;
 // };
 
 export default function PreRegisterForm2() {
-  const [partyNameVisible, setPartyNameVisible] = useState(false);
+  const [partyNameVisible, setPartyNameVisible] = useState(true);
   const maxCabins = 4;
+  const [formComplete, setFormComplete] = useState(false);
+  //const [formErrors, setFormErrors] = useState<any[]>([]);
+  const cabinTypes = [
+    { name: "Interior Bella -$199", value: "interior_bella" },
+    { name: "Deluxe Interior -$229", value: "deluxe_interior" },
+    { name: "Ocean View Bella -$259", value: "ocean_view_bella" },
+    { name: "Deluxe Ocean View -$279", value: "deluxe_ocean_view" },
+    { name: "Balcony Bella -$319", value: "balcony_bella" },
+    { name: "Deluxe Balcony -$359", value: "deluxe_balcony" },
+    
+  ]
+  
   const form = useForm<PreRegisterForm2Values>({
     mode: "onChange",
     resolver: zodResolver(schema),
-    shouldUseNativeValidation: true,
+
     defaultValues: {
       partyName: "",
       cabinsInParty: 1,
       cabins: [
         {
-          cabinType: "interior",
-          numPassengers: 1,
+          cabinType: cabinTypes[0].value ,
+          numPassengers: 2,
           passengers: [
             {
               id: "1",
               paxType: "adult",
               firstName: "",
               lastName: "",
+              //gender: "",
+              dob: "",
+
               email: "",
               phone: "",
               school: "",
+
               city: "",
               state: "",
               zip: "",
               method: "email",
+              loyalty: "",
+            },
+            {
+              id: "2",
+              paxType: "adult",
+              firstName: "",
+              lastName: "",
+              //gender: "",
+              dob: "",
+
+              email: "",
+              phone: "",
+              school: "",
+
+              city: "",
+              state: "",
+              zip: "",
+              method: "email",
+              loyalty: "",
             },
           ],
         },
       ],
     },
   });
-
+  
   const { register, handleSubmit, reset, getValues, control, formState } = form;
   const { errors } = formState;
+  // useEffect(() => {
+  //   console.log("FORM STATE CHANGED", formState);
+  //   const result = schema.safeParse(form.getValues());
+  // console.log(result);
+  // const fe = result.success ? [] : result.error.issues;
+  
+  // }, []);
   const {
     fields: cabinFields,
     append: appendCabin,
@@ -137,9 +191,15 @@ export default function PreRegisterForm2() {
   } = useFieldArray({
     control,
     name: "cabins",
-    
+    shouldUnregister: false,
   });
-
+  // const result = schema.safeParse(form.getValues());
+  // console.log(result);
+  // const formErrors = result.success ? [] : result.error.issues;
+  const result = schema.safeParse(form.getValues());
+  console.log(result);
+  const fe = result.success ? [] : result.error.issues;
+  const formErrors = fe;
 
   function updateCabins(value: any, field: any) {
     if (value === "") return;
@@ -154,25 +214,33 @@ export default function PreRegisterForm2() {
       const diff = value - currentCabinCount;
       for (let i = 0; i < diff; i++) {
         //addCabin();
-        appendCabin({
-          cabinType: "interior",
-          numPassengers: 1,
-          passengers: [
-            {
-              id: currentCabinCount + 1 + i + "",
-              paxType: "adult",
-              firstName: "",
-              lastName: "",
-              email: "",
-              phone: "",
-              school: "",
-              city: "",
-              state: "",
-              zip: "",
-              method: "email",
-            },
-          ],
-        },{shouldFocus: true});
+        appendCabin(
+          {
+            cabinType: "interior",
+            numPassengers: 1,
+            passengers: [
+              {
+                id: currentCabinCount + 1 + i + "",
+                paxType: "adult",
+                firstName: "",
+                lastName: "",
+                //gender: "",
+                dob: "",
+
+                email: "",
+                phone: "",
+                school: "",
+
+                city: "",
+                state: "",
+                zip: "",
+                method: "email",
+                loyalty: "",
+              },
+            ],
+          },
+          { shouldFocus: true }
+        );
       }
     } else if (value < currentCabinCount) {
       const diff = currentCabinCount - value;
@@ -183,33 +251,34 @@ export default function PreRegisterForm2() {
     //field.onChange(value);
   }
 
-  function onSubmit(data: FieldValues) {
+  async function onSubmit(data: z.infer<typeof schema>) {
     console.log("FORM SUBMITTED: ", data);
     console.log("Form Values: ", form.getValues());
-   
-
+    const response = await axios.post("/api/preregister", data);
+    console.log(response.data)
+    setFormComplete(true);
   }
   //function renderCabins() {}
   console.log(form.getValues());
   return (
-    <div className="flex flex-col flex-wrap items-center justify-center bg-slate-800  w-full h-full pt-10 py-20">
-      <Form {...form}>
+    <div className="flex flex-col flex-wrap items-center justify-center w-full py-20 pt-10 bg-black">
+      {!formComplete && <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="pt-5 gap-4 items-center mx-auto justify-center h-full "
+          className="items-center justify-center h-full gap-4 pt-1 mx-auto "
         >
           {/* // Party Section  */}
           <div
             //onFocus={}
-            className="flex flex-col items-center justify-center"
-            onMouseEnter={() => {
-              setPartyNameVisible(true);
-            }}
-            onBlur={() => {
-              setPartyNameVisible(false);
-            }}
+            className="flex flex-col items-center justify-center h-40 mb-14"
+            // onMouseEnter={() => {
+            //   setPartyNameVisible(true);
+            // }}
+            // onBlur={() => {
+            //   setPartyNameVisible(false);
+            // }}
           >
-            <div className="flex flex-col bg-white/10 mt-4  items-end justify-around partyName-section p-4 rounded-sm transition-all duration-300 ease-in-out hover:bg-black/10 hover:shadow-lg hover:scale-110">
+            <div className="flex flex-col items-end justify-around p-4 mt-4 transition-all duration-300 ease-in-out rounded-sm bg-white/10 partyName-section hover:bg-black/10 hover:shadow-lg hover:scale-110">
               <div
                 className={`mx-auto text-2xl font-semibold text-blue-300 text-center ${
                   partyNameVisible ? "hidden" : ""
@@ -220,7 +289,7 @@ export default function PreRegisterForm2() {
                     ? `${getValues("partyName")} Party`
                     : "Please Enter Name of Party"}
                 </p>
-                <p className="text-lg font-medium text-blue-100 text-center">
+                <p className="text-lg font-medium text-center text-blue-100">
                   {getValues("partyName") !== ""
                     ? `${getValues("cabinsInParty")} ${
                         getValues("cabinsInParty") > 1 ? "Cabins" : "Cabin"
@@ -233,7 +302,7 @@ export default function PreRegisterForm2() {
 
                 name="partyName"
                 render={({ field }) => (
-                  <FormItem className="w-72 text-center">
+                  <FormItem className="text-center w-72">
                     <FormLabel
                       htmlFor="partyName"
                       className={`${
@@ -277,7 +346,7 @@ export default function PreRegisterForm2() {
                     className={`${
                       partyNameVisible ? "" : "hidden"
                     } "w-72 text-center `}
-                    // className="w-72 text-center"
+                    // className="text-center w-72"
                   >
                     <FormLabel className="text-white" htmlFor="cabinsInParty">
                       Cabins
@@ -304,25 +373,36 @@ export default function PreRegisterForm2() {
           {/* // Cabins Section */}
           {cabinFields && (
             <Cabins
-            cabinFields={cabinFields}
-            control={control}
-            errors={errors}
-            form={form}
-            register={register}
-            
+              cabinFields={cabinFields}
+              control={control}
+              errors={errors}
+              form={form}
+              register={register}
+              cabinTypes={cabinTypes}
             />
           )}
-          <Button 
-          className="w-full "
-          type="submit" 
-          disabled={!form.formState.isValid}
+          <div className="group ">
+          <Button
+            className="w-full "
+            type="submit"
+            disabled={!form.formState.isValid}
           >
-            Submit
+            Sign me up!
           </Button>
-          {errors.root && <p>{errors.root?.message}</p>}
+          <div className="text-xs text-red-500 opacity-0 group-hover:opacity-100"> {formErrors.map((err, index) => {
+            return <p className="" key={err.path + index}>
+              {err.path[0]?.replace('cabins','cabin')} {String(Number(err.path[1]) +1).replaceAll('NaN','')} {err.path[2]?.replace('passengers','passenger')} {String(Number(err.path[3]) +1).replaceAll('NaN','')} {err.path[4]?.replace('dob','date of birth')}...{err.message}</p>
+          })}</div>
+          </div>
+          
+         
+          {/* {errors.root && <p className="text-white">{errors.root?.message}</p>} */}
         </form>
-        <DevTool control={control} />
-      </Form>
+        {/* <DevTool control={control} /> */}
+      </Form>}
+      {formComplete && <div className="flex flex-col items-center justify-center w-full h-full gap-4 pt-1 mx-auto ">
+        <p className="text-4xl text-white">Thank you! We have received your request.</p>
+        </div>}
     </div>
   );
 }

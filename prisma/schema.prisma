@@ -60,3 +60,49 @@ model AIAssist {
   response String  @db.Text
   ignore   Boolean @default(false)
 }
+model Passenger {
+  id        String   @id @default(cuid())
+  cabin CabinForm @relation(fields: [cabinFormId], references: [id])
+  cabinFormId String
+  paxType  String
+  firstName String
+  middleName String
+  lastName  String
+  gender    String
+  dob       DateTime
+  age       Int
+  email     String
+  phone     String
+  school    String
+  city      String
+  state     String
+  country   String
+  zip       String
+  address   String
+  contactMethod String
+  loyaltyNum String
+  
+
+  @@index([cabinFormId])
+}
+model CabinForm {
+  id        String   @id @default(cuid())
+  cabinType String
+  numPassengers Int
+  passengers Passenger[]
+  
+  preRegisterFormId String
+  preRegisterForm PreRegisterForm @relation(fields: [preRegisterFormId], references: [id])
+  
+  @@index([preRegisterFormId])
+}
+model PreRegisterForm {
+  id        String   @id @default(cuid())
+  tripName String
+  partyName String
+  numCabins Int
+  
+  cabins CabinForm[]
+  
+}
+

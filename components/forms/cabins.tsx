@@ -40,35 +40,45 @@ export default function Cabins({
   register,
   errors,
   control,
+  cabinTypes,
 }: {
   cabinFields: any;
   form: any;
   register: any;
   errors: any;
-  control:any;
+  control: any;
+  cabinTypes: any;
 }) {
   const { getValues } = form;
   return (
     <Tabs defaultValue="cabin1">
       <TabsList className="grid grid-flow-col w-full justify-start items-start bg-transparent">
-      {cabinFields.map((cabin: any, cabinIndex: number) =>{
-        return <TabsTrigger key={`cabin${cabinIndex + 1}`} value={`cabin${cabinIndex + 1}`}>Cabin {cabinIndex+1}</TabsTrigger>
-      })}
+        {cabinFields.map((cabin: any, cabinIndex: number) => {
+          return (
+            <TabsTrigger
+              key={`cabin${cabinIndex + 1}`}
+              value={`cabin${cabinIndex + 1}`}
+            >
+              Cabin {cabinIndex + 1}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
       <div className="flex flex-wrap items-center my-10 border-t-2 border-gray-500/20 py-5 justify-center gap-4">
         {cabinFields.map((cabin: Cabin, cabinIndex: number) => {
           return (
-            <TabsContent key={`cabin${cabinIndex + 1}`}  value={`cabin${cabinIndex + 1}`}>
-              <div key={cabin.id} className="h-64 ">
-                
+            <TabsContent
+              key={`cabin${cabinIndex + 1}`}
+              value={`cabin${cabinIndex + 1}`}
+            >
+              <div key={cabin.id} className="md:h-64 ">
                 <div className="flex flex-row flex-wrap items-stretch gap-10 justify-around cabin-wrapper">
                   <div className="cabin-console-wrapper">
                     <FormField
                       name={`cabins.${cabinIndex}.cabinType`}
-                     control={control}
-                     key={`cabins.${cabinIndex}.cabinType`}
-                     defaultValue="interior"
-
+                      control={control}
+                      key={`cabins.${cabinIndex}.cabinType`}
+                      defaultValue="interior"
                       render={({ field, fieldState, formState }) => (
                         <FormItem>
                           <FormLabel
@@ -85,8 +95,6 @@ export default function Cabins({
                               value={form.getValues(
                                 `cabins.${cabinIndex}.cabinType`
                               )}
-                              
-                             
                               onValueChange={(value) => {
                                 form.setValue(
                                   `cabins.${cabinIndex}.cabinType`,
@@ -95,7 +103,6 @@ export default function Cabins({
                                     shouldDirty: true,
                                     shouldTouch: true,
                                     shouldValidate: true,
-                                    
                                   }
                                 );
                                 console.log(
@@ -104,27 +111,27 @@ export default function Cabins({
                                 );
                               }}
                               {...register(`cabins.${cabinIndex}.cabinType`)}
-                              
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Cabin Type" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
-                                  <SelectItem value="interior">
-                                    Interior
-                                  </SelectItem>
-                                  <SelectItem value="oceanview">
-                                    Ocean View
-                                  </SelectItem>
-                                  <SelectItem value="balcony">
-                                    Balcony
-                                  </SelectItem>
-                                  <SelectItem value="suite">Suite</SelectItem>
+                                  {cabinTypes.map(
+                                    (cabinType: any, index: number) => {
+                                      return (
+                                        <SelectItem
+                                          key={`cabinType${index}`}
+                                          value={cabinType.value}
+                                        >
+                                          {cabinType.name}
+                                        </SelectItem>
+                                      );
+                                    }
+                                  )}
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
-                            
                           </FormControl>
                           <FormDescription>
                             The type of cabin you would like to reserve.
@@ -152,7 +159,8 @@ export default function Cabins({
                               onChange={(value) => {
                                 form.setValue(
                                   `cabins.${cabinIndex}.numPassengers`,
-                                  value
+                                  value,
+                                  { shouldValidate: true }
                                 );
                               }}
                             />
@@ -164,7 +172,7 @@ export default function Cabins({
                       )}
                     />
                   </div>
-                  {/* <Passengers
+                  <Passengers
                     cabinIndex={cabinIndex}
                     control={control}
                     register={register}
@@ -173,7 +181,7 @@ export default function Cabins({
                     )}
                     form={form}
                     errors={errors}
-                  /> */}
+                  />
                 </div>
               </div>
             </TabsContent>
