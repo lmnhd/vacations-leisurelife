@@ -261,7 +261,7 @@ export default function PreRegisterForm2() {
   //function renderCabins() {}
   console.log(form.getValues());
   return (
-    <div className="flex flex-col flex-wrap items-center justify-center w-full py-20 pt-10 bg-black">
+    <div className="flex flex-col flex-wrap items-center justify-center w-full py-20 pt-10 bg-gradient-to-bl from-black via-red-800 to-black mix-blend-screen">
       {!formComplete && <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -383,7 +383,7 @@ export default function PreRegisterForm2() {
           )}
           <div className="group ">
           <Button
-            className="w-full "
+            className="w-full bg-gradient-to-br from-black via-red-500 to-black hover:from-red-500 hover:via-red-400 hover:to-red-500 text-blue-600 font-bold text-lg"
             type="submit"
             disabled={!form.formState.isValid}
           >

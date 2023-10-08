@@ -1,0 +1,86 @@
+.vidContainer {
+  display: flex;
+  justify-content: center;
+
+  top: 0;
+  color: blue;
+  overflow: hidden;
+  position: relative;
+  /* min-height: 100vh; */
+
+  /* min-height: 100vh; */
+}
+.vidCon {
+  /* height: 30vh */
+}
+.overlay1 {
+  position: absolute;
+  /* background-color: blue; */
+ 
+background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(0,5,255,0.1826855742296919) 100%);
+  width: 100%;
+  height: 100%;
+  opacity: 100%;
+  
+}
+.wrapper{
+  z-index: 20;
+  display: flex;
+  flex-direction: row-reverse;
+  background-color: rgb(0, 122, 236);
+
+}
+
+.overlay2 {
+  position: absolute;
+  color: white;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  align-content: space-between;
+  justify-items: end;
+  display: flex ;
+  flex-direction: column;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  grid-template-columns: 1fr 1fr  ;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+}
+.overlay3 {
+  position: absolute;
+  color: blue;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display:flex;
+  text-align: center;
+  align-items: flex-center;
+  justify-content: start;
+  
+  flex-direction: column-reverse;
+  margin-left: 0;
+  opacity: 80%;
+  /* background-color: rgb(189, 216, 247); */
+ 
+  @media screen and (min-width: 480px) {
+    /* margin-top:200px;
+    margin-left:100px; */
+  }
+}
+.overlay3 > p{
+  color:blue;
+  
+  align-items:flex-start;
+  
+}
+
+.videobg {
+  /* position: absolute; */
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  min-height: 100%;
+}

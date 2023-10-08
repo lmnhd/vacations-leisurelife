@@ -21,10 +21,14 @@ import React from "react";
 
 export default function SchoolDazeLanding() {
   return (
-    <div className="h-full">
+    <div className="h-full xl:w-5/6 xl:mx-auto bg-black">
       <Schooldazenavbar />
       <Schooldazehero />
-      <PreRegisterForm2 />
+      <div 
+      //className="mix-blend-screen bg-red-600"
+      >
+        <PreRegisterForm2 />
+      </div>
       <Schooldazefooter />
     </div>
   );
