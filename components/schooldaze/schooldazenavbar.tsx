@@ -28,7 +28,7 @@ export const Schooldazenavbar = () => {
   return (
     <nav className={cn("flex flex-row justify-between p-0 text-white  md:p-4 bg-gradient-to-bl? bg-black from-red-950 via-black to-red-950",orbitron.className)}>
       <p>School Daze</p>
-      <p>party@sea '24</p>
+      <p>party@sea &apos;24</p>
       {/* <Link href="/" className="flex flex-col ">
           <div 
           className="flex flex-row  h-20 md:mr-4 bg-opacity-50 rounded-lg bg-blend-color-dodge"
