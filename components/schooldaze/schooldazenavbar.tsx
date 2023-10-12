@@ -26,7 +26,7 @@ export const Schooldazenavbar = () => {
   const { isSignedIn } = useAuth();
 
   return (
-    <nav className={cn("flex flex-row justify-between p-0 text-white  md:p-4 bg-gradient-to-bl? bg-black from-red-950 via-black to-red-950",orbitron.className)}>
+    <nav className={cn("flex flex-row justify-between p-0 text-black  md:p-4 bg-gradient-to-bl? bg-white from-red-950 via-black to-red-950",orbitron.className)}>
       <p>School Daze</p>
       <p>party@sea &apos;24</p>
       {/* <Link href="/" className="flex flex-col ">
