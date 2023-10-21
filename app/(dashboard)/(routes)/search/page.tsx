@@ -16,6 +16,7 @@ export default function SearchPage() {
 //     console.log(searchResults);
 //   }, []);
 
+
   return (
     <div className="p-2">
       {showResults && (
