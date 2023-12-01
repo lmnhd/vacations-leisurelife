@@ -115,7 +115,7 @@ const createCabin = async (cabin: any, form: any) => {
 export async function POST(req: Request) {
   
   const body = await req.json();
-  console.log("line 78 - body = ", body);
+  console.log("line 118 - body = ", body);
 
   //return new NextResponse("complete", { status: 200 })
 
