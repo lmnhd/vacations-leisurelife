@@ -15,7 +15,7 @@ import { StaticImport } from "next/dist/shared/lib/get-img-props.js";
 import Link from "next/link";
 
 export const Container1Header = ({headerText}: {headerText:string}) => {
-    return ( <h2 className="text-2xl text-right  text-primary py-6 mx-3 my-6 font-extralight">
+    return ( <h2 className="text-2xl text-right  text-primary py-6 mx-3 my-6 font-bold">
     {headerText}
   </h2>)
 }

@@ -20,16 +20,16 @@ model UserApiLimit {
 }
 
 model GoogleImageResource {
-  id              String @id @default(cuid())
-  searchQuery     String
-  type            String
-  width           Int
-  height          Int
-  url             String
-  thumbnail       String
-  description     String
-  parentPage      String
-  ignore          Boolean @default(false)
+  id          String  @id @default(cuid())
+  searchQuery String
+  type        String
+  width       Int
+  height      Int
+  url         String
+  thumbnail   String
+  description String
+  parentPage  String
+  ignore      Boolean @default(false)
 }
 
 model PexelPhotoResource {
@@ -53,56 +53,170 @@ model PexelPhotoResource {
 }
 
 model AIAssist {
-  id       String  @id @default(cuid())
+  id          String  @id @default(cuid())
   componentId String
   functionId  String
-  prompt   String  @db.LongText
-  response String  @db.Text
-  ignore   Boolean @default(false)
+  prompt      String  @db.LongText
+  response    String  @db.Text
+  ignore      Boolean @default(false)
 }
+
 model Passenger {
-  id        String   @id @default(cuid())
-  cabin CabinForm @relation(fields: [cabinFormId], references: [id])
-  cabinFormId String
-  paxType  String
-  firstName String
-  middleName String
-  lastName  String
-  gender    String
-  dob       DateTime
-  age       Int
-  email     String
-  phone     String
-  school    String
-  city      String
-  state     String
-  country   String
-  zip       String
-  address   String
-  contactMethod String
-  loyaltyNum String
-  
+  id                 String    @id @default(cuid())
+  cabin              CabinForm? @relation(fields: [cabinFormId], references: [id])
+  cabinFormId        String?
+  title              String?
+  paxType            String?
+  firstName          String
+  middleName         String?
+  lastName           String
+  gender             String
+  dob                DateTime?
+  age                Int?
+  email              String    @unique
+  phone              String
+  school             String?
+  city               String?
+  state              String?
+  country            String?
+  zip                String?
+  address            String?
+  contactMethod      String?
+  loyaltyNum         String?
+  documentType       String?
+  documentNum        String?
+  documentIssuedBy   String?
+  documentIssuedDate DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([cabinFormId])
 }
+
 model CabinForm {
-  id        String   @id @default(cuid())
-  cabinType String
+  id            String      @id @default(cuid())
+  cabinType     String
   numPassengers Int
-  passengers Passenger[]
-  
-  preRegisterFormId String
-  preRegisterForm PreRegisterForm @relation(fields: [preRegisterFormId], references: [id])
-  
+  passengers    Passenger[]
+createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  preRegisterFormId String?
+  preRegisterForm   PreRegisterForm? @relation(fields: [preRegisterFormId], references: [id])
+
   @@index([preRegisterFormId])
 }
+
 model PreRegisterForm {
-  id        String   @id @default(cuid())
-  tripName String
+  id        String @id @default(cuid())
+  tripName  String
   partyName String
   numCabins Int
-  
+createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   cabins CabinForm[]
-  
 }
 
+model SchoolDazeRegisterForm {
+  id        String @id @default(cuid())
+  tripName  String
+  partyName String
+  numCabins Int
+createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  cabins SchoolDazeCabinForm[]
+}
+
+model SchoolDazePassenger {
+  id                 String              @id @default(cuid())
+  sdcabins            SchoolDazeCabinForm[] 
+ // cabinFormId        String          
+  title              String?
+  paxType            String?
+  firstName          String
+  middleName         String?
+  lastName           String
+  gender             String
+  dob                DateTime?
+  age                Int?
+  email              String              @unique
+  phone              String
+  school             String?
+  city               String?
+  state              String?
+  country            String?
+  zip                String?
+  address            String?
+  contactMethod      String?
+  loyaltyNum         String?
+  documentType       String?
+  documentNum        String?
+  documentIssuedBy   String?
+  documentIssuedDate DateTime?
+  documentExpiryDate DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  //@@index([cabinFormId])
+}
+
+model SchoolDazeCabinForm {
+  id            String                @id @default(cuid())
+  cabinType     String
+  numPassengers Int
+  passengers    SchoolDazePassenger[]
+  cabinPrice    Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  ccNumber      String? 
+  ccExp         String?
+  ccCvv         String?
+  ccZip         String?
+  ccName        String?
+
+  preRegisterFormId String?
+  preRegisterForm   SchoolDazeRegisterForm? @relation(fields: [preRegisterFormId], references: [id])
+
+  @@index([preRegisterFormId])
+}
+
+
+
+model StripeCruiseBooking {
+  id               String   @id @default(cuid())
+  registerId       String
+  invoiceId        String //school daze register id
+  cabinType        String
+  totalPrice       Int
+  amountPaid       Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  customerEmail    String
+  stripeCustomerId String?  @map("stripe_customer_id")
+  stripePriceId    String?  @map("stripe_price_id")
+}
+
+model SchoolDazeRegisterShort {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?  @unique
+  contactMethod String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RegisterShort {
+  id            String   @id @default(cuid())
+  email         String?  
+  password      String
+  firstName     String
+  lastName      String
+  phone         String? 
+  comments      String? 
+  contactMethod String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  wascontacted  Boolean? @default(false)
+}
