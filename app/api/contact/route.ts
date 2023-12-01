@@ -149,7 +149,7 @@ export async function POST(req: Request) {
 
    return new NextResponse("complete", { status: 200 })
   } catch (error: any) {
-    console.log("[DB_ERROR]", error);
+    console.error("[DB_ERROR]", error);
     sendAdminPushNotification( `DB_ERROR_153 : ${error.message}`)
     return new NextResponse("Internal Server Error", { status: 500 });
   }
