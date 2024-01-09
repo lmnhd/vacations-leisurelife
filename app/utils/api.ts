@@ -100,7 +100,8 @@ export async function aiAssistBackOff(
     console.log("stored response found");
     return storedResponse[0].response;
   }
-  console.log("no stored response found, querying openai...");
+  if(process.env.NODE_ENV == 'development'){
+    console.log("no stored response found, querying openai...");
   await new Promise((resolve) => setTimeout(resolve, 1500));
   const userMessage: any = {
     role: "user",
@@ -117,9 +118,12 @@ export async function aiAssistBackOff(
   if (res !== "error") {
     console.log("storing response...");
     storeAIResponse(data, res, componentId, functionId);
-  }
+  } return res;
 
+  }
+  
+return "no response found"
   //console.log(response.choices[0].message.content)
-  return res;
+ 
 }
 
