@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -24,6 +24,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/api/vtgSearch/vtg.mjs", "app/(dashboard)/(routes)/promotion/promotions.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/api/vtgSearch/vtg.mjs", "app/(dashboard)/(routes)/promotion/promotions.js", "app/(dashboard)/(routes)/news/getfeed.js"],
   "exclude": ["node_modules"]
 }

@@ -44,7 +44,7 @@ export interface sortedDestination {
 export default async function CBDestinationPicksTiles() {
   const __destinationPicks: CBPickData[] = await cbPicks();
 
-  // console.log(__destinationPicks);
+   console.log('__destinationPicks',__destinationPicks);
   // return <></>
 
   const sortedDestinations: sortedDestination[] =

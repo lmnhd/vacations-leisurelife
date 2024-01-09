@@ -1,0 +1,77 @@
+[
+    {
+        "lineName": "Royal Caribbean",
+        "feedURL": "https://www.royalcaribbeanpresscenter.com/feed/"
+
+    },
+    {
+        "lineName": "Carnival",
+        "feedURL": "https://carnival-news.com/feed/"
+
+    },
+    {
+        "lineName": "Norwegian",
+        "feedURL": "https://www.nclhltd.com/news-media/press-releases/rss",
+        "hidden": true
+
+    },
+    
+    {
+        "lineName": "Top Stories",
+        "feedURL": "https://latecruisenews.com/feed/"
+
+    },
+    {
+        "lineName": "Celebrity",
+        "feedURL": "https://www.celebritycruisespresscenter.com/feed/"
+
+    },
+    {
+        "lineName": "Disney",
+        "feedURL": "https://disneycruiselineblog.com/feed/"
+
+    },
+    {
+        "lineName": "Costa",
+        "feedURL": "https://www.costacruise.com/B2C/USA/Info/News/Pages/News.aspx",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Seabourn",
+        "feedURL": "https://www.seabourn.com/en_US/news.rss",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Silversea",
+        "feedURL": "https://www.silversea.com/content/silversea-com/en_US/news.html/_jcr_content.feed.rss",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Oceania",
+        "feedURL": "https://www.oceaniacruises.com/blog/feed/",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Regent Seven Seas",
+        "feedURL": "https://www.rssc.com/news.rss",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Crystal",
+        "feedURL": "https://www.crystalcruises.com/media-center/press-releases",
+        "hidden": true
+
+    },
+    {
+        "lineName": "Viking",
+        "feedURL": "https://www.vikingcruises.com/oceans/my-trip/my-journey/index.rss",
+        "hidden": true
+
+    }
+    
+]

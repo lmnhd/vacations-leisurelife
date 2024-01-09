@@ -3,7 +3,7 @@ import { load } from "cheerio";
 export async function cbPicks() {
   const url = "https://www.cruisebrothers.com/the-brothers-picks";
   const baseURL = "https://www.cruisebrothers.com";
-  const data = await fetch(url);
+  const data = await fetch(url,{cache:'no-store'});
   const resultData = await data.text();
   const $ = load(resultData);
   const section = $("section");
@@ -92,7 +92,7 @@ export async function cbPicks() {
       //console.log(arr);
     }
   });
-  //console.log(arr);
+  console.log(arr);
   return arr;
 }
 
@@ -101,10 +101,13 @@ export async function cbPick(pickID) {
   
   return new Promise(async (resolve, reject) => { 
     const picks = await cbPicks();
-  console.log('loaded picks => ');
-  const result = picks.find((pick) => {
+  console.log('loaded picks => ', picks);
+  let result = picks.find((pick) => {
     return pick.id == pickID
   })
+  // if(result == undefined){
+  //   result = picks[0]
+  // }
   resolve(result);
   })
   
