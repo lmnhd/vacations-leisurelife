@@ -22,7 +22,7 @@ export default function Page() {
             console.log(result.lineName);
             if(result.hidden) {return null}
             return (
-              <div>
+              <div key={index}>
                 <Link key={index} href={`/news/${index}`}
                 className="flex h-56 flex-col items-center mb-6 font-bold justify-between hover:scale-110 hover:border-2 hover:border-pink-600 transition-all duration-100 ease-in-out group"
                 >
