@@ -4,6 +4,7 @@ import { getCBSpecial } from './index.js'
 import Image from 'next/image.js'
 import { shipLogos } from '@/app/utils/shiplogos.ts'
 import { Container1Header } from '@/components/containers/container1'
+import { CleanText } from '@/app/utils/CleanText.js'
 
 export default async function Promotion({ params: { promotion, id } }: any) {
   
@@ -26,14 +27,16 @@ export default async function Promotion({ params: { promotion, id } }: any) {
         >{data.header}</h2> */}
         <Container1Header headerText={data.header}/>
       </div>
-      <div className='flex flex-row flex-wrap gap-2 justify-center items-center'>
-        {data.info.map((message: any, index: number) => {
+      <div className='flex flex-row flex-wrap gap-2 justify-start items-center'>
+        {data.info.map((message: string, index: number) => {
+          console.log(message)
           return (
             <div
-              className=" p-2 my-2 text-center rounded-md shadow-md bg-primary text-primary-foreground "
+              className=" p-2 my-2 text-left rounded-md shadow-md? bg-primary? text-slate-900"
               key={index}
             >
-              <p>{message}</p>
+              {message && <p>{CleanText(String(message))}</p>}
+              
             </div>
           );
         })}

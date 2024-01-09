@@ -12,7 +12,11 @@ import axios, { all } from "axios";
 export async function getCBSpecials() {
   const specials = [];
   //const resultList = await axios.get("https://www.cruisebrothers.com/specials");
-const res = (await fetch("https://www.cruisebrothers.com/specials"));
+const res = (await fetch(
+  "https://www.cruisebrothers.com/specials",
+  {cache:'no-store'}
+  ));
+console.log("www.cruisebrothers.com/specials result => ",res);
 const resultList = await res.text();
 //console.log(resultList);
   const $ = load(resultList);
@@ -35,7 +39,7 @@ const resultList = await res.text();
 export async function cbPicks() {
   const url = "https://www.cruisebrothers.com/the-brothers-picks";
   const baseURL = "https://www.cruisebrothers.com";
-  const data = await fetch(url);
+  const data = await fetch(url,{cache:'no-store'});
   const resultData = await data.text();
   const $ = load(resultData);
   const section = $("section");

@@ -17,7 +17,7 @@ const _baseURL = "https://www.cruisebrothers.com";
 //USED ONLY ONCE TO GET DESTINATIONS LIST
 async function getDestinationsList(){
     const result = []
-    const data = await fetch(baseURL);
+    const data = await fetch(baseURL,{cache:'no-store'});
     const resultData = await data.text();
     const $ = load(resultData);
     const ul = $("ul.sr-categories");
@@ -47,7 +47,7 @@ async function getImageTagsFromWebCB(destination = "africa", page = "1"){
     const url = `${baseURL}/${destination}/${page}`;
     console.log(url)
     let finalLinksArray = [];
-    const data = await fetch(url);
+    const data = await fetch(url,{cache:'no-store'});
     const resultData = await data.text();
     //console.log(resultData);
     const $ = load(resultData);

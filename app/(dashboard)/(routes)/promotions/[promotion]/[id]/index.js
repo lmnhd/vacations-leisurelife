@@ -7,9 +7,9 @@ export async function getCBSpecial(
     console.log("Starting","-------------------")
   let obj = { info: [] };
 
-  const data = await fetch(`https://www.cruisebrothers.com/specials${sub}`);
+  const data = await fetch(`https://www.cruisebrothers.com/specials${sub}`,{cache:'no-store'});
   const resultData = await data.text();
-  //console.log(resultData);
+  console.log('resultData, ',resultData);
  
   const $ = load(resultData);
 
