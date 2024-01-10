@@ -30,6 +30,7 @@ async function checkForStoredAIResponse(
   componentId: string,
   functionId: string
 ) {
+  console.log(`checking for stored response for ${prompt} and ${functionId} and ${componentId}`)
   const storedResponse = await prismadb.aIAssist.findMany({
     where: {
       componentId: componentId,
