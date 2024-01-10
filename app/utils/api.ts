@@ -14,7 +14,7 @@ async function storeAIResponse(
   functionId: string
 ) {
   //console.log(prompt, response);
-  const storedResponse = prismadb.aIAssist.create({
+  const storedResponse = await prismadb.aIAssist.create({
     data: {
       prompt: prompt,
       response: response,
@@ -30,7 +30,7 @@ async function checkForStoredAIResponse(
   componentId: string,
   functionId: string
 ) {
-  const storedResponse = prismadb.aIAssist.findMany({
+  const storedResponse = await prismadb.aIAssist.findMany({
     where: {
       componentId: componentId,
       functionId: functionId,
@@ -42,7 +42,7 @@ async function checkForStoredAIResponse(
   return storedResponse;
 }
 async function deleteStoredData(tableValueName: string) {
-  const storedResponse = prismadb.aIAssist.deleteMany({
+  const storedResponse = await prismadb.aIAssist.deleteMany({
     where: {
       functionId: tableValueName,
     },
@@ -104,7 +104,7 @@ async function aiAssist(
     return storedResponse[0].response;
   }else{
     console.log("no stored response found");
-    return "no response found";
+    //return "no response found";
   }
   if (process.env.NODE_ENV == "development") {
     console.log("no stored response found, querying openai...");
