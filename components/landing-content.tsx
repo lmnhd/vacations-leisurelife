@@ -90,20 +90,7 @@ export const LandingContent = async () => {
      //className="px-10 pb-20 bg-primary hover:bg-gradient-to-r hover:from-primary-foreground/70 hover:via-primary/70 hover:to-primary-foreground/70 transition-all ease-in-out duration-500 "
      >
       <CBDestinationPicksTiles/>
-       {/* <h2 className="mb-10 text-4xl font-extrabold text-center text-white">
-         Testimonials
-       </h2>
-       <div className="flex flex-wrap justify-evenly gap-3">
-        {promotionsTest.map((promotion) => {
-          return (
-            <PromotionTile
-              key={promotion.day}
-              promotion={promotion}
-             
-            />
-          );
-        })}
-       </div> */}
+       
      </div>
     </>
   );

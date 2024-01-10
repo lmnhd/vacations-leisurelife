@@ -98,8 +98,8 @@ async function createPageOBJ(id: string) {
       CleanText(dataText),
       "destinationdeal" + pick.id,
       task.task,
-      //task.task //use to delete first
-      //task.task == 'bodyText' ? task.task : ''
+      "", //task.task //use to delete first //task.task == 'bodyText' ? task.task : ''
+      false 
     );
     //console.log("response = ", response);
     result[task.task] = response;

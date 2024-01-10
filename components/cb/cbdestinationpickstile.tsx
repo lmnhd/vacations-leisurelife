@@ -42,10 +42,11 @@ export interface sortedDestination {
   count: number;
 }
 export default async function CBDestinationPicksTiles() {
+  console.log("CB Destination Picks Tiles")
   const __destinationPicks: CBPickData[] = await cbPicks();
 
    console.log('__destinationPicks',__destinationPicks);
-  // return <></>
+   //return <></>
 
   const sortedDestinations: sortedDestination[] =
     sortByDestination(__destinationPicks);
@@ -95,7 +96,9 @@ export default async function CBDestinationPicksTiles() {
       instructions,
       ports,
       componentId,
-      functionId
+      functionId,
+      "",
+      true
     );
     return response;
   }
@@ -108,7 +111,9 @@ export default async function CBDestinationPicksTiles() {
       instructions,
       info,
       componentId,
-      functionId
+      functionId,
+      "",
+      true
     );
     return response || "bad response";
   }
@@ -121,7 +126,9 @@ export default async function CBDestinationPicksTiles() {
       instructions,
       info,
       componentId,
-      functionId
+      functionId,
+      "",
+      true
     );
     return response;
   }

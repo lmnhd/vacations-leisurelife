@@ -28,18 +28,30 @@ async function storeAIResponse(
 async function checkForStoredAIResponse(
   prompt: string,
   componentId: string,
-  functionId: string
+  functionId: string,
+  usePrompt: boolean = true
 ) {
-  console.log(`checking for stored response for ${prompt} *** ${functionId} *** ${componentId}`)
-  const storedResponse = await prismadb.aIAssist.findMany({
-    where: {
-      componentId: componentId,
-      functionId: functionId,
-      //prompt: prompt,
-
-      ignore: false,
-    },
-  });
+  console.log(`checking for stored response for functionId = ${functionId} *** componentId = ${componentId}`)
+  let storedResponse: any;
+  if (usePrompt) {
+    storedResponse = await prismadb.aIAssist.findMany({
+      where: {
+        componentId: componentId,
+        functionId: functionId,
+        prompt: prompt,
+        ignore: false,
+      },
+    });
+  } else {
+    storedResponse = await prismadb.aIAssist.findMany({
+      where: {
+        componentId: componentId,
+        functionId: functionId,
+        ignore: false,
+      },
+    });
+  }
+  
   return storedResponse;
 }
 async function deleteStoredData(tableValueName: string) {
@@ -64,11 +76,12 @@ export async function aiAssistBackOff(
   data: string,
   componentId: string,
   functionId: string,
-  deleteData: string = ""
+  deleteData: string = "",
+  usePrompt: boolean
 ) {
   try {
     const response: string = await backOff(() =>
-      aiAssist(instructions, data, componentId, functionId, deleteData)
+      aiAssist(instructions, data, componentId, functionId, deleteData, usePrompt)
     );
     return response;
   } catch (error) {
@@ -81,7 +94,8 @@ async function aiAssist(
   data: string,
   componentId: string,
   functionId: string,
-  deleteData: string = ""
+  deleteData: string = "",
+  usePrompt: boolean
 ) {
   if (deleteData == "") {
   } else {
@@ -91,13 +105,14 @@ async function aiAssist(
   }
 
   const message = `${instructions} : """${data}"""`;
-  console.log(`message: ${message}`);
+  //console.log(`message: ${message}`);
   //return
   console.log("checking for stored response...");
   const storedResponse = await checkForStoredAIResponse(
     data,
     componentId,
-    functionId
+    functionId,
+    usePrompt
   );
   console.log("search for stored response complete... ", storedResponse)
   if (storedResponse.length > 0) {
