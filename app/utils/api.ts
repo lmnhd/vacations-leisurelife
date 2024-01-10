@@ -98,6 +98,7 @@ async function aiAssist(
     componentId,
     functionId
   );
+  console.log("search for stored response complete... ", storedResponse)
   if (storedResponse.length > 0) {
     console.log("stored response found");
     console.log(storedResponse[0].response)
