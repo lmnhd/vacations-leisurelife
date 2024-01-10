@@ -30,12 +30,12 @@ async function checkForStoredAIResponse(
   componentId: string,
   functionId: string
 ) {
-  console.log(`checking for stored response for ${prompt} and ${functionId} and ${componentId}`)
+  console.log(`checking for stored response for ${prompt} *** ${functionId} *** ${componentId}`)
   const storedResponse = await prismadb.aIAssist.findMany({
     where: {
       componentId: componentId,
       functionId: functionId,
-      prompt: prompt,
+      //prompt: prompt,
 
       ignore: false,
     },
@@ -91,7 +91,7 @@ async function aiAssist(
   }
 
   const message = `${instructions} : """${data}"""`;
-  console.log(message);
+  console.log(`message: ${message}`);
   //return
   console.log("checking for stored response...");
   const storedResponse = await checkForStoredAIResponse(
