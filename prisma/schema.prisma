@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider     = "mysql"
+  provider     = "postgresql"
   url          = env("DATABASE_URL")
   relationMode = "prisma"
 }
@@ -56,7 +56,7 @@ model AIAssist {
   id          String  @id @default(cuid())
   componentId String
   functionId  String
-  prompt      String  @db.LongText
+  prompt      String  @db.Text
   response    String  @db.Text
   ignore      Boolean @default(false)
 }

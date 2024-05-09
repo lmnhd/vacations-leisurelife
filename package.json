@@ -30,6 +30,7 @@
     "@types/node": "20.4.10",
     "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
+    "@xata.io/client": "^0.0.0-next.vc44339ec360519ae99dcb7a9bc6854c1f2dcc741",
     "autoprefixer": "10.4.14",
     "axios": "^1.4.0",
     "cheerio": "^1.0.0-rc.12",
