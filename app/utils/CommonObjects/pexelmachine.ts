@@ -96,42 +96,69 @@ export async function shuffleArray(array:any[]){
 //TO DO
 function cacheSearchedImages() {}
 async function storeImageData(data: PexelPhotoResource, query: string) {
-  await prismadb.pexelPhotoResource.create({
-    data: {
-      searchQuery: query,
-      width: data.width,
-      height: data.height,
-      url: data.url,
-      alt: data.alt,
-      photographer: data.photographer,
-      photographerUrl: data.photographer_url,
-      avgColor: data.avg_color,
-      srcOriginal: data.src.original,
-      srcLarge2x: data.src.large2x,
-      srcLarge: data.src.large,
-      srcMedium: data.src.medium,
-      srcSmall: data.src.small,
-      srcPortrait: data.src.portrait,
-      srcLandscape: data.src.landscape,
-      srcTiny: data.src.tiny,
-    },
-  });
+  try {
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL not configured, skipping image storage');
+      return;
+    }
+    await prismadb.pexelPhotoResource.create({
+      data: {
+        searchQuery: query,
+        width: data.width,
+        height: data.height,
+        url: data.url,
+        alt: data.alt,
+        photographer: data.photographer,
+        photographerUrl: data.photographer_url,
+        avgColor: data.avg_color,
+        srcOriginal: data.src.original,
+        srcLarge2x: data.src.large2x,
+        srcLarge: data.src.large,
+        srcMedium: data.src.medium,
+        srcSmall: data.src.small,
+        srcPortrait: data.src.portrait,
+        srcLandscape: data.src.landscape,
+        srcTiny: data.src.tiny,
+      },
+    });
+  } catch (error) {
+    console.warn('Error storing image data:', error);
+    // Continue without storing - non-critical operation
+  }
 }
 async function checkForStoredImages(query: string) {
-  const storedImages = await prismadb.pexelPhotoResource.findMany({
-    where: {
-      searchQuery: query,
-    },
-  });
-  return storedImages;
+  try {
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL not configured, skipping database lookup');
+      return [];
+    }
+    const storedImages = await prismadb.pexelPhotoResource.findMany({
+      where: {
+        searchQuery: query,
+      },
+    });
+    return storedImages;
+  } catch (error) {
+    console.warn('Error checking stored images:', error);
+    return [];
+  }
 }
 async function checkForStoredImage(original: string) {
-  const storedImages = await prismadb.pexelPhotoResource.findMany({
-    where: {
-      srcOriginal: original,
-    },
-  });
-  return storedImages;
+  try {
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL not configured, skipping database lookup');
+      return [];
+    }
+    const storedImages = await prismadb.pexelPhotoResource.findMany({
+      where: {
+        srcOriginal: original,
+      },
+    });
+    return storedImages;
+  } catch (error) {
+    console.warn('Error checking stored image:', error);
+    return [];
+  }
 }
 async function mapPexelImagesToNewObjectArray(images:PexelPhotoResource[],query:string){
   const res = images.map((image:PexelPhotoResource) => {
