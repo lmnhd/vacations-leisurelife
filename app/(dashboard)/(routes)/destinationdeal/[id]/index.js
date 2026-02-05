@@ -1,127 +1,99 @@
 import { load } from "cheerio";
 
 export async function cbPicks() {
-  const url = "https://www.cruisebrothers.com/the-brothers-picks";
+  const url = "https://www.cruisebrothers.com/cb/brothers_picks/";
   const baseURL = "https://www.cruisebrothers.com";
-  const data = await fetch(url,{cache:'no-store'});
-  const resultData = await data.text();
-  const $ = load(resultData);
-  const section = $("section");
-  let arr = [];
-  let obj = {};
-  let j = 0;
-  let rowNum = 0;
-  section.children("p").each(function (index, child) {
-    const el = child.type;
-    const name = child.name;
-    let check = $(child).text();
-    //console.log(check);
-    if (rowNum == 17) {
-      //console.log(arr);
-    }
-
-    if (String(check).includes("_______________________________")) {
-      //console.log("check");
-      j = -1;
-    } else {
-    }
-
-    if (j == 0) {
-      obj.img = "";
-      if (!String(check).trim().includes("Destination:")) {
-        //console.log("skipping");
-        j = -1;
-      } else {
-        obj.destination = $(child).text();
-        const img = $(child).find("img");
-        const src = `${baseURL}${img.attr("src")}`;
-        if (img.length > 0) {
+  
+  try {
+    const data = await fetch(url, { cache: 'no-store' });
+    const resultData = await data.text();
+    const $ = load(resultData);
+    
+    const arr = [];
+    
+    // The new page structure uses divs with card-like layouts
+    // Looking for elements containing the cruise information
+    $('a[href*="/cb/brothers_pick/"]').each((index, element) => {
+      const $link = $(element);
+      const href = $link.attr('href');
+      const pickID = href.split('/').filter(Boolean).pop(); // Extract ID from URL
+      
+      // Find the closest container that holds all the info
+      const $container = $link.closest('div[class*="card"], article, [class*="pick"]') || $link.parent().parent();
+      
+      if (!$container.length) return;
+      
+      const obj = {
+        id: pickID,
+        destination: '',
+        what: '',
+        when: '',
+        price: '',
+        img: '',
+        destination_url: `${baseURL}${href}`
+      };
+      
+      // Extract title/destination from text before or near the link
+      const textContent = $container.text();
+      const lines = textContent.split('\n').filter(line => line.trim());
+      
+      // Get image
+      const $img = $container.find('img[alt*="brothers pick"], img[src*="brothers_pics_images"]').first();
+      if ($img.length) {
+        const src = $img.attr('src');
+        if (!src.startsWith('http')) {
+          obj.img = `${baseURL}${src}`;
+        } else {
           obj.img = src;
         }
       }
-    }
-    if (j == 1) {
-      if (!String(check).trim().includes("What:")) {
-        //console.log("skipping");
-        j = -1;
-      } else {
-        obj.what = $(child).text().trim();
+      
+      // Extract destination info from text
+      const titleMatch = textContent.match(/([A-Za-z\s]+)\n([A-Za-z\s]+)\n(\d+\s+Nights?)/);
+      if (titleMatch) {
+        obj.what = titleMatch[1]?.trim() || '';
+        obj.destination = titleMatch[2]?.trim() || '';
+        obj.when = titleMatch[3]?.trim() || '';
       }
-    }
-    if (j == 2) {
-      if ($(child).find("img").length > 0) {
-        const src = `${baseURL}${$(child).find("img").attr("src")}`;
-        obj.img = src;
-        if (obj.img == undefined || obj.img == "") {
-          j++;
-        }
-      } else {
-        j++;
+      
+      // Extract price
+      const priceMatch = textContent.match(/\$[\d,]+(?:\s+(?:per person|person))?/);
+      if (priceMatch) {
+        obj.price = priceMatch[0];
       }
-    }
-    if (j == 3) {
-      if (!String(check).trim().includes("When:")) {
-        //console.log("skipping");
-        j = -1;
-      } else {
-        obj.when = $(child).text().trim();
+      
+      // Only add if we have meaningful data
+      if (obj.id && (obj.what || obj.destination)) {
+        arr.push(obj);
       }
-    }
-    if (j == 4) {
-      obj.price = $(child).text().trim();
-    }
-    if (j == 5) {
-      obj.elsepay = $(child).text().trim();
-    }
-    if (j == 6) {
-      obj.go = $(child).text().trim();
-    }
-    if (j == 7) {
-      obj.why = $(child).text().trim();
-    }
-    if (j == 8) {
-      obj.other = $(child).text().trim();
-      j = -1;
-      obj.id = pickID(obj);
-      arr.push(obj);
-      obj = {};
-      rowNum++;
-    }
-    j++;
-    if (rowNum == 2) {
-      //console.log(arr);
-    }
-  });
-  console.log(arr);
-  return arr;
+    });
+    
+    console.log('CB Picks scraped:', arr.length, 'items');
+    return arr;
+  } catch (error) {
+    console.error('Error scraping CB Picks:', error);
+    return [];
+  }
 }
 
 export async function cbPick(pickID) {
-  console.log('cbPick',pickID)
+  console.log('cbPick', pickID);
   
-  return new Promise(async (resolve, reject) => { 
-    const picks = await cbPicks();
-  console.log('loaded picks => ', picks);
-  let result = picks.find((pick) => {
-    return pick.id == pickID
-  })
-  // if(result == undefined){
-  //   result = picks[0]
-  // }
-  resolve(result);
-  })
-  
-  // for (let index = 0; index < picks.length; index++) {
-  //   const pick = picks[index];
-  //   //console.log(pick);
-  //   if (pick.id == pickID) {
-  //     console.log('FOUND PICK => ',pick.id)
-  //     return pick;
-  //   }
-  // }
-  // return result;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const picks = await cbPicks();
+      console.log('loaded picks => ', picks.length, 'items');
+      let result = picks.find((pick) => {
+        return pick.id == pickID;
+      });
+      resolve(result || null);
+    } catch (error) {
+      console.error('Error in cbPick:', error);
+      reject(error);
+    }
+  });
 }
 
 export function pickID(pick) {
-  return String(`${pick.what}-${pick.when}`).replaceAll(" ", "").replaceAll('.','');
+  return String(`${pick.what}-${pick.when}`).replaceAll(" ", "").replaceAll('.', '');
 }
