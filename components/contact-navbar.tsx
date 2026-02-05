@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 const font = Montserrat({ weight: "600", subsets: ["latin"] });
 const ContactNav = async () => {
   const user = await currentUser();
-  const Auth = auth();
+  // const Auth = auth();
   return (
     <div className="flex items-center p-4 bg-primary">
       <MobileSidebar />
@@ -43,7 +43,7 @@ const ContactNav = async () => {
             <div className="text-2xl text-green-200 border-primary-foreground font-extralight">
               Hi {user.firstName} !
             </div>
-          ) : <Link href={Auth.user?.firstName ? "/dashboard" : "/"}>
+          ) : <Link href={user ? "/dashboard" : "/"}>
           <Button variant="outline" className="rounded-full">
               EXPLORE!
           </Button>

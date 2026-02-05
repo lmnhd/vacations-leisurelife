@@ -29,8 +29,13 @@ import axios from "axios";
 import { SearchResults } from "@/components/vtg/search-results";
 import { Container1, Container1Header } from "../containers/container1";
 import LogoStrip from "@/components/logoStrip"
+import { generateMonthOptions } from "@/lib/date-utils";
 
-const sParams: any = searchParams;
+const sParams: any = {
+  ...searchParams,
+  SMonth: generateMonthOptions("From month"),
+  TMonth: generateMonthOptions("To month")
+};
 const allShipsOBJ = {
   shipID: 0,
   lineID: 0,
@@ -254,8 +259,8 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
     );
   };
   return (
-    <div className="flex flex-col items-center justify-between gap-4  ">
-      <div className="md:flex items-center justify-between w-full mx-3 shadow-sm"
+    <div className="flex flex-col items-center justify-between gap-4 ">
+      <div className="items-center justify-between w-full mx-3 shadow-sm md:flex"
       >
         
        
@@ -352,7 +357,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
                           name={finalValName}
                           render={() => (
                             <FormItem>
-                              <FormLabel className="text-primary-foreground text-center font-light mx-auto">
+                              <FormLabel className="mx-auto font-light text-center text-primary-foreground">
                                 {label}
                               </FormLabel>
                               <Select

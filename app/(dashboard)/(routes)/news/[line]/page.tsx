@@ -1,12 +1,21 @@
 "use client";
-import { useState, useEffect, useContext } from "react";
+import { useEffect, useContext } from "react";
 import RSSParser from "rss-parser";
 import { getFeed } from "../getfeed";
 import Image from "next/image";
-import { NewsContext, NewsProvider } from "../newscontext";
+import { NewsContext } from "../newscontext";
 import Link from "next/link";
 import FeedJson from '../cruiseLineFeeds.json'
 import { shipLogos } from "@/app/utils/shiplogos";
+import { useParams } from "next/navigation";
+
+interface NewsFeedLine {
+  lineName: string;
+  feedURL: string;
+  hidden?: boolean;
+}
+
+const feeds = FeedJson as NewsFeedLine[];
 
 
 
@@ -17,23 +26,30 @@ export type Feed = {
   articles: RSSParser.Item[];
 };
 
-const Page = (params:any) => {
-  const {line} = params.params
+const Page = () => {
+  const params = useParams();
+  const line = params?.line;
   console.log(line)
-  const lineName = FeedJson[line].lineName
-  const feedURL = FeedJson[line].feedURL
+  const lineIndex = line ? Number(line) : undefined;
+  const feedData =
+    lineIndex != null && !Number.isNaN(lineIndex) ? feeds[lineIndex] : undefined;
+  const lineName = feedData?.lineName ?? "";
+  const feedURL = feedData?.feedURL ?? "";
   console.log(lineName, feedURL)
-const {setNews, news} = useContext(NewsContext)
-useEffect(() => {
- const fetchFeed = async () => {
-  const data:Feed = await getFeed(feedURL);
-  setNews(data);
-  
-  console.log(data.lineTitle)
-  console.log(data.articles);
- }
-  fetchFeed();
-}, [])
+  const {setNews, news} = useContext(NewsContext)
+  useEffect(() => {
+    if (!feedURL) {
+      return;
+    }
+    const fetchFeed = async () => {
+      const data:Feed = await getFeed(feedURL);
+      setNews(data);
+      
+      console.log(data.lineTitle)
+      console.log(data.articles);
+    }
+    fetchFeed();
+  }, [feedURL, setNews])
 
 //return <>check</>
   return (

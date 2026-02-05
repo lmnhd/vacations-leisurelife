@@ -12,27 +12,88 @@ import axios, { all } from "axios";
 export async function getCBSpecials() {
   const specials = [];
   //const resultList = await axios.get("https://www.cruisebrothers.com/specials");
-const res = (await fetch(
-  "https://www.cruisebrothers.com/specials",
-  {cache:'no-store'}
-  ));
-console.log("www.cruisebrothers.com/specials result => ",res);
-const resultList = await res.text();
-//console.log(resultList);
+  const res = await fetch(
+    "https://www.cruisebrothers.com/cb/specials",
+    { cache: "no-store" }
+  );
+  console.log("www.cruisebrothers.com/cb/specials result => ", res);
+  const resultList = await res.text();
   const $ = load(resultList);
 
-  const list = $(".sr-specials").find("li");
-//console.log(list.text());
-  list.each(function (index, element) {
-    let obj = {};
-    obj.header = $(this).find("h3").text().trim();
-    obj.link = $(this).find("a").attr("href");
-    obj.message = $(this).text().trim();
+  const baseURL = "https://www.cruisebrothers.com";
+  const specialsMap = new Map();
 
-    specials.push(obj);
+  const cards = $(
+    ".cb_specials_full_card_container, article.cb_specials_full_card_container"
+  );
+  cards.each(function () {
+    const card = $(this);
+    const header = card.find(".cb_full_card_special_name").first().text().trim();
+    const message = card
+      .find(".cb_full_card_special_headline")
+      .first()
+      .text()
+      .trim();
+    const href = card.find("a[href*='/cb/special/']").first().attr("href");
+    const absoluteLink = href
+      ? href.startsWith("http")
+        ? href
+        : `${baseURL}${href}`
+      : "";
 
+    if (!header || !absoluteLink) {
+      return;
+    }
+
+    if (!specialsMap.has(absoluteLink)) {
+      specialsMap.set(absoluteLink, {
+        header,
+        link: absoluteLink,
+        message
+      });
+    }
   });
-  //console.log(specials);
+
+  if (specialsMap.size === 0) {
+    const links = $("a[href*='/cb/special/']");
+    links.each(function () {
+      const linkEl = $(this);
+      const href = linkEl.attr("href");
+      if (!href) {
+        return;
+      }
+
+      const absoluteLink = href.startsWith("http") ? href : `${baseURL}${href}`;
+      const container = linkEl.closest(
+        "article.cb_specials_full_card_container, div.cb_specials_full_card, article, section, div"
+      );
+
+      const header =
+        container.find(".cb_full_card_special_name").first().text().trim() ||
+        container.find("h2, h3").first().text().trim() ||
+        linkEl.prevAll("h2, h3").first().text().trim();
+
+      const message =
+        container.find(".cb_full_card_special_headline").first().text().trim() ||
+        container.find("p").first().text().trim() ||
+        linkEl.prevAll("p").first().text().trim();
+
+      if (!header) {
+        return;
+      }
+
+      if (!specialsMap.has(absoluteLink)) {
+        specialsMap.set(absoluteLink, {
+          header,
+          link: absoluteLink,
+          message
+        });
+      }
+    });
+  }
+
+  specials.push(...Array.from(specialsMap.values()));
+  console.log("Special offer list", specials);
   return specials;
 }
 

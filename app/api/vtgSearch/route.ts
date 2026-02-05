@@ -3,7 +3,7 @@ import { search, start } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, res: Response) {
+export async function POST(req: Request) {
   const { userId } = await auth();
   try {
     const body = await req.json();

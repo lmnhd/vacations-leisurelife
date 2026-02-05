@@ -1,12 +1,7 @@
 
-
-import { auth } from "@clerk/nextjs";
-
-
-
 import { NextResponse } from "next/server";
 
-export async function GET(req:Request, res: Response) {
+export async function GET(req:Request) {
    
 
 	// console.log(result?.data);

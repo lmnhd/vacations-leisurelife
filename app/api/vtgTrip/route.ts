@@ -1,11 +1,11 @@
 
 
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { getDealData, start } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
 
-export async function POST(req:Request, res: Response) {
+export async function POST(req:Request) {
 
  //return NextResponse.json({message: "hello"});
  // const { userId } = auth();

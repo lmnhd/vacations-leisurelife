@@ -18,7 +18,7 @@ const PropertyRating = ({
       result.push(<StarIcon key={index + "key"}  className={`w-4 ${color}`}></StarIcon>);
     }
     if (decimal) {
-      result.push(<StarHalfIcon  className={`w-4 ${color}`}></StarHalfIcon>);
+      result.push(<StarHalfIcon key="half-star" className={`w-4 ${color}`}></StarHalfIcon>);
     }
 
     return <div

@@ -15,8 +15,8 @@ export default function SearchResultsSkeleton() {
         <h1 className='text-lg text-center bg-gray-100 shadow-sm '>Gathering Info...</h1>
             {[1,2,3,4,5].map((result: any, i: number) => {
                 const color = i % 2 === 0 ? 'bg-yellow-200' : 'bg-blue-200'
-                return <>
-                <div className='flex items-center gap-4 px-6 my-4 bg-blue-300 rounded-lg'>
+                return (
+                <div key={i} className='flex items-center gap-4 px-6 my-4 bg-blue-300 rounded-lg'>
                     <Skeleton className={`w-28 h-24 shadow-sm rounded-3xl ${color}`}
                     />
                     
@@ -28,7 +28,7 @@ export default function SearchResultsSkeleton() {
                         />
                     </div>
                 </div>
-                </>
+                )
             })}
         </div>
     </div>

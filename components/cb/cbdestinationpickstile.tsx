@@ -178,19 +178,25 @@ export default async function CBDestinationPicksTiles() {
   }
   async function mapTileData(sortedDests: any[]) {
     return sortedDests.map(async (dest: sortedDestination, index) => {
-      //console.log(sortedDestinations)
-      //console.log(sortedDests)
-      //console.log(sortedDestinations.length)
-      //console.log('Sorted Destinations Map -----',`SORTED DESTS ${index}  IS ${dest.picks}`)
       return (
-        <div key={index} className="flex flex-col ">
-          <h3 className="my-2 text-lg font-bold text-center">
-            {dest.destination}
-          </h3>
-          {await mapTile(dest.picks[0])}
+        <div
+          key={index}
+          className="relative flex flex-col items-center gap-4 rounded-[32px] p-4"
+        >
+          <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.7em] text-white/90">
+            <span className="inline-flex h-1.5 w-12 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500" />
+            <span className="text-base font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+              {dest.destination}
+            </span>
+          </div>
+          <div className="relative w-full max-w-[22rem]">
+            <div className="pointer-events-none absolute -inset-3 opacity-40 blur-2xl bg-gradient-to-r from-slate-900 via-primary/20 to-slate-900" />
+            <div className="relative">
+              {await mapTile(dest.picks[0])}
+            </div>
+          </div>
         </div>
       );
-      //return await mapTile(dest.picks[0])
     });
   }
   // const test = await mapTile(cbpickTestData)
@@ -207,11 +213,16 @@ export default async function CBDestinationPicksTiles() {
   //mapTileData(sortedDestinations)
   //await formatDescription('test')
   return (
-    <div>
-      <Container1Header headerText="EXCLUSIVE DEALS FOR OUR TOP CRUISE DESTINATION PICKS" />
-      <div className="flex flex-wrap justify-evenly">
-        {await mapTileData(sortedDestinations)}
+    <section className="relative overflow-hidden px-6 py-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.35),_transparent_65%)]" />
+      <div className="pointer-events-none absolute -left-16 top-1/4 h-60 w-60 rounded-full bg-gradient-to-r from-cyan-500/40 to-primary/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-8 bottom-4 h-72 w-72 rounded-full bg-gradient-to-t from-amber-400/40 to-transparent blur-3xl" />
+      <div className="relative space-y-10">
+        <Container1Header headerText="EXCLUSIVE DEALS FOR OUR TOP CRUISE DESTINATION PICKS" />
+        <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {await mapTileData(sortedDestinations)}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

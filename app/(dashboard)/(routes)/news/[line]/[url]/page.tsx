@@ -1,25 +1,30 @@
 "use client";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { NewsContext } from "@/app/(dashboard)/(routes)/news/newscontext";
-import { useSearchParams } from "next/navigation";
 import RSSParser from "rss-parser";
-import Link from "next/link";
-import Router from "next/router";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { shipLogos } from "@/app/utils/shiplogos";
 import Image from "next/image";
 import { ArticleDiv } from "./newsstyles";
 import "./article.css";
 
-export default function NewArticle(params: any) {
-  const { url } = params.params;
+export default function NewArticle() {
+  const params = useParams<{ line: string; url: string }>();
+  const url = params?.url;
   const { news, setNews } = useContext(NewsContext);
   const router = useRouter();
 
-  const [article, setArticle] = useState<any>(
-    news.articles[parseInt(url)]
-  );
+  const [article, setArticle] = useState<any>(null);
   const [lineName, setLineName] = useState(news.lineTitle);
+  const lineIndex = url ? Number(url) : undefined;
+  useEffect(() => {
+    if (lineIndex == null || Number.isNaN(lineIndex) || !news.articles) {
+      setArticle(null);
+      return;
+    }
+    setArticle(news.articles[lineIndex]);
+    setLineName(news.lineTitle);
+  }, [lineIndex, news]);
   const log0 = shipLogos("Carnival");
   console.log("url: ", url);
   console.log("article: ", article);

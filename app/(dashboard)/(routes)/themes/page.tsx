@@ -7,7 +7,7 @@
 
 const ConversationPage = () => {
   return (
-    <div className="bg-slate-800 text-center font-bold text-green-400 h-screen">Themed Music Cruises</div>
+    <div className="h-screen font-bold text-center text-green-400 bg-slate-800">Themed Music Cruises</div>
   )
 };
 

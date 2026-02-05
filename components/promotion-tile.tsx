@@ -23,7 +23,7 @@ export interface PriceProps {
 }
 const PromotionTile = ({ promotion }: { promotion: PromotionTileProps }) => {
   return (
-    <div className="flex flex-col duration-300 ease-linear bg-white rounded-lg shadow w-80 justify-stretch hover:-translate-y-3 hover:transition-all hover:scale-y-100 border-primary-foreground hover:shadow-2xl ">
+    <div className="flex flex-col duration-300 ease-linear bg-white rounded-lg shadow-lg w-80 justify-stretch hover:-translate-y-1 hover:transition-all hover:scale-y-100 border-primary-foreground hover:shadow-xl ">
       <div className="relative ">
         {/* Image Slider */}
         <div className="image-container">

@@ -3,11 +3,11 @@ import prismadb from "@/lib/prismadb";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 
-export async function GET(req: Request, context : {params: {message: string}}) {
+export async function GET(req: Request, context : {params: Promise<{message: string}>}) {
   try {
    // retrieve message from headers
    let response = '';
-    const message = context.params.message;
+    const { message } = await context.params;
     console.log(message);
 
     switch (message) {
