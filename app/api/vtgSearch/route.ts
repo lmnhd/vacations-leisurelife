@@ -1,14 +1,10 @@
-
-
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { search, start } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
 
-export async function POST(req:Request, res: Response) {
-
-  //return NextResponse.json({message: "hello"});
-  const { userId } = auth();
+export async function POST(req: Request, res: Response) {
+  const { userId } = await auth();
   try {
     const body = await req.json();
   const { data } = body;

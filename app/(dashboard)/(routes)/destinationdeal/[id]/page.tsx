@@ -1,30 +1,16 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import React, { useEffect } from "react";
-import { cbPicks, cbPick } from "./index.js";
-import { InfoIcon, DollarSign, Calendar } from "lucide-react";
+import React from "react";
+import { cbPicks } from "./index.js";
+import { notFound } from "next/navigation";
+import { DollarSign, Calendar } from "lucide-react";
 import Image from "next/image.js";
 import { shipLogos } from "@/app/utils/shiplogos.ts";
 import pexelmachine from "@/app/utils/CommonObjects/pexelmachine";
 import { getGoogleImage } from "@/app/utils/CommonObjects/googleimage";
-import { aiAssistBackOff } from "@/app/utils/api";
 import { Container1Header } from "@/components/containers/container1";
 import { CBPickData } from "@/components/cb/cbdestinationpickstile.jsx";
-import { CleanText } from "@/app/utils/CleanText.js";
+import { generateDealContent } from "@/lib/deals-utils";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { Pi } from "lucide-react";
 import Link from "next/link.js";
-//import { type } from "os";
 
 interface ItineraryItem {
   day: string;
@@ -45,107 +31,39 @@ export interface gptTask {
   task: string;
   instruction: string;
 }
-let thisPick: any = {};
-let thisData: string = "";
 
-const gptTasks: gptTask[] = [
-  {
-    task: "title",
-    instruction: "write a creative title for this trip in one sentence",
-  },
-  {
-    task: "subtitle",
-    instruction:
-      "write a subtitle for this deal. form your response as answer only",
-  },
-  {
-    task: "mainImage",
-    instruction:
-      "In 3 to 6 words (the name of ship is considered 1 word), what is the name of the ship in this deal? Only use the name of cruise line and name of ship. (example: Royal Caribbean Symphony Of The Seas) ",
-  },
-  {
-    task: "mainImageAlt",
-    instruction: "write the alt text for the main image in 6 words or less",
-  },
-  {
-    task: "bodyText",
-    instruction:
-      "write the body of an article about this deal using around 200 words. form your response as answer only without initial explanation.",
-  },
-  {
-    task: "featuresText",
-    instruction:
-      "Locate and list any special highlights that are exclusive to this deal if they are mentioned in the text. This can be special pricing, drink and/or dining specials, bonuses, and onboard credits. If no exclusive offers are mentioned just write a dash only. ",
-  },
-  {
-    task: "itinerary",
-    instruction:
-      "list the ports of call if possible and the days of the week they are visited if possible. form your response as answer only and dont mention it if some info is not there",
-  },
-  {
-    task: "price",
-    instruction:
-      "using one word and numbers/symbols only, write the price of the deal, per-person, in dollars. (example: $1,234)",
-  },
-  {
-    task: "tripLength",
-    instruction:
-      "In 2 words, write the length of this trip. (example: 7 nights)",
-  },
-];
-async function createPageOBJ(id: string) {
-  console.log("id = ", id);
-  const decodedURI = decodeURIComponent(
-    id.replaceAll("%C3%82%C2%A0", "%C2%A0").replaceAll("%C4%80%C2%A0", "%C2%A0")
-  );
-  console.log("decodedURI = ", decodedURI);
-  const pick = await cbPick(decodedURI);
-
-  console.log("(PAGE):pick = ", pick);
-  thisPick = pick;
-  const result: any = {};
-  const dataText = JSON.stringify(pick);
-  thisData = dataText;
-  for (let task of gptTasks) {
-    const response = await aiAssistBackOff(
-      task.instruction,
-      CleanText(dataText),
-      "destinationdeal" + pick.id,
-      task.task,
-      "", //task.task //use to delete first //task.task == 'bodyText' ? task.task : ''
-      false
-    );
-    //console.log("response = ", response);
-    result[task.task] = response;
-  }
-
-  return result;
-}
 async function getData(id: string) {
-  let data: any = {};
-  //const data1 = await cbPicks();
-  const res = await createPageOBJ(id);
-
+  const res = await generateDealContent(id);
   console.log("res = ", res);
-  //return { props: { data:'data' }}
   return res;
 }
-export default async function DestinationDealPage({ params: { id } }: any) {
-  console.log(id);
-  const data = await getData(id);
+export default async function DestinationDealPage({
+  params,
+}: {
+  params: Promise<{ id?: string | string[] }>;
+}) {
+  const resolvedParams = await params;
+  const id = resolvedParams?.id as string | string[] | undefined;
+
+  if (!id) {
+    return notFound();
+  }
+
+  const idValue = Array.isArray(id) ? id.join("/") : id;
+  console.log(idValue);
+  const result = await getData(idValue);
+
+  if (!result || !result.data) {
+    return notFound();
+  }
+
+  const { data, pick } = result;
 
   const allPicks = await cbPicks();
   console.log("allPicks = ", allPicks);
 
-  // console.log(CleanText(thisData))
-  // console.log("Pick = ", thisPick)
-  //await cbPick()
-  // console.log('image query = ', data.mainImage)
-  // const images = await getGoogleImage(data.mainImage, 2);
-  // console.log("images = ", images);
-  //  return <></>
-  if (thisPick.img !== "") {
-    data.featuredImage = thisPick.img;
+  if (pick.img !== "") {
+    data.featuredImage = pick.img;
   } else {
     try {
       const images = await getGoogleImage(data.mainImage, 2);
@@ -172,24 +90,28 @@ export default async function DestinationDealPage({ params: { id } }: any) {
     <>
       <div className="flex flex-col my-6 space-y-8 text-left border-b-2 border-gray-400 md:mx-6">
         <div className="fixed right-0 w-16 h-16 bg-blue-400 top-16 rounded-s-xl">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="w-full h-full font-bold opacity-70 ">
+          <details className="w-full h-full">
+            <summary className="flex items-center justify-center w-full h-full font-bold cursor-pointer opacity-70">
               More...
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Other Deals</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {allPicks.map((pick: CBPickData) => {
-                return (
-                  <DropdownMenuItem key={pick.id}>
-                    <Link href={`/destinationdeal/${pick.id}`}>
-                      {pick.destination.replaceAll("Destination:", "")}
-                    </Link>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </summary>
+            <div className="absolute right-16 top-0 z-50 min-w-[12rem] rounded-md border bg-white p-2 shadow-md">
+              <div className="px-2 py-1 text-xs font-semibold text-gray-600">
+                Other Deals
+              </div>
+              <div className="my-1 border-t" />
+              <div className="flex flex-col gap-1">
+                {allPicks.map((pick: CBPickData) => (
+                  <Link
+                    key={pick.id}
+                    href={`/destinationdeal/${pick.id}`}
+                    className="px-2 py-1 text-sm rounded hover:bg-gray-100"
+                  >
+                    {pick.destination.replaceAll("Destination:", "")}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </details>
         </div>
 
         <div className="flex flex-col items-center justify-center md:grid md:grid-flow-col md:-mt-10">
@@ -216,17 +138,21 @@ export default async function DestinationDealPage({ params: { id } }: any) {
           <div className="p-4 text-lg ">
             <h3>DEAL INCENTIVES</h3>
             {data.featuresText !== "-" &&
-              data.featuresText.split("- ").map((feature: string) => {
-                return (
-                  feature !== "" && (
-                    <div className="flex gap-3 text-sm font-extralight">
+              data.featuresText
+                .split("- ")
+                .map((feature: string, idx: number) => {
+                  if (!feature) return null;
+                  return (
+                    <div
+                      key={`${feature.trim()}-${idx}`}
+                      className="flex gap-3 text-sm font-extralight"
+                    >
                       {/* <InfoIcon size={20} /> */}
                       <p>*</p>
                       {feature.trim()}
                     </div>
-                  )
-                );
-              })}
+                  );
+                })}
           </div>
           <br />
         </div>
@@ -250,8 +176,13 @@ export default async function DestinationDealPage({ params: { id } }: any) {
           {String(data.itinerary)
             .replaceAll("- ", ", ")
             .split(`, `)
-            .map((line: string) => {
-              return line !== "" && <div className="p-3">* {line.trim()}</div>;
+            .map((line: string, index: number) => {
+              if (!line) return null;
+              return (
+                <div key={`itinerary-${index}-${line.trim()}`} className="p-3">
+                  * {line.trim()}
+                </div>
+              );
             })}
         </div>
         <br />
@@ -259,8 +190,13 @@ export default async function DestinationDealPage({ params: { id } }: any) {
         <div className="bg-slate-100">
           {String(data.bodyText)
             .split(`\n`)
-            .map((line: string) => {
-              return line !== "" && <div className="p-3">{line.trim()}</div>;
+            .map((line: string, index: number) => {
+              if (!line) return null;
+              return (
+                <div key={`bodyline-${index}-${line.trim()}`} className="p-3">
+                  {line.trim()}
+                </div>
+              );
             })}
         </div>
         <br />

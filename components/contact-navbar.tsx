@@ -3,7 +3,8 @@ import { User, getAuth } from "@clerk/nextjs/server";
 import { Montserrat } from "next/font/google";
 import MobileSidebar from "./mobile-sidebar";
 
-import { UserButton, clerkClient, currentUser, auth } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs"; 
+import { clerkClient, currentUser, auth } from "@clerk/nextjs/server";
 import { Button } from "./ui/button";
 import logo from '@/public/llv logo_color_sept23-3.png'
 

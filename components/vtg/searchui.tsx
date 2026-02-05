@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useRef } from "react";
+import React, { useContext, useRef } from "react";
 import searchParams from "@/components/vtg/searchParams.json"
 import { BookingContext } from "@/app/contexts/BookingContext";
 import { Search } from "lucide-react";
@@ -151,9 +151,9 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
     //console.log(arr);
     // setLineIDs(arr);
     return (
-      <>
+      <React.Fragment key={key}>
         {visible && (
-          <div className={formstyle1} key={key}>
+          <div className={formstyle1}>
             <FormField
               //className="m-2 "
 
@@ -197,10 +197,10 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
             />
           </div>
         )}
-      </>
+      </React.Fragment>
     );
   };
-  const renderShips = () => {
+  const renderShips = (key: string) => {
     let label = "Ship";
     let finalValName = "s";
     let visible = true; //search.allVals.r !== "0";
@@ -208,7 +208,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
     let shipLineArr = [allShipsOBJ, ...sParams["sortedShips"]];
 
     return (
-      <>
+      <React.Fragment key={key}>
         <div className={formstyle1}>
           <FormField
             //className="m-2 "
@@ -250,7 +250,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
             )}
           />
         </div>
-      </>
+      </React.Fragment>
     );
   };
   return (
@@ -280,7 +280,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
               if (key === "sortedShips") {
               } else if (key === "ShipID") {
                 {
-                  return renderShips();
+                  return renderShips(key);
                 }
               } else if (key == "LineID") {
                 {
@@ -343,9 +343,9 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
                 }
 
                 return (
-                  <>
+                  <React.Fragment key={key}>
                     {visible && (
-                      <div className={formstyle1} key={key}>
+                      <div className={formstyle1}>
                         <FormField
                           //className="m-2 "
 
@@ -420,7 +420,7 @@ function SearchUI({setLoading, setShowResults,setSearchResults}:
                         />
                       </div>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               }
             })}

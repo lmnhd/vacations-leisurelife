@@ -6,7 +6,14 @@ import Configuration, { ClientOptions, OpenAI } from "openai";
 const configuration: ClientOptions = {
   apiKey: process.env.OPENAI_API_KEY,
 };
-const openai = new OpenAI(configuration);
+
+const getOpenAIClient = () => {
+  if (!configuration.apiKey) {
+    return null;
+  }
+
+  return new OpenAI(configuration);
+};
 async function storeAIResponse(
   prompt: string,
   response: string,
@@ -123,14 +130,25 @@ async function aiAssist(
     console.log("no stored response found");
     //return "no response found";
   }
-  if (process.env.NODE_ENV == "development") {
+
+  const isDev = process.env.NODE_ENV === "development";
+  const allowAiInProd = process.env.ALLOW_AI_IN_PRODUCTION === "true";
+
+  if (isDev || allowAiInProd) {
     console.log("no stored response found, querying openai...");
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const userMessage: any = {
       role: "user",
       content: message,
     };
-    const response = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+
+    if (!client) {
+      console.warn("OPENAI_API_KEY is missing; skipping OpenAI request.");
+      return "no response found";
+    }
+
+    const response = await client.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [userMessage],
       max_tokens: 1000,
