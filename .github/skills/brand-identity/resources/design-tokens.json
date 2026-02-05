@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "brand_name": "TradingView (Imported)",
+    "description": "Core design tokens for UI implementation. Imported from user specifications.",
+    "color_scheme": "light"
+  },
+  "colors": {
+    "primary": {
+      "DEFAULT": "#2962FF",
+      "hover": "#0000EE",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "DEFAULT": "#F4F4F5",
+      "foreground": "#18181B"
+    },
+    "background": "#FFFFFF",
+    "foreground": "#000000",
+    "muted": "#F4F4F5",
+    "accent": "#0000EE",
+    "destructive": "#EF4444",
+    "success": "#10B981",
+    "link": "#0000EE",
+    "raw_imported": {
+      "background": "#000000",
+      "textPrimary": "#000000"
+    }
+  },
+  "typography": {
+    "font_family_headings": [
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "Trebuchet MS",
+      "Roboto",
+      "Ubuntu",
+      "sans-serif"
+    ],
+    "font_family_body": [
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "Trebuchet MS",
+      "Roboto",
+      "Ubuntu",
+      "sans-serif"
+    ],
+    "font_weight_bold": "700",
+    "font_weight_normal": "400",
+    "sizes": {
+      "h1": "28px",
+      "h2": "100px",
+      "body": "28px"
+    }
+  },
+  "ui": {
+    "border_radius_default": "6px",
+    "border_radius_small": "4px",
+    "spacing_base_unit": "4px"
+  },
+  "images": {
+    "favicon": "https://static.tradingview.com/static/images/favicon.ico",
+    "ogImage": "https://s.tradingview.com/static/images/illustrations/main-page.jpg"
+  }
+}
