@@ -6,6 +6,7 @@
 ✅ **React Updated**: 18.x (maintained for Clerk compatibility)
 ✅ **Clerk Updated**: 4.27.2 → 6.37.2 (latest)
 ✅ **ESLint Config Updated**: Latest version
+✅ **Middleware Updated**: Converted from deprecated `authMiddleware` to `clerkMiddleware` (v6 pattern)
 ✅ **Created**: `.env.local.example` template
 
 ## The Error You Were Experiencing
@@ -120,7 +121,66 @@ export async function GET(req: Request) {
 }
 ```
 
-## Troubleshooting
+## Breaking Changes in Clerk v6
+
+### Middleware Update (CRITICAL)
+
+The old `authMiddleware` is deprecated. Your middleware has been updated to use `clerkMiddleware`:
+
+**Before (v4):**
+```typescript
+import { authMiddleware } from "@clerk/nextjs";
+
+export default authMiddleware({
+  publicRoutes: ["/", "/api/contact"],
+});
+```
+
+**After (v6):**
+```typescript
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isProtectedRoute(req)) auth().protect();
+});
+```
+
+### API Routes
+
+For protected API routes, use the updated `auth()` function:
+
+```typescript
+import { auth } from "@clerk/nextjs/server";
+
+export async function POST(req: Request) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
+  // Protected route logic
+}
+```
+
+### Components
+
+Client-side components remain mostly the same:
+
+```typescript
+import { useAuth, UserButton } from "@clerk/nextjs";
+
+export function MyComponent() {
+  const { userId, isLoaded } = useAuth();
+  
+  if (!isLoaded) return <div>Loading...</div>;
+  if (!userId) return <div>Not authenticated</div>;
+  
+  return <div>Welcome!</div>;
+}
+```
 
 | Error | Solution |
 |-------|----------|
