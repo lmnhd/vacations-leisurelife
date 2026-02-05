@@ -1,10 +1,10 @@
+"use client";
 
 import "./globals.css";
 
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import Loading from "./(dashboard)/loading";
 
 import { ModalProvider } from "@/components/modal-provider";
@@ -16,7 +16,8 @@ import { Dimmer, Loader } from "semantic-ui-react";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
+// Note: Metadata is exported from this client component, which is allowed in Next.js for root layout
+export const metadata = {
   title: "Leisure Life Vacations",
   description: "Your first stop on a fantastic voyage",
 };
