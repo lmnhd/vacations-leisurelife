@@ -6,7 +6,16 @@ const apiKey = process.env.GOOGLE_SEARCH_API_KEY || "";
 
 const id = process.env.GOOGLE_SEARCH_ENGINE_ID || "";
 
-const client = new GoogleImages(id, apiKey);
+// Initialize client only if both API key and search engine ID are available
+let client: GoogleImages | null = null;
+if (id && apiKey) {
+  try {
+    client = new GoogleImages(id, apiKey);
+  } catch (error) {
+    console.error("Failed to initialize GoogleImages client:", error);
+    client = null;
+  }
+}
 
  async function checkForStoredImage(
   searchQuery: string,
@@ -59,29 +68,40 @@ const client = new GoogleImages(id, apiKey);
   
 }
 export async function getGoogleImage(query: string, numResults: number) {
+  // Return empty array if Google Images client is not available
+  if (!client) {
+    console.warn("Google Images client not initialized - using Pexels fallback");
+    return [];
+  }
+  
   //check if image is stored in db
   const storedImages = (await checkForStoredImage(query, numResults)) || [];
   if (storedImages.length >= numResults) {
     console.log("found google images in db for query: ", query);
     return storedImages;
   } else {
-    const result: any[] = [];
-    const images: any[] = await client.search(query);
-    //store images in db
-    for (let i = 0; i < numResults; i++) {
-      await storeImageData(images[i], query);
-      result.push({
-        searchQuery: query,
-        type: images[i].type,
-        width: images[i].width,
-        height: images[i].height,
-        thumbnail: images[i].thumbnail.url,
-        description: images[i].description,
+    try {
+      const result: any[] = [];
+      const images: any[] = await client.search(query);
+      //store images in db
+      for (let i = 0; i < numResults; i++) {
+        await storeImageData(images[i], query);
+        result.push({
+          searchQuery: query,
+          type: images[i].type,
+          width: images[i].width,
+          height: images[i].height,
+          thumbnail: images[i].thumbnail.url,
+          description: images[i].description,
         parentPage: images[i].parentPage,
         url: images[i].url,
       });
     }
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error("Error fetching Google images:", error);
+      return [];
+    }
   }
 }
