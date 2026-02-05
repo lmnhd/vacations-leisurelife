@@ -1,6 +1,7 @@
-import { User, getAuth } from "@clerk/nextjs/server";
+"use client";
+
 import MobileSidebar from "./mobile-sidebar";
-import { UserButton, clerkClient, currentUser } from "@clerk/nextjs";
+import { UserButton, clerkClient, useUser } from "@clerk/nextjs";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -14,8 +15,8 @@ import ManualBooking from '@/app/Booking/ManualBooking'
 import { Quicksand } from "next/font/google";
 import Quicksignup from "./contactforms/quicksignup";
 
-const Navbar = async () => {
-  const user: User | null = await currentUser();
+const Navbar = () => {
+  const { user } = useUser();
   return (
     <div className="flex items-center p-4 bg-primary">
       <MobileSidebar />

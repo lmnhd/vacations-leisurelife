@@ -1,3 +1,4 @@
+"use client";
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
@@ -6,7 +7,7 @@ import { getApiLimitCount } from "@/lib/api-limit";
 import { useState } from "react";
 import RSSParser from "rss-parser";
 
-const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
  // const apiLImitCount = await getApiLimitCount()
 
   return (
