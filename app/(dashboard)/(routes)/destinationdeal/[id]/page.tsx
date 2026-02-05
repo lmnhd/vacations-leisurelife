@@ -1,3 +1,5 @@
+"use client";
+
 import { useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 import { cbPicks, cbPick } from "./index.js";
