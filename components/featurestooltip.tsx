@@ -54,7 +54,7 @@ export default function FeaturesToolTip({options}:{options:any}) {
             return val && (
                  <TooltipProvider key={index}>
                     <Tooltip>
-                    <TooltipTrigger>
+                    <TooltipTrigger asChild>
                         <div className='flex items-center justify-center'>
                            <tip.icon className='text-gray-500 border-2 h-6 mx-2'/>
                         </div>
