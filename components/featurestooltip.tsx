@@ -55,9 +55,9 @@ export default function FeaturesToolTip({options}:{options:any}) {
                  <TooltipProvider key={index}>
                     <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className='flex items-center justify-center'>
+                        <button className='flex items-center justify-center bg-transparent border-none cursor-pointer'>
                            <tip.icon className='text-gray-500 border-2 h-6 mx-2'/>
-                        </div>
+                        </button>
                     </TooltipTrigger>
                     <TooltipContent className='bg-gray-700  text-white text-center'>
                         {tip.tip}
