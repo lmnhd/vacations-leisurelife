@@ -1,20 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      "*",
-      "oaidalleapiprodscus.blob.core.windows.net",
-      "www.vacationstogo.com",
-      "assets.vacationstogo.com",
-      "www.cruisebrothers.com",
-      "images.pexels.com",
-      "https://www.pexels.com",
-      "www.pexels.com"
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "oaidalleapiprodscus.blob.core.windows.net",
+      },
+      {
+        protocol: "https",
+        hostname: "www.vacationstogo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.vacationstogo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.cruisebrothers.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.pexels.com",
+      },
     ],
   },
-  experimental: {
-   
-  }
 };
 
 module.exports = nextConfig;
