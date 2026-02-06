@@ -14,7 +14,7 @@
     "@clerk/nextjs": "^6.37.2",
     "@hookform/resolvers": "^3.2.0",
     "@material-tailwind/react": "^2.1.1",
-    "@prisma/client": "^5.3.1",
+    "@prisma/client": "5.6.0",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -39,7 +39,7 @@
     "clerk": "^0.8.3",
     "clsx": "^2.0.0",
     "crisp-sdk-web": "^1.0.21",
-    "eslint": "8.47.0",
+    "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
     "exponential-backoff": "^3.1.1",
     "google-images": "^2.1.0",
@@ -79,6 +79,6 @@
     "@gradio/client": "^0.3.1",
     "@hookform/devtools": "^4.3.1",
     "@types/google-images": "^2.1.1",
-    "prisma": "^5.6.0"
+    "prisma": "5.6.0"
   }
 }
