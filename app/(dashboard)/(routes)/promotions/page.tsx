@@ -54,7 +54,7 @@ export default async function Promotions() {
   return (
     <div className="mt-0">
       <Tabs defaultValue="promotions" className="w-full bg-gray-100 ">
-        <TabsList className="w-full bg-primary font-light text-primary-foreground rounded-none">
+        <TabsList className="w-full font-light rounded-none bg-primary text-primary-foreground">
           <TabsTrigger value="promotions">Top Promotions</TabsTrigger>
           <TabsTrigger value="picks">Top Destination Picks</TabsTrigger>
         </TabsList>
@@ -63,7 +63,7 @@ export default async function Promotions() {
             <div className="shadow-sm ">
               <Container1Header headerText={CleanText("TAKE ADVANTAGE OF THESE SPECIAL OFFERS FROM TOP CRUISE LINES!")}/>
             </div>
-            <div className="flex  flex-wrap gap-2 items-start justify-evenly">
+            <div className="flex flex-wrap items-start gap-2 justify-evenly">
               {promos.map((item: any, index: number) => {
                 const logo = shipLogos(item.header);
                 const cleanedHeader = CleanText(item.header ?? "");
@@ -88,13 +88,13 @@ export default async function Promotions() {
         </TabsContent>
         <TabsContent value="picks">
           <div>
-            {/* <h2 className="text-2xl text-center text-primary my-4 font-bold">
+            {/* <h2 className="my-4 text-2xl font-bold text-center text-primary">
               Top Destination Picks
             </h2> */}
-            <Tabs defaultValue="0" className="w-full bg-gray-100 -mt-2">
+            <Tabs defaultValue="0" className="w-full -mt-2 bg-gray-100">
               <div className="grid grid-cols-2">
                 <Container1Header headerText="OUR SPECIAL CHOICE DESTINATION PACKAGES!"/>
-                <TabsList className="bg-primary text-primary-foreground rounded-none flex flex-wrap h-auto ">
+                <TabsList className="flex flex-wrap h-auto rounded-none bg-primary text-primary-foreground ">
                   {sortedPicks.map((item: any, index: number) => {
                     const cleanedDestination = CleanText(
                       String(item.destination ?? "").replace("Destination:", "")
@@ -146,7 +146,7 @@ export default async function Promotions() {
                 );
               })}
             </Tabs>
-            {/* <div className="flex flex-wrap items-center justify-center xl:grid xl:grid-cols-2 xl:items-start my-0">
+            {/* <div className="flex flex-wrap items-center justify-center my-0 xl:grid xl:grid-cols-2 xl:items-start">
               {picks
                 .sort((a: any, b: any) => {
                   if (a.img !== "") {
