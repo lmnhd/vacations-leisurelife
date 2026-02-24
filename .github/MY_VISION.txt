@@ -1,0 +1,217 @@
+ 
+ [TODO in this context means 'we need to figure out how to do this']
+
+
+ ## The Pitch
+ - Easiest way to book a cruise! 
+ - Most exhaustive cruise line scope (Benifits of using a 3rd party travel agency) (It's not just Carnival, Royal Caribbean, and Norwegian!, it's all of them!)
+ - Best way to maximize your potential for an A+ Vacation!
+ 
+ * A themed chat experience.
+
+
+
+## The Product
+
+A completely interactive chat agent that learns about the user's preferences and behavior to build personalize cruise packages using an extensive network of cruise lines and suppliers.
+
+It does not feel like a chatbot, it feels like an interactive presentation with a little light trivia and mood lighting, and results in a first class ticket to paradise!
+
+This will be powered by Cruise Brothers Travel Agency, from which we are agents.
+
+
+
+### Interface
+
+The interface will be an optimized version of our new Proprietary component called 'Hero Chat' (.github\skills\hero-chat\SKILL.md) - A unique merger of a beautiful Hero page and a powerful multi-modal chat interface. One advancement to this system will be a division in the presentation window that will strategically display forms, multiple images, and other media, while displaying rich 'Hero' style chat messages - even in voice mode.
+ - Hero container displays large 'Hero' style text using Typewriter scroll effect for shorter text and a smooth fade in effect for longer text.
+ - Text Size shrinks as messages become longer. Text always fill it's container with the last agent message.
+ - Text 'invisible sub-container' dynamically moves to the side (or bottom on mobile) when the agent displays media or forms in the (split) main container to gracefully make room for both text and media. In Voice, the media can replace the text entirely when appropriate.
+ - Chat history is strategically collpsed to the side of the screen and can be expanded to view previous messages and manually 'revert' back to a previous point in the conversation.
+ - Text and Voice modes should be seamless and allow the user to switch between the two at any time without losing context or chat history. No visible transition between modes. same view and behavior in either mode.
+
+
+
+ ### usage
+
+ **First Time Intro**
+Very first use we make known:
+ - I learn and remember everything about what makes the perfect vacation for you and your family. The more we talk, the more effective I become at removing the hassles and maximizing the fun of your future vacations!
+ - Talk to me whenerver you have thoughts, questions, or complaints about your cruise experiences and they will server you well over time!
+ - We encourge you to use voice mode and speak freely as if you are talking to a friend. 
+
+ **Subsequent Use**
+Every use beyond will be a continuation of where the user left off, with recaps and goal reminders for the agent to ensure aggressive progression toward complete understanding of the user and their needs.
+
+At any point, a user can request to see some packages for a specific date, cruise line, destination, and the agent will do an intelligent investative search (based around all of the infromation it has learned about the user) for the best possible packages, and offer to handle the entire booking!
+
+Pacages will be presented in brief during the chat session while delivering comprehensive package details to the user email, with clickable links to accept and pay for the package.
+
+Automated system will process booking and manage our travel agent backend processing.
+
+
+
+### The Experience
+
+ It should feel like a well organized Powerpoint presentation with a friendly and engaging host with the power to whip up the most amazing cruise packages, and handle all of the hassling logistics of booking a cruise for the entire family. Over time and usage, the user will build the perfect personal travel agent and a single-click connection to the perfect vacation on a whim! 
+Beautiful travel imagery/slideshows as background to the chat interface. (Beaches, Waves, Swimming, etc.) transitioning from very light sunny vibes to dark atmospheric nightlife vibes - based on the context of the conversation. 
+HERO_DISPLAY:Displays animated slide shows of ships and destinations while conversing with the user. (Using dynamic Chat display)
+BACKGROUND SCENE TYPES (conversation mood matching options chosen by the agent - combines 3 options):
+Night/day 
+Indoor/Outdoor
+Tropical, Caribbean, Mediterranean, Arctic, Antarctic, Asia, Australia, Africa, Middle East, Europe, etc.
+Will need to generate a background scene for each mood matching option. Perfect for typing overlay and component display.
+
+
+
+### Data Collection
+
+Special inputs for collection information that should be encrypted and stored in a secure manner. (i.e. credit card information, social security number, etc.) - Agent should direct the user to enter this information gradually through conversation.
+
+The experience will start from the very first conversation, as we will begin a new user table in our database even without intial user authentication. At some point down the road, as we begin to collect the infromation we will ultimately need to book cruises and collect payments, we will 'connect' the data we have collected to a standard user table in our database. We never forget a thing!
+
+Our agent will accompany them through their entire journey, from the first conversation to the final booking, while on the vacation (helping with excursions, amenities, activities, etc.), and even after the vacation helping with any claims, issues, or concerns - while remembering every detail of their experience. Even tracking their itinerary, expenses, and helping explore unfamiliar grounds, on and off the ship, like a well traveled friend with a degree in lifestyle management!
+
+We should ultimately collect all types of information ranging from entertainment preferences to food allergies, and everything in between. The more informatijon we collect, the more scientific our approach to finding the best elements to combine into a package that is perfect for the user.
+
+
+
+### Data & Memory
+
+We will most likely need to implement some sort of Vector Database to store and retrieve contextual information about the user's preferences and behavior for easy access and retrieval during package creation. Maybe even vectorizing the entire conversations, or summaries of the conversations, for deep insights into the user's preferences and behavior. Performing data and memory processing at multiple layers in the chat flow.
+Look into 'in-memory' embedding and querying during runtime, pulling from stored text conversations of a given user. (a possible solution for eliminating the need for a vector database) **JSON based embedding and querying**?? - Semantic search will only be needed for certain processes and when user information reaches a certain level of complexity. Standard database queries will work for the initial stages of the user experience.
+
+We need to build a comprehensive automated process of gathering key information from Cruise Brother specials, packages, and perks, along with deep research into what cruises are popular and highly rated, and pricing advantages that are undiscovered by the general public.
+
+
+
+### Payment System
+
+See Odysseus for reference.
+
+
+
+### Chat System
+
+For the chat system, I want to find or build from scratch a very organized, tree-like structured prompting system (JSON Based) that can be easily read and edited by the developer in realtime, and giving the agent a logical structure to sort through possibly hundreds of layers and branching possiblities when making decisions and guiding the conversation to a productive and enlightneing result. It should be easy and painless to add and remove 'logic' branches and sub-contexts for the agent to stay focused while having ample flexibility to handle unexpected user inputs and requests. It should also be easy to add and remove 'tools' for the agent to use. I am considering implementing a 'Agent Skills' type architecture, where the agent can dynamically load and unload skills based on the user's needs. This structured JSON based approach should allow us to easily implement a user interface in needed later.
+Every 'context' of the agents ability should be sectioned off in a way that it can be easily modified without breaking or contradicting other 'contexts' in the 'prompt schema'. For example, all of the 'Rules for booking clients in wheelchair' should be an independent section that can be easily ammended or updated without affecting any other 'contexts' in the 'prompt schema'.
+A minimal version of a structure prompt system is described in the 'CHANNEL_UNIFIED_AGENT_RUNBOOK.md' file. This is very primitive, but tries to address the same problem we will finally solve.
+Complex sub-contexts will be separated into resources/files and referenced in the main prompt -> JSON -> resources/files, similair to the '.Agent Skills' concept.
+JSON Hierarchicy: Most important rules/instructions at the top, flowing down to the least important rules/instructions. All 'bulletpoint' style instructions for JSON, more complex instructions will be in the resources/files with pointers in the JSON.
+>>Can we use instruction files in a production environment?
+NO PROMPT INSTRUCTIONS WILL EVERY APPEAR IN THE CODE! - ONLY TEMPLATES CONNECTING TO THE JSON STRUCTURE!
+
+
+
+### Data & Memory
+
+We should have a comprehesive list of 'MANDATORY' questions that will need to be answered over time. The agent will constantly update these values as it learns more about the user.
+ - .github\DOCS\Implementation\GUEST_INFO.json
+
+IT IS MANDATORY THAT WE BUILD TRUST WITH THE USER FROM THE BEGINNING!
+
+
+### The Questions:
+- booking questions (pre-travel, special needs, preferred ports,)
+- 
+
+
+### CHAT FLOWS
+
+For starters, we will need 2 primary agent flows.
+ - A flow where the agent immediately begins a conversation that ends with presenting the user with a small list of customized cruise packages ready for booking with a single click.
+  -  the second will be an onboarding process that gets to know the user and builds a profile for them, collecting the most pertinent information first, then gradually more and more preferential type information. We will ask questions like:
+  
+   **If they have been on a cruise before**
+   'Tell me about your last cruise'
+   'What was the most fun about the cruise?'
+   'What was the least fun about the cruise?'
+   'What were the meals you most enjoyed?'
+   'How did your family enjoy the cruise?'
+   'What was their biggest complaint?'
+   'Was the cruise worth the money?'
+   'what are some of thplaces you have already vistite'
+
+   **If they have never been on a cruise before**
+   'What are some of the places you have already visited?'
+   'What was the most fun about your trip?'
+   'What was the least fun about your trip?'
+   'What were the meals you most enjoyed?'
+   'How did your family enjoy the trip?'
+   'What was their biggest complaint?'
+   'Was the trip worth the money?'
+
+   etc. Questions that can be used to gather and acertain the more mundane questions that Users normally find boring and tedious.
+
+
+
+**Conversation Flow Examples**
+--1.
+User: "I was on a Carnival Cruise last month"
+Agent: [Shifts to 'Cruise Ship Review' context] -> [Asks questions about the cruise] -> [Updates user profile] : "How many nights was the cruise, and which one was the most memorable?"
+User: "It was a 7 night cruise to the Bahamas, and the best night was the last night!"
+Agent: [Shifts to 'User Positive Experience' context] -> [Asks questions about the user's positive experience] -> [Updates user profile] : "What happened on the last night that made it so special?"
+User: "They finally served a lobster dinner! And the techno show was amazing!"
+Agent: [Delve in deeper into the user's food preferences and dislikes, as well as their entertainment preferences]
+Agent: [Shifts back to 'Cruise Ship Review' context] -> [Explores negative aspects of the cruise] -> [Updates user profile] : "What was the most inconvenient or disappointing part of the cruise?"
+User: "Well, they charge me for every bottled water, and it was hard to get a drink at the bar most of the time!"
+Agent: [Confirms it now has enough preferential information and shifts to 'Future expectations' context]
+
+--2.
+
+
+##END
+
+
+
+**Fast Cruise Booking Flow (Research common popular cruises to create new packages)**
+
+"I want a Carnival Cruise for Mardi Gras!"
+
+"Agent: I will only need to get your information one time, then all future bookings will be a breeze! 
+[|Agent/subagents research popular packages for Mardi Gras on Carnival]
+
+** if they don't know what cruise they want:
+- first filter down to most plausible options - nearest port, general preference, budget, favorite cruise line, hobbies, group size, preferred cruise length, special event?, etc.
+- then perform a quick refinement, perplexity research, and return a small list of customized cruise packages ready for booking with a single click.
+- if new user, begin a rapid but painless onboarding process to gather the most pertinent information using dynamic forms and conversational questions. the user will have controll of how much information the provide at once. Can stop and continue at any time without losing progress. Scanning of ID's and documents can be used to speed up the process. And we need to inform and educate the user about flexpay and other payment options. Complete forefront transparency!
+
+Our stack will focus on the 'Browser WebRTC' channel - phone system is of secondary importance.
+
+Implementation guides for each technology used:
+'.github\DOCS\Implementation\Voice_SMS_CHAT.md'
+'.github\DOCS\Implementation\CHANNEL_UNIFIED_AGENT_RUNBOOK.md'
+'.github\DOCS\Implementation\PAYMENT_FLOW.md'
+'.github\DOCS\Implementation\GUEST_INFO.json'
+'.github\skills\hero-chat'
+'.github\DOCS\Implementation\AUTH.md'
+'.github\DOCS\Implementation\OPINIONATED_STYLE_GUIDE.md'
+'.github\DOCS\Implementation\TESTING_PAYMENT_SYS.md'
+
+
+
+
+## MUST HAVES
+- ID Scanning/digital information ingestion
+- Comprehensive log and AI thought and tool-call process streaming to the user (thoughts widget)
+- Developer 'Full Prompt Preview' that displays the assembled final prompt for transparency and debugging
+
+
+
+
+
+##
+Exploratory Idea: Guests that don't have internet on the ship can use our app to pre-pull the ship information, itinerary, important cruise and vacation related information, for offline access (into indexedDB) before they leave home, while in port, or on excursion to public wifi hotspots. 
+
+
+## TECH stack
+- ShadCN
+- Tailwind css 
+- Aceternity UI
+- AWS Dynamo DB (using CLI)
+- Next.js 16
+
+2/22 Update:
+
+ -  The agent should have the discretion to use our Cruise Brothers 'Agent Perks' program to add value and cost savings to the user's experience. (if applicable and will help close the sale.)
+ - Expected cost and usage?? (OpenAI RTAPI, AWS, Embeddings etc.) 

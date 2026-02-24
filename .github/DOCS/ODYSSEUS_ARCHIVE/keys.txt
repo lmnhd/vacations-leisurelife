@@ -1,0 +1,50 @@
+
+--- Payload 0 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/facets
+Top keys: total, pageStart, pageSize, list, facets
+
+--- Payload 1 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/facets
+Top keys: total, pageStart, pageSize, list, facets
+
+--- Payload 2 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, facets, rules
+list[0] keys: code, name, itinerary, uniqueItineraryId, prices, contentInfo, status, isActive, destination, parentDestinationIds, ship, shipIds, packages, cruiseType, voyageId, categoryTypes, destinationImagePath, alternateItineraryInfo, destinationIds, cruiseTourName
+
+--- Payload 3 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, facets, rules
+list[0] keys: code, name, itinerary, uniqueItineraryId, prices, contentInfo, status, isActive, destination, parentDestinationIds, ship, shipIds, packages, cruiseType, voyageId, categoryTypes, destinationImagePath, alternateItineraryInfo, destinationIds, cruiseTourName
+
+--- Payload 4 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, facets, rules
+list[0] keys: code, name, itinerary, uniqueItineraryId, prices, contentInfo, status, isActive, destination, parentDestinationIds, ship, shipIds, packages, cruiseType, voyageId, categoryTypes, destinationImagePath, alternateItineraryInfo, destinationIds, cruiseTourName
+
+--- Payload 5 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, facets, rules
+list[0] keys: code, name, itinerary, uniqueItineraryId, prices, contentInfo, status, isActive, destination, parentDestinationIds, ship, shipIds, packages, cruiseType, voyageId, categoryTypes, destinationImagePath, alternateItineraryInfo, destinationIds, cruiseTourName
+
+--- Payload 6 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/listsimiliar
+Top keys: total, pageStart, pageSize, list, rules
+list[0] keys: id, code, name, startDateTime, endDateTime, itinerary, uniqueItineraryId, prices, contentInfo, applicableRules, dynamicRule, status, isActive, destination, parentDestinationIds, ship, shipIds, cruiseType, departureDateTime, arrivalDateTime, cruisePackageDepartureDateTime, cruisePackageArrivalDateTime, voyageId, packageTourId, categoryTypes, bookingSettings, destinationImagePath, maxOccupancy, minOccupancy, cruiseDuration, minGuestAge, alternateItineraryInfo, destinationIds, gratuitiesInfo, cruiseTourName
+
+--- Payload 7 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/listsimiliar
+Top keys: total, pageStart, pageSize, list, rules
+list[0] keys: id, code, name, startDateTime, endDateTime, itinerary, uniqueItineraryId, prices, contentInfo, applicableRules, dynamicRule, status, isActive, destination, parentDestinationIds, ship, shipIds, cruiseType, departureDateTime, arrivalDateTime, cruisePackageDepartureDateTime, cruisePackageArrivalDateTime, voyageId, packageTourId, categoryTypes, bookingSettings, destinationImagePath, maxOccupancy, minOccupancy, cruiseDuration, minGuestAge, alternateItineraryInfo, destinationIds, gratuitiesInfo, cruiseTourName
+
+--- Payload 8 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, rules
+list[0] keys: id, code, name, startDateTime, endDateTime, itinerary, uniqueItineraryId, prices, contentInfo, applicableRules, dynamicRule, status, isActive, destination, parentDestinationIds, ship, shipIds, cruiseType, departureDateTime, arrivalDateTime, cruisePackageDepartureDateTime, cruisePackageArrivalDateTime, voyageId, packageTourId, categoryTypes, bookingSettings, destinationImagePath, maxOccupancy, minOccupancy, cruiseDuration, minGuestAge, alternateItineraryInfo, destinationIds, gratuitiesInfo, cruiseTourName
+
+--- Payload 9 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise
+Top keys: total, pageStart, pageSize, list, rules
+list[0] keys: id, code, name, startDateTime, endDateTime, itinerary, uniqueItineraryId, prices, contentInfo, applicableRules, dynamicRule, status, isActive, destination, parentDestinationIds, ship, shipIds, cruiseType, departureDateTime, arrivalDateTime, cruisePackageDepartureDateTime, cruisePackageArrivalDateTime, voyageId, packageTourId, categoryTypes, bookingSettings, destinationImagePath, maxOccupancy, minOccupancy, cruiseDuration, minGuestAge, alternateItineraryInfo, destinationIds, gratuitiesInfo, cruiseTourName
+
+--- Payload 10 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/itinerary/479966
+Top keys: id, nodes, portsOfCalls, normalizedPortsOfCall, mapPath
+
+--- Payload 11 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/cruise/itinerary/479966
+Top keys: id, nodes, portsOfCalls, normalizedPortsOfCall, mapPath
+
+--- Payload 12 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/reservation/cruise/ListPOS
+Top keys: trackingInfo, cruiseReservation
+
+--- Payload 13 --- URL: https://bookings.cbagenttools.com/nitroapi/v2/reservation/cruise/ListPOS
+Top keys: trackingInfo, cruiseReservation

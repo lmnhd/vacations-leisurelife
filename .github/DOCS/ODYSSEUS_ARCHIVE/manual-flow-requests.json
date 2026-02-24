@@ -1,0 +1,1034 @@
+[
+  {
+    "time": "2026-02-24T00:21:57.643Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:57.644Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.212Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/default.aspx?",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.212Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/default.aspx?",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.333Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/cruise/?siid=1049337&lang=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.333Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/cruise/?siid=1049337&lang=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.421Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:21:59.421Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:10.588Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/1049337?&fetchDefaultSitePreferences=true&fetchTrends=true&requestSource=1&domain=bookings.cbagenttools.com",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:10.589Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/1049337?&fetchDefaultSitePreferences=true&fetchTrends=true&requestSource=1&domain=bookings.cbagenttools.com",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.030Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/label/all/Common?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.030Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/label/all/Common?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.031Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftFooter&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.031Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftFooter&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.032Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftHeader&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.032Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftHeader&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.032Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/allswift?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:15.032Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/allswift?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:17.780Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/logo.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:17.780Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/logo.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:17.868Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise?&sortColumn=cruiselinePriority&sortOrder=asc&includeFacets=hasHqGroupRate,hasAgGroupRate&includeFacets=uniqueId&pageSize=8&fetchFacets=true&groupByItineraryId=true&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&includeFacets=availableCategory,includeShipFlagFacets&requestSource=1",
+    "postData": "{\"filters\":[{\"key\":\"departureDateTime\",\"ranges\":[{\"from\":\"25-Mar-2026\"}]},{}]}"
+  },
+  {
+    "time": "2026-02-24T00:22:17.868Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise?&sortColumn=cruiselinePriority&sortOrder=asc&includeFacets=hasHqGroupRate,hasAgGroupRate&includeFacets=uniqueId&pageSize=8&fetchFacets=true&groupByItineraryId=true&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&includeFacets=availableCategory,includeShipFlagFacets&requestSource=1",
+    "postData": "{\"filters\":[{\"key\":\"departureDateTime\",\"ranges\":[{\"from\":\"25-Mar-2026\"}]},{}]}"
+  },
+  {
+    "time": "2026-02-24T00:22:17.870Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/facets?&sortColumn=cruiselinePriority&sortOrder=asc&includeFacets=hasHqGroupRate,hasAgGroupRate&includeFacets=uniqueItineraryId&requestSource=1",
+    "postData": "{\"filters\":[]}"
+  },
+  {
+    "time": "2026-02-24T00:22:17.870Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/facets?&sortColumn=cruiselinePriority&sortOrder=asc&includeFacets=hasHqGroupRate,hasAgGroupRate&includeFacets=uniqueItineraryId&requestSource=1",
+    "postData": "{\"filters\":[]}"
+  },
+  {
+    "time": "2026-02-24T00:22:19.594Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftTransition&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:19.594Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/client/getStringContentForType/1049337?contentType=SwiftTransition&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:27.628Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/admin/ExtendSession.ashx",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:27.629Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/admin/ExtendSession.ashx",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:37.931Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise?landingpagesrc=swiftResult&pageSize=8&fetchFacets=false&groupByItineraryId=false&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&includeFacets=availableCategory,includeShipFlagFacets&requestSource=1",
+    "postData": "{\"filters\":[{\"key\":\"id\",\"values\":[1542990]},{\"key\":\"includeAllPackages\",\"value\":true},{\"key\":\"includeInternalCruiselines\",\"value\":true},{}]}"
+  },
+  {
+    "time": "2026-02-24T00:22:37.931Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise?landingpagesrc=swiftResult&pageSize=8&fetchFacets=false&groupByItineraryId=false&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&includeFacets=availableCategory,includeShipFlagFacets&requestSource=1",
+    "postData": "{\"filters\":[{\"key\":\"id\",\"values\":[1542990]},{\"key\":\"includeAllPackages\",\"value\":true},{\"key\":\"includeInternalCruiselines\",\"value\":true},{}]}"
+  },
+  {
+    "time": "2026-02-24T00:22:37.931Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/listsimiliar?packageId=1542990&packageTourId=-1&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:37.931Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/listsimiliar?packageId=1542990&packageTourId=-1&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.441Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/itinerary/527404?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.441Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruise/itinerary/527404?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.829Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/ship/GetDetails/14393?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.830Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/ship/GetDetails/14393?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.830Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruiseline/2?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:38.830Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/cruiseline/2?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.761Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/images/Cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.761Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/images/Cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.806Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/templates/default/assets/css/templates/default/itinerary.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.807Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/templates/default/assets/css/templates/default/itinerary.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.807Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/templates/default/assets/css/templates/default/itinerary.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.807Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/swift/templates/default/assets/css/templates/default/itinerary.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.848Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/all/Airport?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.849Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/all/Airport?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.851Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/all/Airport?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:39.851Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/master/all/Airport?requestSource=1",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:40.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&siid=1049337&lang=1&perfOnly=true&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:40.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&siid=1049337&lang=1&perfOnly=true&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:41.439Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&perfOnly=true&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:41.439Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&perfOnly=true&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.183Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&perfOnly=true&ContentOnly=true&brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.183Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&perfOnly=true&ContentOnly=true&brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.919Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.920Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.920Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.920Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.920Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.923Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:42.923Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.436Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style-vODY-638878402124884313.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.436Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style-vODY-638878402124884313.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.494Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/SearchForms/OFramework.min-vODY-638617869220000000.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.494Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/SearchForms/OFramework.min-vODY-638617869220000000.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.494Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/ScriptResource.axd?d=x6wALODbMJK5e0eRC_p1LV7zLctO8JW0MN-DctwtWvbHQzbyQSggULN-I9Fjj88VywuChHNnFiVJpeCd0nApwb6m7NBj0AIlZI1QziFF8NYHVoUO0&t=23c9c237",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:43.494Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/ScriptResource.axd?d=x6wALODbMJK5e0eRC_p1LV7zLctO8JW0MN-DctwtWvbHQzbyQSggULN-I9Fjj88VywuChHNnFiVJpeCd0nApwb6m7NBj0AIlZI1QziFF8NYHVoUO0&t=23c9c237",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:44.240Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/reservation/cruise/ListPOS?requestSource=1",
+    "postData": "{\"cruiseReservation\":{\"pos\":{\"type\":\"B2B\"},\"cruise\":{\"cruiseLine\":{\"id\":2}}}}"
+  },
+  {
+    "time": "2026-02-24T00:22:44.240Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/nitroapi/v2/reservation/cruise/ListPOS?requestSource=1",
+    "postData": "{\"cruiseReservation\":{\"pos\":{\"type\":\"B2B\"},\"cruise\":{\"cruiseLine\":{\"id\":2}}}}"
+  },
+  {
+    "time": "2026-02-24T00:22:48.464Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseInfoTabs.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:22:48.464Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseInfoTabs.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:22:48.957Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseTabNavigationV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:48.957Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseTabNavigationV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:49.347Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?SupplierID=2&BrandID=14393&CruiseTabNavigationVersion=2&brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseShipDetails.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:22:49.347Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?SupplierID=2&BrandID=14393&CruiseTabNavigationVersion=2&brn=WEB2080.786423276544746c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseShipDetails.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:22:49.839Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/css/flexslider.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:49.839Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/css/flexslider.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:49.840Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/js/jquery.flexslider.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:49.840Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/js/jquery.flexslider.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:50.241Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseShipActivitiesV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:50.241Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseShipActivitiesV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:50.521Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/images/cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:22:50.521Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/images/cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:00.778Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/outlines/rounded-white.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:00.778Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/outlines/rounded-white.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:00.779Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/zoomout.cur",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:00.779Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/zoomout.cur",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:10.355Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&siid=1049337&lang=1&p1=2&p2=35,38&skipDetails=true&op=0,0,0,0,0,0,0,0,,,0,0&res=US,FL,DAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:10.355Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&siid=1049337&lang=1&p1=2&p2=35,38&skipDetails=true&op=0,0,0,0,0,0,0,0,,,0,0&res=US,FL,DAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:21.807Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&p1=2&p2=35%2c38&skipDetails=true&op=0%2c0%2c0%2c0%2c0%2c0%2c0%2c0%2c%2c%2c0%2c0&res=US%2cFL%2cDAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:21.807Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&p1=2&p2=35%2c38&skipDetails=true&op=0%2c0%2c0%2c0%2c0%2c0%2c0%2c0%2c%2c%2c0%2c0&res=US%2cFL%2cDAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:21.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&p1=2&p2=35%2c38&skipDetails=true&op=0%2c0%2c0%2c0%2c0%2c0%2c0%2c0%2c%2c%2c0%2c0&res=US%2cFL%2cDAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:21.921Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/details.aspx?source=swift&pid=1542990&packageTourId=-1&lang=1&p1=2&p2=35%2c38&skipDetails=true&op=0%2c0%2c0%2c0%2c0%2c0%2c0%2c0%2c%2c%2c0%2c0&res=US%2cFL%2cDAB&tt=29&Email=&FName=&LName=&PhoneNum=9042573090&PhoneCallingCode=1&phoneCountryCode=us&officeId=193&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.064Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.064Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.064Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.064Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.065Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.065Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.066Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.066Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.066Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.066Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.066Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.067Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.585Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/farecodes.aspx?skip=True&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.586Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/farecodes.aspx?skip=True&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.800Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.800Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.800Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.800Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.801Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.801Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.802Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.802Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.802Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.802Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.803Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:22.803Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:27.934Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/category.aspx?brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:27.934Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/category.aspx?brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.145Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.145Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/bootstrap/v4.6.2/css/bootstrap-vODY-638854221570000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.146Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.146Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/style-vODY-639055663560000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.147Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.147Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/themes/cruise-brothers/theme-vODY-639041750360000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.147Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.147Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/UpdatedCruiseBrothersLogo-vODY-637932388129838457.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:28.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/print-vODY-638913801120000000.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style-vODY-638878402124884313.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/Themes/Swift/css/site-style-vODY-638878402124884313.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Swift/Cruise/CategoryUC.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Swift/Cruise/CategoryUC.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/logo-vODY-637907783110000000.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/site/cruise-brothers/images/logo-vODY-637907783110000000.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.401Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/SearchForms/OFramework.min-vODY-638617869220000000.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.402Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/SearchForms/OFramework.min-vODY-638617869220000000.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.402Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/ScriptResource.axd?d=x6wALODbMJK5e0eRC_p1LV7zLctO8JW0MN-DctwtWvbHQzbyQSggULN-I9Fjj88VywuChHNnFiVJpeCd0nApwb6m7NBj0AIlZI1QziFF8NYHVoUO0&t=23c9c237",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.402Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Web/ScriptResource.axd?d=x6wALODbMJK5e0eRC_p1LV7zLctO8JW0MN-DctwtWvbHQzbyQSggULN-I9Fjj88VywuChHNnFiVJpeCd0nApwb6m7NBj0AIlZI1QziFF8NYHVoUO0&t=23c9c237",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:30.701Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseInfoTabs.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:23:30.701Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseInfoTabs.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:23:31.070Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseTabNavigationV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.070Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseTabNavigationV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.076Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?SupplierID=2&BrandID=14393&CruiseTabNavigationVersion=2&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseShipDetails.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:23:31.076Z",
+    "method": "POST",
+    "url": "https://bookings.cbagenttools.com/web/cruises/CruiseResultsFilter.aspx/GetUserControlHtml?SupplierID=2&BrandID=14393&CruiseTabNavigationVersion=2&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337",
+    "postData": "{\"Params\":\"WebControls|CruiseShipDetails.ascx\"}"
+  },
+  {
+    "time": "2026-02-24T00:23:31.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/outlines/rounded-white.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/outlines/rounded-white.png",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.148Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/zoomout.cur",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.149Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/highslide/graphics/zoomout.cur",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.491Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/css/flexslider.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.491Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/css/flexslider.css",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.492Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/js/jquery.flexslider.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.492Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/Plugins/FlexiGallery_V2/2.7.2/js/jquery.flexslider.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.493Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseShipActivitiesV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.493Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/JSLib/CruiseShipActivitiesV2.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.499Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/images/cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:23:31.499Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/content/images/cruise/2/14393/14393.mp4",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:37.990Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/checkout.ashx?checkoutmethod=rendercategorypricepopup&catCode=XA&rateCode=DC508897&priceCatCode=XA&groupid=0&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337&uid=bb53d7f9-0cc5-44c7-a964-4e311168f69f&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:37.991Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/web/cruises/checkout.ashx?checkoutmethod=rendercategorypricepopup&catCode=XA&rateCode=DC508897&priceCatCode=XA&groupid=0&brn=WEB2080.634311724749539c550f77e78034fc28f62d0a79243772fblxfzaudttpxizzkbcm2dy5w1049337&uid=bb53d7f9-0cc5-44c7-a964-4e311168f69f&ContentOnly=true",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:40.484Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Odysseus/booking/CancellationPolicyUC.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:40.484Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Odysseus/booking/CancellationPolicyUC.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:40.965Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Odysseus/WebControls/CategoryPricePopupUC.min.js",
+    "postData": ""
+  },
+  {
+    "time": "2026-02-24T00:24:40.965Z",
+    "method": "GET",
+    "url": "https://bookings.cbagenttools.com/Content/JSLib/WebSite/Templates/Odysseus/WebControls/CategoryPricePopupUC.min.js",
+    "postData": ""
+  }
+]

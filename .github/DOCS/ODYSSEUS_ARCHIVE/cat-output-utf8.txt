@@ -1,0 +1,24 @@
+Category Types Length: 4
+[
+  "Balcony",
+  "Suite",
+  "Outside",
+  "Inside"
+]
+
+Prices Length: 1
+[
+  {
+    "items": [
+      {
+        "name": "Balcony",
+        "value": 1749
+      },
+      {
+        "name": "Suite",
+        "value": 8438.5
+      }
+    ],
+    "currencyCode": "USD"
+  }
+]

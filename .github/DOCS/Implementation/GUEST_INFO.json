@@ -1,0 +1,61 @@
+{
+    "lead_info": {
+        "agency_id": "CRUISE_BROTHERS_41751032",
+        "agent_name": "Nathaniel Orange Jr.",
+        "status": "Lead/Booking/Paid"
+    },
+    "travelers": [
+        {
+            "is_primary": true,
+            "legal_first_name": "",
+            "legal_middle_name": "",
+            "legal_last_name": "",
+            "suffix": "Jr/Sr/III",
+            "dob": "YYYY-MM-DD",
+            "gender_on_passport": "M/F/X",
+            "citizenship": "USA",
+            "passport_number": "",
+            "passport_expiry": "YYYY-MM-DD",
+            "loyalty_program": {
+                "line_name": "Royal Caribbean",
+                "member_number": ""
+            }
+        }
+    ],
+    "preferences": {
+        "occasion": "Anniversary/Birthday/Family Reunion",
+        "vibe": "Active/Relaxing/Luxury",
+        "dining": {
+            "preference": "Early/Late/MyTime",
+            "table_size": 2,
+            "allergies": [
+                "Peanut",
+                "Shellfish",
+                "Gluten-Free"
+            ]
+        },
+        "stateroom": {
+            "category": "Interior/Oceanview/Balcony/Suite",
+            "deck_preference": "Mid-ship",
+            "bed_config": "King/Twin"
+        }
+    },
+    "logistics": {
+        "departure_port_pref": [
+            "Miami",
+            "Port Canaveral",
+            "Jacksonville"
+        ],
+        "air_travel_needed": true,
+        "pre_post_hotel_needed": true,
+        "mobility_needs": {
+            "wheelchair_accessible_cabin": false,
+            "cpap_machine_usage": false
+        }
+    },
+    "financials": {
+        "budget_per_person": 1500,
+        "insurance_opt_in": true,
+        "flex_pay_interested": false
+    }
+}

@@ -1,9 +1,9 @@
-﻿# GitHub Copilot Instructions - Vacations LeisureLife
+﻿# GitHub Copilot Instructions - Leisure Life Interactive
 
 ##  PROJECT PURPOSE
 
-**Project Name**: Vacations LeisureLife
-**Framework**: Next.js 14
+**Project Name**: Leisure Life Interactive
+**Framework**: Next.js 16
 **Description**: Vacation booking platform with cruise and destination management capabilities.
 
 **CRITICAL**: This project inherits universal coding standards from the Master Workspace while maintaining project-specific patterns and conventions.
@@ -14,7 +14,7 @@
 - **OS**: Windows 11
 - **Shell**: PowerShell (use ; for command chaining, never &&)
 - **Runtime**: Node.js with npm
-- **Framework**: Next.js 14
+- **Framework**: Next.js 16
 
 ---
 

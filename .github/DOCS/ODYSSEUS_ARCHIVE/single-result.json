@@ -1,0 +1,239 @@
+{
+  "code": "AX07E443",
+  "name": "7 Nights St. Kitts, San Juan & Puerto Plata",
+  "itinerary": {
+    "id": 479966,
+    "duration": 7,
+    "departure": {
+      "code": "XPC",
+      "type": "CruisePort"
+    },
+    "arrival": {
+      "code": "XPC",
+      "type": "CruisePort"
+    },
+    "portsOfCalls": "Orlando (Port Canaveral), Fl | Puerto Plata, Dominican Rep | San Juan, Puerto Rico | Basseterre, St Kitts & Nevis | Orlando (Port Canaveral), Fl",
+    "normalizedPortsOfCall": "XPC|POP|SJU|BASS|XPC",
+    "mapPath": "/content/images/Itineraries/XPC_POP_SJU_BBR_XPC.jpg",
+    "fallbackMapPath": "/content/images/Itineraries/XPC_POP_SJU_BBR_XPC.jpg"
+  },
+  "uniqueItineraryId": "479966_14393__7_f043c4a19ab1187f8ff7c953416ded07b8f620d9",
+  "prices": [
+    {
+      "items": [
+        {
+          "name": "Balcony",
+          "value": 1749
+        },
+        {
+          "name": "Suite",
+          "value": 8338.5
+        }
+      ],
+      "currencyCode": "USD"
+    }
+  ],
+  "contentInfo": {},
+  "status": "Publish",
+  "isActive": true,
+  "destination": {
+    "id": 10,
+    "type": "Destination",
+    "priority": 24
+  },
+  "parentDestinationIds": [
+    9
+  ],
+  "ship": {
+    "id": 14393,
+    "priority": 100,
+    "images": [
+      {
+        "path": "/content/images/cruise/2/14393/ship_150.jpg",
+        "type": "Image",
+        "imageType": "Small"
+      },
+      {
+        "path": "/content/images/cruise/2/14393/ship_375.jpg",
+        "type": "Image",
+        "imageType": "Medium"
+      },
+      {
+        "path": "/content/images/cruise/2/14393/ship_520.jpg",
+        "type": "Image",
+        "imageType": "Large"
+      }
+    ],
+    "hasVrForActivity": true,
+    "hasVrForStateRoom": true,
+    "hasShipVideoUrl": true,
+    "cruiseline": {
+      "id": 2,
+      "priority": 50,
+      "logoPath": "/content/images/cruise/2/logo_190.png"
+    }
+  },
+  "shipIds": [
+    14393
+  ],
+  "packages": [
+    {
+      "id": 1477751,
+      "startDateTime": "28-Mar-2026",
+      "endDateTime": "04-Apr-2026",
+      "prices": [],
+      "dynamicRule": {
+        "fareDetailsPromoCodesInfo": []
+      },
+      "departureDateTime": "28-Mar-2026",
+      "arrivalDateTime": "04-Apr-2026",
+      "cruisePackageDepartureDateTime": "28-Mar-2026",
+      "cruisePackageArrivalDateTime": "04-Apr-2026",
+      "voyageId": "AX07E443",
+      "packageTourId": -1,
+      "bookingSettings": {
+        "bookingMode": "Online"
+      },
+      "maxOccupancy": 4,
+      "minOccupancy": 1,
+      "cruiseDuration": 7,
+      "minGuestAge": 0
+    },
+    {
+      "id": 1477753,
+      "startDateTime": "11-Apr-2026",
+      "endDateTime": "18-Apr-2026",
+      "prices": [
+        {
+          "items": [
+            {
+              "name": "Balcony",
+              "value": 1749
+            },
+            {
+              "name": "Suite",
+              "value": 8338.5
+            },
+            {
+              "code": "CruiseTax",
+              "value": 123.45
+            },
+            {
+              "code": "PortCharge",
+              "value": 280
+            },
+            {
+              "code": "BalconyCruiseTax",
+              "value": 123.45
+            },
+            {
+              "code": "BalconyPortCharge",
+              "value": 280
+            },
+            {
+              "code": "SuiteCruiseTax",
+              "value": 123.45
+            },
+            {
+              "code": "SuitePortCharge",
+              "value": 280
+            }
+          ],
+          "currencyCode": "USD",
+          "modifiedOn": "23-Feb-2026 10:54:39"
+        }
+      ],
+      "applicableRules": [],
+      "dynamicRule": {
+        "fareTypePromoCodes": [],
+        "fareDetailsPromoCodes": [
+          "ALL",
+          "BOGO",
+          "DISCOUNT",
+          "NRD",
+          "OBC",
+          "RETREAT"
+        ],
+        "fareDetailsPromoCodesInfo": [
+          {
+            "fareDetailsPromoCode": "BOGO",
+            "subFareDetailsPromoCodes": [
+              "BOGO"
+            ]
+          },
+          {
+            "fareDetailsPromoCode": "NRD",
+            "subFareDetailsPromoCodes": [
+              "NRD"
+            ]
+          },
+          {
+            "fareDetailsPromoCode": "RETREAT",
+            "subFareDetailsPromoCodes": [
+              "RETREAT",
+              "WiFi",
+              "BEV",
+              "GRATS",
+              "SHOREX",
+              "OBC",
+              "Dining"
+            ]
+          },
+          {
+            "fareDetailsPromoCode": "All",
+            "subFareDetailsPromoCodes": [
+              "All",
+              "WiFi",
+              "BEV"
+            ]
+          },
+          {
+            "fareDetailsPromoCode": "OBC",
+            "subFareDetailsPromoCodes": [
+              "OBC"
+            ]
+          },
+          {
+            "fareDetailsPromoCode": "Discount",
+            "subFareDetailsPromoCodes": [
+              "Discount"
+            ]
+          }
+        ],
+        "supplierPromoCodes": [],
+        "vcomPromoCodes": []
+      },
+      "departureDateTime": "11-Apr-2026",
+      "arrivalDateTime": "18-Apr-2026",
+      "cruisePackageDepartureDateTime": "11-Apr-2026",
+      "cruisePackageArrivalDateTime": "18-Apr-2026",
+      "voyageId": "AX07E443",
+      "packageTourId": -1,
+      "bookingSettings": {
+        "bookingMode": "Online"
+      },
+      "maxOccupancy": 4,
+      "minOccupancy": 1,
+      "cruiseDuration": 7,
+      "minGuestAge": 0,
+      "gratuitiesInfo": {
+        "balcony": 126,
+        "suite": 161
+      }
+    }
+  ],
+  "cruiseType": "CruiseOnly",
+  "voyageId": "AX07E443",
+  "categoryTypes": [
+    "Balcony",
+    "Suite",
+    "Outside",
+    "Inside"
+  ],
+  "destinationImagePath": "/content/images/Itineraries/itinerary_10.jpg",
+  "alternateItineraryInfo": [],
+  "destinationIds": [
+    10
+  ],
+  "cruiseTourName": "7 Nights St. Kitts, San Juan & Puerto Plata"
+}

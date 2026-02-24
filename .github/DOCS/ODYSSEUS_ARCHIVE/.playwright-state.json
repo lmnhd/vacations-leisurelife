@@ -1,0 +1,205 @@
+{
+  "cookies": [
+    {
+      "name": "ThirdPartyCookie",
+      "value": "yes",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/web/cruises",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "OdyStickySessionId",
+      "value": "3",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ASP.NET_SessionId",
+      "value": "blxfzaudttpxizzkbcm2dy5w",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OdysseusCookieSet",
+      "value": "SessionFix=1f2b9eabc0de461383c90473dc71f31c",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Request-Id",
+      "value": "f7fa11e1-d835-48b3-a3e6-ef568867c2c4",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Ody_Session_Token",
+      "value": "b33e98c7-af97-4e58-b769-149c1595d055",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": 1771900963.764027,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Ody_Cruise_Search_Token",
+      "value": "5d929d4a-a099-41e0-895b-9893455e363e",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "IsFarecodeSelectionSkipped",
+      "value": "True",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "PaxPref_954383",
+      "value": "p1=2&p2=35,35",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": 1771904563,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gid",
+      "value": "GA1.2.1781410831.1771890808",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1771977765,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gat_gtag_UA_149507583_1",
+      "value": "1",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1771891425,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "csrftoken",
+      "value": "zZIM67D4UW6OITwWP8UeI1ut0xI37Zaz",
+      "domain": "www.cbagenttools.com",
+      "path": "/",
+      "expires": 1803340992.965205,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sessionid",
+      "value": "3ntxxscrjgbwid7s8r46lli2du8bd6jq",
+      "domain": "www.cbagenttools.com",
+      "path": "/",
+      "expires": 1772064192.696852,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_DPV9B4D4T2",
+      "value": "GS2.1.s1771890802$o1$g1$t1771891395$j27$l0$h0",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1806451395.962605,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.934901640.1771890802",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1806451395.962865,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Ody_MFAValidation",
+      "value": "x1:yinaBnF96ynEqVupy63+5z+TR0IK/oNevU6UvnBU1lXmKETX+mDo/w8TJKi/5OIh0Y/23voG/AQabG4e5NHTws7eqTXyWMx1ToHokEdtJYUVgwI02ibM4zDK7LpryWC2iH3Rp1rSVbl5ZfPRF5WPRRXOnk0p03E+oR83U3BRTeM0iRUWHVzyshm0ocUK7AaeWtqTWwR7S0q2L+nhAXKnC1/HWbJFTxQ3nbW2wUwq6qZ66Kk1IYiwV6pCiwFK3I44puUie56TVAHlt1ipx13WVwrP48T6DD2JInT6msHqbpsbr9Je6QVvJffYVCMVNfVnMmTvgTKggmdpbKIQPf+9cAP1j+j1OngpNz1Gki164NXlsFaaO9yatsNIjS+vb3SWm2VUcqLZsDUDS+K1DZCH9WMEmAADK0ImM9FE+S/0GB4KY5BPtPyzGKiu9YzzS6Jcge7O13LsCzWnAwnSF5m5xpCLH8IBS2fcSLSg0SqAUh6oK/c/EFt6X81zSfhyqswnGvPkmaIr4HpDVtYZx07Bvw==",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": 1771902213.793365,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Ody_Admin",
+      "value": "x1:ZA2gRS1n2O/pTPWX8bG+B/hvPl2kPxklEVgxnIXiFPxznLyV/7EWxoiZlRQ1p1Vz3QtPqhbwzsAfpVxyDAEGKD3E95YqI25/TSAYXC/ns1xl8OdepT3CG+tYavubffk3ZoNe/IiRIFFO30gecypbDeLAIkJwciFj+C6jGaM0zeswI0VFiiJxor/xZ5/ETwy703WY5fSAPIBLmFUerdhQkzQ4LpZ/ndyNSmfISF23Su0UBS2vE0TCsjvNQHMpzksa60bGr6yewiPWXcFgbsU+AIZNxjJtOSvhNuBqy6t0/nTY5eSVSHzsN/oSOtnYUUJD9PLyYIp9wOZPEY6oTWVDfcTARr5SpjC3wcZxURYSxa2Yv9dY7pvRbLKwbljbPqhXQTMIadozH80fOJokACodKygMUw1g7zm5V5hK0m6CLt+FrMFKo6SXJPj2GYNEdLtEKbrpzdtlCKeyUEZgfctUMcbSfjcdcWdOMpTofl1mzpycOd4ebqTTJhG0xEznUrh3V7nD1a3QJvjI1t4yS2MayDbVbtF/JwR593Aph8vLMIOFp6F7NQ8b9rFrDXpDrkluDh9CILjA8HtGG32qwCOnFinuy6Y2H4GmkEePHeT3nQ0fBrZjrQ6hJAkYLHeWsbCawy47xVlXCS5RPk3AC7g0jv8G2Xo53Lp67MsksapS0x/nFX0ekV+zmDasOiBwdXaJdW6426bTtRsNtmrMwU7y0UyzB/YBbQgXtMR6m+eWpII+SDKw/bDW1Wph4MzQUdXJgdauatL8llVosZvgxa3Vs+bxSKQBC/iVcM/SyFRMi9QirdWKULVHLCHq86NrTNZelUcuo2HbV/o0Fexk+9d8y3gt8yaxEL/u9TEE4zEZO53go51mLtCFbnkJSZkFbiJnj8Jcg5FXS2gXq4hdfFfYSuiPHVH+KFIpEc+WvrVn+mQKfRNX1tsM++ldCrM4FmkRZvPF+O92UtnLe4uhQ4jqSbd5nHheGBmIl2Hx5AlnmKY=",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": 1771902213.793464,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ODY_UserInfo",
+      "value": "{\"FirstName\":\"Nathaniel\",\"LastName\":\"Orange Jr.\",\"AgentCode\":\"NO\",\"AgentQueueID\":\"\",\"AgentEmail\":\"cc.lemonhead@gmail.com\",\"UserName\":\"23379\",\"SiteRoles\":\"AGTMGR\",\"SiteItemId\":1049337,\"UserId\":1124539,\"UserGroupId\":7}",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "odysseus-siid",
+      "value": "1049337",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ODY_UserFeatureInfo",
+      "value": "CRUISE:DISPLAYFARECODE,CRUISE:EXTERNALID,CRUISE:IGNOREPACKAGEAVAILABILITY,CRUISE:INTERNALCRUISELINEFILTER,PRODUCTS:BKGOFFICESELECTION,SWIFTUI:DISPLAYITINERARYID,SWIFTUI:DISPLAYPACKAGEID",
+      "domain": "bookings.cbagenttools.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

@@ -62,7 +62,7 @@ model AIAssist {
 }
 
 model Passenger {
-  id                 String    @id @default(cuid())
+  id                 String     @id @default(cuid())
   cabin              CabinForm? @relation(fields: [cabinFormId], references: [id])
   cabinFormId        String?
   title              String?
@@ -73,7 +73,7 @@ model Passenger {
   gender             String
   dob                DateTime?
   age                Int?
-  email              String    @unique
+  email              String     @unique
   phone              String
   school             String?
   city               String?
@@ -87,19 +87,19 @@ model Passenger {
   documentNum        String?
   documentIssuedBy   String?
   documentIssuedDate DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   @@index([cabinFormId])
 }
 
 model CabinForm {
-  id            String      @id @default(cuid())
-  cabinType     String
-  numPassengers Int
-  passengers    Passenger[]
-createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String           @id @default(cuid())
+  cabinType         String
+  numPassengers     Int
+  passengers        Passenger[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   preRegisterFormId String?
   preRegisterForm   PreRegisterForm? @relation(fields: [preRegisterFormId], references: [id])
 
@@ -107,29 +107,29 @@ createdAt     DateTime @default(now())
 }
 
 model PreRegisterForm {
-  id        String @id @default(cuid())
+  id        String      @id @default(cuid())
   tripName  String
   partyName String
   numCabins Int
-createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  cabins CabinForm[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  cabins    CabinForm[]
 }
 
 model SchoolDazeRegisterForm {
-  id        String @id @default(cuid())
+  id        String                @id @default(cuid())
   tripName  String
   partyName String
   numCabins Int
-createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  cabins SchoolDazeCabinForm[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  cabins    SchoolDazeCabinForm[]
 }
 
 model SchoolDazePassenger {
-  id                 String              @id @default(cuid())
-  sdcabins            SchoolDazeCabinForm[] 
- // cabinFormId        String          
+  id                 String                @id @default(cuid())
+  sdcabins           SchoolDazeCabinForm[]
+  // cabinFormId        String          
   title              String?
   paxType            String?
   firstName          String
@@ -138,7 +138,7 @@ model SchoolDazePassenger {
   gender             String
   dob                DateTime?
   age                Int?
-  email              String              @unique
+  email              String                @unique
   phone              String
   school             String?
   city               String?
@@ -153,8 +153,8 @@ model SchoolDazePassenger {
   documentIssuedBy   String?
   documentIssuedDate DateTime?
   documentExpiryDate DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   //@@index([cabinFormId])
 }
@@ -165,9 +165,9 @@ model SchoolDazeCabinForm {
   numPassengers Int
   passengers    SchoolDazePassenger[]
   cabinPrice    Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  ccNumber      String? 
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  ccNumber      String?
   ccExp         String?
   ccCvv         String?
   ccZip         String?
@@ -178,8 +178,6 @@ model SchoolDazeCabinForm {
 
   @@index([preRegisterFormId])
 }
-
-
 
 model StripeCruiseBooking {
   id               String   @id @default(cuid())
@@ -209,14 +207,65 @@ model SchoolDazeRegisterShort {
 
 model RegisterShort {
   id            String   @id @default(cuid())
-  email         String?  
+  email         String?
   password      String
   firstName     String
   lastName      String
-  phone         String? 
-  comments      String? 
+  phone         String?
+  comments      String?
   contactMethod String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   wascontacted  Boolean? @default(false)
+}
+
+// ----------------------------------------------------------------------
+// ODYSSEUS CRUISE ENGINE INTEGRATION MODELS
+// ----------------------------------------------------------------------
+
+/// Represents the high-level Cruise search result from the Odysseus Engine (/nitroapi/v2/cruise)
+model OdysseusCruise {
+  id                String  @id @default(cuid())
+  voyageCode        String  @unique // e.g., "AX07E443"
+  name              String
+  itineraryId       Int
+  duration          Int
+  departurePortCode String
+  arrivalPortCode   String
+  portsOfCalls      String
+  mapPath           String?
+  destinationId     Int?
+  shipId            Int?
+  cruiselineId      Int?
+
+  packages OdysseusPackage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([voyageCode])
+}
+
+/// Represents a specific sailing date/package for a given OdysseusCruise
+model OdysseusPackage {
+  id       String         @id @default(cuid())
+  cruiseId String
+  cruise   OdysseusCruise @relation(fields: [cruiseId], references: [id], onDelete: Cascade)
+
+  odyPackageId  Int      @unique // The internal ID Odysseus uses (e.g. 1477751)
+  voyageId      String // Foreign key string to Odysseus
+  startDateTime DateTime
+  endDateTime   DateTime
+
+  minOccupancy Int @default(1)
+  maxOccupancy Int @default(4)
+
+  // Storing the complex price breakdown arrays as JSON for flexibility
+  pricesJson Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cruiseId])
+  @@index([odyPackageId])
 }

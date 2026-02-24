@@ -1,0 +1,97 @@
+All unique data-ody-id values:
+LoaderBubble
+BreadcrumbSection
+emailPopup
+ProgressStepperBar
+EmptySectionForBookingFlowBanner
+PackageDetailsInfoSidebar
+DestinationName
+ShipName
+DepartArrivalText
+DepartArrivalArrow
+DepartArrivalDate
+StartToEndDateArrow
+Duration
+SideBarShipDeckPlans
+SideBarShipReplicateItinerary
+SummaryItineraryTitle
+ViewItineraryScrollY
+ItineraryMapDetail
+ShareItineraryButton
+ItineraryPreNode
+itinerary-node
+nodeType_Cruise
+cruiseItineraryNodeSection
+CruiseItineraryDayNumber
+ItineraryName
+ItineraryInfoText
+ItineraryDatesText
+nodeType_1
+ItineraryPostNode
+EmptyDivAfterItinerarySection
+CruiseBookingHeading
+PricingFrom
+cruiseInclusiveExclusiveMessage
+BonusOffer
+bonusOfferTitleHeader
+promo_ALL
+promo_BOGO
+promo_DISCOUNT
+promo_NRD
+promo_OBC
+promo_RETREAT
+BonusOfferDisclaimer
+GuestInfoAdult
+GuestSelectDropdown
+AtTimeOfSailing
+GuestAge_0
+GuestAge_1
+SpaecialRates
+SupplierPromoCodeSection
+PastPassengerCheckBox
+PastPassengerTextField
+GuestResidencySection
+countryCodes
+country
+state
+transportType
+daCountry
+daCity
+EnterEmailSection
+EmailOfficeIDSection
+office
+ContinueButtonStrucutre
+ContinueButton
+CruiseShipDetailsTabs
+DateRangeInWeekDays
+promo_RE
+promo_SR
+cruisePriceLabelSailingDatesWrapper
+CruiseInfoTabDetails
+Cancellation
+Gratuities
+Pregnancy
+MinorAccompany
+Smoking
+CruiseEndEmptyDiv
+CruiseResultsRightSideEmptyDiv
+CruiseResultsLeftSideEmptyDiv
+
+--- Searching for Continue button ---
+
+--- Age fields ---
+Age field: PackageDetailsInfoSidebar
+Age field: cruiseInclusiveExclusiveMessage
+Age field: GuestAge_0
+Age field: GuestAge_1
+Age field: cruiseInclusiveExclusiveMessage
+Age field: cruiseInclusiveExclusiveMessage
+
+--- Phone fields ---
+
+--- Guest fields ---
+Guest field: GuestInfoAdult
+Guest field: GuestSelectDropdown
+Guest field: GuestAge_0
+Guest field: GuestAge_1
+Guest field: GuestResidencySection

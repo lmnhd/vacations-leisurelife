@@ -1,0 +1,23 @@
+[
+  {
+    "text": "Book \n                        7 Nights | Caribbean Eastern | Celebrity Cruises: Celebrity Apex | Apr 11, 2026",
+    "id": "",
+    "cls": "",
+    "odyId": null,
+    "href": "/web/cruises/details.aspx?pid=1477753&siid=1049337"
+  },
+  {
+    "text": "Fare Code Selection >",
+    "id": "",
+    "cls": "btn btn-outline-primary",
+    "odyId": null,
+    "href": "./farecodes.aspx?brn=WEB2080.4000345014035869121aca67bf34f46bbaea6daced4725eblxfzaudttpxizzkbcm2dy5w1049337"
+  },
+  {
+    "text": "Book Now",
+    "id": "",
+    "cls": "btn btn-primary btn-lg mb-1",
+    "odyId": "BookNowButton",
+    "href": "JavaScript:SelectCategory('EV','bUOMMkjU+0SsWsv5EfrAFVlEYVo=','EV','0','287b85ec-e72e-408c-923b-805a95d8a3e4','False')"
+  }
+]

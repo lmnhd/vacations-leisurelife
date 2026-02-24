@@ -1,0 +1,55 @@
+{
+  "cookies": [
+    {
+      "name": "csrftoken",
+      "value": "weHm4AKiugiXTR0pJjZna0cfEXt2cGxl",
+      "domain": "www.cbagenttools.com",
+      "path": "/",
+      "expires": 1803347659.49495,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_DPV9B4D4T2",
+      "value": "GS2.1.s1771898060$o1$g0$t1771898060$j60$l0$h0",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1806458060.728564,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.2.984563322.1771898061",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1806458060.975268,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gid",
+      "value": "GA1.2.865473916.1771898061",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1771984460,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gat_gtag_UA_149507583_1",
+      "value": "1",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1771898120,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

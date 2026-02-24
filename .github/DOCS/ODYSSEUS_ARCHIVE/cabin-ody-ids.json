@@ -1,0 +1,142 @@
+[
+  {
+    "tag": "DIV",
+    "text": "",
+    "odyId": "EmptySectionForBookingFlowBanner"
+  },
+  {
+    "tag": "DIV",
+    "text": "Caribbean Eastern - ",
+    "odyId": "CruiseBookingDetails"
+  },
+  {
+    "tag": "INPUT",
+    "text": "",
+    "odyId": "ShowAllCruiseCategoryBtn"
+  },
+  {
+    "tag": "DIV",
+    "text": "Show All Categories",
+    "odyId": "ShowAllCruiseCategoryCheckbox"
+  },
+  {
+    "tag": "DIV",
+    "text": "Choose your cabin ex",
+    "odyId": "NavTabCategoryTitle"
+  },
+  {
+    "tag": "STRONG",
+    "text": "Inside",
+    "odyId": "categoryName"
+  },
+  {
+    "tag": "STRONG",
+    "text": "N/A",
+    "odyId": "CategoryFromPriceWrapper"
+  },
+  {
+    "tag": "DIV",
+    "text": "",
+    "odyId": "CategorySelectionRadioButton"
+  },
+  {
+    "tag": "STRONG",
+    "text": "Outside",
+    "odyId": "categoryName"
+  },
+  {
+    "tag": "STRONG",
+    "text": "N/A",
+    "odyId": "CategoryFromPriceWrapper"
+  },
+  {
+    "tag": "DIV",
+    "text": "",
+    "odyId": "CategorySelectionRadioButton"
+  },
+  {
+    "tag": "STRONG",
+    "text": "Balcony",
+    "odyId": "categoryName"
+  },
+  {
+    "tag": "STRONG",
+    "text": "N/A",
+    "odyId": "CategoryFromPriceWrapper"
+  },
+  {
+    "tag": "DIV",
+    "text": "",
+    "odyId": "CategorySelectionRadioButton"
+  },
+  {
+    "tag": "STRONG",
+    "text": "Suite",
+    "odyId": "categoryName"
+  },
+  {
+    "tag": "STRONG",
+    "text": "$8,561.95 Onwards",
+    "odyId": "CategoryFromPriceWrapper"
+  },
+  {
+    "tag": "DIV",
+    "text": "",
+    "odyId": "CategorySelectionRadioButton"
+  },
+  {
+    "tag": "STRONG",
+    "text": "Suite",
+    "odyId": "categoryLabel"
+  },
+  {
+    "tag": "DIV",
+    "text": "click to enlarge\n   ",
+    "odyId": "CategoryContainerView"
+  },
+  {
+    "tag": "DIV",
+    "text": "EV\n                 ",
+    "odyId": "CategoryCodeCabinTypeWrapperAfterImg"
+  },
+  {
+    "tag": "A",
+    "text": "EV",
+    "odyId": "CabinCode"
+  },
+  {
+    "tag": "SPAN",
+    "text": "Edge Villa Suite",
+    "odyId": "CabinType"
+  },
+  {
+    "tag": "DIV",
+    "text": "Size: 950 sq. ft. Sl",
+    "odyId": "CategorySectionDescription"
+  },
+  {
+    "tag": "DIV",
+    "text": "Size: 950 sq. ft. Sl",
+    "odyId": "CabinDeckDescription"
+  },
+  {
+    "tag": "A",
+    "text": "Book Now",
+    "odyId": "BookNowButton"
+  },
+  {
+    "tag": "DIV",
+    "text": "Personalized Quote",
+    "odyId": "CategoryPricePpersonalizeQuote"
+  },
+  {
+    "tag": "DIV",
+    "text": "NCCF (Port Charges) ",
+    "odyId": "CategoryPriceTotalFareWithPortWrapper"
+  },
+  {
+    "tag": "DIV",
+    "text": "Category & Stateroom",
+    "odyId": "DownCruiseCategoryContentDisclaimer"
+  }
+]
