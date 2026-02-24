@@ -26,6 +26,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "www.pexels.com",
       },
+      {
+        // Google Image Search results come from arbitrary domains
+        protocol: "https",
+        hostname: "**",
+      },
     ],
   },
 };

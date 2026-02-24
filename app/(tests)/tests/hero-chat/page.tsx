@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage, ChatResponse } from '@/lib/chat/types';
+import type { GoogleImageResult } from '@/lib/services/media/google-images';
 
 // ─── Hook: useHeroChat ────────────────────────────────────────────────────────
 
@@ -279,6 +280,49 @@ function CinematicMode({
 }
 
 
+// ─── Component: HeroImage ─────────────────────────────────────────────────────
+
+function HeroImage({ image }: { image: GoogleImageResult | null }) {
+    const [loaded, setLoaded] = useState(false);
+    const [currentSrc, setCurrentSrc] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (image?.imageUrl !== currentSrc) {
+            setLoaded(false);
+            setCurrentSrc(image?.imageUrl ?? null);
+        }
+    }, [image?.imageUrl, currentSrc]);
+
+    if (!currentSrc) return null;
+
+    return (
+        <div className="relative w-full max-w-2xl mx-auto px-4">
+            <div
+                className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-cyan-500/10"
+                style={{
+                    opacity: loaded ? 1 : 0,
+                    transform: loaded ? 'scale(1)' : 'scale(0.98)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease',
+                }}
+            >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={currentSrc}
+                    alt={image?.title ?? 'Cruise image'}
+                    className="w-full h-auto max-h-[400px] object-cover"
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setLoaded(false)}
+                />
+                {image?.title && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+                        <p className="text-xs text-white/70 truncate">{image.title}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ─── Component: UserMessageRail ───────────────────────────────────────────────
 
 function UserMessageRail({ messages }: { messages: ChatMessage[] }) {
@@ -374,17 +418,32 @@ const TEST_STREAM_MESSAGES: { label: string; text: string }[] = [
     { label: 'Cinematic #3 (90 chars)', text: 'Your cruise is booked! Confirmation sent to your email. Bon voyage, and happy sailing!' },
 ];
 
+const TEST_IMAGE_QUERIES: string[] = [
+    'Royal Caribbean Harmony of the Seas pool deck',
+    'Cozumel Mexico cruise port',
+    'Celebrity Edge cruise ship suite',
+    'Norwegian Gem Bermuda sunset',
+    'Disney Fantasy cruise ship atrium',
+];
+
 // ─── Component: DevDrawer ─────────────────────────────────────────────────────
 
 function DevDrawer({
     onInjectMessage,
+    onImageResult,
 }: {
     onInjectMessage: (text: string, turn: number) => void;
+    onImageResult: (image: GoogleImageResult | null) => void;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isRunning, setIsRunning] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(-1);
     const abortRef = useRef(false);
+
+    // Image test state
+    const [imageTestRunning, setImageTestRunning] = useState(false);
+    const [imageTestIndex, setImageTestIndex] = useState(-1);
+    const imageAbortRef = useRef(false);
 
     const runTestStream = useCallback(async () => {
         if (isRunning) return;
@@ -409,6 +468,43 @@ function DevDrawer({
 
     const stopTest = useCallback(() => {
         abortRef.current = true;
+    }, []);
+
+    const runImageTest = useCallback(async () => {
+        if (imageTestRunning) return;
+        setImageTestRunning(true);
+        imageAbortRef.current = false;
+
+        for (let i = 0; i < TEST_IMAGE_QUERIES.length; i++) {
+            if (imageAbortRef.current) break;
+            setImageTestIndex(i);
+            const query = TEST_IMAGE_QUERIES[i];
+
+            try {
+                const res = await fetch('/api/tests/image-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, count: 1 }),
+                });
+                const json = await res.json();
+                const firstResult = json.data?.results?.[0] ?? null;
+                onImageResult(firstResult);
+
+                // Also inject a headline
+                onInjectMessage(`Check out: ${query}`, i + 100);
+            } catch {
+                console.error(`Image test failed for: ${query}`);
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 4000));
+        }
+
+        setImageTestRunning(false);
+        setImageTestIndex(-1);
+    }, [imageTestRunning, onImageResult, onInjectMessage]);
+
+    const stopImageTest = useCallback(() => {
+        imageAbortRef.current = true;
     }, []);
 
     return (
@@ -466,6 +562,42 @@ function DevDrawer({
                             <p className="text-[10px] text-slate-600">
                                 {TEST_STREAM_MESSAGES[currentIndex].text.length} chars
                             </p>
+                        </div>
+                    )}
+
+                    {/* Divider */}
+                    <div className="border-t border-white/5" />
+
+                    {/* Image Search Test Button */}
+                    <button
+                        onClick={imageTestRunning ? stopImageTest : runImageTest}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${imageTestRunning
+                            ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20'
+                            : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-cyan-500/30'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <span>{imageTestRunning ? '⏹' : '🖼'}</span>
+                            <span>{imageTestRunning ? 'Stop Image Test' : 'Test Image Search'}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1 ml-5">
+                            5 queries via Google Custom Search
+                        </p>
+                    </button>
+
+                    {/* Image test progress */}
+                    {imageTestRunning && imageTestIndex >= 0 && (
+                        <div className="bg-white/5 rounded-lg p-3 space-y-2">
+                            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                                <span className="truncate mr-2">{TEST_IMAGE_QUERIES[imageTestIndex]}</span>
+                                <span>{imageTestIndex + 1}/5</span>
+                            </div>
+                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${((imageTestIndex + 1) / 5) * 100}%` }}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
@@ -619,6 +751,7 @@ export default function HeroChatTestPage() {
     const chat = useHeroChat();
     const [historyOpen, setHistoryOpen] = useState(false);
     const isMobile = useIsMobile();
+    const [heroImage, setHeroImage] = useState<GoogleImageResult | null>(null);
 
     const handleInjectMessage = useCallback(
         (text: string, turn: number) => {
@@ -626,6 +759,13 @@ export default function HeroChatTestPage() {
             chat.setHeadlineTurn(turn);
         },
         [chat]
+    );
+
+    const handleImageResult = useCallback(
+        (image: GoogleImageResult | null) => {
+            setHeroImage(image);
+        },
+        []
     );
 
     // Mobile: squeeze into top half. Desktop: push right.
@@ -651,6 +791,9 @@ export default function HeroChatTestPage() {
                     responseKey={chat.headlineTurn}
                     isLoading={chat.isLoading}
                 />
+
+                {/* Hero Image */}
+                <HeroImage image={heroImage} />
 
                 {/* User Message Rail */}
                 <UserMessageRail messages={chat.messages} />
@@ -679,7 +822,7 @@ export default function HeroChatTestPage() {
             />
 
             {/* Secret Dev Drawer (Right — overlays) */}
-            <DevDrawer onInjectMessage={handleInjectMessage} />
+            <DevDrawer onInjectMessage={handleInjectMessage} onImageResult={handleImageResult} />
         </div>
     );
 }

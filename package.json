@@ -70,6 +70,7 @@
     "rss-parser": "^3.13.0",
     "semantic-ui-css": "^2.5.0",
     "semantic-ui-react": "^2.1.4",
+    "serpapi": "^2.2.1",
     "styled-components": "^6.1.1",
     "swr": "^2.2.2",
     "tailwind-merge": "^1.14.0",
