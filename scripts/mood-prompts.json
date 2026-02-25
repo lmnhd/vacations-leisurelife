@@ -1,0 +1,146 @@
+[
+    {
+        "environment": "Tropical",
+        "variant": "Day Outdoor",
+        "theme_colors": "Warm cyan, turquoise, bright sand",
+        "prompt": "A highly aesthetic, minimalist UI background of a pristine white-sand tropical beach with shallow turquoise water and softly blurred palm fronds in the periphery. Atmospheric diffused sunlight. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus."
+    },
+    {
+        "environment": "Tropical",
+        "variant": "Day Indoor",
+        "theme_colors": "White, bright cyan, light bamboo",
+        "prompt": "A highly aesthetic, minimalist UI background of a bright, airy tropical resort room looking out through sheer white curtains at the ocean. Diffused bright sunlight, white linens, light wood textures. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus."
+    },
+    {
+        "environment": "Tropical",
+        "variant": "Night Outdoor",
+        "theme_colors": "Deep indigo, bioluminescent cyan, moonlight silver",
+        "prompt": "A highly aesthetic, minimalist UI background of a serene moonlit tropical cove. Gentle glowing bioluminescence in calm water, soft dark silhouettes of palm trees against an indigo starlit sky. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus."
+    },
+    {
+        "environment": "Tropical",
+        "variant": "Night Indoor",
+        "theme_colors": "Warm lantern gold, dark teak wood, deep shadows",
+        "prompt": "A highly aesthetic, minimalist UI background of a luxurious tropical cabana interior at night. Dim ambient lantern light casting warm golden glows over dark teak wood and soft linens. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus."
+    },
+    {
+        "environment": "Arctic",
+        "variant": "Day Outdoor",
+        "theme_colors": "Ice blue, crisp white, pale grey",
+        "prompt": "A highly aesthetic, minimalist UI background of a vast, majestic glacier meeting a calm icy sea. Soft, diffused polar sunlight, mist rolling over smooth ice formations. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus."
+    },
+    {
+        "environment": "Arctic",
+        "variant": "Day Indoor",
+        "theme_colors": "Warm cream, ultra-pale blue, blonde wood",
+        "prompt": "A highly aesthetic, minimalist UI background of a cozy Scandinavian-style observation cabin interior with massive glass windows looking out at snow. Soft diffused daylight, warm wool blankets, pale birch wood. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Arctic",
+        "variant": "Night Outdoor",
+        "theme_colors": "Aurora green, deep navy, cool silver",
+        "prompt": "A highly aesthetic, minimalist UI background of a silent snow-covered landscape under a brilliant, softly glowing aurora borealis. Deep navy sky, gentle green light washing over smooth snowdrifts. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Arctic",
+        "variant": "Night Indoor",
+        "theme_colors": "Firelight orange, dark shadows, frosty blue",
+        "prompt": "A highly aesthetic, minimalist UI background of a dark, cozy arctic lodge interior at night. A softly glowing modern fireplace casting warm amber light on dark stone and rustic wood, with dark blue night visible through frosted windows. Uncluttered composition with deep negative space. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Mediterranean",
+        "variant": "Day Outdoor",
+        "theme_colors": "Sun-drenched terracotta, azure blue, olive green",
+        "prompt": "A highly aesthetic, minimalist UI background of a bright, sun-baked Amalfi coast terrace overlooking the azure sea. Softly blurred terracotta pots with olive tree branches in the periphery. Sun-drenched but soft lighting. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Mediterranean",
+        "variant": "Day Indoor",
+        "theme_colors": "Whitewashed stone, sea blue, rustic brown",
+        "prompt": "A highly aesthetic, minimalist UI background of a cool, whitewashed Greek villa interior looking out an arched window to the sea. Diffused bright Mediterranean sunlight, white plaster walls, soft linen. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Mediterranean",
+        "variant": "Night Outdoor",
+        "theme_colors": "Twilight purple, warm amber, dark stone",
+        "prompt": "A highly aesthetic, minimalist UI background of a quiet, romantic Santorini cliffside cliffside at twilight. Deep purple and navy sky, softly glowing amber lanterns illuminating smooth white plaster architecture. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Mediterranean",
+        "variant": "Night Indoor",
+        "theme_colors": "Candlelight gold, deep red wine, dark shadows",
+        "prompt": "A highly aesthetic, minimalist UI background of a dimly lit, elegant Italian coastal dining room at night. Soft candlelight reflecting off rustic stone walls and dark oak tables, romantic and moody. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Asian",
+        "variant": "Day Outdoor",
+        "theme_colors": "Bamboo green, soft cherry blossom pink, misty grey",
+        "prompt": "A highly aesthetic, minimalist UI background of a serene, misty Japanese zen garden. Soft pink cherry blossoms slightly blurred in the foreground, smooth raked sand, misty soft daylight. Uncluttered composition with deep negative space for text overlays. Smooth gradients, peaceful and atmospheric, cinematic soft focus."
+    },
+    {
+        "environment": "Asian",
+        "variant": "Day Indoor",
+        "theme_colors": "Warm tatami beige, soft rice paper white, dark wood",
+        "prompt": "A highly aesthetic, minimalist UI background of a traditional ryokan interior. Soft daylight filtering through shoji screens, casting gentle geometric shadows on tatami mats. Uncluttered composition with deep negative space for text overlays. Smooth gradients, incredibly peaceful, cinematic soft focus."
+    },
+    {
+        "environment": "Asian",
+        "variant": "Night Outdoor",
+        "theme_colors": "Deep crimson, dark indigo, soft lantern gold",
+        "prompt": "A highly aesthetic, minimalist UI background of a quiet Kyoto street corner or bamboo forest at night. Softly glowing red paper lanterns cutting through deep indigo evening mist. Uncluttered composition with deep negative space for text overlays. Smooth gradients, moody and atmospheric, cinematic soft focus."
+    },
+    {
+        "environment": "Asian",
+        "variant": "Night Indoor",
+        "theme_colors": "Warm golden light, dark cedar, deep shadows",
+        "prompt": "A highly aesthetic, minimalist UI background of a dark, elegant tea room at night. Soft, warm ambient illumination highlighting rich dark cedar wood and minimalist ceramics. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "African",
+        "variant": "Day Outdoor",
+        "theme_colors": "Golden savanna yellow, warm earth, dusty orange",
+        "prompt": "A highly aesthetic, minimalist UI background of a sweeping African savanna at golden hour. Soft, warm dusty sunlight, a lone acacia tree silhouette heavily blurred in the distance. Uncluttered composition with massive depth and deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "African",
+        "variant": "Day Indoor",
+        "theme_colors": "Canvas cream, woven grass yellow, rich mahogany",
+        "prompt": "A highly aesthetic, minimalist UI background of a luxurious safari tent interior. Soft sunlight glowing through canvas walls, elegant mahogany campaign furniture, light breezy fabrics. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "African",
+        "variant": "Night Outdoor",
+        "theme_colors": "Deep dusk purple, starlit black, warm firelight orange",
+        "prompt": "A highly aesthetic, minimalist UI background of the African bush under a massive starlit night sky. Deep purple and indigo tones, with a very soft, distant glow of a campfire warming the foreground grass. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "African",
+        "variant": "Night Indoor",
+        "theme_colors": "Lantern amber, rich leather brown, deep charcoal",
+        "prompt": "A highly aesthetic, minimalist UI background of a luxury safari lodge at night. Extremely soft, dim lantern light glowing against rich leather and dark wood, intensely romantic and secluded. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "European",
+        "variant": "Day Outdoor",
+        "theme_colors": "Classic cream, soft cobblestone greys, muted gold",
+        "prompt": "A highly aesthetic, minimalist UI background of a romantic Parisian street scene in soft morning light. Muted elegant building facades, softly blurred cobblestones, gentle sophisticated lighting. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "European",
+        "variant": "Day Indoor",
+        "theme_colors": "Crisp white wainscoting, soft gold, velvet blue",
+        "prompt": "A highly aesthetic, minimalist UI background of a grand, airy European chateau interior. Tall windows letting in soft diffused daylight, ornate but blurred white wall moldings, a hint of velvet upholstery. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "European",
+        "variant": "Night Outdoor",
+        "theme_colors": "Romantic streetlamp amber, midnight blue, dark slate",
+        "prompt": "A highly aesthetic, minimalist UI background of an old European city riverbank at night. Deep midnight blue sky, softly glowing amber streetlamps reflecting delicately on dark water. Uncluttered composition with deep negative space for text overlays. Smooth gradients, incredibly atmospheric, cinematic soft focus."
+    },
+    {
+        "environment": "European",
+        "variant": "Night Indoor",
+        "theme_colors": "Warm chandelier glow, deep burgundy, shadows",
+        "prompt": "A highly aesthetic, minimalist UI background of a dimly lit, elegant old-world library or lounge at night. Soft, warm ambient glow catching the spines of blurred books and rich dark mahogany panels. Uncluttered composition with deep negative space for text overlays. Smooth gradients, cinematic soft focus."
+    }
+]

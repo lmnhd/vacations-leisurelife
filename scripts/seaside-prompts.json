@@ -1,0 +1,146 @@
+[
+    {
+        "environment": "Ship Exterior",
+        "variant": "Day Forward",
+        "theme_colors": "Bright azure, brilliant white, seafoam",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting the bow of a pristine white cruise ship cutting through bright azure ocean water. Atmospheric diffused sunlight. Uncluttered composition with deep negative space representing the open sky, designed specifically for text overlays. Smooth gradients, easy on the eyes, cinematic soft focus, cruisey vibe."
+    },
+    {
+        "environment": "Ship Exterior",
+        "variant": "Day Aft",
+        "theme_colors": "Deep turquoise, white foam, clear blue",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing the churning white wake trailing behind the aft of a majestic cruise ship over deep turquoise tropical water. Uncluttered composition with endless horizon negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, relaxing cruise travel feel."
+    },
+    {
+        "environment": "Ship Exterior",
+        "variant": "Night Starboard",
+        "theme_colors": "Velvet indigo, warm gold, stark white",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing the starboard side of a massive cruise ship at night, featuring rows of warmly glowing cabin balcony lights against a velvet indigo ocean night sky. Uncluttered composition with deep negative space up top, designed specifically for text overlays. Smooth gradients, cinematic soft focus, luxury travel atmosphere."
+    },
+    {
+        "environment": "Ship Exterior",
+        "variant": "Night Aft",
+        "theme_colors": "Midnight blue, silver moonlight, glowing cyan",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting moonlight reflecting on the trailing wake of a cruise ship at sea at midnight. Very dark, moody, and elegant. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, tranquil nautical night."
+    },
+    {
+        "environment": "Interior Venues",
+        "variant": "Day Atrium",
+        "theme_colors": "Crystal white, brushed gold, soft daylight",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a multi-deck luxury cruise ship atrium with glass elevators and a subtle crystal chandelier catching soft daylight from above. Very bright and airy. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, elegant ship interior."
+    },
+    {
+        "environment": "Interior Venues",
+        "variant": "Day Promenade",
+        "theme_colors": "Warm ivory, soft amber, muted teal",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting a bustling but blurred indoor cruise ship promenade with chic cafes and boutique storefronts. Warm ivory tones and soft ambient skylights. Uncluttered composition with central negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, upscale nautical leisure."
+    },
+    {
+        "environment": "Interior Venues",
+        "variant": "Night Ballroom",
+        "theme_colors": "Rich burgundy, deep gold, warm shadow",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly conveying the warm, rich ambiance of a grand cruise ship ballroom or theater at night. Deep burgundy and gold hues, subtle velvety textures, out-of-focus stage lights. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, evening entertainment vibe."
+    },
+    {
+        "environment": "Interior Venues",
+        "variant": "Night Lounge",
+        "theme_colors": "Neon purple, sleek mahogany, cool blue glow",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a modern, sophisticated cruise ship martini bar or casino lounge at night. Sleek wooden textures, subtle neon purple and blue backlighting. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, nightlife cruising."
+    },
+    {
+        "environment": "Resort Decks",
+        "variant": "Day Main Pool",
+        "theme_colors": "Vibrant cyan, bright teak, pure white",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly representing the main pool deck of a cruise ship on a sunny day. Blurred bright cyan pool water, hints of wooden teak decking and white sun loungers. Uncluttered composition with deep negative space in the bright blue sky, designed specifically for text overlays. Smooth gradients, cinematic soft focus, ultimate cruise vacation."
+    },
+    {
+        "environment": "Resort Decks",
+        "variant": "Day Solarium",
+        "theme_colors": "Soft jade, filtered sunlight, warm stone",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing an indoor adult-only cruise ship solarium pool. Filtered warm sunlight shining through a glass sanctuary roof onto calm jade water and tropical potted plants. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, tranquil spa-like relaxation."
+    },
+    {
+        "environment": "Resort Decks",
+        "variant": "Night Main Pool",
+        "theme_colors": "Electric blue, deep navy, dramatic shadows",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly representing an empty cruise ship main pool deck at night. The pool water glows with electric blue underwater LED lights against the extremely dark navy ocean sky. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, moody nautical evening."
+    },
+    {
+        "environment": "Resort Decks",
+        "variant": "Night Spa",
+        "theme_colors": "Warm amber, smooth pebble, subtle steam",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly conveying a luxury thermal suite spa inside a cruise ship at night. Warm glowing amber light, smooth stone textures, a hint of soft steam rising. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, pure zen cruising experience."
+    },
+    {
+        "environment": "Tropical Beaches",
+        "variant": "Day Pristine Beach",
+        "theme_colors": "Shallow turquoise, powdered sugar white, warm sun",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a pristine tropical cruise destination beach. Powdery white sand meeting crystal clear, shallow turquoise water. Brilliant warm sunshine. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, Caribbean island getaway."
+    },
+    {
+        "environment": "Tropical Beaches",
+        "variant": "Day Private Island",
+        "theme_colors": "Vibrant coral, lush palm green, bright aqua",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting a cruise line's exclusive private tropical island. Blurred colorful cabanas, lush green palm fronds, and bright aqua water. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, exclusive luxury resort feel."
+    },
+    {
+        "environment": "Tropical Beaches",
+        "variant": "Night Beach Bonfire",
+        "theme_colors": "Glowing ember, deep indigo night, calm water reflection",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a beach excursion at night. The warm, glowing light of a beach bonfire illuminating soft sand, set against a deep indigo twilight sky and calm ocean bay. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, romantic evening shore excursion."
+    },
+    {
+        "environment": "Tropical Beaches",
+        "variant": "Night Palm Silhouettes",
+        "theme_colors": "Silver moonlight, dark navy, deep palm shadows",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly representing a quiet tropical bay at midnight. Large, soft silhouettes of palm trees framing a calm ocean gently reflecting silver moonlight. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, peaceful island night."
+    },
+    {
+        "environment": "Balcony Views",
+        "variant": "Day Ocean View",
+        "theme_colors": "Endless azure, bright sky, frosted glass",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly mimicking the view looking out from a fast-moving cruise ship cabin balcony during a bright, sunny day. A frosted glass railing edge in the foreground overlooking an endless blue horizon. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, ocean travel."
+    },
+    {
+        "environment": "Balcony Views",
+        "variant": "Day Port Arrival",
+        "theme_colors": "Pastel sunrise, distant colorful buildings, misty blue water",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing the view from a cruise balcony as the ship slowly glides into a colorful caribbean or mediterranean port at dawn. Beautiful pastel sunrise colors and out-of-focus colorful architecture in the distance. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Balcony Views",
+        "variant": "Night Stargazing",
+        "theme_colors": "Pitch black ocean, brilliant starlight, warm cabin glow",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting the experience of standing on a dark cruise balcony at sea. The pitch black ocean meets a sky full of tiny brilliant stars, with just a sliver of warm golden light spilling out from the sliding glass cabin door. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus."
+    },
+    {
+        "environment": "Balcony Views",
+        "variant": "Night Port Departure",
+        "theme_colors": "Bokeh city lights, deep twilight blue, dark water",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a cruise ship sailing away from a vibrant port city at twilight. Large, beautiful out-of-focus bokeh circles of golden and white city lights reflecting on the dark ocean water. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, sailaway party vibe."
+    },
+    {
+        "environment": "Culinary Venues",
+        "variant": "Day Oceanfront Cafe",
+        "theme_colors": "Crisp white, ocean blue, warm pastry gold",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly representing a bright, casual outdoor buffet cafe on a cruise ship deck. A blurred white table setting with morning coffee, framed against a bright blue ocean backdrop. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, relaxing sea morning."
+    },
+    {
+        "environment": "Culinary Venues",
+        "variant": "Day Fine Dining",
+        "theme_colors": "Stark white linens, sparkling crystal, bright window light",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing a high-end luxury cruise dining room during daytime sea service. Bright window light illuminating crisp white tablecloths and sparkling, out-of-focus wine glasses. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, elegant hospitality."
+    },
+    {
+        "environment": "Culinary Venues",
+        "variant": "Night Main Dining Room",
+        "theme_colors": "Warm amber glow, deep shadows, silver cutlery reflections",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly depicting the grand main dining room of a cruise ship at dinner time. Very warm amber lighting from crystal chandeliers, moody shadows, completely blurred background dinner service. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, premium evening dining."
+    },
+    {
+        "environment": "Culinary Venues",
+        "variant": "Night Specialty Restaurant",
+        "theme_colors": "Moody crimson, dark mahogany, intimate candlelight",
+        "prompt": "A highly aesthetic, minimalist UI background abstractly showing an intimate, exclusive specialty steakhouse or fine dining venue on a cruise ship. Romantic candlelight illuminating dark mahogany wood and moody crimson accents. Uncluttered composition with deep negative space, designed specifically for text overlays. Smooth gradients, cinematic soft focus, sophisticated culinary night."
+    }
+]

@@ -1,61 +1,185 @@
 {
+    "_schema_notes": [
+        "PREFERENCE INHERITANCE: group.preferences = defaults → cabin.preferences_override = cabin-level override → traveler.preferences_override = most specific.",
+        "TRAVELER REFERENCES: cabins reference travelers by traveler_id. Travelers do NOT embed cabin data.",
+        "MINORS: is_minor + age drive automatic enforcement of cruise line minor policies (e.g., must share cabin with adult).",
+        "SINGLE TRAVELER: cabins array has one item with one traveler_id. schema is identical — no special case.",
+        "NULL vs MISSING: null = asked but unknown. missing key = not yet collected. Agent treats these differently."
+    ],
+
     "lead_info": {
         "agency_id": "CRUISE_BROTHERS_41751032",
         "agent_name": "Nathaniel Orange Jr.",
-        "status": "Lead/Booking/Paid"
+        "status": "Lead",
+        "booking_ref": null,
+        "created_at": "YYYY-MM-DDTHH:MM:SSZ",
+        "last_updated": "YYYY-MM-DDTHH:MM:SSZ"
     },
+
+    "group": {
+        "group_name": null,
+        "total_travelers": 0,
+        "total_cabins": 0,
+        "occasion": null,
+        "travel_window": {
+            "earliest_departure": null,
+            "latest_departure": null,
+            "duration_nights": null,
+            "flexible": true
+        },
+        "preferred_cruise_lines": [],
+        "avoided_cruise_lines": [],
+        "preferred_destinations": [],
+        "has_sailed_before": null,
+        "notes": ""
+    },
+
     "travelers": [
         {
+            "_note": "Duplicate this object for each traveler. traveler_id must be unique within this document.",
+            "traveler_id": "t1",
             "is_primary": true,
+            "relationship_to_primary": "self",
+            "is_minor": false,
+            "age": null,
+
             "legal_first_name": "",
             "legal_middle_name": "",
             "legal_last_name": "",
-            "suffix": "Jr/Sr/III",
-            "dob": "YYYY-MM-DD",
-            "gender_on_passport": "M/F/X",
+            "preferred_name": "",
+            "suffix": null,
+            "dob": null,
+            "gender_on_passport": null,
             "citizenship": "USA",
-            "passport_number": "",
-            "passport_expiry": "YYYY-MM-DD",
-            "loyalty_program": {
-                "line_name": "Royal Caribbean",
-                "member_number": ""
+            "passport_number": null,
+            "passport_expiry": null,
+            "redress_number": null,
+            "known_traveler_number": null,
+
+            "loyalty_programs": [
+                {
+                    "line_name": null,
+                    "member_number": null,
+                    "tier": null
+                }
+            ],
+
+            "contact": {
+                "email": null,
+                "phone": null,
+                "preferred_contact_method": null
+            },
+
+            "preferences_override": {
+                "_note": "Only populate fields that DIFFER from group-level preferences. Null = use group default.",
+                "dining": {
+                    "seating": null,
+                    "allergies": [],
+                    "dietary_restrictions": [],
+                    "dietary_notes": null
+                },
+                "accessibility": {
+                    "wheelchair_accessible_cabin": false,
+                    "cpap_machine_usage": false,
+                    "service_animal": false,
+                    "other_needs": null
+                }
             }
         }
     ],
+
+    "cabins": [
+        {
+            "_note": "Each cabin groups travelers together. One cabin = one stateroom booking.",
+            "cabin_id": "c1",
+            "label": null,
+            "traveler_ids": ["t1"],
+            "connecting_to_cabin_id": null,
+
+            "preferences_override": {
+                "_note": "Only populate fields that DIFFER from group-level preferences. Null = use group default.",
+                "stateroom": {
+                    "category": null,
+                    "deck_preference": null,
+                    "bed_config": null,
+                    "accessibility_required": false,
+                    "near_elevator": null,
+                    "away_from_elevator": null
+                },
+                "dining": {
+                    "seating": null,
+                    "table_size": null
+                }
+            },
+
+            "financials": {
+                "cabin_budget": null,
+                "deposit_paid": false,
+                "deposit_amount": null,
+                "balance_due": null,
+                "payment_plan_active": false
+            }
+        }
+    ],
+
     "preferences": {
-        "occasion": "Anniversary/Birthday/Family Reunion",
-        "vibe": "Active/Relaxing/Luxury",
+        "_note": "GROUP-LEVEL DEFAULTS. Apply to all travelers/cabins unless overridden at cabin or traveler level.",
+        "vibe": null,
+        "occasion_notes": null,
+
         "dining": {
-            "preference": "Early/Late/MyTime",
-            "table_size": 2,
-            "allergies": [
-                "Peanut",
-                "Shellfish",
-                "Gluten-Free"
-            ]
+            "seating": null,
+            "table_size": "private",
+            "specialty_dining_interest": null,
+            "allergies": [],
+            "dietary_restrictions": []
         },
+
         "stateroom": {
-            "category": "Interior/Oceanview/Balcony/Suite",
-            "deck_preference": "Mid-ship",
-            "bed_config": "King/Twin"
+            "category": null,
+            "deck_preference": null,
+            "bed_config": null,
+            "connecting_cabins_preferred": false
+        },
+
+        "entertainment": {
+            "interests": [],
+            "shore_excursion_interest": null,
+            "spa_interest": null,
+            "casino_interest": null,
+            "nightlife_interest": null,
+            "kids_club_needed": false,
+            "teen_club_needed": false
+        },
+
+        "past_cruise_experience": {
+            "times_cruised": null,
+            "favorite_line": null,
+            "favorite_destination": null,
+            "best_experience": null,
+            "worst_experience": null,
+            "would_repeat_line": null
         }
     },
+
     "logistics": {
-        "departure_port_pref": [
-            "Miami",
-            "Port Canaveral",
-            "Jacksonville"
-        ],
-        "air_travel_needed": true,
-        "pre_post_hotel_needed": true,
-        "mobility_needs": {
-            "wheelchair_accessible_cabin": false,
-            "cpap_machine_usage": false
-        }
+        "departure_port_pref": [],
+        "air_travel_needed": null,
+        "air_departure_city": null,
+        "pre_cruise_hotel_needed": null,
+        "post_cruise_hotel_needed": null,
+        "cruise_port_transfer_needed": null,
+        "travel_documents_verified": false
     },
+
     "financials": {
-        "budget_per_person": 1500,
-        "insurance_opt_in": true,
-        "flex_pay_interested": false
+        "_note": "Group-level totals. Per-cabin breakdown lives in cabins[n].financials.",
+        "group_budget_total": null,
+        "budget_per_person": null,
+        "insurance_opt_in": null,
+        "insurance_provider": null,
+        "flex_pay_interested": null,
+        "payment_method": null,
+        "referral_source": null
     }
 }

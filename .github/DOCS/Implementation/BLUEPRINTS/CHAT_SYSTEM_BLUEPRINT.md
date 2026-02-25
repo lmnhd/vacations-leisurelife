@@ -81,7 +81,7 @@ A single JSON tree that defines **every context the agent can operate in**. The 
   "schema_version": "1.0",
   "root": {
     "identity": {
-      "name": "Leisure Life Agent",
+      "name": "LL Cruise Buddy",
       "persona_ref": "skills/persona.md",
       "global_rules": [
         "Never fabricate cruise pricing",
@@ -503,10 +503,19 @@ The system maps every conversation to `GUEST_INFO.json` fields using a **complet
 ```json
 {
   "profile_completion": {
-    "travelers[0].legal_first_name": { "status": "collected", "confidence": 0.99, "source": "direct_statement" },
-    "preferences.vibe": { "status": "inferred", "confidence": 0.75, "source": "conversation_analysis" },
-    "financials.budget_per_person": { "status": "missing", "confidence": 0, "source": null },
-    "logistics.mobility_needs.wheelchair_accessible_cabin": { "status": "assumed_false", "confidence": 0.6, "source": "no_mention" }
+    "group.total_travelers":                                                          { "status": "collected",    "confidence": 0.99, "source": "direct_statement" },
+    "group.travel_window.earliest_departure":                                         { "status": "inferred",     "confidence": 0.72, "source": "conversation_analysis" },
+    "group.preferred_destinations":                                                   { "status": "collected",    "confidence": 0.95, "source": "direct_statement" },
+    "travelers[0].legal_first_name":                                                  { "status": "collected",    "confidence": 0.99, "source": "direct_statement" },
+    "travelers[0].dob":                                                               { "status": "missing",      "confidence": 0,    "source": null },
+    "travelers[1].is_minor":                                                          { "status": "collected",    "confidence": 0.99, "source": "direct_statement" },
+    "travelers[1].preferences_override.dining.allergies":                             { "status": "collected",    "confidence": 0.95, "source": "direct_statement" },
+    "travelers[2].preferences_override.accessibility.wheelchair_accessible_cabin":    { "status": "assumed_false","confidence": 0.6,  "source": "no_mention" },
+    "cabins[0].preferences_override.stateroom.bed_config":                            { "status": "collected",    "confidence": 0.9,  "source": "direct_statement" },
+    "cabins[1].preferences_override.stateroom.accessibility_required":                { "status": "missing",      "confidence": 0,    "source": null },
+    "preferences.vibe":                                                               { "status": "inferred",     "confidence": 0.75, "source": "conversation_analysis" },
+    "financials.budget_per_person":                                                   { "status": "missing",      "confidence": 0,    "source": null },
+    "financials.flex_pay_interested":                                                 { "status": "collected",    "confidence": 0.88, "source": "direct_statement" }
   }
 }
 ```
@@ -520,12 +529,60 @@ The system maps every conversation to `GUEST_INFO.json` fields using a **complet
 | Tier | Storage | Use Case |
 |------|---------|----------|
 | **Session** | In-memory | Current conversation context, active flow state |
-| **Profile** | PostgreSQL (Prisma) | Structured guest data (`GUEST_INFO.json` schema) |
-| **Conversation** | PostgreSQL | Full conversation history, searchable |
+| **Profile** | DynamoDB | Structured guest data (`GUEST_INFO.json` schema) — stored as a nested document |
+| **Conversation** | DynamoDB | Full conversation history, range-queryable by userId + timestamp |
 | **Semantic** | JSON embeddings (Phase 2) | Deep preference insights, complex pattern matching |
 
 > [!IMPORTANT]
-> Phase 1 uses standard DB queries only. Vector/semantic search is deferred to Phase 2 when user profiles reach complexity thresholds. This matches your vision note about JSON-based embedding as a possible vector DB alternative.
+> **Dual-database strategy — no conflict with existing app.** Prisma/PostgreSQL remains for all existing features (UserApiLimit, Bookings, Passengers). DynamoDB is additive — used exclusively by the chat pipeline. Pipeline stages (Session Hydrator, State Updater) operate through a `ChatStorageService` abstraction layer, keeping DynamoDB details out of the pipeline logic.
+
+> [!NOTE]
+> Phase 1 uses standard DynamoDB queries only. Vector/semantic search is deferred to Phase 2 when user profiles reach complexity thresholds. This matches the vision for JSON-based embedding as an alternative to a dedicated vector database.
+
+### DynamoDB Table Design
+
+Three tables power the chat system. All reads are `userId`-keyed — no joins, no migrations ever.
+
+#### Table 1: `lll-chat-sessions`
+Active session state. TTL handles automatic cleanup — no cron jobs needed.
+
+| Attribute | Type | Notes |
+|-----------|------|-------|
+| `PK` (userId) | String | Partition key |
+| `SK` (sessionId) | String | Sort key, format: `SESSION#<uuid>` |
+| `flowState` | Map | Active flow, current stage, parked flows |
+| `activeContextPath` | String | Dot-path into prompt-schema.json (e.g., `onboarding.cruise_review`) |
+| `ttl` | Number | Unix timestamp — auto-expires after session inactivity |
+
+#### Table 2: `lll-guest-profiles`
+One item per user. The entire `GUEST_INFO.json` structure stored as a single DynamoDB document, with the `profile_completion` tracker embedded.
+
+| Attribute | Type | Notes |
+|-----------|------|-------|
+| `PK` (userId) | String | Partition key (no SK — one item per user) |
+| `guestInfo` | Map | Full nested GUEST_INFO schema |
+| `profileCompletion` | Map | Field-level confidence scores and collection status |
+| `anonSessionId` | String | Pre-auth session link — connects anonymous data once user authenticates |
+| `updatedAt` | String | ISO timestamp of last Memory Extractor write |
+
+#### Table 3: `lll-conversations`
+Append-only conversation history. Sort key enables range queries: "last 20 turns", "all turns in session X", "all turns before date Y".
+
+| Attribute | Type | Notes |
+|-----------|------|-------|
+| `PK` (userId) | String | Partition key |
+| `SK` (turnKey) | String | Sort key, format: `<ISO-timestamp>#<turnId>` — naturally sorted chronologically |
+| `sessionId` | String | GSI partition key for session-scoped queries |
+| `role` | String | `user` or `assistant` |
+| `content` | String | Message text |
+| `resolvedContext` | String | Context path active at time of turn |
+| `extractedFacts` | Map | Facts captured by Memory Extractor for this turn |
+| `toolCallsLog` | List | Tool calls made during this turn (for Thoughts Widget replay) |
+
+**GSI:** `sessionId-index` (PK: `sessionId`, SK: `SK`) — enables "load all turns for session X" without a full table scan.
+
+#### SDK & Access Pattern
+Use the AWS SDK v3 `@aws-sdk/client-dynamodb` with `@aws-sdk/lib-dynamodb` (DocumentClient) for clean JSON read/write without manual marshalling. Credentials via environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) consistent with the project's existing AWS CLI approach.
 
 ---
 
@@ -544,6 +601,8 @@ lib/
 │   ├── response-processor.ts    # Stage 8
 │   ├── memory-extractor.ts      # Stage 9
 │   ├── state-updater.ts         # Stage 10
+│   ├── dynamo-client.ts         # DynamoDB DocumentClient singleton (AWS SDK v3)
+│   ├── chat-storage.ts          # ChatStorageService — abstraction over all 3 DynamoDB tables
 │   └── tools/                   # Tool handler implementations
 │       ├── perplexity-research.ts
 │       ├── social-media-insights.ts
@@ -595,26 +654,33 @@ app/api/
 
 ## 9. Display Directives (Hero Chat Integration)
 
-The LLM response includes structured **display directives** that the Hero Chat UI consumes:
+The LLM response includes structured **inline directives** that the Hero Chat UI extracts and consumes in real-time as the stream arrives:
 
-```json
-{
-  "message": "The Bahamas are calling! Here are your top 3 options...",
-  "display": {
-    "hero_text_mode": "typewriter",
-    "background_scene": { "time": "day", "setting": "outdoor", "region": "caribbean" },
-    "media": [
-      { "type": "image_slideshow", "images": ["ship_1.jpg", "bahamas_1.jpg"] }
-    ],
-    "form": null,
-    "thoughts_stream": ["Searching NCL packages...", "Found 12 matches", "Filtering by budget..."]
-  },
-  "context_shift": "fast_booking.package_presentation",
-  "extracted_data": {
-    "preferences.destination": "Bahamas"
-  }
-}
-```
+**Example Agent Output:**
+> "The Bahamas are calling! Here are your top 3 options..."
+> `[Mood: "tropical-beaches-day-pristine-beach"]`
+> `[Image: "Royal Caribbean CocoCay"]`
+> `[Form: {"id": "vacation_dates", "fields": [...]}]`
+
+### 9.1 Background Mood Directive (`[Mood: "..."]`)
+The agent can dynamically alter the visual atmosphere of the chat by emitting a `Mood` directive. The system requires exact string matches mapping to the 48 available generated backgrounds. The prompt assembler will inject these enums into the system prompt.
+
+**Available Mood Categories (Agent Enums):**
+- **Ship Exterior** (e.g., `ship-exterior-day-forward`, `ship-exterior-night-aft`)
+- **Interior Venues** (e.g., `interior-venues-day-atrium`, `interior-venues-night-ballroom`)
+- **Resort Decks** (e.g., `resort-decks-day-main-pool`, `resort-decks-night-spa`)
+- **Tropical Beaches** (e.g., `tropical-beaches-day-pristine-beach`)
+- **Balcony Views** (e.g., `balcony-views-day-ocean-view`)
+- **Culinary Venues** (e.g., `culinary-venues-day-fine-dining`)
+- **Worldwide Regions** (e.g., `mediterranean-night-outdoor`, `arctic-day-indoor`)
+
+*Note: The UI maintains a fallback parser. If the agent hallucinates a mood, the UI ignores the directive or falls back to a solid dark gradient without crashing.*
+
+### 9.2 Image Directives (`[Image: "..."]` & `[Images: "..."]`)
+The agent can request relevant web imagery via Google Custom Search by emitting image directives.
+- **Single Image (Default):** `[Image: "Celebrity Edge Pool Deck"]` fetches and displays the top result.
+- **Single Image (Indexed):** `[Image: "Royal Caribbean Oasis class ship" (2)]` fetches the 2nd result instead of the 1st (useful if the first result is a logo or irrelevant).
+- **Slideshow (Multi-Image):** `[Images: "Carnival Mardi Gras roller coaster" (3)]` fetches the top 3 results and displays them in a crossfading slideshow.
 
 ---
 
@@ -630,14 +696,15 @@ This blueprint defines **four core systems**:
 | **Chat Flows** | Extensible flow registry — drop a JSON file to add a new journey |
 
 ### Recommended Build Order
-1. **Types & Schema** — Define all TypeScript types, `prompt-schema.json`, and tool definition schemas
-2. **Pipeline skeleton** — Build the 10-stage pipeline with stub implementations
-3. **Context Resolver + Prompt Assembler** — The two most critical stages
-4. **Tool Dispatcher + first tool** — Perplexity cruise research as proof of concept
-5. **Onboarding Flow** — First working conversational flow
-6. **Memory Extractor** — Profile building from conversations
-7. **Fast Booking Flow** — Second flow with package search + tool integration
-8. **Dev Prompt Preview** — Transparency tool
+1. **DynamoDB tables** — Create the 3 tables (`lll-chat-sessions`, `lll-guest-profiles`, `lll-conversations`) via AWS CLI; add `dynamo-client.ts` and `chat-storage.ts`
+2. **Types & Schema** — Define all TypeScript types, `prompt-schema.json`, and tool definition schemas
+3. **Pipeline skeleton** — Build the 10-stage pipeline with stub implementations
+4. **Context Resolver + Prompt Assembler** — The two most critical stages
+5. **Tool Dispatcher + first tool** — Perplexity cruise research as proof of concept
+6. **Onboarding Flow** — First working conversational flow
+7. **Memory Extractor** — Profile building from conversations into DynamoDB
+8. **Fast Booking Flow** — Second flow with package search + tool integration
+9. **Dev Prompt Preview** — Transparency tool
 
 ## Verification Plan
 

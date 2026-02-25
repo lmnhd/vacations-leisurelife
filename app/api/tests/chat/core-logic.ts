@@ -49,6 +49,7 @@ export async function handleChatRequest(
             data: {
                 reply: result.reply,
                 sessionId: result.sessionId,
+                display: result.display as any, // Attach display directives if present
             },
         };
     } catch (err) {

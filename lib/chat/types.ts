@@ -17,6 +17,7 @@ export interface ChatMessage {
     role: Role;
     content: string;
     timestamp: number;
+    display?: DisplayDirective;
 }
 
 // ─── API Contract ─────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ export interface ChatRequest {
 export interface ChatResponse {
     reply: string;
     sessionId: string;
+    display?: DisplayDirective;
     error?: string;
 }
 
@@ -55,6 +57,22 @@ export interface HeroChatConfig {
 
 // ─── Display Directives (from blueprint §9) ──────────────────────────────────
 
+export interface ParsedFormField {
+    name: string;
+    type: 'text' | 'select' | 'number' | 'email' | 'date';
+    label?: string;
+    options?: string[]; // for select
+    min?: number;       // for number
+    max?: number;       // for number
+    required?: boolean;
+}
+
+export interface ParsedFormDirective {
+    id: string;
+    title?: string;
+    fields: ParsedFormField[];
+}
+
 export interface DisplayDirective {
     heroTextMode: 'typewriter' | 'fade';
     backgroundScene?: {
@@ -63,7 +81,7 @@ export interface DisplayDirective {
         region: string;
     };
     media?: MediaItem[];
-    form?: string | null;
+    form?: ParsedFormDirective | null;
     thoughtsStream?: string[];
 }
 
