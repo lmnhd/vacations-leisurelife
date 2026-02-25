@@ -1,0 +1,27 @@
+{
+    "tool_id": "cruise_groups_manager",
+    "display_name": "Cruise Groups Manager",
+    "description": "Searches for existing private cruise groups or registers a new private group with Cruise Brothers. Use 'search' to find groups by ship, line, or date. Use 'create' to submit a new group registration required before booking into it.",
+    "handler": "lib/chat/tools/cruise-groups-manager.ts",
+    "available_in_contexts": [
+        "fast_booking.package_search",
+        "fast_booking.package_presentation"
+    ],
+    "input_schema": {
+        "action": "string",
+        "searchQuery": "string?",
+        "groupData": {
+            "groupNumber": "string?",
+            "groupName": "string?",
+            "cruiseLine": "string?",
+            "cruiseShip": "string?",
+            "sailDate": "string?"
+        }
+    },
+    "output_schema": {
+        "status": "string",
+        "message": "string",
+        "results": "array"
+    },
+    "thoughts_stream_label": "Interfacing with the Cruise Brothers Group management system..."
+}
