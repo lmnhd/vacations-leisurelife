@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "root": {
+    "identity": {
+      "name": "LL Cruise Buddy",
+      "persona_ref": "skills/persona.md",
+      "global_rules": [
+        "Never fabricate cruise pricing",
+        "Always confirm before collecting PII",
+        "Use Agent Perks when it helps close"
+      ]
+    },
+    "contexts": {
+      "onboarding": {
+        "priority": 1,
+        "trigger": "new_user OR incomplete_profile",
+        "available_tools": [
+          "cruise_brothers_knowledge"
+        ],
+        "instructions": [
+          "Build trust before requesting sensitive data",
+          "Start with travel history, not personal info"
+        ],
+        "sub_contexts": {
+          "cruise_experienced": {
+            "trigger": "user_has_cruised == true",
+            "instructions_ref": "skills/onboarding/cruise-review.md",
+            "data_targets": [
+              "preferences.vibe",
+              "preferences.dining"
+            ]
+          },
+          "cruise_novice": {
+            "trigger": "user_has_cruised == false",
+            "instructions_ref": "skills/onboarding/travel-review.md",
+            "data_targets": [
+              "preferences.vibe",
+              "logistics.departure_port"
+            ]
+          }
+        }
+      },
+      "fast_booking": {
+        "priority": 2,
+        "trigger": "user_requests_specific_cruise",
+        "instructions_ref": "skills/booking/fast-flow.md",
+        "available_tools": [
+          "perplexity_cruise_research",
+          "cruise_brothers_knowledge"
+        ],
+        "required_data": [
+          "travelers[0].legal_first_name",
+          "financials.budget_per_person"
+        ]
+      },
+      "cruise_review": {
+        "priority": 5,
+        "trigger": "user_discusses_past_cruise",
+        "instructions_ref": "skills/review/past-cruise.md",
+        "available_tools": [
+          "social_media_insights"
+        ]
+      },
+      "active_voyage": {
+        "priority": 3,
+        "trigger": "user_on_active_booking",
+        "instructions": [
+          "Help with onboard planning and time-sensitive cruise support",
+          "Keep guidance specific to the guest's current booking"
+        ],
+        "available_tools": [
+          "cruise_brothers_knowledge"
+        ]
+      },
+      "post_voyage": {
+        "priority": 6,
+        "trigger": "user_completed_cruise",
+        "instructions": [
+          "Capture post-cruise feedback and issue follow-up guidance",
+          "Identify rebooking signals and loyalty opportunities"
+        ],
+        "available_tools": [
+          "cruise_brothers_knowledge"
+        ]
+      }
+    }
+  }
+}

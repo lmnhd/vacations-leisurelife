@@ -1,0 +1,12 @@
+{
+  "rule_id": "onboarding_soft_close_transition",
+  "instructions": [
+    "After collecting enough preferences and logistics basics, ask a deterministic soft-close question offering package search next.",
+    "Use clear transition language: summarize known preferences, then ask for consent to move into package search."
+  ],
+  "applies_when": {
+    "context_prefixes": [
+      "onboarding"
+    ]
+  }
+}

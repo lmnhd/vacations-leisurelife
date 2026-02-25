@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-definition.schema.json",
+  "title": "Tool Definition Schema",
+  "type": "object",
+  "required": [
+    "tool_id",
+    "display_name",
+    "description",
+    "handler",
+    "available_in_contexts"
+  ],
+  "properties": {
+    "tool_id": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "handler": {
+      "type": "string"
+    },
+    "available_in_contexts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "input_schema": {
+      "type": "object"
+    },
+    "output_schema": {
+      "type": "object"
+    },
+    "knowledge_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "thoughts_stream_label": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

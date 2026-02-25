@@ -1,0 +1,31 @@
+{
+  "flow_id": "onboarding",
+  "description": "Get to know the user, build trust, populate guest profile",
+  "entry_condition": "guest_profile.completion_pct < 40",
+  "stages": [
+    {
+      "stage": "welcome",
+      "context": "onboarding",
+      "goal": "Establish rapport and explain what the assistant can do",
+      "exit_when": "user_has_responded_to_intro"
+    },
+    {
+      "stage": "travel_history",
+      "context": "onboarding.cruise_experienced OR onboarding.cruise_novice",
+      "goal": "Learn travel history and preference signals",
+      "exit_when": "preferences.vibe IS SET AND preferences.dining IS SET"
+    },
+    {
+      "stage": "logistics_basics",
+      "context": "onboarding",
+      "goal": "Capture departure flexibility and party basics",
+      "exit_when": "logistics.departure_port IS SET AND travelers.length > 0"
+    },
+    {
+      "stage": "soft_close",
+      "context": "onboarding",
+      "goal": "Offer package search transition",
+      "exit_when": "user_accepts_package_search OR user_declines"
+    }
+  ]
+}

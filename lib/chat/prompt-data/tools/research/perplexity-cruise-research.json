@@ -1,0 +1,20 @@
+{
+  "tool_id": "perplexity_cruise_research",
+  "display_name": "Perplexity Cruise Research",
+  "description": "Research cruise availability, pricing ranges, and destination trends.",
+  "handler": "lib/chat/tools/perplexity-research.ts",
+  "available_in_contexts": [
+    "fast_booking",
+    "fast_booking.package_search"
+  ],
+  "input_schema": {
+    "query": "string",
+    "destination": "string | null",
+    "departure_month": "string | null"
+  },
+  "output_schema": {
+    "research_summary": "string",
+    "offers": "array"
+  },
+  "thoughts_stream_label": "Researching live cruise options and pricing..."
+}

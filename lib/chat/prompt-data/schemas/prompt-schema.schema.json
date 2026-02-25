@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "prompt-schema.schema.json",
+  "title": "Prompt Schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "root"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "root": {
+      "type": "object",
+      "required": [
+        "identity",
+        "contexts"
+      ],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": [
+            "name",
+            "persona_ref",
+            "global_rules"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "persona_ref": {
+              "type": "string"
+            },
+            "global_rules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "contexts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/contextNode"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "contextNode": {
+      "type": "object",
+      "required": [
+        "priority",
+        "trigger"
+      ],
+      "properties": {
+        "priority": {
+          "type": "number"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions_ref": {
+          "type": "string"
+        },
+        "data_targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "available_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sub_contexts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/subContextNode"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "subContextNode": {
+      "type": "object",
+      "properties": {
+        "trigger": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions_ref": {
+          "type": "string"
+        },
+        "data_targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "available_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

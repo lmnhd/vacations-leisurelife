@@ -23,7 +23,7 @@ To ensure instant chat responses, the system will employ an **Offline Ingestion 
 - This script is meant to be run periodically (e.g., manually by a developer when updates are announced, or via a scheduled cron job).
 
 ### 2. Tool Definition
-**File**: `.github/prompt-data/tools/agency/cruise-brothers-knowledge.json`
+**File**: `lib/chat/prompt-data/tools/agency/cruise-brothers-knowledge.json`
 
 - Defines the JSON tool schema as specified in the master Chat System Blueprint.
 - Sets the `tool_id`: `"cruise_brothers_knowledge"`.
