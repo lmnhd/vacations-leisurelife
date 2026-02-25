@@ -1,6 +1,7 @@
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
+import { pipelineLog } from './pipeline-logger';
 import { runPerplexityCruiseResearch } from './tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowledge';
 import { runExcursionFinder } from './tools/excursion-finder';
@@ -154,6 +155,13 @@ export async function dispatchTools(input: {
     let updatedResponseText = input.llmResponseText;
     const directiveMatches = [...input.llmResponseText.matchAll(TOOL_DIRECTIVE_PATTERN)];
 
+    if (directiveMatches.length === 0) {
+        pipelineLog.tool('none', input.activeContextPath, 'skipped_no_directive', {
+            allowedTools: input.allowedToolIds,
+            responseSample: input.llmResponseText.slice(0, 150),
+        });
+    }
+
     for (const directiveMatch of directiveMatches) {
         const requestedToolId = directiveMatch[1]?.trim();
         const rawPayload = directiveMatch[2]?.trim();
@@ -191,6 +199,8 @@ export async function dispatchTools(input: {
             payload: parsedPayload,
             status: 'executed',
         });
+
+        pipelineLog.tool(requestedToolId, input.activeContextPath, 'dispatched', { payload: parsedPayload });
 
         if (requestedToolId === 'perplexity_cruise_research') {
             const perplexityPayload = PerplexityPayloadSchema.parse(parsedPayload ?? {});
