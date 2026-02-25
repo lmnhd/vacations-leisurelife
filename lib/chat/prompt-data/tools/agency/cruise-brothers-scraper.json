@@ -1,0 +1,20 @@
+{
+    "tool_id": "cruise_brothers_scraper",
+    "display_name": "Cruise Brothers Live Deals & Specials",
+    "description": "Query current cruise deals, promotions, Agent Perks, and price advantages from the Cruise Brothers agent portal.",
+    "handler": "lib/chat/tools/cruise-brothers-scraper.ts",
+    "available_in_contexts": [
+        "fast_booking",
+        "fast_booking.package_search"
+    ],
+    "input_schema": {
+        "query": "string",
+        "cruise_line": "string | null",
+        "destination": "string | null"
+    },
+    "output_schema": {
+        "deals_summary": "string",
+        "deals": "DealMatch[]"
+    },
+    "thoughts_stream_label": "Searching for live cruise deals and Agent Perks..."
+}

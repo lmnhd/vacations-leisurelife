@@ -46,7 +46,8 @@
         "instructions_ref": "skills/booking/fast-flow.md",
         "available_tools": [
           "perplexity_cruise_research",
-          "cruise_brothers_knowledge"
+          "cruise_brothers_knowledge",
+          "cruise_brothers_scraper"
         ],
         "required_data": [
           "travelers[0].legal_first_name",
@@ -69,7 +70,8 @@
             "available_tools": [
               "perplexity_cruise_research",
               "cruise_brothers_knowledge",
-              "excursion_finder"
+              "excursion_finder",
+              "cruise_brothers_scraper"
             ],
             "data_targets": [
               "group.preferred_packages"

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { runPerplexityCruiseResearch } from './tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowledge';
 import { runExcursionFinder } from './tools/excursion-finder';
+import { runCruiseBrothersScraper } from './tools/cruise-brothers-scraper';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -28,6 +29,12 @@ const ExcursionFinderPayloadSchema = z.object({
     port: z.string().min(1),
     interests: z.string().nullable().optional(),
     cruise_line: z.string().nullable().optional(),
+});
+
+const CruiseBrothersScraperPayloadSchema = z.object({
+    query: z.string().min(1),
+    cruise_line: z.string().nullable().optional(),
+    destination: z.string().nullable().optional(),
 });
 
 type ToolCallLogEntry = {
@@ -165,6 +172,21 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${excursionResult.excursionSummary}`
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'cruise_brothers_scraper') {
+            const scraperPayload = CruiseBrothersScraperPayloadSchema.parse(parsedPayload ?? {});
+            const scraperResult = await runCruiseBrothersScraper({
+                query: scraperPayload.query,
+                cruiseLine: scraperPayload.cruise_line ?? null,
+                destination: scraperPayload.destination ?? null,
+            });
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${scraperResult.dealsSummary}`
             );
             continue;
         }
