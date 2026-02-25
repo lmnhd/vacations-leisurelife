@@ -1,0 +1,31 @@
+{
+  "flow_id": "fast_booking",
+  "description": "User has a specific cruise request — get to booking ASAP",
+  "entry_condition": "user_message MATCHES cruise_intent",
+  "stages": [
+    {
+      "stage": "capture_request",
+      "context": "fast_booking",
+      "goal": "Extract: cruise line, destination, dates, party size",
+      "exit_when": "booking_request_fields >= 3"
+    },
+    {
+      "stage": "info_gap_fill",
+      "context": "fast_booking.info_collection",
+      "goal": "Collect any missing required guest data",
+      "exit_when": "all required_data fields populated"
+    },
+    {
+      "stage": "search_and_present",
+      "context": "fast_booking.package_search",
+      "goal": "Run package search, present top 3 options in chat",
+      "exit_when": "user_selects_package"
+    },
+    {
+      "stage": "payment",
+      "context": "fast_booking.payment_handoff",
+      "goal": "Initiate payment flow",
+      "exit_when": "payment_confirmed OR payment_link_sent"
+    }
+  ]
+}

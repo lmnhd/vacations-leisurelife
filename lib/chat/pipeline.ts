@@ -207,9 +207,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
     // Stage 10 — State Updater
     await updateState({
+        userId: input.userId,
         sessionId: input.sessionId,
+        activeContextPath: resolvedContext.activeContextPath,
         assistantMessage,
+        userMessage,
         extractedFacts,
+        toolCallsLog: toolDispatchResult.toolCallsLog as Array<Record<string, unknown>>,
     });
 
     return {

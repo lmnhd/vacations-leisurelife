@@ -51,7 +51,46 @@
         "required_data": [
           "travelers[0].legal_first_name",
           "financials.budget_per_person"
-        ]
+        ],
+        "sub_contexts": {
+          "info_collection": {
+            "trigger": "required_data_incomplete",
+            "instructions_ref": "skills/data-collection/pii-collection.md",
+            "data_targets": [
+              "travelers[0].legal_first_name",
+              "financials.budget_per_person",
+              "logistics.departure_port",
+              "group.total_travelers"
+            ]
+          },
+          "package_search": {
+            "trigger": "required_data_complete",
+            "instructions_ref": "skills/booking/package-search.md",
+            "available_tools": [
+              "perplexity_cruise_research",
+              "cruise_brothers_knowledge"
+            ],
+            "data_targets": [
+              "group.preferred_packages"
+            ]
+          },
+          "package_presentation": {
+            "trigger": "search_results_ready",
+            "instructions_ref": "skills/booking/package-presentation.md",
+            "available_tools": [
+              "perplexity_cruise_research",
+              "cruise_brothers_knowledge"
+            ]
+          },
+          "payment_handoff": {
+            "trigger": "user_selects_package",
+            "instructions_ref": "skills/data-collection/pii-collection.md",
+            "data_targets": [
+              "travelers[0].email",
+              "financials.flex_pay_interested"
+            ]
+          }
+        }
       },
       "cruise_review": {
         "priority": 5,

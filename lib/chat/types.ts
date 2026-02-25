@@ -96,6 +96,7 @@ export interface MediaItem {
 export interface PipelineInput {
     message: string;
     sessionId: string;
+    userId: string;
     channel: Channel;
 }
 
