@@ -6,6 +6,7 @@ import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowle
 import { runExcursionFinder } from './tools/excursion-finder';
 import { runCruiseBrothersScraper } from './tools/cruise-brothers-scraper';
 import { runPricingComparator } from './tools/pricing-comparator';
+import { runOdysseusSearch } from './tools/odysseus-search';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -45,6 +46,14 @@ const PricingComparatorPayloadSchema = z.object({
     number_of_guests: z.number(),
     number_of_nights: z.number(),
     client_total_budget: z.number(),
+});
+
+const OdysseusSearchPayloadSchema = z.object({
+    vendorId: z.number().nullable().optional(),
+    startDate: z.string().nullable().optional(),
+    endDate: z.string().nullable().optional(),
+    passengers: z.number(),
+    guestAges: z.array(z.number())
 });
 
 type ToolCallLogEntry = {
@@ -215,6 +224,23 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n> [!NOTE]\n> ${compResult.affordabilitySummary}`
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'odysseus_search') {
+            const odyPayload = OdysseusSearchPayloadSchema.parse(parsedPayload ?? {});
+            const odyResult = await runOdysseusSearch({
+                vendorId: odyPayload.vendorId,
+                startDate: odyPayload.startDate,
+                endDate: odyPayload.endDate,
+                passengers: odyPayload.passengers,
+                guestAges: odyPayload.guestAges,
+            });
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${odyResult.searchSummary}\n\`\`\`json\n${JSON.stringify(odyResult.results, null, 2)}\n\`\`\``
             );
             continue;
         }

@@ -72,7 +72,8 @@
               "cruise_brothers_knowledge",
               "excursion_finder",
               "cruise_brothers_scraper",
-              "pricing_comparator"
+              "pricing_comparator",
+              "odysseus_search"
             ],
             "data_targets": [
               "group.preferred_packages"
