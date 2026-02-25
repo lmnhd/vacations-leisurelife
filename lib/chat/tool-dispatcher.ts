@@ -3,6 +3,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { runPerplexityCruiseResearch } from './tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowledge';
+import { runExcursionFinder } from './tools/excursion-finder';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -21,6 +22,12 @@ const PerplexityPayloadSchema = z.object({
 
 const CruiseBrothersPayloadSchema = z.object({
     query: z.string().min(1),
+});
+
+const ExcursionFinderPayloadSchema = z.object({
+    port: z.string().min(1),
+    interests: z.string().nullable().optional(),
+    cruise_line: z.string().nullable().optional(),
 });
 
 type ToolCallLogEntry = {
@@ -143,6 +150,21 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${knowledgeResult.knowledgeSummary}`
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'excursion_finder') {
+            const excursionPayload = ExcursionFinderPayloadSchema.parse(parsedPayload ?? {});
+            const excursionResult = await runExcursionFinder({
+                port: excursionPayload.port,
+                interests: excursionPayload.interests ?? null,
+                cruiseLine: excursionPayload.cruise_line ?? null,
+            });
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${excursionResult.excursionSummary}`
             );
             continue;
         }

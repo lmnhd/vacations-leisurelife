@@ -68,7 +68,8 @@
             "instructions_ref": "skills/booking/package-search.md",
             "available_tools": [
               "perplexity_cruise_research",
-              "cruise_brothers_knowledge"
+              "cruise_brothers_knowledge",
+              "excursion_finder"
             ],
             "data_targets": [
               "group.preferred_packages"
@@ -105,7 +106,8 @@
         "trigger": "user_on_active_booking",
         "instructions_ref": "skills/voyage/onboard-assistant.md",
         "available_tools": [
-          "cruise_brothers_knowledge"
+          "cruise_brothers_knowledge",
+          "excursion_finder"
         ]
       },
       "post_voyage": {
