@@ -124,6 +124,18 @@
         "available_tools": [
           "cruise_brothers_knowledge"
         ]
+      },
+      "general_chat": {
+        "priority": 10,
+        "trigger": "always",
+        "instructions": [
+          "Continue the conversation naturally based on what the user has shared so far",
+          "Work toward understanding the user's travel goals and preferences",
+          "Gently guide toward collecting departure port, travel party size, and budget when appropriate"
+        ],
+        "available_tools": [
+          "cruise_brothers_knowledge"
+        ]
       }
     }
   }

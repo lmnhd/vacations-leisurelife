@@ -45,6 +45,7 @@ function deriveSessionSignal(conversationText: string): {
             normalizedConversationText.includes('specific cruise') ||
             normalizedConversationText.includes('sailing on'),
         incompleteProfile: normalizedConversationText.trim().length === 0,
+
         discussesPastCruise:
             normalizedConversationText.includes('last cruise') ||
             normalizedConversationText.includes('previous cruise') ||

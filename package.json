@@ -9,7 +9,7 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "update-deals": "node scripts/trigger-update.js",
-    "sim": "npx ts-node --project tsconfig.json tests/simulator.ts"
+    "sim": "npx tsx --env-file=.env.local tests/simulator.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

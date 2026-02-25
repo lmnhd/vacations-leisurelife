@@ -3,6 +3,37 @@ import type { ChatMessage } from './types';
 import { appendSessionMessage } from './session-hydrator';
 import { chatStorageService } from './chat-storage';
 
+function deepMerge(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>
+): Record<string, unknown> {
+    const result: Record<string, unknown> = { ...target };
+    for (const key of Object.keys(source)) {
+        const sourceValue = source[key];
+        const targetValue = result[key];
+        if (
+            sourceValue !== null &&
+            typeof sourceValue === 'object' &&
+            !Array.isArray(sourceValue) &&
+            targetValue !== null &&
+            typeof targetValue === 'object' &&
+            !Array.isArray(targetValue)
+        ) {
+            result[key] = deepMerge(
+                targetValue as Record<string, unknown>,
+                sourceValue as Record<string, unknown>
+            );
+        } else if (typeof sourceValue === 'boolean' && typeof targetValue === 'boolean' && targetValue === true && sourceValue === false) {
+            // Never downgrade a confirmed true to false — a later turn not mentioning a fact doesn't negate it
+        } else if (typeof sourceValue === 'string' && sourceValue.trim() === '' && typeof targetValue === 'string' && targetValue.trim() !== '') {
+            // Never overwrite a populated string field with an empty string
+        } else {
+            result[key] = sourceValue;
+        }
+    }
+    return result;
+}
+
 export async function updateState(input: {
     userId: string;
     sessionId: string;
@@ -62,10 +93,10 @@ export async function updateState(input: {
 
         const { metadata: _metadata, ...factsWithoutMetadata } = input.extractedFacts;
 
-        const mergedGuestInfo: Record<string, unknown> = {
-            ...existingGuestInfo,
-            ...factsWithoutMetadata,
-        };
+        const mergedGuestInfo: Record<string, unknown> = deepMerge(
+            existingGuestInfo,
+            factsWithoutMetadata
+        );
 
         const updatedCompletion: Record<string, unknown> = {
             ...existingCompletion,
