@@ -539,6 +539,18 @@ The system maps every conversation to `GUEST_INFO.json` fields using a **complet
 > [!NOTE]
 > Phase 1 uses standard DynamoDB queries only. Vector/semantic search is deferred to Phase 2 when user profiles reach complexity thresholds. This matches the vision for JSON-based embedding as an alternative to a dedicated vector database.
 
+### Testability Hooks
+
+`ChatStorageService` exposes two test-only methods (guarded behind `NODE_ENV === 'test'`) that the [Simulator Persona Engine](./TESTING_SYSTEM_BLUEPRINT.md) uses for state injection and assertion validation:
+
+| Method | Purpose |
+|--------|--------|
+| `injectTestState(userId, overrides)` | Directly sets `activeContextPath`, `flowState`, and date overrides in `lll-chat-sessions` — enables Time Travel testing across lifecycle phases |
+| `getFullSnapshot(userId)` | Returns the complete guest profile (`lll-guest-profiles`), session state (`lll-chat-sessions`), and recent conversation turns (`lll-conversations`) as a single typed object for assertion validation |
+
+> [!CAUTION]
+> These methods bypass the pipeline and write directly to DynamoDB. They are **test-only** and throw if `NODE_ENV !== 'test'`.
+
 ### DynamoDB Table Design
 
 Three tables power the chat system. All reads are `userId`-keyed — no joins, no migrations ever.
@@ -694,6 +706,7 @@ This blueprint defines **four core systems**:
 | **Tool Registry** | External tools (Perplexity, scrapers, builders) as drop-in JSON definitions |
 | **Chat Flow Pipeline** | 10-stage message processing pipeline with tool dispatch |
 | **Chat Flows** | Extensible flow registry — drop a JSON file to add a new journey |
+| **Simulator Persona Engine** | AI-vs-AI stress testing with time travel — see [Testing Blueprint](./TESTING_SYSTEM_BLUEPRINT.md) |
 
 ### Recommended Build Order
 1. **DynamoDB tables** — Create the 3 tables (`lll-chat-sessions`, `lll-guest-profiles`, `lll-conversations`) via AWS CLI; add `dynamo-client.ts` and `chat-storage.ts`
@@ -705,6 +718,7 @@ This blueprint defines **four core systems**:
 7. **Memory Extractor** — Profile building from conversations into DynamoDB
 8. **Fast Booking Flow** — Second flow with package search + tool integration
 9. **Dev Prompt Preview** — Transparency tool
+10. **Simulator Persona Engine** — Automated lifecycle stress testing ([Testing Blueprint](./TESTING_SYSTEM_BLUEPRINT.md))
 
 ## Verification Plan
 
