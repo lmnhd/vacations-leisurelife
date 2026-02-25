@@ -73,7 +73,8 @@
               "excursion_finder",
               "cruise_brothers_scraper",
               "pricing_comparator",
-              "odysseus_search"
+              "odysseus_search",
+              "cruise_groups_manager"
             ],
             "data_targets": [
               "group.preferred_packages"

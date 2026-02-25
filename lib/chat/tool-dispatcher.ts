@@ -7,6 +7,7 @@ import { runExcursionFinder } from './tools/excursion-finder';
 import { runCruiseBrothersScraper } from './tools/cruise-brothers-scraper';
 import { runPricingComparator } from './tools/pricing-comparator';
 import { runOdysseusSearch } from './tools/odysseus-search';
+import { runCruiseGroupsManager } from './tools/cruise-groups-manager';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -54,6 +55,18 @@ const OdysseusSearchPayloadSchema = z.object({
     endDate: z.string().nullable().optional(),
     passengers: z.number(),
     guestAges: z.array(z.number())
+});
+
+const CruiseGroupsManagerPayloadSchema = z.object({
+    action: z.enum(['search', 'create']),
+    searchQuery: z.string().optional(),
+    groupData: z.object({
+        groupNumber: z.string().optional(),
+        groupName: z.string().optional(),
+        cruiseLine: z.string().optional(),
+        cruiseShip: z.string().optional(),
+        sailDate: z.string().optional(),
+    }).optional()
 });
 
 type ToolCallLogEntry = {
@@ -241,6 +254,21 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${odyResult.searchSummary}\n\`\`\`json\n${JSON.stringify(odyResult.results, null, 2)}\n\`\`\``
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'cruise_groups_manager') {
+            const groupPayload = CruiseGroupsManagerPayloadSchema.parse(parsedPayload ?? {});
+            const groupResult = await runCruiseGroupsManager({
+                action: groupPayload.action,
+                searchQuery: groupPayload.searchQuery,
+                groupData: groupPayload.groupData
+            });
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${groupResult.message}\n\`\`\`json\n${JSON.stringify(groupResult.results, null, 2)}\n\`\`\``
             );
             continue;
         }
