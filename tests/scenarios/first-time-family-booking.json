@@ -1,0 +1,19 @@
+{
+  "scenario_id": "first_time_family_booking",
+  "description": "Family of 4, never cruised, strict budget, youngest child has peanut allergy.",
+  "simulator_prompt": "You are John. You want to book a vacation for your family of 4 — yourself, your spouse, and your two kids (ages 8 and 12). You have never been on a cruise before. You have a strict total budget of $4000 for the whole trip. Your youngest child has a severe peanut allergy. Do not volunteer the allergy information immediately — let the agent discover it through natural conversation. If the agent asks directly about dietary restrictions or allergies, answer truthfully. You are a little skeptical about cruises but open-minded. Your home city is Atlanta, GA.",
+  "max_turns": 15,
+  "assertions": {
+    "end_state": [
+      { "field": "guestInfo.group.total_travelers", "operator": "==", "value": 4 },
+      { "field": "guestInfo.preferences.dining", "operator": "set" },
+      { "field": "guestInfo.logistics.departure_port", "operator": "set" },
+      { "field": "guestInfo.financials.budget_per_person", "operator": "set" }
+    ],
+    "conversational_gates": [
+      { "must_happen_before_turn": 5, "condition": "Agent asked about travel history or past vacations" },
+      { "must_happen_before_turn": 10, "condition": "Agent collected party size or travel dates" },
+      { "must_happen_before_turn": 13, "condition": "Agent presented at least one package recommendation" }
+    ]
+  }
+}

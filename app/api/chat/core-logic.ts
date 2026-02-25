@@ -11,6 +11,7 @@ import type { ChatResponse } from '@/lib/chat/types';
 const ChatRequestSchema = z.object({
     message: z.string().min(1, 'Message is required').max(2000),
     sessionId: z.string().min(1, 'Session ID is required'),
+    userId: z.string().optional(),
     channel: z.enum(['text', 'voice']).default('text'),
 });
 
@@ -29,12 +30,14 @@ export async function handleChatRequest(
         };
     }
 
-    const { message, sessionId, channel } = parsed.data;
+    const { message, sessionId, userId, channel } = parsed.data;
+    const resolvedUserId = userId ?? `anon:${sessionId}`;
 
     try {
         const result = await runPipeline({
             message,
             sessionId,
+            userId: resolvedUserId,
             channel,
         });
 

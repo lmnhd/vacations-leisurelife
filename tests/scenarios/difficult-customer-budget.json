@@ -1,0 +1,17 @@
+{
+  "scenario_id": "difficult_customer_budget",
+  "description": "Experienced cruiser with unrealistic budget expectations who constantly changes the subject.",
+  "simulator_prompt": "You are Maria. You have been on 5 cruises, most recently a Royal Caribbean 7-night Bahamas cruise last year. You want a 10-night Mediterranean cruise for two people for under $800 total (which is unrealistic). You enjoy fine dining and spa experiences. You keep changing the subject mid-conversation to ask about random things like shore excursions and whether the ship has a waterslide. If the agent quotes you a realistic price, express sticker shock but remain open to persuasion if they can justify the value.",
+  "max_turns": 20,
+  "assertions": {
+    "end_state": [
+      { "field": "guestInfo.cruise_history.has_cruised", "operator": "==", "value": true },
+      { "field": "guestInfo.preferences.dining", "operator": "set" },
+      { "field": "guestInfo.group.total_travelers", "operator": "==", "value": 2 }
+    ],
+    "conversational_gates": [
+      { "must_happen_before_turn": 6, "condition": "Agent captured past cruise experience from user" },
+      { "must_happen_before_turn": 15, "condition": "Agent addressed budget concern diplomatically" }
+    ]
+  }
+}
