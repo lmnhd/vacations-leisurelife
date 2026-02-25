@@ -13,6 +13,7 @@ import { processResponse } from './response-processor';
 import { extractMemoryFacts } from './memory-extractor';
 import { updateState } from './state-updater';
 import type { PipelineInput, PipelineOutput, ChatMessage, Channel } from './types';
+import { pipelineLog } from './pipeline-logger';
 
 function deriveSessionSignal(conversationText: string): {
     hasCruised: boolean | null;
@@ -121,6 +122,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     });
     const signal = deriveSessionSignal(fullConversationText);
 
+    pipelineLog.stage('session-hydrator', input.sessionId, { userId: input.userId, channel: input.channel });
+
     // Stage 2 — Context Resolver
     const resolvedContext = await resolveContext({
         hasCruised: signal.hasCruised,
@@ -131,17 +134,23 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         completedCruise: signal.completedCruise,
     });
 
+    pipelineLog.stage('context-resolver', input.sessionId, { activeContextPath: resolvedContext.activeContextPath, availableTools: resolvedContext.availableTools });
+
     // Stage 3 — Rule Injector
     const activeRules = await injectRules({
         activeContextPath: resolvedContext.activeContextPath,
         sessionId: input.sessionId,
     });
 
+    pipelineLog.stage('rule-injector', input.sessionId, { activeRulesCount: activeRules.length });
+
     // Stage 4 — Skill Loader
     const loadedSkills = await loadSkills({
         activeContextPath: resolvedContext.activeContextPath,
         instructionRefs: resolvedContext.instructionRefs,
     });
+
+    pipelineLog.stage('skill-loader', input.sessionId, { loadedSkillsCount: loadedSkills.length });
 
     // Stage 5 — Prompt Assembler
     const { systemPrompt } = await assembleSystemPrompt({
@@ -154,6 +163,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         activeRules,
         loadedSkills,
     });
+
+    pipelineLog.stage('prompt-assembler', input.sessionId, { systemPromptLength: systemPrompt.length });
 
     // Stage 1 — Session Hydrator
     const history = hydrateSession({
@@ -174,9 +185,12 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     });
 
     // Stage 6 — LLM Call
+    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: history.length });
     const rawLlmText = await callChatLlm({
         history,
     });
+
+    pipelineLog.llm(input.sessionId, 'call_complete', { responseLength: rawLlmText.length, rawPreview: rawLlmText.slice(0, 120) });
 
     // Stage 7 — Tool Dispatcher
     const toolDispatchResult = await dispatchTools({
@@ -184,6 +198,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         activeContextPath: resolvedContext.activeContextPath,
         allowedToolIds: resolvedContext.availableTools,
     });
+
+    pipelineLog.stage('tool-dispatcher', input.sessionId, { toolCallsLog: toolDispatchResult.toolCallsLog });
 
     // Stage 8 — Response Processor
     const processedResponse = processResponse({
@@ -198,6 +214,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         display: processedResponse.display,
     };
 
+    pipelineLog.stage('response-processor', input.sessionId, { replyLength: processedResponse.reply.length, hasDisplay: !!processedResponse.display });
+
     // Stage 9 — Memory Extractor
     const extractedFacts = await extractMemoryFacts({
         sessionId: input.sessionId,
@@ -205,6 +223,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         userMessage: input.message,
         assistantReply: processedResponse.reply,
     });
+
+    pipelineLog.memory(input.sessionId, 'extracted', { fieldCount: Object.keys(extractedFacts).filter(k => k !== 'metadata').length, facts: extractedFacts });
 
     // Stage 10 — State Updater
     await updateState({
@@ -216,6 +236,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         extractedFacts,
         toolCallsLog: toolDispatchResult.toolCallsLog as Array<Record<string, unknown>>,
     });
+
+    pipelineLog.stage('state-updater', input.sessionId, { activeContextPath: resolvedContext.activeContextPath });
 
     return {
         reply: processedResponse.reply,
