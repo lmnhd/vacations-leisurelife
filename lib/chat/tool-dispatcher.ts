@@ -8,6 +8,7 @@ import { runCruiseBrothersScraper } from './tools/cruise-brothers-scraper';
 import { runPricingComparator } from './tools/pricing-comparator';
 import { runOdysseusSearch } from './tools/odysseus-search';
 import { runCruiseGroupsManager } from './tools/cruise-groups-manager';
+import { runPackageBuilder } from './tools/package-builder';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -55,6 +56,32 @@ const OdysseusSearchPayloadSchema = z.object({
     endDate: z.string().nullable().optional(),
     passengers: z.number(),
     guestAges: z.array(z.number())
+});
+
+const PackageBuilderPayloadSchema = z.object({
+    packages: z.array(z.object({
+        cruiseDetails: z.object({
+            odysseusItineraryCode: z.string().min(1),
+            shipName: z.string().min(1),
+            sailDate: z.string().min(1),
+            durationNights: z.number().int().positive(),
+            departurePort: z.string().min(1),
+            baseFarePerPerson: z.number().positive(),
+            taxesAndFeesPerPerson: z.number().nonnegative(),
+        }),
+        guests: z.object({
+            count: z.number().int().min(1),
+            ages: z.array(z.number().int().nonnegative()),
+        }),
+        gratuityPerPerson: z.number().nonnegative().optional(),
+        includedExcursions: z.array(z.object({
+            excursionId: z.string(),
+            label: z.string(),
+            pricePerPerson: z.number().nonnegative(),
+        })).optional(),
+        appliedPerkCodes: z.array(z.string()).optional(),
+        depositTier: z.enum(['standard', 'promo', 'group']).optional(),
+    })).min(1).max(3),
 });
 
 const CruiseGroupsManagerPayloadSchema = z.object({
@@ -269,6 +296,17 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${groupResult.message}\n\`\`\`json\n${JSON.stringify(groupResult.results, null, 2)}\n\`\`\``
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'package_builder') {
+            const pkgPayload = PackageBuilderPayloadSchema.parse(parsedPayload ?? {});
+            const pkgResult = await runPackageBuilder(pkgPayload);
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n> [!NOTE]\n> Package${pkgResult.comparisonMode ? 's' : ''} ready for presentation.\n\`\`\`json\n${JSON.stringify(pkgResult, null, 2)}\n\`\`\``
             );
             continue;
         }

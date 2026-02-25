@@ -1,0 +1,67 @@
+{
+    "tool_id": "package_builder",
+    "display_name": "Cruise Package Builder",
+    "description": "Synthesizes raw cruise data, guest counts, taxes, excursions, and Agent Perks into a finalized, bookable CruisePackage object. Invoke ONLY after odysseus_search has returned at least one itinerary code AND pricing_comparator has confirmed budget fit. Pass all known itinerary options (up to 3) to enable side-by-side comparison mode. Never invoke during onboarding or early discovery.",
+    "handler": "lib/chat/tools/package-builder.ts",
+    "available_in_contexts": [
+        "fast_booking.package_presentation"
+    ],
+    "input_schema": {
+        "packages": {
+            "type": "array",
+            "description": "One to three cruise options to build packages for. Pass multiple for comparison mode.",
+            "items": {
+                "cruiseDetails": {
+                    "odysseusItineraryCode": "string — the itinerary code returned by odysseus_search (e.g. CARN-12345)",
+                    "shipName": "string",
+                    "sailDate": "string — ISO 8601 or MM/DD/YYYY",
+                    "durationNights": "number",
+                    "departurePort": "string",
+                    "baseFarePerPerson": "number — base cabin fare per person in USD",
+                    "taxesAndFeesPerPerson": "number — taxes, port fees, NCF per person in USD"
+                },
+                "guests": {
+                    "count": "number — total number of passengers",
+                    "ages": "number[] — age of each passenger"
+                },
+                "gratuityPerPerson": "number (optional) — prepaid gratuity per person in USD, default 0",
+                "includedExcursions": {
+                    "type": "array (optional)",
+                    "items": {
+                        "excursionId": "string",
+                        "label": "string",
+                        "pricePerPerson": "number"
+                    }
+                },
+                "appliedPerkCodes": "string[] (optional) — Agent Perk codes to apply, e.g. [\"OBC50\", \"FREE_GRATS\"]",
+                "depositTier": "string (optional) — one of: standard | promo | group. Defaults to standard"
+            }
+        }
+    },
+    "output_schema": {
+        "packages": {
+            "type": "array",
+            "items": {
+                "packageId": "string — e.g. PKG-A1B2C",
+                "odysseusItineraryCode": "string",
+                "shipName": "string",
+                "sailDate": "string",
+                "durationNights": "number",
+                "departurePort": "string",
+                "guestCount": "number",
+                "lineItems": "PackageLineItem[]",
+                "subtotal": "number",
+                "totalPackagePrice": "number",
+                "pricePerPerson": "number",
+                "depositRequired": "number",
+                "depositTier": "string",
+                "appliedPerks": "AppliedPerk[]",
+                "totalPerkSavings": "number",
+                "odysseusBookingUrl": "string",
+                "presentationReady": "boolean"
+            }
+        },
+        "comparisonMode": "boolean — true when 2 or more packages are returned"
+    },
+    "thoughts_stream_label": "Assembling your custom cruise package..."
+}

@@ -86,7 +86,8 @@
             "available_tools": [
               "perplexity_cruise_research",
               "cruise_brothers_knowledge",
-              "pricing_comparator"
+              "pricing_comparator",
+              "package_builder"
             ]
           },
           "payment_handoff": {

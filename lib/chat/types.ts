@@ -83,6 +83,87 @@ export interface DisplayDirective {
     media?: MediaItem[];
     form?: ParsedFormDirective | null;
     thoughtsStream?: string[];
+    packageCard?: CruisePackage | CruisePackage[];
+}
+
+// ─── Package Builder Types ────────────────────────────────────────────────────
+
+export type PackageLineItemCategory =
+    | 'cruise_fare'
+    | 'taxes_fees'
+    | 'excursion'
+    | 'gratuities'
+    | 'agent_perk'
+    | 'deposit';
+
+export interface PackageLineItem {
+    category: PackageLineItemCategory;
+    label: string;
+    unitPrice: number;
+    quantity: number;
+    totalPrice: number;
+    isSavings: boolean;
+}
+
+export type DepositTier = 'standard' | 'promo' | 'group';
+
+export interface AppliedPerk {
+    perkCode: string;
+    label: string;
+    savingsAmount: number;
+}
+
+export interface CruisePackage {
+    packageId: string;
+    odysseusItineraryCode: string;
+    shipName: string;
+    sailDate: string;
+    durationNights: number;
+    departurePort: string;
+    guestCount: number;
+    lineItems: PackageLineItem[];
+    subtotal: number;
+    totalPackagePrice: number;
+    pricePerPerson: number;
+    depositRequired: number;
+    depositTier: DepositTier;
+    appliedPerks: AppliedPerk[];
+    totalPerkSavings: number;
+    odysseusBookingUrl: string;
+    presentationReady: boolean;
+}
+
+export interface PackageBuilderCruiseInput {
+    odysseusItineraryCode: string;
+    shipName: string;
+    sailDate: string;
+    durationNights: number;
+    departurePort: string;
+    baseFarePerPerson: number;
+    taxesAndFeesPerPerson: number;
+}
+
+export interface PackageBuilderExcursionInput {
+    excursionId: string;
+    label: string;
+    pricePerPerson: number;
+}
+
+export interface PackageBuilderInput {
+    cruiseDetails: PackageBuilderCruiseInput;
+    guests: {
+        count: number;
+        ages: number[];
+    };
+    gratuityPerPerson?: number;
+    includedExcursions?: PackageBuilderExcursionInput[];
+    appliedPerkCodes?: string[];
+    depositTier?: DepositTier;
+}
+
+export interface PackageBuilderOutput {
+    packages: CruisePackage[];
+    comparisonMode: boolean;
 }
 
 export interface MediaItem {
