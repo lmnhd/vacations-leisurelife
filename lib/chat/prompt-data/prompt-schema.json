@@ -71,7 +71,8 @@
               "perplexity_cruise_research",
               "cruise_brothers_knowledge",
               "excursion_finder",
-              "cruise_brothers_scraper"
+              "cruise_brothers_scraper",
+              "pricing_comparator"
             ],
             "data_targets": [
               "group.preferred_packages"
@@ -82,7 +83,8 @@
             "instructions_ref": "skills/booking/package-presentation.md",
             "available_tools": [
               "perplexity_cruise_research",
-              "cruise_brothers_knowledge"
+              "cruise_brothers_knowledge",
+              "pricing_comparator"
             ]
           },
           "payment_handoff": {
