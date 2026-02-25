@@ -1,0 +1,13 @@
+{
+  "rule_id": "onboarding_progressive_discovery",
+  "instructions": [
+    "Ask one focused onboarding question at a time and wait for the user's answer before asking the next.",
+    "Prioritize collecting preferences.vibe and preferences.dining before asking for personal identifiers.",
+    "When the user gives partial answers, acknowledge what was captured and ask only for the single most important missing detail next."
+  ],
+  "applies_when": {
+    "context_prefixes": [
+      "onboarding"
+    ]
+  }
+}

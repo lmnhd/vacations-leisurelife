@@ -615,52 +615,50 @@ lib/
 │   ├── state-updater.ts         # Stage 10
 │   ├── dynamo-client.ts         # DynamoDB DocumentClient singleton (AWS SDK v3)
 │   ├── chat-storage.ts          # ChatStorageService — abstraction over all 3 DynamoDB tables
-│   └── tools/                   # Tool handler implementations
-│       ├── perplexity-research.ts
-│       ├── social-media-insights.ts
-│       ├── cruise-brothers-knowledge.ts
-│       ├── cruise-brothers-scraper.ts
-│       ├── package-builder.ts
-│       └── pricing-comparator.ts
+│   ├── tools/                   # Tool handler implementations
+│   │   ├── perplexity-research.ts
+│   │   ├── social-media-insights.ts
+│   │   ├── cruise-brothers-knowledge.ts
+│   │   ├── cruise-brothers-scraper.ts
+│   │   ├── package-builder.ts
+│   │   └── pricing-comparator.ts
+│   └── prompt-data/
+│       ├── prompt-schema.json   # Master context tree (shared context pool)
+│       ├── flows/               # Drop a JSON file to add a flow
+│       │   ├── onboarding.json
+│       │   ├── fast-booking.json
+│       │   └── (future: group-booking.json, honeymoon.json, etc.)
+│       ├── tools/               # Drop a JSON file to add a tool
+│       │   ├── research/
+│       │   │   ├── perplexity-cruise-research.json
+│       │   │   ├── social-media-insights.json
+│       │   │   └── excursion-finder.json
+│       │   ├── agency/
+│       │   │   ├── cruise-brothers-knowledge.json
+│       │   │   ├── cruise-brothers-scraper.json
+│       │   │   └── pricing-comparator.json
+│       │   └── construction/
+│       │       └── package-builder.json
+│       ├── rules/
+│       │   ├── wheelchair-accessibility.json
+│       │   ├── minor-travelers.json
+│       │   └── ...
+│       └── skills/
+│           ├── persona.md
+│           ├── onboarding/
+│           ├── booking/
+│           ├── review/
+│           └── voyage/
 │
 ├── chat/types.ts                # All chat system types (SessionState, ResolvedContext, etc.)
 │
 app/api/
 ├── chat/route.ts                # API handler (thin, delegates to pipeline)
 ├── dev/prompt-preview/route.ts  # Dev prompt preview endpoint
-│
-.github/
-├── prompt-data/
-│   ├── prompt-schema.json       # Master context tree (shared context pool)
-│   ├── flows/                   # Drop a JSON file to add a flow
-│   │   ├── onboarding.json
-│   │   ├── fast-booking.json
-│   │   └── (future: group-booking.json, honeymoon.json, etc.)
-│   ├── tools/                   # Drop a JSON file to add a tool
-│   │   ├── research/
-│   │   │   ├── perplexity-cruise-research.json
-│   │   │   ├── social-media-insights.json
-│   │   │   └── excursion-finder.json
-│   │   ├── agency/
-│   │   │   ├── cruise-brothers-knowledge.json
-│   │   │   ├── cruise-brothers-scraper.json
-│   │   │   └── pricing-comparator.json
-│   │   └── construction/
-│   │       └── package-builder.json
-│   ├── rules/
-│   │   ├── wheelchair-accessibility.json
-│   │   ├── minor-travelers.json
-│   │   └── ...
-│   └── skills/
-│       ├── persona.md
-│       ├── onboarding/
-│       ├── booking/
-│       ├── review/
-│       └── voyage/
 ```
 
 > [!IMPORTANT]
-> All prompt content lives under `.github/prompt-data/`. Zero prompt text in TypeScript files. Code only contains **template logic** that reads and assembles the JSON/MD files.
+> All prompt content lives under `lib/chat/prompt-data/`. Zero prompt text in TypeScript files. Code only contains **template logic** that reads and assembles the JSON/MD files.
 
 ---
 

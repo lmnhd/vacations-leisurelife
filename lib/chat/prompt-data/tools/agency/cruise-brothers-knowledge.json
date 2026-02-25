@@ -1,0 +1,16 @@
+{
+  "tool_id": "cruise_brothers_knowledge",
+  "display_name": "Cruise Brothers Agent Knowledge Base",
+  "description": "Query policies, supplier procedures, commission details, and Agent Perks.",
+  "handler": "lib/chat/tools/cruise-brothers-knowledge.ts",
+  "available_in_contexts": [
+    "*"
+  ],
+  "knowledge_sources": [
+    "Cruise Brothers Agent Handbook",
+    "Supplier Portal Procedures",
+    "Commission Schedules by Cruise Line",
+    "Agent Perks Program Details"
+  ],
+  "thoughts_stream_label": "Checking Cruise Brothers agent resources..."
+}

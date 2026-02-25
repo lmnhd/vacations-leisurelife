@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",
+    "@aws-sdk/client-dynamodb": "^3.997.0",
+    "@aws-sdk/lib-dynamodb": "^3.997.0",
     "@clerk/nextjs": "^6.37.2",
     "@hookform/resolvers": "^3.2.0",
     "@material-tailwind/react": "^2.1.1",
