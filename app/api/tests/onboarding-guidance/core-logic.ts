@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { resolveOnboardingGuidance } from '@/lib/chat/onboarding-flow';
+import { resolveOnboardingStage } from '@/lib/chat/onboarding-flow';
 
-const OnboardingGuidanceRequestSchema = z.object({
+const OnboardingStageRequestSchema = z.object({
     activeContextPath: z.string().min(1, 'activeContextPath is required'),
     conversationText: z.string().default(''),
 });
@@ -10,11 +10,11 @@ export async function handleOnboardingGuidanceRequest(body: unknown): Promise<{
     status: number;
     data: {
         stage?: 'welcome' | 'travel_history' | 'logistics_basics' | 'soft_close';
-        instructions?: string[];
+        contextPath?: string;
         error?: string;
     };
 }> {
-    const parsed = OnboardingGuidanceRequestSchema.safeParse(body);
+    const parsed = OnboardingStageRequestSchema.safeParse(body);
     if (!parsed.success) {
         return {
             status: 400,
@@ -24,21 +24,19 @@ export async function handleOnboardingGuidanceRequest(body: unknown): Promise<{
         };
     }
 
-    const guidance = resolveOnboardingGuidance(parsed.data);
-    if (!guidance) {
+    const result = resolveOnboardingStage(parsed.data);
+    if (!result) {
         return {
             status: 200,
-            data: {
-                instructions: [],
-            },
+            data: {},
         };
     }
 
     return {
         status: 200,
         data: {
-            stage: guidance.stage,
-            instructions: guidance.instructions,
+            stage: result.stage,
+            contextPath: result.contextPath,
         },
     };
 }

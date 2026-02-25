@@ -1,60 +1,73 @@
-export function resolveOnboardingGuidance(input: {
+export type OnboardingStage = 'welcome' | 'travel_history' | 'logistics_basics' | 'soft_close';
+
+export type OnboardingStageResult = {
+    stage: OnboardingStage;
+    contextPath: string;
+};
+
+function hasTravelHistorySignals(normalizedText: string): boolean {
+    return (
+        normalizedText.includes('cruise') ||
+        normalizedText.includes('vacation') ||
+        normalizedText.includes('travel')
+    );
+}
+
+function hasLogisticsSignals(normalizedText: string): boolean {
+    return (
+        normalizedText.includes('port') ||
+        normalizedText.includes('dates') ||
+        normalizedText.includes('month') ||
+        normalizedText.includes('from ') ||
+        normalizedText.includes('travelers') ||
+        normalizedText.includes('party')
+    );
+}
+
+function hasCruiseExperience(normalizedText: string): boolean {
+    return (
+        normalizedText.includes('been on a cruise') ||
+        normalizedText.includes('last cruise') ||
+        normalizedText.includes('cruised before') ||
+        normalizedText.includes('took a cruise')
+    );
+}
+
+export function resolveOnboardingStage(input: {
     activeContextPath: string;
     conversationText: string;
-}): {
-    stage: 'welcome' | 'travel_history' | 'logistics_basics' | 'soft_close';
-    instructions: string[];
-} | null {
+}): OnboardingStageResult | null {
     if (!input.activeContextPath.startsWith('onboarding')) {
         return null;
     }
 
-    const normalizedConversationText = input.conversationText.toLowerCase();
+    const normalizedText = input.conversationText.toLowerCase();
 
-    if (normalizedConversationText.trim().length === 0) {
+    if (normalizedText.trim().length === 0) {
         return {
             stage: 'welcome',
-            instructions: [
-                'Onboarding stage is welcome: explain assistant value and ask one warm opener about travel goals.',
-            ],
+            contextPath: 'onboarding',
         };
     }
 
-    const hasTravelHistorySignal =
-        normalizedConversationText.includes('cruise') ||
-        normalizedConversationText.includes('vacation') ||
-        normalizedConversationText.includes('travel');
-
-    if (!hasTravelHistorySignal) {
+    if (!hasTravelHistorySignals(normalizedText)) {
         return {
             stage: 'travel_history',
-            instructions: [
-                'Onboarding stage is travel_history: ask about past trips and preferred vacation vibe before logistics.',
-            ],
+            contextPath: hasCruiseExperience(normalizedText)
+                ? 'onboarding.cruise_experienced'
+                : 'onboarding.cruise_novice',
         };
     }
 
-    const hasLogisticsSignal =
-        normalizedConversationText.includes('port') ||
-        normalizedConversationText.includes('dates') ||
-        normalizedConversationText.includes('month') ||
-        normalizedConversationText.includes('from ') ||
-        normalizedConversationText.includes('travelers') ||
-        normalizedConversationText.includes('party');
-
-    if (!hasLogisticsSignal) {
+    if (!hasLogisticsSignals(normalizedText)) {
         return {
             stage: 'logistics_basics',
-            instructions: [
-                'Onboarding stage is logistics_basics: capture departure flexibility and party basics with one question.',
-            ],
+            contextPath: 'onboarding',
         };
     }
 
     return {
         stage: 'soft_close',
-        instructions: [
-            'Onboarding stage is soft_close: summarize collected profile signals and ask for consent to start package search.',
-        ],
+        contextPath: 'onboarding',
     };
 }
