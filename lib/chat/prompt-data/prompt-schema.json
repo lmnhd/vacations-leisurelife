@@ -64,10 +64,7 @@
       "active_voyage": {
         "priority": 3,
         "trigger": "user_on_active_booking",
-        "instructions": [
-          "Help with onboard planning and time-sensitive cruise support",
-          "Keep guidance specific to the guest's current booking"
-        ],
+        "instructions_ref": "skills/voyage/onboard-assistant.md",
         "available_tools": [
           "cruise_brothers_knowledge"
         ]
@@ -75,10 +72,7 @@
       "post_voyage": {
         "priority": 6,
         "trigger": "user_completed_cruise",
-        "instructions": [
-          "Capture post-cruise feedback and issue follow-up guidance",
-          "Identify rebooking signals and loyalty opportunities"
-        ],
+        "instructions_ref": "skills/voyage/post-cruise.md",
         "available_tools": [
           "cruise_brothers_knowledge"
         ]

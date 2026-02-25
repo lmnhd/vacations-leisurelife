@@ -12,7 +12,6 @@ import { dispatchTools } from './tool-dispatcher';
 import { processResponse } from './response-processor';
 import { extractMemoryFacts } from './memory-extractor';
 import { updateState } from './state-updater';
-import { resolveOnboardingGuidance } from './onboarding-flow';
 import type { PipelineInput, PipelineOutput, ChatMessage, Channel } from './types';
 
 function deriveSessionSignal(conversationText: string): {
@@ -80,19 +79,10 @@ export async function getPromptPreviewForSession(input: {
         completedCruise: signal.completedCruise,
     });
 
-    const injectedRules = await injectRules({
+    const activeRules = await injectRules({
         activeContextPath: resolvedContext.activeContextPath,
         sessionId: input.sessionId,
     });
-
-    const onboardingGuidance = resolveOnboardingGuidance({
-        activeContextPath: resolvedContext.activeContextPath,
-        conversationText,
-    });
-
-    const activeRules = onboardingGuidance
-        ? [...injectedRules, ...onboardingGuidance.instructions]
-        : injectedRules;
 
     const loadedSkills = await loadSkills({
         activeContextPath: resolvedContext.activeContextPath,
@@ -141,19 +131,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     });
 
     // Stage 3 — Rule Injector
-    const injectedRules = await injectRules({
+    const activeRules = await injectRules({
         activeContextPath: resolvedContext.activeContextPath,
         sessionId: input.sessionId,
     });
-
-    const onboardingGuidance = resolveOnboardingGuidance({
-        activeContextPath: resolvedContext.activeContextPath,
-        conversationText: fullConversationText,
-    });
-
-    const activeRules = onboardingGuidance
-        ? [...injectedRules, ...onboardingGuidance.instructions]
-        : injectedRules;
 
     // Stage 4 — Skill Loader
     const loadedSkills = await loadSkills({
