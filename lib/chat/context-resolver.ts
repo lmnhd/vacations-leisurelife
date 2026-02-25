@@ -63,6 +63,10 @@ function matchesTrigger(
     const evaluateAtomicCondition = (conditionExpression: string): boolean => {
         const atomicCondition = conditionExpression.trim().toLowerCase();
 
+        if (atomicCondition === 'always') {
+            return true;
+        }
+
         if (atomicCondition === 'new_user') {
             return sessionState.incompleteProfile;
         }

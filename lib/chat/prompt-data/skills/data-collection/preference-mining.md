@@ -16,20 +16,20 @@ Return a JSON object with this exact structure (omit any key where no value was 
     "travel_window": "string describing preferred dates or months"
   },
   "group": {
-    "total_travelers": "number",
-    "has_minors": "boolean",
-    "has_accessibility_needs": "boolean"
+    "total_travelers": 2,
+    "has_minors": true,
+    "has_accessibility_needs": false
   },
   "financials": {
-    "budget_per_person": "number in USD",
-    "flex_pay_interested": "boolean"
+    "budget_per_person": 1000,
+    "flex_pay_interested": false
   },
   "cruise_history": {
-    "has_cruised": "boolean",
-    "last_cruise_line": "string",
-    "last_destination": "string",
-    "positive_notes": "string",
-    "negative_notes": "string"
+    "has_cruised": true,
+    "last_cruise_line": "Royal Caribbean",
+    "last_destination": "Bahamas",
+    "positive_notes": "great dining",
+    "negative_notes": "rough seas"
   }
 }
 ```
@@ -38,3 +38,5 @@ Rules:
 - Return ONLY the JSON object. No explanation, no markdown fencing, no extra text.
 - If nothing can be extracted, return exactly: {}
 - Confidence is implicit — only include fields you are certain about from the text.
+- For boolean fields: only include them when there is explicit positive evidence. Never set a boolean to false simply because the topic was not mentioned in this turn.
+- "cruise_history.has_cruised" should only appear in output when the user explicitly states they have cruised before. Omit it entirely if uncertain.
