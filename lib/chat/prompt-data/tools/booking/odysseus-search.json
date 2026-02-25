@@ -1,0 +1,21 @@
+{
+    "tool_id": "odysseus_search",
+    "display_name": "General Cruise Search",
+    "description": "Performs a live search for cruise pricing and availability across all major cruise lines when no pre-packaged deals exist for the client's criteria.",
+    "handler": "lib/chat/tools/odysseus-search.ts",
+    "available_in_contexts": [
+        "fast_booking.package_search"
+    ],
+    "input_schema": {
+        "vendorId": "number?",
+        "startDate": "string?",
+        "endDate": "string?",
+        "passengers": "number",
+        "guestAges": "number[]"
+    },
+    "output_schema": {
+        "searchSummary": "string",
+        "results": "array"
+    },
+    "thoughts_stream_label": "Searching the live bookings engine for available cruises..."
+}
