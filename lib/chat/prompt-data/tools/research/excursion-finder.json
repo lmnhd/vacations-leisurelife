@@ -1,0 +1,20 @@
+{
+    "tool_id": "excursion_finder",
+    "display_name": "Port Excursion Finder",
+    "description": "Research shore excursions at a specific port of call — pricing, duration, difficulty, and booking tips.",
+    "handler": "lib/chat/tools/excursion-finder.ts",
+    "available_in_contexts": [
+        "fast_booking.package_search",
+        "active_voyage"
+    ],
+    "input_schema": {
+        "port": "string",
+        "interests": "string | null",
+        "cruise_line": "string | null"
+    },
+    "output_schema": {
+        "excursion_summary": "string",
+        "excursions": "ExcursionResult[]"
+    },
+    "thoughts_stream_label": "Researching port excursions..."
+}
