@@ -5,6 +5,7 @@ import { runPerplexityCruiseResearch } from './tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowledge';
 import { runExcursionFinder } from './tools/excursion-finder';
 import { runCruiseBrothersScraper } from './tools/cruise-brothers-scraper';
+import { runPricingComparator } from './tools/pricing-comparator';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -35,6 +36,15 @@ const CruiseBrothersScraperPayloadSchema = z.object({
     query: z.string().min(1),
     cruise_line: z.string().nullable().optional(),
     destination: z.string().nullable().optional(),
+});
+
+const PricingComparatorPayloadSchema = z.object({
+    base_fare: z.number(),
+    taxes_fees_port_expenses: z.number(),
+    gratuities: z.number(),
+    number_of_guests: z.number(),
+    number_of_nights: z.number(),
+    client_total_budget: z.number(),
 });
 
 type ToolCallLogEntry = {
@@ -187,6 +197,24 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${scraperResult.dealsSummary}`
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'pricing_comparator') {
+            const compPayload = PricingComparatorPayloadSchema.parse(parsedPayload ?? {});
+            const compResult = await runPricingComparator({
+                baseFare: compPayload.base_fare,
+                taxesFeesPortExpenses: compPayload.taxes_fees_port_expenses,
+                gratuities: compPayload.gratuities,
+                numberOfGuests: compPayload.number_of_guests,
+                numberOfNights: compPayload.number_of_nights,
+                clientTotalBudget: compPayload.client_total_budget,
+            });
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n> [!NOTE]\n> ${compResult.affordabilitySummary}`
             );
             continue;
         }

@@ -1,0 +1,27 @@
+{
+    "tool_id": "pricing_comparator",
+    "display_name": "Pricing & Budget Calculator",
+    "description": "Calculates the total cost of a proposed cruise package, determines per-person/per-night breakdowns, and compares the final sum against the client's stated target budget.",
+    "handler": "lib/chat/tools/pricing-comparator.ts",
+    "available_in_contexts": [
+        "fast_booking.package_search",
+        "fast_booking.presentation"
+    ],
+    "input_schema": {
+        "base_fare": "number",
+        "taxes_fees_port_expenses": "number",
+        "gratuities": "number",
+        "number_of_guests": "number",
+        "number_of_nights": "number",
+        "client_total_budget": "number"
+    },
+    "output_schema": {
+        "total_cost": "number",
+        "per_person_total": "number",
+        "per_person_per_night": "number",
+        "budget_variance": "number",
+        "is_within_budget": "boolean",
+        "affordability_summary": "string"
+    },
+    "thoughts_stream_label": "Running the numbers against the client's budget..."
+}
