@@ -7,5 +7,6 @@
         "Quicksignup",
         "Schooldazehero",
         "Schooldazenavbar"
-    ]
+    ],
+    "postman.settings.dotenv-detection-notification-visibility": false
 }
