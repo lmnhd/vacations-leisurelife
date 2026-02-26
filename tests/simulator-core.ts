@@ -316,6 +316,11 @@ export async function runSimulationStreamed(input: {
             break;
         }
 
+        if (!nextUserMessage.trim()) {
+            input.onEvent({ type: 'error', message: `Simulator returned an empty response at turn ${turnCount} — aborting run.` });
+            break;
+        }
+
         currentUserMessage = nextUserMessage;
     }
 
