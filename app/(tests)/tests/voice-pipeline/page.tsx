@@ -9,7 +9,7 @@
  * Does NOT replicate the Hero Chat canvas — this is a raw plumbing test.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceChat } from '@/app/hooks/useVoiceChat';
 import type { ChatResponse } from '@/lib/chat/types';
 
@@ -27,11 +27,18 @@ export default function VoicePipelineTestPage() {
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     const [pipelineLog, setPipelineLog] = useState<string[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [ttsInput, setTtsInput] = useState('Hello! I am your cruise travel assistant. How can I help you today?');
     const transcriptEndRef = useRef<HTMLDivElement>(null);
+    const logEndRef = useRef<HTMLDivElement>(null);
 
     const addLog = useCallback((msg: string) => {
         setPipelineLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
     }, []);
+
+    // Auto-scroll log to bottom
+    useEffect(() => {
+        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [pipelineLog]);
 
     const handleTranscriptComplete = useCallback(async (transcript: string) => {
         addLog(`STT complete: "${transcript}"`);
@@ -174,6 +181,63 @@ export default function VoicePipelineTestPage() {
                     )}
                 </div>
 
+                {/* TTS Direct Test */}
+                {voice.connectionState === 'connected' && (
+                    <div className="border border-emerald-500/20 rounded-xl p-4 bg-slate-900/50 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-emerald-400 uppercase tracking-widest">TTS Direct Test</span>
+                            <span className="text-[10px] text-slate-600">— type text and click Speak to test audio output</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <textarea
+                                value={ttsInput}
+                                onChange={(e) => setTtsInput(e.target.value)}
+                                rows={2}
+                                className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:border-emerald-500/40"
+                                placeholder="Enter text to speak…"
+                            />
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => {
+                                        if (ttsInput.trim()) {
+                                            addLog(`TTS direct: "${ttsInput.slice(0, 60)}…"`);
+                                            voice.speakText(ttsInput.trim());
+                                        }
+                                    }}
+                                    disabled={!ttsInput.trim()}
+                                    className="px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap"
+                                >
+                                    🔊 Speak
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        addLog('TTS interrupted');
+                                        voice.interruptCurrentSpeech();
+                                    }}
+                                    className="px-4 py-2 rounded-lg text-xs font-medium bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-all whitespace-nowrap"
+                                >
+                                    ✋ Stop
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {[
+                                'Welcome aboard! Ready to plan your perfect cruise?',
+                                'We have amazing deals on Caribbean sailings this season.',
+                                'Tell me about your ideal vacation and I will find the right cruise for you.',
+                            ].map((sample) => (
+                                <button
+                                    key={sample}
+                                    onClick={() => setTtsInput(sample)}
+                                    className="text-[10px] px-2 py-1 rounded bg-white/5 border border-white/5 text-slate-500 hover:text-slate-300 hover:border-white/10 transition-all text-left"
+                                >
+                                    {sample.slice(0, 40)}…
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Transcript */}
                 <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
                     <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
@@ -232,6 +296,7 @@ export default function VoicePipelineTestPage() {
                                 {line}
                             </p>
                         ))}
+                        <div ref={logEndRef} />
                     </div>
                 </div>
 

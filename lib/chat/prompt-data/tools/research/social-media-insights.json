@@ -1,21 +1,52 @@
-{
-  "tool_id": "social_media_insights",
-  "display_name": "Social Media Cruise Insights",
-  "description": "Analyze social review sentiment for cruise lines, ships, and destinations.",
-  "handler": "lib/chat/tools/social-media-insights.ts",
-  "available_in_contexts": [
-    "onboarding.cruise_experienced",
-    "cruise_review"
-  ],
-  "input_schema": {
-    "cruise_line": "string",
-    "ship_name": "string | null",
-    "destination": "string | null"
+[
+  {
+    "tool_id": "social_media_insights",
+    "display_name": "Social Media Cruise Insights",
+    "description": "Analyze social review sentiment for a specific cruise line, ship, or destination. Use when a user asks about a particular cruise product.",
+    "handler": "lib/chat/tools/social-media-insights.ts",
+    "function": "runSocialMediaInsights",
+    "available_in_contexts": [
+      "onboarding.cruise_experienced",
+      "cruise_review"
+    ],
+    "input_schema": {
+      "cruise_line": "string",
+      "ship_name": "string | null",
+      "destination": "string | null"
+    },
+    "output_schema": {
+      "common_highlights": "string[]",
+      "common_complaints": "string[]",
+      "sentiment_summary": "string"
+    },
+    "thoughts_stream_label": "Analyzing real cruise reviews..."
   },
-  "output_schema": {
-    "common_highlights": "string[]",
-    "common_complaints": "string[]",
-    "sentiment_summary": "string"
-  },
-  "thoughts_stream_label": "Analyzing real cruise reviews..."
-}
+  {
+    "tool_id": "cruise_trend_analysis",
+    "display_name": "Cruise Trend Analysis",
+    "description": "Broad social media trend research across the cruise industry. Use when a user asks what people are saying about cruising in general, what is trending, what a specific demographic thinks about cruising, or what is emerging in the cruise world. Supports filtering by traveler perspective (gen_z, millennial, gen_x, boomer, family, solo, luxury, budget) and topic category.",
+    "handler": "lib/chat/tools/social-media-insights.ts",
+    "function": "runCruiseTrendAnalysis",
+    "available_in_contexts": [
+      "onboarding",
+      "onboarding.cruise_experienced",
+      "onboarding.cruise_novice",
+      "general_chat"
+    ],
+    "input_schema": {
+      "perspective": "gen_z | millennial | gen_x | boomer | family | solo | luxury | budget | null",
+      "category": "overall_industry | dining_and_food | onboard_entertainment | shore_excursions | value_and_pricing | sustainability | technology_and_connectivity | health_and_wellness",
+      "cruise_line": "string | null",
+      "timeframe": "string | null"
+    },
+    "output_schema": {
+      "trending_positives": "string[]",
+      "trending_negatives": "string[]",
+      "emerging_trends": "string[]",
+      "perspective_insights": "string[]",
+      "key_cruise_lines_mentioned": "string[]",
+      "trend_summary": "string"
+    },
+    "thoughts_stream_label": "Researching cruise trends across social media..."
+  }
+]

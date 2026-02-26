@@ -34,12 +34,14 @@ async function listJsonFiles(dir: string): Promise<string[]> {
 async function loadToolDefinitions(toolIds: string[]): Promise<ToolDefinition[]> {
     if (toolIds.length === 0) return [];
     const allFiles = await listJsonFiles(TOOL_DATA_ROOT);
-    const definitions = await Promise.all(
+    const definitionGroups = await Promise.all(
         allFiles.map(async (filePath) => {
             const raw = await readFile(filePath, 'utf-8');
-            return JSON.parse(raw) as ToolDefinition;
+            const parsed = JSON.parse(raw) as ToolDefinition | ToolDefinition[];
+            return Array.isArray(parsed) ? parsed : [parsed];
         })
     );
+    const definitions = definitionGroups.flat();
     return definitions.filter((def) => toolIds.includes(def.tool_id));
 }
 
@@ -141,9 +143,7 @@ export async function assembleSystemPrompt(input: {
         ...toolCallingInstructions,
         '',
         '# Channel Directives',
-        input.channel === 'voice'
-            ? '- Keep responses concise for voice playback.'
-            : '- Keep responses concise and scannable for text chat.',
+        ...(resolvedContext.channelDirectives[input.channel] ?? []).map((d) => `- ${d}`),
     ]
         .filter((line) => line.trim().length > 0)
         .join('\n');
