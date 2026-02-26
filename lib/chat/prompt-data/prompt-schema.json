@@ -28,7 +28,8 @@
         "priority": 1,
         "trigger": "new_user OR incomplete_profile",
         "available_tools": [
-          "cruise_brothers_knowledge"
+          "cruise_brothers_knowledge",
+          "cruise_trend_analysis"
         ],
         "instructions": [
           "Build trust before requesting sensitive data",
@@ -147,7 +148,8 @@
           "Gently guide toward collecting departure port, travel party size, and budget when appropriate"
         ],
         "available_tools": [
-          "cruise_brothers_knowledge"
+          "cruise_brothers_knowledge",
+          "cruise_trend_analysis"
         ]
       }
     }
