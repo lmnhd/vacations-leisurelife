@@ -11,7 +11,8 @@ import { runPricingComparator } from './tools/pricing-comparator';
 import { runOdysseusSearch } from './tools/odysseus-search';
 import { runCruiseGroupsManager } from './tools/cruise-groups-manager';
 import { runPackageBuilder } from './tools/package-builder';
-import { runSocialMediaInsights } from './tools/social-media-insights';
+import { runSocialMediaInsights, runCruiseTrendAnalysis } from './tools/social-media-insights';
+import type { TravelerPerspective, TrendCategory } from './tools/social-media-insights';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -87,6 +88,13 @@ const PackageBuilderPayloadSchema = z.object({
     })).min(1).max(3),
 });
 
+const CruiseTrendAnalysisPayloadSchema = z.object({
+    perspective: z.enum(['gen_z', 'millennial', 'gen_x', 'boomer', 'family', 'solo', 'luxury', 'budget']).nullable().optional(),
+    category: z.enum(['overall_industry', 'dining_and_food', 'onboard_entertainment', 'shore_excursions', 'value_and_pricing', 'sustainability', 'technology_and_connectivity', 'health_and_wellness']),
+    cruise_line: z.string().nullable().optional(),
+    timeframe: z.string().nullable().optional(),
+});
+
 const CruiseGroupsManagerPayloadSchema = z.object({
     action: z.enum(['search', 'create']),
     searchQuery: z.string().optional(),
@@ -130,12 +138,16 @@ async function loadToolRegistry(): Promise<Map<string, z.infer<typeof ToolDefini
     const toolDefinitionEntries = await Promise.all(
         definitionFiles.map(async (definitionFilePath) => {
             const definitionContent = await readFile(definitionFilePath, 'utf-8');
-            const parsedDefinition = ToolDefinitionSchema.parse(JSON.parse(definitionContent));
-            return [parsedDefinition.tool_id, parsedDefinition] as const;
+            const raw = JSON.parse(definitionContent) as unknown;
+            const definitions = Array.isArray(raw) ? raw : [raw];
+            return definitions.map((def) => {
+                const parsedDefinition = ToolDefinitionSchema.parse(def);
+                return [parsedDefinition.tool_id, parsedDefinition] as const;
+            });
         })
     );
 
-    return new Map<string, z.infer<typeof ToolDefinitionSchema>>(toolDefinitionEntries);
+    return new Map<string, z.infer<typeof ToolDefinitionSchema>>(toolDefinitionEntries.flat());
 }
 
 async function assertToolHandlerExists(handlerPath: string): Promise<void> {
@@ -255,6 +267,14 @@ export async function dispatchTools(input: {
                 updatedResponseText = updatedResponseText.replace(
                     directiveMatch[0],
                     `\n\n${res.sentiment_summary}\n\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\``
+                );
+                continue;
+            }
+            if (requestedToolId === 'cruise_trend_analysis') {
+                const res = cachedResponse as { trend_summary: string };
+                updatedResponseText = updatedResponseText.replace(
+                    directiveMatch[0],
+                    `\n\n${res.trend_summary}\n\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\``
                 );
                 continue;
             }
@@ -384,6 +404,24 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${socialResult.sentiment_summary}\n\`\`\`json\n${JSON.stringify(socialResult, null, 2)}\n\`\`\``
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'cruise_trend_analysis') {
+            const trendPayload = CruiseTrendAnalysisPayloadSchema.parse(parsedPayload ?? {});
+            const trendResult = await runCruiseTrendAnalysis({
+                perspective: (trendPayload.perspective ?? null) as TravelerPerspective | null,
+                category: trendPayload.category as TrendCategory,
+                cruiseLine: trendPayload.cruise_line ?? null,
+                timeframe: trendPayload.timeframe ?? null,
+            });
+
+            await setToolCache(requestedToolId, parsedPayload ?? {}, trendResult, 86400 * 7); // 7 day cache
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${trendResult.trend_summary}\n\`\`\`json\n${JSON.stringify(trendResult, null, 2)}\n\`\`\``
             );
             continue;
         }

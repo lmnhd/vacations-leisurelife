@@ -38,6 +38,7 @@ const PromptSchema = z.object({
             persona_ref: z.string(),
             global_rules: z.array(z.string()),
         }),
+        channel_directives: z.record(z.array(z.string())).optional(),
         contexts: z.record(ContextNodeSchema),
     }),
 });
@@ -122,6 +123,7 @@ export async function resolveContext(
     identityName: string;
     personaRef: string;
     globalRules: string[];
+    channelDirectives: Record<string, string[]>;
     activeContextPath: string;
     instructions: string[];
     instructionRefs: string[];
@@ -172,6 +174,7 @@ export async function resolveContext(
         identityName: schema.root.identity.name,
         personaRef: schema.root.identity.persona_ref,
         globalRules: schema.root.identity.global_rules,
+        channelDirectives: schema.root.channel_directives ?? {},
         activeContextPath,
         instructions: [...new Set(instructions)],
         instructionRefs: [...new Set(instructionRefs)],
