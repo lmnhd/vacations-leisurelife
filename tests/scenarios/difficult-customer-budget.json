@@ -10,7 +10,7 @@
       { "field": "guestInfo.group.total_travelers", "operator": "==", "value": 2 }
     ],
     "conversational_gates": [
-      { "must_happen_before_turn": 6, "condition": "Agent captured past cruise experience from user" },
+      { "must_happen_before_turn": 10, "condition": "Agent captured past cruise experience from user" },
       { "must_happen_before_turn": 15, "condition": "Agent addressed budget concern diplomatically" }
     ]
   }

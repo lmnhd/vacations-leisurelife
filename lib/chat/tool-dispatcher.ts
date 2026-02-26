@@ -171,14 +171,16 @@ export async function dispatchTools(input: {
         }
 
         if (!input.allowedToolIds.includes(requestedToolId)) {
-            throw new Error(
-                `Tool ${requestedToolId} is not allowed in context ${input.activeContextPath}.`
-            );
+            pipelineLog.warn('tool-dispatcher', input.activeContextPath, `LLM emitted unknown/disallowed tool directive: ${requestedToolId} — skipping`);
+            updatedResponseText = updatedResponseText.replace(directiveMatch[0], '').trim();
+            continue;
         }
 
         const toolDefinition = toolRegistry.get(requestedToolId);
         if (!toolDefinition) {
-            throw new Error(`Tool definition not found for ${requestedToolId}.`);
+            pipelineLog.warn('tool-dispatcher', input.activeContextPath, `Tool directive matched allowed list but has no JSON definition: ${requestedToolId} — skipping`);
+            updatedResponseText = updatedResponseText.replace(directiveMatch[0], '').trim();
+            continue;
         }
 
         await assertToolHandlerExists(toolDefinition.handler);
@@ -188,9 +190,9 @@ export async function dispatchTools(input: {
             try {
                 parsedPayload = JSON.parse(rawPayload);
             } catch {
-                throw new Error(
-                    `Tool directive payload is invalid JSON for ${requestedToolId}.`
-                );
+                pipelineLog.warn('tool-dispatcher', input.activeContextPath, `Tool ${requestedToolId} emitted invalid JSON payload — skipping`, { rawPayload });
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], '').trim();
+                continue;
             }
         }
 
@@ -201,6 +203,8 @@ export async function dispatchTools(input: {
         });
 
         pipelineLog.tool(requestedToolId, input.activeContextPath, 'dispatched', { payload: parsedPayload });
+
+        try {
 
         if (requestedToolId === 'perplexity_cruise_research') {
             const perplexityPayload = PerplexityPayloadSchema.parse(parsedPayload ?? {});
@@ -326,10 +330,13 @@ export async function dispatchTools(input: {
             status: 'validated_not_implemented',
         };
 
-        throw new Error(
-            `Tool handler invocation not implemented yet for ${requestedToolId}. ` +
-            `Directive detected and validated.`
-        );
+        pipelineLog.warn('tool-dispatcher', input.activeContextPath, `Tool handler not implemented for ${requestedToolId} — skipping`);
+        updatedResponseText = updatedResponseText.replace(directiveMatch[0], '').trim();
+
+        } catch (toolError) {
+            pipelineLog.error('tool-dispatcher', input.activeContextPath, toolError, { toolId: requestedToolId, payload: parsedPayload });
+            updatedResponseText = updatedResponseText.replace(directiveMatch[0], '').trim();
+        }
     }
 
     updatedResponseText = updatedResponseText.replace(TOOL_DIRECTIVE_PATTERN, '').trim();
