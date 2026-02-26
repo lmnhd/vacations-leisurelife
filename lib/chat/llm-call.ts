@@ -9,6 +9,12 @@ function tokenParam(model: string, count: number): Record<string, number> {
         : { max_tokens: count };
 }
 
+function tempParam(model: string, value: number): Record<string, number> {
+    return COMPLETION_TOKENS_MODELS.some((m) => model.startsWith(m))
+        ? {}
+        : { temperature: value };
+}
+
 export async function callChatLlm(input: {
     history: ChatMessage[];
     model?: string;
@@ -23,7 +29,7 @@ export async function callChatLlm(input: {
             content: message.content,
         })),
         ...tokenParam(model, 500),
-        temperature: 0.8,
+        ...tempParam(model, 0.8),
     });
 
     const rawReply = completion.choices[0]?.message?.content;
