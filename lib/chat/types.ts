@@ -180,6 +180,7 @@ export interface PipelineInput {
     sessionId: string;
     userId: string;
     channel: Channel;
+    model?: string;
 }
 
 export type ToolCallLogEntry = {

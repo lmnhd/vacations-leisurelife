@@ -86,6 +86,14 @@ export type SimStreamEvent =
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const TOKENS_PER_TURN_ESTIMATE = 800;
+
+const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
+
+function tokenParam(model: string, count: number): Record<string, number> {
+    return COMPLETION_TOKENS_MODELS.some((m) => model.startsWith(m))
+        ? { max_completion_tokens: count }
+        : { max_tokens: count };
+}
 const COST_PER_1K_TOKENS_USD = 0.00015;
 const SCENARIOS_DIR = path.join(process.cwd(), 'tests', 'scenarios');
 
@@ -121,6 +129,7 @@ async function callChatApi(input: {
     sessionId: string;
     userId: string;
     apiUrl: string;
+    agentModel: string;
 }): Promise<{ reply: string; toolCallsLog: ToolCallEntry[] }> {
     const response = await fetch(input.apiUrl, {
         method: 'POST',
@@ -130,6 +139,7 @@ async function callChatApi(input: {
             sessionId: input.sessionId,
             userId: input.userId,
             channel: 'text',
+            model: input.agentModel,
         }),
     });
 
@@ -160,7 +170,7 @@ async function getSimulatorResponse(input: {
     const completion = await input.openai.chat.completions.create({
         model: input.model,
         messages,
-        max_tokens: 200,
+        ...tokenParam(input.model, 200),
         temperature: 0.9,
     });
 
@@ -183,7 +193,7 @@ async function evaluateConversationalGate(input: {
             { role: 'system', content: 'You are a conversation evaluator. Answer only with "true" or "false".' },
             { role: 'user', content: `Given this conversation transcript:\n\n${transcriptText}\n\nDid the following occur? "${input.condition}"\n\nAnswer only: true or false` },
         ],
-        max_tokens: 10,
+        ...tokenParam(input.model, 10),
         temperature: 0,
     });
 
@@ -258,6 +268,7 @@ export async function runSimulationStreamed(input: {
             sessionId,
             userId,
             apiUrl: input.apiUrl,
+            agentModel: input.agentModel,
         });
 
         const turnToolCalls: ToolCallEntry[] = toolCallsLog.map((tc) => ({ ...tc, turn: turnCount }));

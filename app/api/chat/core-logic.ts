@@ -13,6 +13,7 @@ const ChatRequestSchema = z.object({
     sessionId: z.string().min(1, 'Session ID is required'),
     userId: z.string().optional(),
     channel: z.enum(['text', 'voice']).default('text'),
+    model: z.string().optional(),
 });
 
 export async function handleChatRequest(
@@ -30,7 +31,7 @@ export async function handleChatRequest(
         };
     }
 
-    const { message, sessionId, userId, channel } = parsed.data;
+    const { message, sessionId, userId, channel, model } = parsed.data;
     const resolvedUserId = userId ?? `anon:${sessionId}`;
 
     try {
@@ -39,6 +40,7 @@ export async function handleChatRequest(
             sessionId,
             userId: resolvedUserId,
             channel,
+            model,
         });
 
         return {
