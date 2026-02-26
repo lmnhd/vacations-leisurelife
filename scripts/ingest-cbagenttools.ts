@@ -5,14 +5,19 @@ import path from 'node:path';
 const CB_LOGIN_URL = 'https://www.cbagenttools.com';
 const TARGET_PAGES: ReadonlyArray<{ url: string; source: string; tags: string[] }> = [
     {
-        url: 'https://www.cbagenttools.com',
-        source: 'Cruise Brothers Agent Handbook',
-        tags: ['handbook', 'agent', 'policy'],
+        url: 'https://www.cbagenttools.com/marketing/vendor_urls/',
+        source: 'Cruise Brothers Vendor Directory',
+        tags: ['vendor', 'commission', 'cruise line', 'phone', 'agent'],
     },
     {
-        url: 'https://bookings.cbagenttools.com',
-        source: 'Supplier Portal Procedures',
-        tags: ['supplier', 'portal', 'procedures'],
+        url: 'https://www.cbagenttools.com/marketing/todaysview/',
+        source: 'Cruise Brothers Promotions',
+        tags: ['promotion', 'deal', 'discount', 'offer', 'cruise line'],
+    },
+    {
+        url: 'https://www.cbagenttools.com/bookings/home/',
+        source: 'Cruise Brothers Agent Handbook',
+        tags: ['handbook', 'agent', 'policy', 'announcement'],
     },
 ];
 
@@ -54,14 +59,13 @@ async function loginToCBAgentTools(input: {
     const page = await browser.newPage();
     await page.goto(CB_LOGIN_URL, { waitUntil: 'domcontentloaded' });
 
-    const emailSelector = 'input[name="email"], input[type="email"]';
+    const usernameSelector = 'input[name="username"], input[type="text"], textbox';
     const passwordSelector = 'input[name="password"], input[type="password"]';
-    const submitSelector = 'button[type="submit"], button:has-text("Sign In"), button:has-text("Login")';
+    const submitSelector = 'button[type="submit"], button:has-text("Submit")';
 
-    await page.waitForSelector(emailSelector, { timeout: 15000 });
     await page.waitForSelector(passwordSelector, { timeout: 15000 });
 
-    await page.fill(emailSelector, input.email);
+    await page.fill(usernameSelector, input.email);
     await page.fill(passwordSelector, input.password);
     await page.click(submitSelector);
 
@@ -79,32 +83,67 @@ async function loginToCBAgentTools(input: {
     };
 }
 
-async function scrapeKnowledgeEntries(page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>): Promise<KnowledgeCacheEntry[]> {
-    const allEntries: KnowledgeCacheEntry[] = [];
+async function scrapeVendorEntries(
+    page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>
+): Promise<KnowledgeCacheEntry[]> {
+    await page.goto('https://www.cbagenttools.com/marketing/vendor_urls/', { waitUntil: 'domcontentloaded' });
 
-    for (const targetPage of TARGET_PAGES) {
-        await page.goto(targetPage.url, { waitUntil: 'domcontentloaded' });
+    const rows = await page.locator('table tr').all();
+    const entries: KnowledgeCacheEntry[] = [];
 
-        const pageTitle = normalizeText(await page.title());
-        const pageBodyText = normalizeText(
-            await page.locator('main, article, body').first().innerText({ timeout: 15000 })
-        );
+    for (const row of rows) {
+        const cells = await row.locator('td').all();
+        if (cells.length < 4) continue;
 
-        const trimmedBody = pageBodyText.slice(0, 6000);
-        if (trimmedBody.length === 0) {
-            continue;
-        }
+        const vendorName = normalizeText(await cells[0].innerText());
+        const commission = normalizeText(await cells[1].innerText());
+        const agentPhone = normalizeText(await cells[3].innerText());
+        const groupPhone = cells[4] ? normalizeText(await cells[4].innerText()) : '';
 
-        allEntries.push({
-            title: pageTitle.length > 0 ? pageTitle : targetPage.source,
-            content: trimmedBody,
-            source: targetPage.source,
-            url: targetPage.url,
-            tags: [...targetPage.tags],
+        if (!vendorName || vendorName === 'Vendor Name') continue;
+
+        entries.push({
+            title: vendorName,
+            content: `Cruise line: ${vendorName}. Commission: ${commission}. Agent phone: ${agentPhone}${groupPhone ? `. Group phone: ${groupPhone}` : ''}.`,
+            source: 'Cruise Brothers Vendor Directory',
+            url: 'https://www.cbagenttools.com/marketing/vendor_urls/',
+            tags: ['vendor', 'commission', 'cruise line', vendorName.toLowerCase(), agentPhone],
         });
     }
 
-    return allEntries;
+    return entries;
+}
+
+async function scrapePromotionEntries(
+    page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>
+): Promise<KnowledgeCacheEntry[]> {
+    await page.goto('https://www.cbagenttools.com/marketing/todaysview/', { waitUntil: 'domcontentloaded' });
+
+    const promoLinks = await page.locator('a[href*="/marketing/promotion/"]').all();
+    const entries: KnowledgeCacheEntry[] = [];
+    const seen = new Set<string>();
+
+    for (const link of promoLinks) {
+        const title = normalizeText(await link.innerText());
+        if (!title || seen.has(title)) continue;
+        seen.add(title);
+
+        entries.push({
+            title,
+            content: `Current promotion: ${title}. Available through Cruise Brothers agent portal.`,
+            source: 'Cruise Brothers Promotions',
+            url: 'https://www.cbagenttools.com/marketing/todaysview/',
+            tags: ['promotion', 'deal', 'offer', title.toLowerCase()],
+        });
+    }
+
+    return entries;
+}
+
+async function scrapeKnowledgeEntries(page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>): Promise<KnowledgeCacheEntry[]> {
+    const vendorEntries = await scrapeVendorEntries(page);
+    const promotionEntries = await scrapePromotionEntries(page);
+    return [...vendorEntries, ...promotionEntries];
 }
 
 async function runIngestion(): Promise<void> {
