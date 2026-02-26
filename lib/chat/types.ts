@@ -33,6 +33,7 @@ export interface ChatResponse {
     reply: string;
     sessionId: string;
     display?: DisplayDirective;
+    toolCallsLog?: ToolCallLogEntry[];
     error?: string;
 }
 
@@ -181,8 +182,15 @@ export interface PipelineInput {
     channel: Channel;
 }
 
+export type ToolCallLogEntry = {
+    toolId: string;
+    payload: unknown;
+    status: 'executed' | 'validated_not_implemented';
+};
+
 export interface PipelineOutput {
     reply: string;
     sessionId: string;
     display?: DisplayDirective;
+    toolCallsLog: ToolCallLogEntry[];
 }

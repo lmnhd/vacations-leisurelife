@@ -47,6 +47,7 @@ export async function handleChatRequest(
                 reply: result.reply,
                 sessionId: result.sessionId,
                 display: result.display,
+                toolCallsLog: result.toolCallsLog,
             },
         };
     } catch (error) {
