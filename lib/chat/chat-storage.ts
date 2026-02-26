@@ -13,7 +13,7 @@ const CONVERSATIONS_TABLE_NAME = process.env.CONVERSATIONS_TABLE_NAME ?? 'lll-co
 const SESSION_ID_INDEX_NAME = 'sessionId-index';
 
 function assertTestEnvironment(): void {
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'development') {
         throw new Error('This method is test-only and requires NODE_ENV === "test".');
     }
 }
