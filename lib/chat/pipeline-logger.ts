@@ -36,8 +36,13 @@ export const pipelineLog = {
         emit({ ts: now(), level: 'INFO', stage: stageName, sessionId, event: 'stage_complete', data });
     },
 
-    tool(toolId: string, sessionId: string, event: 'dispatched' | 'completed' | 'skipped_no_directive' | 'not_allowed', data?: Record<string, unknown>): void {
-        emit({ ts: now(), level: 'INFO', stage: 'tool-dispatcher', sessionId, event: `tool:${event}:${toolId}`, data });
+    tool: (
+        toolId: string,
+        sessionId: string,
+        status: 'dispatched' | 'completed' | 'skipped_no_directive' | 'not_allowed' | 'cache_hit',
+        data?: Record<string, unknown>
+    ) => {
+        emit({ ts: now(), level: 'INFO', stage: 'tool-dispatcher', sessionId, event: `tool:${status}:${toolId}`, data });
     },
 
     llm(sessionId: string, event: 'call_start' | 'call_complete' | 'tool_directive_found' | 'no_tool_directives', data?: Record<string, unknown>): void {

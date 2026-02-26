@@ -1,0 +1,19 @@
+{
+  "scenario_id": "group_size_ambiguity",
+  "description": "Stress test for group.total_travelers: user is vague, uses informal phrasing, and updates party size mid-conversation. Final correct count is 5.",
+  "simulator_prompt": "You are Sandra. You are planning a girls trip cruise with some friends and family. Start by saying 'the whole crew is coming' without specifying a number. If the agent asks how many people, first say 'just us girls' — about 3 of us'. Then later in the conversation, casually mention that your sister decided to join and is bringing her daughter, so now it is 5 total. Be natural and conversational — do not lead with numbers. Your budget is around $800 per person. You want Caribbean. You prefer a party/social vibe. Your home city is Miami.",
+  "max_turns": 12,
+  "assertions": {
+    "end_state": [
+      { "field": "guestInfo.group.total_travelers", "operator": "==", "value": 5 },
+      { "field": "guestInfo.group.has_minors", "operator": "==", "value": true },
+      { "field": "guestInfo.preferences.vibe", "operator": "set" },
+      { "field": "guestInfo.financials.budget_per_person", "operator": "set" }
+    ],
+    "conversational_gates": [
+      { "must_happen_before_turn": 4, "condition": "Agent explicitly asked how many people are in the group" },
+      { "must_happen_before_turn": 8, "condition": "User mentioned the group size changed or someone new is joining" },
+      { "must_happen_before_turn": 10, "condition": "Agent confirmed or acknowledged the updated party size of 5" }
+    ]
+  }
+}

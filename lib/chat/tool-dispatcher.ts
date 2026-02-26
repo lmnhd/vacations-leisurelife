@@ -2,6 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import { pipelineLog } from './pipeline-logger';
+import { getToolCache, setToolCache } from './tool-cache';
 import { runPerplexityCruiseResearch } from './tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from './tools/cruise-brothers-knowledge';
 import { runExcursionFinder } from './tools/excursion-finder';
@@ -10,6 +11,7 @@ import { runPricingComparator } from './tools/pricing-comparator';
 import { runOdysseusSearch } from './tools/odysseus-search';
 import { runCruiseGroupsManager } from './tools/cruise-groups-manager';
 import { runPackageBuilder } from './tools/package-builder';
+import { runSocialMediaInsights } from './tools/social-media-insights';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
@@ -206,6 +208,59 @@ export async function dispatchTools(input: {
 
         try {
 
+        // ----------------------------------------------------------------------
+        // CACHE LAYER
+        // Check if we already ran this exact tool with this exact payload recently
+        // ----------------------------------------------------------------------
+        const cachedResponse = await getToolCache<unknown>(requestedToolId, parsedPayload ?? {});
+        
+        if (cachedResponse) {
+            pipelineLog.tool(requestedToolId, input.activeContextPath, 'cache_hit', { payload: parsedPayload });
+            
+            if (requestedToolId === 'perplexity_cruise_research') {
+                const res = cachedResponse as { researchSummary: string };
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], `\n\n${res.researchSummary}`);
+                continue;
+            }
+            if (requestedToolId === 'cruise_brothers_knowledge') {
+                const res = cachedResponse as { knowledgeSummary: string };
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], `\n\n${res.knowledgeSummary}`);
+                continue;
+            }
+            if (requestedToolId === 'excursion_finder') {
+                const res = cachedResponse as { excursionSummary: string };
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], `\n\n${res.excursionSummary}`);
+                continue;
+            }
+            if (requestedToolId === 'cruise_brothers_scraper') {
+                const res = cachedResponse as { dealsSummary: string };
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], `\n\n${res.dealsSummary}`);
+                continue;
+            }
+            if (requestedToolId === 'pricing_comparator') {
+                const res = cachedResponse as { affordabilitySummary: string };
+                updatedResponseText = updatedResponseText.replace(directiveMatch[0], `\n\n> [!NOTE]\n> ${res.affordabilitySummary}`);
+                continue;
+            }
+            if (requestedToolId === 'odysseus_search') {
+                const res = cachedResponse as { searchSummary: string, results: unknown };
+                updatedResponseText = updatedResponseText.replace(
+                    directiveMatch[0],
+                    `\n\n${res.searchSummary}\n\`\`\`json\n${JSON.stringify(res.results, null, 2)}\n\`\`\``
+                );
+                continue;
+            }
+            if (requestedToolId === 'social_media_insights') {
+                const res = cachedResponse as { sentiment_summary: string };
+                updatedResponseText = updatedResponseText.replace(
+                    directiveMatch[0],
+                    `\n\n${res.sentiment_summary}\n\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\``
+                );
+                continue;
+            }
+            // For tools with side effects (like package builder / cruise groups manager), we skip caching.
+        }
+
         if (requestedToolId === 'perplexity_cruise_research') {
             const perplexityPayload = PerplexityPayloadSchema.parse(parsedPayload ?? {});
             const researchResult = await runPerplexityCruiseResearch({
@@ -213,6 +268,8 @@ export async function dispatchTools(input: {
                 destination: perplexityPayload.destination ?? null,
                 departureMonth: perplexityPayload.departure_month ?? null,
             });
+
+            await setToolCache(requestedToolId, parsedPayload ?? {}, researchResult, 86400); // 24hr cache
 
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
@@ -226,6 +283,8 @@ export async function dispatchTools(input: {
             const knowledgeResult = await runCruiseBrothersKnowledgeLookup({
                 query: knowledgePayload.query,
             });
+
+            await setToolCache(requestedToolId, parsedPayload ?? {}, knowledgeResult, 86400 * 7); // 7 day cache
 
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
@@ -242,6 +301,8 @@ export async function dispatchTools(input: {
                 cruiseLine: excursionPayload.cruise_line ?? null,
             });
 
+            await setToolCache(requestedToolId, parsedPayload ?? {}, excursionResult, 86400 * 7); // 7 day cache
+
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${excursionResult.excursionSummary}`
@@ -256,6 +317,8 @@ export async function dispatchTools(input: {
                 cruiseLine: scraperPayload.cruise_line ?? null,
                 destination: scraperPayload.destination ?? null,
             });
+
+            await setToolCache(requestedToolId, parsedPayload ?? {}, scraperResult, 3600 * 6); // 6hr cache
 
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
@@ -275,6 +338,8 @@ export async function dispatchTools(input: {
                 clientTotalBudget: compPayload.client_total_budget,
             });
 
+            await setToolCache(requestedToolId, parsedPayload ?? {}, compResult, 86400 * 7); // 7 day cache
+
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n> [!NOTE]\n> ${compResult.affordabilitySummary}`
@@ -292,9 +357,33 @@ export async function dispatchTools(input: {
                 guestAges: odyPayload.guestAges,
             });
 
+            await setToolCache(requestedToolId, parsedPayload ?? {}, odyResult, 3600 * 4); // 4hr cache
+
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${odyResult.searchSummary}\n\`\`\`json\n${JSON.stringify(odyResult.results, null, 2)}\n\`\`\``
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'social_media_insights') {
+            const socialPayload = z.object({
+                cruise_line: z.string(),
+                ship_name: z.string().nullable().optional(),
+                destination: z.string().nullable().optional()
+            }).parse(parsedPayload ?? {});
+
+            const socialResult = await runSocialMediaInsights({
+                cruiseLine: socialPayload.cruise_line,
+                shipName: socialPayload.ship_name ?? null,
+                destination: socialPayload.destination ?? null
+            });
+
+            await setToolCache(requestedToolId, parsedPayload ?? {}, socialResult, 86400 * 30); // 30 day cache
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${socialResult.sentiment_summary}\n\`\`\`json\n${JSON.stringify(socialResult, null, 2)}\n\`\`\``
             );
             continue;
         }
@@ -307,6 +396,7 @@ export async function dispatchTools(input: {
                 groupData: groupPayload.groupData
             });
 
+            // No caching for mutation operations or dynamic lookups
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${groupResult.message}\n\`\`\`json\n${JSON.stringify(groupResult.results, null, 2)}\n\`\`\``
@@ -318,6 +408,7 @@ export async function dispatchTools(input: {
             const pkgPayload = PackageBuilderPayloadSchema.parse(parsedPayload ?? {});
             const pkgResult = await runPackageBuilder(pkgPayload);
 
+            // No caching for side effect operations
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n> [!NOTE]\n> Package${pkgResult.comparisonMode ? 's' : ''} ready for presentation.\n\`\`\`json\n${JSON.stringify(pkgResult, null, 2)}\n\`\`\``
