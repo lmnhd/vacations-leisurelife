@@ -5,9 +5,9 @@ import * as path from 'path';
 const STATE_FILE = path.join(__dirname, '..', '.playwright-state.json');
 
 // Helper function to attach network interception to ANY page
-function setupNetworkInterceptor(page) {
+function setupNetworkInterceptor(page: any) {
     // Let's log *everything* that isn't a static asset just in case it's not JSON
-    page.on('response', async (response) => {
+    page.on('response', async (response: any) => {
         const url = response.url();
 
         // Ignore images, css, fonts to reduce noise
