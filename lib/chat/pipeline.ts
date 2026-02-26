@@ -185,9 +185,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     });
 
     // Stage 6 — LLM Call
-    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: history.length });
+    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: history.length, model: input.model ?? 'gpt-4o-mini' });
     const rawLlmText = await callChatLlm({
         history,
+        model: input.model,
     });
 
     pipelineLog.llm(input.sessionId, 'call_complete', { responseLength: rawLlmText.length, rawPreview: rawLlmText.slice(0, 120) });
