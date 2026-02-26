@@ -36,7 +36,7 @@ Central state machine for the chat experience.
 
 **Key methods:**
 
-- `sendText(text)` — posts to `/api/tests/chat`, updates `messages`, applies `display` directives from response
+- `sendText(text)` — posts to `/api/chat`, updates `messages`, applies `display` directives from response
 - `viewPastTurn(index)` — **View-Only History Navigation**: restores headline and form state from a past message without modifying the conversation log. New input always appends to the end.
 
 ---
@@ -131,7 +131,7 @@ The mic toggle in the input bar switches between text and voice UX:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/tests/chat` | POST | Chat pipeline; returns `{ reply, sessionId, display? }` |
+| `/api/chat` | POST | Chat pipeline; returns `{ reply, sessionId, display? }` |
 | `/api/tests/image-search` | POST | Searches Google Custom Search; accepts `query`, `count?`, `index?` |
 
 ---
@@ -144,6 +144,6 @@ The mic toggle in the input bar switches between text and voice UX:
 | `lib/chat/response-parser.ts` | Extracts `image`, `form` directives from raw LLM output |
 | `lib/chat/types.ts` | `ChatMessage`, `ParsedFormField`, `ParsedFormDirective`, `DisplayDirective` |
 | `lib/chat/pipeline.ts` | LLM call + `parseResponse` + display directive assembly |
-| `app/api/tests/chat/core-logic.ts` | Chat route handler |
+| `app/api/chat/core-logic.ts` | Chat route handler |
 | `app/api/tests/image-search/core-logic.ts` | Image search route handler |
 | `lib/services/media/google-images.ts` | Google Custom Search API wrapper |
