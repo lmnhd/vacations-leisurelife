@@ -20,7 +20,7 @@ type ModelId = typeof AVAILABLE_MODELS[number]['id'];
 
 // ─── Turn display ─────────────────────────────────────────────────────────────
 
-type TurnWithTools = TurnRecord & { tool_calls?: ToolCallEntry[] };
+type TurnWithTools = TurnRecord & { tool_calls?: ToolCallEntry[]; isError?: boolean };
 
 type GateEvent = {
     type: 'gate_passed' | 'gate_failed';
@@ -148,8 +148,15 @@ export default function SimViewerPage() {
                             case 'done':
                                 return { ...prev, status: 'done', result: event.result };
 
-                            case 'error':
-                                return { ...prev, status: 'error', error: event.message };
+                            case 'error': {
+                                const errorTurn: TurnWithTools = {
+                                    turn: prev.turns.length + 1,
+                                    role: 'agent',
+                                    content: event.message,
+                                    isError: true,
+                                };
+                                return { ...prev, status: 'done', turns: [...prev.turns, errorTurn], error: event.message };
+                            }
 
                             default:
                                 return prev;
@@ -343,8 +350,20 @@ function ModelSelector({ label, value, onChange, disabled }: {
 
 function TurnBubble({ turn }: { turn: TurnWithTools }) {
     const isUser = turn.role === 'user';
+
+    if (turn.isError) {
+        return (
+            <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">💥 Pipeline Error</span>
+                <div className="rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap w-full bg-red-950/40 text-red-300 border border-red-700/60">
+                    {turn.content}
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className={`flex flex-col gap-1 ${isUser ? 'items-start' : 'items-start'}`}>
+        <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${isUser ? 'text-cyan-400' : 'text-amber-400'}`}>
                     {isUser ? `👤 User · Turn ${turn.turn}` : `🤖 Agent · Turn ${turn.turn}`}
