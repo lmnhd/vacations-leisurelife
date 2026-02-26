@@ -1,0 +1,13 @@
+{
+  "scenario_id": "social_media_past_cruise",
+  "description": "User mentions a previous sailing and triggers the past cruise review skill and social media tool.",
+  "simulator_prompt": "You are Tom, an experienced cruiser. Last year you went on the Royal Caribbean Oasis of the Seas to the Bahamas. It was fun, but the main pool deck was constantly packed. You are looking for a new recommendation that has better crowd management. You start the conversation by telling the agent about your last cruise and your complaint about the crowded pool.",
+  "max_turns": 8,
+  "assertions": {
+    "end_state": [],
+    "conversational_gates": [
+      { "must_happen_before_turn": 4, "condition": "Agent acknowledges the past cruise and validates the crowded pool sentiment (likely using the social media insights tool)" },
+      { "must_happen_before_turn": 6, "condition": "Agent suggests a different ship or cruise line with better crowd flow" }
+    ]
+  }
+}
