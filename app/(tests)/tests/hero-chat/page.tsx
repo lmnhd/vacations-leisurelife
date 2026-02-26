@@ -3,6 +3,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage, ChatResponse, ParsedFormDirective } from '@/lib/chat/types';
 import type { GoogleImageResult } from '@/lib/services/media/google-images';
+import { useVoiceChat } from '@/app/hooks/useVoiceChat';
+import type { RealtimeConnectionState } from '@/app/hooks/useVoiceChat';
 
 // ─── Component: ParticleOverlay ──────────────────────────────────────────────────
 
@@ -221,7 +223,7 @@ function useHeroChat() {
         [messages]
     );
 
-    const sendText = async (text: string) => {
+    const sendText = async (text: string, channel: 'text' | 'voice' = 'text') => {
         const trimmed = text.trim();
         if (!trimmed || isLoading) return;
 
@@ -242,7 +244,7 @@ function useHeroChat() {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: trimmed, sessionId, channel: 'text' }),
+                body: JSON.stringify({ message: trimmed, sessionId, channel }),
             });
 
             const payload = (await response.json()) as ChatResponse;
@@ -275,6 +277,8 @@ function useHeroChat() {
             // Need a way to pass images up. The page.tsx handles images itself via the dev test button right now.
             // But we actually want the chat flow to set it eventually. We'll handle that via a callback if needed,
             // or just let the HeroChatTestPage handle it via the viewPastTurn.
+
+            return safeReply;
         } catch (err) {
             const message =
                 err instanceof Error ? err.message : 'Unknown chat error';
@@ -284,6 +288,7 @@ function useHeroChat() {
         } finally {
             setIsLoading(false);
         }
+        return undefined;
     };
 
     const viewPastTurn = useCallback((index: number) => {
@@ -688,12 +693,17 @@ function UserMessageRail({ messages }: { messages: ChatMessage[] }) {
 function HeroInputBar({
     isLoading,
     onSend,
+    voiceMode,
+    voiceConnectionState,
+    onVoiceToggle,
 }: {
     isLoading: boolean;
     onSend: (text: string) => void;
+    voiceMode: boolean;
+    voiceConnectionState: RealtimeConnectionState;
+    onVoiceToggle: () => void;
 }) {
     const [input, setInput] = useState('');
-    const [voiceMode, setVoiceMode] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -703,15 +713,18 @@ function HeroInputBar({
         }
     };
 
+    const micIsConnecting = voiceConnectionState === 'connecting';
+
     return (
         <form onSubmit={handleSubmit} className="px-4 w-full max-w-2xl mx-auto">
             <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-3 backdrop-blur-sm focus-within:border-cyan-500/50 transition-colors">
                 {/* Mic toggle — left side */}
                 <button
                     type="button"
-                    onClick={() => setVoiceMode((v) => !v)}
+                    onClick={onVoiceToggle}
+                    disabled={micIsConnecting}
                     title={voiceMode ? 'Switch to text input' : 'Switch to voice input'}
-                    className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full transition-all ${voiceMode
+                    className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full transition-all disabled:opacity-50 ${voiceMode
                         ? 'bg-red-500/20 border border-red-500/50 text-red-400 animate-pulse'
                         : 'bg-white/5 border border-white/10 text-slate-500 hover:text-cyan-400 hover:border-cyan-500/30'
                         }`}
@@ -727,7 +740,8 @@ function HeroInputBar({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={
-                        voiceMode ? '🎤 Tap mic again to return to text...' :
+                        micIsConnecting ? '⏳ Connecting voice...' :
+                        voiceMode ? '🎤 Listening — tap mic to return to text...' :
                             isLoading ? 'Thinking...' : 'Tell me about your dream vacation...'
                     }
                     disabled={isLoading || voiceMode}
@@ -1253,9 +1267,42 @@ export default function HeroChatTestPage() {
     const [historyOpen, setHistoryOpen] = useState(false);
     const isMobile = useIsMobile();
     const [heroImages, setHeroImages] = useState<GoogleImageResult[]>([]);
+    const [voiceMode, setVoiceMode] = useState(false);
 
     // Test state for mood backgrounds
     const [currentMood, setCurrentMood] = useState<string | null>(null);
+
+    // ── Voice layer — audio on top of the existing canvas ──
+    // speakTextRef breaks the circular reference: onTranscriptComplete needs speakText,
+    // but speakText comes from the useVoiceChat return value. The ref is populated after init.
+    const speakTextRef = useRef<((text: string) => void) | null>(null);
+
+    const voice = useVoiceChat({
+        sessionId: chat.sessionId,
+        userId: 'hero-chat-user',
+        onTranscriptComplete: async (transcript: string) => {
+            // Voice transcript flows through the same pipeline as typed text (channel: voice)
+            // The reply animates on HeroHeadline AND is spoken aloud — both run in parallel
+            const reply = await chat.sendText(transcript, 'voice');
+            if (reply) {
+                speakTextRef.current?.(reply);
+            }
+        },
+        onSpeakReply: (_text: string) => { /* handled via onTranscriptComplete */ },
+    });
+
+    // Wire the ref now that voice is defined
+    speakTextRef.current = voice.speakText;
+
+    const handleVoiceToggle = useCallback(async () => {
+        if (voiceMode) {
+            voice.stopVoiceChat();
+            setVoiceMode(false);
+        } else {
+            setVoiceMode(true);
+            await voice.startVoiceChat();
+        }
+    }, [voiceMode, voice]);
 
     const handleInjectMessage = useCallback(
         (text: string, turn: number, form?: ParsedFormDirective) => {
@@ -1314,7 +1361,13 @@ export default function HeroChatTestPage() {
                                         gradient={getMoodGradient(currentMood)}
                                     />
                                     <UserMessageRail messages={chat.messages} />
-                                    <HeroInputBar isLoading={chat.isLoading} onSend={chat.sendText} />
+                                    <HeroInputBar
+                                        isLoading={chat.isLoading}
+                                        onSend={chat.sendText}
+                                        voiceMode={voiceMode}
+                                        voiceConnectionState={voice.connectionState}
+                                        onVoiceToggle={handleVoiceToggle}
+                                    />
                                     {chat.error && (
                                         <p className="text-xs text-red-400 font-mono">⚠️ {chat.error}</p>
                                     )}
@@ -1371,7 +1424,13 @@ export default function HeroChatTestPage() {
                             {/* Image only when no form is active */}
                             {!chat.activeForm && <HeroImage images={heroImages} />}
                             <UserMessageRail messages={chat.messages} />
-                            <HeroInputBar isLoading={chat.isLoading} onSend={chat.sendText} />
+                            <HeroInputBar
+                                isLoading={chat.isLoading}
+                                onSend={chat.sendText}
+                                voiceMode={voiceMode}
+                                voiceConnectionState={voice.connectionState}
+                                onVoiceToggle={handleVoiceToggle}
+                            />
 
                             {chat.error && (
                                 <p className="text-xs text-red-400 font-mono text-center">⚠️ {chat.error}</p>
