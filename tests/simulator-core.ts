@@ -94,6 +94,12 @@ function tokenParam(model: string, count: number): Record<string, number> {
         ? { max_completion_tokens: count }
         : { max_tokens: count };
 }
+
+function tempParam(model: string, value: number): Record<string, number> {
+    return COMPLETION_TOKENS_MODELS.some((m) => model.startsWith(m))
+        ? {}
+        : { temperature: value };
+}
 const COST_PER_1K_TOKENS_USD = 0.00015;
 const SCENARIOS_DIR = path.join(process.cwd(), 'tests', 'scenarios');
 
@@ -171,7 +177,7 @@ async function getSimulatorResponse(input: {
         model: input.model,
         messages,
         ...tokenParam(input.model, 200),
-        temperature: 0.9,
+        ...tempParam(input.model, 0.9),
     });
 
     return completion.choices[0]?.message?.content?.trim() ?? 'GOAL_ACHIEVED';
@@ -194,7 +200,7 @@ async function evaluateConversationalGate(input: {
             { role: 'user', content: `Given this conversation transcript:\n\n${transcriptText}\n\nDid the following occur? "${input.condition}"\n\nAnswer only: true or false` },
         ],
         ...tokenParam(input.model, 10),
-        temperature: 0,
+        ...tempParam(input.model, 0),
     });
 
     return (completion.choices[0]?.message?.content?.trim().toLowerCase() ?? 'false') === 'true';
