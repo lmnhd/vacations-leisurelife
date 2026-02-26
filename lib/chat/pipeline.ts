@@ -243,5 +243,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         reply: processedResponse.reply,
         sessionId: input.sessionId,
         display: processedResponse.display,
+        toolCallsLog: toolDispatchResult.toolCallsLog,
     };
 }
