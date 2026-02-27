@@ -67,6 +67,11 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                 }),
             });
 
+            if (!res.ok) {
+                options.onError?.(`Pipeline HTTP ${res.status} — ${res.statusText}`);
+                return;
+            }
+
             const data = await res.json() as ChatResponse;
             options.onPipelineResult?.(data);
 
