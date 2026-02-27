@@ -58,18 +58,16 @@ export async function createRealtimeSession(
 
     const pc = new RTCPeerConnection();
 
-    // ── Inbound TTS audio from OpenAI (skipped in text-only mode) ──
+    // ── Audio: skipped entirely in text-only mode ──
     const audioElement = new Audio();
     audioElement.autoplay = true;
     if (!textOnly) {
         pc.ontrack = (event) => {
             audioElement.srcObject = event.streams[0];
         };
-    }
-
-    // ── Outbound microphone audio ──
-    for (const track of audioStream.getTracks()) {
-        pc.addTrack(track, audioStream);
+        for (const track of audioStream.getTracks()) {
+            pc.addTrack(track, audioStream);
+        }
     }
 
     // ── Data channel for Realtime events ──
@@ -185,6 +183,9 @@ function handleDataChannelMessage(
 
     const type = message['type'] as string | undefined;
     if (!type) return;
+
+    // DEBUG: surface all DC event types to the event log
+    callbacks.onEvent?.({ type: `dc:raw:${type}`, detail: '', ts: ts() });
 
     // ── Function call: start buffering + speak acknowledgment ──
     if (type === 'response.function_call_arguments.start') {
