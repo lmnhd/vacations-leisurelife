@@ -1,5 +1,5 @@
-import { OdysseusEngine } from '@/lib/services/odysseus/OdysseusEngine';
-import { CruiseResult, CruiseSearchCriteria } from '@/lib/services/odysseus/types';
+import { getOdysseusSession } from '@/lib/services/odysseus/OdysseusSessionManager';
+import type { CruiseResult, CruiseSearchCriteria } from '@/lib/services/odysseus/types';
 
 export type OdysseusSearchInput = {
     vendorId?: number | null;
@@ -11,21 +11,23 @@ export type OdysseusSearchInput = {
 
 export type OdysseusSearchOutput = {
     searchSummary: string;
-    results: any[];
+    results: OdysseusCruiseSummary[];
+};
+
+type OdysseusCruiseSummary = {
+    id: string;
+    name: string;
+    shipName: string;
+    duration: string;
+    departurePort: string;
+    arrivalPort: string;
+    startingAtUSD: number | 'N/A';
 };
 
 export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<OdysseusSearchOutput> {
-    const engine = new OdysseusEngine();
-
     try {
-        console.log('[odysseus-search-tool] Initializing OdysseusEngine...');
-        await engine.init(true); // Run headless
-
-        console.log('[odysseus-search-tool] Logging in / loading session...');
-        await engine.login();
-
-        console.log('[odysseus-search-tool] Validating DOM health...');
-        await engine.validateHealth();
+        console.log('[odysseus-search-tool] Acquiring persistent session...');
+        const engine = await getOdysseusSession();
 
         const criteria: CruiseSearchCriteria = {
             passengers: input.passengers,
@@ -39,8 +41,7 @@ export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<Ody
         console.log('[odysseus-search-tool] Executing search...');
         const rawResults: CruiseResult[] = await engine.searchCruises(criteria);
 
-        // Map the results to a concise subset for the LLM context
-        const mappedResults = rawResults.map((r) => {
+        const mappedResults: OdysseusCruiseSummary[] = rawResults.map((r) => {
             const minPrice = r.prices && r.prices.length > 0 && r.prices[0].items.length > 0
                 ? Math.min(...r.prices[0].items.map(i => i.value))
                 : -1;
@@ -52,26 +53,22 @@ export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<Ody
                 duration: `${r.itinerary?.duration || '?'} Nights`,
                 departurePort: r.itinerary?.departure?.code || 'Unknown',
                 arrivalPort: r.itinerary?.arrival?.code || 'Unknown',
-                startingAtUSD: minPrice > 0 ? minPrice : 'N/A'
+                startingAtUSD: (minPrice > 0 ? minPrice : 'N/A') as number | 'N/A',
             };
         }).slice(0, 3); // Return top 3 only — voice context must stay concise
 
         const searchSummary = mappedResults.length > 0
             ? `Found ${rawResults.length} live cruise itineraries. Showing top ${mappedResults.length} for voice summary:`
-            : "No live cruises matched that exact criteria.";
+            : 'No live cruises matched that exact criteria.';
 
-        return {
-            searchSummary,
-            results: mappedResults
-        };
+        return { searchSummary, results: mappedResults };
 
     } catch (error) {
         console.error('[odysseus-search-tool] Error:', error);
         return {
-            searchSummary: "An error occurred while connecting to the live booking engine. Please try again or refine search criteria.",
-            results: []
+            searchSummary: 'An error occurred while connecting to the live booking engine. Please try again or refine search criteria.',
+            results: [],
         };
-    } finally {
-        await engine.close();
     }
+    // NOTE: No engine.close() — session stays alive for the next call
 }

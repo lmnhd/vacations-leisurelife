@@ -134,12 +134,30 @@ export default function VoiceSimulatorPage() {
         }]);
     }, []);
 
+    // ── Odysseus warm-up — fire-and-forget before connect ────────────────────
+
+    const triggerWarmup = useCallback(async () => {
+        addLog('warmup:start', 'Pre-warming Odysseus session + common search cache...');
+        try {
+            const res = await fetch('/api/voice/odysseus-warmup', { method: 'POST' });
+            const data = await res.json() as { fetched?: number; cached?: number; errors?: number; totalDurationMs?: number };
+            addLog('warmup:done', `fetched=${data.fetched ?? 0} cached=${data.cached ?? 0} errors=${data.errors ?? 0} (${data.totalDurationMs ?? '?'}ms)`);
+        } catch (err) {
+            addLog('warmup:error', String(err));
+        }
+    }, [addLog]);
+
     // ── Connect to Realtime in test mode ──────────────────────────────────────
 
     const connect = useCallback(async () => {
         if (connectionState !== 'idle') return;
         setConnectionState('connecting');
         addLog('session:init', `Requesting ${sessionMode.toUpperCase()} mode ephemeral token...`);
+
+        // Auto warm-up Odysseus when connecting with fast_cruise_search context
+        if (startingContext === 'fast_cruise_search') {
+            void triggerWarmup();
+        }
 
         try {
             const tokenRes = await fetch('/api/voice/session', {
@@ -323,6 +341,12 @@ export default function VoiceSimulatorPage() {
                                     Override bypasses trigger logic and pins this context for the session.
                                 </div>
                             </div>
+                            <button
+                                onClick={triggerWarmup}
+                                className="w-full py-1.5 rounded-lg text-[11px] font-medium bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all"
+                            >
+                                🔥 Pre-warm Odysseus Cache
+                            </button>
                             <div className="flex gap-2">
                                 <button
                                     onClick={connect}
