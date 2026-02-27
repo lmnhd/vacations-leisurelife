@@ -181,6 +181,7 @@ export interface PipelineInput {
     userId: string;
     channel: Channel;
     model?: string;
+    startingContext?: string;
 }
 
 export type ToolCallLogEntry = {
