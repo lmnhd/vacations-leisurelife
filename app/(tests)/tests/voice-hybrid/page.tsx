@@ -37,7 +37,7 @@ export default function VoiceHybridPage() {
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     const [log, setLog] = useState<LogEntry[]>([]);
     const [startingContext, setStartingContext] = useState('fast_cruise_search');
-    const pipelineStartRef = useRef<number>(0);
+    const pipelineStartRef = useRef<number>(Date.now());
     const logEndRef = useRef<HTMLDivElement>(null);
 
     const addLog = useCallback((text: string, type: LogEntry['type'] = 'info') => {

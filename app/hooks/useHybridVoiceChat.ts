@@ -63,7 +63,7 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     message: transcript,
                     sessionId: options.sessionId,
                     userId: options.userId,
-                    channel: 'voice',
+                    channel: 'text',  // hybrid: reasoning is text-pipeline, I/O is voice separately
                     ...(options.startingContext ? { startingContext: options.startingContext } : {}),
                 }),
             });
@@ -132,8 +132,10 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     options.onTranscriptComplete?.(transcript);
                     void runPipeline(transcript);
                 },
-                onAgentTranscript: options.onAgentTranscript,
-            }
+                // onAgentTranscript suppressed in hybrid mode via hybridMode flag below
+            },
+            false,       // textOnly
+            true         // hybridMode — suppresses response.audio_transcript.done echo
         );
 
         sessionRef.current = session;
