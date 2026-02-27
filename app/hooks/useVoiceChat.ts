@@ -28,6 +28,8 @@ export type { RealtimeConnectionState, RealtimeVoiceEvent };
 interface UseVoiceChatOptions {
     sessionId: string;
     userId: string;
+    startingContext?: string;
+    mode?: 'dev' | 'test';
     onTranscriptComplete: (transcript: string) => void;
     onAgentTranscript?: (transcript: string) => void;
     onEvent?: (event: RealtimeVoiceEvent) => void;
@@ -71,11 +73,16 @@ export function useVoiceChat(options: UseVoiceChatOptions): UseVoiceChatReturn {
             setConnectionState('connecting');
 
             // ── Step 1: Fetch ephemeral token from our server ──
-            const { sessionId, userId } = optionsRef.current;
+            const { sessionId, userId, startingContext, mode } = optionsRef.current;
             const tokenResponse = await fetch('/api/voice/session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, userId }),
+                body: JSON.stringify({
+                    sessionId,
+                    userId,
+                    ...(mode ? { mode } : {}),
+                    ...(startingContext ? { startingContext } : {}),
+                }),
             });
 
             if (!tokenResponse.ok) {
