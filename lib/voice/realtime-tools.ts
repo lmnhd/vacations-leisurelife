@@ -127,6 +127,23 @@ const TOOL_DEFINITIONS: Record<string, RealtimeFunctionDefinition> = {
     },
 };
 
+// ─── Spoken acknowledgment labels (matches thoughts_stream_label in tool JSON) ─
+
+const TOOL_THINKING_LABELS: Record<string, string> = {
+    perplexity_cruise_research: 'Give me a moment, I\'m looking that up for you.',
+    cruise_brothers_knowledge: 'Let me check our agent resources on that.',
+    excursion_finder: 'I\'m pulling up excursion options for that port.',
+    cruise_brothers_scraper: 'Hold on, I\'m scanning current deals and promotions.',
+    social_media_insights: 'I\'m checking what travelers are saying about that.',
+    cruise_trend_analysis: 'Let me research the latest trends on that.',
+    odysseus_search: 'I\'m searching live cruise availability right now.',
+    pricing_comparator: 'Give me a second to run those numbers.',
+};
+
+export function getToolThinkingLabel(toolId: string): string {
+    return TOOL_THINKING_LABELS[toolId] ?? 'Give me a moment while I look that up.';
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 export function buildRealtimeToolDefinitions(
