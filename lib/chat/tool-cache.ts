@@ -1,6 +1,17 @@
 import { createHash } from 'crypto';
 import prismadb from '@/lib/prismadb';
 
+const CACHE_TIMEOUT_MS = 2000;
+
+function withTimeout<T>(promise: Promise<T>): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('ToolCache: DB timeout')), CACHE_TIMEOUT_MS)
+        ),
+    ]);
+}
+
 /**
  * Creates a deterministic SHA-256 hash of a JSON payload.
  * Sorts object keys so {a:1, b:2} and {b:2, a:1} hash to the same value.
@@ -28,14 +39,14 @@ export async function getToolCache<T>(toolId: string, payload: unknown): Promise
     const payloadHash = hashPayload(payload);
 
     try {
-        const cached = await prismadb.agentToolCache.findUnique({
+        const cached = await withTimeout(prismadb.agentToolCache.findUnique({
             where: {
                 toolId_payloadHash: {
                     toolId,
                     payloadHash,
                 },
             },
-        });
+        }));
 
         if (!cached) {
             return null;
@@ -71,7 +82,7 @@ export async function setToolCache(
     const serializedResponse = JSON.stringify(response);
 
     try {
-        await prismadb.agentToolCache.upsert({
+        await withTimeout(prismadb.agentToolCache.upsert({
             where: {
                 toolId_payloadHash: {
                     toolId,
@@ -88,7 +99,7 @@ export async function setToolCache(
                 response: serializedResponse,
                 expiresAt,
             },
-        });
+        }));
     } catch (error) {
         console.error(`[ToolCache] Failed to set cache for ${toolId}:`, error);
     }
