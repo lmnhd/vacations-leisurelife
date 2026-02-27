@@ -14,6 +14,8 @@ import { runExcursionFinder } from '@/lib/chat/tools/excursion-finder';
 import { runCruiseBrothersScraper } from '@/lib/chat/tools/cruise-brothers-scraper';
 import { runSocialMediaInsights, runCruiseTrendAnalysis } from '@/lib/chat/tools/social-media-insights';
 import type { TravelerPerspective, TrendCategory } from '@/lib/chat/tools/social-media-insights';
+import { runOdysseusSearch } from '@/lib/chat/tools/odysseus-search';
+import { runPricingComparator } from '@/lib/chat/tools/pricing-comparator';
 
 // ─── Request / Response types ─────────────────────────────────────────────────
 
@@ -52,6 +54,23 @@ const SocialMediaInsightsPayloadSchema = z.object({
     cruise_line: z.string(),
     ship_name: z.string().nullable().optional(),
     destination: z.string().nullable().optional(),
+});
+
+const OdysseusSearchPayloadSchema = z.object({
+    passengers: z.number().int().positive(),
+    guestAges: z.array(z.number().int().positive()),
+    startDate: z.string().nullable().optional(),
+    endDate: z.string().nullable().optional(),
+    vendorId: z.number().int().positive().nullable().optional(),
+});
+
+const PricingComparatorPayloadSchema = z.object({
+    baseFare: z.number(),
+    taxesFeesPortExpenses: z.number(),
+    gratuities: z.number(),
+    numberOfGuests: z.number().int().positive(),
+    numberOfNights: z.number().int().positive(),
+    clientTotalBudget: z.number(),
 });
 
 const CruiseTrendAnalysisPayloadSchema = z.object({
@@ -163,6 +182,27 @@ export async function handleVoiceToolDispatch(
                 timeframe: p.timeframe ?? null,
             });
             await setToolCache(toolId, payload, result, 86400 * 7);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
+            return { status: 200, data: result as unknown as Record<string, unknown> };
+        }
+
+        if (toolId === 'odysseus_search') {
+            const p = OdysseusSearchPayloadSchema.parse(payload);
+            const result = await runOdysseusSearch({
+                passengers: p.passengers,
+                guestAges: p.guestAges,
+                startDate: p.startDate ?? null,
+                endDate: p.endDate ?? null,
+                vendorId: p.vendorId ?? null,
+            });
+            await setToolCache(toolId, payload, result as unknown as Record<string, unknown>, 300);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
+            return { status: 200, data: result as unknown as Record<string, unknown> };
+        }
+
+        if (toolId === 'pricing_comparator') {
+            const p = PricingComparatorPayloadSchema.parse(payload);
+            const result = await runPricingComparator(p);
             voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }

@@ -102,6 +102,41 @@ const TOOL_DEFINITIONS: Record<string, RealtimeFunctionDefinition> = {
         },
     },
 
+    odysseus_search: {
+        type: 'function',
+        name: 'odysseus_search',
+        description: 'Search live cruise availability and pricing from the booking engine. Use this when the user specifies travel dates, party size, or destination and needs real availability.',
+        parameters: {
+            type: 'object',
+            properties: {
+                passengers: { type: 'number', description: 'Total number of passengers' },
+                guestAges: { type: 'array', description: 'Age of each passenger as an array of numbers e.g. [35, 39]', items: { type: 'number' } },
+                startDate: { type: 'string', description: 'Search start date in MM/DD/YYYY format (optional)' },
+                endDate: { type: 'string', description: 'Search end date in MM/DD/YYYY format (optional)' },
+                vendorId: { type: 'number', description: 'Specific cruise line vendor ID (optional)' },
+            },
+            required: ['passengers', 'guestAges'],
+        },
+    },
+
+    pricing_comparator: {
+        type: 'function',
+        name: 'pricing_comparator',
+        description: 'Calculate total cost, per-person breakdown, and budget comparison for a cruise package.',
+        parameters: {
+            type: 'object',
+            properties: {
+                baseFare: { type: 'number', description: 'Base fare total for all guests' },
+                taxesFeesPortExpenses: { type: 'number', description: 'Combined taxes, fees, and port expenses' },
+                gratuities: { type: 'number', description: 'Prepaid gratuities total (0 if not included)' },
+                numberOfGuests: { type: 'number', description: 'Number of guests' },
+                numberOfNights: { type: 'number', description: 'Number of cruise nights' },
+                clientTotalBudget: { type: 'number', description: 'Client total budget in USD' },
+            },
+            required: ['baseFare', 'taxesFeesPortExpenses', 'gratuities', 'numberOfGuests', 'numberOfNights', 'clientTotalBudget'],
+        },
+    },
+
     cruise_trend_analysis: {
         type: 'function',
         name: 'cruise_trend_analysis',
