@@ -205,9 +205,17 @@ function handleDataChannelMessage(
     if (type === 'response.function_call_arguments.delta') {
         const callId = message['call_id'] as string | undefined;
         const delta = (message['delta'] as string | undefined) ?? '';
+        const name = message['name'] as string | undefined;
         if (callId) {
             const pending = pendingToolCalls.get(callId);
-            if (pending) pending.argBuffer += delta;
+            if (pending) {
+                pending.argBuffer += delta;
+            } else if (name) {
+                // start event was missed — register now
+                pendingToolCalls.set(callId, { name, argBuffer: delta });
+                if (!isTextOnly) speakThinkingLabel(dc, name);
+                callbacks.onEvent?.({ type: 'tool:start', detail: `tool=${name} callId=${callId} (late)`, ts: ts() });
+            }
         }
         return;
     }
@@ -216,11 +224,19 @@ function handleDataChannelMessage(
     if (type === 'response.function_call_arguments.done') {
         const callId = message['call_id'] as string | undefined;
         if (!callId) return;
-        const pending = pendingToolCalls.get(callId);
+        const name = message['name'] as string | undefined;
+        const arguments_ = message['arguments'] as string | undefined;
+        // Recover if start+delta were both missed (done carries full payload)
+        let pending = pendingToolCalls.get(callId);
+        if (!pending && name && arguments_) {
+            callbacks.onEvent?.({ type: 'tool:start', detail: `tool=${name} callId=${callId} (recovered)`, ts: ts() });
+            pending = { name, argBuffer: arguments_ };
+        }
         if (!pending) return;
         pendingToolCalls.delete(callId);
-        callbacks.onEvent?.({ type: 'tool:dispatch', detail: `tool=${pending.name} args=${pending.argBuffer.slice(0, 120)}`, ts: ts() });
-        dispatchToolCall(dc, callId, pending.name, pending.argBuffer, callbacks);
+        const argBuffer = arguments_ ?? pending.argBuffer;
+        callbacks.onEvent?.({ type: 'tool:dispatch', detail: `tool=${pending.name} args=${argBuffer.slice(0, 120)}`, ts: ts() });
+        dispatchToolCall(dc, callId, pending.name, argBuffer, callbacks);
         return;
     }
 
