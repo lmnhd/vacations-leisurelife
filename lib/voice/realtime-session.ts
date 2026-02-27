@@ -186,9 +186,6 @@ function handleDataChannelMessage(
     const type = message['type'] as string | undefined;
     if (!type) return;
 
-    // DEBUG: surface all DC event types to the event log
-    callbacks.onEvent?.({ type: `dc:raw:${type}`, detail: '', ts: ts() });
-
     // ── Function call: start buffering + speak acknowledgment ──
     if (type === 'response.function_call_arguments.start') {
         const callId = message['call_id'] as string | undefined;
