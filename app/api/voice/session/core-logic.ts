@@ -38,7 +38,7 @@ interface VoiceSessionRequestBody {
     userId?: string;
     voice?: string;
     temperature?: number;
-    mode?: 'test';
+    mode?: 'test' | 'dev';
 }
 
 interface VoiceSessionResponseData {
@@ -64,24 +64,28 @@ export async function handleVoiceSessionRequest(
 
     let resolvedTools: string[] = [];
     const isTestMode = body.mode === 'test';
+    const isDevMode = body.mode === 'dev';
 
     try {
         const context = await resolveContext({
             hasCruised: null,
             requestedSpecificCruise: false,
-            incompleteProfile: true,
+            incompleteProfile: !isDevMode,
             discussesPastCruise: false,
+            devModeActive: isDevMode,
         });
 
         // Test mode: unlock all tools + use stripped test prompt
-        resolvedTools = isTestMode ? ALL_TOOL_IDS : context.availableTools;
+        // Dev mode: unlock all tools + use relaxed dev prompt
+        resolvedTools = (isTestMode || isDevMode) ? ALL_TOOL_IDS : context.availableTools;
 
         const assembled = await assembleSystemPrompt({
             channel: isTestMode ? 'voice_test' : 'voice',
             hasCruised: null,
             requestedSpecificCruise: false,
-            incompleteProfile: true,
+            incompleteProfile: !isDevMode,
             discussesPastCruise: false,
+            devModeActive: isDevMode,
             preResolvedContext: context,
         });
         instructions = assembled.systemPrompt;

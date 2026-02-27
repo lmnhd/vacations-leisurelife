@@ -110,6 +110,7 @@ export default function VoiceSimulatorPage() {
     const [selectedScenario, setSelectedScenario] = useState<string>(TEST_SCENARIOS[0]!.id);
     const [customMessage, setCustomMessage] = useState('');
     const [delayMs, setDelayMs] = useState(3000);
+    const [sessionMode, setSessionMode] = useState<'test' | 'dev'>('test');
 
     const sessionRef = useRef<RealtimeSessionHandle | null>(null);
     const logEndRef = useRef<HTMLDivElement>(null);
@@ -137,20 +138,21 @@ export default function VoiceSimulatorPage() {
     const connect = useCallback(async () => {
         if (connectionState !== 'idle') return;
         setConnectionState('connecting');
-        addLog('session:init', 'Requesting test-mode ephemeral token...');
+        addLog('session:init', `Requesting ${sessionMode.toUpperCase()} mode ephemeral token...`);
 
         try {
             const tokenRes = await fetch('/api/voice/session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: TEST_SESSION_ID, userId: 'voice-sim', mode: 'test' }),
+                body: JSON.stringify({ sessionId: TEST_SESSION_ID, userId: 'voice-sim', mode: sessionMode }),
             });
 
             const tokenData = await tokenRes.json() as { clientSecret?: string; error?: string };
             if (!tokenRes.ok || !tokenData.clientSecret) {
                 throw new Error(tokenData.error ?? 'No client secret returned');
             }
-            addLog('session:token', 'Token received — TEST mode, all tools unlocked');
+            const modeLabel = sessionMode === 'test' ? 'TEST mode, all tools unlocked' : 'DEV mode, relaxed context';
+            addLog('session:token', `Token received — ${modeLabel}`);
 
             // Silent audio stream — no mic needed
             const silentStream = createSilentAudioStream();
@@ -272,13 +274,36 @@ export default function VoiceSimulatorPage() {
                         {/* Connect */}
                         <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
                             <div className="text-xs text-slate-400 uppercase tracking-widest">Session</div>
+                            <div className="flex gap-1 p-1 bg-slate-800 rounded-lg">
+                                {(['test', 'dev'] as const).map((m) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setSessionMode(m)}
+                                        disabled={connectionState !== 'idle'}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all disabled:pointer-events-none ${
+                                            sessionMode === m
+                                                ? m === 'test'
+                                                    ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40'
+                                                    : 'bg-violet-500/30 text-violet-300 border border-violet-500/40'
+                                                : 'text-slate-500 hover:text-slate-300'
+                                        }`}
+                                    >
+                                        {m === 'test' ? '🧪 Tool Test' : '🛠 Dev Mode'}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="text-[10px] text-slate-600">
+                                {sessionMode === 'test'
+                                    ? 'Terse tool testing — no persona, terse TOOL|STATUS|RESULT format'
+                                    : 'Relaxed dev context — short answers, all tools, no sales flow'}
+                            </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={connect}
                                     disabled={connectionState !== 'idle' && connectionState !== 'error'}
                                     className="flex-1 py-2 rounded-lg text-xs font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-40 disabled:pointer-events-none transition-all"
                                 >
-                                    Connect (Test Mode)
+                                    Connect ({sessionMode === 'test' ? 'Test' : 'Dev'} Mode)
                                 </button>
                                 <button
                                     onClick={disconnect}

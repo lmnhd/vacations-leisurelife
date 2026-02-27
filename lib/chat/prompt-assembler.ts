@@ -88,6 +88,7 @@ export async function assembleSystemPrompt(input: {
     requestedSpecificCruise: boolean;
     incompleteProfile: boolean;
     discussesPastCruise: boolean;
+    devModeActive?: boolean;
     preResolvedContext?: Awaited<ReturnType<typeof resolveContext>>;
     activeRules?: string[];
     loadedSkills?: string[];
@@ -99,6 +100,7 @@ export async function assembleSystemPrompt(input: {
             requestedSpecificCruise: input.requestedSpecificCruise,
             incompleteProfile: input.incompleteProfile,
             discussesPastCruise: input.discussesPastCruise,
+            devModeActive: input.devModeActive,
         });
 
     const activeRules = input.activeRules ?? [];
