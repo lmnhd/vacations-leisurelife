@@ -291,6 +291,20 @@ function useHeroChat() {
         return undefined;
     };
 
+    const addMessage = useCallback((role: 'user' | 'assistant', content: string) => {
+        const msg: ChatMessage = {
+            id: `${role[0]}-${Date.now()}`,
+            role,
+            content,
+            timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, msg]);
+        if (role === 'assistant') {
+            setHeadline(content);
+            setHeadlineTurn((n) => n + 1);
+        }
+    }, []);
+
     const viewPastTurn = useCallback((index: number) => {
         const msg = messages[index];
         if (!msg) return;
@@ -311,6 +325,7 @@ function useHeroChat() {
         sessionId,
         hasUserHistory,
         sendText,
+        addMessage,
         setHeadline,
         setHeadlineTurn,
         setActiveForm,
@@ -1272,27 +1287,21 @@ export default function HeroChatTestPage() {
     // Test state for mood backgrounds
     const [currentMood, setCurrentMood] = useState<string | null>(null);
 
-    // ── Voice layer — audio on top of the existing canvas ──
-    // speakTextRef breaks the circular reference: onTranscriptComplete needs speakText,
-    // but speakText comes from the useVoiceChat return value. The ref is populated after init.
-    const speakTextRef = useRef<((text: string) => void) | null>(null);
-
+    // ── Voice layer — Y-plug: voice mode bypasses /api/chat entirely ──
+    // Text mode:  typed input → sendText() → /api/chat → reply in messages
+    // Voice mode: mic → Realtime STT → onTranscriptComplete (user msg only)
+    //             Realtime LLM → onAgentTranscript → reply injected into messages
     const voice = useVoiceChat({
         sessionId: chat.sessionId,
         userId: 'hero-chat-user',
-        onTranscriptComplete: async (transcript: string) => {
-            // Voice transcript flows through the same pipeline as typed text (channel: voice)
-            // The reply animates on HeroHeadline AND is spoken aloud — both run in parallel
-            const reply = await chat.sendText(transcript, 'voice');
-            if (reply) {
-                speakTextRef.current?.(reply);
-            }
+        onTranscriptComplete: (transcript: string) => {
+            chat.addMessage('user', transcript);
         },
-        onSpeakReply: (_text: string) => { /* handled via onTranscriptComplete */ },
+        onAgentTranscript: (transcript: string) => {
+            chat.addMessage('assistant', transcript);
+        },
+        onSpeakReply: (_text: string) => { /* Realtime speaks its own responses */ },
     });
-
-    // Wire the ref now that voice is defined
-    speakTextRef.current = voice.speakText;
 
     const handleVoiceToggle = useCallback(async () => {
         if (voiceMode) {
