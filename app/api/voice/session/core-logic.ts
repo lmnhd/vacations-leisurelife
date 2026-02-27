@@ -73,6 +73,14 @@ export async function handleVoiceSessionRequest(
         });
         instructions = assembled.systemPrompt;
         source = 'assembled';
+
+        console.log(
+            `🎤 [voice:session]        │ session_created\n` +
+            `    context: ${context.activeContextPath}\n` +
+            `    tools: ${JSON.stringify(resolvedTools)}\n` +
+            `    promptLength: ${instructions.length}\n` +
+            `    promptSource: ${source}`
+        );
     } catch (err) {
         console.error('[VoiceSession] assembleSystemPrompt failed, using fallback:', err);
         instructions = FALLBACK_VOICE_INSTRUCTIONS;

@@ -61,6 +61,21 @@ const CruiseTrendAnalysisPayloadSchema = z.object({
     timeframe: z.string().nullable().optional(),
 });
 
+// ─── Logger ──────────────────────────────────────────────────────────────────
+
+function voiceLog(event: string, data?: Record<string, unknown>): void {
+    const time = new Date().toISOString().replace('T', ' ').slice(11, 23);
+    const header = `🎤 [voice:tool]          │ ${event}`;
+    if (data && Object.keys(data).length > 0) {
+        const lines = Object.entries(data)
+            .map(([k, v]) => `    ${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+            .join('\n');
+        console.log(`${header}  (${time})\n${lines}`);
+    } else {
+        console.log(`${header}  (${time})`);
+    }
+}
+
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 export async function handleVoiceToolDispatch(
@@ -72,10 +87,14 @@ export async function handleVoiceToolDispatch(
     }
 
     const { toolId, payload } = parsed.data;
+    const startMs = Date.now();
+
+    voiceLog('tool:call_start', { toolId, payload });
 
     try {
         const cachedResult = await getToolCache<Record<string, unknown>>(toolId, payload);
         if (cachedResult) {
+            voiceLog('tool:cache_hit', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: cachedResult };
         }
 
@@ -87,6 +106,7 @@ export async function handleVoiceToolDispatch(
                 departureMonth: p.departure_month ?? null,
             });
             await setToolCache(toolId, payload, result, 86400);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
@@ -94,6 +114,7 @@ export async function handleVoiceToolDispatch(
             const p = CruiseBrothersKnowledgePayloadSchema.parse(payload);
             const result = await runCruiseBrothersKnowledgeLookup({ query: p.query });
             await setToolCache(toolId, payload, result, 86400 * 7);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
@@ -105,6 +126,7 @@ export async function handleVoiceToolDispatch(
                 cruiseLine: p.cruise_line ?? null,
             });
             await setToolCache(toolId, payload, result, 86400 * 7);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
@@ -116,6 +138,7 @@ export async function handleVoiceToolDispatch(
                 destination: p.destination ?? null,
             });
             await setToolCache(toolId, payload, result, 3600 * 6);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
@@ -127,6 +150,7 @@ export async function handleVoiceToolDispatch(
                 destination: p.destination ?? null,
             });
             await setToolCache(toolId, payload, result, 86400 * 30);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
@@ -139,13 +163,16 @@ export async function handleVoiceToolDispatch(
                 timeframe: p.timeframe ?? null,
             });
             await setToolCache(toolId, payload, result, 86400 * 7);
+            voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }
 
+        voiceLog('tool:unknown', { toolId });
         return { status: 400, data: { error: `Unknown or unsupported voice tool: ${toolId}` } };
 
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        voiceLog('tool:error', { toolId, error: message, durationMs: Date.now() - startMs });
         return { status: 500, data: { error: `Tool execution failed: ${message}` } };
     }
 }
