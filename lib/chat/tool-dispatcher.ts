@@ -15,7 +15,7 @@ import { runSocialMediaInsights, runCruiseTrendAnalysis } from './tools/social-m
 import type { TravelerPerspective, TrendCategory } from './tools/social-media-insights';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
-const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{[^\]]*\})?\s*\]/gi;
+const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{(?:[^\[\]]*|\[[^\]]*\])*\})?\s*\]/gi;
 
 const ToolDefinitionSchema = z.object({
     tool_id: z.string(),
@@ -167,6 +167,7 @@ export async function dispatchTools(input: {
     const toolCallsLog: ToolCallLogEntry[] = [];
 
     let updatedResponseText = input.llmResponseText;
+    TOOL_DIRECTIVE_PATTERN.lastIndex = 0;
     const directiveMatches = [...input.llmResponseText.matchAll(TOOL_DIRECTIVE_PATTERN)];
 
     if (directiveMatches.length === 0) {
