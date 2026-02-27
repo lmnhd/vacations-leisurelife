@@ -19,16 +19,18 @@ import {
     createRealtimeSession,
     type RealtimeConnectionState,
     type RealtimeSessionHandle,
+    type RealtimeVoiceEvent,
 } from '@/lib/voice/realtime-session';
 import { speakReply, interruptSpeech } from '@/lib/voice/tts-streamer';
 
-export type { RealtimeConnectionState };
+export type { RealtimeConnectionState, RealtimeVoiceEvent };
 
 interface UseVoiceChatOptions {
     sessionId: string;
     userId: string;
     onTranscriptComplete: (transcript: string) => void;
     onAgentTranscript?: (transcript: string) => void;
+    onEvent?: (event: RealtimeVoiceEvent) => void;
     onSpeakReply: (cleanText: string) => void;
 }
 
@@ -101,6 +103,9 @@ export function useVoiceChat(options: UseVoiceChatOptions): UseVoiceChatReturn {
                     },
                     onAgentTranscript: (transcript: string) => {
                         optionsRef.current.onAgentTranscript?.(transcript);
+                    },
+                    onEvent: (event: RealtimeVoiceEvent) => {
+                        optionsRef.current.onEvent?.(event);
                     },
                     onStateChange: (state: RealtimeConnectionState) => {
                         setConnectionState(state);

@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceChat } from '@/app/hooks/useVoiceChat';
+import type { RealtimeVoiceEvent } from '@/app/hooks/useVoiceChat';
 
 interface TranscriptEntry {
     id: string;
@@ -39,27 +40,30 @@ export default function VoicePipelineTestPage() {
     }, [pipelineLog]);
 
     const handleTranscriptComplete = useCallback((transcript: string) => {
-        addLog(`STT complete: "${transcript}"`);
         setTranscripts((prev) => [
             ...prev,
             { id: `u-${Date.now()}`, role: 'user', text: transcript, timestamp: Date.now() },
         ]);
-    }, [addLog]);
+    }, []);
 
     const handleAgentTranscript = useCallback((transcript: string) => {
-        addLog(`Agent said: "${transcript.slice(0, 80)}…"`);
         setTranscripts((prev) => [
             ...prev,
             { id: `a-${Date.now()}`, role: 'assistant', text: transcript, timestamp: Date.now() },
         ]);
-    }, [addLog]);
+    }, []);
+
+    const handleEvent = useCallback((event: RealtimeVoiceEvent) => {
+        setPipelineLog((prev) => [...prev, `[${event.ts}] ${event.type.padEnd(16)} ${event.detail}`]);
+    }, []);
 
     const voice = useVoiceChat({
         sessionId: TEST_SESSION_ID,
         userId: TEST_USER_ID,
         onTranscriptComplete: handleTranscriptComplete,
         onAgentTranscript: handleAgentTranscript,
-        onSpeakReply: (text) => addLog(`onSpeakReply: "${text.slice(0, 60)}…"`),
+        onEvent: handleEvent,
+        onSpeakReply: (_text: string) => { /* Realtime speaks its own responses */ },
     });
 
     const handleToggle = useCallback(async () => {

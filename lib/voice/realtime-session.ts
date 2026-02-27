@@ -20,11 +20,18 @@ export interface RealtimeToolCall {
     arguments: string;
 }
 
+export interface RealtimeVoiceEvent {
+    type: string;
+    detail: string;
+    ts: string;
+}
+
 export interface RealtimeSessionCallbacks {
     onTranscriptComplete: (transcript: string, itemId: string) => void;
     onAgentTranscript?: (transcript: string) => void;
     onStateChange: (state: RealtimeConnectionState) => void;
     onError: (error: string) => void;
+    onEvent?: (event: RealtimeVoiceEvent) => void;
 }
 
 export interface RealtimeSessionHandle {
@@ -35,6 +42,10 @@ export interface RealtimeSessionHandle {
 
 const OPENAI_REALTIME_BASE = 'https://api.openai.com/v1/realtime';
 const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+
+function ts(): string {
+    return new Date().toISOString().slice(11, 23);
+}
 
 export async function createRealtimeSession(
     clientSecret: string,
@@ -62,6 +73,7 @@ export async function createRealtimeSession(
 
     dc.onopen = () => {
         callbacks.onStateChange('connected');
+        callbacks.onEvent?.({ type: 'dc:open', detail: 'Data channel connected', ts: ts() });
     };
 
     dc.onclose = () => {
@@ -69,7 +81,9 @@ export async function createRealtimeSession(
     };
 
     dc.onerror = (e) => {
-        callbacks.onError(`Data channel error: ${String(e)}`);
+        const msg = `Data channel error: ${String(e)}`;
+        callbacks.onError(msg);
+        callbacks.onEvent?.({ type: 'dc:error', detail: msg, ts: ts() });
         callbacks.onStateChange('error');
     };
 
@@ -161,6 +175,7 @@ function handleDataChannelMessage(
         if (callId && name) {
             pendingToolCalls.set(callId, { name, argBuffer: '' });
             speakThinkingLabel(dc, name);
+            callbacks.onEvent?.({ type: 'tool:start', detail: `tool=${name} callId=${callId}`, ts: ts() });
         }
         return;
     }
@@ -183,6 +198,7 @@ function handleDataChannelMessage(
         const pending = pendingToolCalls.get(callId);
         if (!pending) return;
         pendingToolCalls.delete(callId);
+        callbacks.onEvent?.({ type: 'tool:dispatch', detail: `tool=${pending.name} args=${pending.argBuffer.slice(0, 120)}`, ts: ts() });
         dispatchToolCall(dc, callId, pending.name, pending.argBuffer, callbacks);
         return;
     }
@@ -192,6 +208,7 @@ function handleDataChannelMessage(
         const transcript = (message['transcript'] as string | undefined)?.trim();
         const itemId = (message['item_id'] as string | undefined) ?? '';
         if (transcript) {
+            callbacks.onEvent?.({ type: 'stt:complete', detail: `"${transcript.slice(0, 100)}"`, ts: ts() });
             callbacks.onTranscriptComplete(transcript, itemId);
         }
         return;
@@ -201,6 +218,7 @@ function handleDataChannelMessage(
     if (type === 'response.audio_transcript.done') {
         const transcript = (message['transcript'] as string | undefined)?.trim();
         if (transcript) {
+            callbacks.onEvent?.({ type: 'agent:reply', detail: `"${transcript.slice(0, 100)}"`, ts: ts() });
             callbacks.onAgentTranscript?.(transcript);
         }
     }
@@ -231,6 +249,7 @@ async function dispatchToolCall(
     rawArgs: string,
     callbacks: RealtimeSessionCallbacks
 ): Promise<void> {
+    const startMs = Date.now();
     try {
         const response = await fetch('/api/voice/tool-dispatch', {
             method: 'POST',
@@ -238,9 +257,17 @@ async function dispatchToolCall(
             body: JSON.stringify({ toolId: toolName, payload: JSON.parse(rawArgs) }),
         });
 
-        const resultText = response.ok
-            ? JSON.stringify((await response.json() as Record<string, unknown>))
-            : JSON.stringify({ error: `Tool dispatch failed: ${response.status}` });
+        const durationMs = Date.now() - startMs;
+
+        if (!response.ok) {
+            const errDetail = `HTTP ${response.status} after ${durationMs}ms`;
+            callbacks.onEvent?.({ type: 'tool:error', detail: `tool=${toolName} ${errDetail}`, ts: ts() });
+            callbacks.onError(`Tool dispatch failed for ${toolName}: ${errDetail}`);
+            return;
+        }
+
+        const resultText = JSON.stringify(await response.json() as Record<string, unknown>);
+        callbacks.onEvent?.({ type: 'tool:result', detail: `tool=${toolName} ${durationMs}ms result=${resultText.slice(0, 120)}`, ts: ts() });
 
         if (dc.readyState !== 'open') return;
 
@@ -257,6 +284,8 @@ async function dispatchToolCall(
         // Tell Realtime to resume generating its response
         dc.send(JSON.stringify({ type: 'response.create' }));
     } catch (err) {
-        callbacks.onError(`Tool dispatch error for ${toolName}: ${String(err)}`);
+        const errMsg = `Tool dispatch error for ${toolName}: ${String(err)}`;
+        callbacks.onEvent?.({ type: 'tool:error', detail: errMsg, ts: ts() });
+        callbacks.onError(errMsg);
     }
 }
