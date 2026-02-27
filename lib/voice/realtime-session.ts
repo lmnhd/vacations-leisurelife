@@ -38,6 +38,7 @@ export interface RealtimeSessionHandle {
     sendTtsText: (text: string) => void;
     injectUserMessage: (text: string) => void;
     sendInterrupt: () => void;
+    cancelAutoResponse: () => void;  // hybrid mode: suppress Realtime model's self-generated reply
     close: () => void;
 }
 
@@ -156,6 +157,11 @@ export async function createRealtimeSession(
         },
 
         sendInterrupt: () => {
+            if (dc.readyState !== 'open') return;
+            dc.send(JSON.stringify({ type: 'response.cancel' }));
+        },
+
+        cancelAutoResponse: () => {
             if (dc.readyState !== 'open') return;
             dc.send(JSON.stringify({ type: 'response.cancel' }));
         },

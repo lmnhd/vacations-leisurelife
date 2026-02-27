@@ -57,8 +57,7 @@ export async function handleHybridSessionRequest(
                 prefix_padding_ms: 300,
                 threshold: 0.5,
             },
-            tools: [],        // No tools — reasoning is handled by /api/chat
-            tool_choice: 'none',
+            // No tools registered — reasoning is handled by /api/chat pipeline
         }),
     });
 
