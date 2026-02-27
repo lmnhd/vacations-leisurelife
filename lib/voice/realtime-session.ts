@@ -65,7 +65,7 @@ export async function createRealtimeSession(
     };
 
     dc.onmessage = (event: MessageEvent) => {
-        handleDataChannelMessage(event.data as string, callbacks);
+        handleDataChannelMessage(event.data as string, dc, callbacks);
     };
 
     // ── SDP offer / answer handshake ──
@@ -129,6 +129,7 @@ export async function createRealtimeSession(
 
 function handleDataChannelMessage(
     raw: string,
+    dc: RTCDataChannel,
     callbacks: RealtimeSessionCallbacks
 ): void {
     let message: Record<string, unknown>;
@@ -140,6 +141,14 @@ function handleDataChannelMessage(
 
     const type = message['type'] as string | undefined;
     if (!type) return;
+
+    // Cancel any auto-generated response immediately — pipeline owns the reply
+    if (type === 'response.created') {
+        if (dc.readyState === 'open') {
+            dc.send(JSON.stringify({ type: 'response.cancel' }));
+        }
+        return;
+    }
 
     if (type === 'conversation.item.input_audio_transcription.completed') {
         const transcript = (message['transcript'] as string | undefined)?.trim();
