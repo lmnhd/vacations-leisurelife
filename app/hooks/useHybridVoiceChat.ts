@@ -120,6 +120,9 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                 onError: (err) => options.onError?.(err),
                 onEvent: (event) => options.onEvent?.(event),
                 onTranscriptComplete: (transcript) => {
+                    // Cancel the Realtime model's self-generated reply immediately —
+                    // the pipeline response will be injected via sendTtsText instead.
+                    sessionRef.current?.cancelAutoResponse();
                     options.onTranscriptComplete?.(transcript);
                     void runPipeline(transcript);
                 },
