@@ -156,6 +156,18 @@
           "cruise_brothers_knowledge"
         ]
       },
+      "fast_cruise_search": {
+        "priority": 2,
+        "trigger": "user_requests_specific_cruise",
+        "available_tools": [
+          "perplexity_cruise_research",
+          "cruise_brothers_knowledge",
+          "excursion_finder",
+          "cruise_brothers_scraper"
+        ],
+        "instructions_ref": "skills/fast-cruise-search.md",
+        "instructions": []
+      },
       "dev_mode": {
         "priority": 0,
         "trigger": "dev_mode_active",

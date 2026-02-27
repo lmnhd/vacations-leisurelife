@@ -89,6 +89,7 @@ export async function assembleSystemPrompt(input: {
     incompleteProfile: boolean;
     discussesPastCruise: boolean;
     devModeActive?: boolean;
+    startingContext?: string;
     preResolvedContext?: Awaited<ReturnType<typeof resolveContext>>;
     activeRules?: string[];
     loadedSkills?: string[];
@@ -101,6 +102,7 @@ export async function assembleSystemPrompt(input: {
             incompleteProfile: input.incompleteProfile,
             discussesPastCruise: input.discussesPastCruise,
             devModeActive: input.devModeActive,
+            startingContext: input.startingContext,
         });
 
     const activeRules = input.activeRules ?? [];

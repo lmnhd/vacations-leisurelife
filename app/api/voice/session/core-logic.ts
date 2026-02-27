@@ -39,6 +39,7 @@ interface VoiceSessionRequestBody {
     voice?: string;
     temperature?: number;
     mode?: 'test' | 'dev';
+    startingContext?: string;
 }
 
 interface VoiceSessionResponseData {
@@ -73,6 +74,7 @@ export async function handleVoiceSessionRequest(
             incompleteProfile: !isDevMode,
             discussesPastCruise: false,
             devModeActive: isDevMode,
+            startingContext: body.startingContext,
         });
 
         // Test mode: unlock all tools + use stripped test prompt
@@ -86,6 +88,7 @@ export async function handleVoiceSessionRequest(
             incompleteProfile: !isDevMode,
             discussesPastCruise: false,
             devModeActive: isDevMode,
+            startingContext: body.startingContext,
             preResolvedContext: context,
         });
         instructions = assembled.systemPrompt;
