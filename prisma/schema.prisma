@@ -272,17 +272,4 @@ model OdysseusPackage {
 
 // ----------------------------------------------------------------------
 // AI AGENT TOOL CACHING
-// ----------------------------------------------------------------------
-
-/// Caches identical LLM tool requests (Perplexity, Odysseus, etc.) to save time/money
-model AgentToolCache {
-  id          String   @id @default(cuid())
-  toolId      String   // e.g. 'perplexity_cruise_research'
-  payloadHash String   // Deterministic hash of the input payload JSON
-  response    String   @db.Text // Serialized JSON or plain text response
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime // TTL for when this cache entry should be considered stale
-
-  @@unique([toolId, payloadHash])
-  @@index([expiresAt])
-}
+// AgentToolCache migrated to DynamoDB (table: AgentToolCache, PK: toolId, SK: payloadHash)
