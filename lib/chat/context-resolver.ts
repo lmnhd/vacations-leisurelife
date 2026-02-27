@@ -57,6 +57,7 @@ function matchesTrigger(
         discussesPastCruise: boolean;
         onActiveBooking?: boolean;
         completedCruise?: boolean;
+        devModeActive?: boolean;
     }
 ): boolean {
     const normalizedTrigger = trigger.trim().replace(/\s+/g, ' ');
@@ -100,6 +101,10 @@ function matchesTrigger(
             return sessionState.completedCruise ?? false;
         }
 
+        if (atomicCondition === 'dev_mode_active') {
+            return sessionState.devModeActive ?? false;
+        }
+
         return false;
     };
 
@@ -118,6 +123,7 @@ export async function resolveContext(
         discussesPastCruise: boolean;
         onActiveBooking?: boolean;
         completedCruise?: boolean;
+        devModeActive?: boolean;
     }
 ): Promise<{
     identityName: string;

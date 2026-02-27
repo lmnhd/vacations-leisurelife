@@ -154,6 +154,20 @@
           "cruise_brothers_knowledge"
         ]
       },
+      "dev_mode": {
+        "priority": 0,
+        "trigger": "dev_mode_active",
+        "available_tools": [
+          "perplexity_cruise_research",
+          "cruise_brothers_knowledge",
+          "excursion_finder",
+          "cruise_brothers_scraper",
+          "social_media_insights",
+          "cruise_trend_analysis"
+        ],
+        "instructions_ref": "skills/dev-mode.md",
+        "instructions": []
+      },
       "general_chat": {
         "priority": 10,
         "trigger": "always",
