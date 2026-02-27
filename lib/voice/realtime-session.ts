@@ -22,6 +22,7 @@ export interface RealtimeToolCall {
 
 export interface RealtimeSessionCallbacks {
     onTranscriptComplete: (transcript: string, itemId: string) => void;
+    onAgentTranscript?: (transcript: string) => void;
     onStateChange: (state: RealtimeConnectionState) => void;
     onError: (error: string) => void;
 }
@@ -192,6 +193,15 @@ function handleDataChannelMessage(
         const itemId = (message['item_id'] as string | undefined) ?? '';
         if (transcript) {
             callbacks.onTranscriptComplete(transcript, itemId);
+        }
+        return;
+    }
+
+    // ── Agent audio transcript complete ──
+    if (type === 'response.audio_transcript.done') {
+        const transcript = (message['transcript'] as string | undefined)?.trim();
+        if (transcript) {
+            callbacks.onAgentTranscript?.(transcript);
         }
     }
 }

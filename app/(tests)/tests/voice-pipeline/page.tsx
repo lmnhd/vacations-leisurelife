@@ -44,13 +44,21 @@ export default function VoicePipelineTestPage() {
             ...prev,
             { id: `u-${Date.now()}`, role: 'user', text: transcript, timestamp: Date.now() },
         ]);
-        // Realtime model handles the response — no pipeline call needed
+    }, [addLog]);
+
+    const handleAgentTranscript = useCallback((transcript: string) => {
+        addLog(`Agent said: "${transcript.slice(0, 80)}…"`);
+        setTranscripts((prev) => [
+            ...prev,
+            { id: `a-${Date.now()}`, role: 'assistant', text: transcript, timestamp: Date.now() },
+        ]);
     }, [addLog]);
 
     const voice = useVoiceChat({
         sessionId: TEST_SESSION_ID,
         userId: TEST_USER_ID,
         onTranscriptComplete: handleTranscriptComplete,
+        onAgentTranscript: handleAgentTranscript,
         onSpeakReply: (text) => addLog(`onSpeakReply: "${text.slice(0, 60)}…"`),
     });
 

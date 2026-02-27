@@ -28,6 +28,7 @@ interface UseVoiceChatOptions {
     sessionId: string;
     userId: string;
     onTranscriptComplete: (transcript: string) => void;
+    onAgentTranscript?: (transcript: string) => void;
     onSpeakReply: (cleanText: string) => void;
 }
 
@@ -97,6 +98,9 @@ export function useVoiceChat(options: UseVoiceChatOptions): UseVoiceChatReturn {
                 {
                     onTranscriptComplete: (transcript: string, _itemId: string) => {
                         optionsRef.current.onTranscriptComplete(transcript);
+                    },
+                    onAgentTranscript: (transcript: string) => {
+                        optionsRef.current.onAgentTranscript?.(transcript);
                     },
                     onStateChange: (state: RealtimeConnectionState) => {
                         setConnectionState(state);
