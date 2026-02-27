@@ -24,7 +24,21 @@ type PipelineLogEntry = {
 
 function emit(entry: PipelineLogEntry): void {
     const prefix = entry.level === 'ERROR' ? '🔴' : entry.level === 'WARN' ? '🟡' : '🟢';
-    console.log(`${prefix} [PIPELINE] ${JSON.stringify(entry)}`);
+    const time = entry.ts.replace('T', ' ').replace('Z', '').slice(11); // HH:MM:SS.mmm
+    const sessionShort = entry.sessionId.length > 20 ? `…${entry.sessionId.slice(-16)}` : entry.sessionId;
+    const header = `${prefix} [${time}] ${entry.stage.padEnd(22)} │ ${entry.event}  (${sessionShort})`;
+    if (entry.data && Object.keys(entry.data).length > 0) {
+        const dataLines = Object.entries(entry.data)
+            .map(([k, v]) => {
+                const valueStr = typeof v === 'string' ? v : JSON.stringify(v);
+                const truncated = valueStr.length > 120 ? `${valueStr.slice(0, 120)}…` : valueStr;
+                return `    ${k}: ${truncated}`;
+            })
+            .join('\n');
+        console.log(`${header}\n${dataLines}`);
+    } else {
+        console.log(header);
+    }
 }
 
 function now(): string {
