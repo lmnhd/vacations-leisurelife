@@ -10,6 +10,8 @@
  *   - TTS audio comes back via the peer connection's remote audio track
  */
 
+import { getToolThinkingLabel } from './realtime-tools';
+
 export type RealtimeConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
 
 export interface RealtimeToolCall {
@@ -151,12 +153,13 @@ function handleDataChannelMessage(
     const type = message['type'] as string | undefined;
     if (!type) return;
 
-    // ── Function call: start buffering ──
+    // ── Function call: start buffering + speak acknowledgment ──
     if (type === 'response.function_call_arguments.start') {
         const callId = message['call_id'] as string | undefined;
         const name = message['name'] as string | undefined;
         if (callId && name) {
             pendingToolCalls.set(callId, { name, argBuffer: '' });
+            speakThinkingLabel(dc, name);
         }
         return;
     }
@@ -191,6 +194,22 @@ function handleDataChannelMessage(
             callbacks.onTranscriptComplete(transcript, itemId);
         }
     }
+}
+
+// ── Speak a short acknowledgment while the tool runs ──
+
+function speakThinkingLabel(dc: RTCDataChannel, toolName: string): void {
+    if (dc.readyState !== 'open') return;
+    const label = getToolThinkingLabel(toolName);
+    dc.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+            type: 'message',
+            role: 'assistant',
+            content: [{ type: 'text', text: label }],
+        },
+    }));
+    dc.send(JSON.stringify({ type: 'response.create' }));
 }
 
 // ── Dispatch tool call to server and return result to Realtime ──
