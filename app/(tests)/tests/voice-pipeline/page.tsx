@@ -11,7 +11,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useVoiceChat } from '@/app/hooks/useVoiceChat';
-import type { ChatResponse } from '@/lib/chat/types';
 
 interface TranscriptEntry {
     id: string;
@@ -26,7 +25,6 @@ const TEST_USER_ID = 'voice-test-user';
 export default function VoicePipelineTestPage() {
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     const [pipelineLog, setPipelineLog] = useState<string[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [ttsInput, setTtsInput] = useState('Hello! I am your cruise travel assistant. How can I help you today?');
     const transcriptEndRef = useRef<HTMLDivElement>(null);
     const logEndRef = useRef<HTMLDivElement>(null);
@@ -40,57 +38,14 @@ export default function VoicePipelineTestPage() {
         logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [pipelineLog]);
 
-    const handleTranscriptComplete = useCallback(async (transcript: string) => {
+    const handleTranscriptComplete = useCallback((transcript: string) => {
         addLog(`STT complete: "${transcript}"`);
-
         setTranscripts((prev) => [
             ...prev,
             { id: `u-${Date.now()}`, role: 'user', text: transcript, timestamp: Date.now() },
         ]);
-
-        setIsProcessing(true);
-        addLog('Sending to /api/chat pipeline (channel: voice)…');
-
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: transcript,
-                    sessionId: TEST_SESSION_ID,
-                    channel: 'voice',
-                    userId: TEST_USER_ID,
-                }),
-            });
-
-            const payload = (await response.json()) as ChatResponse;
-
-            if (!response.ok) {
-                addLog(`Pipeline error: ${payload.error ?? response.status}`);
-                return;
-            }
-
-            addLog(`Pipeline reply (${payload.reply.length} chars): "${payload.reply.slice(0, 80)}…"`);
-
-            setTranscripts((prev) => [
-                ...prev,
-                {
-                    id: `a-${Date.now()}`,
-                    role: 'assistant',
-                    text: payload.reply,
-                    timestamp: Date.now(),
-                },
-            ]);
-
-            // Send to TTS
-            voice.speakText(payload.reply);
-            addLog('cleanText sent to TTS streamer — agent speaking');
-        } catch (err) {
-            addLog(`Error: ${err instanceof Error ? err.message : String(err)}`);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [addLog]); // eslint-disable-line react-hooks/exhaustive-deps
+        // Realtime model handles the response — no pipeline call needed
+    }, [addLog]);
 
     const voice = useVoiceChat({
         sessionId: TEST_SESSION_ID,
@@ -148,7 +103,7 @@ export default function VoicePipelineTestPage() {
                     <div className="flex gap-3">
                         <button
                             onClick={handleToggle}
-                            disabled={voice.connectionState === 'connecting' || isProcessing}
+                            disabled={voice.connectionState === 'connecting'}
                             className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:pointer-events-none ${
                                 voice.connectionState === 'connected'
                                     ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'
