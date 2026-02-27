@@ -111,6 +111,7 @@ export default function VoiceSimulatorPage() {
     const [customMessage, setCustomMessage] = useState('');
     const [delayMs, setDelayMs] = useState(3000);
     const [sessionMode, setSessionMode] = useState<'test' | 'dev'>('test');
+    const [startingContext, setStartingContext] = useState<string>('');
 
     const sessionRef = useRef<RealtimeSessionHandle | null>(null);
     const logEndRef = useRef<HTMLDivElement>(null);
@@ -144,7 +145,12 @@ export default function VoiceSimulatorPage() {
             const tokenRes = await fetch('/api/voice/session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: TEST_SESSION_ID, userId: 'voice-sim', mode: sessionMode }),
+                body: JSON.stringify({
+                    sessionId: TEST_SESSION_ID,
+                    userId: 'voice-sim',
+                    mode: sessionMode,
+                    ...(startingContext ? { startingContext } : {}),
+                }),
             });
 
             const tokenData = await tokenRes.json() as { clientSecret?: string; error?: string };
@@ -152,7 +158,8 @@ export default function VoiceSimulatorPage() {
                 throw new Error(tokenData.error ?? 'No client secret returned');
             }
             const modeLabel = sessionMode === 'test' ? 'TEST mode, all tools unlocked' : 'DEV mode, relaxed context';
-            addLog('session:token', `Token received — ${modeLabel}`);
+            const contextLabel = startingContext ? ` | context: ${startingContext}` : '';
+            addLog('session:token', `Token received — ${modeLabel}${contextLabel}`);
 
             // Silent audio stream — no mic needed
             const silentStream = createSilentAudioStream();
@@ -296,6 +303,25 @@ export default function VoiceSimulatorPage() {
                                 {sessionMode === 'test'
                                     ? 'Terse tool testing — no persona, terse TOOL|STATUS|RESULT format'
                                     : 'Relaxed dev context — short answers, all tools, no sales flow'}
+                            </div>
+                            <div className="space-y-1">
+                                <div className="text-[10px] text-slate-500 uppercase tracking-widest">Starting Context</div>
+                                <select
+                                    value={startingContext}
+                                    onChange={(e) => setStartingContext(e.target.value)}
+                                    disabled={connectionState !== 'idle'}
+                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-violet-500/40 disabled:opacity-40"
+                                >
+                                    <option value="">— Auto (trigger-based) —</option>
+                                    <option value="onboarding">onboarding</option>
+                                    <option value="fast_cruise_search">fast_cruise_search</option>
+                                    <option value="fast_booking">fast_booking</option>
+                                    <option value="dev_mode">dev_mode</option>
+                                    <option value="general_chat">general_chat</option>
+                                </select>
+                                <div className="text-[10px] text-slate-600">
+                                    Override bypasses trigger logic and pins this context for the session.
+                                </div>
                             </div>
                             <div className="flex gap-2">
                                 <button

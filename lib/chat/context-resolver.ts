@@ -124,6 +124,7 @@ export async function resolveContext(
         onActiveBooking?: boolean;
         completedCruise?: boolean;
         devModeActive?: boolean;
+        startingContext?: string;
     }
 ): Promise<{
     identityName: string;
@@ -139,15 +140,27 @@ export async function resolveContext(
 }> {
     const schema = await loadPromptSchema();
 
-    const matchedTopLevelContexts = Object.entries(schema.root.contexts)
-        .filter(([, contextNode]) => matchesTrigger(contextNode.trigger, sessionState))
-        .sort(([, leftNode], [, rightNode]) => leftNode.priority - rightNode.priority);
+    let topContextKey: string;
+    let topContextNode: z.infer<typeof ContextNodeSchema>;
 
-    if (matchedTopLevelContexts.length === 0) {
-        throw new Error('No active context could be resolved from prompt-schema.json');
+    if (sessionState.startingContext) {
+        const overrideEntry = schema.root.contexts[sessionState.startingContext];
+        if (!overrideEntry) {
+            throw new Error(`startingContext '${sessionState.startingContext}' not found in prompt-schema.json`);
+        }
+        topContextKey = sessionState.startingContext;
+        topContextNode = overrideEntry;
+    } else {
+        const matchedTopLevelContexts = Object.entries(schema.root.contexts)
+            .filter(([, contextNode]) => matchesTrigger(contextNode.trigger, sessionState))
+            .sort(([, leftNode], [, rightNode]) => leftNode.priority - rightNode.priority);
+
+        if (matchedTopLevelContexts.length === 0) {
+            throw new Error('No active context could be resolved from prompt-schema.json');
+        }
+
+        [topContextKey, topContextNode] = matchedTopLevelContexts[0]!;
     }
-
-    const [topContextKey, topContextNode] = matchedTopLevelContexts[0];
 
     let activeContextPath = topContextKey;
     const instructions = [...(topContextNode.instructions ?? [])];
