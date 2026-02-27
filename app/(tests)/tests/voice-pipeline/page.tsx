@@ -27,6 +27,8 @@ export default function VoicePipelineTestPage() {
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     const [pipelineLog, setPipelineLog] = useState<string[]>([]);
     const [ttsInput, setTtsInput] = useState('Hello! I am your cruise travel assistant. How can I help you today?');
+    const [startingContext, setStartingContext] = useState<string>('');
+    const [sessionMode, setSessionMode] = useState<'dev' | 'test' | ''>('');
     const transcriptEndRef = useRef<HTMLDivElement>(null);
     const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +62,8 @@ export default function VoicePipelineTestPage() {
     const voice = useVoiceChat({
         sessionId: TEST_SESSION_ID,
         userId: TEST_USER_ID,
+        ...(startingContext ? { startingContext } : {}),
+        ...(sessionMode ? { mode: sessionMode as 'dev' | 'test' } : {}),
         onTranscriptComplete: handleTranscriptComplete,
         onAgentTranscript: handleAgentTranscript,
         onEvent: handleEvent,
@@ -110,6 +114,37 @@ export default function VoicePipelineTestPage() {
                         <span className={`text-sm font-semibold ${stateColor[voice.connectionState] ?? 'text-slate-400'}`}>
                             {voice.connectionState.toUpperCase()}
                         </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Mode</div>
+                            <select
+                                value={sessionMode}
+                                onChange={(e) => setSessionMode(e.target.value as 'dev' | 'test' | '')}
+                                disabled={voice.connectionState !== 'idle'}
+                                className="w-full bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
+                            >
+                                <option value="">— Normal —</option>
+                                <option value="dev">🛠 Dev Mode</option>
+                                <option value="test">🧪 Tool Test</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Starting Context</div>
+                            <select
+                                value={startingContext}
+                                onChange={(e) => setStartingContext(e.target.value)}
+                                disabled={voice.connectionState !== 'idle'}
+                                className="w-full bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/40 disabled:opacity-40"
+                            >
+                                <option value="">— Auto —</option>
+                                <option value="onboarding">onboarding</option>
+                                <option value="fast_cruise_search">fast_cruise_search</option>
+                                <option value="fast_booking">fast_booking</option>
+                                <option value="dev_mode">dev_mode</option>
+                                <option value="general_chat">general_chat</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="flex gap-3">
