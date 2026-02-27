@@ -58,16 +58,18 @@ export async function createRealtimeSession(
 
     const pc = new RTCPeerConnection();
 
-    // ── Audio: skipped entirely in text-only mode ──
+    // ── Inbound audio (TTS playback skipped in text-only mode) ──
     const audioElement = new Audio();
     audioElement.autoplay = true;
     if (!textOnly) {
         pc.ontrack = (event) => {
             audioElement.srcObject = event.streams[0];
         };
-        for (const track of audioStream.getTracks()) {
-            pc.addTrack(track, audioStream);
-        }
+    }
+
+    // ── Outbound audio track (always required by OpenAI SDP) ──
+    for (const track of audioStream.getTracks()) {
+        pc.addTrack(track, audioStream);
     }
 
     // ── Data channel for Realtime events ──
