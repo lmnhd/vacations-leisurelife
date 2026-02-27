@@ -51,18 +51,21 @@ function ts(): string {
 export async function createRealtimeSession(
     clientSecret: string,
     audioStream: MediaStream,
-    callbacks: RealtimeSessionCallbacks
+    callbacks: RealtimeSessionCallbacks,
+    textOnly = false
 ): Promise<RealtimeSessionHandle> {
     callbacks.onStateChange('connecting');
 
     const pc = new RTCPeerConnection();
 
-    // ── Inbound TTS audio from OpenAI ──
+    // ── Inbound TTS audio from OpenAI (skipped in text-only mode) ──
     const audioElement = new Audio();
     audioElement.autoplay = true;
-    pc.ontrack = (event) => {
-        audioElement.srcObject = event.streams[0];
-    };
+    if (!textOnly) {
+        pc.ontrack = (event) => {
+            audioElement.srcObject = event.streams[0];
+        };
+    }
 
     // ── Outbound microphone audio ──
     for (const track of audioStream.getTracks()) {
@@ -89,10 +92,9 @@ export async function createRealtimeSession(
     };
 
     const pendingToolCalls = new Map<string, { name: string; argBuffer: string }>();
-    const isTextOnly = !audioStream.getAudioTracks().some((t) => t.enabled);
 
     dc.onmessage = (event: MessageEvent) => {
-        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, callbacks, isTextOnly);
+        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, callbacks, textOnly);
     };
 
     // ── SDP offer / answer handshake ──
