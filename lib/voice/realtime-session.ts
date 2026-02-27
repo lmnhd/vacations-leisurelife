@@ -89,9 +89,10 @@ export async function createRealtimeSession(
     };
 
     const pendingToolCalls = new Map<string, { name: string; argBuffer: string }>();
+    const isTextOnly = !audioStream.getAudioTracks().some((t) => t.enabled);
 
     dc.onmessage = (event: MessageEvent) => {
-        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, callbacks);
+        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, callbacks, isTextOnly);
     };
 
     // ── SDP offer / answer handshake ──
@@ -170,7 +171,8 @@ function handleDataChannelMessage(
     raw: string,
     dc: RTCDataChannel,
     pendingToolCalls: Map<string, { name: string; argBuffer: string }>,
-    callbacks: RealtimeSessionCallbacks
+    callbacks: RealtimeSessionCallbacks,
+    isTextOnly = false
 ): void {
     let message: Record<string, unknown>;
     try {
@@ -188,7 +190,7 @@ function handleDataChannelMessage(
         const name = message['name'] as string | undefined;
         if (callId && name) {
             pendingToolCalls.set(callId, { name, argBuffer: '' });
-            speakThinkingLabel(dc, name);
+            if (!isTextOnly) speakThinkingLabel(dc, name);
             callbacks.onEvent?.({ type: 'tool:start', detail: `tool=${name} callId=${callId}`, ts: ts() });
         }
         return;
@@ -228,12 +230,22 @@ function handleDataChannelMessage(
         return;
     }
 
-    // ── Agent audio transcript complete ──
+    // ── Agent audio transcript complete (audio sessions) ──
     if (type === 'response.audio_transcript.done') {
         const transcript = (message['transcript'] as string | undefined)?.trim();
         if (transcript) {
             callbacks.onEvent?.({ type: 'agent:reply', detail: `"${transcript.slice(0, 100)}"`, ts: ts() });
             callbacks.onAgentTranscript?.(transcript);
+        }
+        return;
+    }
+
+    // ── Agent text response complete (text-only / test mode sessions) ──
+    if (type === 'response.text.done') {
+        const text = (message['text'] as string | undefined)?.trim();
+        if (text) {
+            callbacks.onEvent?.({ type: 'agent:reply', detail: `"${text.slice(0, 100)}"`, ts: ts() });
+            callbacks.onAgentTranscript?.(text);
         }
     }
 }
