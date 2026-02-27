@@ -180,7 +180,7 @@ export default function VoiceSimulatorPage() {
                 },
             };
 
-            const handle = await createRealtimeSession(tokenData.clientSecret, silentStream, callbacks);
+            const handle = await createRealtimeSession(tokenData.clientSecret, silentStream, callbacks, true);
             sessionRef.current = handle;
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
