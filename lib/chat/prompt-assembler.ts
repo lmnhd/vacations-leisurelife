@@ -83,7 +83,7 @@ function buildToolCallingInstructions(tools: ToolDefinition[]): string[] {
 }
 
 export async function assembleSystemPrompt(input: {
-    channel: 'text' | 'voice';
+    channel: 'text' | 'voice' | 'voice_test';
     hasCruised: boolean | null;
     requestedSpecificCruise: boolean;
     incompleteProfile: boolean;

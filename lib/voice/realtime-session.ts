@@ -36,6 +36,7 @@ export interface RealtimeSessionCallbacks {
 
 export interface RealtimeSessionHandle {
     sendTtsText: (text: string) => void;
+    injectUserMessage: (text: string) => void;
     sendInterrupt: () => void;
     close: () => void;
 }
@@ -122,6 +123,19 @@ export async function createRealtimeSession(
 
     // ── Return control handle ──
     return {
+        injectUserMessage: (text: string) => {
+            if (dc.readyState !== 'open') return;
+            dc.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                    type: 'message',
+                    role: 'user',
+                    content: [{ type: 'input_text', text }],
+                },
+            }));
+            dc.send(JSON.stringify({ type: 'response.create' }));
+        },
+
         sendTtsText: (text: string) => {
             if (dc.readyState !== 'open') return;
             dc.send(

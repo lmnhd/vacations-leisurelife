@@ -24,11 +24,21 @@ const FALLBACK_VOICE_INSTRUCTIONS = [
     "When offering options, weave them naturally into speech: 'You could do X, or if you prefer, Y.'",
 ].join(' ');
 
+const ALL_TOOL_IDS = [
+    'perplexity_cruise_research',
+    'cruise_brothers_knowledge',
+    'excursion_finder',
+    'cruise_brothers_scraper',
+    'social_media_insights',
+    'cruise_trend_analysis',
+];
+
 interface VoiceSessionRequestBody {
     sessionId?: string;
     userId?: string;
     voice?: string;
     temperature?: number;
+    mode?: 'test';
 }
 
 interface VoiceSessionResponseData {
@@ -53,6 +63,7 @@ export async function handleVoiceSessionRequest(
     let source: 'assembled' | 'fallback';
 
     let resolvedTools: string[] = [];
+    const isTestMode = body.mode === 'test';
 
     try {
         const context = await resolveContext({
@@ -61,10 +72,12 @@ export async function handleVoiceSessionRequest(
             incompleteProfile: true,
             discussesPastCruise: false,
         });
-        resolvedTools = context.availableTools;
+
+        // Test mode: unlock all tools + use stripped test prompt
+        resolvedTools = isTestMode ? ALL_TOOL_IDS : context.availableTools;
 
         const assembled = await assembleSystemPrompt({
-            channel: 'voice',
+            channel: isTestMode ? 'voice_test' : 'voice',
             hasCruised: null,
             requestedSpecificCruise: false,
             incompleteProfile: true,
@@ -76,6 +89,7 @@ export async function handleVoiceSessionRequest(
 
         console.log(
             `🎤 [voice:session]        │ session_created\n` +
+            `    mode: ${isTestMode ? 'TEST' : 'normal'}\n` +
             `    context: ${context.activeContextPath}\n` +
             `    tools: ${JSON.stringify(resolvedTools)}\n` +
             `    promptLength: ${instructions.length}\n` +
