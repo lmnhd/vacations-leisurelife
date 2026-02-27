@@ -54,10 +54,10 @@ export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<Ody
                 arrivalPort: r.itinerary?.arrival?.code || 'Unknown',
                 startingAtUSD: minPrice > 0 ? minPrice : 'N/A'
             };
-        }).slice(0, 10); // Return top 10 to avoid blasting context limits
+        }).slice(0, 3); // Return top 3 only — voice context must stay concise
 
         const searchSummary = mappedResults.length > 0
-            ? `Found ${rawResults.length} live cruise itineraries. Showing top ${mappedResults.length}:`
+            ? `Found ${rawResults.length} live cruise itineraries. Showing top ${mappedResults.length} for voice summary:`
             : "No live cruises matched that exact criteria.";
 
         return {

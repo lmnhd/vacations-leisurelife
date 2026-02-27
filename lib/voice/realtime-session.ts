@@ -92,9 +92,10 @@ export async function createRealtimeSession(
     };
 
     const pendingToolCalls = new Map<string, { name: string; argBuffer: string }>();
+    const inFlightTools = new Set<string>();
 
     dc.onmessage = (event: MessageEvent) => {
-        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, callbacks, textOnly);
+        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, inFlightTools, callbacks, textOnly);
     };
 
     // ── SDP offer / answer handshake ──
@@ -173,6 +174,7 @@ function handleDataChannelMessage(
     raw: string,
     dc: RTCDataChannel,
     pendingToolCalls: Map<string, { name: string; argBuffer: string }>,
+    inFlightTools: Set<string>,
     callbacks: RealtimeSessionCallbacks,
     isTextOnly = false
 ): void {
@@ -232,8 +234,12 @@ function handleDataChannelMessage(
         if (!pending) return;
         pendingToolCalls.delete(callId);
         const argBuffer = arguments_ ?? pending.argBuffer;
+        if (inFlightTools.has(pending.name)) {
+            callbacks.onEvent?.({ type: 'tool:dedup', detail: `tool=${pending.name} callId=${callId} — already in-flight, skipped`, ts: ts() });
+            return;
+        }
         callbacks.onEvent?.({ type: 'tool:dispatch', detail: `tool=${pending.name} args=${argBuffer.slice(0, 120)}`, ts: ts() });
-        dispatchToolCall(dc, callId, pending.name, argBuffer, callbacks);
+        dispatchToolCall(dc, callId, pending.name, argBuffer, inFlightTools, callbacks);
         return;
     }
 
@@ -291,8 +297,10 @@ async function dispatchToolCall(
     callId: string,
     toolName: string,
     rawArgs: string,
+    inFlightTools: Set<string>,
     callbacks: RealtimeSessionCallbacks
 ): Promise<void> {
+    inFlightTools.add(toolName);
     const startMs = Date.now();
     try {
         const response = await fetch('/api/voice/tool-dispatch', {
@@ -331,5 +339,7 @@ async function dispatchToolCall(
         const errMsg = `Tool dispatch error for ${toolName}: ${String(err)}`;
         callbacks.onEvent?.({ type: 'tool:error', detail: errMsg, ts: ts() });
         callbacks.onError(errMsg);
+    } finally {
+        inFlightTools.delete(toolName);
     }
 }
