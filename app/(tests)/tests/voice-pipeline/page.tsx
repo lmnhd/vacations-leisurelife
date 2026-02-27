@@ -70,8 +70,20 @@ export default function VoicePipelineTestPage() {
         onSpeakReply: (_text: string) => { /* Realtime speaks its own responses */ },
     });
 
+    const triggerWarmup = useCallback(async () => {
+        addLog('[warmup] Pre-warming Odysseus session + common search cache...');
+        try {
+            const res = await fetch('/api/voice/odysseus-warmup', { method: 'POST' });
+            const data = await res.json() as { fetched?: number; cached?: number; errors?: number; totalDurationMs?: number };
+            addLog(`[warmup] done — fetched=${data.fetched ?? 0} cached=${data.cached ?? 0} errors=${data.errors ?? 0} (${data.totalDurationMs ?? '?'}ms)`);
+        } catch (err) {
+            addLog(`[warmup] error — ${String(err)}`);
+        }
+    }, [addLog]);
+
     const handleToggle = useCallback(async () => {
         if (voice.connectionState === 'idle' || voice.connectionState === 'error') {
+            if (startingContext === 'fast_cruise_search') void triggerWarmup();
             addLog('Starting voice session…');
             await voice.startVoiceChat();
             addLog('WebRTC session established');
@@ -79,7 +91,7 @@ export default function VoicePipelineTestPage() {
             addLog('Stopping voice session');
             voice.stopVoiceChat();
         }
-    }, [voice, addLog]);
+    }, [voice, addLog, startingContext, triggerWarmup]);
 
     const stateColor: Record<string, string> = {
         idle: 'text-slate-400',
@@ -146,6 +158,14 @@ export default function VoicePipelineTestPage() {
                             </select>
                         </div>
                     </div>
+
+                    <button
+                        onClick={triggerWarmup}
+                        disabled={voice.connectionState !== 'idle'}
+                        className="w-full py-2 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    >
+                        🔥 Pre-warm Odysseus Cache
+                    </button>
 
                     <div className="flex gap-3">
                         <button

@@ -292,6 +292,28 @@ function speakThinkingLabel(dc: RTCDataChannel, toolName: string): void {
 
 // ── Dispatch tool call to server and return result to Realtime ──
 
+const LONG_TOOL_PATIENCE_LABELS: Partial<Record<string, string>> = {
+    odysseus_search: "Still searching — the live booking engine takes a moment. I'll have options for you shortly.",
+    pricing_comparator: "Still crunching those numbers, just a moment.",
+};
+
+const LONG_TOOL_THRESHOLD_MS = 30_000;
+
+function speakPatienceLabel(dc: RTCDataChannel, toolName: string): void {
+    if (dc.readyState !== 'open') return;
+    const label = LONG_TOOL_PATIENCE_LABELS[toolName];
+    if (!label) return;
+    dc.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+            type: 'message',
+            role: 'assistant',
+            content: [{ type: 'text', text: label }],
+        },
+    }));
+    dc.send(JSON.stringify({ type: 'response.create' }));
+}
+
 async function dispatchToolCall(
     dc: RTCDataChannel,
     callId: string,
@@ -302,6 +324,15 @@ async function dispatchToolCall(
 ): Promise<void> {
     inFlightTools.add(toolName);
     const startMs = Date.now();
+
+    let patienceTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+        patienceTimer = null;
+        if (inFlightTools.has(toolName)) {
+            callbacks.onEvent?.({ type: 'tool:patience', detail: `tool=${toolName} — injecting 30s spoken update`, ts: ts() });
+            speakPatienceLabel(dc, toolName);
+        }
+    }, LONG_TOOL_THRESHOLD_MS);
+
     try {
         const response = await fetch('/api/voice/tool-dispatch', {
             method: 'POST',
@@ -340,6 +371,7 @@ async function dispatchToolCall(
         callbacks.onEvent?.({ type: 'tool:error', detail: errMsg, ts: ts() });
         callbacks.onError(errMsg);
     } finally {
+        if (patienceTimer !== null) clearTimeout(patienceTimer);
         inFlightTools.delete(toolName);
     }
 }
