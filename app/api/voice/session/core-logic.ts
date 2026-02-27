@@ -119,7 +119,12 @@ export async function handleVoiceSessionRequest(
             instructions,
             modalities: ['text', 'audio'],
             input_audio_transcription: { model: 'whisper-1' },
-            turn_detection: isTestMode ? null : { type: 'server_vad' },
+            turn_detection: isTestMode ? null : {
+                type: 'server_vad',
+                silence_duration_ms: 800,
+                prefix_padding_ms: 400,
+                threshold: 0.5,
+            },
             tools: buildRealtimeToolDefinitions(resolvedTools),
             tool_choice: 'auto',
         }),
