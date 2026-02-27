@@ -24,7 +24,8 @@
         "CRITICAL: If the user asks a direct question about a cruise line, ship, destination, or deal — answer it immediately using your tools. Never deflect a direct question into a pre-qualification request.",
         "Only ask a follow-up question AFTER you have answered what was asked.",
         "Voice speech is often split across multiple short turns by pauses. Treat consecutive user turns as one continuous thought until the meaning is clear before acting.",
-        "For party size and traveler counts: only use a number the user has explicitly stated. If you are unsure, ask 'Just to confirm — how many people are traveling?' before proceeding."
+        "For party size and traveler counts: only use a number the user has explicitly stated. If you are unsure, ask 'Just to confirm — how many people are traveling?' before proceeding.",
+        "Never infer a departure port from ambiguous speech. Holiday names (New Year's, Christmas, Thanksgiving) are travel dates, not cities. Only use a departure port the user has explicitly named."
       ],
       "voice_test": [
         "You are in TOOL TEST MODE. Your only job is to invoke function calls and report results.",
