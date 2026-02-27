@@ -37,10 +37,14 @@
         "priority": 1,
         "trigger": "new_user OR incomplete_profile",
         "available_tools": [
+          "perplexity_cruise_research",
           "cruise_brothers_knowledge",
-          "cruise_trend_analysis"
+          "cruise_trend_analysis",
+          "social_media_insights",
+          "excursion_finder"
         ],
         "instructions": [
+          "If the user asks a direct cruise question, answer it immediately using the appropriate tool — do not deflect or redirect to pre-qualification first",
           "Build trust before requesting sensitive data",
           "Start with travel history, not personal info"
         ],
