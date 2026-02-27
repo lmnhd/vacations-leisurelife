@@ -64,6 +64,7 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     sessionId: options.sessionId,
                     userId: options.userId,
                     channel: 'voice',
+                    ...(options.startingContext ? { startingContext: options.startingContext } : {}),
                 }),
             });
 

@@ -132,6 +132,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         discussesPastCruise: signal.discussesPastCruise,
         onActiveBooking: signal.onActiveBooking,
         completedCruise: signal.completedCruise,
+        startingContext: input.startingContext,
     });
 
     pipelineLog.stage('context-resolver', input.sessionId, { activeContextPath: resolvedContext.activeContextPath, availableTools: resolvedContext.availableTools });
@@ -162,6 +163,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         preResolvedContext: resolvedContext,
         activeRules,
         loadedSkills,
+        startingContext: input.startingContext,
     });
 
     pipelineLog.stage('prompt-assembler', input.sessionId, { systemPromptLength: systemPrompt.length });
