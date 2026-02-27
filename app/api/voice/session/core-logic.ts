@@ -7,6 +7,8 @@
  */
 
 import { assembleSystemPrompt } from '@/lib/chat/prompt-assembler';
+import { resolveContext } from '@/lib/chat/context-resolver';
+import { buildRealtimeToolDefinitions } from '@/lib/voice/realtime-tools';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
@@ -50,13 +52,24 @@ export async function handleVoiceSessionRequest(
     let instructions: string;
     let source: 'assembled' | 'fallback';
 
+    let resolvedTools: string[] = [];
+
     try {
+        const context = await resolveContext({
+            hasCruised: null,
+            requestedSpecificCruise: false,
+            incompleteProfile: true,
+            discussesPastCruise: false,
+        });
+        resolvedTools = context.availableTools;
+
         const assembled = await assembleSystemPrompt({
             channel: 'voice',
             hasCruised: null,
             requestedSpecificCruise: false,
             incompleteProfile: true,
             discussesPastCruise: false,
+            preResolvedContext: context,
         });
         instructions = assembled.systemPrompt;
         source = 'assembled';
@@ -81,6 +94,8 @@ export async function handleVoiceSessionRequest(
             modalities: ['text', 'audio'],
             input_audio_transcription: { model: 'whisper-1' },
             turn_detection: { type: 'server_vad' },
+            tools: buildRealtimeToolDefinitions(resolvedTools),
+            tool_choice: 'auto',
         }),
     });
 
