@@ -25,6 +25,8 @@ const FALLBACK_VOICE_INSTRUCTIONS = [
 ].join(' ');
 
 const ALL_TOOL_IDS = [
+    'odysseus_search',
+    'pricing_comparator',
     'perplexity_cruise_research',
     'cruise_brothers_knowledge',
     'excursion_finder',
