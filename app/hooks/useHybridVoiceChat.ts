@@ -64,6 +64,7 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     sessionId: options.sessionId,
                     userId: options.userId,
                     channel: 'text',  // hybrid: reasoning is text-pipeline, I/O is voice separately
+                    model: 'gpt-4o',  // hybrid needs reliable tool directive compliance
                     ...(options.startingContext ? { startingContext: options.startingContext } : {}),
                 }),
             });
