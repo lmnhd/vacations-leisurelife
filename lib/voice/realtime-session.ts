@@ -53,7 +53,8 @@ export async function createRealtimeSession(
     clientSecret: string,
     audioStream: MediaStream,
     callbacks: RealtimeSessionCallbacks,
-    textOnly = false
+    textOnly = false,
+    hybridMode = false
 ): Promise<RealtimeSessionHandle> {
     callbacks.onStateChange('connecting');
 
@@ -96,7 +97,7 @@ export async function createRealtimeSession(
     const inFlightTools = new Set<string>();
 
     dc.onmessage = (event: MessageEvent) => {
-        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, inFlightTools, callbacks, textOnly);
+        handleDataChannelMessage(event.data as string, dc, pendingToolCalls, inFlightTools, callbacks, textOnly, hybridMode);
     };
 
     // ── SDP offer / answer handshake ──
@@ -182,7 +183,8 @@ function handleDataChannelMessage(
     pendingToolCalls: Map<string, { name: string; argBuffer: string }>,
     inFlightTools: Set<string>,
     callbacks: RealtimeSessionCallbacks,
-    isTextOnly = false
+    isTextOnly = false,
+    isHybridMode = false
 ): void {
     let message: Record<string, unknown>;
     try {
@@ -262,6 +264,8 @@ function handleDataChannelMessage(
 
     // ── Agent audio transcript complete (audio sessions) ──
     if (type === 'response.audio_transcript.done') {
+        // In hybrid mode, TTS audio is injected by the pipeline — suppress echo back as agent reply
+        if (isHybridMode) return;
         const transcript = (message['transcript'] as string | undefined)?.trim();
         if (transcript) {
             callbacks.onEvent?.({ type: 'agent:reply', detail: `"${transcript.slice(0, 100)}"`, ts: ts() });
