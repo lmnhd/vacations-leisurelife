@@ -140,8 +140,8 @@ export default function VoiceSimulatorPage() {
         addLog('warmup:start', 'Pre-warming Odysseus session + common search cache...');
         try {
             const res = await fetch('/api/voice/odysseus-warmup', { method: 'POST' });
-            const data = await res.json() as { fetched?: number; cached?: number; errors?: number; totalDurationMs?: number };
-            addLog('warmup:done', `fetched=${data.fetched ?? 0} cached=${data.cached ?? 0} errors=${data.errors ?? 0} (${data.totalDurationMs ?? '?'}ms)`);
+            const data = await res.json() as { status?: string; durationMs?: number; message?: string };
+            addLog('warmup:done', `${data.status ?? '?'} — ${data.message ?? ''} (${data.durationMs ?? '?'}ms)`);
         } catch (err) {
             addLog('warmup:error', String(err));
         }
