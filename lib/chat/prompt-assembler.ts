@@ -110,8 +110,12 @@ export async function assembleSystemPrompt(input: {
         resolvedContext.instructionRefs.map((instructionRef) => readPromptDataFile(instructionRef))
     );
 
-    const toolDefinitions = await loadToolDefinitions(resolvedContext.availableTools);
-    const toolCallingInstructions = buildToolCallingInstructions(toolDefinitions);
+    // Voice channels use Realtime function definitions (registered in session config),
+    // not text-directive tool calling syntax. Skip for voice/voice_test.
+    const isVoiceChannel = input.channel === 'voice' || input.channel === 'voice_test';
+    const toolCallingInstructions = isVoiceChannel
+        ? []
+        : buildToolCallingInstructions(await loadToolDefinitions(resolvedContext.availableTools));
 
     const systemPrompt = [
         `# Identity`,

@@ -429,9 +429,15 @@ function sleep(ms: number): Promise<void> {
 
 function createSilentAudioStream(): MediaStream {
     const ctx = new AudioContext();
-    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
     const dst = ctx.createMediaStreamDestination();
-    oscillator.connect(dst);
-    oscillator.start();
+    // Connect a constant silent source so the stream has a valid audio track
+    const bufferSource = ctx.createBufferSource();
+    bufferSource.buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    bufferSource.loop = true;
+    bufferSource.connect(gainNode);
+    gainNode.connect(dst);
+    bufferSource.start();
     return dst.stream;
 }
