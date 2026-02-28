@@ -15,6 +15,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+
 import {
     createRealtimeSession,
     type RealtimeConnectionState,
@@ -22,6 +23,20 @@ import {
     type RealtimeVoiceEvent,
 } from '@/lib/voice/realtime-session';
 import type { ChatResponse } from '@/lib/chat/types';
+
+// Strip markdown code blocks, JSON blobs, and formatting — Realtime TTS needs clean prose only
+function stripForVoice(text: string): string {
+    return text
+        .replace(/```[\s\S]*?```/g, '')   // remove fenced code blocks (including JSON)
+        .replace(/`[^`]+`/g, '')          // remove inline code
+        .replace(/\[.*?\]\(.*?\)/g, '')   // remove markdown links
+        .replace(/^#{1,6}\s+/gm, '')      // remove heading markers
+        .replace(/\*\*(.+?)\*\*/g, '$1') // unwrap bold
+        .replace(/\*(.+?)\*/g, '$1')     // unwrap italic
+        .replace(/^\s*[-*]\s+/gm, '')    // remove bullet points
+        .replace(/\n{3,}/g, '\n\n')      // collapse excessive newlines
+        .trim();
+}
 
 export interface UseHybridVoiceChatOptions {
     sessionId: string;
@@ -85,8 +100,9 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
 
             if (data.reply) {
                 if (sessionRef.current) {
-                    options.onEvent?.({ type: 'tts:send', detail: `sending ${data.reply.length} chars to Realtime TTS`, ts: new Date().toISOString().slice(11,23) });
-                    sessionRef.current.sendTtsText(data.reply);
+                    const ttsText = stripForVoice(data.reply);
+                    options.onEvent?.({ type: 'tts:send', detail: `sending ${ttsText.length} chars to Realtime TTS`, ts: new Date().toISOString().slice(11,23) });
+                    sessionRef.current.sendTtsText(ttsText);
                 } else {
                     options.onEvent?.({ type: 'tts:skipped', detail: 'session already closed when pipeline reply arrived', ts: new Date().toISOString().slice(11,23) });
                 }
