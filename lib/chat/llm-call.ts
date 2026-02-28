@@ -32,7 +32,7 @@ export async function callChatLlm(input: {
             role: message.role,
             content: message.content,
         })),
-        ...tokenParam(model, 500),
+        ...tokenParam(model, 2000),
         ...tempParam(model, 0.8),
     });
 
