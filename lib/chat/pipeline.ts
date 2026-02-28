@@ -4,7 +4,7 @@
 
 import { assembleSystemPrompt } from './prompt-assembler';
 import { resolveContext } from './context-resolver';
-import { hydrateSession, appendSessionMessage, getConversationTextForSession } from './session-hydrator';
+import { hydrateSession, appendSessionMessage, getConversationTextForSession, pruneHistoryForLlm } from './session-hydrator';
 import { injectRules } from './rule-injector';
 import { loadSkills } from './skill-loader';
 import { callChatLlm, MODEL_VOICE } from './llm-call';
@@ -141,9 +141,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     });
 
     // Stage 6 — LLM Call
-    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: history.length, model: input.model ?? 'gpt-4o-mini' });
+    const prunedHistory = pruneHistoryForLlm(history);
+    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: prunedHistory.length, model: input.model ?? 'gpt-4o-mini' });
     const rawLlmText = await callChatLlm({
-        history,
+        history: prunedHistory,
         model: input.model,
     });
 
