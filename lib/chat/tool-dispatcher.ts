@@ -58,19 +58,19 @@ const PricingComparatorPayloadSchema = z.object({
 const VtgSearchPayloadSchema = z.object({
     cruiseLine: z.string().nullable().optional(),
     region: z.string().nullable().optional(),
-    minNights: z.number().nullable().optional(),
-    maxNights: z.number().nullable().optional(),
+    minNights: z.coerce.number().nullable().optional(),
+    maxNights: z.coerce.number().nullable().optional(),
     startMonth: z.string().nullable().optional(),
     endMonth: z.string().nullable().optional(),
-    passengers: z.number().default(2),
+    passengers: z.coerce.number().default(2),
 });
 
 const OdysseusSearchPayloadSchema = z.object({
-    vendorId: z.number().nullable().optional(),
+    vendorId: z.coerce.number().nullable().optional(),
     startDate: z.string().nullable().optional(),
     endDate: z.string().nullable().optional(),
-    passengers: z.number(),
-    guestAges: z.array(z.number())
+    passengers: z.coerce.number(),
+    guestAges: z.array(z.coerce.number()),
 });
 
 const PackageBuilderPayloadSchema = z.object({
