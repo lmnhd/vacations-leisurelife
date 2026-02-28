@@ -209,9 +209,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     let finalLlmText = toolDispatchResult.finalLlmText;
     if (input.channel === 'voice_hybrid' && toolDispatchResult.toolCallsLog.length > 0) {
         const voiceSummaryPrompt = [
-            'You are a voice assistant. Rewrite the following agent response as 2-3 natural spoken sentences.',
+            'You are a voice assistant. Rewrite the following agent response as 3-5 natural spoken sentences.',
             'Rules: no markdown, no bullet points, no JSON, no code blocks, no headers.',
-            'Keep only the most useful single result. End with exactly one question to keep the conversation going.',
+            'Surface 2-3 of the most interesting and specific insights — not generic summaries.',
+            'If the data contains named cruise lines, specific trends, or concrete details, include them by name.',
+            'End with exactly one conversational question relevant to what was just shared.',
             '',
             finalLlmText,
         ].join('\n');
