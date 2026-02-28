@@ -204,9 +204,28 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
     pipelineLog.stage('tool-dispatcher', input.sessionId, { toolCallsLog: toolDispatchResult.toolCallsLog });
 
+    // Stage 7.5 — Voice Summarizer (voice_hybrid only)
+    // Tool results are injected as raw data (searchSummary + JSON). For voice, rewrite as spoken prose.
+    let finalLlmText = toolDispatchResult.finalLlmText;
+    if (input.channel === 'voice_hybrid' && toolDispatchResult.toolCallsLog.length > 0) {
+        const voiceSummaryPrompt = [
+            'You are a voice assistant. Rewrite the following agent response as 2-3 natural spoken sentences.',
+            'Rules: no markdown, no bullet points, no JSON, no code blocks, no headers.',
+            'Keep only the most useful single result. End with exactly one question to keep the conversation going.',
+            '',
+            finalLlmText,
+        ].join('\n');
+        const voiceReply = await callChatLlm({
+            history: [{ id: 'vs-1', role: 'user', content: voiceSummaryPrompt, timestamp: Date.now() }],
+            model: 'gpt-4o-mini',
+        });
+        pipelineLog.stage('voice-summarizer', input.sessionId, { responseLength: voiceReply.length, rawPreview: voiceReply.slice(0, 120) });
+        finalLlmText = voiceReply;
+    }
+
     // Stage 8 — Response Processor
     const processedResponse = processResponse({
-        llmText: toolDispatchResult.finalLlmText,
+        llmText: finalLlmText,
     });
 
     const assistantMessage: ChatMessage = {
