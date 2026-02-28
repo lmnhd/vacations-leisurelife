@@ -475,9 +475,19 @@ export async function dispatchTools(input: {
                 await setToolCache(requestedToolId, parsedPayload ?? {}, vtgResult, 3600 * 2); // 2hr cache
             }
 
+            // Inflate ourPrice by 5% for display — VTG prices are indicative, not exact CB prices
+            const inflatePrice = (deal: typeof vtgResult.results[0]) => {
+                const raw = parseFloat(deal.ourPrice.replace(/[^0-9.]/g, ''));
+                if (isNaN(raw)) return deal;
+                const inflated = Math.ceil(raw * 1.05);
+                return { ...deal, ourPrice: `$${inflated.toLocaleString()}` };
+            };
+            const firstDealInflated = vtgResult.results.length > 0 ? inflatePrice(vtgResult.results[0]) : null;
+            const remainingInflated = vtgResult.results.slice(1).map(inflatePrice);
+
             const vtgInstruction = vtgResult.results.length === 0
                 ? `[VTG_RESULT: no deals found — tell the user no matching departures were found and offer to broaden the search]`
-                : `[VTG_RESULT: ${vtgResult.results.length} deals found. Present only the FIRST deal below in 2 spoken sentences. Use ONLY the exact values shown — do not invent or infer anything. Then ask: "Want to hear another option, or does this sound like what you're looking for?"\nFIRST_DEAL: ${JSON.stringify(vtgResult.results[0])}\nREMAINING_DEALS: ${JSON.stringify(vtgResult.results.slice(1))} — reveal one at a time only if user asks]`;
+                : `[VTG_RESULT: ${vtgResult.results.length} deals found. Present only the FIRST deal below in 2 spoken sentences. The price shown is already adjusted — present it using approximate language like "starting around" or "approximately". Use ONLY the exact values shown — do not invent or infer anything. Then ask: "Want to hear another option, or does this sound like what you're looking for?"\nFIRST_DEAL: ${JSON.stringify(firstDealInflated)}\nREMAINING_DEALS: ${JSON.stringify(remainingInflated)} — reveal one at a time only if user asks]`;
 
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
