@@ -1,0 +1,38 @@
+{
+    "tool_id": "vtg_price_lookup",
+    "display_name": "VTG Fast Price Lookup",
+    "description": "Fast cruise price discovery via VacationsToGo. Use this for quick pricing questions, general availability, or when the user asks what cruises are available without needing live CB inventory. Returns results in seconds with no browser session required. Prices are indicative (VTG vendor), not the exact CB booking price. Use odysseus_search when the client is ready to book or needs live CB pricing.",
+    "handler": "lib/chat/tools/vtg-search.ts",
+    "function": "runVtgSearch",
+    "available_in_contexts": [
+        "general_chat",
+        "fast_cruise_search",
+        "onboarding.cruise_experienced",
+        "onboarding.cruise_novice"
+    ],
+    "input_schema": {
+        "cruiseLine": "string | null — cruise line name (e.g. 'Royal Caribbean', 'Carnival', 'Norwegian') or null for all lines",
+        "region": "string | null — destination region (e.g. 'Caribbean', 'Bahamas', 'Mediterranean', 'Alaska') or null for all",
+        "minNights": "number | null — minimum trip length in nights, or null for any",
+        "maxNights": "number | null — maximum trip length in nights, or null for any",
+        "startMonth": "string | null — earliest departure month in YYYYMM format (e.g. '202604'), or null for current month",
+        "endMonth": "string | null — latest departure month in YYYYMM format (e.g. '202606'), or null for ~4 months out",
+        "passengers": "number — number of passengers (default 2)"
+    },
+    "cruise_line_options": [
+        "Carnival", "Celebrity", "Crystal", "Disney", "Holland America",
+        "Norwegian", "Princess", "Royal Caribbean", "Seabourn", "Cunard",
+        "Oceania", "Costa", "MSC", "Azamara", "Silversea", "Regent Seven Seas",
+        "Viking", "Virgin Voyages"
+    ],
+    "region_options": [
+        "Caribbean", "Bahamas", "Mexico", "Bermuda", "Alaska", "Hawaii",
+        "Europe", "Mediterranean", "South America", "Panama Canal",
+        "Asia", "Australia", "Canada/New England", "Transatlantic"
+    ],
+    "output_schema": {
+        "searchSummary": "string",
+        "results": "array of deals with cruiseLine, ship, date, fromPort, toPort, nights, ourPrice, youSave, region"
+    },
+    "thoughts_stream_label": "Looking up cruise prices on VacationsToGo..."
+}

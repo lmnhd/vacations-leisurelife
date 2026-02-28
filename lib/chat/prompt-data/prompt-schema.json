@@ -161,6 +161,7 @@
         "priority": 2,
         "trigger": "user_requests_specific_cruise",
         "available_tools": [
+          "vtg_price_lookup",
           "odysseus_search",
           "pricing_comparator",
           "perplexity_cruise_research",
@@ -194,6 +195,7 @@
           "Gently guide toward collecting departure port, travel party size, and budget when appropriate"
         ],
         "available_tools": [
+          "vtg_price_lookup",
           "cruise_brothers_knowledge",
           "cruise_trend_analysis"
         ]

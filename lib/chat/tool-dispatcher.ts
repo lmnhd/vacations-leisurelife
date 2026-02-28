@@ -13,6 +13,7 @@ import { runCruiseGroupsManager } from './tools/cruise-groups-manager';
 import { runPackageBuilder } from './tools/package-builder';
 import { runSocialMediaInsights, runCruiseTrendAnalysis } from './tools/social-media-insights';
 import type { TravelerPerspective, TrendCategory } from './tools/social-media-insights';
+import { runVtgSearch } from './tools/vtg-search';
 
 const TOOL_DATA_ROOT = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'tools');
 const TOOL_DIRECTIVE_PATTERN = /\[Tool:\s*([a-z0-9_\-]+)\s*(\{(?:[^\[\]]*|\[[^\]]*\])*\})?\s*\]/gi;
@@ -52,6 +53,16 @@ const PricingComparatorPayloadSchema = z.object({
     number_of_guests: z.number(),
     number_of_nights: z.number(),
     client_total_budget: z.number(),
+});
+
+const VtgSearchPayloadSchema = z.object({
+    cruiseLine: z.string().nullable().optional(),
+    region: z.string().nullable().optional(),
+    minNights: z.number().nullable().optional(),
+    maxNights: z.number().nullable().optional(),
+    startMonth: z.string().nullable().optional(),
+    endMonth: z.string().nullable().optional(),
+    passengers: z.number().default(2),
 });
 
 const OdysseusSearchPayloadSchema = z.object({
@@ -442,6 +453,29 @@ export async function dispatchTools(input: {
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
                 `\n\n${groupResult.message}\n\`\`\`json\n${JSON.stringify(groupResult.results, null, 2)}\n\`\`\``
+            );
+            continue;
+        }
+
+        if (requestedToolId === 'vtg_price_lookup') {
+            const vtgPayload = VtgSearchPayloadSchema.parse(parsedPayload ?? {});
+            const vtgResult = await runVtgSearch({
+                cruiseLine: vtgPayload.cruiseLine ?? null,
+                region: vtgPayload.region ?? null,
+                minNights: vtgPayload.minNights ?? null,
+                maxNights: vtgPayload.maxNights ?? null,
+                startMonth: vtgPayload.startMonth ?? null,
+                endMonth: vtgPayload.endMonth ?? null,
+                passengers: vtgPayload.passengers,
+            });
+
+            if (vtgResult.results.length > 0) {
+                await setToolCache(requestedToolId, parsedPayload ?? {}, vtgResult, 3600 * 2); // 2hr cache
+            }
+
+            updatedResponseText = updatedResponseText.replace(
+                directiveMatch[0],
+                `\n\n${vtgResult.searchSummary}\n\`\`\`json\n${JSON.stringify(vtgResult.results, null, 2)}\n\`\`\``
             );
             continue;
         }
