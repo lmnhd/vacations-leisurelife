@@ -14,69 +14,7 @@ import { extractMemoryFacts } from './memory-extractor';
 import { updateState } from './state-updater';
 import type { PipelineInput, PipelineOutput, ChatMessage, Channel } from './types';
 import { pipelineLog } from './pipeline-logger';
-
-function deriveSessionSignal(conversationText: string): {
-    hasCruised: boolean | null;
-    requestedSpecificCruise: boolean;
-    incompleteProfile: boolean;
-    discussesPastCruise: boolean;
-    onActiveBooking: boolean;
-    completedCruise: boolean;
-} {
-    const normalizedConversationText = conversationText.toLowerCase();
-
-    const hasCruisedFromConversation =
-        normalizedConversationText.includes('i have cruised') ||
-        normalizedConversationText.includes('we have cruised') ||
-        normalizedConversationText.includes('been on a cruise');
-
-    const hasNotCruisedFromConversation =
-        normalizedConversationText.includes("i haven't cruised") ||
-        normalizedConversationText.includes('i have not cruised') ||
-        normalizedConversationText.includes('never been on a cruise');
-
-    return {
-        hasCruised: hasCruisedFromConversation
-            ? true
-            : hasNotCruisedFromConversation
-                ? false
-                : null,
-        requestedSpecificCruise:
-            normalizedConversationText.includes('book') ||
-            normalizedConversationText.includes('specific cruise') ||
-            normalizedConversationText.includes('sailing on') ||
-            normalizedConversationText.includes('find me a cruise') ||
-            normalizedConversationText.includes('find a cruise') ||
-            normalizedConversationText.includes('search for a cruise') ||
-            normalizedConversationText.includes('look for a cruise') ||
-            normalizedConversationText.includes('show me a cruise') ||
-            normalizedConversationText.includes('show me cruises') ||
-            normalizedConversationText.includes('cruises from') ||
-            normalizedConversationText.includes('cruises departing') ||
-            normalizedConversationText.includes('departing from') ||
-            normalizedConversationText.includes('cruise from') ||
-            normalizedConversationText.includes('cruise to') ||
-            normalizedConversationText.includes('cruise for two') ||
-            normalizedConversationText.includes('cruise for us') ||
-            normalizedConversationText.includes('available cruises') ||
-            normalizedConversationText.includes('what cruises') ||
-            normalizedConversationText.includes('any cruises'),
-        incompleteProfile: normalizedConversationText.trim().length === 0,
-
-        discussesPastCruise:
-            normalizedConversationText.includes('last cruise') ||
-            normalizedConversationText.includes('previous cruise') ||
-            normalizedConversationText.includes('past cruise'),
-        onActiveBooking:
-            normalizedConversationText.includes('my booking') ||
-            normalizedConversationText.includes('already booked') ||
-            normalizedConversationText.includes('upcoming cruise'),
-        completedCruise:
-            normalizedConversationText.includes('just got back') ||
-            normalizedConversationText.includes('after my cruise') ||
-            normalizedConversationText.includes('returned from'),
-    };
-}
+import { classifyIntent } from './intent-classifier';
 
 export async function getPromptPreviewForSession(input: {
     sessionId: string;
@@ -87,7 +25,7 @@ export async function getPromptPreviewForSession(input: {
     systemPrompt: string;
 }> {
     const conversationText = getConversationTextForSession({ sessionId: input.sessionId });
-    const signal = deriveSessionSignal(conversationText);
+    const signal = await classifyIntent(conversationText);
     const resolvedContext = await resolveContext({
         hasCruised: signal.hasCruised,
         requestedSpecificCruise: signal.requestedSpecificCruise,
@@ -136,7 +74,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         sessionId: input.sessionId,
         pendingMessage: input.message,
     });
-    const signal = deriveSessionSignal(fullConversationText);
+    const signal = await classifyIntent(fullConversationText);
 
     pipelineLog.stage('session-hydrator', input.sessionId, { userId: input.userId, channel: input.channel });
 
