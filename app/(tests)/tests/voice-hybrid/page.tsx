@@ -61,18 +61,18 @@ export default function VoiceHybridPage() {
             addLog(`STT: "${transcript.slice(0, 80)}"`, 'event');
             addLog('Routing to /api/chat pipeline...', 'pipeline');
         },
-        onAgentTranscript: (reply) => {
-            const pipelineMs = Date.now() - pipelineStartRef.current;
-            setTranscripts(prev => [...prev, {
-                id: `${Date.now()}`,
-                role: 'assistant',
-                text: reply,
-                ts: new Date().toLocaleTimeString(),
-                pipelineMs,
-            }]);
-            addLog(`Pipeline reply (${pipelineMs}ms): "${reply.slice(0, 80)}"`, 'pipeline');
-        },
         onPipelineResult: (result: ChatResponse) => {
+            const pipelineMs = Date.now() - pipelineStartRef.current;
+            if (result.reply) {
+                setTranscripts(prev => [...prev, {
+                    id: `${Date.now()}`,
+                    role: 'assistant',
+                    text: result.reply,
+                    ts: new Date().toLocaleTimeString(),
+                    pipelineMs,
+                }]);
+                addLog(`Pipeline reply (${pipelineMs}ms): "${result.reply.slice(0, 80)}"`, 'pipeline');
+            }
             if (result.toolCallsLog && result.toolCallsLog.length > 0) {
                 for (const t of result.toolCallsLog) {
                     addLog(`tool: ${t.toolId} → ${t.status}`, 'event');
@@ -85,8 +85,20 @@ export default function VoiceHybridPage() {
         onError: (err) => addLog(`ERROR: ${err}`, 'error'),
     });
 
+    const triggerWarmup = useCallback(async () => {
+        addLog('[warmup] Pre-warming Odysseus session...');
+        try {
+            const res = await fetch('/api/voice/odysseus-warmup', { method: 'POST' });
+            const data = await res.json() as { status?: string; durationMs?: number; message?: string };
+            addLog(`[warmup] ${data.status ?? '?'} — ${data.message ?? ''} (${data.durationMs ?? '?'}ms)`);
+        } catch (err) {
+            addLog(`[warmup] error — ${String(err)}`, 'error');
+        }
+    }, [addLog]);
+
     const handleToggle = useCallback(async () => {
         if (voice.connectionState === 'idle' || voice.connectionState === 'error') {
+            if (startingContext === 'fast_cruise_search') void triggerWarmup();
             addLog('Starting hybrid voice session...');
             await voice.startVoiceChat();
             addLog('Hybrid session ready — Realtime for STT+TTS, pipeline for reasoning');
@@ -94,7 +106,7 @@ export default function VoiceHybridPage() {
             addLog('Stopping session');
             voice.stopVoiceChat();
         }
-    }, [voice, addLog]);
+    }, [voice, addLog, startingContext, triggerWarmup]);
 
     const stateColor: Record<string, string> = {
         idle: 'text-slate-400',
