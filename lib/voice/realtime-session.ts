@@ -144,17 +144,16 @@ export async function createRealtimeSession(
 
         sendTtsText: (text: string) => {
             if (dc.readyState !== 'open') return;
-            dc.send(
-                JSON.stringify({
-                    type: 'conversation.item.create',
-                    item: {
-                        type: 'message',
-                        role: 'assistant',
-                        content: [{ type: 'text', text }],
-                    },
-                })
-            );
-            dc.send(JSON.stringify({ type: 'response.create' }));
+            // Create a user message instructing the model to read the text,
+            // then response.create — this is the reliable TTS pattern for Realtime API.
+            // Injecting an assistant message directly does NOT trigger audio playback.
+            dc.send(JSON.stringify({
+                type: 'response.create',
+                response: {
+                    modalities: ['text', 'audio'],
+                    instructions: `Say exactly the following, word for word, with no additions or changes:\n\n${text}`,
+                },
+            }));
         },
 
         sendInterrupt: () => {
