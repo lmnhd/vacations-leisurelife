@@ -143,11 +143,7 @@ export async function createRealtimeSession(
         },
 
         sendTtsText: (text: string) => {
-            console.log(`[sendTtsText] dc.readyState=${dc.readyState} text.length=${text.length}`);
-            if (dc.readyState !== 'open') {
-                console.warn('[sendTtsText] data channel not open — TTS skipped');
-                return;
-            }
+            if (dc.readyState !== 'open') return;
             dc.send(JSON.stringify({
                 type: 'response.create',
                 response: {
@@ -155,7 +151,6 @@ export async function createRealtimeSession(
                     instructions: `Say exactly the following, word for word, with no additions or changes:\n\n${text}`,
                 },
             }));
-            console.log('[sendTtsText] response.create sent');
         },
 
         sendInterrupt: () => {
