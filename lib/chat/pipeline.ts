@@ -7,7 +7,7 @@ import { resolveContext } from './context-resolver';
 import { hydrateSession, appendSessionMessage, getConversationTextForSession, pruneHistoryForLlm } from './session-hydrator';
 import { injectRules } from './rule-injector';
 import { loadSkills } from './skill-loader';
-import { callChatLlm, MODEL_VOICE } from './llm-call';
+import { callChatLlm, MODEL_VOICE, MODEL_FAST } from './llm-call';
 import { dispatchTools } from './tool-dispatcher';
 import { processResponse } from './response-processor';
 import { extractMemoryFacts } from './memory-extractor';
@@ -181,7 +181,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
             ].join('\n');
             const vtgReply = await callChatLlm({
                 history: [{ id: `vtg-sum-${input.sessionId}`, role: 'user', content: vtgSummaryPrompt, timestamp: Date.now() }],
-                model: MODEL_VOICE,
+                model: MODEL_FAST,
             });
             pipelineLog.stage('vtg-summarizer', input.sessionId, { responseLength: vtgReply.length, rawPreview: vtgReply.slice(0, 120) });
             finalLlmText = vtgReply;
