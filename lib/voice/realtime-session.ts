@@ -251,6 +251,12 @@ function handleDataChannelMessage(
         return;
     }
 
+    // ── Speech stopped — in hybrid mode, cancel model response immediately ──
+    if (type === 'input_audio_buffer.speech_stopped' && isHybridMode) {
+        dc.send(JSON.stringify({ type: 'response.cancel' }));
+        return;
+    }
+
     // ── STT transcript complete ──
     if (type === 'conversation.item.input_audio_transcription.completed') {
         const transcript = (message['transcript'] as string | undefined)?.trim();
