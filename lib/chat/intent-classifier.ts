@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { callChatLlm } from './llm-call';
+import { callChatLlm, MODEL_FAST } from './llm-call';
 
 const IntentSignalSchema = z.object({
     hasCruised: z.boolean().nullable(),
@@ -68,7 +68,7 @@ export async function classifyIntent(conversationText: string): Promise<IntentSi
     try {
         const raw = await callChatLlm({
             history: [userMessage],
-            model: 'gpt-4o-mini',
+            model: MODEL_FAST,
         });
 
         const cleaned = raw.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');

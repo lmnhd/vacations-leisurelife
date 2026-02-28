@@ -7,7 +7,7 @@ import { resolveContext } from './context-resolver';
 import { hydrateSession, appendSessionMessage, getConversationTextForSession } from './session-hydrator';
 import { injectRules } from './rule-injector';
 import { loadSkills } from './skill-loader';
-import { callChatLlm } from './llm-call';
+import { callChatLlm, MODEL_VOICE } from './llm-call';
 import { dispatchTools } from './tool-dispatcher';
 import { processResponse } from './response-processor';
 import { extractMemoryFacts } from './memory-extractor';
@@ -173,7 +173,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         ].join('\n');
         const voiceReply = await callChatLlm({
             history: [{ id: 'vs-1', role: 'user', content: voiceSummaryPrompt, timestamp: Date.now() }],
-            model: 'gpt-4o-mini',
+            model: MODEL_VOICE,
         });
         pipelineLog.stage('voice-summarizer', input.sessionId, { responseLength: voiceReply.length, rawPreview: voiceReply.slice(0, 120) });
         finalLlmText = voiceReply;
