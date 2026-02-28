@@ -46,6 +46,15 @@ export function appendSessionMessage(input: {
     history.push(input.message);
 }
 
+const MAX_HISTORY_TURNS = 12; // system + last 12 messages sent to LLM
+
+export function pruneHistoryForLlm(history: ChatMessage[]): ChatMessage[] {
+    const systemMessages = history.filter(m => m.role === 'system');
+    const nonSystemMessages = history.filter(m => m.role !== 'system');
+    const pruned = nonSystemMessages.slice(-MAX_HISTORY_TURNS);
+    return [...systemMessages, ...pruned];
+}
+
 export function getConversationTextForSession(input: {
     sessionId: string;
     pendingMessage?: string;
