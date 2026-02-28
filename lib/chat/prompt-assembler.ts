@@ -83,7 +83,7 @@ function buildToolCallingInstructions(tools: ToolDefinition[]): string[] {
 }
 
 export async function assembleSystemPrompt(input: {
-    channel: 'text' | 'voice' | 'voice_test';
+    channel: 'text' | 'voice' | 'voice_test' | 'voice_hybrid';
     hasCruised: boolean | null;
     requestedSpecificCruise: boolean;
     incompleteProfile: boolean;
@@ -114,10 +114,10 @@ export async function assembleSystemPrompt(input: {
         resolvedContext.instructionRefs.map((instructionRef) => readPromptDataFile(instructionRef))
     );
 
-    // Voice channels use Realtime function definitions (registered in session config),
-    // not text-directive tool calling syntax. Skip for voice/voice_test.
-    const isVoiceChannel = input.channel === 'voice' || input.channel === 'voice_test';
-    const toolCallingInstructions = isVoiceChannel
+    // voice_hybrid uses text-directive tool calling (pipeline handles reasoning, not Realtime).
+    // Pure voice/voice_test use Realtime function definitions registered in session config.
+    const skipToolDirectives = input.channel === 'voice' || input.channel === 'voice_test';
+    const toolCallingInstructions = skipToolDirectives
         ? []
         : buildToolCallingInstructions(await loadToolDefinitions(resolvedContext.availableTools));
 
@@ -151,7 +151,8 @@ export async function assembleSystemPrompt(input: {
         ...toolCallingInstructions,
         '',
         '# Channel Directives',
-        ...(resolvedContext.channelDirectives[input.channel] ?? []).map((d) => `- ${d}`),
+        // voice_hybrid applies the same directives as voice — prose only, no markdown
+        ...(resolvedContext.channelDirectives[input.channel === 'voice_hybrid' ? 'voice' : input.channel] ?? []).map((d) => `- ${d}`),
     ]
         .filter((line) => line.trim().length > 0)
         .join('\n');

@@ -6,7 +6,7 @@
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
 export type Role = 'user' | 'assistant' | 'system';
-export type Channel = 'text' | 'voice';
+export type Channel = 'text' | 'voice' | 'voice_hybrid';
 export type PersonaKey = 'professional' | 'laidback' | 'hustler';
 export type VoiceName = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
 

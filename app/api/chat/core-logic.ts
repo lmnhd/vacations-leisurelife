@@ -12,7 +12,7 @@ const ChatRequestSchema = z.object({
     message: z.string().min(1, 'Message is required').max(2000),
     sessionId: z.string().min(1, 'Session ID is required'),
     userId: z.string().optional(),
-    channel: z.enum(['text', 'voice']).default('text'),
+    channel: z.enum(['text', 'voice', 'voice_hybrid']).default('text'),
     model: z.string().optional(),
     startingContext: z.string().optional(),
 });
