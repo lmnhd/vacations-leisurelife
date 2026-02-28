@@ -473,9 +473,13 @@ export async function dispatchTools(input: {
                 await setToolCache(requestedToolId, parsedPayload ?? {}, vtgResult, 3600 * 2); // 2hr cache
             }
 
+            const vtgInstruction = vtgResult.results.length === 0
+                ? `[VTG_RESULT: no deals found — tell the user no matching departures were found and offer to broaden the search]`
+                : `[VTG_RESULT: ${vtgResult.results.length} deals found. Present only the FIRST deal below in 2 spoken sentences. Use ONLY the exact values shown — do not invent or infer anything. Then ask: "Want to hear another option, or does this sound like what you're looking for?"\nFIRST_DEAL: ${JSON.stringify(vtgResult.results[0])}\nREMAINING_DEALS: ${JSON.stringify(vtgResult.results.slice(1))} — reveal one at a time only if user asks]`;
+
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
-                `\n\n${vtgResult.searchSummary}\n\`\`\`json\n${JSON.stringify(vtgResult.results, null, 2)}\n\`\`\``
+                `\n\n${vtgInstruction}`
             );
             continue;
         }
