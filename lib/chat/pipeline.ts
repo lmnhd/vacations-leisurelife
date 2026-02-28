@@ -167,26 +167,33 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     const toolsFired = toolDispatchResult.toolCallsLog.length > 0;
 
     if (vtgFired) {
-        try {
-            const vtgSummaryPrompt = [
-                'You are a cruise shopping assistant. The following contains a VTG_RESULT instruction block with cruise deal data.',
-                'Your job: read FIRST_DEAL and present it in exactly 2 natural spoken sentences.',
-                'Include: ship name, number of nights, departure port, sailing date, and price per person.',
-                'Use ONLY the exact field values from FIRST_DEAL — do not invent, infer, or embellish anything.',
-                'The price shown is already adjusted — present it using approximate language like "starting around" or "approximately".',
-                'End with exactly this question: "Want to hear another option, or does this sound like what you\'re looking for?"',
-                'Rules: no JSON, no code blocks, no bullet points, no markdown — plain prose only.',
-                '',
-                finalLlmText,
-            ].join('\n');
-            const vtgReply = await callChatLlm({
-                history: [{ id: `vtg-sum-${input.sessionId}`, role: 'user', content: vtgSummaryPrompt, timestamp: Date.now() }],
-                model: MODEL_FAST,
-            });
-            pipelineLog.stage('vtg-summarizer', input.sessionId, { responseLength: vtgReply.length, rawPreview: vtgReply.slice(0, 120) });
-            finalLlmText = vtgReply;
-        } catch (err) {
-            pipelineLog.warn('vtg-summarizer', input.sessionId, 'summarizer failed, using raw dispatcher output', { err });
+        // Short-circuit: no results → return clean prose immediately, no LLM call needed
+        if (finalLlmText.includes('[VTG_RESULT: no deals found')) {
+            finalLlmText = "I wasn't able to find any cruises matching those criteria. Would you like me to broaden the search, try a different cruise line, or adjust the dates?";
+            pipelineLog.stage('vtg-summarizer', input.sessionId, { responseLength: finalLlmText.length, rawPreview: 'no-results shortcut' });
+        } else {
+            try {
+                const vtgSummaryPrompt = [
+                    'You are a cruise shopping assistant. The following contains a VTG_RESULT instruction block with cruise deal data.',
+                    'Your job: read FIRST_DEAL and present it in exactly 2 natural spoken sentences.',
+                    'Include: ship name, number of nights, departure port, sailing date, and price per person.',
+                    'Use ONLY the exact field values from FIRST_DEAL — do not invent, infer, or embellish anything.',
+                    'The price shown is already adjusted — present it using approximate language like "starting around" or "approximately".',
+                    'End with exactly this question: "Want to hear another option, or does this sound like what you\'re looking for?"',
+                    'Rules: no JSON, no code blocks, no bullet points, no markdown — plain prose only.',
+                    '',
+                    finalLlmText,
+                ].join('\n');
+                const vtgReply = await callChatLlm({
+                    history: [{ id: `vtg-sum-${input.sessionId}`, role: 'user', content: vtgSummaryPrompt, timestamp: Date.now() }],
+                    model: MODEL_FAST,
+                });
+                pipelineLog.stage('vtg-summarizer', input.sessionId, { responseLength: vtgReply.length, rawPreview: vtgReply.slice(0, 120) });
+                finalLlmText = vtgReply;
+            } catch (err) {
+                pipelineLog.warn('vtg-summarizer', input.sessionId, 'summarizer failed, using raw dispatcher output', { err });
+                finalLlmText = "I wasn't able to retrieve cruise results right now. Want to try again or adjust the search?";
+            }
         }
     } else if (input.channel === 'voice_hybrid' && toolsFired) {
         const voiceSummaryPrompt = [
