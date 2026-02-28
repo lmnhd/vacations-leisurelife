@@ -82,9 +82,13 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                 return;
             }
 
-            if (data.reply && sessionRef.current) {
-                options.onAgentTranscript?.(data.reply);
-                sessionRef.current.sendTtsText(data.reply);
+            if (data.reply) {
+                if (sessionRef.current) {
+                    options.onEvent?.({ type: 'tts:send', detail: `sending ${data.reply.length} chars to Realtime TTS`, ts: new Date().toISOString().slice(11,23) });
+                    sessionRef.current.sendTtsText(data.reply);
+                } else {
+                    options.onEvent?.({ type: 'tts:skipped', detail: 'session already closed when pipeline reply arrived', ts: new Date().toISOString().slice(11,23) });
+                }
             }
         } catch (err) {
             options.onError?.(`Hybrid pipeline error: ${String(err)}`);

@@ -143,10 +143,11 @@ export async function createRealtimeSession(
         },
 
         sendTtsText: (text: string) => {
-            if (dc.readyState !== 'open') return;
-            // Create a user message instructing the model to read the text,
-            // then response.create — this is the reliable TTS pattern for Realtime API.
-            // Injecting an assistant message directly does NOT trigger audio playback.
+            console.log(`[sendTtsText] dc.readyState=${dc.readyState} text.length=${text.length}`);
+            if (dc.readyState !== 'open') {
+                console.warn('[sendTtsText] data channel not open — TTS skipped');
+                return;
+            }
             dc.send(JSON.stringify({
                 type: 'response.create',
                 response: {
@@ -154,6 +155,7 @@ export async function createRealtimeSession(
                     instructions: `Say exactly the following, word for word, with no additions or changes:\n\n${text}`,
                 },
             }));
+            console.log('[sendTtsText] response.create sent');
         },
 
         sendInterrupt: () => {
