@@ -158,10 +158,31 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
     pipelineLog.stage('tool-dispatcher', input.sessionId, { toolCallsLog: toolDispatchResult.toolCallsLog });
 
-    // Stage 7.5 — Voice Summarizer (voice_hybrid only)
-    // Tool results are injected as raw data (searchSummary + JSON). For voice, rewrite as spoken prose.
+    // Stage 7.5 — Result Summarizer
+    // VTG results: always rewrite instruction block as spoken prose (all channels).
+    // Other tools on voice_hybrid: rewrite raw data as spoken prose.
     let finalLlmText = toolDispatchResult.finalLlmText;
-    if (input.channel === 'voice_hybrid' && toolDispatchResult.toolCallsLog.length > 0) {
+    const vtgFired = toolDispatchResult.toolCallsLog.some(t => t.toolId === 'vtg_price_lookup');
+    const toolsFired = toolDispatchResult.toolCallsLog.length > 0;
+
+    if (vtgFired) {
+        const vtgSummaryPrompt = [
+            'You are a cruise shopping assistant. The following contains a VTG_RESULT instruction block with cruise deal data.',
+            'Your job: read FIRST_DEAL and present it in exactly 2 natural spoken sentences.',
+            'Include: ship name, number of nights, departure port, sailing date, and price per person.',
+            'Use ONLY the exact field values from FIRST_DEAL — do not invent, infer, or embellish anything.',
+            'End with exactly this question: "Want to hear another option, or does this sound like what you\'re looking for?"',
+            'Rules: no JSON, no code blocks, no bullet points, no markdown — plain prose only.',
+            '',
+            finalLlmText,
+        ].join('\n');
+        const vtgReply = await callChatLlm({
+            history: [{ id: 'vtg-sum-1', role: 'user', content: vtgSummaryPrompt, timestamp: Date.now() }],
+            model: MODEL_VOICE,
+        });
+        pipelineLog.stage('vtg-summarizer', input.sessionId, { responseLength: vtgReply.length, rawPreview: vtgReply.slice(0, 120) });
+        finalLlmText = vtgReply;
+    } else if (input.channel === 'voice_hybrid' && toolsFired) {
         const voiceSummaryPrompt = [
             'You are a voice assistant. Rewrite the following agent response as 3-5 natural spoken sentences.',
             'Rules: no markdown, no bullet points, no JSON, no code blocks, no headers.',
