@@ -156,7 +156,16 @@ function buildVtgUrl(input: VtgSearchInput): string {
         return m;
     };
 
-    const sm = input.startMonth ? normalizeMonth(input.startMonth) : toVtgMonth(now);
+    // Clamp to current month if LLM sends a past date
+    const clampToFuture = (vtgMonth: string): string => {
+        const year = parseInt(vtgMonth.slice(0, 4), 10);
+        const month = parseInt(vtgMonth.slice(4), 10);
+        const candidate = new Date(year, month - 1, 1);
+        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return candidate < currentMonth ? toVtgMonth(currentMonth) : vtgMonth;
+    };
+
+    const sm = clampToFuture(input.startMonth ? normalizeMonth(input.startMonth) : toVtgMonth(now));
     // If only startMonth given, default endMonth to startMonth + 3 months (not the same month)
     const defaultTm = (): string => {
         if (input.startMonth) {
