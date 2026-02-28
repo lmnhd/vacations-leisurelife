@@ -176,7 +176,8 @@ export class OdysseusEngine {
         const page = this.odysseusPage;
         console.log(`[OdysseusEngine] Attempting to select Option ${optionValue} in ${odyId}...`);
         try {
-            // Click the select2 container to open the dropdown
+            // Scroll element into view first, then click
+            await page.locator(`ody-dropdown[data-ody-id="${odyId}"]`).scrollIntoViewIfNeeded();
             await page.locator(`ody-dropdown[data-ody-id="${odyId}"] .select2-selection`).click({ force: true });
             await page.waitForTimeout(500); // Give the dropdown animation a moment
 
