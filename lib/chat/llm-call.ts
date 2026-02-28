@@ -3,7 +3,7 @@ import type { ChatMessage } from './types';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
-export const MODEL_MAIN = 'gpt-5-mini';        // primary reasoning model
+export const MODEL_MAIN = 'gpt-4o';            // primary reasoning model
 export const MODEL_FAST = 'gpt-4o-mini';       // lightweight tasks: classifier, summarizer
 export const MODEL_VOICE = 'o3-mini';          // voice pipeline
 
