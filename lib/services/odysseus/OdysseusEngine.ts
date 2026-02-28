@@ -86,7 +86,7 @@ export class OdysseusEngine {
         if (!page || !this.context) throw new Error('Engine not initialized');
 
         console.log('[OdysseusEngine] Navigating to CBAgentTools...');
-        await page.goto('https://www.cbagenttools.com', { waitUntil: 'domcontentloaded' });
+        await page.goto('https://www.cbagenttools.com', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
         // Check if we are already logged in based on visible DOM elements or URL
         const currentUrl = page.url();
