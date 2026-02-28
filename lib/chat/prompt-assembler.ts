@@ -15,6 +15,7 @@ type ToolDefinition = {
     display_name?: string;
     description?: string;
     input_schema?: Record<string, string>;
+    vendorId_map?: Record<string, number>;
     thoughts_stream_label?: string;
 };
 
@@ -76,6 +77,12 @@ function buildToolCallingInstructions(tools: ToolDefinition[]): string[] {
                 ])
             );
             lines.push(`Example: [Tool: ${tool.tool_id} ${JSON.stringify(exampleParams)}]`);
+        }
+        if (tool.vendorId_map) {
+            lines.push('Cruise Line ID Reference (use numeric value for vendorId):');
+            for (const [name, id] of Object.entries(tool.vendorId_map)) {
+                lines.push(`  - "${name}": ${id}`);
+            }
         }
     }
 
