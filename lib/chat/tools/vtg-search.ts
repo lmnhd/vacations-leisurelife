@@ -3,48 +3,57 @@ import { load } from 'cheerio';
 import path from 'path';
 import { readFileSync } from 'fs';
 
-// VTG cruise line codes for the `v` param
+// VTG cruise line codes for the `l` param — extracted from live VTG form
 export const VTG_CRUISE_LINE_CODES: Record<string, number> = {
     'all': 0,
-    'Carnival': 3,
-    'Celebrity': 5,
-    'Crystal': 7,
-    'Disney': 9,
-    'Holland America': 12,
-    'Norwegian': 16,
-    'Princess': 19,
-    'Royal Caribbean': 21,
-    'Seabourn': 23,
-    'Cunard': 8,
-    'Oceania': 17,
-    'Costa': 6,
-    'MSC': 15,
-    'Azamara': 2,
-    'Silversea': 24,
-    'Regent Seven Seas': 20,
-    'Viking': 26,
-    'Virgin Voyages': 27,
+    'Carnival': 8,
+    'Celebrity': 11,
+    'Crystal': 13,
+    'Disney': 16,
+    'Holland America': 5,
+    'Norwegian': 17,
+    'Princess': 3,
+    'Royal Caribbean': 14,
+    'Seabourn': 19,
+    'Cunard': 6,
+    'Oceania': 47,
+    'Costa': 12,
+    'MSC': 41,
+    'Azamara': 55,
+    'Silversea': 20,
+    'Regent Seven Seas': 18,
+    'Viking': 45,
+    'Virgin Voyages': 122,
+    'Windstar': 15,
+    'Hurtigruten': 58,
 };
 
-// VTG region codes for the `r` param
+// VTG region codes for the `r` param — extracted from live VTG form
 export const VTG_REGION_CODES: Record<string, number> = {
     'all': 0,
-    'Caribbean': 1,
-    'Bahamas': 2,
-    'Mexico': 3,
-    'Bermuda': 4,
-    'Alaska': 5,
-    'Hawaii': 6,
-    'Europe': 7,
-    'Mediterranean': 8,
-    'South America': 9,
-    'Panama Canal': 10,
-    'Asia': 11,
-    'Australia': 12,
-    'Africa': 13,
-    'Canada/New England': 14,
-    'Transatlantic': 15,
-    'Transpacific': 16,
+    'Bahamas': 30,
+    'Caribbean': 13,
+    'Caribbean (Eastern)': 42,
+    'Caribbean (Western)': 44,
+    'Caribbean (Southern)': 43,
+    'Alaska': 9,
+    'Hawaii': 21,
+    'Europe': 71,
+    'Mediterranean': 11,
+    'Mediterranean (Eastern)': 91,
+    'Mediterranean (Western)': 90,
+    'South America': 25,
+    'Panama Canal': 14,
+    'Asia': 17,
+    'Australia': 15,
+    'Africa': 16,
+    'Canada/New England': 19,
+    'Transatlantic': 26,
+    'Transpacific': 34,
+    'Bermuda': 18,
+    'Mexico': 22,
+    'Norway': 81,
+    'Greek Islands': 37,
 };
 
 export type VtgSearchInput = {
@@ -83,7 +92,8 @@ function getCookie(): string {
     const cookiefile = path.join(process.cwd(), '/app/api/vtgSearch/cookies.json');
     const raw = readFileSync(cookiefile, 'utf-8');
     const cookies = JSON.parse(raw) as Array<{ name: string; value: string }>;
-    return `${cookies[4].name}=${cookies[4].value}`;
+    // Build cookie string from all entries in the file
+    return cookies.map(c => `${c.name}=${c.value}`).join('; ');
 }
 
 function resolveCode(map: Record<string, number>, key: string | null): number {
@@ -94,27 +104,42 @@ function resolveCode(map: Record<string, number>, key: string | null): number {
 }
 
 function buildVtgUrl(input: VtgSearchInput): string {
-    const v = resolveCode(VTG_CRUISE_LINE_CODES, input.cruiseLine);
-    const r = resolveCode(VTG_REGION_CODES, input.region);
-    const n = input.passengers ?? 2;
+    const l = resolveCode(VTG_CRUISE_LINE_CODES, input.cruiseLine); // cruise line filter
+    const r = resolveCode(VTG_REGION_CODES, input.region);          // region filter
+    const passengers = input.passengers ?? 2;
 
     const now = new Date();
-    const defaultStartYYYYMM = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const defaultEndYYYYMM = `${now.getFullYear()}${String(now.getMonth() + 4).padStart(2, '0')}`;
+    // VTG month format: YYYYM (e.g. April 2026 = 20264, Oct 2026 = 202610)
+    const toVtgMonth = (d: Date) => `${d.getFullYear()}${d.getMonth() + 1}`;
+    const futureDate = new Date(now.getFullYear(), now.getMonth() + 4, 1);
+    const defaultSm = toVtgMonth(now);
+    const defaultTm = toVtgMonth(futureDate);
 
-    const sm = input.startMonth ?? defaultStartYYYYMM;
-    const tm = input.endMonth ?? defaultEndYYYYMM;
+    // Accept YYYYMM (6-digit) from LLM and convert to VTG's YYYYM format
+    const normalizeMonth = (m: string) => {
+        if (m.length === 6) return `${m.slice(0, 4)}${parseInt(m.slice(4), 10)}`;
+        return m;
+    };
+
+    const sm = input.startMonth ? normalizeMonth(input.startMonth) : defaultSm;
+    const tm = input.endMonth ? normalizeMonth(input.endMonth) : defaultTm;
     const sd = sm;
     const td = tm;
 
     const minNights = input.minNights ?? 0;
     const maxNights = input.maxNights ?? 0;
 
-    // l = min nights bucket: 0=any, 2=2-4, 5=5-7, 7=7-9, 10=10-13, 14=14+
-    const lMap: Array<[number, number]> = [[14, 14], [10, 10], [7, 7], [5, 5], [2, 2]];
-    const l = lMap.find(([threshold]) => minNights >= threshold)?.[1] ?? 0;
+        // n = nights bucket: 0=any, 1=3-6, 2=7, 3=8-13, 4=14+, 5=21+
+    let nightsBucket = 0;
+    if (minNights !== null && minNights > 0) {
+        if (minNights >= 21) nightsBucket = 5;
+        else if (minNights >= 14) nightsBucket = 4;
+        else if (minNights >= 8) nightsBucket = 3;
+        else if (minNights >= 7) nightsBucket = 2;
+        else nightsBucket = 1;
+    }
 
-    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${n}&d=${maxNights}&v=${v}&sd=${sd}&td=${td}&rd=0&rt=0`;
+    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${nightsBucket}&d=0&v=0&sd=${sd}&td=${td}&rd=0&rt=0&np=${passengers}`;
 }
 
 function parseDealsHtml(html: string): VtgDeal[] {
