@@ -176,19 +176,12 @@ export class OdysseusEngine {
         const page = this.odysseusPage;
         console.log(`[OdysseusEngine] Attempting to select Option ${optionValue} in ${odyId}...`);
         try {
-            // Scroll element into view first, then click
-            await page.locator(`ody-dropdown[data-ody-id="${odyId}"]`).scrollIntoViewIfNeeded();
-            await page.locator(`ody-dropdown[data-ody-id="${odyId}"] .select2-selection`).click({ force: true });
-            await page.waitForTimeout(500); // Give the dropdown animation a moment
-
-            // The dropdown list items are attached to the body or a nearby wrapper, not inside the select. 
-            // We use the generic locator for the dropdown results and force the native select change event.
+            // Drive the native select directly — no UI click needed since we dispatch the change event
             await page.locator(`ody-dropdown[data-ody-id="${odyId}"] select`).selectOption({ value: optionValue }, { force: true });
-            await page.$eval(`ody-dropdown[data-ody-id="${odyId}"] select`, el => {
-                const event = new Event('change', { bubbles: true });
-                el.dispatchEvent(event);
+            await page.$eval(`ody-dropdown[data-ody-id="${odyId}"] select`, (el: HTMLSelectElement) => {
+                el.dispatchEvent(new Event('change', { bubbles: true }));
             });
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(300);
         } catch (e) {
             console.log(`[OdysseusEngine] Failed to select option in ${odyId}:`, e);
         }
