@@ -34,6 +34,9 @@ export function hydrateSession(input: {
     return existingHistory;
 }
 
+const MAX_STORED_TURNS = 20;  // hard cap in store — system message not counted
+const MAX_LLM_TURNS = 12;     // window sent to LLM each call
+
 export function appendSessionMessage(input: {
     sessionId: string;
     message: ChatMessage;
@@ -44,14 +47,20 @@ export function appendSessionMessage(input: {
     }
 
     history.push(input.message);
-}
 
-const MAX_HISTORY_TURNS = 12; // system + last 12 messages sent to LLM
+    // Cap non-system messages in the store so history never bloats server-side
+    const systemMessages = history.filter(m => m.role === 'system');
+    const nonSystemMessages = history.filter(m => m.role !== 'system');
+    if (nonSystemMessages.length > MAX_STORED_TURNS) {
+        const trimmed = nonSystemMessages.slice(-MAX_STORED_TURNS);
+        history.splice(0, history.length, ...systemMessages, ...trimmed);
+    }
+}
 
 export function pruneHistoryForLlm(history: ChatMessage[]): ChatMessage[] {
     const systemMessages = history.filter(m => m.role === 'system');
     const nonSystemMessages = history.filter(m => m.role !== 'system');
-    const pruned = nonSystemMessages.slice(-MAX_HISTORY_TURNS);
+    const pruned = nonSystemMessages.slice(-MAX_LLM_TURNS);
     return [...systemMessages, ...pruned];
 }
 
