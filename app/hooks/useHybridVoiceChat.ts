@@ -2,19 +2,19 @@
  * useHybridVoiceChat
  *
  * Hybrid voice architecture:
- *   - OpenAI Realtime API handles ONLY audio I/O (STT + TTS)
+ *   - OpenAI Realtime API handles STT ONLY (Whisper transcript)
  *   - All reasoning goes through the standard /api/chat text pipeline
- *   - The Realtime model never reasons or calls tools
+ *   - TTS playback via OpenAI REST Audio API (/api/voice/tts) — not the Realtime model
  *
  * Flow per user turn:
- *   1. Browser mic audio → Realtime WebRTC → STT transcript
- *   2. Transcript text → POST /api/chat (channel: 'voice')
- *   3. Reply text → inject into Realtime as assistant message → TTS playback
+ *   1. Browser mic → Realtime WebRTC → Whisper STT transcript
+ *   2. Transcript → POST /api/chat (channel: voice_hybrid) → gpt-4o reasoning + tools
+ *   3. Reply text → POST /api/voice/tts → mp3 audio → AudioContext playback
  */
 
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
     createRealtimeSession,
@@ -38,6 +38,43 @@ function stripForVoice(text: string): string {
         .trim();
 }
 
+// Fetch TTS audio from REST endpoint and play via AudioContext
+async function playTtsAudio(
+    text: string,
+    voice: string,
+    audioCtxRef: React.MutableRefObject<AudioContext | null>,
+    audioSourceRef: React.MutableRefObject<AudioBufferSourceNode | null>
+): Promise<void> {
+    // Stop any currently playing audio
+    audioSourceRef.current?.stop();
+    audioSourceRef.current = null;
+
+    const res = await fetch('/api/voice/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice }),
+    });
+
+    if (!res.ok || !res.body) {
+        console.error('[TTS] REST TTS request failed:', res.status);
+        return;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioContext();
+    }
+    const ctx = audioCtxRef.current;
+
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    audioSourceRef.current = source;
+    source.start();
+}
+
 export interface UseHybridVoiceChatOptions {
     sessionId: string;
     userId?: string;
@@ -56,7 +93,7 @@ export interface UseHybridVoiceChatReturn {
     startVoiceChat: () => Promise<void>;
     stopVoiceChat: () => void;
     interruptCurrentSpeech: () => void;
-    testTts: (text: string) => void;
+    testTts: (text: string) => Promise<void>;
 }
 
 export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybridVoiceChatReturn {
@@ -65,6 +102,8 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
 
     const sessionRef = useRef<RealtimeSessionHandle | null>(null);
     const processingRef = useRef(false); // prevent concurrent pipeline calls
+    const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+    const audioCtxRef = useRef<AudioContext | null>(null);
 
     const runPipeline = useCallback(async (transcript: string) => {
         if (processingRef.current) return; // drop if already processing
@@ -99,13 +138,9 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
             }
 
             if (data.reply) {
-                if (sessionRef.current) {
-                    const ttsText = stripForVoice(data.reply);
-                    options.onEvent?.({ type: 'tts:send', detail: `sending ${ttsText.length} chars to Realtime TTS`, ts: new Date().toISOString().slice(11,23) });
-                    sessionRef.current.sendTtsText(ttsText);
-                } else {
-                    options.onEvent?.({ type: 'tts:skipped', detail: 'session already closed when pipeline reply arrived', ts: new Date().toISOString().slice(11,23) });
-                }
+                const ttsText = stripForVoice(data.reply);
+                options.onEvent?.({ type: 'tts:send', detail: `sending ${ttsText.length} chars to REST TTS`, ts: new Date().toISOString().slice(11,23) });
+                await playTtsAudio(ttsText, options.voice ?? 'alloy', audioCtxRef, audioSourceRef);
             }
         } catch (err) {
             options.onError?.(`Hybrid pipeline error: ${String(err)}`);
@@ -169,11 +204,21 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
     }, []);
 
     const interruptCurrentSpeech = useCallback(() => {
-        sessionRef.current?.sendInterrupt();
+        // Stop any active REST TTS playback
+        audioSourceRef.current?.stop();
+        audioSourceRef.current = null;
     }, []);
 
-    const testTts = useCallback((text: string) => {
-        sessionRef.current?.sendTtsText(text);
+    const testTts = useCallback(async (text: string) => {
+        await playTtsAudio(text, options.voice ?? 'alloy', audioCtxRef, audioSourceRef);
+    }, [options.voice]);
+
+    // Clean up AudioContext on unmount
+    useEffect(() => {
+        return () => {
+            audioSourceRef.current?.stop();
+            void audioCtxRef.current?.close();
+        };
     }, []);
 
     return { connectionState, isProcessing, startVoiceChat, stopVoiceChat, interruptCurrentSpeech, testTts };
