@@ -144,11 +144,20 @@ export async function createRealtimeSession(
 
         sendTtsText: (text: string) => {
             if (dc.readyState !== 'open') return;
+            // Inject the pipeline reply as an assistant message, then trigger response.create
+            // with that message as the sole input — model speaks it verbatim without generating.
+            dc.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                    type: 'message',
+                    role: 'assistant',
+                    content: [{ type: 'text', text }],
+                },
+            }));
             dc.send(JSON.stringify({
                 type: 'response.create',
                 response: {
-                    modalities: ['text', 'audio'],
-                    instructions: `Say exactly the following, word for word, with no additions or changes:\n\n${text}`,
+                    modalities: ['audio'],
                 },
             }));
         },
