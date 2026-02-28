@@ -121,7 +121,7 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     sessionId: options.sessionId,
                     userId: options.userId,
                     channel: 'voice_hybrid',
-                    model: 'gpt-5.2',  // matches MODEL_MAIN in llm-call.ts
+                    model: 'gpt-5-mini',  // matches MODEL_MAIN in llm-call.ts
                     ...(options.startingContext ? { startingContext: options.startingContext } : {}),
                 }),
             });
