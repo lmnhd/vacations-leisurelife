@@ -3,9 +3,9 @@ import type { ChatMessage } from './types';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
-export const MODEL_MAIN = 'gpt-4o-mini';       // primary reasoning model
+export const MODEL_MAIN = 'gpt-5.2';           // primary reasoning model
 export const MODEL_FAST = 'gpt-4o-mini';       // lightweight tasks: classifier, summarizer
-export const MODEL_VOICE = 'gpt-4o-mini';      // voice pipeline
+export const MODEL_VOICE = 'o3-mini';          // voice pipeline
 
 function tokenParam(model: string, count: number): Record<string, number> {
     return COMPLETION_TOKENS_MODELS.some((m) => model.startsWith(m))
