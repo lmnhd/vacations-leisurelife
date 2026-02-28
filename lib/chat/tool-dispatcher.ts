@@ -378,7 +378,10 @@ export async function dispatchTools(input: {
                 guestAges: odyPayload.guestAges,
             });
 
-            await setToolCache(requestedToolId, parsedPayload ?? {}, odyResult, 3600 * 4); // 4hr cache
+            // Only cache successful results — never cache empty or error responses
+            if (Array.isArray(odyResult.results) && odyResult.results.length > 0) {
+                await setToolCache(requestedToolId, parsedPayload ?? {}, odyResult, 3600 * 4); // 4hr cache
+            }
 
             updatedResponseText = updatedResponseText.replace(
                 directiveMatch[0],
