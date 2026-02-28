@@ -11,8 +11,8 @@
         "onboarding.cruise_novice"
     ],
     "input_schema": {
-        "cruiseLine": "string | null — cruise line name (e.g. 'Royal Caribbean', 'Carnival', 'Norwegian') or null for all lines",
-        "region": "string | null — destination region (e.g. 'Caribbean', 'Bahamas', 'Mediterranean', 'Alaska') or null for all",
+        "cruiseLine": "string | null — MUST be an exact value from cruise_line_options list (e.g. 'Norwegian', 'Royal Caribbean', 'Carnival'). Do NOT use full brand names like 'Norwegian Cruise Line' — use only the short form from the list. Use null for all lines.",
+        "region": "string | null — MUST be an exact value from region_options list (e.g. 'Caribbean', 'Bahamas', 'Alaska'). Use null for all regions.",
         "minNights": "number | null — minimum trip length in nights, or null for any",
         "maxNights": "number | null — maximum trip length in nights, or null for any",
         "startMonth": "string | null — earliest departure month in YYYYMM format (e.g. '202604'), or null for current month",

@@ -99,8 +99,15 @@ function getCookie(): string {
 function resolveCode(map: Record<string, number>, key: string | null): number {
     if (!key) return 0;
     const normalized = key.trim().toLowerCase();
-    const entry = Object.entries(map).find(([k]) => k.toLowerCase() === normalized);
-    return entry ? entry[1] : 0;
+    // Exact match first
+    const exact = Object.entries(map).find(([k]) => k.toLowerCase() === normalized);
+    if (exact) return exact[1];
+    // Partial match: map key is contained in the input (e.g. 'Norwegian' in 'Norwegian Cruise Line')
+    const partial = Object.entries(map).find(([k]) => k !== 'all' && normalized.includes(k.toLowerCase()));
+    if (partial) return partial[1];
+    // Reverse partial: input is contained in map key
+    const reverse = Object.entries(map).find(([k]) => k !== 'all' && k.toLowerCase().includes(normalized));
+    return reverse ? reverse[1] : 0;
 }
 
 function buildVtgUrl(input: VtgSearchInput): string {
@@ -119,7 +126,18 @@ function buildVtgUrl(input: VtgSearchInput): string {
     };
 
     const sm = input.startMonth ? normalizeMonth(input.startMonth) : toVtgMonth(now);
-    const tm = input.endMonth ? normalizeMonth(input.endMonth) : toVtgMonth(futureDate);
+    // If only startMonth given, default endMonth to startMonth + 3 months (not the same month)
+    const defaultTm = (): string => {
+        if (input.startMonth) {
+            const raw = normalizeMonth(input.startMonth);
+            const year = parseInt(raw.slice(0, 4), 10);
+            const month = parseInt(raw.slice(4), 10);
+            const d = new Date(year, month - 1 + 3, 1);
+            return toVtgMonth(d);
+        }
+        return toVtgMonth(futureDate);
+    };
+    const tm = input.endMonth ? normalizeMonth(input.endMonth) : defaultTm();
 
     const minNights = input.minNights ?? 0;
 
