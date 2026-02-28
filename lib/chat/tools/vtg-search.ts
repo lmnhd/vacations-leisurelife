@@ -106,14 +106,11 @@ function resolveCode(map: Record<string, number>, key: string | null): number {
 function buildVtgUrl(input: VtgSearchInput): string {
     const l = resolveCode(VTG_CRUISE_LINE_CODES, input.cruiseLine); // cruise line filter
     const r = resolveCode(VTG_REGION_CODES, input.region);          // region filter
-    const passengers = input.passengers ?? 2;
 
     const now = new Date();
     // VTG month format: YYYYM (e.g. April 2026 = 20264, Oct 2026 = 202610)
     const toVtgMonth = (d: Date) => `${d.getFullYear()}${d.getMonth() + 1}`;
     const futureDate = new Date(now.getFullYear(), now.getMonth() + 4, 1);
-    const defaultSm = toVtgMonth(now);
-    const defaultTm = toVtgMonth(futureDate);
 
     // Accept YYYYMM (6-digit) from LLM and convert to VTG's YYYYM format
     const normalizeMonth = (m: string) => {
@@ -121,13 +118,10 @@ function buildVtgUrl(input: VtgSearchInput): string {
         return m;
     };
 
-    const sm = input.startMonth ? normalizeMonth(input.startMonth) : defaultSm;
-    const tm = input.endMonth ? normalizeMonth(input.endMonth) : defaultTm;
-    const sd = sm;
-    const td = tm;
+    const sm = input.startMonth ? normalizeMonth(input.startMonth) : toVtgMonth(now);
+    const tm = input.endMonth ? normalizeMonth(input.endMonth) : toVtgMonth(futureDate);
 
     const minNights = input.minNights ?? 0;
-    const maxNights = input.maxNights ?? 0;
 
         // n = nights bucket: 0=any, 1=3-6, 2=7, 3=8-13, 4=14+, 5=21+
     let nightsBucket = 0;
@@ -139,7 +133,7 @@ function buildVtgUrl(input: VtgSearchInput): string {
         else nightsBucket = 1;
     }
 
-    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${nightsBucket}&d=0&v=0&sd=${sd}&td=${td}&rd=0&rt=0&np=${passengers}`;
+    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${nightsBucket}&d=0&v=0&rt=1`;
 }
 
 function parseDealsHtml(html: string): VtgDeal[] {
