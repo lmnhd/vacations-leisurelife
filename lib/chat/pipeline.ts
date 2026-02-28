@@ -44,7 +44,23 @@ function deriveSessionSignal(conversationText: string): {
         requestedSpecificCruise:
             normalizedConversationText.includes('book') ||
             normalizedConversationText.includes('specific cruise') ||
-            normalizedConversationText.includes('sailing on'),
+            normalizedConversationText.includes('sailing on') ||
+            normalizedConversationText.includes('find me a cruise') ||
+            normalizedConversationText.includes('find a cruise') ||
+            normalizedConversationText.includes('search for a cruise') ||
+            normalizedConversationText.includes('look for a cruise') ||
+            normalizedConversationText.includes('show me a cruise') ||
+            normalizedConversationText.includes('show me cruises') ||
+            normalizedConversationText.includes('cruises from') ||
+            normalizedConversationText.includes('cruises departing') ||
+            normalizedConversationText.includes('departing from') ||
+            normalizedConversationText.includes('cruise from') ||
+            normalizedConversationText.includes('cruise to') ||
+            normalizedConversationText.includes('cruise for two') ||
+            normalizedConversationText.includes('cruise for us') ||
+            normalizedConversationText.includes('available cruises') ||
+            normalizedConversationText.includes('what cruises') ||
+            normalizedConversationText.includes('any cruises'),
         incompleteProfile: normalizedConversationText.trim().length === 0,
 
         discussesPastCruise:
