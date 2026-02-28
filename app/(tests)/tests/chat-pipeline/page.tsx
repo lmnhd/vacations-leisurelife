@@ -34,6 +34,7 @@ export default function ChatPipelinePage() {
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     const [log, setLog] = useState<LogEntry[]>([]);
     const [startingContext, setStartingContext] = useState('fast_cruise_search');
+    const [model, setModel] = useState('gpt-4o-mini');
     const [input, setInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [sessionId, setSessionId] = useState(TEST_SESSION_ID);
@@ -80,7 +81,7 @@ export default function ChatPipelinePage() {
             ts: new Date().toLocaleTimeString(),
         }]);
         addLog(`Routing to /api/chat pipeline...`, 'pipeline');
-        addLog(`model: gpt-5-mini | context: ${startingContext}`, 'info');
+        addLog(`model: ${model} | context: ${startingContext}`, 'info');
 
         try {
             const res = await fetch('/api/chat', {
@@ -91,7 +92,7 @@ export default function ChatPipelinePage() {
                     sessionId,
                     userId: TEST_USER_ID,
                     channel: 'text',
-                    model: 'gpt-5-mini',
+                    model,
                     ...(startingContext ? { startingContext } : {}),
                 }),
             });
@@ -130,7 +131,7 @@ export default function ChatPipelinePage() {
             setIsProcessing(false);
             setTimeout(() => inputRef.current?.focus(), 50);
         }
-    }, [input, isProcessing, sessionId, startingContext, addLog]);
+    }, [input, isProcessing, sessionId, startingContext, model, addLog]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -205,6 +206,19 @@ export default function ChatPipelinePage() {
                                 <option value="fast_cruise_search">fast_cruise_search</option>
                                 <option value="onboarding">onboarding</option>
                                 <option value="general_chat">general_chat</option>
+                            </select>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <label className="text-[11px] text-slate-500">Model</label>
+                            <select
+                                value={model}
+                                onChange={e => setModel(e.target.value)}
+                                disabled={isProcessing}
+                                className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/40 disabled:opacity-40"
+                            >
+                                <option value="gpt-4o-mini">gpt-4o-mini (fast)</option>
+                                <option value="gpt-4o">gpt-4o (main)</option>
+                                <option value="o3-mini">o3-mini (reasoning)</option>
                             </select>
                         </div>
 
