@@ -91,17 +91,25 @@ export class OdysseusEngine {
         // Check if we are already logged in based on visible DOM elements or URL
         const currentUrl = page.url();
         if (currentUrl.includes('/login') || await page.isVisible('input[name="password"]')) {
-            console.log('======================================================');
-            console.log('ACTION REQUIRED: CBAgentTools Login Page is OPEN.');
-            console.log('1. Please log in manually in the browser window.');
-            console.log('2. Once logged in, click "Booking Engine" -> "Cruise Engine".');
-            console.log('3. Wait for the Odysseus Engine to fully load.');
-            console.log('======================================================');
+            const email = process.env.CB_EMAIL;
+            const password = process.env.CB_PASSWORD;
 
-            // Wait for the user to login manually. Timeout at 60s.
-            await page.waitForTimeout(60000);
+            if (email && password) {
+                console.log('[OdysseusEngine] Login page detected — auto-filling credentials...');
+                await page.fill('input[name="username"], input[type="email"], input[name="email"]', email);
+                await page.fill('input[name="password"]', password);
+                await page.click('button[type="submit"], input[type="submit"]');
+                await page.waitForLoadState('networkidle', { timeout: 30000 });
+                console.log('[OdysseusEngine] ✅ Auto-login complete.');
+            } else {
+                console.log('======================================================');
+                console.log('ACTION REQUIRED: CB_EMAIL / CB_PASSWORD not set in .env.local');
+                console.log('Please log in manually in the browser window.');
+                console.log('======================================================');
+                await page.waitForTimeout(60000);
+            }
 
-            // Save state so we never have to do this again
+            // Save state so future cold starts skip login
             await this.context.storageState({ path: STATE_FILE });
             console.log('[OdysseusEngine] ✅ Session state saved!');
         } else {
