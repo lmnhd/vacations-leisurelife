@@ -1,4 +1,4 @@
-import { getOdysseusSession } from '@/lib/services/odysseus/OdysseusSessionManager';
+import { getOdysseusSession, releaseOdysseusSession } from '@/lib/services/odysseus/OdysseusSessionManager';
 import type { CruiseResult, CruiseSearchCriteria } from '@/lib/services/odysseus/types';
 
 export type OdysseusSearchInput = {
@@ -65,6 +65,8 @@ export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<Ody
 
     } catch (error) {
         console.error('[odysseus-search-tool] Error:', error);
+        // Release the broken session so the next call cold-starts cleanly (avoids login page trap)
+        void releaseOdysseusSession();
         return {
             searchSummary: 'An error occurred while connecting to the live booking engine. Please try again or refine search criteria.',
             results: [],
