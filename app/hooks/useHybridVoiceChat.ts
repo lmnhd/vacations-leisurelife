@@ -104,6 +104,8 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
     const processingRef = useRef(false); // prevent concurrent pipeline calls
     const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingTranscriptRef = useRef<string>('');
 
     const runPipeline = useCallback(async (transcript: string) => {
         if (processingRef.current) return; // drop if already processing
@@ -183,11 +185,19 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                 onError: (err) => options.onError?.(err),
                 onEvent: (event) => options.onEvent?.(event),
                 onTranscriptComplete: (transcript) => {
-                    // Cancel the Realtime model's self-generated reply immediately —
-                    // the pipeline response will be injected via sendTtsText instead.
                     sessionRef.current?.cancelAutoResponse();
                     options.onTranscriptComplete?.(transcript);
-                    void runPipeline(transcript);
+                    // Debounce: accumulate rapid short bursts into one pipeline call
+                    pendingTranscriptRef.current = pendingTranscriptRef.current
+                        ? `${pendingTranscriptRef.current} ${transcript}`
+                        : transcript;
+                    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+                    debounceTimerRef.current = setTimeout(() => {
+                        const combined = pendingTranscriptRef.current;
+                        pendingTranscriptRef.current = '';
+                        debounceTimerRef.current = null;
+                        void runPipeline(combined);
+                    }, 1500);
                 },
                 // onAgentTranscript suppressed in hybrid mode via hybridMode flag below
             },
