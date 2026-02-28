@@ -41,6 +41,7 @@ export interface UseHybridVoiceChatReturn {
     startVoiceChat: () => Promise<void>;
     stopVoiceChat: () => void;
     interruptCurrentSpeech: () => void;
+    testTts: (text: string) => void;
 }
 
 export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybridVoiceChatReturn {
@@ -155,5 +156,9 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
         sessionRef.current?.sendInterrupt();
     }, []);
 
-    return { connectionState, isProcessing, startVoiceChat, stopVoiceChat, interruptCurrentSpeech };
+    const testTts = useCallback((text: string) => {
+        sessionRef.current?.sendTtsText(text);
+    }, []);
+
+    return { connectionState, isProcessing, startVoiceChat, stopVoiceChat, interruptCurrentSpeech, testTts };
 }

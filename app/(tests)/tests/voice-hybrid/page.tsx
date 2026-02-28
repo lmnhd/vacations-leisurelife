@@ -207,6 +207,17 @@ export default function VoiceHybridPage() {
                                 ✋ Interrupt
                             </button>
                         )}
+                        {voice.connectionState === 'connected' && (
+                            <button
+                                onClick={() => {
+                                    addLog('[tts:test] Firing test TTS phrase...', 'event');
+                                    voice.testTts('Hello, this is a test of the hybrid text to speech system. If you can hear this, audio playback is working correctly.');
+                                }}
+                                className="px-4 py-3 rounded-lg text-sm font-medium bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-all"
+                            >
+                                🔊 Test TTS
+                            </button>
+                        )}
                     </div>
 
                     {voice.connectionState === 'connected' && (
