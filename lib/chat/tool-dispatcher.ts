@@ -58,6 +58,7 @@ const PricingComparatorPayloadSchema = z.object({
 const VtgSearchPayloadSchema = z.object({
     cruiseLine: z.string().nullable().optional(),
     region: z.string().nullable().optional(),
+    departurePort: z.string().nullable().optional(),
     minNights: z.coerce.number().nullable().optional(),
     maxNights: z.coerce.number().nullable().optional(),
     startMonth: z.string().nullable().optional(),
@@ -462,6 +463,7 @@ export async function dispatchTools(input: {
             const vtgResult = await runVtgSearch({
                 cruiseLine: vtgPayload.cruiseLine ?? null,
                 region: vtgPayload.region ?? null,
+                departurePort: vtgPayload.departurePort ?? null,
                 minNights: vtgPayload.minNights ?? null,
                 maxNights: vtgPayload.maxNights ?? null,
                 startMonth: vtgPayload.startMonth ?? null,

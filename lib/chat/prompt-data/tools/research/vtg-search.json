@@ -13,6 +13,7 @@
     "input_schema": {
         "cruiseLine": "string | null — MUST be an exact value from cruise_line_options list (e.g. 'Norwegian', 'Royal Caribbean', 'Carnival'). Do NOT use full brand names like 'Norwegian Cruise Line' — use only the short form from the list. Use null for all lines.",
         "region": "string | null — MUST be an exact value from region_options list (e.g. 'Caribbean', 'Bahamas', 'Alaska'). Use null for all regions.",
+        "departurePort": "string | null — MUST be an exact value from departure_port_options list (e.g. 'Jacksonville, FL', 'Miami, FL', 'Port Canaveral, FL'). Use null for any port. Always set this when the user mentions a specific departure city or port.",
         "minNights": "number | null — minimum trip length in nights, or null for any",
         "maxNights": "number | null — maximum trip length in nights, or null for any",
         "startMonth": "string | null — earliest departure month in YYYYMM format (e.g. '202604'), or null for current month",
@@ -29,6 +30,13 @@
         "Caribbean", "Bahamas", "Mexico", "Bermuda", "Alaska", "Hawaii",
         "Europe", "Mediterranean", "South America", "Panama Canal",
         "Asia", "Australia", "Canada/New England", "Transatlantic"
+    ],
+    "departure_port_options": [
+        "Baltimore, MD", "Boston, MA", "Charleston, SC", "Fort Lauderdale, FL",
+        "Galveston, TX", "Jacksonville, FL", "Los Angeles, CA", "Miami, FL",
+        "Mobile, AL", "New Orleans, LA", "New York, NY", "Norfolk, VA",
+        "Philadelphia, PA", "Port Canaveral, FL", "San Diego, CA", "San Francisco, CA",
+        "Seattle, WA", "Tampa, FL", "West Palm Beach, FL"
     ],
     "output_schema": {
         "searchSummary": "string",

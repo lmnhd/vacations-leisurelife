@@ -56,14 +56,44 @@ export const VTG_REGION_CODES: Record<string, number> = {
     'Greek Islands': 37,
 };
 
+// VTG departure port codes for the `d` param — extracted from live VTG form
+export const VTG_DEPARTURE_PORT_CODES: Record<string, number> = {
+    'Amelia Island, FL': 622,
+    'Anchorage (Seward), AK': 8,
+    'Anchorage (Whittier), AK': 1090,
+    'Baltimore, MD': 362,
+    'Bayonne, NJ': 1508,
+    'Boston, MA': 35,
+    'Charleston, SC': 329,
+    'Fort Lauderdale, FL': 320,
+    'Galveston, TX': 326,
+    'Honolulu, HI': 730,
+    'Jacksonville, FL': 823,
+    'Los Angeles, CA': 2232,
+    'Miami, FL': 281,
+    'Mobile, AL': 748,
+    'New Orleans, LA': 160,
+    'New York, NY': 1509,
+    'Norfolk, VA': 473,
+    'Philadelphia, PA': 577,
+    'Port Canaveral, FL': 305,
+    'Portland, ME': 188,
+    'San Diego, CA': 207,
+    'San Francisco, CA': 325,
+    'Seattle, WA': 313,
+    'Tampa, FL': 315,
+    'West Palm Beach, FL': 604,
+};
+
 export type VtgSearchInput = {
-    cruiseLine: string | null;   // cruise line name — use VTG_CRUISE_LINE_CODES
-    region: string | null;       // destination region — use VTG_REGION_CODES
-    minNights: number | null;    // minimum nights (4, 7, 10, 14...)
-    maxNights: number | null;    // maximum nights
-    startMonth: string | null;   // YYYYMM format e.g. "202604"
-    endMonth: string | null;     // YYYYMM format e.g. "202606"
-    passengers: number;          // number of guests
+    cruiseLine: string | null;     // cruise line name — use VTG_CRUISE_LINE_CODES
+    region: string | null;         // destination region — use VTG_REGION_CODES
+    departurePort: string | null;  // departure port city — use VTG_DEPARTURE_PORT_CODES
+    minNights: number | null;      // minimum nights (4, 7, 10, 14...)
+    maxNights: number | null;      // maximum nights
+    startMonth: string | null;     // YYYYMM format e.g. "202604"
+    endMonth: string | null;       // YYYYMM format e.g. "202606"
+    passengers: number;            // number of guests
 };
 
 export type VtgDeal = {
@@ -111,8 +141,9 @@ function resolveCode(map: Record<string, number>, key: string | null): number {
 }
 
 function buildVtgUrl(input: VtgSearchInput): string {
-    const l = resolveCode(VTG_CRUISE_LINE_CODES, input.cruiseLine); // cruise line filter
-    const r = resolveCode(VTG_REGION_CODES, input.region);          // region filter
+    const l = resolveCode(VTG_CRUISE_LINE_CODES, input.cruiseLine);        // cruise line filter
+    const r = resolveCode(VTG_REGION_CODES, input.region);                // region filter
+    const d = resolveCode(VTG_DEPARTURE_PORT_CODES, input.departurePort); // departure port filter
 
     const now = new Date();
     // VTG month format: YYYYM (e.g. April 2026 = 20264, Oct 2026 = 202610)
@@ -151,7 +182,7 @@ function buildVtgUrl(input: VtgSearchInput): string {
         else nightsBucket = 1;
     }
 
-    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${nightsBucket}&d=0&v=0&rt=1`;
+    return `https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=${sm}&tm=${tm}&r=${r}&l=${l}&s=0&n=${nightsBucket}&d=${d}&v=0&rt=1`;
 }
 
 function parseDealsHtml(html: string): VtgDeal[] {
