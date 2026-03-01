@@ -124,12 +124,12 @@
               "package_builder"
             ]
           },
-          "payment_handoff": {
+          "hold_and_email": {
             "trigger": "user_selects_package",
             "instructions_ref": "skills/data-collection/pii-collection.md",
             "data_targets": [
               "travelers[0].email",
-              "financials.flex_pay_interested"
+              "travelers[0].legal_last_name"
             ]
           }
         }

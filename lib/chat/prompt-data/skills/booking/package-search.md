@@ -12,7 +12,7 @@ You are searching for the best cruise packages based on what you know about the 
 
 ## Tool Usage
 
-- Use `[Tool: perplexity_cruise_research {"query": "...", "destination": "...", "departure_month": "..."}]` for live pricing and availability research.
+- Use `[Tool: vtg_price_lookup {...}]` for fast live pricing and availability research.
 - Use `[Tool: cruise_brothers_knowledge {"query": "agent perks ..."}]` to check if Cruise Brothers Agent Perks can add value to the package.
 - Run both tools when a user is close to selecting — research + perks check together creates the best offer.
 

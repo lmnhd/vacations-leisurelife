@@ -58,6 +58,9 @@ function matchesTrigger(
         onActiveBooking?: boolean;
         completedCruise?: boolean;
         devModeActive?: boolean;
+        bookingDataComplete?: boolean;
+        searchResultsReady?: boolean;
+        userSelectsPackage?: boolean;
     }
 ): boolean {
     const normalizedTrigger = trigger.trim().replace(/\s+/g, ' ');
@@ -105,6 +108,22 @@ function matchesTrigger(
             return sessionState.devModeActive ?? false;
         }
 
+        if (atomicCondition === 'required_data_incomplete') {
+            return !(sessionState.bookingDataComplete ?? false);
+        }
+
+        if (atomicCondition === 'required_data_complete') {
+            return sessionState.bookingDataComplete ?? false;
+        }
+
+        if (atomicCondition === 'search_results_ready') {
+            return sessionState.searchResultsReady ?? false;
+        }
+
+        if (atomicCondition === 'user_selects_package') {
+            return sessionState.userSelectsPackage ?? false;
+        }
+
         return false;
     };
 
@@ -124,6 +143,9 @@ export async function resolveContext(
         onActiveBooking?: boolean;
         completedCruise?: boolean;
         devModeActive?: boolean;
+        bookingDataComplete?: boolean;
+        searchResultsReady?: boolean;
+        userSelectsPackage?: boolean;
         startingContext?: string;
     }
 ): Promise<{

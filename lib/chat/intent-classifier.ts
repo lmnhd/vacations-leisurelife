@@ -16,6 +16,10 @@ const IntentSignalSchema = z.object({
     discussesPastCruise: z.boolean(),
     onActiveBooking: z.boolean(),
     completedCruise: z.boolean(),
+    // Booking flow signals
+    bookingDataComplete: z.boolean().default(false),
+    searchResultsReady: z.boolean().default(false),
+    userSelectsPackage: z.boolean().default(false),
 });
 
 export type IntentSignal = z.infer<typeof IntentSignalSchema>;
@@ -32,7 +36,10 @@ Read the conversation below and return a JSON object with these exact fields:
   "incompleteProfile": true | false,
   "discussesPastCruise": true | false,
   "onActiveBooking": true | false,
-  "completedCruise": true | false
+  "completedCruise": true | false,
+  "bookingDataComplete": true | false,
+  "searchResultsReady": true | false,
+  "userSelectsPackage": true | false
 }
 
 Field definitions:
@@ -42,6 +49,9 @@ Field definitions:
 - discussesPastCruise: Is the user talking about a cruise they previously took?
 - onActiveBooking: Is the user asking about a booking they have already made?
 - completedCruise: Did the user recently return from a cruise?
+- bookingDataComplete: Has the user provided their name, budget, departure port, and party size?
+- searchResultsReady: Have we recently presented specific cruise packages with pricing to the user?
+- userSelectsPackage: Has the user explicitly chosen one of the presented packages to book or hold?
 
 Return ONLY the raw JSON object. No markdown, no explanation.`,
 };
@@ -55,6 +65,9 @@ export async function classifyIntent(conversationText: string): Promise<IntentSi
             discussesPastCruise: false,
             onActiveBooking: false,
             completedCruise: false,
+            bookingDataComplete: false,
+            searchResultsReady: false,
+            userSelectsPackage: false,
         };
     }
 
@@ -83,6 +96,9 @@ export async function classifyIntent(conversationText: string): Promise<IntentSi
             discussesPastCruise: false,
             onActiveBooking: false,
             completedCruise: false,
+            bookingDataComplete: false,
+            searchResultsReady: false,
+            userSelectsPackage: false,
         };
     }
 }

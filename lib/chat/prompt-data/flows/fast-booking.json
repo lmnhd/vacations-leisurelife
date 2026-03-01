@@ -22,10 +22,10 @@
       "exit_when": "user_selects_package"
     },
     {
-      "stage": "payment",
-      "context": "fast_booking.payment_handoff",
-      "goal": "Initiate payment flow",
-      "exit_when": "payment_confirmed OR payment_link_sent"
+      "stage": "hold_and_email",
+      "context": "fast_booking.hold_and_email",
+      "goal": "Place courtesy hold and email link",
+      "exit_when": "email_sent"
     }
   ]
 }

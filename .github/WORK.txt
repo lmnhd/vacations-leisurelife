@@ -1,0 +1,27 @@
+Chat Pipeline Discrepancy Report
+Based on a comprehensive audit of the pipeline, schemas, resolvers, and tool instructions, here are the core discrepancies and broken bridges currently living in the codebase.
+
+1. Unhandled Sub-Context Triggers (The "Dead End" Booking Flow)
+The fast_booking context has four sub-contexts that are meant to step the user through booking: info_collection, package_search, package_presentation, and payment_handoff.
+
+The Discrepancy: The triggers for these (required_data_incomplete, required_data_complete, search_results_ready, user_selects_package) do not exist in @c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\chat\context-resolver.ts.
+Impact: The evaluateAtomicCondition function will return false for all of them. The pipeline can never route the user into these sub-stages automatically.
+
+
+2. Shadowed Contexts (fast_cruise_search vs fast_booking)
+The Discrepancy: Both contexts share the exact same trigger in @c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\chat\prompt-data\prompt-schema.json: user_requests_specific_cruise.
+Impact: Because I just bumped fast_cruise_search to priority: 1 to fix the Perplexity bug, fast_booking (at priority: 2) is now completely shadowed. The Auto-Trigger will never enter fast_booking because the search context will always win the tie-breaker. The intent-classifier needs a way to distinguish between "I want to look for options" and "I am ready to book right now".
+
+
+3. Lingering Instructions for Missing Tools (The Perplexity Ghost)
+The Discrepancy: I removed perplexity_cruise_research from the available_tools array for the fast_booking context in prompt-schema.json. However, because I am currently in Ask mode, I could not edit the markdown files.
+Impact: @c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\chat\prompt-data\skills\booking\fast-flow.md and @c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\chat\prompt-data\skills\booking\package-search.md still explicitly command the LLM to use [Tool: perplexity_cruise_research]. If the agent ever enters this context, it will try to call a tool it no longer has access to, likely causing an error or a hallucinated tool call.
+
+
+4. Missing State Engine for required_data
+The Discrepancy: prompt-schema.json dictates that info_collection requires travelers[0].legal_first_name and financials.budget_per_person.
+Impact: There is currently no mechanism evaluating this. @c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\chat\intent-classifier.ts only extracts boolean conversational intents (hasCruised, discussesPastCruise). There is no "Profile/State Analyzer" looking at memory to see if budget is filled out in order to flip the required_data_complete trigger.
+Summary
+The system does a great job switching top-level contexts based on conversation intent. However, the multi-stage fast_booking flow is fundamentally disconnected from the code. The router lacks the logic to step through it, the triggers are unmapped, and the state required to drive it isn't being tracked.
+
+(Note: If you want me to write the code to map these triggers and fix the markdown files, just switch to Code mode and say the word!)
