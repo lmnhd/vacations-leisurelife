@@ -158,7 +158,7 @@
         ]
       },
       "fast_cruise_search": {
-        "priority": 2,
+        "priority": 1,
         "trigger": "user_requests_specific_cruise",
         "available_tools": [
           "vtg_price_lookup",
