@@ -11,9 +11,9 @@
       { "field": "guestInfo.financials.budget_per_person", "operator": "set" }
     ],
     "conversational_gates": [
-      { "must_happen_before_turn": 4, "condition": "Agent explicitly asked how many people are in the group" },
-      { "must_happen_before_turn": 8, "condition": "User mentioned the group size changed or someone new is joining" },
-      { "must_happen_before_turn": 10, "condition": "Agent confirmed or acknowledged the updated party size of 5" }
+      { "must_happen_before_turn": 5, "condition": "Agent presented at least one package recommendation" },
+      { "must_happen_before_turn": 10, "condition": "User mentioned the group size changed or someone new is joining" },
+      { "must_happen_before_turn": 12, "condition": "Agent confirmed or acknowledged the updated party size of 5" }
     ]
   }
 }

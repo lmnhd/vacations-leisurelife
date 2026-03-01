@@ -74,7 +74,7 @@
       },
       "fast_booking": {
         "priority": 2,
-        "trigger": "user_requests_specific_cruise",
+        "trigger": "user_ready_to_book",
         "instructions_ref": "skills/booking/fast-flow.md",
         "available_tools": [
           "vtg_price_lookup",

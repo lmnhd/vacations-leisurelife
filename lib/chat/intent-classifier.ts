@@ -17,6 +17,7 @@ const IntentSignalSchema = z.object({
     onActiveBooking: z.boolean(),
     completedCruise: z.boolean(),
     // Booking flow signals
+    readyToBook: z.boolean().default(false),
     bookingDataComplete: z.boolean().default(false),
     searchResultsReady: z.boolean().default(false),
     userSelectsPackage: z.boolean().default(false),
@@ -37,6 +38,7 @@ Read the conversation below and return a JSON object with these exact fields:
   "discussesPastCruise": true | false,
   "onActiveBooking": true | false,
   "completedCruise": true | false,
+  "readyToBook": true | false,
   "bookingDataComplete": true | false,
   "searchResultsReady": true | false,
   "userSelectsPackage": true | false
@@ -49,6 +51,7 @@ Field definitions:
 - discussesPastCruise: Is the user talking about a cruise they previously took?
 - onActiveBooking: Is the user asking about a booking they have already made?
 - completedCruise: Did the user recently return from a cruise?
+- readyToBook: Is the user explicitly asking to book, buy, hold, or finalize a specific cruise reservation right now? Examples: "I want to book this", "Let's go with option 2", "How do I pay?", "Yes I'm ready to proceed".
 - bookingDataComplete: Has the user provided their name, budget, departure port, and party size?
 - searchResultsReady: Have we recently presented specific cruise packages with pricing to the user?
 - userSelectsPackage: Has the user explicitly chosen one of the presented packages to book or hold?
@@ -65,6 +68,7 @@ export async function classifyIntent(conversationText: string): Promise<IntentSi
             discussesPastCruise: false,
             onActiveBooking: false,
             completedCruise: false,
+            readyToBook: false,
             bookingDataComplete: false,
             searchResultsReady: false,
             userSelectsPackage: false,
@@ -96,6 +100,7 @@ export async function classifyIntent(conversationText: string): Promise<IntentSi
             discussesPastCruise: false,
             onActiveBooking: false,
             completedCruise: false,
+            readyToBook: false,
             bookingDataComplete: false,
             searchResultsReady: false,
             userSelectsPackage: false,

@@ -86,6 +86,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         discussesPastCruise: signal.discussesPastCruise,
         onActiveBooking: signal.onActiveBooking,
         completedCruise: signal.completedCruise,
+        readyToBook: signal.readyToBook,
         bookingDataComplete: signal.bookingDataComplete,
         searchResultsReady: signal.searchResultsReady,
         userSelectsPackage: signal.userSelectsPackage,
