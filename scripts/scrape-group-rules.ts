@@ -48,17 +48,40 @@ async function run() {
     const { browser, page } = await getAuthenticatedContext();
 
     try {
-        console.log('\nNavigating to View Groups page to look for valid links...');
-        await page.goto(CB_BASE_URL + '/groups/view_groups/', { waitUntil: 'networkidle' });
+        console.log('\nScanning for Payment / Modification flow...');
+        await page.goto(CB_BASE_URL + '/groups/modification-requests/?request_type=payment', { waitUntil: 'networkidle' });
 
-        // Grab ALL links to group-related stuff
-        const links = await page.evaluate(() => {
-           const anchors = document.querySelectorAll('a');
-           return Array.from(anchors).map(a => ({ text: a.textContent?.trim(), href: a.href }));
+        // Grab any instructional text or form fields related to payments
+        const paymentText = await page.evaluate(() => {
+           const body = document.querySelector('body')?.innerText || '';
+           return body.replace(/\n\s*\n/g, '\n').substring(0, 4000);
         });
 
-        console.log('\n=== GROUP LINKS ===\n');
-        links.filter(l => l.href && l.href.includes('group') && l.text).forEach(l => console.log(l.text + ' -> ' + l.href));
+        console.log('\n=== PAYMENT MODIFICATION TEXT ===\n');
+        console.log(paymentText);
+        
+        // Let's also check if there's a specific "How to pay for groups" or "Payment Links" section
+        await page.goto(CB_BASE_URL + '/groups/view_groups/', { waitUntil: 'networkidle' });
+        
+        const bookingLinkText = await page.evaluate(() => {
+            // Find "Booking Engine Link" or similar
+            const panels = document.querySelectorAll('.card, .alert, .info-panel, td, th');
+            return Array.from(panels).map(p => p.textContent?.trim()).filter(t => t && t.toLowerCase().includes('link')).join('\n---\n');
+        });
+        
+        console.log('\n=== BOOKING LINK INFO ===\n');
+        console.log(bookingLinkText);
+        
+        // Check a specific group to see its booking link format
+        await page.goto(CB_BASE_URL + '/groups/view_group/44071/', { waitUntil: 'networkidle' });
+        
+        const groupLinks = await page.evaluate(() => {
+           const anchors = document.querySelectorAll('a');
+           return Array.from(anchors).map(a => ({ text: a.textContent?.trim(), href: a.href })).filter(a => a.text?.toLowerCase().includes('book') || a.text?.toLowerCase().includes('link'));
+        });
+        
+        console.log('\n=== SPECIFIC GROUP LINKS ===\n');
+        console.dir(groupLinks);
 
     } catch (e) {
         console.error('Extraction Error:', e);

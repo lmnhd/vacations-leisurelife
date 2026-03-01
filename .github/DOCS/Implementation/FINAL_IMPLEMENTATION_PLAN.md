@@ -1,13 +1,13 @@
-# Final Implementation Plan
+﻿# Final Implementation Plan
 
 **Project**: Leisure Life Interactive
 **Last Updated**: 2026-03-01
 
-This document outlines the final phases of implementation required to complete the Leisure Life Interactive platform, aligning with the core vision and recent architectural decisions. It also includes the newly researched 'Shadow Groups' methodology to allow rapid go-to-market testing for niche group cruise campaigns.
+This document outlines the final phases of implementation required to complete the Leisure Life Interactive platform, aligning with the core vision and recent architectural decisions. It also references the newly organized 'Shadow Groups' methodology for go-to-market testing.
 
 ---
 
-## ?? Completed Milestones (Foundation & Polish)
+## 🎯 Completed Milestones (Foundation & Polish)
 
 - **Chat System Architecture**: 10-stage pipeline, structured JSON prompt schema, and memory extraction.
 - **Hero Chat Canvas**: Split-screen UI, dynamic form injection, conversation history, and voice/text toggle readiness.
@@ -18,7 +18,7 @@ This document outlines the final phases of implementation required to complete t
 
 ---
 
-## ?? Phase 1: Voice Pipeline (Audio Layer)
+## 🚀 Phase 1: Voice Pipeline (Audio Layer)
 
 **Goal**: Bring the "Hero Chat" to life as a true multi-modal agent by integrating seamless voice capabilities.
 
@@ -29,7 +29,7 @@ This document outlines the final phases of implementation required to complete t
 
 ---
 
-## ?? Phase 2: Semantic Search (Deep Memory)
+## 🧠 Phase 2: Semantic Search (Deep Memory)
 
 **Goal**: Enable the agent to recall deep user preferences and past conversation context without bloating the standard prompt.
 
@@ -39,7 +39,7 @@ This document outlines the final phases of implementation required to complete t
 
 ---
 
-## ??? Phase 3: Image Retrieval System (Completion)
+## 🖼️ Phase 3: Image Retrieval System (Completion)
 
 **Goal**: Finalize the dynamic visual presentation for specific ships and destinations.
 
@@ -49,31 +49,19 @@ This document outlines the final phases of implementation required to complete t
 
 ---
 
-## ?? Phase 4: "Shadow Groups" & Campaign Orchestration
+## 👥 Phase 4: "Shadow Groups" & Campaign Orchestration
 
-**Goal**: Enable the rapid deployment of speculative "Group Cruise Packages" (e.g., *Cat Lover's Cruise*, *High School Grads*) to capture market interest *without* prematurely configuring them in CB Agent Tools.
+**Goal**: Enable the rapid deployment of speculative "Group Cruise Packages" (e.g., *Cat Lover's Cruise*, *High School Grads*). 
 
-### 4.1 Database Layer (Added via Prisma)
-*   **\ShadowGroupCampaign\**: Stores the metadata for theoretical groups (Title, Description, Target Dates, Min Cabins Required, Status).
-*   **\ShadowGroupSubmission\**: Stores user intent, requested cabin types, passenger counts, and Stripe Pre-Auth references.
+**Implementation Details Moved:**
+A dedicated single source of truth document has been created for the comprehensive Group Strategy. Please refer to:
+👉 **[Group Campaign Strategy](GROUP_STRATEGY/GROUP_CAMPAIGN_STRATEGY.md)**
 
-### 4.2 The "Feel It Out" Landing Page Generator
-*   **Dynamic Next.js Route**: \/campaigns/[slug]\ that pulls data from the \ShadowGroupCampaign\ database.
-*   **UI/UX**: Needs to display the themed intent (Cat Lovers), target dates/destinations, an AI-generated itinerary proposal, and a clear "Pre-Register Your Interest" call-to-action indicating that *no charges are finalized until the group thresholds are met.*
-
-### 4.3 Stripe Pre-Authorization Flow
-Because CB group policies warn against floating unauthorized inventory, we will hold user intent financially *off-platform*:
-*   **Capture Stripe \SetupIntent\**: Instead of charging a deposit, the system captures a card for future use if the campaign reaches the "Active" threshold.
-*   **Authorization Thresholds**: Set a 7-day Stripe authorization window. If the \ShadowGroupCampaign\ doesn't meet the \minCabinsRequired\, let the authorizations drop safely.
-
-### 4.4 Automated CBAgentTools Synchronization 
-*   **The Threshold Trigger**: Once \ShadowGroupCampaign.status\ hits \MET_THRESHOLD\, an automated admin alert goes out.
-*   **Sync to CB**: Using the \cruise-groups-manager\ Playwright tool, populate the Formstack registration at \https://www.cbagenttools.com/groups/build/\ and lock in the real CB Group ID.
-*   **Capture Payments**: Call Stripe to capture the Authorized deposit intents and map them as a "Modification Request -> Payment" in CB Agent Tools.
+*Note: This specific strategy relies on a modernized DynamoDB approach to capture and measure market interest via an interest-only waitlist system—without prematurely collecting deposits or configuring un-proven groups in CB Agent Tools. It completely replaces any prior Stripe/Prisma pre-authorization models.*
 
 ---
 
-## ?? Phase 5: Final Booking & Email Handoff
+## ✉️ Phase 5: Final Booking & Email Handoff
 
 **Goal**: Execute reservations and hand off payment processing for standard FIT (Foreign Independent Tour) bookings to Cruise Brothers.
 
@@ -83,7 +71,7 @@ Because CB group policies warn against floating unauthorized inventory, we will 
 
 ---
 
-## ? Phase 6: Vision "Must Haves" & Polish
+## ✨ Phase 6: Vision "Must Haves" & Polish
 
 *   **ID Scanning**: Use document intelligence to scan passports/licenses during the Pre-Registration stages.
 *   **Thoughts Widget**: Stream the AI's internal thought process.
