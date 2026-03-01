@@ -77,7 +77,8 @@
         "trigger": "user_requests_specific_cruise",
         "instructions_ref": "skills/booking/fast-flow.md",
         "available_tools": [
-          "perplexity_cruise_research",
+          "vtg_price_lookup",
+          "odysseus_search",
           "cruise_brothers_knowledge",
           "cruise_brothers_scraper"
         ],
@@ -100,12 +101,12 @@
             "trigger": "required_data_complete",
             "instructions_ref": "skills/booking/package-search.md",
             "available_tools": [
-              "perplexity_cruise_research",
+              "vtg_price_lookup",
+              "odysseus_search",
               "cruise_brothers_knowledge",
               "excursion_finder",
               "cruise_brothers_scraper",
               "pricing_comparator",
-              "odysseus_search",
               "cruise_groups_manager"
             ],
             "data_targets": [
@@ -116,7 +117,8 @@
             "trigger": "search_results_ready",
             "instructions_ref": "skills/booking/package-presentation.md",
             "available_tools": [
-              "perplexity_cruise_research",
+              "vtg_price_lookup",
+              "odysseus_search",
               "cruise_brothers_knowledge",
               "pricing_comparator",
               "package_builder"
