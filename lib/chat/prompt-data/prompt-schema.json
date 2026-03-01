@@ -169,7 +169,8 @@
           "perplexity_cruise_research",
           "cruise_brothers_knowledge",
           "excursion_finder",
-          "cruise_brothers_scraper"
+          "cruise_brothers_scraper",
+          "social_media_insights"
         ],
         "instructions_ref": "skills/fast-cruise-search.md",
         "instructions": []
