@@ -270,6 +270,61 @@ model OdysseusPackage {
   @@index([odyPackageId])
 }
 
+// ----------------------------------------------------------------------// SHADOW GROUPS (CAMPAIGNS) MODELS
 // ----------------------------------------------------------------------
-// AI AGENT TOOL CACHING
+
+/// Represents a speculative Group Cruise Campaign that collects interest
+/// before being formalized in CB Agent Tools.
+model ShadowGroupCampaign {
+  id             String   @id @default(cuid())
+  themeName      String   // e.g., "Cat Lover's Cruise"
+  slug           String   @unique // URL-friendly string for the landing page
+  description    String   @db.Text
+  targetSailDate DateTime?
+  targetDestination String?
+  shipHint       String?  // Optional proposed ship
+  minCabinsRequired Int   @default(8) // Threshold to become a real group
+  status         String   @default("DRAFT") // DRAFT, ACTIVE, MET_THRESHOLD, CANCELLED, CONVERTED
+  
+  // CB-specific mapping if converted
+  cbGroupId      String?  
+  
+  submissions    ShadowGroupSubmission[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+}
+
+/// Represents a user's pre-registration/intent for a Shadow Group Campaign.
+/// Includes the Stripe SetupIntent ID for the refundable hold.
+model ShadowGroupSubmission {
+  id                String   @id @default(cuid())
+  campaignId        String
+  campaign          ShadowGroupCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  primaryFirstName  String
+  primaryLastName   String
+  email             String
+  phone             String?
+  
+  numGuests         Int      @default(2)
+  preferredCabinType String  // e.g., "Balcony", "Interior"
+  
+  // Payment info for the hold
+  stripeCustomerId  String?
+  setupIntentId     String?  // The ID of the stripe pre-auth hold
+  depositAmount     Int      // Amount held in cents
+  
+  status            String   @default("PENDING") // PENDING, AUTHORIZED, CAPTURED, RELEASED
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([campaignId])
+  @@index([email])
+}
+
+// ----------------------------------------------------------------------       // AI AGENT TOOL CACHING
 // AgentToolCache migrated to DynamoDB (table: AgentToolCache, PK: toolId, SK: payloadHash)
