@@ -58,6 +58,7 @@ function matchesTrigger(
         onActiveBooking?: boolean;
         completedCruise?: boolean;
         devModeActive?: boolean;
+        readyToBook?: boolean;
         bookingDataComplete?: boolean;
         searchResultsReady?: boolean;
         userSelectsPackage?: boolean;
@@ -82,6 +83,10 @@ function matchesTrigger(
 
         if (atomicCondition === 'user_requests_specific_cruise') {
             return sessionState.requestedSpecificCruise;
+        }
+
+        if (atomicCondition === 'user_ready_to_book') {
+            return sessionState.readyToBook ?? false;
         }
 
         if (atomicCondition === 'user_has_cruised == true') {
@@ -143,6 +148,7 @@ export async function resolveContext(
         onActiveBooking?: boolean;
         completedCruise?: boolean;
         devModeActive?: boolean;
+        readyToBook?: boolean;
         bookingDataComplete?: boolean;
         searchResultsReady?: boolean;
         userSelectsPackage?: boolean;

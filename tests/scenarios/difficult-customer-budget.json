@@ -10,8 +10,9 @@
       { "field": "guestInfo.group.total_travelers", "operator": "==", "value": 2 }
     ],
     "conversational_gates": [
-      { "must_happen_before_turn": 10, "condition": "Agent captured past cruise experience from user" },
-      { "must_happen_before_turn": 15, "condition": "Agent addressed budget concern diplomatically" }
+      { "must_happen_before_turn": 5, "condition": "Agent presented a Mediterranean cruise package" },
+      { "must_happen_before_turn": 8, "condition": "Agent addressed budget concern diplomatically" },
+      { "must_happen_before_turn": 15, "condition": "Agent checked for deals or perks to lower the cost" }
     ]
   }
 }

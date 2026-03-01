@@ -11,9 +11,9 @@
       { "field": "guestInfo.financials.budget_per_person", "operator": "set" }
     ],
     "conversational_gates": [
-      { "must_happen_before_turn": 5, "condition": "Agent asked about travel history or past vacations" },
-      { "must_happen_before_turn": 8, "condition": "Party size or number of travelers has been mentioned in the conversation" },
-      { "must_happen_before_turn": 12, "condition": "Agent presented at least one package recommendation" }
+      { "must_happen_before_turn": 6, "condition": "Agent presented at least one package recommendation" },
+      { "must_happen_before_turn": 10, "condition": "Party size or number of travelers has been mentioned in the conversation" },
+      { "must_happen_before_turn": 15, "condition": "Agent acknowledged the peanut allergy" }
     ]
   }
 }
