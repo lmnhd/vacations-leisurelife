@@ -4,18 +4,27 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { Campaign } from '@/lib/campaigns/types';
 
 export default function DiscoveryTestPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [blueprints, setBlueprints] = useState<Campaign[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [skippedCount, setSkippedCount] = useState(0);
 
     const handleGenerate = async () => {
+        const confirmed = window.confirm(
+            'This will make 2× Sonar Deep Research calls + 1× GPT-5-mini call.\n\n' +
+            'Estimated cost: ~$1.60 – $2.00\n\n' +
+            'Continue?'
+        );
+        if (!confirmed) return;
+
         setIsLoading(true);
         setError(null);
         setBlueprints([]);
+        setSkippedCount(0);
 
         try {
             const res = await fetch('/api/groups/discovery');
@@ -23,6 +32,7 @@ export default function DiscoveryTestPage() {
 
             if (data.success && data.blueprints) {
                 setBlueprints(data.blueprints);
+                setSkippedCount(data.skippedCount ?? 0);
             } else {
                 setError(data.error || 'Failed to fetch blueprints');
             }
@@ -33,6 +43,14 @@ export default function DiscoveryTestPage() {
         }
     };
 
+    const handleClear = () => {
+        setBlueprints([]);
+        setError(null);
+        setSkippedCount(0);
+    };
+
+    const hasResults = blueprints.length > 0;
+
     return (
         <div className="container mx-auto py-10 max-w-7xl">
             <div className="mb-8 flex items-center justify-between">
@@ -42,17 +60,33 @@ export default function DiscoveryTestPage() {
                         Execute the Sonar Deep Research pipeline to generate 5 vetted Theme Cruise Blueprints.
                     </p>
                 </div>
-                <Button onClick={handleGenerate} disabled={isLoading} size="lg">
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Researching... (Takes ~2-3 mins)
-                        </>
-                    ) : (
-                        "Generate Blueprints"
+                <div className="flex gap-2">
+                    {hasResults && (
+                        <Button onClick={handleClear} variant="outline" size="lg">
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Clear &amp; Reset
+                        </Button>
                     )}
-                </Button>
+                    <Button onClick={handleGenerate} disabled={isLoading || hasResults} size="lg">
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Researching... (Takes ~2-3 mins)
+                            </>
+                        ) : hasResults ? (
+                            "Results Loaded"
+                        ) : (
+                            "Generate Blueprints"
+                        )}
+                    </Button>
+                </div>
             </div>
+
+            {skippedCount > 0 && (
+                <div className="bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 p-4 rounded-md mb-4 text-sm">
+                    ⚠️ {skippedCount} blueprint(s) already existed in DynamoDB and were skipped.
+                </div>
+            )}
 
             {error && (
                 <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-8">
@@ -108,7 +142,7 @@ export default function DiscoveryTestPage() {
 
             {!isLoading && blueprints.length === 0 && !error && (
                 <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-lg">
-                    Click "Generate Blueprints" to begin the deep research process.
+                    Click &quot;Generate Blueprints&quot; to begin the deep research process.
                 </div>
             )}
         </div>

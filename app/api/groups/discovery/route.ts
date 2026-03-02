@@ -6,12 +6,13 @@ export const maxDuration = 300; // Allow 5 minutes for deep research and LLM pro
 export async function GET() {
     try {
         console.log('[API] Starting GET /api/groups/discovery');
-        const blueprints = await runGroupDiscoveryPipeline();
+        const { campaigns, skippedCount } = await runGroupDiscoveryPipeline();
 
         return NextResponse.json({
             success: true,
-            count: blueprints.length,
-            blueprints,
+            count: campaigns.length,
+            skippedCount,
+            blueprints: campaigns,
         });
     } catch (error) {
         console.error('[API] Error in GET /api/groups/discovery:', error);

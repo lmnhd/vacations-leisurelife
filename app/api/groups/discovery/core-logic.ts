@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { Campaign } from '@/lib/campaigns/types';
-import { saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { saveCampaignBlueprint, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 
 const PerplexityResponseSchema = z.object({
     choices: z.array(
@@ -67,7 +67,12 @@ const ThemeBlueprintSchema = z.object({
     })).length(5, "Must provide exactly 5 blueprints")
 });
 
-export async function runGroupDiscoveryPipeline(): Promise<Campaign[]> {
+interface DiscoveryPipelineResult {
+    campaigns: Campaign[];
+    skippedCount: number;
+}
+
+export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResult> {
     console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
     const psychographicPrompt = `
 Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate.
@@ -97,7 +102,7 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
         `.trim(),
     });
 
-    console.log('[runGroupDiscoveryPipeline] Step 4: Saving Blueprints to DynamoDB');
+    console.log('[runGroupDiscoveryPipeline] Step 4: Saving Blueprints to DynamoDB (with idempotency check)');
     const campaigns: Campaign[] = object.blueprints.map(bp => {
         const now = new Date().toISOString();
         return {
@@ -120,9 +125,16 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
         } as Campaign;
     });
 
+    let skippedCount = 0;
     for (const campaign of campaigns) {
+        const existing = await getCampaignBlueprint(campaign.id);
+        if (existing) {
+            console.warn(`[runGroupDiscoveryPipeline] Campaign "${campaign.id}" already exists — skipping.`);
+            skippedCount++;
+            continue;
+        }
         await saveCampaignBlueprint(campaign);
     }
 
-    return campaigns;
+    return { campaigns, skippedCount };
 }
