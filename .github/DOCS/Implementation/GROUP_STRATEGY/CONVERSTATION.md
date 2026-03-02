@@ -311,6 +311,7 @@ Clean Handoff: By using the cbagenttools direct link, you stay compliant with "S
 
 Would you like me to help you draft the specific DynamoDB schema for the proposedEvents voting system to make it interactive?
 
+##
 You said
 What is missing from this is the actual 'MARKETING AND PROMOTION' technical aspects. This is what I am mostly uncertain about!
 
@@ -381,3 +382,19 @@ Traffic	Meta Ads + Google Intent	Target the niche, not the "Traveler."
 Data Bridge	AWS Lambda / Zapier	Move leads from Ads → DynamoDB.
 Automation	Klaviyo / Twilio	Nurture the lead until the threshold hits.
 Attribution	Meta CAPI	Ensure your ad spend isn't being wasted by privacy blockers.
+
+
+
+
+## CAMPAIGN DISCOVERY AND RESEARCH
+
+1. The Perplexity "Trend-Mining" StrategyPerplexity’s "Pro" or "Deep Research" modes are essential here because they can crawl live sentiment from Reddit, Discord summaries, and niche blogs in real-time.Step A: The "Psychographic" Discovery PromptRun this in Perplexity to find "Viral" hooks that aren't yet on the cruise industry's radar:"Analyze Reddit (r/travel, r/niche_hobbies), TikTok trends, and Discord community growth for 2026. Identify 5 high-engagement niche subcultures that are currently discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Filter for communities with a high 'willingness to spend' and a specific aesthetic (e.g., Solar-punk, Dark Academia, Biohacking). Which of these would benefit most from a 4-day 'controlled environment' like a cruise?"Step B: The "Aesthetic Gap" AnalysisOnce you have a theme (e.g., "Biohacking & Longevity"), use Perplexity to find the specific "Edge":"What are the most requested amenities for a 'Biohacking' retreat in 2026? Look for mentions of red-light therapy, cold plunges, glucose monitoring, and 'blue zone' diets. Now, find which Cruise Lines (specifically on newer ships like Celebrity Beyond or Virgin Voyages) already have the infrastructure to support these without a full-scale renovation."2. Envisioning: The "Viral-Quality" Theme ExamplesBased on current 2026 trends (Adult-only surges, Private Islands as the "Main Event," and Nostalgia), here are three viral-ready "Shadow" concepts:Theme NameThe "Viral" Hook (The Why)The "Shadow" Itinerary Vision"The Deep Work" VoyageFor Founders/Devs. 100% Starlink-guaranteed. Sea days are for "Deep Work" sprints; Port days are for "Mastermind" hikes.Ship: Virgin Voyages (Adults only). Activity: Morning focus blocks + evening "Founder Fails" beach bonfire at Bimini."The Y2K Analog" CruiseTargets 30-somethings. No Wi-Fi allowed in the private lounge. GameBoys, vinyl listening sessions, and 35mm film photography.Ship: Royal Caribbean (Utopia/Icon class). Activity: "Crystal Clear" purple tech mixers + retro-gaming tournaments on the big screen."Solar-punk & Sustainability"Targets eco-conscious Gen Z/Millennials. Focus on LNG-powered ships and shore excursions that support local reefs.Ship: MSC World Europa (or similar LNG vessels). Activity: Reef restoration workshops + "Farm-to-Sea" curated dining.3. Logistical Design: Building the "Aspirational Pitch"Once the theme is chosen, you use your AI Stack to build the content that will populate your landing page.A. Itinerary Synthesis (API Grounding)Use a tool like Mindtrip or Gemini (with Flights/Hotels extensions) to pull real-world retail pricing for the proposed dates.Goal: You need a "Price Starting At" number that is accurate to the retail market, even though you haven't booked the group yet.Instruction: "Generate a 4-day Bahamas itinerary for Nov 2026. Average the current retail price for a Balcony cabin on Royal Caribbean vs. Celebrity. Add a 15% 'Theme Fee' for the exclusive events."B. The "Vibe" Visuals (Midjourney + ElevenLabs)Midjourney: Generate 4-5 images that define the "Aesthetic." If it's the Analog Cruise, generate "A 90s transparent tech aesthetic on a futuristic cruise ship deck, sunset lighting, high resolution."ElevenLabs: Create a 30-second "Audio Pitch" for your landing page. "Imagine a world where the only thing that matters is the high score and the horizon..."4. Connection to Digital Campaign PhaseThe output of this "Brainstorming" session must be a Config Object that your code can read to generate the landing page automatically.Example campaign-config.json:JSON{
+  "slug": "analog-voyage-2026",
+  "themeName": "The Analog Voyage",
+  "aesthetic": "Retro-Future / Y2K",
+  "minCabins": 8,
+  "startingPrice": 899,
+  "highlightEvents": ["GameBoy Link-Cable Tourney", "Vinyl & Sunset Mixer"],
+  "targetingKeywords": ["GameBoy", "Vinyl Records", "Digital Detox", "Analog Photography"]
+}
+Would you like me to use Perplexity right now to generate a list of the top 3 "Viral" cruise niches for Jacksonville-based departures (e.g., Port Canaveral) for late 2026?

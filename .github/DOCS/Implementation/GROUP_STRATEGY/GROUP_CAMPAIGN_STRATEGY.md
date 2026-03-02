@@ -133,3 +133,94 @@ Since you are a music producer, you can create high-end Audio-Visual Assets that
 
 *   **Audio:** Use ElevenLabs to clone a "Hype-Man" voice for your video ads.
 *   **Visuals:** Use HeyGen to create an AI avatar of a "Retro Specialist" who speaks directly to the camera about the cruise.
+
+---
+
+## 6. Campaign Discovery & Research
+
+*This phase happens **before** a campaign slug is created. The goal is to identify which themed niches are viable, aspirationally price them using real inventory data, and produce the `campaign-config` object that auto-generates the landing page.*
+
+### 6.1 Phase A: Psychographic Trend-Mining
+
+The objective is to find high-intent niche subcultures *before* they hit the mainstream cruise industry's radar.
+
+**The "Psychographic Discovery" Prompt**
+Run this prompt through the internal AI chat pipeline (`/api/chat`) or a dedicated research agent session:
+
+> *"Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate."*
+
+**The "Aesthetic Gap" Follow-Up**
+Once a theme candidate emerges, drill into cruise-side feasibility:
+
+> *"For a [THEME] retreat, what onboard amenities are most requested? Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement."*
+
+This produces a shortlist of 2–3 **viable ship/theme pairings** before any inventory is touched.
+
+---
+
+### 6.2 Phase B: Real-World Pricing via Internal Scrapers
+
+Generic tools like Mindtrip or Gemini web extensions are **not used here**. Pricing must be grounded in the actual inventory sources this platform already integrates with.
+
+**Primary Pricing Source: `vtgSearch` API**
+The existing `/api/vtgSearch` route queries the VTG (Vacations To Go) retail engine for live sailing data. Use it to pull real `startingPrice` benchmarks for the proposed itinerary and date range.
+
+*Example query pattern:*
+```
+GET /api/vtgSearch?destination=bahamas&duration=4&departureMonth=2026-11
+```
+Extract the median Balcony cabin price across 2–3 cruise lines for the target window. This becomes the campaign's `startingPrice` baseline.
+
+**Secondary Source: CB Agent Tools Scrapers**
+The scripts in `/scripts/` contain purpose-built CB scrapers. Run the relevant ones to cross-validate:
+
+*   **`scrape-cb-deals.ts`** — Pulls current promotional fares from CB's deals engine. Use this to find if the target sailing has any group-eligible pricing windows.
+*   **`scrape-group-info.ts`** — Retrieves the current group block rules and minimum cabin counts for the target cruise line and ship class.
+*   **`scrape-group-rules.ts`** — Confirms the tour-conductor credit threshold and any blackout date restrictions.
+
+**Pricing Formula:**
+```
+startingPrice = (vtgSearch median Balcony price) × 1.15  // +15% Theme Fee
+```
+The 15% buffer covers the aspirational "exclusive event" component (tournament prize pools, private venue buyouts, branded materials) and protects the margin before the group rate is locked.
+
+---
+
+### 6.3 Phase C: "Vibe" Asset Generation
+
+Once pricing and ship/theme pairing are confirmed, generate the visual and audio assets for the landing page.
+
+**Visuals (Midjourney)**
+Generate 4–5 images that define the campaign aesthetic. Be hyper-specific to avoid generic cruise imagery:
+> *"A [THEME AESTHETIC] scene on a modern cruise ship deck at golden hour, [specific prop/mood], high-resolution editorial photography style."*
+
+**Audio Pitch (ElevenLabs)**
+Create a 30-second ambient narration clip for the landing page hero. Keep it aspirational and identity-driven, not transactional:
+> *"Imagine a week where the only thing that matters is [core theme value] and the horizon..."*
+
+**Video (HeyGen — Optional)**
+For high-priority campaigns, generate a 60-second "Virtual Host" video. The host explains the Shadow Group concept in niche-native language: *"We are gathering [N] more [identity label] to unlock this exclusive sailing — join the waitlist to make it happen."*
+
+---
+
+### 6.4 Phase D: The Campaign Config Object
+
+The output of this entire discovery phase is a single typed config object that the campaign generator reads to auto-build the `/campaigns/[slug]` landing page and seed the DynamoDB `METADATA` record.
+
+```json
+{
+  "slug": "analog-voyage-2026",
+  "themeName": "The Analog Voyage",
+  "aesthetic": "Retro-Future / Y2K",
+  "targetDates": "November 2026",
+  "minCabins": 8,
+  "startingPrice": 1034,
+  "priceSource": "vtgSearch + scrape-cb-deals",
+  "shipTarget": "Royal Caribbean — Icon Class",
+  "highlightEvents": ["GameBoy Link-Cable Tourney", "Vinyl & Sunset Mixer", "35mm Film Walk Ashore"],
+  "targetingKeywords": ["GameBoy", "Vinyl Records", "Digital Detox", "Analog Photography"],
+  "status": "DRAFT"
+}
+```
+
+This object is the handoff artifact from the Discovery phase to the Build phase. It is committed to the campaign's DynamoDB `METADATA` record as the initial `DRAFT` entry before any waitlist traffic is routed.
