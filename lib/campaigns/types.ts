@@ -25,6 +25,12 @@ export interface Campaign {
     description: string;
 
     /**
+     * The aesthetic or vibe of the campaign.
+     * e.g. 'Retro-Future / Y2K'
+     */
+    aesthetic?: string;
+
+    /**
      * Planned departure dates for the cruise.
      */
     targetDates: string;
@@ -32,7 +38,32 @@ export interface Campaign {
     /**
      * Expected ship or destination.
      */
-    targetDestination: string;
+    targetDestination?: string;
+    
+    /**
+     * Target cruise line or ship class
+     */
+    shipTarget?: string;
+
+    /**
+     * Highlight events or suggested activities for the group
+     */
+    highlightEvents?: string[];
+
+    /**
+     * Targeting keywords for programmatic contextual ads
+     */
+    targetingKeywords?: string[];
+
+    /**
+     * Estimated starting price from VTG median pricing + 15% buffer
+     */
+    startingPrice?: number;
+
+    /**
+     * Where the starting price data was sourced from
+     */
+    priceSource?: string;
 
     /**
      * Number of standard double-occupancy cabins required to form an official 'Group' in CB.

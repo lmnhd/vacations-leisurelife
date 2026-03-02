@@ -1,11 +1,29 @@
 import OpenAI from 'openai';
 import type { ChatMessage } from './types';
+import { generateObject } from 'ai';
+import { openai as vercelOpenAI } from '@ai-sdk/openai';
+import { z } from 'zod';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
-export const MODEL_MAIN = 'gpt-4o';            // primary reasoning model
-export const MODEL_FAST = 'gpt-4o-mini';       // lightweight tasks: classifier, summarizer
+export const MODEL_MAIN = 'gpt-5';            // primary reasoning model
+export const MODEL_FAST = 'gpt-5-mini';       // lightweight tasks: classifier, summarizer
 export const MODEL_VOICE = 'o3-mini';          // voice pipeline
+
+export async function callGlobalGenerateObject<T>(options: {
+    system?: string;
+    prompt: string;
+    schema: z.ZodSchema<T>;
+    modelName?: string;
+}) {
+    const model = vercelOpenAI(options.modelName || MODEL_FAST);
+    return generateObject({
+        model,
+        schema: options.schema,
+        system: options.system,
+        prompt: options.prompt,
+    });
+}
 
 function tokenParam(model: string, count: number): Record<string, number> {
     return COMPLETION_TOKENS_MODELS.some((m) => model.startsWith(m))
