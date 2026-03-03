@@ -52,7 +52,41 @@ All initialization infrastructure for the "Shadow Group" campaign system is buil
 
 ---
 
-## 🔜 Phase 2: Campaign Build — NOT STARTED
+## 🔜 Phase 2: Digital Promotion Stack — **NEXT PRIORITY**
+
+*Runs in parallel to landing page build. Goal: drive external traffic into `/campaigns/[slug]` waitlist before threshold is hit.*
+
+### 2A. Top-of-Funnel — Traffic Generation
+- [ ] **Google Custom Intent Audiences** — target niche search terms (e.g. "analog pocket restock", "best handheld emulator 2026"), force placement onto specific YouTube channels/blogs (Retro RGB, Digital Foundry)
+- [ ] **Meta Lead Form Ads + Webhook** — Facebook Lead Ad auto-fills email on click → AWS Lambda/Zapier webhook writes directly to DynamoDB `lll-shadow-campaigns` as a `USER#` record — bypasses landing page load latency (+40% conversion)
+
+### 2B. Lead Nurture — Moving to Threshold
+- [ ] **Klaviyo / Beehiiv Email Sequence** (3-part, auto-triggered on waitlist join):
+  - T+0: *"You're on the list. We need X more cabins."*
+  - T+3d: *"Vote on the itinerary!"* → `UpdateItem` call to `proposedEvents` in DynamoDB
+  - T+7d: *"We just hit Y cabins! Only Z more to go."* (live count from DynamoDB)
+- [ ] **Twilio SMS** — fires only on `THRESHOLD_MET` status change with the CB booking link. SMS for action, email for nurture.
+
+### 2C. Privacy-First Attribution
+- [ ] **Meta Conversions API (CAPI)** — server-side event ping from the DynamoDB write Lambda → Facebook. Ensures 100% attribution accuracy despite browser privacy blockers. Critical for ad spend optimization.
+
+### 2D. Synthetic Influencer Assets
+- [ ] **Midjourney** — 4–5 hyper-specific aesthetic images per campaign (not generic cruise stock art)
+- [ ] **ElevenLabs** — 30-second ambient audio pitch for landing page hero (`"Imagine a world where the only metric is the high score and the horizon..."`)
+- [ ] **HeyGen** — optional 60-second "Virtual Cruise Director" avatar video per high-priority campaign explaining the Shadow Group concept in niche-native language
+- [ ] **Original music** — 8-bit or hybrid background track for ads (copyright-safe, stand-out)
+
+### 2E. Landing Page Engagement Mechanics (feeds nurture loop)
+- [ ] **Live "Hype" Counter** — real-time DynamoDB read: *"5 of 8 cabins pledged. 3 more to lock in the group rate!"*
+- [ ] **Proposed Events Leaderboard** — surface top-voted `proposedEvents` from waitlist entries to make early registrants feel like co-creators
+- [ ] **Interactive "Vibe Quiz"** — lightweight React quiz (e.g. *"Which Caribbean island matches your vibe?"*) populates `proposedEvents` via email capture — higher conversion than a bare waitlist form
+
+### Reference
+Detailed strategy in: [GROUP_CAMPAIGN_STRATEGY.md §5](./GROUP_CAMPAIGN_STRATEGY.md) · [CONVERSTATION.md](./CONVERSTATION.md)
+
+---
+
+## 🔜 Phase 3: Campaign Build — NOT STARTED
 
 *Converts a `DRAFT` campaign into an active `GATHERING_INTEREST` landing page.*
 
