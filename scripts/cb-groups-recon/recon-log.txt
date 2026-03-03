@@ -1,0 +1,258 @@
+[2026-03-03T01:21:18.598Z] Navigating to CB Agent Tools login...
+[2026-03-03T01:21:21.226Z] Screenshot: 01-landing.png
+[2026-03-03T01:21:21.227Z] Filling credentials...
+[2026-03-03T01:21:51.618Z] Screenshot: ERROR-state.png
+[2026-03-03T01:22:41.996Z] Navigating to CB Agent Tools...
+[2026-03-03T01:22:43.095Z] URL after /login: https://www.cbagenttools.com/login
+[2026-03-03T01:22:43.128Z] No inputs on /login — trying root URL...
+[2026-03-03T01:22:46.944Z] Pre-fill URL: https://www.cbagenttools.com/accounts/login/?next=/bookings/home/
+[2026-03-03T01:22:47.015Z] Screenshot: 01-landing.png
+[2026-03-03T01:22:47.022Z] Landing page HTML saved. Scanning for input fields...
+[2026-03-03T01:22:47.027Z] Found 4 input fields on landing page:
+[2026-03-03T01:22:47.059Z]   input: type=hidden name=csrfmiddlewaretoken id= placeholder=
+[2026-03-03T01:22:47.071Z]   input: type=hidden name=next id=next placeholder=
+[2026-03-03T01:22:47.083Z]   input: type=text name=username id=username placeholder=username ** case sensitive **
+[2026-03-03T01:22:47.095Z]   input: type=password name=password id=password placeholder=password
+[2026-03-03T01:22:47.099Z] Found 1 buttons:
+[2026-03-03T01:22:47.116Z]   button: text="Submit" type=submit id=
+[2026-03-03T01:22:47.117Z] Filling credentials...
+[2026-03-03T01:22:57.437Z] Standard email selector failed — trying first visible text input...
+[2026-03-03T01:22:58.141Z] Screenshot: 02-credentials-filled.png
+[2026-03-03T01:23:02.408Z] Screenshot: 03-post-login.png
+[2026-03-03T01:23:02.409Z] Post-login URL: https://www.cbagenttools.com/bookings/home/
+[2026-03-03T01:23:02.409Z] Looking for Groups nav link...
+[2026-03-03T01:23:02.578Z] Screenshot: ERROR-state.png
+[2026-03-03T01:23:45.976Z] Navigating to CB Agent Tools...
+[2026-03-03T01:23:47.114Z] URL after /login: https://www.cbagenttools.com/login
+[2026-03-03T01:23:47.147Z] No inputs on /login — trying root URL...
+[2026-03-03T01:23:49.979Z] Pre-fill URL: https://www.cbagenttools.com/accounts/login/?next=/bookings/home/
+[2026-03-03T01:23:50.048Z] Screenshot: 01-landing.png
+[2026-03-03T01:23:50.054Z] Landing page HTML saved. Scanning for input fields...
+[2026-03-03T01:23:50.059Z] Found 4 input fields on landing page:
+[2026-03-03T01:23:50.098Z]   input: type=hidden name=csrfmiddlewaretoken id= placeholder=
+[2026-03-03T01:23:50.113Z]   input: type=hidden name=next id=next placeholder=
+[2026-03-03T01:23:50.125Z]   input: type=text name=username id=username placeholder=username ** case sensitive **
+[2026-03-03T01:23:50.137Z]   input: type=password name=password id=password placeholder=password
+[2026-03-03T01:23:50.142Z] Found 1 buttons:
+[2026-03-03T01:23:50.160Z]   button: text="Submit" type=submit id=
+[2026-03-03T01:23:50.161Z] Filling credentials...
+[2026-03-03T01:23:50.895Z] Screenshot: 02-credentials-filled.png
+[2026-03-03T01:23:54.406Z] Screenshot: 03-post-login.png
+[2026-03-03T01:23:54.407Z] Post-login URL: https://www.cbagenttools.com/bookings/home/
+[2026-03-03T01:23:54.410Z] Found 79 links on authenticated home page:
+[2026-03-03T01:23:54.417Z]   link: "" -> /bookings/home/
+[2026-03-03T01:23:54.426Z]   link: "Trips" -> #
+[2026-03-03T01:23:54.432Z]   link: "Search All Trips" -> /bookings/search_trip/?checkbox=on&start_date_departed=2025-11-02
+[2026-03-03T01:23:54.440Z]   link: "Quick Search" -> null
+[2026-03-03T01:23:54.445Z]   link: "Add Reservation" -> /bookings/input_reservation/contact/
+[2026-03-03T01:23:54.451Z]   link: "Reports" -> /bookings/reports_home/
+[2026-03-03T01:23:54.460Z]   link: "Modification Requests" -> /groups/modification-requests/
+[2026-03-03T01:23:54.467Z]   link: "Payments" -> /groups/modification-requests/?request_type=payment
+[2026-03-03T01:23:54.476Z]   link: "Booking Engine" -> #
+[2026-03-03T01:23:54.482Z]   link: "Cruise Engine" -> /bookings/odysseus/booking/
+[2026-03-03T01:23:54.491Z]   link: "Cruise Engine Admin" -> /bookings/odysseus/admin/
+[2026-03-03T01:23:54.498Z]   link: "Hotels" -> https://www.expediataap.com/TAAP-Agent?key=48bb861d-2847-46f3-beaa-8fa4596f1503
+[2026-03-03T01:23:54.506Z]   link: "Commissions" -> #
+[2026-03-03T01:23:54.512Z]   link: "Commission Dashboard" -> /accounting/commission_home/23379/
+[2026-03-03T01:23:54.520Z]   link: "Commission Status Report" -> /accounting/agentcommissions/
+[2026-03-03T01:23:54.527Z]   link: "Pending Commissions" -> /accounting/commissions/?searchType=pending&name=23379&fullname=Nathaniel Orange Jr.
+[2026-03-03T01:23:54.532Z]   link: "Commission Payments" -> /accounting/commissions/?name=23379&fullname=Nathaniel Orange Jr.
+[2026-03-03T01:23:54.541Z]   link: "Groups" -> #
+[2026-03-03T01:23:54.546Z]   link: "View All Groups" -> /groups/view_groups/
+[2026-03-03T01:23:54.553Z]   link: "View Price Advantages" -> /groups/view_groups/?price_advantage=on
+[2026-03-03T01:23:54.560Z]   link: "View Campaigns" -> /groups/view_campaigns/
+[2026-03-03T01:23:54.565Z]   link: "Clients" -> #
+[2026-03-03T01:23:54.574Z]   link: "Search/Edit Clients" -> /bookings/search_people/
+[2026-03-03T01:23:54.579Z]   link: "Add Client" -> /bookings/add_client/
+[2026-03-03T01:23:54.586Z]   link: "Upload my Clients" -> /bookings/upload_my_clients/
+[2026-03-03T01:23:54.592Z]   link: "View ToDos" -> /bookings/view_agent_todos/
+[2026-03-03T01:23:54.599Z]   link: "View ToDos Calendar" -> /bookings/view_agent_todo_calendar/2026/3/
+[2026-03-03T01:23:54.608Z]   link: "Training / Resources" -> #
+[2026-03-03T01:23:54.615Z]   link: "Training / Resources Home" -> /training/home/
+[2026-03-03T01:23:54.623Z]   link: "Event Calendar" -> /training/event_calendar/
+[2026-03-03T01:23:54.630Z]   link: "Cruise Brothers Contact Info" -> /training/view_agency_contact_info/
+[2026-03-03T01:23:54.635Z]   link: "CBAT University" -> /training/university/
+[2026-03-03T01:23:54.640Z]   link: "Vendors" -> /marketing/vendor_urls/
+[2026-03-03T01:23:54.646Z]   link: "Promotions" -> #
+[2026-03-03T01:23:54.652Z]   link: "Today's Promos" -> /marketing/todaysview/
+[2026-03-03T01:23:54.660Z]   link: "Calendar" -> /marketing/calendar/
+[2026-03-03T01:23:54.664Z]   link: "Search" -> /marketing/home/
+[2026-03-03T01:23:54.670Z]   link: "LogoWear" -> https://shop.spreadshirt.com/the-cruise-brothers/all
+[2026-03-03T01:23:54.676Z]   link: "My Site" -> #
+[2026-03-03T01:23:54.686Z]   link: "Get Started" -> /icleads/manage_subdomain_intro/23379/
+[2026-03-03T01:23:54.692Z]   link: "Account" -> #
+[2026-03-03T01:23:54.699Z]   link: "Change Password" -> /accounts/password_change/
+[2026-03-03T01:23:54.706Z]   link: "Edit My Profile" -> /accounts/my-profile/
+[2026-03-03T01:23:54.712Z]   link: "View My Contract" -> /icleads/user_sign_new_contract/
+[2026-03-03T01:23:54.717Z]   link: "Contact Preferences" -> /icleads/user_unsubscribe/bVSZ1yZ4iiGlzP1ndGF9lXf9WyVJTwuKddThyTK4KJY/
+[2026-03-03T01:23:54.726Z]   link: "Enable Two-Factor Auth" -> /accounts/enable_multi_auth/
+[2026-03-03T01:23:54.741Z]   link: "NO-REPLY@TRACK1099.COM" -> mailto:NO-REPLY@TRACK1099.COM
+[2026-03-03T01:23:54.747Z]   link: "CLICK HERE FOR OUR TRAINING CALENDAR - CBAT ESSENTIALS NOW E" -> ../../training/event_calendar/
+[2026-03-03T01:23:54.753Z]   link: "UK visa for US Citizens must be applied for 3 days prior to " -> https://www.gov.uk/government/news/uk-opens-pre-travel-requirement-to-non-europeans
+[2026-03-03T01:23:54.759Z]   link: "Have you booked a private group?
+CLICK HERE TO REGISTER YOUR" -> https://anhywhereinc.formstack.com/forms/private_group_booking
+[2026-03-03T01:23:54.767Z]   link: "Don't miss a thing going on!
+SIGN UP HERE TO RECEIVE THE LAT" -> https://mailchi.mp/21c4c9b3cc90/cbagentsubscriptions
+[2026-03-03T01:23:54.774Z]   link: "Facebook Page" -> https://www.facebook.com/groups/4872128919509416
+[2026-03-03T01:23:54.780Z]   link: "https://www.facebook.com/groups/4872128919509416" -> https://www.facebook.com/groups/4872128919509416
+[2026-03-03T01:23:54.785Z]   link: "" -> https://www.cbagenttools.com/cb/marketing/promotions/2717/
+[2026-03-03T01:23:54.792Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2614/
+[2026-03-03T01:23:54.808Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2693/
+[2026-03-03T01:23:54.817Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2626/
+[2026-03-03T01:23:54.826Z]   link: "No To Do's" -> /bookings/view_agent_todos/
+[2026-03-03T01:23:54.833Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2268/
+[2026-03-03T01:23:54.840Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2695/
+[2026-03-03T01:23:54.847Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2611
+[2026-03-03T01:23:54.856Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2458/
+[2026-03-03T01:23:54.864Z]   link: "Expedia TAAP up to 25% Off Winter Sale" -> /marketing/promotion/2621/
+[2026-03-03T01:23:54.873Z]   link: "Carnival Cruises - March Madness Savings" -> /marketing/promotion/2717/
+[2026-03-03T01:23:54.881Z]   link: "Azamara Club Cruises - Strawberries & Wine" -> /marketing/promotion/2690/
+[2026-03-03T01:23:54.887Z]   link: "Holland America Save on Sunshine - Dollars Off, Kids Free" -> /marketing/promotion/2722/
+[2026-03-03T01:23:54.893Z]   link: "Celebrity Semi Annual Sale - Save with Bonus Dollars Off" -> /marketing/promotion/2594/
+[2026-03-03T01:23:54.901Z]   link: "Royal Caribbean - Cruise Brothers Exclusive FREE Dining" -> /marketing/promotion/2719/
+[2026-03-03T01:23:54.909Z]   link: "AMA Waterways Free Land Package" -> /marketing/promotion/2620/
+[2026-03-03T01:23:54.915Z]   link: "All Promotions" -> /marketing/todaysview/
+[2026-03-03T01:23:54.923Z]   link: "Orientation - New agents should start here" -> https://www.cbagenttools.com/training/home/?search=orientation
+[2026-03-03T01:23:54.930Z]   link: "Group Info - Find the group list and more..." -> /groups/view_groups/
+[2026-03-03T01:23:54.940Z]   link: "Report a new sale here" -> /bookings/input_reservation/contact/
+[2026-03-03T01:23:54.947Z]   link: "Edit My Profile - Update contact information" -> /accounts/my-profile/
+[2026-03-03T01:23:54.953Z]   link: "Vendor Info - Information you need about our partners" -> /marketing/vendor_urls/
+[2026-03-03T01:23:54.959Z]   link: "Commissions - See commissions and pay history" -> /accounting/commission_home/23379/
+[2026-03-03T01:23:54.965Z]   link: "Facebook Page - Connect with cruisebrothers Agents" -> https://facebook.com/groups/46597403359
+[2026-03-03T01:23:54.974Z]   link: "Weekly Webinars Channel" -> https://www.gotostage.com/channel/cruisebrotherstrainingchannel
+[2026-03-03T01:23:54.975Z] Looking for Groups nav link...
+[2026-03-03T01:23:54.979Z] Found Groups link — clicking...
+[2026-03-03T01:24:25.474Z] Screenshot: ERROR-state.png
+[2026-03-03T01:25:21.120Z] Navigating to CB Agent Tools...
+[2026-03-03T01:25:22.458Z] URL after /login: https://www.cbagenttools.com/login
+[2026-03-03T01:25:22.479Z] No inputs on /login — trying root URL...
+[2026-03-03T01:25:28.256Z] Pre-fill URL: https://www.cbagenttools.com/accounts/login/?next=/bookings/home/
+[2026-03-03T01:25:28.313Z] Screenshot: 01-landing.png
+[2026-03-03T01:25:28.319Z] Landing page HTML saved. Scanning for input fields...
+[2026-03-03T01:25:28.324Z] Found 4 input fields on landing page:
+[2026-03-03T01:25:28.356Z]   input: type=hidden name=csrfmiddlewaretoken id= placeholder=
+[2026-03-03T01:25:28.367Z]   input: type=hidden name=next id=next placeholder=
+[2026-03-03T01:25:28.381Z]   input: type=text name=username id=username placeholder=username ** case sensitive **
+[2026-03-03T01:25:28.396Z]   input: type=password name=password id=password placeholder=password
+[2026-03-03T01:25:28.401Z] Found 1 buttons:
+[2026-03-03T01:25:28.425Z]   button: text="Submit" type=submit id=
+[2026-03-03T01:25:28.426Z] Filling credentials...
+[2026-03-03T01:25:29.161Z] Screenshot: 02-credentials-filled.png
+[2026-03-03T01:25:32.962Z] Screenshot: 03-post-login.png
+[2026-03-03T01:25:32.962Z] Post-login URL: https://www.cbagenttools.com/bookings/home/
+[2026-03-03T01:25:32.966Z] Found 79 links on authenticated home page:
+[2026-03-03T01:25:32.974Z]   link: "" -> /bookings/home/
+[2026-03-03T01:25:32.981Z]   link: "Trips" -> #
+[2026-03-03T01:25:32.989Z]   link: "Search All Trips" -> /bookings/search_trip/?checkbox=on&start_date_departed=2025-11-02
+[2026-03-03T01:25:32.997Z]   link: "Quick Search" -> null
+[2026-03-03T01:25:33.005Z]   link: "Add Reservation" -> /bookings/input_reservation/contact/
+[2026-03-03T01:25:33.013Z]   link: "Reports" -> /bookings/reports_home/
+[2026-03-03T01:25:33.021Z]   link: "Modification Requests" -> /groups/modification-requests/
+[2026-03-03T01:25:33.030Z]   link: "Payments" -> /groups/modification-requests/?request_type=payment
+[2026-03-03T01:25:33.038Z]   link: "Booking Engine" -> #
+[2026-03-03T01:25:33.045Z]   link: "Cruise Engine" -> /bookings/odysseus/booking/
+[2026-03-03T01:25:33.053Z]   link: "Cruise Engine Admin" -> /bookings/odysseus/admin/
+[2026-03-03T01:25:33.060Z]   link: "Hotels" -> https://www.expediataap.com/TAAP-Agent?key=48bb861d-2847-46f3-beaa-8fa4596f1503
+[2026-03-03T01:25:33.065Z]   link: "Commissions" -> #
+[2026-03-03T01:25:33.076Z]   link: "Commission Dashboard" -> /accounting/commission_home/23379/
+[2026-03-03T01:25:33.083Z]   link: "Commission Status Report" -> /accounting/agentcommissions/
+[2026-03-03T01:25:33.091Z]   link: "Pending Commissions" -> /accounting/commissions/?searchType=pending&name=23379&fullname=Nathaniel Orange Jr.
+[2026-03-03T01:25:33.098Z]   link: "Commission Payments" -> /accounting/commissions/?name=23379&fullname=Nathaniel Orange Jr.
+[2026-03-03T01:25:33.106Z]   link: "Groups" -> #
+[2026-03-03T01:25:33.112Z]   link: "View All Groups" -> /groups/view_groups/
+[2026-03-03T01:25:33.120Z]   link: "View Price Advantages" -> /groups/view_groups/?price_advantage=on
+[2026-03-03T01:25:33.127Z]   link: "View Campaigns" -> /groups/view_campaigns/
+[2026-03-03T01:25:33.136Z]   link: "Clients" -> #
+[2026-03-03T01:25:33.143Z]   link: "Search/Edit Clients" -> /bookings/search_people/
+[2026-03-03T01:25:33.150Z]   link: "Add Client" -> /bookings/add_client/
+[2026-03-03T01:25:33.156Z]   link: "Upload my Clients" -> /bookings/upload_my_clients/
+[2026-03-03T01:25:33.162Z]   link: "View ToDos" -> /bookings/view_agent_todos/
+[2026-03-03T01:25:33.170Z]   link: "View ToDos Calendar" -> /bookings/view_agent_todo_calendar/2026/3/
+[2026-03-03T01:25:33.178Z]   link: "Training / Resources" -> #
+[2026-03-03T01:25:33.186Z]   link: "Training / Resources Home" -> /training/home/
+[2026-03-03T01:25:33.195Z]   link: "Event Calendar" -> /training/event_calendar/
+[2026-03-03T01:25:33.204Z]   link: "Cruise Brothers Contact Info" -> /training/view_agency_contact_info/
+[2026-03-03T01:25:33.210Z]   link: "CBAT University" -> /training/university/
+[2026-03-03T01:25:33.216Z]   link: "Vendors" -> /marketing/vendor_urls/
+[2026-03-03T01:25:33.224Z]   link: "Promotions" -> #
+[2026-03-03T01:25:33.231Z]   link: "Today's Promos" -> /marketing/todaysview/
+[2026-03-03T01:25:33.240Z]   link: "Calendar" -> /marketing/calendar/
+[2026-03-03T01:25:33.249Z]   link: "Search" -> /marketing/home/
+[2026-03-03T01:25:33.262Z]   link: "LogoWear" -> https://shop.spreadshirt.com/the-cruise-brothers/all
+[2026-03-03T01:25:33.270Z]   link: "My Site" -> #
+[2026-03-03T01:25:33.277Z]   link: "Get Started" -> /icleads/manage_subdomain_intro/23379/
+[2026-03-03T01:25:33.285Z]   link: "Account" -> #
+[2026-03-03T01:25:33.291Z]   link: "Change Password" -> /accounts/password_change/
+[2026-03-03T01:25:33.299Z]   link: "Edit My Profile" -> /accounts/my-profile/
+[2026-03-03T01:25:33.310Z]   link: "View My Contract" -> /icleads/user_sign_new_contract/
+[2026-03-03T01:25:33.320Z]   link: "Contact Preferences" -> /icleads/user_unsubscribe/bVSZ1yZ4iiGlzP1ndGF9lXf9WyVJTwuKddThyTK4KJY/
+[2026-03-03T01:25:33.328Z]   link: "Enable Two-Factor Auth" -> /accounts/enable_multi_auth/
+[2026-03-03T01:25:33.348Z]   link: "NO-REPLY@TRACK1099.COM" -> mailto:NO-REPLY@TRACK1099.COM
+[2026-03-03T01:25:33.355Z]   link: "CLICK HERE FOR OUR TRAINING CALENDAR - CBAT ESSENTIALS NOW E" -> ../../training/event_calendar/
+[2026-03-03T01:25:33.361Z]   link: "UK visa for US Citizens must be applied for 3 days prior to " -> https://www.gov.uk/government/news/uk-opens-pre-travel-requirement-to-non-europeans
+[2026-03-03T01:25:33.368Z]   link: "Have you booked a private group?
+CLICK HERE TO REGISTER YOUR" -> https://anhywhereinc.formstack.com/forms/private_group_booking
+[2026-03-03T01:25:33.374Z]   link: "Don't miss a thing going on!
+SIGN UP HERE TO RECEIVE THE LAT" -> https://mailchi.mp/21c4c9b3cc90/cbagentsubscriptions
+[2026-03-03T01:25:33.381Z]   link: "Facebook Page" -> https://www.facebook.com/groups/4872128919509416
+[2026-03-03T01:25:33.389Z]   link: "https://www.facebook.com/groups/4872128919509416" -> https://www.facebook.com/groups/4872128919509416
+[2026-03-03T01:25:33.397Z]   link: "" -> https://www.cbagenttools.com/cb/marketing/promotions/2717/
+[2026-03-03T01:25:33.406Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2614/
+[2026-03-03T01:25:33.414Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2693/
+[2026-03-03T01:25:33.423Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2626/
+[2026-03-03T01:25:33.430Z]   link: "No To Do's" -> /bookings/view_agent_todos/
+[2026-03-03T01:25:33.438Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2268/
+[2026-03-03T01:25:33.446Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2695/
+[2026-03-03T01:25:33.454Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2611
+[2026-03-03T01:25:33.460Z]   link: "" -> https://www.cbagenttools.com/marketing/promotion/2458/
+[2026-03-03T01:25:33.467Z]   link: "Expedia TAAP up to 25% Off Winter Sale" -> /marketing/promotion/2621/
+[2026-03-03T01:25:33.477Z]   link: "Carnival Cruises - March Madness Savings" -> /marketing/promotion/2717/
+[2026-03-03T01:25:33.485Z]   link: "Azamara Club Cruises - Strawberries & Wine" -> /marketing/promotion/2690/
+[2026-03-03T01:25:33.493Z]   link: "Holland America Save on Sunshine - Dollars Off, Kids Free" -> /marketing/promotion/2722/
+[2026-03-03T01:25:33.499Z]   link: "Celebrity Semi Annual Sale - Save with Bonus Dollars Off" -> /marketing/promotion/2594/
+[2026-03-03T01:25:33.507Z]   link: "Royal Caribbean - Cruise Brothers Exclusive FREE Dining" -> /marketing/promotion/2719/
+[2026-03-03T01:25:33.517Z]   link: "AMA Waterways Free Land Package" -> /marketing/promotion/2620/
+[2026-03-03T01:25:33.527Z]   link: "All Promotions" -> /marketing/todaysview/
+[2026-03-03T01:25:33.535Z]   link: "Orientation - New agents should start here" -> https://www.cbagenttools.com/training/home/?search=orientation
+[2026-03-03T01:25:33.542Z]   link: "Group Info - Find the group list and more..." -> /groups/view_groups/
+[2026-03-03T01:25:33.549Z]   link: "Report a new sale here" -> /bookings/input_reservation/contact/
+[2026-03-03T01:25:33.559Z]   link: "Edit My Profile - Update contact information" -> /accounts/my-profile/
+[2026-03-03T01:25:33.565Z]   link: "Vendor Info - Information you need about our partners" -> /marketing/vendor_urls/
+[2026-03-03T01:25:33.572Z]   link: "Commissions - See commissions and pay history" -> /accounting/commission_home/23379/
+[2026-03-03T01:25:33.578Z]   link: "Facebook Page - Connect with cruisebrothers Agents" -> https://facebook.com/groups/46597403359
+[2026-03-03T01:25:33.586Z]   link: "Weekly Webinars Channel" -> https://www.gotostage.com/channel/cruisebrotherstrainingchannel
+[2026-03-03T01:25:33.587Z] Navigating directly to Groups pages...
+[2026-03-03T01:25:33.588Z] 
+Navigating to: https://www.cbagenttools.com/groups/view_groups/
+[2026-03-03T01:25:34.949Z]   Landed at: https://www.cbagenttools.com/groups/view_groups/
+[2026-03-03T01:25:35.464Z] Screenshot: 04-groups-view-all.png
+[2026-03-03T01:25:35.472Z]   No deposit/fee keywords found on this page.
+[2026-03-03T01:25:35.473Z] 
+Navigating to: https://www.cbagenttools.com/groups/view_campaigns/
+[2026-03-03T01:25:36.805Z]   Landed at: https://www.cbagenttools.com/groups/view_campaigns/
+[2026-03-03T01:25:36.897Z] Screenshot: 05-groups-campaigns.png
+[2026-03-03T01:25:36.905Z]   No deposit/fee keywords found on this page.
+[2026-03-03T01:25:36.906Z] 
+Navigating to: https://www.cbagenttools.com/groups/build/
+[2026-03-03T01:25:37.868Z]   Landed at: https://www.cbagenttools.com/groups/build/
+[2026-03-03T01:25:37.949Z] Screenshot: 06-groups-build.png
+[2026-03-03T01:25:37.956Z]   No deposit/fee keywords found on this page.
+[2026-03-03T01:25:37.956Z] 
+Navigating to: https://www.cbagenttools.com/groups/modification-requests/
+[2026-03-03T01:25:39.078Z]   Landed at: https://www.cbagenttools.com/groups/modification-requests/
+[2026-03-03T01:25:39.142Z] Screenshot: 07-groups-modification-requests.png
+[2026-03-03T01:25:39.147Z] 
+=== KEYWORD HITS at https://www.cbagenttools.com/groups/modification-requests/ ===
+[2026-03-03T01:25:39.147Z]   > Cancellation
+[2026-03-03T01:25:39.148Z]   > Payment
+[2026-03-03T01:25:39.148Z]   > Late payments only
+[2026-03-03T01:25:39.149Z] 
+Navigating to: https://www.cbagenttools.com/groups/
+[2026-03-03T01:25:40.080Z]   Landed at: https://www.cbagenttools.com/groups/
+[2026-03-03T01:25:40.143Z] Screenshot: 08-groups-info.png
+[2026-03-03T01:25:40.147Z]   No deposit/fee keywords found on this page.
+[2026-03-03T01:25:40.148Z] 
+Checking Formstack private group booking form...
+[2026-03-03T01:25:43.050Z] Screenshot: 09-formstack-group-booking.png
+[2026-03-03T01:25:43.059Z] 
+=== RECON COMPLETE. See scripts/cb-groups-recon/FINDINGS-SUMMARY.txt ===

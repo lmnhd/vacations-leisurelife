@@ -60,9 +60,14 @@ We implement a **Single-Table Design** pattern.
 *   On every waitlist submission, a serverless function checks if `Total Cabins Request >= minCabinsRequired`.
 *   If true, the system fires off an internal alert via the `.env` configured notification channel (Slack/Pushover/Email) to the Master Agent.
 
-### Stage 3: Official Configuration
-*   **Action**: The Agent formally populates the group registration Formstack at `https://www.cbagenttools.com/groups/build/` to lock in the real CB Group ID.
-*   *Note*: This can be performed manually or via a verified Playwright task (`cruise-groups-manager`).
+### Stage 3: Inventory Match & Link Acquisition
+
+*Verified via direct CBAT recon (March 2026): Cruise Brothers pre-negotiates and holds hundreds of group blocks across all major cruise lines on behalf of its agent network. **No agent-side deposit is required.** CB carries the group hold cost.*
+
+*   **Primary Action (No-Cost Path):** Search the existing CB Group Inventory at `/groups/view_groups/` for a sailing that matches the campaign's target destination, duration, and sail date window. Hundreds of pre-blocked sailings are available across Royal Caribbean, Norwegian, Celebrity, Carnival, MSC, Holland America, Princess, and Virgin Voyages — with ready-made Personal Links and pre-calculated Price Advantages.
+*   **On Match Found:** Click "Copy Link" to retrieve the Personal Booking Link immediately. No Formstack registration needed.
+*   **Fallback (Custom/External Blocks Only):** If a sailing negotiated *outside* of CB's pre-existing inventory is used (e.g., directly with a cruise line group desk), register it via the Formstack at `https://anhywhereinc.formstack.com/forms/private_group_booking`. This locks the Group ID so other CB agents cannot book into it.
+*   *Note*: The `view_campaigns` section in CBAT is where the agent's named/themed campaigns appear once linked to a group block — this is the visible record of an active Shadow Group post-conversion.
 
 ### Stage 4: Financial Collection Handoff (The Direct Link)
 *   **CRITICAL CONSTRAINT**: The Leisure Life Interactive platform MUST NOT collect local payments or deposits (No Stripe Pre-Authorizations).
@@ -77,11 +82,12 @@ We implement a **Single-Table Design** pattern.
 
 ## 4. Why This Model?
 
-*   **Risk Averse:** Prevents holding unfillable group inventory.
+*   **Risk Averse:** Prevents holding unfillable group inventory. CB holds it on your behalf at no cost.
 *   **Compliance Safe:** Removes the legal liability of acting as a Merchant of Record on behalf of a host agency.
 *   **Agile Iteration:** Allows the creation of 50 different themed landing pages in a day, letting the organic web traffic prove which trip is naturally viable.
 *   **Serverless Native:** Moves transient interest data to fast, cheap DynamoDB storage.
 *   **Crowd-Sourced Itineraries (Event Requests):** By asking early responders what activities, workshops, or meetups they want, we gather free market research, increase user investment in the trip, and use their specific ideas as marketing ammunition to autonomously promote the campaign to others.
+*   **Inventory-First Theming:** CB's pre-blocked inventory is rich enough to support virtually any niche theme. Campaigns can be designed *around* compelling sailings already in the group list — matching ship amenities, departure ports, and price advantages to the target audience — rather than building a theme in a vacuum and hoping matching inventory exists.
 
 ---
 
@@ -171,18 +177,26 @@ GET /api/vtgSearch?destination=bahamas&duration=4&departureMonth=2026-11
 ```
 Extract the median Balcony cabin price across 2–3 cruise lines for the target window. This becomes the campaign's `startingPrice` baseline.
 
-**Secondary Source: CB Agent Tools Scrapers**
-The scripts in `/scripts/` contain purpose-built CB scrapers. Run the relevant ones to cross-validate:
+**Secondary Source: CB Group Inventory (Live, Pre-Blocked)**
 
-*   **`scrape-cb-deals.ts`** — Pulls current promotional fares from CB's deals engine. Use this to find if the target sailing has any group-eligible pricing windows.
-*   **`scrape-group-info.ts`** — Retrieves the current group block rules and minimum cabin counts for the target cruise line and ship class.
-*   **`scrape-group-rules.ts`** — Confirms the tour-conductor credit threshold and any blackout date restrictions.
+The CB `view_groups` page at `/groups/view_groups/` is the most authoritative source for confirmed available inventory with group pricing already applied. This step serves double duty: pricing validation *and* inventory matching.
+
+*   **`scrape-group-info.ts`** — Query the live CB group inventory for sailings matching the target destination, cruise line, and duration. This returns the actual Group ID, Price From (group rate), Price Advantage over retail, and Personal Link availability.
+*   **`scrape-cb-deals.ts`** — Cross-check against CB's promotional fares to identify any additional stackable discounts on the matched sailing.
+*   **`scrape-group-rules.ts`** — Confirms the tour-conductor credit threshold and blackout date restrictions for the matched cruise line.
+
+**Inventory-First Theming Workflow:**
+Rather than designing a theme and then searching for inventory, Phase B can run in parallel with Phase A or even lead it:
+1.  Query `view_groups` filtered by target departure port (e.g., JAX, XPC, TPA) and date window.
+2.  Identify sailings with strong Price Advantages and compelling ships (newer fleet, specific amenities).
+3.  Feed the ship/itinerary details back into the Phase A AI prompt to refine or select the best-fit theme.
+4.  Lock the matched `cbGroupId` and `cbPersonalLink` into the campaign config *before launch* — making the threshold handoff near-instantaneous.
 
 **Pricing Formula:**
 ```
-startingPrice = (vtgSearch median Balcony price) × 1.15  // +15% Theme Fee
+startingPrice = (CB group 'Price From' for matched sailing) × 1.15  // +15% Theme Fee
 ```
-The 15% buffer covers the aspirational "exclusive event" component (tournament prize pools, private venue buyouts, branded materials) and protects the margin before the group rate is locked.
+Using the CB group rate directly (rather than retail median) is more accurate and already captures the Price Advantage. The 15% buffer covers the aspirational "exclusive event" component (tournament prize pools, private venue buyouts, branded materials).
 
 ---
 
@@ -215,8 +229,11 @@ The output of this entire discovery phase is a single typed config object that t
   "targetDates": "November 2026",
   "minCabins": 8,
   "startingPrice": 1034,
-  "priceSource": "vtgSearch + scrape-cb-deals",
-  "shipTarget": "Royal Caribbean — Icon Class",
+  "priceSource": "CB group inventory (scrape-group-info) — cbGroupId matched pre-launch",
+  "cbGroupId": "2847958",
+  "cbPersonalLink": "https://bookings.cbagenttools.com/swift/cruise/package/2847958?siid=23379",
+  "cbPriceAdvantage": 305,
+  "shipTarget": "Norwegian Gem — 4-Night Bahamas from JAX",
   "highlightEvents": ["GameBoy Link-Cable Tourney", "Vinyl & Sunset Mixer", "35mm Film Walk Ashore"],
   "targetingKeywords": ["GameBoy", "Vinyl Records", "Digital Detox", "Analog Photography"],
   "status": "DRAFT"

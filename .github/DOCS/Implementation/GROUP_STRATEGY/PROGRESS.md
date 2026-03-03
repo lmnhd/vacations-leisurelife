@@ -6,9 +6,9 @@
 
 ---
 
-## ✅ Phase 1: Discovery Infrastructure — COMPLETE
+## ⚠️ Phase 1: Discovery Infrastructure — PARTIALLY COMPLETE
 
-All initialization infrastructure for the "Shadow Group" campaign system is built and operational.
+Core discovery pipeline is built and operational, but the Phase B (inventory pricing + CB match) step is **not yet wired in**. Campaigns currently launch with LLM-estimated prices and no pre-linked CB inventory.
 
 ### What Was Built
 
@@ -23,11 +23,20 @@ All initialization infrastructure for the "Shadow Group" campaign system is buil
 - **`route.ts`** — `GET /api/groups/discovery`
   - In-flight lock (`isRunning` flag) — returns `409` if already running (prevents OpenClaw scheduler overcosts)
   - Returns `message`, `count`, `skippedCount`, and `campaigns[]` with `fetchUrl` per blueprint
-- **`core-logic.ts`** — 3-step pipeline:
+- **`core-logic.ts`** — Phase A only (3-step):
   1. **Sonar Deep Research** — Psychographic trend-mining (niche subculture identification)
   2. **Sonar Deep Research** — Aesthetic gap / ship infrastructure cross-reference
   3. **GPT-5-mini `generateObject`** — Produces 5 structured `Campaign` blueprints
   4. **DynamoDB write** — Idempotent: skips slugs that already exist
+
+#### Phase B — CB Inventory Match (NOT YET WIRED)
+- [ ] Query `/api/vtgSearch` for live pricing baseline on target destination/duration/month
+- [ ] Run `scrape-group-info.ts` against CB `view_groups` to find pre-blocked sailings matching target destination, cruise line, duration — returns actual Group ID, group rate, Price Advantage, and Personal Link
+- [ ] Run `scrape-cb-deals.ts` to catch any stackable promotional fares on the matched sailing
+- [ ] Run `scrape-group-rules.ts` to confirm tour-conductor credit threshold and blackout restrictions
+- [ ] Apply pricing formula: `startingPrice = CB 'Price From' × 1.15` (15% theme fee)
+- [ ] Store `cbGroupId`, `cbPersonalLink`, `cbPriceAdvantage` on the `METADATA` record **pre-launch** — enables near-instantaneous threshold handoff
+- [ ] Prefer **Inventory-First** workflow: query `view_groups` first by departure port + date, identify compelling sailings, then feed ship/itinerary details back into Phase A prompt to choose best-fit theme
 
 #### Campaign Lookup Endpoint (`app/api/groups/campaign/[id]/`)
 - **`route.ts`** — `GET /api/groups/campaign/:id`
@@ -123,11 +132,21 @@ Detailed strategy in: [GROUP_CAMPAIGN_STRATEGY.md §5](./GROUP_CAMPAIGN_STRATEGY
 - [ ] Auto-threshold check on every waitlist submission
 - [ ] Internal alert (Slack/Pushover/Email) when `minCabinsRequired` met
 
-## 🔜 Phase 4: Group Registration — NOT STARTED
+## 🔜 Phase 4: CB Inventory Match & Group Registration — NOT STARTED
 
-- [ ] Playwright task via `cruise-groups-manager.ts` to submit CB Formstack
-- [ ] Populate `cbagenttoolsGroupId` and `cbagenttoolsBookingLink` on campaign record
+*Strategy updated (March 2026): CB pre-negotiates and holds hundreds of group blocks across all major lines at **no agent-side cost**. The primary path is matching to existing pre-blocked inventory — Formstack is fallback only.*
+
+**Primary Path (Pre-blocked CB Inventory):**
+- [ ] Search CB `view_groups` (`/groups/view_groups/`) for sailings matching campaign's destination, duration, and date window
+- [ ] On match: click "Copy Link" to retrieve the Personal Booking Link immediately — no Formstack needed
+- [ ] Populate `cbagenttoolsGroupId` and `cbagenttoolsBookingLink` on the `METADATA` record
 - [ ] Campaign status → `CONVERTED`
+
+**Fallback Path (External/Custom Blocks Only):**
+- [ ] If no CB pre-block matches, register via Formstack at `https://anhywhereinc.formstack.com/forms/private_group_booking` to lock the Group ID
+- [ ] Prevents other CB agents from booking into it
+
+*Note: If Phase 1 Phase B is completed (CB inventory match pre-launch), this phase becomes near-instantaneous — the `cbPersonalLink` is already stored on the record at threshold time.*
 
 ## 🔜 Phase 5: Financial Handoff — NOT STARTED
 
@@ -177,6 +196,6 @@ Detailed strategy in: [GROUP_CAMPAIGN_STRATEGY.md §5](./GROUP_CAMPAIGN_STRATEGY
 ---
 
 ## Known Gaps (Deferred)
-- **Phase B Pricing**: `vtgSearch` + CB scraper cross-validation not yet wired into discovery — prices are currently LLM estimates (`priceSource: 'AI Estimate'`)
+- **Phase 1 Phase B**: CB inventory search + pricing scrapers not yet wired into discovery pipeline — see Phase 1 checklist above
 - **Auth on discovery endpoint**: Deferred — local-only system for now
 - **Perplexity fetch timeout/retry**: No timeout set on Sonar calls; acceptable for local dev, revisit before any production deploy
