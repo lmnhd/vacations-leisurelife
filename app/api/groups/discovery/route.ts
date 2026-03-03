@@ -27,8 +27,10 @@ export async function GET() {
     try {
         const { campaigns, skippedCount } = await runGroupDiscoveryPipeline();
 
+        const completedAt = new Date().toISOString();
         return NextResponse.json({
             success: true,
+            message: `Discovery pipeline completed at ${completedAt}. ${campaigns.length} blueprint(s) generated (${skippedCount} skipped — already existed). Results are stored in DynamoDB table 'lll-shadow-campaigns' under CAMPAIGN#{slug}/METADATA and are viewable at /tests/groups/discovery.`,
             count: campaigns.length,
             skippedCount,
             blueprints: campaigns,
