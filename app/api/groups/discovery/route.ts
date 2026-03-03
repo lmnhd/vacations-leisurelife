@@ -28,12 +28,18 @@ export async function GET() {
         const { campaigns, skippedCount } = await runGroupDiscoveryPipeline();
 
         const completedAt = new Date().toISOString();
+        const campaignRefs = campaigns.map(c => ({
+            id: c.id,
+            name: c.name,
+            fetchUrl: `/api/groups/campaign/${c.id}`,
+        }));
+
         return NextResponse.json({
             success: true,
-            message: `Discovery pipeline completed at ${completedAt}. ${campaigns.length} blueprint(s) generated (${skippedCount} skipped — already existed). Results are stored in DynamoDB table 'lll-shadow-campaigns' under CAMPAIGN#{slug}/METADATA and are viewable at /tests/groups/discovery.`,
+            message: `Discovery pipeline completed at ${completedAt}. ${campaigns.length} blueprint(s) generated (${skippedCount} skipped — already existed). Fetch individual campaigns using the URLs in 'campaigns'. Results are also viewable at /tests/groups/discovery.`,
             count: campaigns.length,
             skippedCount,
-            blueprints: campaigns,
+            campaigns: campaignRefs,
         });
     } catch (error) {
         console.error('[API] Error in GET /api/groups/discovery:', error);

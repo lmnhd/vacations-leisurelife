@@ -27,15 +27,28 @@ export default function DiscoveryTestPage() {
         setSkippedCount(0);
 
         try {
-            const res = await fetch('/api/groups/discovery');
-            const data = await res.json();
+            // Step 1: run the discovery pipeline — returns refs with fetchUrls
+            const discoveryRes = await fetch('/api/groups/discovery');
+            const discoveryData = await discoveryRes.json();
 
-            if (data.success && data.blueprints) {
-                setBlueprints(data.blueprints);
-                setSkippedCount(data.skippedCount ?? 0);
-            } else {
-                setError(data.error || 'Failed to fetch blueprints');
+            if (!discoveryData.success || !discoveryData.campaigns) {
+                setError(discoveryData.error || 'Failed to start discovery pipeline');
+                return;
             }
+
+            setSkippedCount(discoveryData.skippedCount ?? 0);
+
+            // Step 2: fan-out fetch each campaign by ID for full blueprint details
+            const campaignRefs: Array<{ id: string; name: string; fetchUrl: string }> = discoveryData.campaigns;
+            const fetchedBlueprints = await Promise.all(
+                campaignRefs.map(async (ref) => {
+                    const res = await fetch(ref.fetchUrl);
+                    const data = await res.json();
+                    return data.success ? (data.campaign as Campaign) : null;
+                })
+            );
+
+            setBlueprints(fetchedBlueprints.filter((b): b is Campaign => b !== null));
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Network error');
         } finally {
