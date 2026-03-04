@@ -3,14 +3,28 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { scanUnmatchedCampaigns } from '@/lib/campaigns/campaign-store';
 
+export const maxDuration = 300;
+
 let phaseBRunning = false;
 
 /**
  * GET /api/groups/discovery/phase-b
- * Returns all campaigns that are unmatched (AI_ESTIMATE or no pricingStatus).
- * Used by the test page to poll status.
+ * Dual-purpose:
+ *   - If ?run=true → triggers Phase B immediately (OpenClaw scheduler pattern, matches Phase A)
+ *   - If no query  → returns status of unmatched campaigns (polling / status check)
+ *
+ * Optional: ?slug=<campaign-id> to target a single campaign
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
+    const { searchParams } = new URL(request.url);
+    const shouldRun = searchParams.get('run') === 'true';
+    const slug = searchParams.get('slug') ?? undefined;
+
+    if (shouldRun) {
+        return triggerPhaseB(slug);
+    }
+
+    // Status-only response
     try {
         const campaigns = await scanUnmatchedCampaigns();
         return NextResponse.json({
@@ -32,24 +46,30 @@ export async function GET(): Promise<NextResponse> {
 /**
  * POST /api/groups/discovery/phase-b
  * Body: { slug?: string }
- * Spawns run-phase-b.ts as a child process and returns immediately.
- * The caller should poll GET for status updates.
+ * Same as GET ?run=true but accepts body payload for slug targeting.
+ * Preferred when calling from the test UI (allows body).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    if (phaseBRunning) {
-        return NextResponse.json({ error: 'Phase B is already running' }, { status: 409 });
-    }
-
     const body = await request.json().catch(() => ({})) as { slug?: string };
-    const scriptPath = path.join(process.cwd(), 'scripts', 'run-phase-b.ts');
+    return triggerPhaseB(body.slug);
+}
 
-    const args = ['tsx', scriptPath];
-    if (body.slug) {
-        args.push('--slug', body.slug);
+// ─── Shared trigger logic ────────────────────────────────────────────────────
+
+function triggerPhaseB(slug?: string): NextResponse {
+    if (phaseBRunning) {
+        return NextResponse.json(
+            { success: false, error: 'Phase B is already running. Try again after the current run completes.' },
+            { status: 409 }
+        );
     }
+
+    const scriptPath = path.join(process.cwd(), 'scripts', 'run-phase-b.ts');
+    const args = ['tsx', scriptPath];
+    if (slug) args.push('--slug', slug);
 
     phaseBRunning = true;
-    console.log('[phase-b route] Spawning run-phase-b.ts...');
+    console.log(`[phase-b route] Spawning run-phase-b.ts${slug ? ` for slug: ${slug}` : ' for all campaigns'}...`);
 
     const child = spawn('npx', args, {
         cwd: process.cwd(),
@@ -71,8 +91,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-        status: 'started',
-        slug: body.slug ?? 'all',
-        message: 'Phase B running in background. Poll GET /api/groups/discovery/phase-b for status.',
+        success: true,
+        message: `Phase B running in background. Poll GET /api/groups/discovery/phase-b for status.`,
+        slug: slug ?? 'all',
     });
 }

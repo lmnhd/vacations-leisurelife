@@ -7,9 +7,9 @@
 
 ---
 
-## ⚠️ Phase 1: Discovery Infrastructure — PARTIALLY COMPLETE
+## ✅ Phase 1: Discovery Infrastructure — COMPLETE
 
-Core discovery pipeline (Phase A) is built and operational. Phase B (CB inventory pricing + match) is **not yet wired in**. Campaigns currently launch with LLM-estimated prices and no pre-linked CB inventory.
+Full 2-phase discovery pipeline is operational. Phase A generates AI blueprints via Sonar Deep Research. Phase B matches each campaign to live CB group inventory, populates pricing, and writes booking links to DynamoDB.
 
 ### What Was Built
 
@@ -30,31 +30,42 @@ Core discovery pipeline (Phase A) is built and operational. Phase B (CB inventor
   3. **GPT-5-mini `generateObject`** — Produces 5 structured `Campaign` blueprints
   4. **DynamoDB write** — Idempotent: skips slugs that already exist
 
-#### Phase B — CB Inventory Match (NOT YET WIRED)
-- [ ] Query `/api/vtgSearch` for live pricing baseline (§6.2)
-- [ ] Run `scrape-group-info.ts` against CB `view_groups` for matching sailings (§6.2)
-- [ ] Run `scrape-cb-deals.ts` for stackable promotional fares (§6.2)
-- [ ] Run `scrape-group-rules.ts` for TC credit threshold & blackout restrictions (§6.2)
-- [ ] Apply pricing formula: `startingPrice = CB 'Price From' × 1.15` (§6.2)
-- [ ] Store `cbGroupId`, `cbPersonalLink`, `cbPriceAdvantage` on `METADATA` record pre-launch
-- [ ] Support **Inventory-First Theming** workflow (§6.2): query `view_groups` first, then feed ship details back into Phase A
+#### Phase B — CB Inventory Match ✅ COMPLETE
+- [x] **Scraper Library**: `scripts/cb-inventory-scraper.ts` — Playwright, authenticates to CBAT, scrapes `view_groups/?price_advantage=on` → returns typed `CbGroupInventoryItem[]`
+- [x] **Matcher Engine**: `lib/campaigns/cb-inventory-matcher.ts` — pure scoring logic, fuzzy-matches inventory items to campaign by ship name, date, destination, and keyword overlap. Returns `CbInventoryMatch | null`
+- [x] **Pricing Formula**: `startingPrice = CB group 'Price From' × 1.15` (§6.2)
+- [x] **DynamoDB write**: `upsertCampaignPricingMatch` — writes `cbagenttoolsGroupId`, `cbagenttoolsBookingLink`, `cbPriceAdvantage`, `startingPrice`, `pricingStatus: 'CB_MATCHED'`
+- [x] **Unmatched handling**: `markCampaignUnmatched` — sets `pricingStatus: 'UNMATCHED'`, no error thrown
+- [x] **Personal Link construction**: `https://bookings.cbagenttools.com/swift/cruise/package/<groupId>?siid=<CB_AGENT_SIID>`
+
+#### Phase B — Runner & API Endpoints ✅
+- [x] **`scripts/run-phase-b.ts`** — standalone CLI runner (`npx tsx scripts/run-phase-b.ts [--slug <id>]`)
+- [x] **`GET /api/groups/discovery/phase-b?run=true`** — AI Agent trigger (OpenClaw scheduler pattern; matches Phase A's GET trigger). Optional `&slug=<id>` to target single campaign.
+- [x] **`GET /api/groups/discovery/phase-b`** — Status-only: returns all unmatched campaigns + `running` flag for test page polling.
+- [x] **`POST /api/groups/discovery/phase-b`** — UI trigger: body `{ slug? }`, same as GET `?run=true` for test page use.
+- [x] **In-flight lock**: `409` returned if Phase B already running (same pattern as Phase A)
 
 #### Campaign Lookup Endpoint (`app/api/groups/campaign/[id]/`)
 - **`route.ts`** — `GET /api/groups/campaign/:id`
-  - Fetches single campaign from DynamoDB by slug, returns AI-readable JSON
+  - Fetches single campaign from DynamoDB by slug
+  - Returns AI-readable flat JSON with all fields including `pricingStatus`, `cbagenttoolsBookingLink`, `cbPriceAdvantage`
 
 #### Test UI (`app/(tests)/tests/groups/discovery/page.tsx`)
-- Triggers the full pipeline via button click with cost guardrail dialog (~$1.60–$2.00 per run)
-- Button lockout while results displayed; "Clear & Reset" to re-run
-- Fan-out fetches full campaign details from `/api/groups/campaign/[id]` for display
+- **Phase A panel**: Cost-guarded button, button lockout while results loaded, Clear & Reset
+- **Phase B panel**: "Run Matching" button → fires POST + polls GET every 5s
+- Per-campaign pricing badges: `CB_MATCHED` (green) · `AI_ESTIMATE` (amber) · `UNMATCHED` (red)
+- "Load Status" button to check existing campaigns without triggering a run
 
 ### Safeguards In Place
 | Risk | Guard |
 |---|---|
-| Concurrent scheduler calls (OpenClaw) | `409` in-flight lock in `route.ts` |
+| Concurrent Phase A scheduler calls | `409` in-flight lock in `GET /api/groups/discovery` |
+| Concurrent Phase B scheduler calls | `409` in-flight lock in Phase B route |
 | Accidental double-click on test page | Button disabled while results loaded |
-| Blind cost exposure | `window.confirm` with cost estimate |
-| Silent DynamoDB overwrites | Idempotency check skips existing slugs |
+| Blind cost exposure (Phase A) | `window.confirm` with ~$1.60–$2.00 estimate |
+| Silent DynamoDB overwrites | Idempotency check skips existing campaign slugs |
+| CB session expired | Playwright re-logs in automatically via `CB_EMAIL`/`CB_PASSWORD` env vars |
+| No inventory match found | `pricingStatus: 'UNMATCHED'` set; run not aborted |
 
 ---
 
@@ -272,8 +283,10 @@ Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 ---
 
 ## Known Gaps (Deferred)
-- **Phase 1 Phase B**: CB inventory search + pricing scrapers not yet wired into discovery pipeline
-- **Auth on discovery endpoint**: Deferred — local-only system for now
-- **Perplexity fetch timeout/retry**: No timeout on Sonar calls; acceptable for local dev
+- **Phase B match quality**: Scoring is keyword-based fuzzy match. A campaign with a very generic `shipTarget` (e.g., "Caribbean cruise") may return a low-confidence match. Future improvement: semantic embedding similarity.
+- **Phase B vtgSearch integration**: `/api/vtgSearch` retail pricing not yet cross-referenced — CB group rate is used directly as the sole pricing source.
+- **Auth on discovery endpoints**: Deferred — local-only system for now; no auth middleware
+- **Perplexity fetch timeout/retry**: No timeout on Sonar calls; acceptable for local dev, revisit before production
 - **`GUEST_INFO` schema**: Full JSON schema for manifest collection not yet defined as Zod
 - **OdysseusEngine final step**: Passenger Details form fill + hold submission click outstanding
+- **`CB_AGENT_SIID` env var**: Must be set in `.env.local` for personal booking link construction to be correct
