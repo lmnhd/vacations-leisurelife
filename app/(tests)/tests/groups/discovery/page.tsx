@@ -233,28 +233,82 @@ export default function DiscoveryTestPage() {
                         )}
 
                         {hasPhaseAResults ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {blueprints.map((bp, i) => (
-                                    <div key={bp.id || i} className="border border-white/10 rounded-lg p-3 bg-slate-800/40">
-                                        <div className="flex items-start justify-between gap-2 mb-1">
-                                            <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
-                                            <PricingBadge status={(bp.pricingStatus ?? 'AI_ESTIMATE') as PricingStatus} />
+                            <div className="space-y-3">
+                                {blueprints.map((bp, i) => {
+                                    const isMatched = bp.pricingStatus === 'CB_MATCHED';
+                                    const isUnmatched = bp.pricingStatus === 'UNMATCHED';
+                                    return (
+                                        <div key={bp.id || i} className={`border rounded-lg p-4 bg-slate-800/40 ${isMatched ? 'border-emerald-500/30' : isUnmatched ? 'border-red-500/20' : 'border-white/10'}`}>
+                                            {/* Header row */}
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div>
+                                                    <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
+                                                    <span className="text-[10px] text-slate-600 ml-2">{bp.id}</span>
+                                                </div>
+                                                <PricingBadge status={(bp.pricingStatus ?? 'AI_ESTIMATE') as PricingStatus} />
+                                            </div>
+
+                                            {/* Aesthetic + dates */}
+                                            <div className="text-[10px] text-slate-500 mb-2 font-sans">{bp.aesthetic} · {bp.targetDates}</div>
+                                            <div className="text-[10px] text-slate-400 font-sans mb-2 line-clamp-2">{bp.description}</div>
+
+                                            {/* Ship + pricing */}
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] mb-3">
+                                                <span className="text-slate-400 flex items-center gap-1">
+                                                    <MapPin className="h-3 w-3" /> {bp.shipTarget ?? 'TBD'}
+                                                </span>
+                                                {bp.startingPrice && (
+                                                    <span className="text-emerald-400">
+                                                        From ${bp.startingPrice.toLocaleString()}/pp · {bp.priceSource}
+                                                    </span>
+                                                )}
+                                                {bp.cbPriceAdvantage && (
+                                                    <span className="text-cyan-400">{bp.cbPriceAdvantage}% price advantage</span>
+                                                )}
+                                            </div>
+
+                                            {/* CB booking link */}
+                                            {bp.cbagenttoolsBookingLink && (
+                                                <div className="text-[10px] mb-3">
+                                                    <span className="text-slate-600">Booking link: </span>
+                                                    <a
+                                                        href={bp.cbagenttoolsBookingLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-cyan-400 hover:text-cyan-300 underline break-all"
+                                                    >
+                                                        {bp.cbagenttoolsBookingLink}
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            {/* Actions */}
+                                            <div className="flex gap-2 pt-2 border-t border-white/5">
+                                                <a
+                                                    href={`/api/groups/campaign/${bp.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] px-2 py-1 rounded border border-white/10 text-slate-400 hover:text-white transition-all"
+                                                >
+                                                    View JSON
+                                                </a>
+                                                <button
+                                                    onClick={() => setBlueprints(prev => prev.filter(b => b.id !== bp.id))}
+                                                    className="text-[10px] px-2 py-1 rounded border border-red-500/20 text-red-400 hover:text-red-300 hover:border-red-400/40 transition-all"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="text-[10px] text-slate-500 mb-2 font-sans">{bp.aesthetic} · {bp.targetDates}</div>
-                                        <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                                            <MapPin className="h-3 w-3" /> {bp.shipTarget ?? 'TBD'}
-                                        </div>
-                                        {bp.startingPrice && (
-                                            <div className="text-xs text-emerald-400 mt-1">From ${bp.startingPrice}/pp · {bp.priceSource}</div>
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : !phaseALoading && (
                             <div className="text-center py-8 text-slate-600 text-xs">
                                 Click "Generate Blueprints" to begin deep research.
                             </div>
                         )}
+
                     </div>
                 </div>
 
