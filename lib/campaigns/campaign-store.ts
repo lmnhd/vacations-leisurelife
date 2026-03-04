@@ -181,11 +181,11 @@ export async function markCampaignUnmatched(slug: string): Promise<void> {
 export async function scanUnmatchedCampaigns(): Promise<Campaign[]> {
     const params = {
         TableName: TABLE_NAME,
-        FilterExpression: 'SK = :sk AND (#ps = :aiEstimate OR attribute_not_exists(#ps))',
+        FilterExpression: 'SK = :sk AND (#ps <> :matched OR attribute_not_exists(#ps))',
         ExpressionAttributeNames: { '#ps': 'pricingStatus' },
         ExpressionAttributeValues: {
             ':sk': 'METADATA',
-            ':aiEstimate': 'AI_ESTIMATE',
+            ':matched': 'CB_MATCHED',
         },
     };
 
