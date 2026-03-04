@@ -36,10 +36,11 @@ export async function POST(
 
         return NextResponse.json({ success: true, brief }, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
         console.error(`[Aesthetic Approval Error]:`, error);
         return NextResponse.json(
-            { error: "Failed to approve aesthetic brief", details: error.message },
+            { error: "Failed to approve aesthetic brief", details: message },
             { status: 500 }
         );
     }

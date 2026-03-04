@@ -13,8 +13,9 @@ export async function GET(
             return NextResponse.json({ error: "Brief not found" }, { status: 404 });
         }
         return NextResponse.json(brief, { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json({ error: "Failed to fetch brief", details: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: "Failed to fetch brief", details: message }, { status: 500 });
     }
 }
 
@@ -38,10 +39,11 @@ export async function POST(
 
         return NextResponse.json(brief, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
         console.error(`[Aesthetic Generation Error]:`, error);
         return NextResponse.json(
-            { error: "Failed to generate aesthetic brief", details: error.message },
+            { error: "Failed to generate aesthetic brief", details: message },
             { status: 500 }
         );
     }

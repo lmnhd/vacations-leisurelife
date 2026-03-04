@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Loader2, Wand2 } from "lucide-react";
+import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
 
 export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<CampaignAestheticBrief | null>(null);
     const [error, setError] = useState("");
 
     const handleGenerate = async () => {
@@ -16,14 +17,14 @@ export default function AestheticDevisingTestPage() {
         setResult(null);
 
         try {
-            const res = await fetch(`/api/campaigns/${slug.trim()}/media/aesthetic`, {
+            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic`, {
                 method: "POST",
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Generation failed");
             setResult(data);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setLoading(false);
         }

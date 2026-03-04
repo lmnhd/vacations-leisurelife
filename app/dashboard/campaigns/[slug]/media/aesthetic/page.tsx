@@ -27,9 +27,8 @@ export default function AestheticReviewPage() {
         // Note: For a comprehensive UI, we would typically have a GET endpoint 
         // to retrieve the brief for review without regenerating. 
         // Assuming we need to add GET to the route.ts to fetch existing.
-        // For demonstration, let's assume `GET /api/campaigns/[slug]/media/aesthetic` returns the brief.
         try {
-            const res = await fetch(`/api/campaigns/${slug}/media/aesthetic`);
+            const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic`);
             if (res.status === 404) {
                 setBrief(null);
             } else if (res.ok) {
@@ -38,8 +37,8 @@ export default function AestheticReviewPage() {
             } else {
                 throw new Error("Failed to load brief");
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setLoading(false);
         }
@@ -49,7 +48,7 @@ export default function AestheticReviewPage() {
         if (!brief) return;
         setApproving(true);
         try {
-            const res = await fetch(`/api/campaigns/${slug}/media/aesthetic/approve`, {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/approve`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(brief)
@@ -63,8 +62,8 @@ export default function AestheticReviewPage() {
             // Redirect back to campaign overview or refresh
             router.refresh();
 
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setApproving(false);
         }
@@ -73,14 +72,14 @@ export default function AestheticReviewPage() {
     const handleGenerate = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/campaigns/${slug}/media/aesthetic`, {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic`, {
                 method: "POST"
             });
             if (!res.ok) throw new Error("Generation failed");
             const data = await res.json();
             setBrief(data);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setLoading(false);
         }
