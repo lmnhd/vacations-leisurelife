@@ -1,7 +1,7 @@
 # Group Campaign Automation — Progress Log
 
 **Branch**: `feature/shadow-groups`  
-**Last Updated**: 2026-03-03  
+**Last Updated**: 2026-03-04  
 **Strategy Reference**: [GROUP_CAMPAIGN_STRATEGY.md](./GROUP_CAMPAIGN_STRATEGY.md)  
 **Campaign Media Sub-Pipeline**: [CAMPAIGN_MEDIA/README.md](./CAMPAIGN_MEDIA/README.md)
 
@@ -9,7 +9,9 @@
 
 ## ✅ Phase 1: Discovery Infrastructure — COMPLETE
 
-Full 2-phase discovery pipeline is operational. Phase A generates AI blueprints via Sonar Deep Research. Phase B matches each campaign to live CB group inventory, populates pricing, and writes booking links to DynamoDB.
+Full 2-phase discovery pipeline is operational and battle-tested. Phase A generates AI blueprints via Sonar Deep Research using **inventory-first** ship selection (CB group blocks from `cb-deals-cache.json` injected into Step 2 prompt). Phase B matches each campaign to live CB group inventory, populates pricing, and writes booking links to DynamoDB. **7/10 campaigns are CB_MATCHED** and ready to feed into Phase 2.
+
+> **Campaign ID (slug)** — e.g., `analog-film-and-darkroom-odyssey-2026` — is the key passed into all downstream phases (aesthetic devising, media generation, ad campaigns).
 
 ### What Was Built
 
@@ -54,7 +56,16 @@ Full 2-phase discovery pipeline is operational. Phase A generates AI blueprints 
 - **Phase A panel**: Cost-guarded button, button lockout while results loaded, Clear & Reset
 - **Phase B panel**: "Run Matching" button → fires POST + polls GET every 5s
 - Per-campaign pricing badges: `CB_MATCHED` (green) · `AI_ESTIMATE` (amber) · `UNMATCHED` (red)
-- "Load Status" button to check existing campaigns without triggering a run
+- **Blueprint cards** (updated): show description, ship, dates, booking link, price advantage, **View JSON** link per campaign
+- **"Clear All" button**: `DELETE /api/groups/discovery/clear` — wipes all DynamoDB campaigns + research cache for clean re-run
+- **Auto-load on mount**: `GET /api/groups/discovery?load=true` → pre-populates grid from DynamoDB without triggering Phase A
+- **"Load Status" button**: checks existing campaigns without triggering a run
+
+#### Maintenance Scripts
+- **`scripts/remap-campaigns-to-inventory.ts`** — GPT-4o-mini maps stale campaign `shipTarget` to real CB inventory ships. Resets `pricingStatus` to `AI_ESTIMATE` for Phase B retry.
+  - `npx tsx scripts/remap-campaigns-to-inventory.ts [--slug <id>]`
+- **`DELETE /api/groups/campaign/:id`** — Deletes a single campaign METADATA record from DynamoDB
+- **`DELETE /api/groups/discovery/clear`** — Deletes all campaigns + clears research cache
 
 ### Safeguards In Place
 | Risk | Guard |
@@ -65,7 +76,11 @@ Full 2-phase discovery pipeline is operational. Phase A generates AI blueprints 
 | Blind cost exposure (Phase A) | `window.confirm` with ~$1.60–$2.00 estimate |
 | Silent DynamoDB overwrites | Idempotency check skips existing campaign slugs |
 | CB session expired | Playwright re-logs in automatically via `CB_EMAIL`/`CB_PASSWORD` env vars |
-| No inventory match found | `pricingStatus: 'UNMATCHED'` set; run not aborted |
+| No inventory match found | `pricingStatus: 'UNMATCHED'` set; run not aborted; retried on next Phase B run |
+| Phase A picks non-CB ship line | CB `priceAdvantages` ship list injected into Step 2 Perplexity prompt |
+| Perplexity ECONNRESET | Retry logic (3×) + keep-alive + AbortController timeout |
+| Duplicate themes generated | Existing campaign names injected into both Perplexity + GPT prompts as exclusion list |
+| Research cost wasted on failure | Disk cache (`discovery-research-cache.json`) — resumes from last completed step |
 
 ---
 
