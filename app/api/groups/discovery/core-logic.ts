@@ -2,6 +2,41 @@ import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { Campaign } from '@/lib/campaigns/types';
 import { saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import path from 'path';
+
+// ─── Research Cache ─────────────────────────────────────────────────────────
+// Persists each Perplexity step result to disk so a mid-pipeline failure can
+// resume without re-paying for completed steps. Cache key = YYYY-MM-DD.
+// Delete .github/data/discovery-research-cache.json to force a fresh run.
+
+const CACHE_DIR = path.join(process.cwd(), '.github', 'data');
+const CACHE_FILE = path.join(CACHE_DIR, 'discovery-research-cache.json');
+
+type ResearchCache = {
+    date: string;
+    psychographicData?: string;
+    aestheticData?: string;
+};
+
+function readResearchCache(): ResearchCache {
+    const today = new Date().toISOString().slice(0, 10);
+    if (!existsSync(CACHE_FILE)) return { date: today };
+    try {
+        const raw = readFileSync(CACHE_FILE, 'utf-8');
+        const parsed = JSON.parse(raw) as ResearchCache;
+        // Stale if from a different day — return fresh
+        if (parsed.date !== today) return { date: today };
+        return parsed;
+    } catch {
+        return { date: today };
+    }
+}
+
+function writeResearchCache(cache: ResearchCache): void {
+    mkdirSync(CACHE_DIR, { recursive: true });
+    writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+}
 
 const PerplexityResponseSchema = z.object({
     choices: z.array(
@@ -99,6 +134,8 @@ interface DiscoveryPipelineResult {
 }
 
 export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResult> {
+    const cache = readResearchCache();
+
     // Pre-load existing campaigns to build the deduplication exclusion list
     const existingCampaigns = await scanAllCampaigns();
     const existingThemesBlock = existingCampaigns.length > 0
@@ -107,20 +144,40 @@ export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResu
 
     console.log(`[runGroupDiscoveryPipeline] ${existingCampaigns.length} existing campaign(s) found — injecting exclusion list into prompts.`);
 
-    console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
-    const psychographicPrompt = `
+    // ── Step 1: Psychographic Discovery ──────────────────────────────────────
+    let psychographicData: string;
+    if (cache.psychographicData) {
+        console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Resuming from cache (psychographicData)');
+        psychographicData = cache.psychographicData;
+    } else {
+        console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
+        const psychographicPrompt = `
 Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate.${existingThemesBlock}
-    `.trim();
-    const psychographicData = await callPerplexity(psychographicPrompt);
+        `.trim();
+        psychographicData = await callPerplexity(psychographicPrompt);
+        cache.psychographicData = psychographicData;
+        writeResearchCache(cache);
+        console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Saved to cache.');
+    }
 
-    console.log('[runGroupDiscoveryPipeline] Step 2: Aesthetic Gap Follow-up');
-    const aestheticPrompt = `
+    // ── Step 2: Aesthetic Gap Follow-up ──────────────────────────────────────
+    let aestheticData: string;
+    if (cache.aestheticData) {
+        console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
+        aestheticData = cache.aestheticData;
+    } else {
+        console.log('[runGroupDiscoveryPipeline] Step 2: Aesthetic Gap Follow-up');
+        const aestheticPrompt = `
 Based on the following subcultures we identified:
 ${psychographicData}
 
 For each theme retreat, what onboard amenities are most requested? Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement.
-    `.trim();
-    const aestheticData = await callPerplexity(aestheticPrompt);
+        `.trim();
+        aestheticData = await callPerplexity(aestheticPrompt);
+        cache.aestheticData = aestheticData;
+        writeResearchCache(cache);
+        console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Saved to cache.');
+    }
 
     console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5-mini)');
     const { object } = await callGlobalGenerateObject({
