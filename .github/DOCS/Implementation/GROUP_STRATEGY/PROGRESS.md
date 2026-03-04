@@ -1,14 +1,15 @@
 # Group Campaign Automation — Progress Log
 
 **Branch**: `feature/shadow-groups`  
-**Last Updated**: 2026-03-02  
-**Strategy Reference**: [GROUP_CAMPAIGN_STRATEGY.md](./GROUP_CAMPAIGN_STRATEGY.md)
+**Last Updated**: 2026-03-03  
+**Strategy Reference**: [GROUP_CAMPAIGN_STRATEGY.md](./GROUP_CAMPAIGN_STRATEGY.md)  
+**Campaign Media Sub-Pipeline**: [CAMPAIGN_MEDIA/README.md](./CAMPAIGN_MEDIA/README.md)
 
 ---
 
 ## ⚠️ Phase 1: Discovery Infrastructure — PARTIALLY COMPLETE
 
-Core discovery pipeline is built and operational, but the Phase B (inventory pricing + CB match) step is **not yet wired in**. Campaigns currently launch with LLM-estimated prices and no pre-linked CB inventory.
+Core discovery pipeline (Phase A) is built and operational. Phase B (CB inventory pricing + match) is **not yet wired in**. Campaigns currently launch with LLM-estimated prices and no pre-linked CB inventory.
 
 ### What Was Built
 
@@ -19,36 +20,32 @@ Core discovery pipeline is built and operational, but the Phase B (inventory pri
 - **Types**: `lib/campaigns/types.ts` — `Campaign` and `CampaignWaitlistEntry` interfaces
 - **Store**: `lib/campaigns/campaign-store.ts` — `saveCampaignBlueprint`, `getCampaignBlueprint`
 
-#### Discovery Pipeline (`app/api/groups/discovery/`)
+#### Discovery Pipeline — Phase A (`app/api/groups/discovery/`)
 - **`route.ts`** — `GET /api/groups/discovery`
-  - In-flight lock (`isRunning` flag) — returns `409` if already running (prevents OpenClaw scheduler overcosts)
+  - In-flight lock (`isRunning` flag) — returns `409` if already running
   - Returns `message`, `count`, `skippedCount`, and `campaigns[]` with `fetchUrl` per blueprint
-- **`core-logic.ts`** — Phase A only (3-step):
-  1. **Sonar Deep Research** — Psychographic trend-mining (niche subculture identification)
-  2. **Sonar Deep Research** — Aesthetic gap / ship infrastructure cross-reference
+- **`core-logic.ts`** — 3-step:
+  1. **Sonar Deep Research** — Psychographic trend-mining (§6.1)
+  2. **Sonar Deep Research** — Aesthetic gap / ship infrastructure cross-reference (§6.1)
   3. **GPT-5-mini `generateObject`** — Produces 5 structured `Campaign` blueprints
   4. **DynamoDB write** — Idempotent: skips slugs that already exist
 
 #### Phase B — CB Inventory Match (NOT YET WIRED)
-- [ ] Query `/api/vtgSearch` for live pricing baseline on target destination/duration/month
-- [ ] Run `scrape-group-info.ts` against CB `view_groups` to find pre-blocked sailings matching target destination, cruise line, duration — returns actual Group ID, group rate, Price Advantage, and Personal Link
-- [ ] Run `scrape-cb-deals.ts` to catch any stackable promotional fares on the matched sailing
-- [ ] Run `scrape-group-rules.ts` to confirm tour-conductor credit threshold and blackout restrictions
-- [ ] Apply pricing formula: `startingPrice = CB 'Price From' × 1.15` (15% theme fee)
-- [ ] Store `cbGroupId`, `cbPersonalLink`, `cbPriceAdvantage` on the `METADATA` record **pre-launch** — enables near-instantaneous threshold handoff
-- [ ] Prefer **Inventory-First** workflow: query `view_groups` first by departure port + date, identify compelling sailings, then feed ship/itinerary details back into Phase A prompt to choose best-fit theme
+- [ ] Query `/api/vtgSearch` for live pricing baseline (§6.2)
+- [ ] Run `scrape-group-info.ts` against CB `view_groups` for matching sailings (§6.2)
+- [ ] Run `scrape-cb-deals.ts` for stackable promotional fares (§6.2)
+- [ ] Run `scrape-group-rules.ts` for TC credit threshold & blackout restrictions (§6.2)
+- [ ] Apply pricing formula: `startingPrice = CB 'Price From' × 1.15` (§6.2)
+- [ ] Store `cbGroupId`, `cbPersonalLink`, `cbPriceAdvantage` on `METADATA` record pre-launch
+- [ ] Support **Inventory-First Theming** workflow (§6.2): query `view_groups` first, then feed ship details back into Phase A
 
 #### Campaign Lookup Endpoint (`app/api/groups/campaign/[id]/`)
 - **`route.ts`** — `GET /api/groups/campaign/:id`
-  - Fetches a single campaign from DynamoDB by slug
-  - Returns AI-readable flat JSON with all fields and descriptive nulls
-  - Returns `404` with clear error if not found
+  - Fetches single campaign from DynamoDB by slug, returns AI-readable JSON
 
 #### Test UI (`app/(tests)/tests/groups/discovery/page.tsx`)
-- Triggers the full pipeline via button click
-- **Cost guardrail**: `window.confirm` dialog showing `~$1.60–$2.00` cost estimate before firing
-- **Button lockout**: Disabled while results are displayed; "Clear & Reset" to re-run
-- **Skipped banner**: Shows yellow warning if any slugs were already in DynamoDB
+- Triggers the full pipeline via button click with cost guardrail dialog (~$1.60–$2.00 per run)
+- Button lockout while results displayed; "Clear & Reset" to re-run
 - Fan-out fetches full campaign details from `/api/groups/campaign/[id]` for display
 
 ### Safeguards In Place
@@ -61,141 +58,222 @@ Core discovery pipeline is built and operational, but the Phase B (inventory pri
 
 ---
 
-## 🔜 Phase 2: Digital Promotion Stack — **NEXT PRIORITY**
+## ✅ Phase 2: Campaign Media Pipeline — IN PROGRESS
 
-*Runs in parallel to landing page build. Goal: drive external traffic into `/campaigns/[slug]` waitlist before threshold is hit.*
+*Corresponds to Strategy §6.3 "Vibe Asset Generation." This is a multi-step sub-pipeline with its own phased docs in [`CAMPAIGN_MEDIA/`](./CAMPAIGN_MEDIA/README.md).*
 
-### 2A. Top-of-Funnel — Traffic Generation (Human-in-the-Loop Approval)
+### 2A. Aesthetic Devising (Phase C.1) — ✅ COMPLETE
 
-The system generates a **Promotion Brief** per campaign, then explicitly prompts you for approval/input before spending money. Once approved, automation resumes via APIs.
+**The Campaign Identity Engine** — generates a locked `CampaignAestheticBrief` before any image/video/audio assets are created.
 
-**Step-by-step flow:**
+#### What Was Built
+- **Zod Schemas**: `lib/campaigns/schema.ts` — `CampaignAestheticBriefSchema` + all nested types (`VideoBrief`, `TikTokConceptSet`, `MerchItemBrief`, etc.) with inferred TypeScript types
+- **DynamoDB Ops**: `lib/campaigns/campaign-store.ts` — `saveAestheticBrief`, `getAestheticBrief` (writes to `SK: MEDIA#AESTHETIC_BRIEF`, updates campaign `METADATA` with `aestheticBriefStatus`)
+- **AI Engine**: `lib/campaigns/aesthetic-engine.ts` — Two-pass GPT-4o generation via `@ai-sdk/openai`:
+  - **Pass 1**: Core identity (visual palette, typography, messaging, merch direction, audio identity)
+  - **Pass 2**: Platform-specific expansion (social concepts for 8 platforms + 5 video briefs)
+  - **Slogan Quality Gate**: Programmatic check — rejects clichés and enforces word-count limits; auto-retries up to 3×
+  - **Brand Constraint Integration**: Hard constraints from `brand-identity` skill injected into system prompt
+- **API Endpoints**:
+  - `POST /api/campaigns/[slug]/media/aesthetic` — generates + persists brief
+  - `GET /api/campaigns/[slug]/media/aesthetic` — retrieves existing brief
+  - `POST /api/campaigns/[slug]/media/aesthetic/approve` — validates via Zod + locks `humanReviewStatus: 'approved'`
+- **Dashboard UI**: `app/dashboard/campaigns/[slug]/media/aesthetic/page.tsx` — visual palette preview, slogans, raw JSON, approve button
+- **Test Page**: `app/(tests)/tests/aesthetic-devising/page.tsx` — isolated pipeline runner
 
-1. **Auto-generated**: System produces a structured Promotion Brief from the campaign blueprint:
-   - Google Custom Intent keywords + placement URLs (derived from `targetingKeywords`)
-   - Meta Lead Form ad copy (3 variants, niche-native voice via GPT-5-mini)
-   - Budget recommendation (tiered: $5 → $15 → $30/day based on traction)
-   - Webhook URL for Meta Lead Form → DynamoDB
+#### Spec Reference
+Full schema and generation process: [PHASE_1_AESTHETIC_DEVISING.md](./CAMPAIGN_MEDIA/PHASE_1_AESTHETIC_DEVISING.md)
 
-2. **⏸️ HUMAN CHECKPOINT — Brief Review**:
-   System prompts you with exactly what it needs:
-   - *"Approve/edit the following 3 ad copy variants"*
-   - *"Confirm daily budget tier (default: $5/day)"*
-   - *"Provide Google Ads Customer ID and Meta Ad Account ID"* (one-time, stored in `.env`)
-   - *"Approve targeting keywords and placements"*
-   
-   Approval stored on campaign record: `promotionStatus: 'APPROVED'`
+### 2B. Media Generation (Phase C.2) — NOT STARTED
+- [ ] AI image generation (Midjourney / DALL-E) driven by aesthetic brief
+- [ ] Ship reference imagery via `/api/imageSearch` (§6.3)
+- [ ] HeyGen avatar video generation from `VideoBrief` specs
+- [ ] ElevenLabs narration from `audio.ambientNarrationScript`
+- [ ] Suno/original music from `audio.musicMood` prompt seed
 
-3. **▶️ AUTOMATION RESUMES**:
-   - Google Ads API → creates Custom Intent Audience + Display campaign
-   - Meta Marketing API → creates Lead Ad + attaches webhook endpoint
-   - Campaign record updated: `promotionStatus: 'LIVE'`
+Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md)
 
-4. **Budget auto-scaling** (agent-managed, no approval needed):
-   - Agent reads waitlist count from DynamoDB every 24h
-   - 0–2 signups after 48h → pause spend, flag for review
-   - 3+ signups → escalate to Tier 2 ($15/day)
-   - Within 2 cabins of threshold → escalate to Tier 3 ($30/day)
+### 2C. Storage & Organization (Phase C.3) — NOT STARTED
+- [ ] Asset CDN/S3 storage structure
+- [ ] Metadata linking assets back to campaign slug + aesthetic brief
 
-### 2B. Lead Nurture — Moving to Threshold
-- [ ] **Klaviyo / Beehiiv Email Sequence** (3-part, auto-triggered on waitlist join):
-  - T+0: *"You're on the list. We need X more cabins."*
-  - T+3d: *"Vote on the itinerary!"* → `UpdateItem` call to `proposedEvents` in DynamoDB
-  - T+7d: *"We just hit Y cabins! Only Z more to go."* (live count from DynamoDB)
-- [ ] **Twilio SMS** — fires only on `THRESHOLD_MET` status change with the CB booking link
+Spec: [PHASE_3_STORAGE_ORGANIZATION.md](./CAMPAIGN_MEDIA/PHASE_3_STORAGE_ORGANIZATION.md)
 
-### 2C. Privacy-First Attribution
-- [ ] **Meta Conversions API (CAPI)** — server-side event ping from the DynamoDB write Lambda → Facebook. 100% attribution accuracy despite browser privacy blockers
+### 2D. Distribution & Platform Delivery (Phase C.4) — NOT STARTED
+- [ ] Auto-format assets per platform specs (TikTok, IG, FB, Pinterest, etc.)
+- [ ] Email template image embedding (Klaviyo/Beehiiv)
 
-### 2D. Synthetic Influencer Assets
-- [ ] **Midjourney** — 4–5 hyper-specific aesthetic images per campaign
-- [ ] **ElevenLabs** — 30-second ambient audio pitch for landing page hero
-- [ ] **HeyGen** — optional 60-second "Virtual Cruise Director" avatar video
-- [ ] **Original music** — niche-native background track for ads (copyright-safe)
-
-### 2E. Landing Page Engagement Mechanics (feeds nurture loop)
-- [ ] **Live "Hype" Counter** — real-time DynamoDB read: *"5 of 8 cabins pledged."*
-- [ ] **Proposed Events Leaderboard** — top-voted `proposedEvents` from waitlist entries
-- [ ] **Interactive "Vibe Quiz"** — lightweight React quiz populates `proposedEvents` via email capture
-
-### Reference
-Detailed strategy in: [GROUP_CAMPAIGN_STRATEGY.md §5](./GROUP_CAMPAIGN_STRATEGY.md) · [CONVERSTATION.md](./CONVERSTATION.md)
+Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 
 ---
 
-## 🔜 Phase 3: Campaign Build — NOT STARTED
+## 🔜 Phase 3: Campaign Build & Guest Onboarding — NOT STARTED
 
-*Converts a `DRAFT` campaign into an active `GATHERING_INTEREST` landing page.*
+*Converts a `DRAFT` campaign into a live `GATHERING_INTEREST` landing page and handles the full guest journey through manifest collection. Corresponds to Strategy §3 Stages 1, 2, 2.5, 2.6, 2.7.*
 
+### 3A. Landing Page (Stage 1)
 - [ ] Dynamic landing page: `app/(campaigns)/campaigns/[slug]/page.tsx`
+- [ ] Dual CTA model: "Join Group Waitlist" (`bookingMode: 'GROUP_WAIT'`) + "Book My Spot Now" (`bookingMode: 'BOOK_NOW'`)
 - [ ] Waitlist form → DynamoDB `USER#<email>` record write
+- [ ] Live "Hype" counter — real-time DynamoDB read: *"X of Y cabins pledged"*
+- [ ] Proposed Events leaderboard from waitlist entries
+- [ ] Interactive "Vibe Quiz" → email capture → `proposedEvents` population
+
+### 3B. Threshold & Validation Logic (Stage 2)
 - [ ] Auto-threshold check on every waitlist submission
-- [ ] Internal alert (Slack/Pushover/Email) when `minCabinsRequired` met
+  - `BOOK_NOW` → immediate manifest trigger (no threshold check)
+  - `GROUP_WAIT` → threshold check against `minCabinsRequired`
+- [ ] Internal alert (Pushover/Slack) when `THRESHOLD_MET`
+- [ ] `BOOK_NOW` guests count toward threshold total
 
-## 🔜 Phase 4: CB Inventory Match & Group Registration — NOT STARTED
+### 3C. Passenger Manifest Collection — "The Golden Window" (Stage 2.5)
+- [ ] "Trip is GO!" email to all `USER#` records on threshold event
+- [ ] Manifest page: `/campaigns/[slug]/manifest?token=<signed-jwt>` (72h expiry)
+- [ ] AI-assisted conversational form flow via `/api/chat`
+- [ ] Pre-seeded from parent `USER#` record data
+- [ ] Writes `GUEST#<email>` record with full `GUEST_INFO` JSON
+- [ ] Per-guest dispatch gate: CB link sent on `manifestStatus: 'SUBMITTED'`
+- [ ] Non-submitter reminder sequence (24h, 48h, 72h → agent alert)
 
-*Strategy updated (March 2026): CB pre-negotiates and holds hundreds of group blocks across all major lines at **no agent-side cost**. The primary path is matching to existing pre-blocked inventory — Formstack is fallback only.*
+### 3D. Group Community Channel (Stage 2.6)
+- [ ] `communityChannelUrl` in campaign config (Discord / WhatsApp / Facebook Group)
+- [ ] Channel invite included in "Trip is GO!" email
+- [ ] `BOOK_NOW` guests get invite immediately on manifest completion
+- [ ] Pre-configured channels: `#intros`, `#event-voting`, `#cabin-tips`, `#ship-day-photos`
+
+### 3E. Branded Merchandise (Stage 2.7)
+- [ ] Print-on-demand via Printful/Printify (zero inventory, zero upfront cost)
+- [ ] Merch page: `/campaigns/[slug]/merch` or Printify Pop-Up Store link
+- [ ] Activates on `THRESHOLD_MET` — teaser shown before
+- [ ] `merchandiseStoreUrl` populated on `METADATA` record at activation
+- [ ] Designs sourced from `CampaignAestheticBrief.merch` section
+- [ ] Order window closes 21 days before sailing date
+
+---
+
+## 🔜 Phase 4: CB Inventory Match & Link Pre-Loading (Stage 3) — NOT STARTED
+
+*Strategy updated (March 2026): CB pre-negotiates and holds hundreds of group blocks at **no agent-side cost**. The primary path is matching to existing pre-blocked inventory — Formstack is fallback only. This stage happens during pre-launch setup, not at threshold time.*
 
 **Primary Path (Pre-blocked CB Inventory):**
-- [ ] Search CB `view_groups` (`/groups/view_groups/`) for sailings matching campaign's destination, duration, and date window
-- [ ] On match: click "Copy Link" to retrieve the Personal Booking Link immediately — no Formstack needed
-- [ ] Populate `cbagenttoolsGroupId` and `cbagenttoolsBookingLink` on the `METADATA` record
-- [ ] Campaign status → `CONVERTED`
+- [ ] Search CB `view_groups` for sailings matching campaign destination, duration, date window
+- [ ] On match: "Copy Link" to retrieve Personal Booking Link — no Formstack needed
+- [ ] Populate `cbagenttoolsGroupId` and `cbagenttoolsBookingLink` on `METADATA` record
+- [ ] Link is pre-loaded **before** campaign goes live (zero-latency threshold dispatch)
 
 **Fallback Path (External/Custom Blocks Only):**
-- [ ] If no CB pre-block matches, register via Formstack at `https://anhywhereinc.formstack.com/forms/private_group_booking` to lock the Group ID
-- [ ] Prevents other CB agents from booking into it
-
-*Note: If Phase 1 Phase B is completed (CB inventory match pre-launch), this phase becomes near-instantaneous — the `cbPersonalLink` is already stored on the record at threshold time.*
-
-## 🔜 Phase 5: Financial Handoff — NOT STARTED
-
-- [ ] Automated email to all waitlist `USER#` records with CB booking link
-- [ ] Mark `notified: true` per user record
-- [ ] Conversion tracking: `converted: true` once deposit confirmed
+- [ ] Register via Formstack at `https://anhywhereinc.formstack.com/forms/private_group_booking`
+- [ ] Only needed if sailing is negotiated outside CB's pre-existing inventory
 
 ---
 
-## 🔜 Phase 6: Campaign Lifecycle Tracking — NOT STARTED
+## 🔜 Phase 5: Financial Handoff & Booking (Stage 4) — NOT STARTED
+
+*Dual-mode booking system: Self-Serve link dispatch OR OdysseusEngine automated booking. Mode selected automatically by `autoHandoffThreshold`.*
+
+### 5A. Self-Serve Path (Above Threshold)
+- [ ] CB personal link dispatched to guest on `manifestStatus: 'SUBMITTED'`
+- [ ] Guest completes CB's own checkout, pays deposit directly
+- [ ] Confirmation screen text: multi-cabin booking instructions
+- [ ] `converted: true` via webhook callback
+
+### 5B. OdysseusEngine-Assisted Path (Below Threshold)
+- [ ] OdysseusEngine invoked programmatically from `GUEST_INFO` record
+- [ ] Headless Chrome automation: login → navigate group → select cabin → fill passenger details → hold
+- [ ] Reservation number captured → written to `GUEST#` record → confirmation email dispatched
+- [ ] **Current status**: OdysseusEngine operational through `holdCabin()` scaffolding. Outstanding gap: final Passenger Details form fill + hold submission.
+
+### 5C. Graceful Expiry (Stage 5)
+- [ ] Daily scheduled function checks `GATHERING_INTEREST` campaigns against `expiresAt`
+- [ ] "This One Didn't Sail" email to `GROUP_WAIT` guests with pivot to individual booking
+- [ ] CTA → same manifest page → CB link dispatched individually
+- [ ] All `USER#` / `GUEST#` records retained as CRM for future campaigns
+
+---
+
+## 🔜 Phase 6: Digital Promotion Stack (Strategy §5) — NOT STARTED
+
+*Drives external traffic into `/campaigns/[slug]` waitlist. Human-in-the-loop approval for ad spend.*
+
+### 6A. Top-of-Funnel Traffic Generation
+- [ ] Auto-generate Promotion Brief per campaign from blueprint data
+- [ ] **⏸️ HUMAN CHECKPOINT**: approve ad copy variants, budget tier, targeting keywords
+- [ ] Google Custom Intent Audience + Display campaign via Google Ads API (§5.1A)
+- [ ] Meta Lead Form Ads with Webhook → DynamoDB write (§5.1B)
+- [ ] TikTok organic seeding: AI-generated concept videos (§5.5A)
+- [ ] TikTok Lead Gen Ads post-validation (§5.5B)
+
+### 6B. Lead Nurture (§5.2)
+- [ ] Klaviyo/Beehiiv 3-part email sequence (T+0, T+3d, T+7d)
+- [ ] Twilio SMS on `THRESHOLD_MET` status change
+
+### 6C. Privacy-First Attribution (§5.3)
+- [ ] Meta Conversions API (CAPI) — server-side event ping from DynamoDB write Lambda
+
+### 6D. Budget Auto-Scaling
+- [ ] Agent reads waitlist count every 24h
+- [ ] Tier 1 ($5/day) → Tier 2 ($15/day) → Tier 3 ($30/day) based on traction
+- [ ] Auto-pause on 0 signups after 48h
+
+### 6E. Synthetic Influencer Assets (§5.4)
+- [ ] ElevenLabs "Hype-Man" voice for video ads
+- [ ] HeyGen AI avatar "Specialist" video
+- [ ] Original niche-native music (copyright-safe)
+
+---
+
+## 🔜 Phase 7: Campaign Lifecycle Tracking — NOT STARTED
 
 *Structured process for monitoring campaigns over months. Prevents missed deadlines, stale campaigns, and budget waste.*
 
-### 6A. Campaign Health Status Engine
-- [ ] **New DynamoDB attributes on campaign record**:
-  - `promotionStatus`: `'BRIEF_GENERATED'` → `'PENDING_APPROVAL'` → `'APPROVED'` → `'LIVE'` → `'PAUSED'` → `'EXPIRED'`
-  - `promotionStartedAt`: ISO timestamp
-  - `lastHealthCheckAt`: ISO timestamp
-  - `adSpendTotal`: running total in dollars
-  - `deadlines`: structured object (see 6B)
+### 7A. Campaign Health Status Engine
+- [ ] New DynamoDB attributes: `promotionStatus`, `promotionStartedAt`, `lastHealthCheckAt`, `adSpendTotal`, `deadlines`
+- [ ] Status flow: `BRIEF_GENERATED` → `PENDING_APPROVAL` → `APPROVED` → `LIVE` → `PAUSED` → `EXPIRED`
 
-### 6B. Deadline Tracking
-- [ ] **Per-campaign deadline object** on the DynamoDB record:
-  - `sailingDate`: when the target sailing departs — hard stop for all activity
-  - `groupBlockExpiry`: when CB group block expires if not filled (typically sail date minus 60–90 days)
-  - `depositDeadline`: last date waitlist users can book via the CB link
-  - `promotionCutoff`: *auto-calculated* (`groupBlockExpiry - 14 days`) — stop spending after this
-- [ ] **OpenClaw daily cron** checks all `LIVE` campaigns:
-  - 🟡 Alert if within 14 days of `groupBlockExpiry` and waitlist < threshold
-  - 🔴 Alert if `promotionStatus: 'LIVE'` but 0 signups for 7+ days (dead campaign)
-  - ⛔ Auto-pause ads if past `promotionCutoff`
+### 7B. Deadline Tracking
+- [ ] Per-campaign deadline object: `sailingDate`, `groupBlockExpiry`, `depositDeadline`, `promotionCutoff`
+- [ ] OpenClaw daily cron checks all `LIVE` campaigns
+  - 🟡 Alert within 14 days of `groupBlockExpiry` and waitlist < threshold
+  - 🔴 Alert if `LIVE` but 0 signups for 7+ days
+  - ⛔ Auto-pause ads past `promotionCutoff`
 
-### 6C. Campaign Health Report
-- [ ] **`GET /api/groups/health`** endpoint — returns all active campaigns with:
-  - Current waitlist count vs. `minCabinsRequired`
-  - Days until each deadline
-  - Ad spend vs. signups (cost-per-lead)
-  - Status flag: `ON_TRACK` | `AT_RISK` | `STALE` | `EXPIRED`
-- [ ] OpenClaw consumes this endpoint on schedule, alerts you only on `AT_RISK` or `STALE`
+### 7C. Campaign Health Report
+- [ ] `GET /api/groups/health` endpoint
+- [ ] Returns: waitlist count vs threshold, days until deadlines, CPL, status flags (`ON_TRACK` | `AT_RISK` | `STALE` | `EXPIRED`)
 
-### 6D. Campaign Archival
-- [ ] On `CONVERTED` or `EXPIRED`:
-  - Pause/delete promotion ads via API
-  - Snapshot final metrics on campaign record
-  - Status → `ARCHIVED` (data preserved, removed from active monitoring)
+### 7D. Campaign Archival
+- [ ] On `CONVERTED` or `EXPIRED`: pause/delete ads, snapshot metrics, status → `ARCHIVED`
+
+---
+
+## 🔜 Phase 8: Operations Calendar (Strategy §7) — NOT STARTED
+
+*The "factory floor" layer — how blueprints are batched, campaigns launched, and performance gates enforced.*
+
+### 8A. Monthly Blueprint Sprint (§7.1)
+- [ ] 5 × Phase D `campaign-config` objects produced in single AI-assisted session
+- [ ] Cross-reference themes to avoid keyword overlap / audience cannibalization
+- [ ] All configs committed as `DRAFT` to DynamoDB
+
+### 8B. Weekly Launch Rate (§7.2)
+- [ ] Staggered activation: 1–2 campaigns per week from monthly batch
+- [ ] Activation = `DRAFT` → `GATHERING_INTEREST`
+
+### 8C. Seed Phase — Days 1–30 (§7.3)
+- [ ] TikTok Organic (zero budget) + Tier 1 Targeted Ads ($5–10/day)
+- [ ] Seed Phase budget ceiling: ~$300/month per campaign
+- [ ] All paid leads → DynamoDB via webhook → Klaviyo nurture sequence
+
+### 8D. Day 30 Decision Gate — Scale or Kill (§7.4)
+- [ ] Score against 5 metrics: waitlist %, email open rate, TikTok save rate, CPL, manifest completion rate
+- [ ] **Scale**: 3+ Strong → increase budget, add TikTok Lead Gen Ads, extend window
+- [ ] **Kill**: 3+ Weak → Stage 5 Graceful Expiry, archive, retain CRM, re-queue niche
 
 ---
 
 ## Known Gaps (Deferred)
-- **Phase 1 Phase B**: CB inventory search + pricing scrapers not yet wired into discovery pipeline — see Phase 1 checklist above
+- **Phase 1 Phase B**: CB inventory search + pricing scrapers not yet wired into discovery pipeline
 - **Auth on discovery endpoint**: Deferred — local-only system for now
-- **Perplexity fetch timeout/retry**: No timeout set on Sonar calls; acceptable for local dev, revisit before any production deploy
+- **Perplexity fetch timeout/retry**: No timeout on Sonar calls; acceptable for local dev
+- **`GUEST_INFO` schema**: Full JSON schema for manifest collection not yet defined as Zod
+- **OdysseusEngine final step**: Passenger Details form fill + hold submission click outstanding
