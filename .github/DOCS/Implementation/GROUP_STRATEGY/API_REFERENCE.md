@@ -64,8 +64,8 @@
 
 | Method | Path | File | Status |
 |--------|------|------|--------|
-| `GET` | `/api/groups/campaign/:slug` | `app/api/groups/campaign/[id]/route.ts` | ✅ Live |
-| `DELETE` | `/api/groups/campaign/:slug` | `app/api/groups/campaign/[id]/route.ts` | ✅ Live |
+| `GET` | `/api/groups/campaign/:slug` | `app/api/groups/campaign/[slug]/route.ts` | ✅ Live |
+| `DELETE` | `/api/groups/campaign/:slug` | `app/api/groups/campaign/[slug]/route.ts` | ✅ Live |
 
 ### Campaign Media — Phase 2A (Aesthetic)
 
@@ -79,9 +79,7 @@
 
 ## Identifier: Slug vs ID
 
-> **`slug`** is the canonical campaign identifier everywhere. It is set at discovery time and is the `PK` suffix in DynamoDB (`CAMPAIGN#<slug>`).
->
-> `[id]` in the current folder name `campaign/[id]/` is a legacy naming artifact — the value passed is always the slug. **Future folders should use `[slug]`** for naming clarity.
+> **`slug`** is the canonical campaign identifier everywhere. It is set at discovery time and is the `PK` suffix in DynamoDB (`CAMPAIGN#<slug>`). Use `[slug]` for all dynamic route folder names.
 
 ---
 
