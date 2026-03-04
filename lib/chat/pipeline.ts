@@ -146,7 +146,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
     // Stage 6 — LLM Call
     const prunedHistory = pruneHistoryForLlm(history);
-    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: prunedHistory.length, model: input.model ?? 'gpt-4o-mini' });
+    pipelineLog.llm(input.sessionId, 'call_start', { historyTurns: prunedHistory.length, model: input.model ?? MODEL_FAST });
     const rawLlmText = await callChatLlm({
         history: prunedHistory,
         model: input.model,

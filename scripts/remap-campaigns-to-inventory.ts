@@ -2,7 +2,7 @@
  * scripts/remap-campaigns-to-inventory.ts
  *
  * Remaps existing campaign `shipTarget` fields to real CB group inventory ships
- * using GPT-4o-mini — no new Perplexity calls needed.
+ * using the LLM Gateway (GPT_5_MEDIUM for structured extraction).
  *
  * Usage:
  *   npx tsx scripts/remap-campaigns-to-inventory.ts
@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import OpenAI from 'openai';
+import { callLLM, ModelName } from '../lib/ai/llm-gateway';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -105,18 +105,12 @@ function loadCbInventory(): CbInventoryItem[] {
     });
 }
 
-// ─── GPT Remap ───────────────────────────────────────────────────────────────
+// ─── Gateway Remap ───────────────────────────────────────────────────────────
 
 async function remapWithGpt(
     campaign: Campaign,
     inventory: CbInventoryItem[]
 ): Promise<RemapResult> {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const inventoryList = inventory.map(item =>
-        `- ${item.shipName} (${item.vendor})${item.sailDate ? ' | ' + item.sailDate : ''}`
-    ).join('\n');
-
     const prompt = {
         task: 'Match this campaign to the best available CB group inventory ship.',
         campaign: {
@@ -147,14 +141,14 @@ async function remapWithGpt(
         },
     };
 
-    const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: JSON.stringify(prompt) }],
-        response_format: { type: 'json_object' },
-        temperature: 0.3,
+    // GPT_5_MEDIUM: reliable instruction-following for structured extraction — routed via gateway
+    const { content } = await callLLM(ModelName.GPT_5_MEDIUM, JSON.stringify(prompt), {
+        systemPrompt: 'You are a cruise inventory matcher. Return ONLY valid JSON with no markdown wrapping.',
+        temperature:  0.3,
+        maxTokens:    400,
     });
 
-    const parsed = JSON.parse(response.choices[0].message.content ?? '{}') as RemapResult;
+    const parsed = JSON.parse(content) as RemapResult;
     return { ...parsed, campaignId: campaign.id };
 }
 

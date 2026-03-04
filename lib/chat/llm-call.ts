@@ -3,20 +3,41 @@ import type { ChatMessage } from './types';
 import { generateObject } from 'ai';
 import { openai as vercelOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
+import { ModelName, getModelConfig, modelForTask } from '@/lib/ai/llm-gateway';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
-export const MODEL_MAIN = 'gpt-5';            // primary reasoning model
-export const MODEL_FAST = 'gpt-5-mini';       // lightweight tasks: classifier, summarizer
-export const MODEL_VOICE = 'o3-mini';          // voice pipeline
+// ─── Model constants — resolved through the gateway registry ─────────────────
+/** Primary reasoning / agentic chat model */
+export const MODEL_MAIN  = ModelName.CLAUDE_4_SONNET;  // agentic: balanced utility + tool-use
+/** Lightweight tasks: classification, intent, JSON extraction */
+export const MODEL_FAST  = ModelName.GPT_5_INSTANT;    // decision: lowest latency
+/** Voice pipeline text-mode fallback */
+export const MODEL_VOICE = ModelName.CLAUDE_4_SONNET;  // agentic
+
+/**
+ * Resolves a ModelName (or raw string for backward compat) to its API-level model ID.
+ * ModelName values are looked up in the registry; unknown strings pass through as-is.
+ */
+export function resolveModelApiId(model: string): string {
+    const allNames = Object.values(ModelName) as string[];
+    if (allNames.includes(model)) {
+        const cfg = getModelConfig(model as ModelName);
+        return cfg.apiId ?? model;
+    }
+    return model; // backward-compat pass-through for unknown/legacy model strings
+}
 
 export async function callGlobalGenerateObject<T>(options: {
     system?: string;
     prompt: string;
     schema: z.ZodSchema<T>;
-    modelName?: string;
+    modelName?: ModelName;
 }) {
-    const model = vercelOpenAI(options.modelName || MODEL_FAST);
+    // Resolve model through the gateway registry — falls back to MODEL_FAST (GPT_5_INSTANT)
+    const targetModel = options.modelName ?? MODEL_FAST;
+    const apiId = resolveModelApiId(targetModel);
+    const model = vercelOpenAI(apiId);
     return generateObject({
         model,
         schema: options.schema,
@@ -39,19 +60,21 @@ function tempParam(model: string, value: number): Record<string, number> {
 
 export async function callChatLlm(input: {
     history: ChatMessage[];
-    model?: string;
+    /** Pass a ModelName enum value; raw legacy strings are also accepted for backward compat. */
+    model?: ModelName | string;
 }): Promise<string> {
     const openai = new OpenAI();
-    const model = input.model ?? MODEL_MAIN;
+    // Resolve through the gateway registry so model selection stays centralised.
+    const apiId = resolveModelApiId(input.model ?? MODEL_MAIN);
 
     const completion = await openai.chat.completions.create({
-        model,
+        model: apiId,
         messages: input.history.map((message) => ({
             role: message.role,
             content: message.content,
         })),
-        ...tokenParam(model, 2000),
-        ...tempParam(model, 0.8),
+        ...tokenParam(apiId, 2000),
+        ...tempParam(apiId, 0.8),
     });
 
     const rawReply = completion.choices[0]?.message?.content;

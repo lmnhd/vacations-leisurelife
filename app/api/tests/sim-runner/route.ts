@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { runSimulationStreamed, listScenarios } from '@/tests/simulator-core';
 import type { SimStreamEvent } from '@/tests/simulator-core';
+import { ModelName } from '@/lib/ai/llm-gateway';
 
 export const maxDuration = 300;
 
@@ -13,12 +14,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = await request.json() as {
         scenarioId?: string;
         agentModel?: string;
-        simulatorModel?: string;
+        simulatorModel?: ModelName;
     };
 
-    const scenarioId = body.scenarioId;
-    const agentModel = body.agentModel ?? 'gpt-4o-mini';
-    const simulatorModel = body.simulatorModel ?? 'gpt-4o-mini';
+    const scenarioId      = body.scenarioId;
+    const agentModel      = body.agentModel ?? 'default';   // resolved by chat pipeline
+    const simulatorModel  = body.simulatorModel ?? ModelName.CLAUDE_4_SONNET;
 
     if (!scenarioId) {
         return Response.json({ error: 'scenarioId is required' }, { status: 400 });

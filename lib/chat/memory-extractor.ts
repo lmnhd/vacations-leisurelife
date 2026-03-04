@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { callLLM, ModelName } from '@/lib/ai/llm-gateway';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -53,18 +53,13 @@ export async function extractMemoryFacts(input: {
     const extractionPrompt = await loadExtractionPrompt();
     const userMessage = buildExtractionUserMessage(input);
 
-    const openai = new OpenAI();
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-            { role: 'system', content: extractionPrompt },
-            { role: 'user', content: userMessage },
-        ],
-        max_tokens: 400,
-        temperature: 0,
+    // GPT_5_INSTANT: cheap, fast extraction task — routed through the gateway
+    const { content: rawReply } = await callLLM(ModelName.GPT_5_INSTANT, userMessage, {
+        systemPrompt: extractionPrompt,
+        maxTokens:    400,
+        temperature:  0,
     });
 
-    const rawReply = completion.choices[0]?.message?.content ?? '{}';
     const extractedFields = parseExtractedJson(rawReply);
 
     return {

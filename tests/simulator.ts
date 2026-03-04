@@ -11,7 +11,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import OpenAI from 'openai';
+import { callLLM, ModelName } from '../lib/ai/llm-gateway';
 import { chatStorageService } from '../lib/chat/chat-storage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -65,8 +65,9 @@ type SimulationResult = {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const CHAT_API_URL = process.env.CHAT_API_URL ?? 'http://localhost:3000/api/chat';
-const SIMULATOR_MODEL = 'gpt-4o-mini';
+const CHAT_API_URL  = process.env.CHAT_API_URL ?? 'http://localhost:3000/api/chat';
+/** Simulator persona model — routed through the LLM gateway */
+const SIMULATOR_MODEL = ModelName.CLAUDE_4_SONNET;
 const TOKENS_PER_TURN_ESTIMATE = 800;
 const COST_PER_1K_TOKENS_USD = 0.00015;
 
@@ -115,29 +116,27 @@ async function callChatApi(input: {
 }
 
 async function getSimulatorResponse(input: {
-    openai: OpenAI;
     systemPrompt: string;
     conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
     agentReply: string;
 }): Promise<string> {
-    const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
-        { role: 'system', content: input.systemPrompt },
-        ...input.conversationHistory,
-        { role: 'user', content: input.agentReply },
-    ];
+    // Serialize multi-turn history into a single prompt for the gateway
+    const historyText = input.conversationHistory
+        .map((m) => `${m.role === 'user' ? 'USER' : 'ASSISTANT'}: ${m.content}`)
+        .join('\n');
+    const prompt = historyText
+        ? `${historyText}\nUSER: ${input.agentReply}`
+        : `USER: ${input.agentReply}`;
 
-    const completion = await input.openai.chat.completions.create({
-        model: SIMULATOR_MODEL,
-        messages,
-        max_tokens: 200,
-        temperature: 0.9,
+    const { content } = await callLLM(SIMULATOR_MODEL, prompt, {
+        systemPrompt: input.systemPrompt,
+        maxTokens:    200,
+        temperature:  0.9,
     });
-
-    return completion.choices[0]?.message?.content?.trim() ?? 'GOAL_ACHIEVED';
+    return content.trim() || 'GOAL_ACHIEVED';
 }
 
 async function evaluateConversationalGate(input: {
-    openai: OpenAI;
     condition: string;
     transcript: TurnRecord[];
 }): Promise<boolean> {
@@ -145,24 +144,12 @@ async function evaluateConversationalGate(input: {
         .map((t) => `${t.role.toUpperCase()}: ${t.content}`)
         .join('\n');
 
-    const completion = await input.openai.chat.completions.create({
-        model: SIMULATOR_MODEL,
-        messages: [
-            {
-                role: 'system',
-                content: 'You are a conversation evaluator. Answer only with "true" or "false".',
-            },
-            {
-                role: 'user',
-                content: `Given this conversation transcript:\n\n${transcriptText}\n\nDid the following occur? "${input.condition}"\n\nAnswer only: true or false`,
-            },
-        ],
-        max_tokens: 10,
-        temperature: 0,
+    const { content } = await callLLM(SIMULATOR_MODEL, `Given this conversation transcript:\n\n${transcriptText}\n\nDid the following occur? "${input.condition}"\n\nAnswer only: true or false`, {
+        systemPrompt: 'You are a conversation evaluator. Answer only with "true" or "false".',
+        maxTokens:    10,
+        temperature:  0,
     });
-
-    const answer = completion.choices[0]?.message?.content?.trim().toLowerCase() ?? 'false';
-    return answer === 'true';
+    return content.trim().toLowerCase() === 'true';
 }
 
 function resolveFieldValue(
@@ -212,10 +199,9 @@ function evaluateEndStateAssertion(
 
 async function runSimulation(scenarioFilePath: string): Promise<void> {
     const scenario = loadScenario(scenarioFilePath);
-    const openai = new OpenAI();
 
     const sessionId = `sim-${scenario.scenario_id}-${Date.now()}`;
-    const userId = `sim-user-${scenario.scenario_id}`;
+    const userId    = `sim-user-${scenario.scenario_id}`;
     const simulatorSystemPrompt = buildSimulatorSystemPrompt(scenario);
 
     const transcript: TurnRecord[] = [];
@@ -258,7 +244,6 @@ async function runSimulation(scenarioFilePath: string): Promise<void> {
         for (const gateResult of gateResults) {
             if (!gateResult.passed && turnCount <= gateResult.required_before_turn) {
                 const gatePassed = await evaluateConversationalGate({
-                    openai,
                     condition: gateResult.condition,
                     transcript,
                 });
@@ -271,7 +256,6 @@ async function runSimulation(scenarioFilePath: string): Promise<void> {
         }
 
         const nextUserMessage = await getSimulatorResponse({
-            openai,
             systemPrompt: simulatorSystemPrompt,
             conversationHistory: simulatorHistory,
             agentReply,

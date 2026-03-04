@@ -1,14 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import Configuration, { ClientOptions, OpenAI } from "openai";
+import { callLLM, ModelName } from "@/lib/ai/llm-gateway";
 
 import { increaseApiLimit, checkApiLImit } from "@/lib/api-limit";
-
-const configuration: ClientOptions = {
-  apiKey: process.env.OPENAI_API_KEY,
-};
-
-const openai = new OpenAI(configuration);
 
 export async function POST(req: Request) {
   try {
@@ -20,10 +14,6 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    if (!configuration.apiKey) {
-      return new NextResponse("OpenAI key not configured", { status: 500 });
-    }
-
     if (!messages) {
       return new NextResponse("Messages are required", { status: 400 });
     }
@@ -33,17 +23,24 @@ export async function POST(req: Request) {
       return new NextResponse("Free trial limit exceeded", { status: 403 });
     }
 
+    // Route through the gateway — ModelName.GPT_5_INSTANT for fast, low-latency conversation
+    const lastUserMessage = (messages as Array<{ role: string; content: string }>)
+      .filter((m) => m.role === 'user')
+      .pop()?.content ?? '';
+    const systemMessage = (messages as Array<{ role: string; content: string }>)
+      .find((m) => m.role === 'system')?.content;
 
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      max_tokens: 150,
+    const { content, raw } = await callLLM(ModelName.GPT_5_INSTANT, lastUserMessage, {
+      systemPrompt: systemMessage,
+      maxTokens:    150,
     });
 
     await increaseApiLimit();
 
-    return NextResponse.json(response.choices[0]);
+    // Return in the same shape as the original response.choices[0]
+    const rawResponse = raw as { choices?: Array<{ message: { role: string; content: string } }> };
+    const choice = rawResponse?.choices?.[0] ?? { message: { role: 'assistant', content } };
+    return NextResponse.json(choice);
   } catch (error) {
     console.log(error);
     return new NextResponse("Internal Server Error", { status: 500 });

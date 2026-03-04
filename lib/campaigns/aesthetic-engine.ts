@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { Campaign } from './types';
+import { ModelName, getModelConfig, modelForTask } from '@/lib/ai/llm-gateway';
 import {
     CampaignAestheticBrief,
     CampaignAestheticBriefSchema,
@@ -72,7 +73,10 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
 }
 
 export async function generateAestheticBrief(campaign: Campaign): Promise<CampaignAestheticBrief> {
-    const model = openai('gpt-4o');
+    // Resolve model through the gateway registry. Creative task → GPT_5_HIGH (OpenAI Tier-1).
+    // Note: uses @ai-sdk/openai adapter for generateObject structured output.
+    const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
+    const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
 
     const brandGuidelines = `
 Leisure Life Interactive Brand Guidelines:

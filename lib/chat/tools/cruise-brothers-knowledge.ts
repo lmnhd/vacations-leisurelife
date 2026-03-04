@@ -1,9 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
-
-const CACHE_FILE_PATH = path.join(process.cwd(), '.github', 'data', 'cb-knowledge-cache.json');
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? '';
+import { callLLM, ModelName } from '@/lib/ai/llm-gateway';
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +27,8 @@ const AiMatchSchema = z.object({
 
 type KnowledgeEntry = z.infer<typeof KnowledgeEntrySchema>;
 
+const CACHE_FILE_PATH = path.join(process.cwd(), '.github', 'data', 'cb-knowledge-cache.json');
+
 // ─── AI semantic selection ────────────────────────────────────────────────────
 
 async function selectRelevantEntries(
@@ -40,40 +40,20 @@ async function selectRelevantEntries(
         .map((entry, i) => `${i}: ${entry.title} — ${entry.content.slice(0, 80)}`)
         .join('\n');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            temperature: 0,
-            response_format: { type: 'json_object' },
-            messages: [
-                {
-                    role: 'system',
-                    content: [
-                        'You are a knowledge retrieval assistant for Cruise Brothers travel agents.',
-                        'Given a query and an index of knowledge entries, return the indices of the 1-3 entries that genuinely answer the query.',
-                        'Only return entries with directly relevant content. Never match on incidental word overlap (e.g. "group" in a phone number label does not mean the entry answers a group-booking question).',
-                        'Respond with JSON: { "indices": [<number>, ...], "reasoning": "<one sentence>" }',
-                    ].join(' '),
-                },
-                {
-                    role: 'user',
-                    content: `QUERY: ${query}\n\nINDEX:\n${index}`,
-                },
-            ],
-        }),
+    const systemPrompt = [
+        'You are a knowledge retrieval assistant for Cruise Brothers travel agents.',
+        'Given a query and an index of knowledge entries, return the indices of the 1-3 entries that genuinely answer the query.',
+        'Only return entries with directly relevant content. Never match on incidental word overlap.',
+        'Respond with JSON: { "indices": [<number>, ...], "reasoning": "<one sentence>" }',
+    ].join(' ');
+
+    // GPT_5_INSTANT: fast, cheap binary decision routed through the gateway
+    const { content } = await callLLM(ModelName.GPT_5_INSTANT, `QUERY: ${query}\n\nINDEX:\n${index}`, {
+        systemPrompt,
+        temperature: 0,
+        maxTokens:   200,
     });
 
-    if (!response.ok) {
-        throw new Error(`OpenAI semantic selection failed: ${response.status}`);
-    }
-
-    const json = await response.json() as { choices: Array<{ message: { content: string } }> };
-    const content = json.choices[0]?.message.content ?? '{}';
     const parsed = AiMatchSchema.safeParse(JSON.parse(content));
 
     if (!parsed.success || parsed.data.indices.length === 0) {

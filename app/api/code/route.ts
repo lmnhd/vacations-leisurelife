@@ -1,12 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server"
-import Configuration, { ClientOptions, OpenAI} from "openai"
-
-const configuration : ClientOptions = {
-    apiKey: process.env.OPENAI_API_KEY,
-}
-
-const openai = new OpenAI(configuration)
+import { NextResponse } from "next/server";
+import { callLLM, ModelName } from "@/lib/ai/llm-gateway";
 
 const instructionMessage = {
     role: "system",
@@ -26,21 +20,25 @@ export async function POST(
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        if (!configuration.apiKey) {
-            return new NextResponse("OpenAI key not configured", { status: 500 });
-        }
-
         if (!messages) {
             return new NextResponse("Messages are required", { status: 400 });
         }
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [instructionMessage, ...messages],
-            max_tokens: 500,
-        })
+        // Route through the gateway — CLAUDE_4_OPUS for code generation (top SWE-bench score)
+        const userContent = (messages as Array<{ role: string; content: string }>)
+            .filter((m) => m.role === 'user')
+            .map((m) => m.content)
+            .join('\n');
 
-        return NextResponse.json(response.choices[0])
+        const { content, raw } = await callLLM(ModelName.CLAUDE_4_OPUS, userContent, {
+            systemPrompt: instructionMessage.content,
+            maxTokens:    500,
+        });
+
+        // Return in the same shape as the original response.choices[0]
+        const rawResponse = raw as { choices?: Array<unknown> };
+        const choice = rawResponse?.choices?.[0] ?? { message: { role: 'assistant', content } };
+        return NextResponse.json(choice);
     } catch (error) {
         console.log("[CODE_ERROR]",error)
         return new NextResponse("Internal Server Error", { status: 500 } )

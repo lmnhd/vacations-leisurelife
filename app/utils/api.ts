@@ -1,19 +1,7 @@
 import axios from "axios";
 import prismadb from "@/lib/prismadb";
 import { backOff } from "exponential-backoff";
-import Configuration, { ClientOptions, OpenAI } from "openai";
-
-const configuration: ClientOptions = {
-  apiKey: process.env.OPENAI_API_KEY,
-};
-
-const getOpenAIClient = () => {
-  if (!configuration.apiKey) {
-    return null;
-  }
-
-  return new OpenAI(configuration);
-};
+import { callLLM, ModelName } from "@/lib/ai/llm-gateway";
 async function storeAIResponse(
   prompt: string,
   response: string,
@@ -135,32 +123,26 @@ async function aiAssist(
   const allowAiInProd = process.env.ALLOW_AI_IN_PRODUCTION === "true";
 
   if (isDev || allowAiInProd) {
-    console.log("no stored response found, querying openai...");
+    console.log("no stored response found, querying LLM gateway...");
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    const userMessage: any = {
-      role: "user",
-      content: message,
-    };
-    const client = getOpenAIClient();
 
-    if (!client) {
-      console.warn("OPENAI_API_KEY is missing; skipping OpenAI request.");
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OPENAI_API_KEY is missing; skipping LLM request.");
       return "no response found";
     }
 
-    const response = await client.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [userMessage],
-      max_tokens: 1000,
+    // Route through the gateway — GPT_5_INSTANT for cheap AI-assist tasks
+    const { content: res } = await callLLM(ModelName.GPT_5_INSTANT, message, {
+      maxTokens: 1000,
     });
-    const res = response.choices[0].message.content || "error";
+
     console.log(res);
 
-    if (res !== "error") {
+    if (res && res !== "error") {
       console.log("storing response...");
       storeAIResponse(data, res, componentId, functionId);
     }
-    return res;
+    return res || "error";
   }
 
   return "no response found";

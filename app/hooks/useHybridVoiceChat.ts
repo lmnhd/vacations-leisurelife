@@ -14,6 +14,7 @@
 
 'use client';
 
+import { ModelName } from '@/lib/ai/llm-gateway';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -121,7 +122,7 @@ export function useHybridVoiceChat(options: UseHybridVoiceChatOptions): UseHybri
                     sessionId: options.sessionId,
                     userId: options.userId,
                     channel: 'voice_hybrid',
-                    model: 'gpt-4o',  // matches MODEL_MAIN in llm-call.ts
+                    model: ModelName.GPT_5_MEDIUM,  // routes through resolveModelApiId in pipeline
                     ...(options.startingContext ? { startingContext: options.startingContext } : {}),
                 }),
             });
