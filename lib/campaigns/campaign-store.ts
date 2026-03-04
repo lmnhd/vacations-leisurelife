@@ -1,4 +1,4 @@
-import { PutCommand, GetCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import { Campaign } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
@@ -18,6 +18,25 @@ export async function saveCampaignBlueprint(campaign: Campaign): Promise<void> {
         console.error(`Failed to save campaign blueprint ${campaign.id}:`, error);
         throw error;
     }
+}
+
+export async function deleteCampaignBlueprint(slug: string): Promise<void> {
+    const params = {
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
+    };
+    try {
+        await chatDynamoDocumentClient.send(new DeleteCommand(params));
+    } catch (error) {
+        console.error(`Failed to delete campaign ${slug}:`, error);
+        throw error;
+    }
+}
+
+export async function deleteAllCampaigns(): Promise<number> {
+    const campaigns = await scanAllCampaigns();
+    await Promise.all(campaigns.map(c => deleteCampaignBlueprint(c.id)));
+    return campaigns.length;
 }
 
 export async function getCampaignBlueprint(slug: string): Promise<Campaign | null> {

@@ -122,6 +122,16 @@ export default function DiscoveryTestPage() {
         setSkippedCount(0);
     };
 
+    const handleClearAll = async () => {
+        const confirmed = window.confirm(
+            '⚠️ This will permanently delete ALL campaigns from DynamoDB and clear the research cache.\n\n' +
+            'Use this to wipe stale Phase A results before a fresh inventory-aligned run.\n\nContinue?'
+        );
+        if (!confirmed) return;
+        await fetch('/api/groups/discovery/clear', { method: 'DELETE' });
+        handleClear();
+    };
+
     // ─── Phase B ─────────────────────────────────────────────────────────────
 
     const pollPhaseBStatus = useCallback(async () => {
@@ -194,6 +204,9 @@ export default function DiscoveryTestPage() {
                             <p className="text-[10px] text-slate-600 mt-0.5">2× Perplexity Sonar + 1× GPT-4o-mini · ~$1.60–$2.00</p>
                         </div>
                         <div className="flex gap-2">
+                            <button onClick={handleClearAll} className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-400/60 transition-all flex items-center gap-1.5">
+                                🗑 Clear All
+                            </button>
                             {hasPhaseAResults && (
                                 <button onClick={handleClear} className="text-xs px-3 py-1.5 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all flex items-center gap-1.5">
                                     <RotateCcw className="h-3 w-3" /> Reset
