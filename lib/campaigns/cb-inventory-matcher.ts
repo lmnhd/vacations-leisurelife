@@ -83,8 +83,8 @@ export function matchGroupInventoryToCampaign(
     let bestScore = 0;
 
     for (const item of inventory) {
-        // Skip items with no usable price or groupId
-        if (!item.groupId || item.startingPriceNumber <= 0) continue;
+        // Only need a valid groupId — price absence is handled at result time
+        if (!item.groupId) continue;
 
         const score = scoreMatch(campaign, item);
         if (score > bestScore) {
@@ -98,10 +98,16 @@ export function matchGroupInventoryToCampaign(
         return null;
     }
 
-    const computedStartingPrice = Math.round(bestItem.startingPriceNumber * THEME_FEE_MULTIPLIER);
+    // Use parsed price if available; fall back to a baseline derived from priceAdvantage discount value
+    const rawPrice = bestItem.startingPriceNumber > 0
+        ? bestItem.startingPriceNumber
+        : bestItem.priceAdvantageNumber > 0
+            ? bestItem.priceAdvantageNumber * 100  // priceAdvantage is % off — rough baseline
+            : 0;
     const cbPersonalLink = `https://bookings.cbagenttools.com/swift/cruise/package/${bestItem.groupId}?siid=${CB_AGENT_SIID}`;
+    const computedStartingPrice = Math.round(rawPrice * THEME_FEE_MULTIPLIER);
 
-    console.log(`[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore})`);
+    console.log(`[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice})`);
 
     return {
         cbGroupId: bestItem.groupId,
