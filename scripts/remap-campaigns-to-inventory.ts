@@ -11,7 +11,7 @@
  * Each campaign gets: new shipTarget, updated vendor, updated targetDates (if sail dates available)
  */
 
-import { config } from 'dotenv'; config(); config({ path: '.env.local' });
+//import { config } from 'dotenv'; config(); config({ path: '.env.local' });
 import * as fs from 'fs';
 import * as path from 'path';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';

@@ -51,6 +51,7 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 - **`route.ts`** — `GET /api/groups/campaign/:id`
   - Fetches single campaign from DynamoDB by slug
   - Returns AI-readable flat JSON with all fields including `pricingStatus`, `cbagenttoolsBookingLink`, `cbPriceAdvantage`
+  - first test : 'Analog Film & Darkroom Odyssey' slug: `analog-film-and-darkroom-odyssey-2026`
 
 #### Test UI (`app/(tests)/tests/groups/discovery/page.tsx`)
 - **Phase A panel**: Cost-guarded button, button lockout while results loaded, Clear & Reset
@@ -86,6 +87,8 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 
 ## ✅ Phase 2: Campaign Media Pipeline — IN PROGRESS
 
+**test campaign**: `analog-film-and-darkroom-odyssey-2026`
+
 *Corresponds to Strategy §6.3 "Vibe Asset Generation." This is a multi-step sub-pipeline with its own phased docs in [`CAMPAIGN_MEDIA/`](./CAMPAIGN_MEDIA/README.md).*
 
 ### 2A. Aesthetic Devising (Phase C.1) — ✅ COMPLETE
@@ -111,23 +114,83 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 Full schema and generation process: [PHASE_1_AESTHETIC_DEVISING.md](./CAMPAIGN_MEDIA/PHASE_1_AESTHETIC_DEVISING.md)
 
 ### 2B. Media Generation (Phase C.2) — NOT STARTED
-- [ ] AI image generation (Midjourney / DALL-E) driven by aesthetic brief
-- [ ] Ship reference imagery via `/api/imageSearch` (§6.3)
-- [ ] HeyGen avatar video generation from `VideoBrief` specs
-- [ ] ElevenLabs narration from `audio.ambientNarrationScript`
-- [ ] Suno/original music from `audio.musicMood` prompt seed
+
+**Images**
+- [ ] Hero images (5–6) via Stability AI / Midjourney driven by `CampaignAestheticBrief.visual`
+- [ ] Aesthetic concept art (4–5) via Midjourney / DALL-E 3
+- [ ] Ship reference imagery via `/api/imageSearch` (§6.3) — injected as moodboard context
+- [ ] Platform-format crops (16:9, 4:5, 9:16, OG, email header) via Sharp server-side resize
+
+**Video**
+- [ ] TikTok seed video (30–45s) — HeyGen avatar + ElevenLabs voice + hero image backdrop
+- [ ] Hero explainer video (60s) — HeyGen, `messaging.elevatorPitch` expanded to script
+- [ ] Threshold announcement video (30s) — HeyGen, pre-generated with dynamic token placeholders
+- [ ] Countdown video series (3×) — RunwayML Gen-3 image-to-video from hero images
+- [ ] Cinematic B-roll clips (3–4×, 6–10s) — RunwayML Gen-3 atmospheric motion
+
+**Audio**
+- [ ] Ambient narration (30s) — ElevenLabs from `audio.ambientNarrationScript`
+- [ ] Threshold hype clip (15s) — ElevenLabs high-energy from `audio.hypeClipScript`
+- [ ] Campaign theme music (60–120s loop) — Suno AI from `audio.musicMood` prompt seed
+
+**Merch & Copy**
+- [ ] Merch design files (3–5) — DALL-E 3 from `merch.*.dallePrompt` → Printful mockup generation
+- [ ] Platform copy / captions batch — GPT-4o structured call: carousel slides, ad variants (A/B/C), TikTok captions, Pinterest descriptions, email subject lines
+
+**Infrastructure**
+- [ ] Async generation job queue — `MediaGenerationJob` records written to DynamoDB per asset
+- [ ] `CampaignMediaManifest` output — unified asset index with CDN URLs
 
 Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md)
 
 ### 2C. Storage & Organization (Phase C.3) — NOT STARTED
-- [ ] Asset CDN/S3 storage structure
-- [ ] Metadata linking assets back to campaign slug + aesthetic brief
+
+**Binary Storage**
+- [ ] Cloudflare R2 bucket `lll-campaign-media` with deterministic path structure: `campaigns/{slug}/{type}/...`
+- [ ] All assets served via CDN `https://cdn.leisurelifeinteractive.com/campaigns/{slug}/...` (zero egress cost)
+- [ ] AWS S3 as fallback / large video overflow only
+- [ ] WebP for all static images (Sharp post-processing); MP4 H.264 for video; MP3 for audio
+
+**DynamoDB Schema Extensions**
+- [ ] `MEDIA#AESTHETIC_BRIEF` record — serialized `CampaignAestheticBrief` JSON
+- [ ] `MEDIA#MANIFEST` record — serialized `CampaignMediaManifest` with total asset count + CDN URLs
+- [ ] `MEDIA#ASSET#{assetId}` records — per-asset metadata (generator, prompt, dimensions, review status)
+- [ ] `MEDIAJOB#{jobId}` records — generation job tracking (status, retries, cost audit)
+- [ ] `METADATA` record updated with `mediaStatus`, `mediaGeneratedAt`, `mediaManifestUrl`
+
+**Asset Versioning**
+- [ ] `version` + `active` fields on each `MEDIA#ASSET#` record — prior versions retained on regeneration
+- [ ] Manifest always references `active: true` version per `assetId`
+
+**Storage API**
+- [ ] `POST /api/campaigns/[slug]/media/store` — upload asset binary to R2 + write `MEDIA#ASSET#` record
+- [ ] `GET /api/campaigns/[slug]/media/manifest` — retrieve `CampaignMediaManifest`
+- [ ] `GET /api/campaigns/[slug]/media/assets?type=&format=` — query assets by type/format
+- [ ] `POST /api/campaigns/[slug]/media/regenerate` — swap asset version, optionally override prompt
 
 Spec: [PHASE_3_STORAGE_ORGANIZATION.md](./CAMPAIGN_MEDIA/PHASE_3_STORAGE_ORGANIZATION.md)
 
 ### 2D. Distribution & Platform Delivery (Phase C.4) — NOT STARTED
-- [ ] Auto-format assets per platform specs (TikTok, IG, FB, Pinterest, etc.)
-- [ ] Email template image embedding (Klaviyo/Beehiiv)
+
+**Stage-Triggered Dispatch**
+- [ ] `DistributionSchedule` DynamoDB record — machine-readable posting calendar per campaign (`MEDIA#DISTRIBUTION_SCHEDULE`)
+- [ ] `ScheduledPost` records with `scheduledAt` as ISO, `'ON_THRESHOLD'`, `'ON_MANIFEST_SUBMIT'`, or `'ON_EXPIRY'` tokens
+- [ ] Distribution triggered by campaign lifecycle events (same Lambda path as DynamoDB status transitions)
+
+**Platform Integrations**
+- [ ] **TikTok** — TikTok Content Posting API v2: upload + publish seed video; schedule countdown series (2 posts/day rate limit)
+- [ ] **Instagram** — Meta Graph API: single image, Reels, 7-slide carousel; scheduled up to 75 days ahead
+- [ ] **Meta Ads** — Marketing API: upload creatives → create `AdCreative` + `AdSet` + `Ad`; 3 A/B/C variants created as `PAUSED`, activated at `GATHERING_INTEREST`
+- [ ] **Klaviyo** — Pre-build all 7 email campaigns with hero assets injected into templates; flows triggered by DynamoDB events (`lll_waitlist_join`, `lll_threshold_met`, `lll_manifest_submitted`, `lll_campaign_expired`)
+- [ ] **Twilio SMS** — Blast on `THRESHOLD_MET`; MMS attachment of hype clip where supported
+- [ ] **Discord** — Webhook dispatch of welcome embed + ship imagery at Stage 2.6; merch launch pin at `THRESHOLD_MET`
+- [ ] **Printful** — Transition merch products `DRAFT` → `PUBLISHED` on `THRESHOLD_MET`; auto-close orders 21 days pre-sail
+- [ ] **Pinterest** — Pin aesthetic concept images weekly through Seed Phase via Pinterest API v5
+
+**Endpoint & Dashboard**
+- [ ] `POST /api/campaigns/[slug]/media/distribute` — run full distribution or targeted platform subset
+- [ ] `POST /api/distribution/tiktok/post` — targeted TikTok dispatch
+- [ ] Distribution Status Dashboard: `/dashboard/campaigns/[slug]/media/distribution` — timeline view, per-platform status, engagement summary pull, manual post triggers, asset swap UI, kill switch
 
 Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 

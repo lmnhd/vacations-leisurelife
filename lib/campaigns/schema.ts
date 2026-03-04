@@ -23,7 +23,7 @@ export const MerchItemBriefSchema = z.object({
     designDescription: z.string(),
     colorway: z.string(),
     dallePrompt: z.string(),
-    printfulProductId: z.string().optional(),
+    printfulProductId: z.string(), // Required by OpenAI structured output; AI returns "" when not yet assigned
 });
 
 export const TikTokConceptSetSchema = z.object({
