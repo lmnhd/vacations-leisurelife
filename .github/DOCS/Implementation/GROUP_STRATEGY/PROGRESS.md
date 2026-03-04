@@ -3,7 +3,10 @@
 **Branch**: `feature/shadow-groups`  
 **Last Updated**: 2026-03-04  
 **Strategy Reference**: [GROUP_CAMPAIGN_STRATEGY.md](./GROUP_CAMPAIGN_STRATEGY.md)  
-**Campaign Media Sub-Pipeline**: [CAMPAIGN_MEDIA/README.md](./CAMPAIGN_MEDIA/README.md)
+**Campaign Media Sub-Pipeline**: [CAMPAIGN_MEDIA/README.md](./CAMPAIGN_MEDIA/README.md)  
+**API Endpoint Reference**: [API_REFERENCE.md](./API_REFERENCE.md) ← **All endpoints MUST be documented here**
+
+> ⚠️ **API Convention**: ALL endpoints live under `/api/groups/`. Never create routes under `/api/campaigns/`, `/api/media/`, or any other top-level prefix. See [API_REFERENCE.md](./API_REFERENCE.md).
 
 ---
 
@@ -104,9 +107,9 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
   - **Slogan Quality Gate**: Programmatic check — rejects clichés and enforces word-count limits; auto-retries up to 3×
   - **Brand Constraint Integration**: Hard constraints from `brand-identity` skill injected into system prompt
 - **API Endpoints**:
-  - `POST /api/campaigns/[slug]/media/aesthetic` — generates + persists brief
-  - `GET /api/campaigns/[slug]/media/aesthetic` — retrieves existing brief
-  - `POST /api/campaigns/[slug]/media/aesthetic/approve` — validates via Zod + locks `humanReviewStatus: 'approved'`
+  - `POST /api/groups/campaign/:slug/media/aesthetic` — generates + persists brief
+  - `GET /api/groups/campaign/:slug/media/aesthetic` — retrieves existing brief
+  - `POST /api/groups/campaign/:slug/media/aesthetic/approve` — validates via Zod + locks `humanReviewStatus: 'approved'`
 - **Dashboard UI**: `app/dashboard/campaigns/[slug]/media/aesthetic/page.tsx` — visual palette preview, slogans, raw JSON, approve button
 - **Test Page**: `app/(tests)/tests/aesthetic-devising/page.tsx` — isolated pipeline runner
 
@@ -163,10 +166,10 @@ Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md
 - [ ] Manifest always references `active: true` version per `assetId`
 
 **Storage API**
-- [ ] `POST /api/campaigns/[slug]/media/store` — upload asset binary to R2 + write `MEDIA#ASSET#` record
-- [ ] `GET /api/campaigns/[slug]/media/manifest` — retrieve `CampaignMediaManifest`
-- [ ] `GET /api/campaigns/[slug]/media/assets?type=&format=` — query assets by type/format
-- [ ] `POST /api/campaigns/[slug]/media/regenerate` — swap asset version, optionally override prompt
+- [ ] `POST /api/groups/campaign/:slug/media/store` — upload asset binary to R2 + write `MEDIA#ASSET#` record
+- [ ] `GET /api/groups/campaign/:slug/media/manifest` — retrieve `CampaignMediaManifest`
+- [ ] `GET /api/groups/campaign/:slug/media/assets?type=&format=` — query assets by type/format
+- [ ] `POST /api/groups/campaign/:slug/media/regenerate` — swap asset version, optionally override prompt
 
 Spec: [PHASE_3_STORAGE_ORGANIZATION.md](./CAMPAIGN_MEDIA/PHASE_3_STORAGE_ORGANIZATION.md)
 
@@ -188,8 +191,8 @@ Spec: [PHASE_3_STORAGE_ORGANIZATION.md](./CAMPAIGN_MEDIA/PHASE_3_STORAGE_ORGANIZ
 - [ ] **Pinterest** — Pin aesthetic concept images weekly through Seed Phase via Pinterest API v5
 
 **Endpoint & Dashboard**
-- [ ] `POST /api/campaigns/[slug]/media/distribute` — run full distribution or targeted platform subset
-- [ ] `POST /api/distribution/tiktok/post` — targeted TikTok dispatch
+- [ ] `POST /api/groups/campaign/:slug/media/distribute` — run full distribution or targeted platform subset
+- [ ] `POST /api/groups/campaign/:slug/media/distribute/tiktok` — targeted TikTok dispatch
 - [ ] Distribution Status Dashboard: `/dashboard/campaigns/[slug]/media/distribution` — timeline view, per-platform status, engagement summary pull, manual post triggers, asset swap UI, kill switch
 
 Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
