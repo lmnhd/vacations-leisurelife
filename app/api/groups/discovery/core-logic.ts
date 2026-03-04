@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { Campaign } from '@/lib/campaigns/types';
-import { saveCampaignBlueprint, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
 const PerplexityResponseSchema = z.object({
     choices: z.array(
@@ -73,9 +73,17 @@ interface DiscoveryPipelineResult {
 }
 
 export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResult> {
+    // Pre-load existing campaigns to build the deduplication exclusion list
+    const existingCampaigns = await scanAllCampaigns();
+    const existingThemesBlock = existingCampaigns.length > 0
+        ? `\n\nIMPORTANT: The following theme niches have already been created and must NOT be suggested again — choose entirely different communities and aesthetics:\n${existingCampaigns.map(c => `- ${c.name} (${c.aesthetic ?? c.id})`).join('\n')}`
+        : '';
+
+    console.log(`[runGroupDiscoveryPipeline] ${existingCampaigns.length} existing campaign(s) found — injecting exclusion list into prompts.`);
+
     console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
     const psychographicPrompt = `
-Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate.
+Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate.${existingThemesBlock}
     `.trim();
     const psychographicData = await callPerplexity(psychographicPrompt);
 
@@ -98,7 +106,7 @@ Research Data:
 ${aestheticData}
 
 Write a structured JSON detailing exactly 5 fully vetted, high-value Theme Cruise Blueprints based on this research.
-Ensure each blueprint is highly specific, aspirational, and contains all required fields.
+Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}
         `.trim(),
     });
 

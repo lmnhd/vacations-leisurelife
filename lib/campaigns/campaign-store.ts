@@ -178,3 +178,23 @@ export async function scanUnmatchedCampaigns(): Promise<Campaign[]> {
         throw error;
     }
 }
+
+/**
+ * Scans ALL campaign METADATA records regardless of pricingStatus or campaign status.
+ * Used by the discovery pipeline to build an exclusion list for Perplexity prompts.
+ */
+export async function scanAllCampaigns(): Promise<Campaign[]> {
+    const params = {
+        TableName: TABLE_NAME,
+        FilterExpression: 'SK = :sk',
+        ExpressionAttributeValues: { ':sk': 'METADATA' },
+    };
+
+    try {
+        const response = await chatDynamoDocumentClient.send(new ScanCommand(params));
+        return (response.Items as Campaign[]) ?? [];
+    } catch (error) {
+        console.error('[campaign-store] Failed to scan all campaigns:', error);
+        throw error;
+    }
+}
