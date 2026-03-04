@@ -75,7 +75,7 @@ export function matchGroupInventoryToCampaign(
     campaign: Campaign,
     inventory: CbGroupInventoryItem[]
 ): CbInventoryMatch | null {
-    const MIN_MATCH_SCORE = 30;
+    const MIN_MATCH_SCORE = 25;
 
     if (inventory.length === 0) return null;
 
