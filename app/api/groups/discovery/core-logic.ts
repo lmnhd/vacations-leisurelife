@@ -12,11 +12,22 @@ import path from 'path';
 
 const CACHE_DIR = path.join(process.cwd(), '.github', 'data');
 const CACHE_FILE = path.join(CACHE_DIR, 'discovery-research-cache.json');
+const CB_DEALS_CACHE_FILE = path.join(CACHE_DIR, 'cb-deals-cache.json');
 
 type ResearchCache = {
     date: string;
     psychographicData?: string;
     aestheticData?: string;
+};
+
+type CbDealsCache = {
+    generatedAtIso: string;
+    priceAdvantages: Array<{
+        groupId: string;
+        shipName: string;
+        vendor: string;
+        sailDate: string;
+    }>;
 };
 
 function readResearchCache(): ResearchCache {
@@ -25,7 +36,6 @@ function readResearchCache(): ResearchCache {
     try {
         const raw = readFileSync(CACHE_FILE, 'utf-8');
         const parsed = JSON.parse(raw) as ResearchCache;
-        // Stale if from a different day — return fresh
         if (parsed.date !== today) return { date: today };
         return parsed;
     } catch {
@@ -36,6 +46,30 @@ function readResearchCache(): ResearchCache {
 function writeResearchCache(cache: ResearchCache): void {
     mkdirSync(CACHE_DIR, { recursive: true });
     writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+}
+
+/**
+ * Reads the CB deals cache and builds a concise ship inventory string for AI prompts.
+ * Returns empty string if cache file doesn't exist — graceful degradation.
+ */
+function buildCbInventoryContext(): string {
+    if (!existsSync(CB_DEALS_CACHE_FILE)) return '';
+    try {
+        const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
+        const cache = JSON.parse(raw) as CbDealsCache;
+        const ships = cache.priceAdvantages
+            .filter(g => g.shipName && g.vendor)
+            .map(g => `- ${g.shipName} (${g.vendor})${g.sailDate ? ': ' + g.sailDate : ''}`)
+            // Deduplicate by ship name
+            .filter((line, idx, arr) => arr.findIndex(l => l.startsWith(line.split('(')[0])) === idx)
+            .slice(0, 20); // cap to keep prompt size sane
+
+        if (ships.length === 0) return '';
+
+        return `\n\nAVAILABLE CB GROUP INVENTORY (real bookable ship blocks — your blueprints MUST target one of these ships):\n${ships.join('\n')}`;
+    } catch {
+        return '';
+    }
 }
 
 const PerplexityResponseSchema = z.object({
@@ -166,12 +200,19 @@ Analyze current community growth and sentiment for niche subcultures discussing 
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
         aestheticData = cache.aestheticData;
     } else {
+        const cbInventoryContext = buildCbInventoryContext();
+        if (cbInventoryContext) {
+            console.log('[runGroupDiscoveryPipeline] Step 2: CB inventory context loaded from cb-deals-cache.json');
+        } else {
+            console.warn('[runGroupDiscoveryPipeline] Step 2: No CB deals cache found — run scrape-cb-deals.ts first for inventory-first theming.');
+        }
+
         console.log('[runGroupDiscoveryPipeline] Step 2: Aesthetic Gap Follow-up');
         const aestheticPrompt = `
 Based on the following subcultures we identified:
 ${psychographicData}
 
-For each theme retreat, what onboard amenities are most requested? Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement.
+For each theme retreat, what onboard amenities are most requested? Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement.${cbInventoryContext}
         `.trim();
         aestheticData = await callPerplexity(aestheticPrompt);
         cache.aestheticData = aestheticData;

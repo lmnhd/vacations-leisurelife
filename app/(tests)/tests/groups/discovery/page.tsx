@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Loader2, RotateCcw, GitBranch, MapPin } from "lucide-react";
 import { Campaign } from '@/lib/campaigns/types';
 
@@ -49,6 +49,30 @@ export default function DiscoveryTestPage() {
     const [phaseBCampaigns, setPhaseBCampaigns] = useState<PhaseBCampaignRef[]>([]);
     const [phaseBError, setPhaseBError] = useState<string | null>(null);
     const [phaseBRunning, setPhaseBRunning] = useState(false);
+
+    // Auto-load existing campaigns from DynamoDB on mount
+    useEffect(() => {
+        const loadExisting = async () => {
+            try {
+                const res = await fetch('/api/groups/discovery?load=true');
+                const data = await res.json();
+                if (!data.success || !data.campaigns?.length) return;
+
+                const fetched = await Promise.all(
+                    (data.campaigns as Array<{ id: string; name: string; fetchUrl: string }>).map(async (ref) => {
+                        const r = await fetch(ref.fetchUrl);
+                        const d = await r.json();
+                        return d.success ? (d.campaign as Campaign) : null;
+                    })
+                );
+                const loaded = fetched.filter((b): b is Campaign => b !== null);
+                if (loaded.length > 0) setBlueprints(loaded);
+            } catch {
+                // Silent — auto-load is best-effort
+            }
+        };
+        loadExisting();
+    }, []);
 
     // ─── Phase A ─────────────────────────────────────────────────────────────
 

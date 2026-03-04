@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { runGroupDiscoveryPipeline } from './core-logic';
+import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
-export const maxDuration = 300; // Allow 5 minutes for deep research and LLM processing
+export const maxDuration = 300;
 
 /**
  * In-process lock: prevents concurrent discovery runs from the OpenClaw scheduler
@@ -9,7 +10,20 @@ export const maxDuration = 300; // Allow 5 minutes for deep research and LLM pro
  */
 let isRunning = false;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+
+    // ?load=true — return existing campaigns without running Phase A
+    if (searchParams.get('load') === 'true') {
+        const campaigns = await scanAllCampaigns();
+        const campaignRefs = campaigns.map(c => ({
+            id: c.id,
+            name: c.name,
+            fetchUrl: `/api/groups/campaign/${c.id}`,
+        }));
+        return NextResponse.json({ success: true, campaigns: campaignRefs, skippedCount: 0 });
+    }
+
     if (isRunning) {
         console.warn('[API] Discovery pipeline is already in progress — rejecting concurrent request.');
         return NextResponse.json(
