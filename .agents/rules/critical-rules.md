@@ -61,16 +61,99 @@ pm start, or any development server commands
 
 ---
 
-# LLM Architecture & Model Nuance Rules
-- **Anti-Defaulting Policy**: Never hardcode 'gpt-4o' or any specific model globally. 
-- **Model Selection Protocol**: For every new AI-driven feature, perform a web search for "Current SOTA LLM Benchmarks [Current Month] [Current Year]". 
-- **Task-Based Routing**: Use the following logic for model selection:
-    * **Complex Software Engineering/Refactoring**: Default to Claude 4.5 Sonnet (Current Leader in SWE-bench).
-    * **Deep Reasoning/Math/Logic**: Default to GPT-5.2 or DeepSeek-R1 series.
-    * **High-Volume/Low-Latency/UI-Chat**: Default to Gemini 3.1 Flash or GPT-5 mini.
-    * **Large Context Analysis (>200k tokens)**: Default to Gemini 2.5 Pro or Llama 4 Scout (10M window).
-- **Centralization**: ALWAYS implement a single `LLMProvider` or `AIGateway` utility. Do not allow unique API connections to be scattered throughout the app. 
-- **Cost Awareness**: If a task is trivial (classification, formatting), use a 'Flash' or 'Mini' model to preserve token budget.
+# LLM Usage — Gateway Pattern (MANDATORY)
+
+All LLM calls in this app MUST go through the centralized gateway at `lib/ai/llm-gateway/`.
+**NEVER** instantiate `new OpenAI()`, `new Anthropic()`, or any SDK client directly outside that folder.
+
+## The Single Entry Point
+
+```typescript
+import { callLLM, ModelName, modelForTask, TASK_MODEL_MAP } from '@/lib/ai/llm-gateway';
+
+// Simple call
+const { content } = await callLLM(ModelName.GPT_5_INSTANT, userMessage, {
+  systemPrompt: 'You are a helpful assistant.',
+  maxTokens: 500,
+  temperature: 0.7,
+});
+
+// Task-based routing (preferred — no manual model picking)
+const model = modelForTask('extraction');
+const { content } = await callLLM(model, prompt);
+```
+
+## ModelName Enum — Use These, Never Raw Strings
+
+| Enum Value | Best For |
+|---|---|
+| `ModelName.CLAUDE_4_OPUS` | Code fixes, code generation, creative briefs |
+| `ModelName.GPT_5_HIGH` | Deep reasoning, math, planning |
+| `ModelName.GEMINI_3_PRO` | Large context analysis (repo-wide, long docs) |
+| `ModelName.CLAUDE_4_SONNET` | Agentic workflows, simulations, general tool-use |
+| `ModelName.GPT_5_MEDIUM` | Data extraction, structured output |
+| `ModelName.GEMINI_3_FLASH` | Real-time UI chat, low-latency responses |
+| `ModelName.GPT_5_INSTANT` | Memory extraction, quick decisions, classification |
+| `ModelName.GEMINI_3_FLASH_LITE` | Summarization, cheap verification |
+| `ModelName.LLAMA_4_MAVERICK` | Sanity checks, ultra-low cost tasks |
+
+## TASK_MODEL_MAP — Semantic Routing (Preferred)
+
+Use `modelForTask(key)` instead of hardpicking a model. Available task keys:
+
+```
+code_fix · code_generation · repo_analysis · long_context · reasoning
+agentic · summarize · decision · verify · extraction
+ui_chat · memory_extraction · simulation · creative
+```
+
+```typescript
+// Good — intent is clear, model decision is centralized
+const { content } = await callLLM(modelForTask('code_fix'), prompt);
+
+// Acceptable — when you need a specific tier explicitly
+const { content } = await callLLM(ModelName.CLAUDE_4_OPUS, prompt);
+
+// FORBIDDEN — raw model strings are banned everywhere
+const { content } = await callLLM('gpt-4o' as any, prompt); // ❌
+```
+
+## Structured Output (generateObject)
+
+For structured JSON output via Vercel AI SDK (e.g., schema-driven generation),
+only OpenAI models are currently supported (`@ai-sdk/openai` installed).
+Resolve the model API ID through the registry:
+
+```typescript
+import { openai } from '@ai-sdk/openai';
+import { getModelConfig, ModelName } from '@/lib/ai/llm-gateway';
+
+const cfg   = getModelConfig(ModelName.GPT_5_MEDIUM);
+const model = openai(cfg.apiId ?? ModelName.GPT_5_MEDIUM);
+// then pass to generateObject(...)
+```
+
+## Multi-Turn Chat (Messages Array)
+
+For multi-turn conversations (messages array), use `callChatLlm` from `lib/chat/llm-call.ts`.
+Pass a `ModelName` enum value as the `model` parameter — it resolves to the correct API ID via
+`resolveModelApiId()`. Do not pass raw strings.
+
+```typescript
+import { callChatLlm } from '@/lib/chat/llm-call';
+import { ModelName } from '@/lib/ai/llm-gateway';
+
+const reply = await callChatLlm({ history, model: ModelName.CLAUDE_4_SONNET });
+```
+
+## Adding New Models
+
+Update **only** `lib/ai/llm-gateway/models.ts`:
+1. Add the value to the `ModelName` enum
+2. Add metadata to `MODEL_METADATA`
+3. Optionally add a `TASK_MODEL_MAP` entry
+
+No other files need to change.
 
 ---
 
