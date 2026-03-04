@@ -13,43 +13,69 @@ const PerplexityResponseSchema = z.object({
     ),
 });
 
-async function callPerplexity(prompt: string): Promise<string> {
+async function callPerplexity(prompt: string, attempt: number = 1): Promise<string> {
     const apiKey = process.env.PERPLEXITY_API_KEY;
     if (!apiKey) {
         throw new Error('Missing PERPLEXITY_API_KEY environment variable.');
     }
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: 'sonar-deep-research',
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt,
-                },
-            ],
-            temperature: 0.2, // Low temp for more factual/focused answers
-        }),
-    });
+    const MAX_ATTEMPTS = 3;
+    const controller = new AbortController();
+    // Hard cap: 10 minutes per call (sonar-deep-research is slow)
+    const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000);
 
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Perplexity request failed (${response.status}): ${errorBody}`);
+    try {
+        console.log(`[callPerplexity] Attempt ${attempt}/${MAX_ATTEMPTS}...`);
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'Connection': 'keep-alive',
+            },
+            body: JSON.stringify({
+                model: 'sonar-deep-research',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.2,
+            }),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Perplexity request failed (${response.status}): ${errorBody}`);
+        }
+
+        const parsedResponse = PerplexityResponseSchema.parse(await response.json());
+        const result = parsedResponse.choices[0]?.message.content?.trim();
+        if (!result) {
+            throw new Error('Perplexity returned an empty research response.');
+        }
+
+        console.log(`[callPerplexity] ✅ Response received (attempt ${attempt}).`);
+        return result;
+
+    } catch (error) {
+        const isRetryable = error instanceof Error && (
+            error.message.includes('ECONNRESET') ||
+            error.message.includes('ECONNREFUSED') ||
+            error.message.includes('fetch failed') ||
+            error.name === 'AbortError'
+        );
+
+        if (isRetryable && attempt < MAX_ATTEMPTS) {
+            const delayMs = attempt * 5000; // 5s, 10s backoff
+            console.warn(`[callPerplexity] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            return callPerplexity(prompt, attempt + 1);
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
     }
-
-    const parsedResponse = PerplexityResponseSchema.parse(await response.json());
-    const result = parsedResponse.choices[0]?.message.content?.trim();
-    if (!result) {
-        throw new Error('Perplexity returned an empty research response.');
-    }
-
-    return result;
 }
+
 
 const ThemeBlueprintSchema = z.object({
     blueprints: z.array(z.object({
