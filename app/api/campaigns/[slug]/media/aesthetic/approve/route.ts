@@ -4,10 +4,10 @@ import { CampaignAestheticBriefSchema } from "@/lib/campaigns/schema";
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { slug } = params;
+        const { slug } = await params;
 
         // Body could contain the fully user-edited brief
         const body = await req.json();

@@ -4,10 +4,11 @@ import { generateAestheticBrief } from "@/lib/campaigns/aesthetic-engine";
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const brief = await getAestheticBrief(params.slug);
+        const { slug } = await params;
+        const brief = await getAestheticBrief(slug);
         if (!brief) {
             return NextResponse.json({ error: "Brief not found" }, { status: 404 });
         }
@@ -19,10 +20,10 @@ export async function GET(
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { slug } = params;
+        const { slug } = await params;
 
         const campaign = await getCampaignBlueprint(slug);
         if (!campaign) {
