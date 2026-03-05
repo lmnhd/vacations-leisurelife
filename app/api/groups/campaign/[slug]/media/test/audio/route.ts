@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { uploadAsset } from '@/lib/campaigns/media/r2-client';
+import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateThemeMusic } from '@/lib/campaigns/media/generators/suno-generator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/audio
-// Test-only route — runs audio generators individually without R2 upload.
-// Returns base64 audio + script metadata.
+// Generate → upload to R2 → save AssetRecord → return CDN URL.
 // Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'suno_theme' }
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -37,37 +39,68 @@ export async function POST(
     try {
         if (generator === 'elevenlabs_narration') {
             const audio = await generateAmbientNarration(brief);
+            const cdnUrl = await uploadAsset(slug, audio.fileName, audio.buffer, 'audio/mpeg');
+            await saveAssetRecord(slug, {
+                assetId: audio.assetId,
+                assetType: 'ambient_narration',
+                url: cdnUrl,
+                generator: 'elevenlabs',
+                promptUsed: audio.script,
+                durationSeconds: 30,
+                fileSizeBytes: audio.buffer.length,
+                mimeType: 'audio/mpeg',
+                tags: ['audio', 'narration'],
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            });
             return NextResponse.json({
                 generator: 'elevenlabs',
                 assetId: audio.assetId,
                 fileName: audio.fileName,
                 script: audio.script,
-                sizeBytes: audio.buffer.length,
-                preview: `data:audio/mpeg;base64,${audio.buffer.toString('base64')}`,
+                fileSizeBytes: audio.buffer.length,
+                cdnUrl,
             });
         }
 
         if (generator === 'elevenlabs_hype') {
             const audio = await generateHypeClip(brief);
+            const cdnUrl = await uploadAsset(slug, audio.fileName, audio.buffer, 'audio/mpeg');
+            await saveAssetRecord(slug, {
+                assetId: audio.assetId,
+                assetType: 'hype_clip',
+                url: cdnUrl,
+                generator: 'elevenlabs',
+                promptUsed: audio.script,
+                durationSeconds: 15,
+                fileSizeBytes: audio.buffer.length,
+                mimeType: 'audio/mpeg',
+                tags: ['audio', 'hype'],
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            });
             return NextResponse.json({
                 generator: 'elevenlabs',
                 assetId: audio.assetId,
                 fileName: audio.fileName,
                 script: audio.script,
-                sizeBytes: audio.buffer.length,
-                preview: `data:audio/mpeg;base64,${audio.buffer.toString('base64')}`,
+                fileSizeBytes: audio.buffer.length,
+                cdnUrl,
             });
         }
 
         if (generator === 'suno_theme') {
-            // Will throw Not Implemented — that's the expected result for now
-            await generateThemeMusic(brief);
+            await generateThemeMusic(brief); // throws Not Implemented
         }
 
         return NextResponse.json({ error: `Unknown generator: ${generator}` }, { status: 400 });
+
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        // Known Not Implemented errors are 501, others are 500
         const status = message.includes('not yet implemented') || message.includes('not set') ? 501 : 500;
         return NextResponse.json({ error: message, notImplemented: status === 501 }, { status });
     }

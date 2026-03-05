@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
-import { generateMerchDesigns } from '@/lib/campaigns/media/generators/dalle-generator';
+import { uploadAsset } from '@/lib/campaigns/media/r2-client';
+import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/merch
-// Test-only route — runs DALL-E 3 merch design generator.
-// Returns base64 design images inline. No R2 upload.
-// Body: { itemIndex?: number } — 0 = core, 1 = practical, 2+ = niche items
+// DALL-E 3 merch design → upload PNG to R2 → save AssetRecord → return CDN URL.
+// Body: { itemIndex?: number }  0=core, 1=practical, 2+=niche
 // ────────────────────────────────────────────────────────────────────────────
 
 interface MerchTestRequestBody {
-    /** Which merch item to generate: 0=core, 1=practical, 2+= niche specific */
     itemIndex?: number;
+}
+
+interface DalleResponse {
+    data: Array<{ b64_json: string; revised_prompt?: string }>;
 }
 
 export async function POST(
@@ -32,7 +36,6 @@ export async function POST(
         }, { status: 400 });
     }
 
-    // Build a single-item brief variant to generate only the requested item
     const { merch } = brief;
     const allItems = [
         { type: 'core', label: merch.coreItem.productType, prompt: merch.coreItem.dallePrompt },
@@ -46,7 +49,7 @@ export async function POST(
 
     if (itemIndex >= allItems.length) {
         return NextResponse.json({
-            error: `itemIndex ${itemIndex} out of range. This brief has ${allItems.length} merch items (0–${allItems.length - 1}).`,
+            error: `itemIndex ${itemIndex} out of range. ${allItems.length} items available (0–${allItems.length - 1}).`,
             availableItems: allItems.map((item, i) => ({ index: i, type: item.type, label: item.label })),
         }, { status: 400 });
     }
@@ -54,7 +57,7 @@ export async function POST(
     const targetItem = allItems[itemIndex];
 
     try {
-        const response = await fetch('https://api.openai.com/v1/images/generations', {
+        const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -71,13 +74,33 @@ export async function POST(
             }),
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`DALL-E 3 error ${response.status}: ${errorText}`);
+        if (!dalleResponse.ok) {
+            const errorText = await dalleResponse.text();
+            throw new Error(`DALL-E 3 error ${dalleResponse.status}: ${errorText}`);
         }
 
-        const data = await response.json() as { data: Array<{ b64_json: string; revised_prompt?: string }> };
-        const result = data.data[0];
+        const dalleData = await dalleResponse.json() as DalleResponse;
+        const result = dalleData.data[0];
+        const imageBuffer = Buffer.from(result.b64_json, 'base64');
+        const assetId = `merch_${targetItem.type}_${randomUUID().slice(0, 8)}`;
+        const fileName = `merch/${targetItem.type}_design.png`;
+
+        const cdnUrl = await uploadAsset(slug, fileName, imageBuffer, 'image/png');
+        await saveAssetRecord(slug, {
+            assetId,
+            assetType: 'merch_design',
+            url: cdnUrl,
+            generator: 'dalle3',
+            promptUsed: result.revised_prompt ?? targetItem.prompt,
+            dimensions: { width: 1024, height: 1024 },
+            fileSizeBytes: imageBuffer.length,
+            mimeType: 'image/png',
+            tags: ['merch', targetItem.type],
+            createdAt: new Date().toISOString(),
+            reviewStatus: 'needs_review',
+            version: 1,
+            active: true,
+        });
 
         return NextResponse.json({
             generator: 'dalle3',
@@ -86,8 +109,10 @@ export async function POST(
             productLabel: targetItem.label,
             promptUsed: targetItem.prompt,
             revisedPrompt: result.revised_prompt,
-            allItems: allItems.map((item, i) => ({ index: i, type: item.type, label: item.label })),
-            preview: `data:image/png;base64,${result.b64_json}`,
+            assetId,
+            fileSizeBytes: imageBuffer.length,
+            cdnUrl,
+            availableItems: allItems.map((item, i) => ({ index: i, type: item.type, label: item.label })),
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
