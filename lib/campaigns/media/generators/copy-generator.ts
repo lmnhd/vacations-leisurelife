@@ -1,10 +1,11 @@
 import {
-    CampaignAestheticBrief,
-    AdCopySet,
-    EmailSubjectSet,
-    PlatformCaptions
+  CampaignAestheticBrief,
+  AdCopySet,
+  EmailSubjectSet,
+  PlatformCaptions
 } from '../../schema';
-import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
+import { callLLM } from '@/lib/ai/llm-gateway';
+import { MEDIA_LLM_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Copy & Caption Generator
@@ -13,10 +14,10 @@ import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
 // ────────────────────────────────────────────────────────────────────────────
 
 export interface GeneratedCopy {
-    carouselSlides: string[];
-    adVariants: AdCopySet[];
-    captions: PlatformCaptions;
-    emailSubjectLines: EmailSubjectSet[];
+  carouselSlides: string[];
+  adVariants: AdCopySet[];
+  captions: PlatformCaptions;
+  emailSubjectLines: EmailSubjectSet[];
 }
 
 /**
@@ -24,15 +25,15 @@ export interface GeneratedCopy {
  * Returns structured JSON with carousel slides, ad variants, captions, and email subjects.
  */
 export async function generatePlatformCopy(
-    brief: CampaignAestheticBrief
+  brief: CampaignAestheticBrief
 ): Promise<GeneratedCopy> {
-    const model = modelForTask('creative');
+  const model = MEDIA_LLM_CONFIG.platformCopy;
 
-    const systemPrompt = `You are the copywriter for Leisure Life Interactive, a boutique cruise campaign studio.
+  const systemPrompt = `You are the copywriter for Leisure Life Interactive, a boutique cruise campaign studio.
 You write platform-native copy that is sharp, niche-specific, and avoids generic cruise marketing language.
 Return ONLY valid JSON matching the exact schema specified. No markdown, no explanation.`;
 
-    const userPrompt = `Generate all platform copy for this campaign. Return JSON matching this schema exactly:
+  const userPrompt = `Generate all platform copy for this campaign. Return JSON matching this schema exactly:
 
 {
   "carouselSlides": ["slide 1 text", "slide 2 text", ... (7 slides for Instagram carousel)],
@@ -78,15 +79,15 @@ Campaign Context:
 
 Generate copy that is niche-native, avoids generic cruise tropes, and matches the ${brief.visual.aestheticLabel} aesthetic.`;
 
-    const { content } = await callLLM(model, userPrompt, {
-        systemPrompt,
-        maxTokens: 4000,
-        temperature: 0.8,
-    });
+  const { content } = await callLLM(model, userPrompt, {
+    systemPrompt,
+    maxTokens: 4000,
+    temperature: 0.8,
+  });
 
-    // Parse the JSON response — strip any markdown fencing if present
-    const jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const parsed = JSON.parse(jsonStr) as GeneratedCopy;
+  // Parse the JSON response — strip any markdown fencing if present
+  const jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const parsed = JSON.parse(jsonStr) as GeneratedCopy;
 
-    return parsed;
+  return parsed;
 }

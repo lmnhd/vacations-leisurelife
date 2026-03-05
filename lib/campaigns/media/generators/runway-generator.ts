@@ -1,19 +1,25 @@
 import { CampaignAestheticBrief } from '../../schema';
+import { RUNWAYML_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // RunwayML Gen-3 Alpha Video Generator
 // Image-to-video for countdown clips and cinematic B-roll.
-// API: https://api.dev.runwayml.com/v1
+// All settings controlled via RUNWAYML_CONFIG in media-pipeline-config.ts.
 // ────────────────────────────────────────────────────────────────────────────
-
-const RUNWAY_API_BASE = 'https://api.dev.runwayml.com/v1';
-const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_ATTEMPTS = 60;
 
 function getApiKey(): string {
     const key = process.env.RUNWAYML_API_KEY;
     if (!key) throw new Error('RUNWAYML_API_KEY not set in environment');
     return key;
+}
+
+interface RunwayCreateResponse {
+    id: string;
+}
+
+interface RunwayStatusResponse {
+    status: string;
+    output?: string[];
 }
 
 interface RunwayVideoResult {
@@ -24,23 +30,21 @@ interface RunwayVideoResult {
 async function createImageToVideo(
     sourceImageUrl: string,
     motionPrompt: string,
-    durationSeconds: number = 10
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
 ): Promise<RunwayVideoResult> {
-    const apiKey = getApiKey();
-
-    const response = await fetch(`${RUNWAY_API_BASE}/image_to_video`, {
+    const response = await fetch(`${RUNWAYML_CONFIG.apiBase}/image_to_video`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${getApiKey()}`,
             'Content-Type': 'application/json',
-            'X-Runway-Version': '2024-11-06',
+            'X-Runway-Version': RUNWAYML_CONFIG.apiVersion,
         },
         body: JSON.stringify({
-            model: 'gen3a_turbo',
+            model: RUNWAYML_CONFIG.model,
             promptImage: sourceImageUrl,
-            promptText: motionPrompt.slice(0, 512),
+            promptText: motionPrompt.slice(0, RUNWAYML_CONFIG.motionPromptMaxChars),
             duration: durationSeconds,
-            ratio: '1280:768',
+            ratio: RUNWAYML_CONFIG.outputRatio,
         }),
     });
 
@@ -49,29 +53,25 @@ async function createImageToVideo(
         throw new Error(`RunwayML create error ${response.status}: ${errorText}`);
     }
 
-    const createData = await response.json() as { id: string };
+    const createData = await response.json() as RunwayCreateResponse;
     const taskId = createData.id;
 
-    // Poll for completion
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+    for (let attempt = 0; attempt < RUNWAYML_CONFIG.maxPollAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, RUNWAYML_CONFIG.pollIntervalMs));
 
-        const statusResponse = await fetch(`${RUNWAY_API_BASE}/tasks/${taskId}`, {
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': '2024-11-06' },
+        const statusResponse = await fetch(`${RUNWAYML_CONFIG.apiBase}/tasks/${taskId}`, {
+            headers: {
+                'Authorization': `Bearer ${getApiKey()}`,
+                'X-Runway-Version': RUNWAYML_CONFIG.apiVersion,
+            },
         });
 
         if (!statusResponse.ok) continue;
 
-        const statusData = await statusResponse.json() as {
-            status: string;
-            output?: string[];
-        };
+        const statusData = await statusResponse.json() as RunwayStatusResponse;
 
         if (statusData.status === 'SUCCEEDED' && statusData.output?.[0]) {
-            return {
-                videoUrl: statusData.output[0],
-                durationSeconds,
-            };
+            return { videoUrl: statusData.output[0], durationSeconds };
         }
 
         if (statusData.status === 'FAILED') {
@@ -96,9 +96,7 @@ export interface GeneratedVideo {
     fileName: string;
 }
 
-/**
- * 3× countdown videos (15s each): "3 cabins remaining", "2 remaining", "1 remaining"
- */
+/** 3× countdown videos — generates all 3 in sequence (use test route for single clip) */
 export async function generateCountdownVideos(
     brief: CampaignAestheticBrief,
     heroImageUrl: string
@@ -114,9 +112,8 @@ export async function generateCountdownVideos(
     ];
 
     for (let i = 0; i < countdownLabels.length; i++) {
-        const result = await createImageToVideo(heroImageUrl, countdownMotions[i], 10);
+        const result = await createImageToVideo(heroImageUrl, countdownMotions[i]);
         const buffer = await downloadVideo(result.videoUrl);
-
         results.push({
             buffer,
             motionPrompt: countdownMotions[i],
@@ -129,9 +126,7 @@ export async function generateCountdownVideos(
     return results;
 }
 
-/**
- * 3–4× cinematic B-roll clips (6–10s) — atmospheric motion from hero images.
- */
+/** 3–4× cinematic B-roll clips — one per source image provided */
 export async function generateBrollClips(
     brief: CampaignAestheticBrief,
     heroImageUrls: string[]
@@ -149,10 +144,9 @@ export async function generateBrollClips(
     const clipCount = Math.min(brollMotions.length, heroImageUrls.length);
 
     for (let i = 0; i < clipCount; i++) {
-        const result = await createImageToVideo(heroImageUrls[i], brollMotions[i], 10);
+        const result = await createImageToVideo(heroImageUrls[i], brollMotions[i]);
         const buffer = await downloadVideo(result.videoUrl);
         const idx = String(i + 1).padStart(3, '0');
-
         results.push({
             buffer,
             motionPrompt: brollMotions[i],

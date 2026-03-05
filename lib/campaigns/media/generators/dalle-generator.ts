@@ -1,13 +1,12 @@
 import { CampaignAestheticBrief } from '../../schema';
 import { GeneratedImage } from './stability-generator';
+import { DALLE_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // DALL-E 3 Merch Design Generator
 // Generates print-ready merch design images from dallePrompt fields.
-// Uses existing OPENAI_API_KEY.
+// All model/API settings controlled via DALLE_CONFIG in media-pipeline-config.ts
 // ────────────────────────────────────────────────────────────────────────────
-
-const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
 
 function getApiKey(): string {
     const key = process.env.OPENAI_API_KEY;
@@ -15,22 +14,24 @@ function getApiKey(): string {
     return key;
 }
 
-async function generateDalleImage(prompt: string): Promise<Buffer> {
-    const apiKey = getApiKey();
+interface DalleImageResponse {
+    data: Array<{ b64_json: string }>;
+}
 
-    const response = await fetch(OPENAI_IMAGES_URL, {
+async function generateDalleImage(prompt: string): Promise<Buffer> {
+    const response = await fetch(`${DALLE_CONFIG.apiBase}/images/generations`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${getApiKey()}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'dall-e-3',
+            model: DALLE_CONFIG.model,
             prompt,
-            size: '1024x1024',
-            quality: 'hd',
-            style: 'natural',
-            response_format: 'b64_json',
+            size: DALLE_CONFIG.size,
+            quality: DALLE_CONFIG.quality,
+            style: DALLE_CONFIG.style,
+            response_format: DALLE_CONFIG.responseFormat,
             n: 1,
         }),
     });
@@ -40,7 +41,7 @@ async function generateDalleImage(prompt: string): Promise<Buffer> {
         throw new Error(`DALL-E 3 error ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json() as { data: Array<{ b64_json: string }> };
+    const data = await response.json() as DalleImageResponse;
     return Buffer.from(data.data[0].b64_json, 'base64');
 }
 
@@ -56,7 +57,6 @@ export async function generateMerchDesigns(
     const { merch } = brief;
     const results: GeneratedImage[] = [];
 
-    // Core item
     const coreBuffer = await generateDalleImage(merch.coreItem.dallePrompt);
     results.push({
         buffer: coreBuffer,
@@ -65,7 +65,6 @@ export async function generateMerchDesigns(
         fileName: `merch/designs/core_tshirt_design.png`,
     });
 
-    // Practical item
     const practicalBuffer = await generateDalleImage(merch.practicalItem.dallePrompt);
     results.push({
         buffer: practicalBuffer,
@@ -74,7 +73,6 @@ export async function generateMerchDesigns(
         fileName: `merch/designs/${merch.practicalItem.productType.toLowerCase().replace(/\s+/g, '_')}_design.png`,
     });
 
-    // Niche-specific items
     for (let i = 0; i < merch.nicheSpecificItems.length; i++) {
         const item = merch.nicheSpecificItems[i];
         const buffer = await generateDalleImage(item.dallePrompt);

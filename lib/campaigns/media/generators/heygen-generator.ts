@@ -1,15 +1,12 @@
 import { CampaignAestheticBrief } from '../../schema';
+import { HEYGEN_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // HeyGen Avatar Video Generator
 // Produces AI avatar talking-head videos for TikTok seed, hero explainer,
 // and threshold announcement.
-// API: https://api.heygen.com/v2
+// All settings controlled via HEYGEN_CONFIG in media-pipeline-config.ts.
 // ────────────────────────────────────────────────────────────────────────────
-
-const HEYGEN_API_BASE = 'https://api.heygen.com/v2';
-const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_ATTEMPTS = 60; // 10 minutes max wait
 
 function getApiKey(): string {
     const key = process.env.HEYGEN_API_KEY;
@@ -17,8 +14,12 @@ function getApiKey(): string {
     return key;
 }
 
-function getDefaultAvatarId(): string {
-    return process.env.HEYGEN_DEFAULT_AVATAR_ID || 'josh_lite3_20230714';
+interface HeyGenCreateResponse {
+    data: { video_id: string };
+}
+
+interface HeyGenStatusResponse {
+    data: { status: string; video_url?: string; duration?: number };
 }
 
 interface HeyGenVideoResult {
@@ -29,37 +30,36 @@ interface HeyGenVideoResult {
 async function createVideo(
     script: string,
     backgroundImageUrl: string,
-    aspectRatio: '16:9' | '9:16' = '16:9'
+    aspectRatio: typeof HEYGEN_CONFIG.tiktokAspectRatio | typeof HEYGEN_CONFIG.explainerAspectRatio
 ): Promise<HeyGenVideoResult> {
-    const apiKey = getApiKey();
-    const avatarId = getDefaultAvatarId();
+    const dimensions = aspectRatio === HEYGEN_CONFIG.tiktokAspectRatio
+        ? HEYGEN_CONFIG.tiktokDimensions
+        : HEYGEN_CONFIG.explainerDimensions;
 
-    const [width, height] = aspectRatio === '16:9' ? [1920, 1080] : [1080, 1920];
-
-    const response = await fetch(`${HEYGEN_API_BASE}/video/generate`, {
+    const response = await fetch(`${HEYGEN_CONFIG.apiBase}/video/generate`, {
         method: 'POST',
         headers: {
-            'X-Api-Key': apiKey,
+            'X-Api-Key': getApiKey(),
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
             video_inputs: [{
                 character: {
                     type: 'avatar',
-                    avatar_id: avatarId,
+                    avatar_id: HEYGEN_CONFIG.defaultAvatarId,
                     avatar_style: 'normal',
                 },
                 voice: {
                     type: 'text',
                     input_text: script,
-                    voice_id: 'default', // Will be overridden by ElevenLabs voice if configured
+                    voice_id: 'default',
                 },
                 background: {
                     type: 'image',
                     url: backgroundImageUrl,
                 },
             }],
-            dimension: { width, height },
+            dimension: dimensions,
             aspect_ratio: aspectRatio,
         }),
     });
@@ -69,27 +69,24 @@ async function createVideo(
         throw new Error(`HeyGen create error ${response.status}: ${errorText}`);
     }
 
-    const createData = await response.json() as { data: { video_id: string } };
+    const createData = await response.json() as HeyGenCreateResponse;
     const videoId = createData.data.video_id;
 
-    // Poll for completion
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+    for (let attempt = 0; attempt < HEYGEN_CONFIG.maxPollAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, HEYGEN_CONFIG.pollIntervalMs));
 
-        const statusResponse = await fetch(`${HEYGEN_API_BASE}/video/${videoId}`, {
-            headers: { 'X-Api-Key': apiKey },
+        const statusResponse = await fetch(`${HEYGEN_CONFIG.apiBase}/video/${videoId}`, {
+            headers: { 'X-Api-Key': getApiKey() },
         });
 
         if (!statusResponse.ok) continue;
 
-        const statusData = await statusResponse.json() as {
-            data: { status: string; video_url?: string; duration?: number };
-        };
+        const statusData = await statusResponse.json() as HeyGenStatusResponse;
 
         if (statusData.data.status === 'completed' && statusData.data.video_url) {
             return {
                 videoUrl: statusData.data.video_url,
-                durationSeconds: statusData.data.duration || 0,
+                durationSeconds: statusData.data.duration ?? 0,
             };
         }
 
@@ -115,9 +112,7 @@ export interface GeneratedVideo {
     fileName: string;
 }
 
-/**
- * TikTok seed video (30–45s) — avatar + hero image backdrop.
- */
+/** TikTok seed video (30–45s) — avatar + hero image backdrop. 9:16 */
 export async function generateTikTokSeed(
     brief: CampaignAestheticBrief,
     heroImageUrl: string
@@ -126,58 +121,29 @@ export async function generateTikTokSeed(
     const hook = brief.socialConcepts.tiktokOrganic.hook;
     const script = `${hook}\n\n${tiktokBrief.scriptOrNarration}\n\nSign up below — link in bio.`;
 
-    const result = await createVideo(script, heroImageUrl, '9:16');
+    const result = await createVideo(script, heroImageUrl, HEYGEN_CONFIG.tiktokAspectRatio);
     const buffer = await downloadVideo(result.videoUrl);
-
-    return {
-        buffer,
-        script,
-        durationSeconds: result.durationSeconds,
-        assetId: 'vid_tiktok_seed',
-        fileName: 'video/tiktok_seed.mp4',
-    };
+    return { buffer, script, durationSeconds: result.durationSeconds, assetId: 'vid_tiktok_seed', fileName: 'video/tiktok_seed.mp4' };
 }
 
-/**
- * Hero explainer video (60s) — full avatar presentation.
- */
+/** Hero explainer video (60s) — full avatar presentation. 16:9 */
 export async function generateHeroExplainer(
     brief: CampaignAestheticBrief,
     heroImageUrl: string
 ): Promise<GeneratedVideo> {
-    const explainerBrief = brief.videoConcepts.heroExplainer;
-    const script = explainerBrief.scriptOrNarration;
-
-    const result = await createVideo(script, heroImageUrl, '16:9');
+    const script = brief.videoConcepts.heroExplainer.scriptOrNarration;
+    const result = await createVideo(script, heroImageUrl, HEYGEN_CONFIG.explainerAspectRatio);
     const buffer = await downloadVideo(result.videoUrl);
-
-    return {
-        buffer,
-        script,
-        durationSeconds: result.durationSeconds,
-        assetId: 'vid_hero_explainer',
-        fileName: 'video/hero_explainer.mp4',
-    };
+    return { buffer, script, durationSeconds: result.durationSeconds, assetId: 'vid_hero_explainer', fileName: 'video/hero_explainer.mp4' };
 }
 
-/**
- * Threshold announcement video (30s) — pre-generated with dynamic tokens.
- */
+/** Threshold announcement video (30s) — pre-generated with dynamic tokens. 16:9 */
 export async function generateThresholdAnnouncement(
     brief: CampaignAestheticBrief,
     heroImageUrl: string
 ): Promise<GeneratedVideo> {
-    const thresholdBrief = brief.videoConcepts.thresholdAnnouncement;
-    const script = thresholdBrief.scriptOrNarration;
-
-    const result = await createVideo(script, heroImageUrl, '16:9');
+    const script = brief.videoConcepts.thresholdAnnouncement.scriptOrNarration;
+    const result = await createVideo(script, heroImageUrl, HEYGEN_CONFIG.explainerAspectRatio);
     const buffer = await downloadVideo(result.videoUrl);
-
-    return {
-        buffer,
-        script,
-        durationSeconds: result.durationSeconds,
-        assetId: 'vid_threshold_announcement',
-        fileName: 'video/threshold_announcement.mp4',
-    };
+    return { buffer, script, durationSeconds: result.durationSeconds, assetId: 'vid_threshold_announcement', fileName: 'video/threshold_announcement.mp4' };
 }

@@ -1,13 +1,11 @@
-import { CampaignAestheticBrief, AssetRecord } from '../../schema';
-import { randomUUID } from 'crypto';
+import { CampaignAestheticBrief } from '../../schema';
+import { STABILITY_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Stability AI Image Generator
-// Primary hero image + aesthetic concept art generation
-// API: POST https://api.stability.ai/v2beta/stable-image/generate/ultra
+// Primary hero image + aesthetic concept art generation.
+// All settings controlled via STABILITY_CONFIG in media-pipeline-config.ts.
 // ────────────────────────────────────────────────────────────────────────────
-
-const STABILITY_API_BASE = 'https://api.stability.ai/v2beta';
 
 function getApiKey(): string {
     const key = process.env.STABILITY_API_KEY;
@@ -15,17 +13,8 @@ function getApiKey(): string {
     return key;
 }
 
-/**
- * Five hero image prompt variants per the Phase 2 spec:
- * 1. Wide exterior deck shot — ship identity anchor
- * 2. Niche event scene — the unique activity happening on deck
- * 3. Intimate cabin/stateroom — aspirational lifestyle
- * 4. Social gathering shot — group energy, community feeling
- * 5. Destination arrival — port/day excursion
- */
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
-    const { imageryMood, lightingStyle, compositionNotes, avoidList } = brief.visual;
-    const negativeTokens = avoidList.join(', ');
+    const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
 
     const scenes = [
         `Wide exterior deck shot on ${shipName}, panoramic ocean view, ship architecture prominent`,
@@ -58,32 +47,32 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
 async function generateImage(
     prompt: string,
     negativePrompt: string,
-    aspectRatio: '16:9' | '1:1' | '9:16' | '4:5' | '3:2'
+    aspectRatio: typeof STABILITY_CONFIG.heroAspectRatio | typeof STABILITY_CONFIG.conceptAspectRatio
 ): Promise<Buffer> {
-    const apiKey = getApiKey();
-
     const formData = new FormData();
     formData.append('prompt', prompt);
     formData.append('negative_prompt', negativePrompt);
     formData.append('aspect_ratio', aspectRatio);
-    formData.append('output_format', 'webp');
+    formData.append('output_format', STABILITY_CONFIG.outputFormat);
 
-    const response = await fetch(`${STABILITY_API_BASE}/stable-image/generate/ultra`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'image/*',
-        },
-        body: formData,
-    });
+    const response = await fetch(
+        `${STABILITY_CONFIG.apiBase}${STABILITY_CONFIG.endpoint}`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getApiKey()}`,
+                'Accept': 'image/*',
+            },
+            body: formData,
+        }
+    );
 
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Stability AI error ${response.status}: ${errorText}`);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return Buffer.from(await response.arrayBuffer());
 }
 
 export interface GeneratedImage {
@@ -93,20 +82,17 @@ export interface GeneratedImage {
     fileName: string;
 }
 
-/**
- * Generate 5 hero images from the aesthetic brief visual fields.
- */
 export async function generateHeroImages(
     brief: CampaignAestheticBrief,
     shipName: string,
-    count: number = 5
+    count: number = STABILITY_CONFIG.heroCount
 ): Promise<GeneratedImage[]> {
     const prompts = buildHeroPrompts(brief, shipName).slice(0, count);
     const negativePrompt = brief.visual.avoidList.join(', ');
     const results: GeneratedImage[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateImage(prompts[i], negativePrompt, '16:9');
+        const buffer = await generateImage(prompts[i], negativePrompt, STABILITY_CONFIG.heroAspectRatio);
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
@@ -119,19 +105,16 @@ export async function generateHeroImages(
     return results;
 }
 
-/**
- * Generate 4 aesthetic concept art images.
- */
 export async function generateAestheticConcepts(
     brief: CampaignAestheticBrief,
-    count: number = 4
+    count: number = STABILITY_CONFIG.conceptCount
 ): Promise<GeneratedImage[]> {
     const prompts = buildConceptPrompts(brief).slice(0, count);
     const negativePrompt = brief.visual.avoidList.join(', ');
     const results: GeneratedImage[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateImage(prompts[i], negativePrompt, '1:1');
+        const buffer = await generateImage(prompts[i], negativePrompt, STABILITY_CONFIG.conceptAspectRatio);
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
