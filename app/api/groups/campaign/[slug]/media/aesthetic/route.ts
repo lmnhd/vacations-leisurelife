@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCampaignBlueprint, saveAestheticBrief, getAestheticBrief } from "@/lib/campaigns/campaign-store";
+import { getCampaignBlueprint, saveAestheticBrief, getAestheticBrief, deleteAestheticBrief } from "@/lib/campaigns/campaign-store";
 import { generateAestheticBrief } from "@/lib/campaigns/aesthetic-engine";
 
 export async function GET(
@@ -46,5 +46,20 @@ export async function POST(
             { error: "Failed to generate aesthetic brief", details: message },
             { status: 500 }
         );
+    }
+}
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ slug: string }> }
+) {
+    try {
+        const { slug } = await params;
+        await deleteAestheticBrief(slug);
+        return NextResponse.json({ success: true }, { status: 200 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        console.error(`[Aesthetic Delete Error]:`, error);
+        return NextResponse.json({ error: "Failed to delete aesthetic brief", details: message }, { status: 500 });
     }
 }

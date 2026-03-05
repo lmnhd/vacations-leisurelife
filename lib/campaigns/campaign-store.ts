@@ -112,6 +112,31 @@ export async function getAestheticBrief(slug: string): Promise<CampaignAesthetic
     }
 }
 
+export async function deleteAestheticBrief(slug: string): Promise<void> {
+    const params = {
+        TableName: TABLE_NAME,
+        Key: {
+            PK: `CAMPAIGN#${slug}`,
+            SK: 'MEDIA#AESTHETIC_BRIEF',
+        },
+    };
+
+    try {
+        await chatDynamoDocumentClient.send(new DeleteCommand(params));
+
+        // Clear the status flags on the campaign METADATA record
+        const updateParams = {
+            TableName: TABLE_NAME,
+            Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
+            UpdateExpression: 'REMOVE aestheticBriefStatus, aestheticGeneratedAt',
+        };
+        await chatDynamoDocumentClient.send(new UpdateCommand(updateParams));
+    } catch (error) {
+        console.error(`Failed to delete aesthetic brief for ${slug}:`, error);
+        throw error;
+    }
+}
+
 /**
  * Writes CB inventory match results onto the campaign METADATA record.
  * Called by run-phase-b.ts after a successful inventory match.
