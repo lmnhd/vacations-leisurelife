@@ -357,17 +357,46 @@ Once organic seeding confirms the theme has traction:
 
 The objective is to find high-intent niche subcultures *before* they hit the mainstream cruise industry's radar.
 
-**The "Psychographic Discovery" Prompt**
-Run this prompt through the internal AI chat pipeline (`/api/chat`) or a dedicated research agent session:
+**This phase is fully automated** — trigger it via the discovery UI at `/tests/groups/discovery` or directly via `GET /api/groups/discovery`.
+The pipeline executes two Perplexity Sonar Deep Research calls sequentially, then passes both research results to the blueprint-generation model.
 
-> *"Analyze Reddit (r/travel, r/solotravel, r/niche_hobbies, r/digitalnomad), TikTok trends (hashtag velocity + comment sentiment), and Discord community growth for 2026. Identify 5 high-engagement niche subcultures currently discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Filter for communities with high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate and estimate the size of the addressable audience on each platform."*
+---
 
-**The "Aesthetic Gap" Follow-Up**
-Once a theme candidate emerges, drill into cruise-side feasibility:
+#### Step 1 — Psychographic Discovery (Perplexity Sonar)
 
-> *"For a [THEME] retreat, what onboard amenities are most requested— Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement."*
+The pipeline sends this prompt to `sonar-deep-research`:
 
-This produces a shortlist of 2–3 **viable ship/theme pairings** before any inventory is touched.
+> *"Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate."*
+
+The full Sonar response is cached in `.github/data/discovery-research-cache.json` (keyed by date) and is **viewable in the discovery UI** — expand the "Sonar Deep Research → Step 1" panel after a run.
+
+---
+
+#### Step 2 — Aesthetic Gap / Ship Match (Perplexity Sonar)
+
+Follow-up prompt fed back to `sonar-deep-research`, with the Step 1 output + live CB inventory context injected:
+
+> *"For each theme retreat identified above, what onboard amenities are most requested? Cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement."*
+
+The CB inventory context (`cb-deals-cache.json`) is automatically appended if it exists. Run `scripts/scrape-cb-deals.ts` first for inventory-first theming. The full Step 2 response is also viewable in the "Step 2 — Aesthetic Gap / Ship Match" panel in the discovery UI.
+
+---
+
+#### Step 3 — Structured Blueprint Generation (Gateway Model)
+
+Both Sonar responses are fed to the blueprint-generation model (`callGlobalGenerateObject`) which produces exactly **5 structured campaign blueprints**. The model is explicitly required to produce three research-intelligence fields alongside each blueprint — these are stored on the `Campaign` record and are visible in the discovery UI under "Research Intelligence" on each blueprint card:
+
+| Field | Description |
+|---|---|
+| `researchRationale` | **Why this niche was selected** — cites specific community data, platform signals, and trend observations from the Sonar data that identified the theme as viable. Must name subreddits, hashtag metrics, Discord sizes, etc. |
+| `successLogic` | **Why this will convert** — the commercial and psychological case: audience spend willingness, the IRL pull factor, what market gap this fills, and why the cruise environment uniquely suits this community. |
+| `audienceSignals` | **2–4 concrete data signals** — specific, single-sentence facts with platform, metric, and date context where available (e.g., `r/solotravel 15k+ upvotes on IRL meetup thread, Jan 2026`). |
+
+> **Why this matters:** Blueprints that cannot explain their own rationale are guesses. These fields make every Phase A result auditable — you can see exactly which Sonar data point triggered each campaign idea and assess commercial viability before spending money on Phase B.
+
+**Accessing Research Intelligence in the UI:**
+- Each blueprint card in `/tests/groups/discovery` has a collapsible **"Research Intelligence"** section showing all three fields.
+- The full raw Sonar text (both steps) is surfaced in the **"Sonar Deep Research"** amber panel between Phase A results and Phase B.
 
 ---
 

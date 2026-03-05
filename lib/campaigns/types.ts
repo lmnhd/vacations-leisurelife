@@ -138,6 +138,26 @@ export interface Campaign {
      */
     aestheticGeneratedAt?: string;
 
+    // ─── Phase A Research Intelligence ────────────────────────────────────────
+
+    /**
+     * Why this niche was selected: specific community signals, platform data, and
+     * trend observations from the Sonar Deep Research run that identified this theme.
+     */
+    researchRationale?: string;
+
+    /**
+     * The commercial and psychological reasoning for why this niche + cruise pairing
+     * will convert — audience spend willingness, IRL appeal, market gap analysis.
+     */
+    successLogic?: string;
+
+    /**
+     * 2–4 concrete data signals from the Sonar research that validated this niche.
+     * e.g. 'r/solotravel 15k+ upvotes on IRL meetup threads'
+     */
+    audienceSignals?: string[];
+
     createdAt: string;
     updatedAt: string;
 }

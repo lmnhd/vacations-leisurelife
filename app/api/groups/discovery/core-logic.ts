@@ -158,13 +158,27 @@ const ThemeBlueprintSchema = z.object({
         targetingKeywords: z.array(z.string()).describe("List of targeting keywords for ads (3-5 items)"),
         minCabinsRequired: z.number().describe("Default to 8"),
         startingPrice: z.number().describe("Estimated starting price (use 1000 if unknown)"),
-        priceSource: z.string().describe("Source of the price, e.g. 'AI Estimate'")
+        priceSource: z.string().describe("Source of the price, e.g. 'AI Estimate'"),
+        // ─── Research Intelligence (required) ───────────────────────
+        researchRationale: z.string().describe(
+            "Why this niche was selected: reference the specific community data, platform signals, or trend observations from the research that identified this theme as viable. Be specific — name subreddits, hashtag metrics, Discord server sizes, etc."
+        ),
+        successLogic: z.string().describe(
+            "The commercial and psychological reasoning this niche+cruise pairing will convert: explain audience spending willingness, the 'IRL meetup' pull factor, what market gap this fills, and why the controlled cruise environment is uniquely suited to this community."
+        ),
+        audienceSignals: z.array(z.string()).min(2).max(4).describe(
+            "2-4 concrete, specific data signals from the research that validate this niche. Each should be a single-sentence fact, e.g. 'r/solotravel recorded 15k+ upvotes on an IRL meetup thread in Jan 2026', or 'TikTok #darkacademia has 3.2B views with >60% Gen-Z engagement'."
+        ),
     })).length(5, "Must provide exactly 5 blueprints")
 });
 
 interface DiscoveryPipelineResult {
     campaigns: Campaign[];
     skippedCount: number;
+    sonarResearch: {
+        psychographic: string;
+        aesthetic: string;
+    };
 }
 
 export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResult> {
@@ -224,12 +238,18 @@ For each theme retreat, what onboard amenities are most requested? Now cross-ref
     const { object } = await callGlobalGenerateObject({
         schema: ThemeBlueprintSchema,
         prompt: `
-You are an expert Cruise Campaign Strategist. Review the following deep research regarding niche subcultures and ship infrastructure:
+You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Perplexity Sonar Deep Research regarding niche subcultures and ship infrastructure:
 
 Research Data:
 ${aestheticData}
 
 Write a structured JSON detailing exactly 5 fully vetted, high-value Theme Cruise Blueprints based on this research.
+
+CRITICAL REQUIREMENTS for each blueprint:
+1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, or metrics the Sonar data surfaced. Do not generalise.
+2. successLogic: Explain the commercial + psychological case for why this niche will convert to bookings. Include spend willingness signals, the IRL pull factor, and what market gap this fills.
+3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available).
+
 Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}
         `.trim(),
     });
@@ -251,6 +271,9 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
             minCabinsRequired: bp.minCabinsRequired,
             startingPrice: bp.startingPrice,
             priceSource: bp.priceSource,
+            researchRationale: bp.researchRationale,
+            successLogic: bp.successLogic,
+            audienceSignals: bp.audienceSignals,
             status: 'DRAFT',
             createdAt: now,
             updatedAt: now
@@ -268,5 +291,12 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
         await saveCampaignBlueprint(campaign);
     }
 
-    return { campaigns, skippedCount };
+    return {
+        campaigns,
+        skippedCount,
+        sonarResearch: {
+            psychographic: psychographicData,
+            aesthetic: aestheticData,
+        },
+    };
 }

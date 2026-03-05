@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Loader2, RotateCcw, GitBranch, MapPin } from "lucide-react";
+import { Loader2, RotateCcw, GitBranch, MapPin, ChevronDown, ChevronUp, FlaskConical } from "lucide-react";
 import { Campaign } from '@/lib/campaigns/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -13,6 +13,106 @@ interface PhaseBCampaignRef {
     name: string;
     pricingStatus: PricingStatus;
     shipTarget?: string;
+}
+
+// ─── Sonar Research Panel ─────────────────────────────────────────────────────
+
+interface SonarResearch {
+    psychographic: string;
+    aesthetic: string;
+}
+
+function SonarResearchPanel({ research }: { research: SonarResearch }) {
+    const [openKey, setOpenKey] = useState<'psychographic' | 'aesthetic' | null>(null);
+
+    const sections: Array<{ key: 'psychographic' | 'aesthetic'; label: string; description: string }> = [
+        { key: 'psychographic', label: 'Step 1 — Psychographic Discovery', description: 'Community growth & niche subculture analysis' },
+        { key: 'aesthetic', label: 'Step 2 — Aesthetic Gap / Ship Match', description: 'Amenity needs × available CB inventory' },
+    ];
+
+    return (
+        <div className="border border-amber-500/20 rounded-xl bg-amber-950/10 overflow-hidden">
+            <div className="px-4 py-3 border-b border-amber-500/10 flex items-center gap-2">
+                <FlaskConical className="h-3.5 w-3.5 text-amber-400" />
+                <span className="text-xs text-amber-400 uppercase tracking-widest">Sonar Deep Research</span>
+                <span className="text-[10px] text-slate-600 ml-1">Raw Perplexity responses — the foundation for all 5 blueprints</span>
+            </div>
+            <div className="divide-y divide-amber-500/10">
+                {sections.map(({ key, label, description }) => (
+                    <div key={key}>
+                        <button
+                            onClick={() => setOpenKey(openKey === key ? null : key)}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-amber-500/5 transition-colors"
+                        >
+                            <div className="text-left">
+                                <div className="text-xs text-slate-300">{label}</div>
+                                <div className="text-[10px] text-slate-600 mt-0.5">{description}</div>
+                            </div>
+                            {openKey === key
+                                ? <ChevronUp className="h-3.5 w-3.5 text-amber-400" />
+                                : <ChevronDown className="h-3.5 w-3.5 text-slate-500" />}
+                        </button>
+                        {openKey === key && (
+                            <div className="px-4 pb-4">
+                                <pre className="text-[10px] text-slate-300 bg-slate-900/60 border border-white/5 rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
+                                    {research[key]}
+                                </pre>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ─── Blueprint Rationale Card ─────────────────────────────────────────────────
+
+function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
+    const [open, setOpen] = useState(false);
+    const hasRationale = !!(campaign.researchRationale || campaign.successLogic || campaign.audienceSignals?.length);
+    if (!hasRationale) return null;
+
+    return (
+        <div className="mt-3 border border-cyan-500/15 rounded-lg overflow-hidden">
+            <button
+                onClick={() => setOpen(o => !o)}
+                className="w-full px-3 py-2 flex items-center justify-between bg-cyan-950/20 hover:bg-cyan-950/40 transition-colors"
+            >
+                <span className="text-[10px] text-cyan-400 uppercase tracking-widest">Research Intelligence</span>
+                {open ? <ChevronUp className="h-3 w-3 text-cyan-400" /> : <ChevronDown className="h-3 w-3 text-cyan-500" />}
+            </button>
+            {open && (
+                <div className="px-3 pb-3 pt-2 space-y-3 bg-cyan-950/10">
+                    {campaign.audienceSignals && campaign.audienceSignals.length > 0 && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Data Signals</div>
+                            <ul className="space-y-1">
+                                {campaign.audienceSignals.map((signal, idx) => (
+                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                        <span className="text-cyan-500 mt-0.5">▸</span>
+                                        <span>{signal}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {campaign.researchRationale && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Why This Niche</div>
+                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.researchRationale}</p>
+                        </div>
+                    )}
+                    {campaign.successLogic && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Success Logic</div>
+                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.successLogic}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 // ─── Pricing Badge ────────────────────────────────────────────────────────────
@@ -43,6 +143,7 @@ export default function DiscoveryTestPage() {
     const [blueprints, setBlueprints] = useState<Campaign[]>([]);
     const [phaseAError, setPhaseAError] = useState<string | null>(null);
     const [skippedCount, setSkippedCount] = useState(0);
+    const [sonarResearch, setSonarResearch] = useState<SonarResearch | null>(null);
 
     // Phase B state
     const [phaseBLoading, setPhaseBLoading] = useState(false);
@@ -98,6 +199,9 @@ export default function DiscoveryTestPage() {
             }
 
             setSkippedCount(discoveryData.skippedCount ?? 0);
+            if (discoveryData.sonarResearch) {
+                setSonarResearch(discoveryData.sonarResearch as SonarResearch);
+            }
 
             const campaignRefs: Array<{ id: string; name: string; fetchUrl: string }> = discoveryData.campaigns;
             const fetched = await Promise.all(
@@ -120,6 +224,7 @@ export default function DiscoveryTestPage() {
         setBlueprints([]);
         setPhaseAError(null);
         setSkippedCount(0);
+        setSonarResearch(null);
     };
 
     const handleClearAll = async () => {
@@ -282,23 +387,26 @@ export default function DiscoveryTestPage() {
                                                 </div>
                                             )}
 
-                                            {/* Actions */}
-                                            <div className="flex gap-2 pt-2 border-t border-white/5">
-                                                <a
-                                                    href={`/api/groups/campaign/${bp.id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[10px] px-2 py-1 rounded border border-white/10 text-slate-400 hover:text-white transition-all"
-                                                >
-                                                    View JSON
-                                                </a>
-                                                <button
-                                                    onClick={() => setBlueprints(prev => prev.filter(b => b.id !== bp.id))}
-                                                    className="text-[10px] px-2 py-1 rounded border border-red-500/20 text-red-400 hover:text-red-300 hover:border-red-400/40 transition-all"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
+                        {/* Actions */}
+                            <div className="flex gap-2 pt-2 border-t border-white/5">
+                                <a
+                                    href={`/api/groups/campaign/${bp.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] px-2 py-1 rounded border border-white/10 text-slate-400 hover:text-white transition-all"
+                                >
+                                    View JSON
+                                </a>
+                                <button
+                                    onClick={() => setBlueprints(prev => prev.filter(b => b.id !== bp.id))}
+                                    className="text-[10px] px-2 py-1 rounded border border-red-500/20 text-red-400 hover:text-red-300 hover:border-red-400/40 transition-all"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+
+                            {/* Research Intelligence (collapsible) */}
+                            <BlueprintRationaleSection campaign={bp} />
                                         </div>
                                     );
                                 })}
@@ -311,6 +419,9 @@ export default function DiscoveryTestPage() {
 
                     </div>
                 </div>
+
+                {/* ─── Sonar Research ─────────────────────────────────────── */}
+                {sonarResearch && <SonarResearchPanel research={sonarResearch} />}
 
                 {/* ─── Phase B ─────────────────────────────────────────────── */}
                 <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">

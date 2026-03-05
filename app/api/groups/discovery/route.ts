@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     console.log('[API] Starting GET /api/groups/discovery');
 
     try {
-        const { campaigns, skippedCount } = await runGroupDiscoveryPipeline();
+        const result = await runGroupDiscoveryPipeline();
+        const { campaigns, skippedCount, sonarResearch } = result;
 
         const completedAt = new Date().toISOString();
         const campaignRefs = campaigns.map(c => ({
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
             count: campaigns.length,
             skippedCount,
             campaigns: campaignRefs,
+            sonarResearch,
         });
     } catch (error) {
         console.error('[API] Error in GET /api/groups/discovery:', error);
