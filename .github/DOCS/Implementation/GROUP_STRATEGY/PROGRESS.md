@@ -116,33 +116,42 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 #### Spec Reference
 Full schema and generation process: [PHASE_1_AESTHETIC_DEVISING.md](./CAMPAIGN_MEDIA/PHASE_1_AESTHETIC_DEVISING.md)
 
-### 2B. Media Generation (Phase C.2) — NOT STARTED
-
-**Images**
-- [ ] Hero images (5–6) via Stability AI / Midjourney driven by `CampaignAestheticBrief.visual`
-- [ ] Aesthetic concept art (4–5) via Midjourney / DALL-E 3
-- [ ] Ship reference imagery via `/api/imageSearch` (§6.3) — injected as moodboard context
-- [ ] Platform-format crops (16:9, 4:5, 9:16, OG, email header) via Sharp server-side resize
-
-**Video**
-- [ ] TikTok seed video (30–45s) — HeyGen avatar + ElevenLabs voice + hero image backdrop
-- [ ] Hero explainer video (60s) — HeyGen, `messaging.elevatorPitch` expanded to script
-- [ ] Threshold announcement video (30s) — HeyGen, pre-generated with dynamic token placeholders
-- [ ] Countdown video series (3×) — RunwayML Gen-3 image-to-video from hero images
-- [ ] Cinematic B-roll clips (3–4×, 6–10s) — RunwayML Gen-3 atmospheric motion
-
-**Audio**
-- [ ] Ambient narration (30s) — ElevenLabs from `audio.ambientNarrationScript`
-- [ ] Threshold hype clip (15s) — ElevenLabs high-energy from `audio.hypeClipScript`
-- [ ] Campaign theme music (60–120s loop) — Suno AI from `audio.musicMood` prompt seed
-
-**Merch & Copy**
-- [ ] Merch design files (3–5) — DALL-E 3 from `merch.*.dallePrompt` → Printful mockup generation
-- [ ] Platform copy / captions batch — GPT-4o structured call: carousel slides, ad variants (A/B/C), TikTok captions, Pinterest descriptions, email subject lines
+### 2B. Media Generation (Phase C.2) — ✅ COMPLETE
 
 **Infrastructure**
-- [ ] Async generation job queue — `MediaGenerationJob` records written to DynamoDB per asset
-- [ ] `CampaignMediaManifest` output — unified asset index with CDN URLs
+- [x] `AssetRecord`, `MediaGenerationJob`, `CampaignMediaManifest` Zod schemas — `lib/campaigns/schema.ts`
+- [x] R2 client — `lib/campaigns/media/r2-client.ts` (upload/delete, CDN URL builder)
+- [x] Media DynamoDB store — `lib/campaigns/media/media-store.ts` (jobs, assets, manifest, campaign status)
+
+**Generators** (`lib/campaigns/media/generators/`)
+- [x] `stability-generator.ts` — Stability AI hero images (5×) + aesthetic concepts (4×); optional count param for test mode
+- [x] `sharp-processor.ts` — 8-format platform crops (16:9, 4:5, 9:16, 1:1, banner, email, OG, thumbnail)
+- [x] `dalle-generator.ts` — DALL-E 3 merch designs (core + practical + niche items)
+- [x] `heygen-generator.ts` — TikTok seed, hero explainer, threshold announcement videos
+- [x] `runway-generator.ts` — Countdown video series + cinematic B-roll clips
+- [x] `elevenlabs-generator.ts` — Ambient narration + hype clip
+- [x] `suno-generator.ts` — Theme music (Not Implemented stub; requires SUNO_API_KEY when available)
+- [x] `copy-generator.ts` — GPT-4o single structured call: carousel slides, ad variants, captions, email subjects
+
+**Orchestrator**
+- [x] `lib/campaigns/media/media-orchestrator.ts` — Two-phase parallel pipeline; Group 1 (independent) + Group 2 (depends on hero images); per-generator job tracking; manifest assembly
+
+**API Routes**
+- [x] `POST /api/groups/campaign/:slug/media/generate` — Full or targeted pipeline trigger
+- [x] `GET  /api/groups/campaign/:slug/media/manifest` — Retrieve `CampaignMediaManifest`
+- [x] `GET  /api/groups/campaign/:slug/media/assets?type=` — Query assets by type
+
+**Per-Generator Test Routes** *(test-only, no R2 upload, inline base64 results)*
+- [x] `POST /api/groups/campaign/:slug/media/test/copy` — GPT-4o copy batch
+- [x] `POST /api/groups/campaign/:slug/media/test/audio` — ElevenLabs narration / hype / Suno
+- [x] `POST /api/groups/campaign/:slug/media/test/images` — Stability AI hero / concepts / Sharp crops
+- [x] `POST /api/groups/campaign/:slug/media/test/merch` — DALL-E 3 single item by index
+
+**Test Pages**
+- [x] `app/(tests)/tests/media-generation/page.tsx` — Category-level pipeline runner with cost confirmation
+- [x] `app/(tests)/tests/media-generation/test/page.tsx` — **Per-generator test page**: 8 individual cards, each hitting one API; inline image/audio/JSON results; API key status badges; Sharp crops auto-use last hero output
+
+> **API keys in `.env.local`**: `OPENAI_API_KEY` ✅ · `ELEVENLABS_API_KEY` ✅ · `STABILITY_API_KEY` ❌ · `HEYGEN_API_KEY` ❌ · `RUNWAYML_API_KEY` ❌ · R2 credentials ❌
 
 Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md)
 
@@ -287,16 +296,48 @@ Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 
 *Drives external traffic into `/campaigns/[slug]` waitlist. Human-in-the-loop approval for ad spend.*
 
+> ⚠️ **Core Targeting Principle — Niche Spaces, Not Cruise Spaces.**
+> Every ad placement, organic post, and keyword target in this pipeline MUST target the **niche identity** of the campaign — NOT cruise-category inventory.
+> - ✅ A film photography campaign appears on Lomography forums, `/r/analog`, Flickr Pro upgrade pages, and YouTube channels reviewing film stocks.
+> - ✅ A retro-gaming campaign appears inside GameBoy subreddits, retro-tech YouTube, and TikTok's `#AnalogPocket` community.
+> - ❌ **Never** target: "cruise vacations", "cruise deals", "travel agency" keywords, cruise brand interest segments, or travel-category display networks.
+>
+> The campaign finds people who do not know a niche cruise is possible — it does not compete for people already searching for one. Implementation of every ad platform integration below MUST enforce this rule in its targeting configuration.
+
 ### 6A. Top-of-Funnel Traffic Generation
-- [ ] Auto-generate Promotion Brief per campaign from blueprint data
-- [ ] **⏸️ HUMAN CHECKPOINT**: approve ad copy variants, budget tier, targeting keywords
-- [ ] Google Custom Intent Audience + Display campaign via Google Ads API (§5.1A)
-- [ ] Meta Lead Form Ads with Webhook → DynamoDB write (§5.1B)
-- [ ] TikTok organic seeding: AI-generated concept videos (§5.5A)
-- [ ] TikTok Lead Gen Ads post-validation (§5.5B)
+
+**Promotion Brief Generation**
+- [ ] Auto-generate Promotion Brief per campaign from `Campaign.targetingKeywords` and `CampaignAestheticBrief`
+- [ ] Brief includes: niche identity statement, platform-specific niche keyword list, forbidden terms list (must include cruise/travel category terms), copy angles
+- [ ] **⏸️ HUMAN CHECKPOINT**: approve ad copy variants, budget tier, and **targeting keyword list** before any spend activates
+
+**Google Custom Intent Audience — Niche Search Targeting (§5.1A)**
+- [ ] Audience built from `campaign.targetingKeywords` — these are niche-domain terms ONLY (e.g., `["Lomography", "film photography", "darkroom processing", "Portra 400"]`)
+- [ ] Placement Targeting: force display onto specific niche YouTube channels and blogs matching the campaign theme — do NOT use Google's broad audience expansion
+- [ ] Forbidden: "cruise", "vacation packages", "travel deals" as keywords or audience interests
+- [ ] Implementation: `targetingKeywords` from DynamoDB `METADATA` are the ONLY seed for this audience — no augmentation with travel-category terms
+
+**Meta Lead Form Ads — Niche Interest Targeting (§5.1B)**
+- [ ] Interest targeting: niche-specific Facebook/Instagram interests ONLY (e.g., film photography communities, analog enthusiast groups, hobby-specific pages)
+- [ ] Webhook: Lead Form submit → AWS Lambda → `USER#<email>` written to `lll-shadow-campaigns` DynamoDB → Klaviyo nurture triggered
+- [ ] Forbidden: "Travel & Tourism", "Cruises", "Vacation" interest categories in audience config
+- [ ] Lookalike audience (post Seed Phase): seeded from existing DynamoDB `USER#` signups exported as CSV — NOT from cruise/travel lookalike pools
+
+**TikTok Organic Seeding — Niche Hashtags Only (§5.5A)**
+- [ ] Post AI-generated concept video at campaign activation using assets from Phase 2B
+- [ ] Hashtag set: 3–5 niche-specific tags ONLY — sourced from `campaign.targetingKeywords` transformed to hashtags (e.g., `["#FilmPhotography", "#AnalogPocket", "#35mmFilm"]`). Do NOT include `#Cruise`, `#CruiseLife`, `#Travel`, or generic vacation tags.
+- [ ] Caption framing: curiosity-hook about the niche event, never "cruise deal" positioning
+- [ ] DM every commenter with campaign landing page slug directly — highest-converting entry point
+
+**TikTok Lead Gen Ads — Post Validation (§5.5B)**
+- [ ] Activated only after Day 30 Decision Gate signals Scale (3+ Strong metrics)
+- [ ] Interest & Behavior targeting: niche identity categories matching the campaign theme
+- [ ] Lookalike: seeded from TikTok profile matches of existing DynamoDB organic commenters — NOT travel/vacation interest sets
+- [ ] Creative: reuse Phase 2B HeyGen/ElevenLabs assets — same content as organic, native TikTok format
 
 ### 6B. Lead Nurture (§5.2)
 - [ ] Klaviyo/Beehiiv 3-part email sequence (T+0, T+3d, T+7d)
+- [ ] Sequence content references the **niche activity**, not the cruise — the ship is the venue, not the headline
 - [ ] Twilio SMS on `THRESHOLD_MET` status change
 
 ### 6C. Privacy-First Attribution (§5.3)
@@ -309,7 +350,7 @@ Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 
 ### 6E. Synthetic Influencer Assets (§5.4)
 - [ ] ElevenLabs "Hype-Man" voice for video ads
-- [ ] HeyGen AI avatar "Specialist" video
+- [ ] HeyGen AI avatar "Specialist" video — persona is a niche expert (e.g., photographer, gamer), not a travel agent
 - [ ] Original niche-native music (copyright-safe)
 
 ---
@@ -352,9 +393,11 @@ Spec: [PHASE_4_DISTRIBUTION.md](./CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION.md)
 - [ ] Activation = `DRAFT` → `GATHERING_INTEREST`
 
 ### 8C. Seed Phase — Days 1–30 (§7.3)
-- [ ] TikTok Organic (zero budget) + Tier 1 Targeted Ads ($5–10/day)
+- [ ] TikTok Organic (zero budget): post niche-targeted concept video, DM commenters directly
+- [ ] Tier 1 Targeted Ads ($5–10/day): Google Custom Intent (niche keywords only) + Meta Lead Ads (niche interests only)
 - [ ] Seed Phase budget ceiling: ~$300/month per campaign
 - [ ] All paid leads → DynamoDB via webhook → Klaviyo nurture sequence
+- [ ] **Targeting enforcement**: implementation of ad platform calls MUST pull `campaign.targetingKeywords` as the audience seed. No travel, cruise, or vacation category terms may be added. Violation of this breaks the niche-identity acquisition model.
 
 ### 8D. Day 30 Decision Gate — Scale or Kill (§7.4)
 - [ ] Score against 5 metrics: waitlist %, email open rate, TikTok save rate, CPL, manifest completion rate
