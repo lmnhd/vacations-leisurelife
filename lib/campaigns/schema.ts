@@ -174,3 +174,138 @@ export type PinterestConceptSet = z.infer<typeof PinterestConceptSetSchema>;
 export type EmailConceptSet = z.infer<typeof EmailConceptSetSchema>;
 export type DiscordConceptSet = z.infer<typeof DiscordConceptSetSchema>;
 export type CampaignAestheticBrief = z.infer<typeof CampaignAestheticBriefSchema>;
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 2B: Media Generation Pipeline — Types
+// ────────────────────────────────────────────────────────────────────────────
+
+export const AssetTypeEnum = z.enum([
+    'hero_image', 'aesthetic_concept', 'platform_crop',
+    'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
+    'countdown_video', 'broll_clip',
+    'ambient_narration', 'hype_clip', 'theme_music',
+    'merch_design', 'email_header', 'ad_creative', 'carousel_slide',
+]);
+export type AssetType = z.infer<typeof AssetTypeEnum>;
+
+export const GeneratorServiceEnum = z.enum([
+    'midjourney', 'stability_ai', 'dalle3',
+    'heygen', 'runwayml', 'kling',
+    'elevenlabs', 'openai_tts',
+    'suno', 'udio',
+    'sharp',
+    'gpt4o',
+]);
+export type GeneratorService = z.infer<typeof GeneratorServiceEnum>;
+
+export const ImageFormatEnum = z.enum([
+    'hero_16x9', 'hero_4x5', 'story_9x16', 'square_1x1',
+    'banner_3x1', 'email_header', 'og_image', 'thumbnail',
+]);
+export type ImageFormat = z.infer<typeof ImageFormatEnum>;
+
+export const ReviewStatusEnum = z.enum([
+    'auto_approved', 'human_approved', 'needs_review',
+]);
+export type ReviewStatus = z.infer<typeof ReviewStatusEnum>;
+
+export const AssetRecordSchema = z.object({
+    assetId: z.string(),
+    assetType: AssetTypeEnum,
+    url: z.string(),
+    generator: GeneratorServiceEnum,
+    promptUsed: z.string(),
+    dimensions: z.object({ width: z.number(), height: z.number() }).optional(),
+    durationSeconds: z.number().optional(),
+    fileSizeBytes: z.number(),
+    mimeType: z.string(),
+    tags: z.array(z.string()),
+    createdAt: z.string(),
+    reviewStatus: ReviewStatusEnum,
+    version: z.number().default(1),
+    active: z.boolean().default(true),
+});
+export type AssetRecord = z.infer<typeof AssetRecordSchema>;
+
+export const MediaJobStatusEnum = z.enum([
+    'queued', 'in_progress', 'complete', 'failed', 'needs_review',
+]);
+
+export const MediaGenerationJobSchema = z.object({
+    jobId: z.string(),
+    campaignSlug: z.string(),
+    assetType: AssetTypeEnum,
+    status: MediaJobStatusEnum,
+    generator: GeneratorServiceEnum,
+    promptUsed: z.string(),
+    outputUrl: z.string().optional(),
+    outputMetadata: z.record(z.string(), z.unknown()).optional(),
+    retryCount: z.number().default(0),
+    createdAt: z.string(),
+    completedAt: z.string().optional(),
+    error: z.string().optional(),
+});
+export type MediaGenerationJob = z.infer<typeof MediaGenerationJobSchema>;
+
+export const AdCopySetSchema = z.object({
+    headline: z.string(),
+    primaryText: z.string(),
+    description: z.string(),
+    cta: z.string(),
+    variant: z.enum(['A', 'B', 'C']),
+});
+export type AdCopySet = z.infer<typeof AdCopySetSchema>;
+
+export const EmailSubjectSetSchema = z.object({
+    stage: z.string(),
+    variants: z.array(z.string()),
+});
+export type EmailSubjectSet = z.infer<typeof EmailSubjectSetSchema>;
+
+export const PlatformCaptionsSchema = z.object({
+    tiktok: z.array(z.object({ caption: z.string(), hashtags: z.array(z.string()) })),
+    pinterest: z.array(z.object({ title: z.string(), description: z.string() })),
+    discord: z.string(),
+});
+export type PlatformCaptions = z.infer<typeof PlatformCaptionsSchema>;
+
+export const CampaignMediaManifestSchema = z.object({
+    slug: z.string(),
+    generatedAt: z.string(),
+    totalAssets: z.number(),
+    completionStatus: z.enum(['partial', 'complete']),
+
+    images: z.object({
+        hero: z.array(AssetRecordSchema),
+        aestheticConcepts: z.array(AssetRecordSchema),
+        platformCrops: z.record(ImageFormatEnum, z.array(AssetRecordSchema)),
+    }),
+
+    videos: z.object({
+        tiktokSeed: AssetRecordSchema.nullable(),
+        heroExplainer: AssetRecordSchema.nullable(),
+        thresholdAnnouncement: AssetRecordSchema.nullable(),
+        countdown: z.array(AssetRecordSchema),
+        broll: z.array(AssetRecordSchema),
+    }),
+
+    audio: z.object({
+        ambientNarration: AssetRecordSchema.nullable(),
+        hypeClip: AssetRecordSchema.nullable(),
+        themeMusic: AssetRecordSchema.nullable(),
+    }),
+
+    merch: z.object({
+        designs: z.array(AssetRecordSchema),
+        mockups: z.array(AssetRecordSchema),
+        printfulProductIds: z.array(z.string()),
+    }),
+
+    copy: z.object({
+        carouselSlides: z.array(z.string()),
+        adVariants: z.array(AdCopySetSchema),
+        captions: PlatformCaptionsSchema,
+        emailSubjectLines: z.array(EmailSubjectSetSchema),
+    }).nullable(),
+});
+export type CampaignMediaManifest = z.infer<typeof CampaignMediaManifestSchema>;
