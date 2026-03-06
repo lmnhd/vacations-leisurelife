@@ -7,6 +7,20 @@
 
 ---
 
+## Single Manifest Source of Truth
+
+All media creation paths now target the same persisted `CampaignMediaManifest` object for a campaign slug.
+
+- `/tests/media-generation` actions are not sandbox-only previews; they persist real manifest artifacts.
+- Manual operator runs and targeted regeneration are expected to merge into the existing manifest instead of creating disconnected side outputs.
+- Agentic orchestration uses the same manifest object and the same asset records.
+- Partial reruns must preserve untouched manifest sections.
+- The test surfaces double as controlled customization points for operators or downstream agents.
+
+In practice, this means copy, audio, image, video, merch, and review actions should all resolve to one campaign-level media state object rather than separate per-surface records.
+
+---
+
 ## What Gets Generated
 
 | Asset Type | Count | Tool | Destination |
@@ -32,7 +46,7 @@
 
 ## Generation Job Architecture
 
-All generation happens via an async job queue. Each job type is independent and can run in parallel. The `CampaignMediaManifest` record is created empty at job start and updated as each asset completes.
+All generation paths ultimately converge on the same persisted manifest. Full pipeline generation uses async job execution, while targeted test/manual operations update the same underlying record section-by-section. The `CampaignMediaManifest` is therefore the canonical asset ledger regardless of entry point.
 
 ```typescript
 interface MediaGenerationJob {
@@ -85,10 +99,10 @@ The pipeline resolves the campaign's matched ship identity, then runs structured
 Candidate images are ranked automatically using ship-name match, cruise-line tokens, category match, and image size, while penalizing floor plans, logos, brochures, and illustrations.
 
 ### Hero Images (3–5 images)
-**Tool:** SerpAPI real photo import  
+**Tool:** SerpAPI reference discovery + Stability AI guided transform  
 **Purpose:** Primary landing page hero, email headers, social backgrounds
 
-Hero assets are now selected from the ranked real ship reference set rather than synthesized from a ship prompt. This makes the landing page visually anchored to the actual vessel.
+Hero assets are selected from the ranked real ship reference set, then transformed through a reference-grounded Stability pass that preserves ship identity while adding campaign-specific cinematic embellishment. This keeps the landing page visually anchored to the actual vessel without reducing the hero to a plain import.
 
 ### Aesthetic Concept Art (4–5 images)
 **Tool:** Stability AI  

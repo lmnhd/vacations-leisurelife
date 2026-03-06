@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
-import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
+import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
 import {
     generateAestheticConcepts,
 } from '@/lib/campaigns/media/generators/stability-generator';
@@ -71,6 +72,8 @@ export async function POST(
             const referenceRecords = await importShipReferenceAssets(slug, candidates);
             const heroRecords = await importHeroAssetsFromReferences(slug, campaign, brief, candidates, 1);
             const heroRecord = heroRecords[0];
+            await upsertManifestAssetSection(slug, 'shipReferences', referenceRecords);
+            await upsertManifestAssetSection(slug, 'hero', heroRecords);
             return NextResponse.json({
                 generator: heroRecord.generator,
                 assetId: heroRecord.assetId,
@@ -86,7 +89,7 @@ export async function POST(
             const images = await generateAestheticConcepts(brief, 1);
             const img = images[0];
             const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/webp');
-            await saveAssetRecord(slug, {
+            const record: AssetRecord = {
                 assetId: img.assetId,
                 assetType: 'aesthetic_concept',
                 url: cdnUrl,
@@ -99,7 +102,9 @@ export async function POST(
                 reviewStatus: 'needs_review',
                 version: 1,
                 active: true,
-            });
+            };
+            await saveAssetRecord(slug, record);
+            await upsertManifestAssetSection(slug, 'aestheticConcepts', [record]);
             return NextResponse.json({
                 generator: 'stability_ai',
                 assetId: img.assetId,
@@ -127,7 +132,7 @@ export async function POST(
 
             const uploadedCrops = await Promise.all(crops.map(async (crop) => {
                 const cdnUrl = await uploadAsset(slug, crop.fileName, crop.buffer, 'image/webp');
-                await saveAssetRecord(slug, {
+                const record: AssetRecord = {
                     assetId: crop.assetId,
                     assetType: 'platform_crop',
                     url: cdnUrl,
@@ -141,11 +146,24 @@ export async function POST(
                     reviewStatus: 'auto_approved',
                     version: 1,
                     active: true,
-                });
-                return { format: crop.format, width: crop.width, height: crop.height, fileSizeBytes: crop.buffer.length, cdnUrl };
+                };
+                await saveAssetRecord(slug, record);
+                return { format: crop.format, width: crop.width, height: crop.height, fileSizeBytes: crop.buffer.length, cdnUrl, record };
             }));
 
-            return NextResponse.json({ generator: 'sharp', cropCount: uploadedCrops.length, crops: uploadedCrops });
+            const cropsByFormat = uploadedCrops.reduce((currentGroups, crop) => {
+                const nextGroups = { ...currentGroups };
+                const currentFormatRecords = nextGroups[crop.format] ?? [];
+                nextGroups[crop.format] = [...currentFormatRecords, crop.record];
+                return nextGroups;
+            }, {} as Record<ImageFormat, AssetRecord[]>);
+            await upsertManifestAssetSection(slug, 'platformCrops', cropsByFormat);
+
+            return NextResponse.json({
+                generator: 'sharp',
+                cropCount: uploadedCrops.length,
+                crops: uploadedCrops.map(({ record: _record, ...crop }) => crop),
+            });
         }
 
         return NextResponse.json({ error: `Unknown generator: ${generator}` }, { status: 400 });

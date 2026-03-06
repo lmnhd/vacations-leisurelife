@@ -1,11 +1,13 @@
 import { PutCommand, GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
+import type { GeneratedCopy } from './generators/copy-generator';
 import {
     AssetRecord,
     MediaGenerationJob,
     CampaignMediaManifest,
     AssetType,
     ReviewStatus,
+    ImageFormat,
 } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -15,6 +17,17 @@ import {
 // ────────────────────────────────────────────────────────────────────────────
 
 const TABLE_NAME = 'lll-shadow-campaigns';
+
+const EMPTY_PLATFORM_CROPS: Record<ImageFormat, AssetRecord[]> = {
+    hero_16x9: [],
+    hero_4x5: [],
+    story_9x16: [],
+    square_1x1: [],
+    banner_3x1: [],
+    email_header: [],
+    og_image: [],
+    thumbnail: [],
+};
 
 // ── Media Generation Jobs ──────────────────────────────────────────────────
 
@@ -117,6 +130,181 @@ function updateAssetInCollection(records: AssetRecord[], updatedRecord: AssetRec
 
         return updatedRecord;
     });
+}
+
+function upsertAssetRecord(records: AssetRecord[], newRecord: AssetRecord): AssetRecord[] {
+    const existingIndex = records.findIndex((record) => record.assetId === newRecord.assetId);
+    if (existingIndex === -1) {
+        return [...records, newRecord];
+    }
+
+    return records.map((record) => record.assetId === newRecord.assetId ? newRecord : record);
+}
+
+function createEmptyManifest(slug: string): CampaignMediaManifest {
+    return {
+        slug,
+        generatedAt: new Date().toISOString(),
+        totalAssets: 0,
+        completionStatus: 'partial',
+        images: {
+            shipReferences: [],
+            hero: [],
+            aestheticConcepts: [],
+            platformCrops: { ...EMPTY_PLATFORM_CROPS },
+        },
+        videos: {
+            tiktokSeed: null,
+            heroExplainer: null,
+            thresholdAnnouncement: null,
+            countdown: [],
+            broll: [],
+        },
+        audio: {
+            ambientNarration: null,
+            hypeClip: null,
+            themeMusic: null,
+        },
+        merch: {
+            designs: [],
+            mockups: [],
+            printfulProductIds: [],
+        },
+        copy: null,
+    };
+}
+
+function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
+    return [
+        ...manifest.images.shipReferences,
+        ...manifest.images.hero,
+        ...manifest.images.aestheticConcepts,
+        ...Object.values(manifest.images.platformCrops).flat(),
+        ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
+        ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),
+        ...(manifest.videos.thresholdAnnouncement ? [manifest.videos.thresholdAnnouncement] : []),
+        ...manifest.videos.countdown,
+        ...manifest.videos.broll,
+        ...(manifest.audio.ambientNarration ? [manifest.audio.ambientNarration] : []),
+        ...(manifest.audio.hypeClip ? [manifest.audio.hypeClip] : []),
+        ...(manifest.audio.themeMusic ? [manifest.audio.themeMusic] : []),
+        ...manifest.merch.designs,
+        ...manifest.merch.mockups,
+    ].length;
+}
+
+function finalizeManifest(manifest: CampaignMediaManifest): CampaignMediaManifest {
+    return {
+        ...manifest,
+        generatedAt: new Date().toISOString(),
+        totalAssets: calculateManifestAssetTotal(manifest),
+    };
+}
+
+type ManifestAssetSection =
+    | 'shipReferences'
+    | 'hero'
+    | 'aestheticConcepts'
+    | 'platformCrops'
+    | 'tiktokSeed'
+    | 'heroExplainer'
+    | 'thresholdAnnouncement'
+    | 'countdown'
+    | 'broll'
+    | 'ambientNarration'
+    | 'hypeClip'
+    | 'themeMusic'
+    | 'designs'
+    | 'mockups';
+
+export async function upsertManifestAssetSection(
+    slug: string,
+    section: ManifestAssetSection,
+    records: AssetRecord[] | AssetRecord | Record<ImageFormat, AssetRecord[]>
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    const baseManifest = existingManifest ?? createEmptyManifest(slug);
+    let updatedManifest: CampaignMediaManifest;
+
+    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts') {
+        const newRecords = records as AssetRecord[];
+        updatedManifest = {
+            ...baseManifest,
+            images: {
+                ...baseManifest.images,
+                [section]: newRecords.reduce((currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord), baseManifest.images[section]),
+            },
+        };
+    } else if (section === 'platformCrops') {
+        const cropRecordsByFormat = records as Record<ImageFormat, AssetRecord[]>;
+        const nextPlatformCrops: Record<ImageFormat, AssetRecord[]> = {
+            ...EMPTY_PLATFORM_CROPS,
+            ...baseManifest.images.platformCrops,
+        };
+        for (const [formatKey, formatRecords] of Object.entries(cropRecordsByFormat) as Array<[ImageFormat, AssetRecord[]]>) {
+            const existingFormatRecords = nextPlatformCrops[formatKey] ?? [];
+            nextPlatformCrops[formatKey] = formatRecords.reduce(
+                (currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord),
+                existingFormatRecords
+            );
+        }
+        updatedManifest = {
+            ...baseManifest,
+            images: {
+                ...baseManifest.images,
+                platformCrops: nextPlatformCrops,
+            },
+        };
+    } else if (section === 'tiktokSeed' || section === 'heroExplainer' || section === 'thresholdAnnouncement') {
+        updatedManifest = {
+            ...baseManifest,
+            videos: {
+                ...baseManifest.videos,
+                [section]: records as AssetRecord,
+            },
+        };
+    } else if (section === 'countdown' || section === 'broll') {
+        const newRecords = records as AssetRecord[];
+        updatedManifest = {
+            ...baseManifest,
+            videos: {
+                ...baseManifest.videos,
+                [section]: newRecords.reduce((currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord), baseManifest.videos[section]),
+            },
+        };
+    } else if (section === 'ambientNarration' || section === 'hypeClip' || section === 'themeMusic') {
+        updatedManifest = {
+            ...baseManifest,
+            audio: {
+                ...baseManifest.audio,
+                [section]: records as AssetRecord,
+            },
+        };
+    } else {
+        const newRecords = records as AssetRecord[];
+        updatedManifest = {
+            ...baseManifest,
+            merch: {
+                ...baseManifest.merch,
+                [section]: newRecords.reduce((currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord), baseManifest.merch[section]),
+            },
+        };
+    }
+
+    const finalizedManifest = finalizeManifest(updatedManifest);
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function upsertManifestCopy(slug: string, copy: GeneratedCopy): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    const baseManifest = existingManifest ?? createEmptyManifest(slug);
+    const finalizedManifest = finalizeManifest({
+        ...baseManifest,
+        copy,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
 }
 
 function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: AssetRecord): CampaignMediaManifest {

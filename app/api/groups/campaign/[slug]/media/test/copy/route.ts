@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
-import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { saveAssetRecord, upsertManifestCopy } from '@/lib/campaigns/media/media-store';
 import { generatePlatformCopy } from '@/lib/campaigns/media/generators/copy-generator';
 import { MEDIA_LLM_CONFIG, modelNameToGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 
@@ -53,6 +53,7 @@ export async function POST(
             version: 1,
             active: true,
         });
+        await upsertManifestCopy(slug, copy);
 
         return NextResponse.json({
             generator: generatorService,

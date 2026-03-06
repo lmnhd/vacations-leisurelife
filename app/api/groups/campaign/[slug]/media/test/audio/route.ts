@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
-import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateThemeMusic } from '@/lib/campaigns/media/generators/replicate-music-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from '@/lib/campaigns/media/theme-music-library';
+import type { AssetRecord } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/audio
@@ -41,7 +42,7 @@ export async function POST(
         if (generator === 'elevenlabs_narration') {
             const audio = await generateAmbientNarration(brief);
             const cdnUrl = await uploadAsset(slug, audio.fileName, audio.buffer, 'audio/mpeg');
-            await saveAssetRecord(slug, {
+            const record: AssetRecord = {
                 assetId: audio.assetId,
                 assetType: 'ambient_narration',
                 url: cdnUrl,
@@ -55,7 +56,9 @@ export async function POST(
                 reviewStatus: 'needs_review',
                 version: 1,
                 active: true,
-            });
+            };
+            await saveAssetRecord(slug, record);
+            await upsertManifestAssetSection(slug, 'ambientNarration', record);
             return NextResponse.json({
                 generator: 'elevenlabs',
                 assetId: audio.assetId,
@@ -69,7 +72,7 @@ export async function POST(
         if (generator === 'elevenlabs_hype') {
             const audio = await generateHypeClip(brief);
             const cdnUrl = await uploadAsset(slug, audio.fileName, audio.buffer, 'audio/mpeg');
-            await saveAssetRecord(slug, {
+            const record: AssetRecord = {
                 assetId: audio.assetId,
                 assetType: 'hype_clip',
                 url: cdnUrl,
@@ -83,7 +86,9 @@ export async function POST(
                 reviewStatus: 'needs_review',
                 version: 1,
                 active: true,
-            });
+            };
+            await saveAssetRecord(slug, record);
+            await upsertManifestAssetSection(slug, 'hypeClip', record);
             return NextResponse.json({
                 generator: 'elevenlabs',
                 assetId: audio.assetId,
@@ -105,7 +110,7 @@ export async function POST(
                 'audio/mpeg'
             );
 
-            const record = await saveAssetRecord(slug, {
+            const record: AssetRecord = {
                 assetId: audio.assetId,
                 assetType: 'theme_music',
                 url: cdnUrl,
@@ -119,7 +124,9 @@ export async function POST(
                 reviewStatus: 'auto_approved',
                 version: 1,
                 active: true,
-            });
+            };
+            await saveAssetRecord(slug, record);
+            await upsertManifestAssetSection(slug, 'themeMusic', record);
 
             return NextResponse.json(record);
         }
@@ -133,6 +140,7 @@ export async function POST(
             const selectionReason = buildThemeMusicSelectionReason(brief, selectedTrack);
             const record = buildDefaultThemeMusicRecord(slug, selectedTrack, selectionReason);
             await saveAssetRecord(slug, record);
+            await upsertManifestAssetSection(slug, 'themeMusic', record);
             return NextResponse.json(record);
         }
 
