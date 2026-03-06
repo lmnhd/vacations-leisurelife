@@ -195,7 +195,7 @@ export const GeneratorServiceEnum = z.enum([
     // Video generators
     'heygen', 'runwayml', 'kling',
     // Audio generators
-    'elevenlabs', 'openai_tts', 'suno', 'udio',
+    'elevenlabs', 'openai_tts', 'mubert', 'udio',
     // Image processing
     'sharp',
     // OpenAI LLM

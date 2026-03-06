@@ -4,15 +4,15 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
-import { generateThemeMusic } from '@/lib/campaigns/media/generators/suno-generator';
+import { generateThemeMusic } from '@/lib/campaigns/media/generators/mubert-generator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/audio
 // Generate → upload to R2 → save AssetRecord → return CDN URL.
-// Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'suno_theme' }
+// Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'mubert_theme' }
 // ────────────────────────────────────────────────────────────────────────────
 
-type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'suno_theme';
+type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'mubert_theme';
 
 interface AudioTestRequestBody {
     generator: AudioTestGenerator;
@@ -93,8 +93,34 @@ export async function POST(
             });
         }
 
-        if (generator === 'suno_theme') {
-            await generateThemeMusic(brief); // throws Not Implemented
+        if (generator === 'mubert_theme') {
+            const audio = await generateThemeMusic(brief);
+            
+            const fileSizeBytes = audio.buffer.length;
+            const cdnUrl = await uploadAsset(
+                slug,
+                audio.fileName,
+                audio.buffer,
+                'audio/mpeg'
+            );
+
+            const record = await saveAssetRecord(slug, {
+                assetId: audio.assetId,
+                assetType: 'theme_music',
+                url: cdnUrl,
+                generator: 'mubert',
+                promptUsed: audio.script,
+                durationSeconds: 30, // Use constant 30s
+                fileSizeBytes,
+                mimeType: 'audio/mpeg',
+                tags: ['audio', 'music', 'theme', 'test'],
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'auto_approved',
+                version: 1,
+                active: true,
+            });
+
+            return NextResponse.json(record);
         }
 
         return NextResponse.json({ error: `Unknown generator: ${generator}` }, { status: 400 });

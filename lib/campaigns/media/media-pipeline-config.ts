@@ -134,11 +134,11 @@ export const DALLE_CONFIG = {
     responseFormat: 'b64_json' as const,
 } as const;
 
-// ── Suno Settings (Not Yet Implemented) ───────────────────────────────────────
-// Placeholder for when Suno public API becomes available.
+// ── Mubert API Settings ─────────────────────────────────────────────────────────
+// Controls music generation for campaign themes using Mubert's B2B API.
 
-export const SUNO_CONFIG = {
-    apiBase: 'https://api.suno.ai/v1',
-    model: 'chirp-v3-5' as const,
-    defaultDurationSeconds: 90,
+export const MUBERT_CONFIG = {
+    apiBase: 'https://api-b2b.mubert.com/v2',
+    defaultDuration: 30, // seconds
+    mode: 'loop' as const, // For ambient loops
 } as const;

@@ -22,7 +22,7 @@ import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateTikTokSeed, generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip, GeneratedAudio } from './generators/elevenlabs-generator';
-import { generateThemeMusic } from './generators/suno-generator';
+import { generateThemeMusic } from './generators/mubert-generator';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { randomUUID } from 'crypto';
 
@@ -324,12 +324,12 @@ export async function runMediaGeneration(
                 }, errors)
             );
 
-            // Theme music (may throw — Suno is stub)
+            // Theme music
             group1Promises.push(
-                runWithJob(slug, 'theme_music', 'suno', 'theme music', async () => {
+                runWithJob(slug, 'theme_music', 'mubert', 'theme music', async () => {
                     const audio = await generateThemeMusic(brief);
                     const rec = await uploadAndRecord(
-                        slug, audio.assetId, 'theme_music', 'suno',
+                        slug, audio.assetId, 'theme_music', 'mubert',
                         audio.script, audio.buffer, audio.fileName, 'audio/mpeg',
                         ['audio', 'music', 'theme']
                     );

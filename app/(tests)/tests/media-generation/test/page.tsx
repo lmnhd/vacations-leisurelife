@@ -151,7 +151,7 @@ export default function MediaGenerationTestPage() {
     const [copyResult, setCopyResult] = useState<GeneratorResult>(makeResult());
     const [narrationResult, setNarrationResult] = useState<GeneratorResult>(makeResult());
     const [hypeResult, setHypeResult] = useState<GeneratorResult>(makeResult());
-    const [sunoResult, setSunoResult] = useState<GeneratorResult>(makeResult());
+    const [mubertResult, setMubertResult] = useState<GeneratorResult>(makeResult());
     const [merch0Result, setMerch0Result] = useState<GeneratorResult>(makeResult());
     const [heygenTiktokResult, setHeygenTiktokResult] = useState<GeneratorResult>(makeResult());
     const [heygenExplainerResult, setHeygenExplainerResult] = useState<GeneratorResult>(makeResult());
@@ -271,19 +271,19 @@ export default function MediaGenerationTestPage() {
                     onRun={() => runGenerator(`${base}/audio`, { generator: "elevenlabs_hype" }, setHypeResult)}
                 />
 
-                {/* ── Suno ─────────────────────────────────────────────── */}
+                {/* ── Mubert ──────────────────────────────────────────────────────── */}
                 <GeneratorCard
-                    id="gen-suno"
+                    id="gen-mubert"
                     keyStatus={keyStatus}
-                    title="Suno AI — Theme Music"
+                    title="Mubert API — Theme Music"
                     icon={<Music className="h-4 w-4" />}
                     color="slate"
-                    description="60–120s instrumental loop from brief.audio.musicMood. NOT IMPLEMENTED — Suno API in limited beta. Expected: 501 response."
-                    cost="TBD"
-                    apiKeys={["OPENAI"]}
-                    result={sunoResult}
+                    description="30s instrumental loop from brief.visual.aestheticLabel and colors. Uploads directly to R2."
+                    cost="~$0.10"
+                    apiKeys={["MUBERT"]}
+                    result={mubertResult}
                     previewType="none"
-                    onRun={() => runGenerator(`${base}/audio`, { generator: "suno_theme" }, setSunoResult)}
+                    onRun={() => runGenerator(`${base}/audio`, { generator: "mubert_theme" }, setMubertResult)}
                 />
 
                 {/* ── Stability Hero ───────────────────────────────────── */}
