@@ -44,19 +44,39 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     );
 }
 
+function buildNicheHeroDetails(brief: CampaignAestheticBrief): string {
+    const instagramVisual = brief.socialConcepts.instagramFeed.singlePostConcept;
+    const reelVisual = brief.socialConcepts.instagramReels.visualConcept;
+    const adVisual = brief.socialConcepts.facebookAd.visualDescription;
+    const heroExplainerBackground = brief.videoConcepts.heroExplainer.backgroundDescription;
+    const merchAesthetic = brief.merch.conceptStatement;
+
+    return [
+        `Niche visual world: ${instagramVisual}`,
+        `Motion-inspired atmosphere: ${reelVisual}`,
+        `Ad-surface styling cues: ${adVisual}`,
+        `Hero scene background language: ${heroExplainerBackground}`,
+        `Merch and group identity styling: ${merchAesthetic}`,
+    ].join('. ');
+}
+
 function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipName: string, candidate: ShipReferenceCandidate): string {
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette } = brief.visual;
     const toneKeywords = brief.messaging.toneKeywords.join(', ');
     const heroSlogan = brief.messaging.heroSlogan;
+    const nicheHeroDetails = buildNicheHeroDetails(brief);
     return [
-        `Transform this real photo of ${shipName} into a premium campaign hero image while preserving the ship identity, architecture, deck geometry, and believable photographic realism`,
+        `Transform this real photo of ${shipName} into a premium niche campaign hero image while preserving the ship identity, architecture, deck geometry, and believable photographic realism`,
         `Use ${candidate.category.replace(/_/g, ' ')} as the anchor scene and keep the vessel clearly recognizable`,
         `Apply ${aestheticLabel} atmosphere, ${imageryMood}, ${lightingStyle}, ${compositionNotes}`,
-        `Embellish the scene with cinematic campaign styling, subtle surreal travel details, immersive themed energy, refined environmental storytelling, and elevated editorial composition`,
+        nicheHeroDetails,
+        `Embellish the scene with bold niche-coded art direction, immersive themed set dressing, wardrobe cues, props, signage, lighting treatments, and refined surreal environmental storytelling that make the community identity obvious at a glance`,
         `Incorporate the campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}, ${colorPalette.background}`,
         `Reflect the campaign slogan energy: ${heroSlogan}`,
         `Tone direction: ${toneKeywords}`,
-        `Create a luxurious, polished, aspirational hero frame with depth, spectacle, and emotional resonance while avoiding cartoonish fantasy or loss of ship fidelity`,
+        `Create a luxurious, polished, aspirational hero frame with depth, spectacle, stylized atmosphere, and emotional resonance` ,
+        `The final image must feel like a branded campaign key art frame for a very specific subculture gathering at sea, not a generic cruise brochure photo`,
+        `Avoid cartoon fantasy, generic tourism visuals, plain documentary realism, and loss of ship fidelity`,
     ].join('. ');
 }
 

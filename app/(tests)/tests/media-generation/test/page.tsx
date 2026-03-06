@@ -13,6 +13,11 @@ import {
 // ────────────────────────────────────────────────────────────────────────────
 
 const DEFAULT_SLUG = "analog-film-and-darkroom-odyssey-2026";
+const TEST_PAGE_SLUG_KEY = "mediaGen_test_slug";
+
+function getTestPageStateKey(targetSlug: string): string {
+    return `mediaGen_test_state_${targetSlug}`;
+}
 
 const KEY_META: Record<string, { label: string; cost: string }> = {
     OPENAI: { label: "OpenAI", cost: "" },
@@ -48,8 +53,48 @@ interface GeneratorResult {
     cdnUrl: string; // CDN URL of uploaded asset (image, audio, video)
 }
 
+interface PersistedTestPageState {
+    heroImageUrl: string;
+    themeMusicSource: 'replicate' | 'default';
+    shipReferenceResult: GeneratorResult;
+    heroResult: GeneratorResult;
+    conceptResult: GeneratorResult;
+    cropResult: GeneratorResult;
+    copyResult: GeneratorResult;
+    narrationResult: GeneratorResult;
+    hypeResult: GeneratorResult;
+    replicateResult: GeneratorResult;
+    merch0Result: GeneratorResult;
+    heygenTiktokResult: GeneratorResult;
+    heygenExplainerResult: GeneratorResult;
+    heygenThresholdResult: GeneratorResult;
+    runwayCountdownResult: GeneratorResult;
+    runwayBrollResult: GeneratorResult;
+}
+
 function makeResult(): GeneratorResult {
     return { state: "idle", data: null, error: "", cdnUrl: "" };
+}
+
+function createEmptyPersistedState(): PersistedTestPageState {
+    return {
+        heroImageUrl: "",
+        themeMusicSource: 'default',
+        shipReferenceResult: makeResult(),
+        heroResult: makeResult(),
+        conceptResult: makeResult(),
+        cropResult: makeResult(),
+        copyResult: makeResult(),
+        narrationResult: makeResult(),
+        hypeResult: makeResult(),
+        replicateResult: makeResult(),
+        merch0Result: makeResult(),
+        heygenTiktokResult: makeResult(),
+        heygenExplainerResult: makeResult(),
+        heygenThresholdResult: makeResult(),
+        runwayCountdownResult: makeResult(),
+        runwayBrollResult: makeResult(),
+    };
 }
 
 function KeyBadge({ apiKey, keyStatus }: { apiKey: string; keyStatus: KeyStatus }) {
@@ -215,6 +260,113 @@ export default function MediaGenerationTestPage() {
     const lastHeroCdnUrl = useRef<string>("");
     // User-editable heroImageUrl for video generators (can paste any CDN URL)
     const [heroImageUrl, setHeroImageUrl] = useState("")
+
+    useEffect(() => {
+        const savedSlug = localStorage.getItem(TEST_PAGE_SLUG_KEY);
+        if (savedSlug) {
+            setSlug(savedSlug);
+        }
+    }, []);
+
+    useEffect(() => {
+        const trimmedSlug = slug.trim();
+        if (!trimmedSlug) {
+            return;
+        }
+
+        localStorage.setItem(TEST_PAGE_SLUG_KEY, trimmedSlug);
+        const savedState = localStorage.getItem(getTestPageStateKey(trimmedSlug));
+        if (!savedState) {
+            const emptyState = createEmptyPersistedState();
+            setThemeMusicSource(emptyState.themeMusicSource);
+            setHeroImageUrl(emptyState.heroImageUrl);
+            setShipReferenceResult(emptyState.shipReferenceResult);
+            setHeroResult(emptyState.heroResult);
+            setConceptResult(emptyState.conceptResult);
+            setCropResult(emptyState.cropResult);
+            setCopyResult(emptyState.copyResult);
+            setNarrationResult(emptyState.narrationResult);
+            setHypeResult(emptyState.hypeResult);
+            setReplicateResult(emptyState.replicateResult);
+            setMerch0Result(emptyState.merch0Result);
+            setHeygenTiktokResult(emptyState.heygenTiktokResult);
+            setHeygenExplainerResult(emptyState.heygenExplainerResult);
+            setHeygenThresholdResult(emptyState.heygenThresholdResult);
+            setRunwayCountdownResult(emptyState.runwayCountdownResult);
+            setRunwayBrollResult(emptyState.runwayBrollResult);
+            lastHeroCdnUrl.current = "";
+            return;
+        }
+
+        try {
+            const parsedState = JSON.parse(savedState) as PersistedTestPageState;
+            setThemeMusicSource(parsedState.themeMusicSource);
+            setHeroImageUrl(parsedState.heroImageUrl);
+            setShipReferenceResult(parsedState.shipReferenceResult);
+            setHeroResult(parsedState.heroResult);
+            setConceptResult(parsedState.conceptResult);
+            setCropResult(parsedState.cropResult);
+            setCopyResult(parsedState.copyResult);
+            setNarrationResult(parsedState.narrationResult);
+            setHypeResult(parsedState.hypeResult);
+            setReplicateResult(parsedState.replicateResult);
+            setMerch0Result(parsedState.merch0Result);
+            setHeygenTiktokResult(parsedState.heygenTiktokResult);
+            setHeygenExplainerResult(parsedState.heygenExplainerResult);
+            setHeygenThresholdResult(parsedState.heygenThresholdResult);
+            setRunwayCountdownResult(parsedState.runwayCountdownResult);
+            setRunwayBrollResult(parsedState.runwayBrollResult);
+            lastHeroCdnUrl.current = parsedState.heroResult.cdnUrl || parsedState.heroImageUrl;
+        } catch {
+            localStorage.removeItem(getTestPageStateKey(trimmedSlug));
+        }
+    }, [slug]);
+
+    useEffect(() => {
+        const trimmedSlug = slug.trim();
+        if (!trimmedSlug) {
+            return;
+        }
+
+        const nextState: PersistedTestPageState = {
+            heroImageUrl,
+            themeMusicSource,
+            shipReferenceResult,
+            heroResult,
+            conceptResult,
+            cropResult,
+            copyResult,
+            narrationResult,
+            hypeResult,
+            replicateResult,
+            merch0Result,
+            heygenTiktokResult,
+            heygenExplainerResult,
+            heygenThresholdResult,
+            runwayCountdownResult,
+            runwayBrollResult,
+        };
+
+        localStorage.setItem(getTestPageStateKey(trimmedSlug), JSON.stringify(nextState));
+    }, [
+        slug,
+        heroImageUrl,
+        themeMusicSource,
+        shipReferenceResult,
+        heroResult,
+        conceptResult,
+        cropResult,
+        copyResult,
+        narrationResult,
+        hypeResult,
+        replicateResult,
+        merch0Result,
+        heygenTiktokResult,
+        heygenExplainerResult,
+        heygenThresholdResult,
+        runwayCountdownResult,
+        runwayBrollResult,
+    ]);
 
     async function runGenerator(
         url: string,

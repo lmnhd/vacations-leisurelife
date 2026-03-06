@@ -49,7 +49,7 @@ const COST_ESTIMATES: Record<string, string> = {
 };
 
 const LS_SLUG_KEY = "mediaGen_slug";
-const LS_MANIFEST_KEY = "mediaGen_manifest";
+const getManifestStorageKey = (targetSlug: string) => `mediaGen_manifest_${targetSlug}`;
 
 export default function MediaGenerationTestPage() {
     const [slug, setSlug] = useState("analog-film-and-darkroom-odyssey-2026");
@@ -76,13 +76,13 @@ export default function MediaGenerationTestPage() {
             if (res.status === 404) {
                 setManifest(null);
                 setError("No manifest found. Run generation first.");
-                localStorage.removeItem(LS_MANIFEST_KEY);
+                localStorage.removeItem(getManifestStorageKey(targetSlug));
                 return;
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Load failed");
             setManifest(data as CampaignMediaManifest);
-            localStorage.setItem(LS_MANIFEST_KEY, JSON.stringify(data));
+            localStorage.setItem(getManifestStorageKey(targetSlug), JSON.stringify(data));
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -92,21 +92,38 @@ export default function MediaGenerationTestPage() {
 
     useEffect(() => {
         const savedSlug = localStorage.getItem(LS_SLUG_KEY);
-        const savedManifest = localStorage.getItem(LS_MANIFEST_KEY);
         if (savedSlug) {
             setSlug(savedSlug);
+            const savedManifest = localStorage.getItem(getManifestStorageKey(savedSlug));
             if (savedManifest) {
-                // Restore from cache immediately, then re-fetch to get fresh data
                 try {
                     setManifest(JSON.parse(savedManifest) as CampaignMediaManifest);
                 } catch { /* ignore malformed cache */ }
-            } else {
-                // No cached manifest — auto-fetch from API
-                handleLoadManifestRef(savedSlug);
             }
+            void handleLoadManifestRef(savedSlug);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        const trimmedSlug = slug.trim();
+        if (!trimmedSlug) {
+            setManifest(null);
+            return;
+        }
+
+        const cachedManifest = localStorage.getItem(getManifestStorageKey(trimmedSlug));
+        if (cachedManifest) {
+            try {
+                setManifest(JSON.parse(cachedManifest) as CampaignMediaManifest);
+                return;
+            } catch {
+                localStorage.removeItem(getManifestStorageKey(trimmedSlug));
+            }
+        }
+
+        setManifest(null);
+    }, [slug]);
 
     const handleGenerate = async (assetTypes?: string[]) => {
         if (!slug.trim()) return;
