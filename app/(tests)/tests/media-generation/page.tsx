@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     Loader2, Wand2, Image, Film, Music, Type, Shirt,
     Zap, Download, Eye, AlertTriangle
@@ -58,6 +58,9 @@ const COST_ESTIMATES: Record<string, string> = {
     all: "~$6–$16 total",
 };
 
+const LS_SLUG_KEY = "mediaGen_slug";
+const LS_MANIFEST_KEY = "mediaGen_manifest";
+
 export default function MediaGenerationTestPage() {
     const [slug, setSlug] = useState("analog-film-and-darkroom-odyssey-2026");
     const [pageState, setPageState] = useState<PageState>("idle");
@@ -67,6 +70,52 @@ export default function MediaGenerationTestPage() {
     const [error, setError] = useState("");
 
     const isBusy = pageState !== "idle";
+
+    // ── Persist slug whenever it changes ──────────────────────────────────────
+    useEffect(() => {
+        if (slug.trim()) localStorage.setItem(LS_SLUG_KEY, slug.trim());
+    }, [slug]);
+
+    // ── On mount: restore slug + manifest from localStorage ──────────────────
+    const handleLoadManifestRef = useCallback(async (targetSlug: string) => {
+        setPageState("loading");
+        setError("");
+        try {
+            const res = await fetch(`/api/groups/campaign/${targetSlug}/media/manifest`);
+            if (res.status === 404) {
+                setManifest(null);
+                setError("No manifest found. Run generation first.");
+                localStorage.removeItem(LS_MANIFEST_KEY);
+                return;
+            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Load failed");
+            setManifest(data as ManifestData);
+            localStorage.setItem(LS_MANIFEST_KEY, JSON.stringify(data));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setPageState("idle");
+        }
+    }, []);
+
+    useEffect(() => {
+        const savedSlug = localStorage.getItem(LS_SLUG_KEY);
+        const savedManifest = localStorage.getItem(LS_MANIFEST_KEY);
+        if (savedSlug) {
+            setSlug(savedSlug);
+            if (savedManifest) {
+                // Restore from cache immediately, then re-fetch to get fresh data
+                try {
+                    setManifest(JSON.parse(savedManifest) as ManifestData);
+                } catch { /* ignore malformed cache */ }
+            } else {
+                // No cached manifest — auto-fetch from API
+                handleLoadManifestRef(savedSlug);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleGenerate = async (assetTypes?: string[]) => {
         if (!slug.trim()) return;
@@ -93,6 +142,8 @@ export default function MediaGenerationTestPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || `Generation failed (${res.status})`);
             setResult(data as GenerateResult);
+            // Auto-refresh manifest so the latest state is cached for next reload
+            await handleLoadManifestRef(slug.trim());
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -103,24 +154,7 @@ export default function MediaGenerationTestPage() {
 
     const handleLoadManifest = async () => {
         if (!slug.trim()) return;
-        setPageState("loading");
-        setError("");
-
-        try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/manifest`);
-            if (res.status === 404) {
-                setManifest(null);
-                setError("No manifest found. Run generation first.");
-                return;
-            }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Load failed");
-            setManifest(data as ManifestData);
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Unknown error");
-        } finally {
-            setPageState("idle");
-        }
+        await handleLoadManifestRef(slug.trim());
     };
 
     const colorClass = (color: string, part: "bg" | "text" | "border") => {

@@ -4,15 +4,15 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
-import { generateThemeMusic } from '@/lib/campaigns/media/generators/mubert-generator';
+import { generateThemeMusic } from '@/lib/campaigns/media/generators/replicate-music-generator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/audio
 // Generate → upload to R2 → save AssetRecord → return CDN URL.
-// Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'mubert_theme' }
+// Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'replicate_theme' }
 // ────────────────────────────────────────────────────────────────────────────
 
-type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'mubert_theme';
+type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'replicate_theme';
 
 interface AudioTestRequestBody {
     generator: AudioTestGenerator;
@@ -93,7 +93,7 @@ export async function POST(
             });
         }
 
-        if (generator === 'mubert_theme') {
+        if (generator === 'replicate_theme') {
             const audio = await generateThemeMusic(brief);
             
             const fileSizeBytes = audio.buffer.length;
@@ -108,7 +108,7 @@ export async function POST(
                 assetId: audio.assetId,
                 assetType: 'theme_music',
                 url: cdnUrl,
-                generator: 'mubert',
+                generator: 'replicate',
                 promptUsed: audio.script,
                 durationSeconds: 30, // Use constant 30s
                 fileSizeBytes,

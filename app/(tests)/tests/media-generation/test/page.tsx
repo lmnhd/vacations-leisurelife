@@ -151,7 +151,7 @@ export default function MediaGenerationTestPage() {
     const [copyResult, setCopyResult] = useState<GeneratorResult>(makeResult());
     const [narrationResult, setNarrationResult] = useState<GeneratorResult>(makeResult());
     const [hypeResult, setHypeResult] = useState<GeneratorResult>(makeResult());
-    const [mubertResult, setMubertResult] = useState<GeneratorResult>(makeResult());
+    const [replicateResult, setReplicateResult] = useState<GeneratorResult>(makeResult());
     const [merch0Result, setMerch0Result] = useState<GeneratorResult>(makeResult());
     const [heygenTiktokResult, setHeygenTiktokResult] = useState<GeneratorResult>(makeResult());
     const [heygenExplainerResult, setHeygenExplainerResult] = useState<GeneratorResult>(makeResult());
@@ -271,19 +271,19 @@ export default function MediaGenerationTestPage() {
                     onRun={() => runGenerator(`${base}/audio`, { generator: "elevenlabs_hype" }, setHypeResult)}
                 />
 
-                {/* ── Mubert ──────────────────────────────────────────────────────── */}
+                {/* ── Replicate MusicGen ──────────────────────────────────────────────────────── */}
                 <GeneratorCard
-                    id="gen-mubert"
+                    id="gen-replicate"
                     keyStatus={keyStatus}
-                    title="Mubert API — Theme Music"
+                    title="Replicate (MusicGen) — Theme Music"
                     icon={<Music className="h-4 w-4" />}
                     color="slate"
                     description="30s instrumental loop from brief.visual.aestheticLabel and colors. Uploads directly to R2."
-                    cost="~$0.10"
-                    apiKeys={["MUBERT"]}
-                    result={mubertResult}
+                    cost="~$0.01"
+                    apiKeys={["REPLICATE"]}
+                    result={replicateResult}
                     previewType="none"
-                    onRun={() => runGenerator(`${base}/audio`, { generator: "mubert_theme" }, setMubertResult)}
+                    onRun={() => runGenerator(`${base}/audio`, { generator: "replicate_theme" }, setReplicateResult)}
                 />
 
                 {/* ── Stability Hero ───────────────────────────────────── */}

@@ -90,6 +90,24 @@ export async function getAssetsByType(slug: string, assetType: AssetType): Promi
     return (result.Items ?? []) as AssetRecord[];
 }
 
+export async function getActiveAssetRecord(slug: string, assetId: string): Promise<AssetRecord | null> {
+    const result = await chatDynamoDocumentClient.send(new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: `MEDIA#ASSET#${assetId}` },
+    }));
+    if (!result.Item) return null;
+    return result.Item as AssetRecord;
+}
+
+export async function deactivateAssetRecord(slug: string, assetId: string): Promise<void> {
+    await chatDynamoDocumentClient.send(new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: `MEDIA#ASSET#${assetId}` },
+        UpdateExpression: 'SET active = :false',
+        ExpressionAttributeValues: { ':false': false },
+    }));
+}
+
 // ── Media Manifest ─────────────────────────────────────────────────────────
 
 export async function saveMediaManifest(manifest: CampaignMediaManifest): Promise<void> {
@@ -115,9 +133,43 @@ export async function getMediaManifest(slug: string): Promise<CampaignMediaManif
     return JSON.parse(result.Item.manifestJson as string) as CampaignMediaManifest;
 }
 
-// ── Campaign METADATA Updates ──────────────────────────────────────────────
+// ── Asset Binary Storage (DynamoDB fallback when R2 is unavailable) ───────
+// DynamoDB max item: 400 KB. Caller must ensure base64-encoded buffer fits.
 
-export type MediaStatus = 'not_started' | 'generating' | 'partial' | 'ready';
+export async function storeAssetBinary(
+    slug: string,
+    assetId: string,
+    bufferBase64: string,
+    mimeType: string,
+): Promise<void> {
+    await chatDynamoDocumentClient.send(new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+            PK: `CAMPAIGN#${slug}`,
+            SK: `MEDIA#BINARY#${assetId}`,
+            bufferBase64,
+            mimeType,
+            storedAt: new Date().toISOString(),
+        },
+    }));
+}
+
+export async function getAssetBinary(
+    slug: string,
+    assetId: string,
+): Promise<{ bufferBase64: string; mimeType: string } | null> {
+    const result = await chatDynamoDocumentClient.send(new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: `MEDIA#BINARY#${assetId}` },
+    }));
+    if (!result.Item) return null;
+    return {
+        bufferBase64: result.Item.bufferBase64 as string,
+        mimeType: result.Item.mimeType as string,
+    };
+}
+
+// ── Campaign METADATA Updates ──────────────────────────────────────────────export type MediaStatus = 'not_started' | 'generating' | 'partial' | 'ready';
 
 export async function updateCampaignMediaStatus(
     slug: string,

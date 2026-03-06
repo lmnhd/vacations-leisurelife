@@ -15,14 +15,14 @@ import {
     saveMediaManifest,
     updateCampaignMediaStatus,
 } from './media-store';
-import { uploadAsset, getAssetUrl } from './r2-client';
+import { storeAsset, getAssetUrl } from './storage-client';
 import { generateHeroImages, generateAestheticConcepts, GeneratedImage } from './generators/stability-generator';
 import { generatePlatformCrops, CroppedImage } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateTikTokSeed, generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip, GeneratedAudio } from './generators/elevenlabs-generator';
-import { generateThemeMusic } from './generators/mubert-generator';
+import { generateThemeMusic } from './generators/replicate-music-generator';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { randomUUID } from 'crypto';
 
@@ -109,7 +109,8 @@ async function uploadAndRecord(
     dims?: { width: number; height: number },
     duration?: number
 ): Promise<AssetRecord> {
-    const url = await uploadAsset(slug, fileName, buffer, mimeType);
+    // storeAsset routes to R2 when configured, falls back to DynamoDB or placeholder.
+    const url = await storeAsset(slug, assetId, fileName, buffer, mimeType);
     const record = makeAssetRecord(
         assetId, assetType, url, generator, prompt,
         buffer.length, mimeType, tags, dims, duration
@@ -326,10 +327,10 @@ export async function runMediaGeneration(
 
             // Theme music
             group1Promises.push(
-                runWithJob(slug, 'theme_music', 'mubert', 'theme music', async () => {
+                runWithJob(slug, 'theme_music', 'replicate', 'theme music', async () => {
                     const audio = await generateThemeMusic(brief);
                     const rec = await uploadAndRecord(
-                        slug, audio.assetId, 'theme_music', 'mubert',
+                        slug, audio.assetId, 'theme_music', 'replicate',
                         audio.script, audio.buffer, audio.fileName, 'audio/mpeg',
                         ['audio', 'music', 'theme']
                     );
@@ -504,11 +505,24 @@ export async function runMediaGeneration(
             } : null,
         };
 
-        // Save manifest
+        // Save manifest to DynamoDB (always)
         await saveMediaManifest(manifest);
-        const manifestUrl = getAssetUrl(slug, 'manifests/media_manifest.json');
-        const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2));
-        await uploadAsset(slug, 'manifests/media_manifest.json', manifestBuffer, 'application/json');
+
+        // Also persist manifest binary — non-fatal if storage unavailable
+        let manifestUrl = getAssetUrl(slug, 'manifests/media_manifest.json');
+        try {
+            const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2));
+            const storedUrl = await storeAsset(
+                slug, 'manifest_json', 'manifests/media_manifest.json',
+                manifestBuffer, 'application/json'
+            );
+            if (!storedUrl.startsWith('r2://pending')) {
+                manifestUrl = storedUrl;
+            }
+        } catch (manifestStoreErr) {
+            // DynamoDB manifest is the source of truth; binary upload failure is non-fatal
+            errors.push(`[manifest/storage] ${manifestStoreErr instanceof Error ? manifestStoreErr.message : String(manifestStoreErr)}`);
+        }
 
         // Update campaign status
         const finalStatus = errors.length > 0 ? 'partial' as const : 'ready' as const;

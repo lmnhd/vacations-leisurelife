@@ -9,6 +9,18 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 
 const R2_BUCKET = 'lll-campaign-media';
 
+/**
+ * Returns true if the R2 environment variables are configured.
+ * Use this as a guard before calling uploadAsset / deleteAsset.
+ */
+export function isR2Available(): boolean {
+    return !!(
+        process.env.CLOUDFLARE_ACCOUNT_ID &&
+        process.env.R2_ACCESS_KEY_ID &&
+        process.env.R2_SECRET_ACCESS_KEY
+    );
+}
+
 function getR2Client(): S3Client {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;

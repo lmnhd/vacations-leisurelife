@@ -134,11 +134,13 @@ export const DALLE_CONFIG = {
     responseFormat: 'b64_json' as const,
 } as const;
 
-// ── Mubert API Settings ─────────────────────────────────────────────────────────
-// Controls music generation for campaign themes using Mubert's B2B API.
+// ── Replicate API Settings (MusicGen) ───────────────────────────────────────────
+// Controls music generation for campaign themes using Meta's MusicGen model via Replicate.
 
-export const MUBERT_CONFIG = {
-    apiBase: 'https://api-b2b.mubert.com/v2',
-    defaultDuration: 30, // seconds
-    mode: 'loop' as const, // For ambient loops
+export const REPLICATE_CONFIG = {
+    // Current MusicGen 'melody' model version hash
+    musicGenModel: 'meta/musicgen:7a76a8258b23fae65c5a22debb8841d1d7e816b75c2f24218cd2bd8573787906' as const,
+    defaultDuration: 30, // seconds (max 30s for this model)
+    outputFormat: 'mp3' as const,
+    normalizationStrategy: 'loudness' as const,
 } as const;
