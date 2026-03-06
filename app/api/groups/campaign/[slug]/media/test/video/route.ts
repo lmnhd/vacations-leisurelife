@@ -4,10 +4,10 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import {
-    generateTikTokSeed,
     generateHeroExplainer,
     generateThresholdAnnouncement,
 } from '@/lib/campaigns/media/generators/heygen-generator';
+import { generateTikTokSeed } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
 import {
     generateCountdownVideos,
     generateBrollClips,
@@ -18,14 +18,14 @@ import {
 // Generate → upload to R2 → save AssetRecord → return CDN URL.
 //
 // Body: {
-//   generator: 'heygen_tiktok' | 'heygen_explainer' | 'heygen_threshold'
+//   generator: 'tiktok_voiceover' | 'heygen_explainer' | 'heygen_threshold'
 //            | 'runway_countdown' | 'runway_broll'
 //   heroImageUrl: string  ← CDN URL of an already-uploaded hero image
 // }
 // ────────────────────────────────────────────────────────────────────────────
 
 type VideoTestGenerator =
-    | 'heygen_tiktok'
+    | 'tiktok_voiceover'
     | 'heygen_explainer'
     | 'heygen_threshold'
     | 'runway_countdown'
@@ -46,7 +46,7 @@ export async function POST(
 
     if (!heroImageUrl) {
         return NextResponse.json({
-            error: 'heroImageUrl required. Run the Stability Hero image test first, then paste the returned cdnUrl here.'
+            error: 'heroImageUrl required. Run the Nano-Banana hero image test first, then paste the returned cdnUrl here.'
         }, { status: 400 });
     }
 
@@ -61,28 +61,29 @@ export async function POST(
     }
 
     try {
-        if (generator === 'heygen_tiktok') {
+        if (generator === 'tiktok_voiceover') {
             const video = await generateTikTokSeed(brief, heroImageUrl);
             const cdnUrl = await uploadAsset(slug, video.fileName, video.buffer, 'video/mp4');
             await saveAssetRecord(slug, {
                 assetId: video.assetId,
                 assetType: 'tiktok_seed_video',
                 url: cdnUrl,
-                generator: 'heygen',
-                promptUsed: video.script,
+                generator: 'runwayml',
+                promptUsed: `${video.motionPrompt}\n\n${video.script}`,
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
                 mimeType: 'video/mp4',
-                tags: ['video', 'tiktok', 'heygen'],
+                tags: ['video', 'tiktok', 'runwayml', 'elevenlabs', 'narrated'],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
                 active: true,
             });
             return NextResponse.json({
-                generator: 'heygen', type: 'tiktok_seed_9x16',
+                generator: 'runwayml+elevenlabs', type: 'tiktok_seed_9x16',
                 assetId: video.assetId, fileName: video.fileName,
                 script: video.script, durationSeconds: video.durationSeconds,
+                motionPrompt: video.motionPrompt,
                 fileSizeBytes: video.buffer.length, cdnUrl,
             });
         }

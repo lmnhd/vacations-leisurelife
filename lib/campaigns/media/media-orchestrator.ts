@@ -19,7 +19,8 @@ import { storeAsset, getAssetUrl } from './storage-client';
 import { generateAestheticConcepts } from './generators/stability-generator';
 import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
-import { generateTikTokSeed, generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
+import { generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
+import { generateTikTokSeed } from './generators/tiktok-seed-generator';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
@@ -395,15 +396,15 @@ export async function runMediaGeneration(
             }
         }
 
-        // HeyGen videos (depend on hero image URL for backdrop)
+        // Video generation (depend on hero image URL for backdrop)
         if (shouldRun('video', resolvedOptions.assetTypes) && firstHeroUrl) {
             group2Promises.push(
-                runWithJob(slug, 'tiktok_seed_video', 'heygen', 'tiktok seed', async () => {
+                runWithJob(slug, 'tiktok_seed_video', 'runwayml', 'tiktok seed', async () => {
                     const video = await generateTikTokSeed(brief, firstHeroUrl);
                     const rec = await uploadAndRecord(
-                        slug, video.assetId, 'tiktok_seed_video', 'heygen',
-                        video.script, video.buffer, video.fileName, 'video/mp4',
-                        ['video', 'tiktok', 'seed'], undefined, video.durationSeconds
+                        slug, video.assetId, 'tiktok_seed_video', 'runwayml',
+                        `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
+                        ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated'], undefined, video.durationSeconds
                     );
                     videoRecords.tiktokSeed = rec;
                     return [rec];

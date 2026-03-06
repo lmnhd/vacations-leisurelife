@@ -65,7 +65,7 @@ interface PersistedTestPageState {
     hypeResult: GeneratorResult;
     replicateResult: GeneratorResult;
     merch0Result: GeneratorResult;
-    heygenTiktokResult: GeneratorResult;
+    tiktokVoiceoverResult: GeneratorResult;
     heygenExplainerResult: GeneratorResult;
     heygenThresholdResult: GeneratorResult;
     runwayCountdownResult: GeneratorResult;
@@ -89,7 +89,7 @@ function createEmptyPersistedState(): PersistedTestPageState {
         hypeResult: makeResult(),
         replicateResult: makeResult(),
         merch0Result: makeResult(),
-        heygenTiktokResult: makeResult(),
+        tiktokVoiceoverResult: makeResult(),
         heygenExplainerResult: makeResult(),
         heygenThresholdResult: makeResult(),
         runwayCountdownResult: makeResult(),
@@ -250,7 +250,7 @@ export default function MediaGenerationTestPage() {
     const [hypeResult, setHypeResult] = useState<GeneratorResult>(makeResult());
     const [replicateResult, setReplicateResult] = useState<GeneratorResult>(makeResult());
     const [merch0Result, setMerch0Result] = useState<GeneratorResult>(makeResult());
-    const [heygenTiktokResult, setHeygenTiktokResult] = useState<GeneratorResult>(makeResult());
+    const [tiktokVoiceoverResult, setTiktokVoiceoverResult] = useState<GeneratorResult>(makeResult());
     const [heygenExplainerResult, setHeygenExplainerResult] = useState<GeneratorResult>(makeResult());
     const [heygenThresholdResult, setHeygenThresholdResult] = useState<GeneratorResult>(makeResult());
     const [runwayCountdownResult, setRunwayCountdownResult] = useState<GeneratorResult>(makeResult());
@@ -289,7 +289,7 @@ export default function MediaGenerationTestPage() {
             setHypeResult(emptyState.hypeResult);
             setReplicateResult(emptyState.replicateResult);
             setMerch0Result(emptyState.merch0Result);
-            setHeygenTiktokResult(emptyState.heygenTiktokResult);
+            setTiktokVoiceoverResult(emptyState.tiktokVoiceoverResult);
             setHeygenExplainerResult(emptyState.heygenExplainerResult);
             setHeygenThresholdResult(emptyState.heygenThresholdResult);
             setRunwayCountdownResult(emptyState.runwayCountdownResult);
@@ -311,7 +311,7 @@ export default function MediaGenerationTestPage() {
             setHypeResult(parsedState.hypeResult);
             setReplicateResult(parsedState.replicateResult);
             setMerch0Result(parsedState.merch0Result);
-            setHeygenTiktokResult(parsedState.heygenTiktokResult);
+            setTiktokVoiceoverResult(parsedState.tiktokVoiceoverResult);
             setHeygenExplainerResult(parsedState.heygenExplainerResult);
             setHeygenThresholdResult(parsedState.heygenThresholdResult);
             setRunwayCountdownResult(parsedState.runwayCountdownResult);
@@ -340,7 +340,7 @@ export default function MediaGenerationTestPage() {
             hypeResult,
             replicateResult,
             merch0Result,
-            heygenTiktokResult,
+            tiktokVoiceoverResult,
             heygenExplainerResult,
             heygenThresholdResult,
             runwayCountdownResult,
@@ -361,7 +361,7 @@ export default function MediaGenerationTestPage() {
         hypeResult,
         replicateResult,
         merch0Result,
-        heygenTiktokResult,
+        tiktokVoiceoverResult,
         heygenExplainerResult,
         heygenThresholdResult,
         runwayCountdownResult,
@@ -597,19 +597,19 @@ export default function MediaGenerationTestPage() {
                     />
                 </div>
 
-                {/* ── HeyGen TikTok Seed ───────────────────────────────── */}
+                {/* ── TikTok Voiceover Seed ─────────────────────────────── */}
                 <GeneratorCard
-                    id="gen-heygen-tiktok"
+                    id="gen-tiktok-voiceover"
                     keyStatus={keyStatus}
-                    title="HeyGen — TikTok Seed Video (9:16)"
+                    title="RunwayML + ElevenLabs — TikTok Voiceover Video (9:16)"
                     icon={<Play className="h-4 w-4" />}
                     color="violet"
-                    description="30–45s avatar video from brief.videoConcepts.tiktokSeed + TikTok hook. Uploaded to R2. Requires the hero CDN URL above as background."
-                    cost="~$1–3"
-                    apiKeys={["HEYGEN", "R2"]}
-                    result={heygenTiktokResult}
+                    description="30s narrated TikTok promo built from a Runway motion clip plus ElevenLabs voiceover, then composed into one vertical MP4 and uploaded to R2. Requires the hero CDN URL above as the visual source."
+                    cost="~$0.60"
+                    apiKeys={["RUNWAYML", "ELEVENLABS", "R2"]}
+                    result={tiktokVoiceoverResult}
                     previewType="video"
-                    onRun={() => runGenerator(`${base}/video`, { generator: "heygen_tiktok", heroImageUrl }, setHeygenTiktokResult)}
+                    onRun={() => runGenerator(`${base}/video`, { generator: "tiktok_voiceover", heroImageUrl }, setTiktokVoiceoverResult)}
                 />
 
                 {/* ── HeyGen Explainer ─────────────────────────────────── */}
