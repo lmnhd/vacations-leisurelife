@@ -130,28 +130,35 @@ Full schema and generation process: [PHASE_1_AESTHETIC_DEVISING.md](./CAMPAIGN_M
 - [x] `heygen-generator.ts` — TikTok seed, hero explainer, threshold announcement videos
 - [x] `runway-generator.ts` — Countdown video series + cinematic B-roll clips
 - [x] `elevenlabs-generator.ts` — Ambient narration + hype clip
-- [x] `suno-generator.ts` — Theme music (Not Implemented stub; requires SUNO_API_KEY when available)
+- [x] `replicate-music-generator.ts` — Theme music via Replicate MusicGen using `REPLICATE_API_TOKEN`; downloads MP3 output and stores as `theme_music`
+- [x] `theme-music-library.ts` — shared default track library selector using AI-agent-friendly tags + prompt notes; supports deterministic best-match selection from premade tracks
 - [x] `copy-generator.ts` — GPT-4o single structured call: carousel slides, ad variants, captions, email subjects
 
 **Orchestrator**
 - [x] `lib/campaigns/media/media-orchestrator.ts` — Two-phase parallel pipeline; Group 1 (independent) + Group 2 (depends on hero images); per-generator job tracking; manifest assembly
 
 **API Routes**
-- [x] `POST /api/groups/campaign/:slug/media/generate` — Full or targeted pipeline trigger
+- [x] `POST /api/groups/campaign/:slug/media/generate` — Full or targeted pipeline trigger with optional `themeMusicSource: 'default' | 'replicate'`
 - [x] `GET  /api/groups/campaign/:slug/media/manifest` — Retrieve `CampaignMediaManifest`
 - [x] `GET  /api/groups/campaign/:slug/media/assets?type=` — Query assets by type
+- [x] `GET  /api/groups/theme-music-library` — List shared premade tracks; optional `campaignSlug` returns current best default match
+- [x] `POST /api/groups/theme-music-library` — Bulk upload shared premade theme music tracks
+- [x] `PATCH /api/groups/theme-music-library/:assetId` — Update tags / notes / duration metadata for library tracks
 
-**Per-Generator Test Routes** *(test-only, no R2 upload, inline base64 results)*
+**Per-Generator Test Routes** *(current test routes use real generator paths; audio/image/video assets upload to R2 where applicable)*
 - [x] `POST /api/groups/campaign/:slug/media/test/copy` — GPT-4o copy batch
-- [x] `POST /api/groups/campaign/:slug/media/test/audio` — ElevenLabs narration / hype / Suno
+- [x] `POST /api/groups/campaign/:slug/media/test/audio` — ElevenLabs narration / hype / Replicate MusicGen theme audio / shared default theme music
 - [x] `POST /api/groups/campaign/:slug/media/test/images` — Stability AI hero / concepts / Sharp crops
 - [x] `POST /api/groups/campaign/:slug/media/test/merch` — DALL-E 3 single item by index
+- [x] `POST /api/tests/musicgen` — dedicated standalone Replicate MusicGen prompt + duration test route
 
 **Test Pages**
-- [x] `app/(tests)/tests/media-generation/page.tsx` — Category-level pipeline runner with cost confirmation
-- [x] `app/(tests)/tests/media-generation/test/page.tsx` — **Per-generator test page**: 8 individual cards, each hitting one API; inline image/audio/JSON results; API key status badges; Sharp crops auto-use last hero output
+- [x] `app/(tests)/tests/media-generation/page.tsx` — Category-level pipeline runner with cost confirmation and theme music source selector (`default` vs `replicate`)
+- [x] `app/(tests)/tests/media-generation/test/page.tsx` — **Per-generator test page**: individual cards hitting current group media test routes; theme music card can use shared default library or Replicate and previews returned audio
+- [x] `app/(tests)/tests/musicgen/page.tsx` — standalone Replicate MusicGen test page for prompt + duration validation before full pipeline testing
+- [x] `app/(tests)/tests/theme-music-library/page.tsx` — shared theme music library manager for bulk upload, tag editing, prompt-note editing, and track preview
 
-> **API keys in `.env.local`**: `OPENAI_API_KEY` ✅ · `ELEVENLABS_API_KEY` ✅ · `STABILITY_API_KEY` ❌ · `HEYGEN_API_KEY` ❌ · `RUNWAYML_API_KEY` ❌ · R2 credentials ❌
+> **API keys in `.env.local`**: `OPENAI_API_KEY` ✅ · `ELEVENLABS_API_KEY` ✅ · `REPLICATE_API_TOKEN` required only when using Replicate theme music ✅ · `STABILITY_API_KEY` ❌ · `HEYGEN_API_KEY` ❌ · `RUNWAYML_API_KEY` ❌ · R2 credentials required for uploaded test assets and shared theme music library uploads
 
 Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md)
 

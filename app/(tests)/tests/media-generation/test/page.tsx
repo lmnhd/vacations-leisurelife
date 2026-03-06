@@ -17,6 +17,7 @@ const DEFAULT_SLUG = "analog-film-and-darkroom-odyssey-2026";
 const KEY_META: Record<string, { label: string; cost: string }> = {
     OPENAI: { label: "OpenAI", cost: "" },
     ELEVENLABS: { label: "ElevenLabs", cost: "" },
+    REPLICATE: { label: "Replicate", cost: "~$0.01" },
     STABILITY: { label: "Stability AI", cost: "~$0.05/img" },
     HEYGEN: { label: "HeyGen", cost: "~$1–3/video" },
     RUNWAYML: { label: "RunwayML", cost: "~$0.50/clip" },
@@ -136,6 +137,7 @@ function ResultPanel({ result, previewType }: { result: GeneratorResult; preview
 export default function MediaGenerationTestPage() {
     const [slug, setSlug] = useState(DEFAULT_SLUG);
     const [keyStatus, setKeyStatus] = useState<KeyStatus>({});
+    const [themeMusicSource, setThemeMusicSource] = useState<'replicate' | 'default'>('default');
 
     useEffect(() => {
         fetch('/api/groups/media/env-check')
@@ -226,6 +228,21 @@ export default function MediaGenerationTestPage() {
                     />
                 </div>
 
+                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
+                    <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">Theme Music Source</label>
+                    <select
+                        value={themeMusicSource}
+                        onChange={event => setThemeMusicSource(event.target.value === 'replicate' ? 'replicate' : 'default')}
+                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/40"
+                    >
+                        <option value="default">Default Library</option>
+                        <option value="replicate">Replicate MusicGen</option>
+                    </select>
+                    <p className="mt-2 text-[11px] text-slate-500">
+                        Default Library reuses approved pre-made tracks with tags. Replicate generates a fresh track.
+                    </p>
+                </div>
+
                 {/* ── Copy Generator ───────────────────────────────────── */}
                 <GeneratorCard
                     id="gen-copy"
@@ -275,15 +292,17 @@ export default function MediaGenerationTestPage() {
                 <GeneratorCard
                     id="gen-replicate"
                     keyStatus={keyStatus}
-                    title="Replicate (MusicGen) — Theme Music"
+                    title={themeMusicSource === 'default' ? 'Default Library — Theme Music' : 'Replicate (MusicGen) — Theme Music'}
                     icon={<Music className="h-4 w-4" />}
                     color="slate"
-                    description="30s instrumental loop from brief.visual.aestheticLabel and colors. Uploads directly to R2."
-                    cost="~$0.01"
-                    apiKeys={["REPLICATE"]}
+                    description={themeMusicSource === 'default'
+                        ? "Selects a tagged pre-made track from the shared library and records it as the campaign theme music."
+                        : "30s instrumental loop from brief.visual.aestheticLabel and colors. Uploads directly to R2."}
+                    cost={themeMusicSource === 'default' ? 'free' : '~$0.01'}
+                    apiKeys={themeMusicSource === 'default' ? [] : ["REPLICATE"]}
                     result={replicateResult}
-                    previewType="none"
-                    onRun={() => runGenerator(`${base}/audio`, { generator: "replicate_theme" }, setReplicateResult)}
+                    previewType="audio"
+                    onRun={() => runGenerator(`${base}/audio`, { generator: themeMusicSource === 'default' ? "default_theme" : "replicate_theme" }, setReplicateResult)}
                 />
 
                 {/* ── Stability Hero ───────────────────────────────────── */}

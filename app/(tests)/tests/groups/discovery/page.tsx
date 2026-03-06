@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Loader2, RotateCcw, GitBranch, MapPin, ChevronDown, ChevronUp, FlaskConical } from "lucide-react";
 import { Campaign } from '@/lib/campaigns/types';
 
@@ -150,6 +150,14 @@ export default function DiscoveryTestPage() {
     const [phaseBCampaigns, setPhaseBCampaigns] = useState<PhaseBCampaignRef[]>([]);
     const [phaseBError, setPhaseBError] = useState<string | null>(null);
     const [phaseBRunning, setPhaseBRunning] = useState(false);
+    const phaseBPollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const clearPhaseBPollingInterval = useCallback(() => {
+        if (phaseBPollingIntervalRef.current) {
+            clearInterval(phaseBPollingIntervalRef.current);
+            phaseBPollingIntervalRef.current = null;
+        }
+    }, []);
 
     // Auto-load existing campaigns from DynamoDB on mount
     useEffect(() => {
@@ -174,6 +182,12 @@ export default function DiscoveryTestPage() {
         };
         loadExisting();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            clearPhaseBPollingInterval();
+        };
+    }, [clearPhaseBPollingInterval]);
 
     // ─── Phase A ─────────────────────────────────────────────────────────────
 
@@ -241,13 +255,31 @@ export default function DiscoveryTestPage() {
 
     const pollPhaseBStatus = useCallback(async () => {
         const res = await fetch('/api/groups/discovery/phase-b');
-        const data = await res.json();
+        const data = await res.json() as { campaigns?: PhaseBCampaignRef[]; running?: boolean; error?: string };
+
+        if (!res.ok) {
+            throw new Error(data.error ?? 'Failed to load Phase B status');
+        }
+
         setPhaseBCampaigns(data.campaigns ?? []);
         if (!data.running) {
+            clearPhaseBPollingInterval();
             setPhaseBRunning(false);
             setPhaseBLoading(false);
         }
-    }, []);
+    }, [clearPhaseBPollingInterval]);
+
+    const startPhaseBPolling = useCallback(() => {
+        clearPhaseBPollingInterval();
+        phaseBPollingIntervalRef.current = setInterval(() => {
+            void pollPhaseBStatus().catch((error: unknown) => {
+                clearPhaseBPollingInterval();
+                setPhaseBError(error instanceof Error ? error.message : 'Phase B polling failed');
+                setPhaseBLoading(false);
+                setPhaseBRunning(false);
+            });
+        }, 5000);
+    }, [clearPhaseBPollingInterval, pollPhaseBStatus]);
 
     const handleRunPhaseB = async () => {
         const confirmed = window.confirm(
@@ -262,28 +294,31 @@ export default function DiscoveryTestPage() {
         setPhaseBRunning(true);
 
         try {
-            await fetch('/api/groups/discovery/phase-b', { method: 'POST' });
+            clearPhaseBPollingInterval();
 
-            // Poll every 5s until process completes
-            const interval = setInterval(async () => {
-                const res = await fetch('/api/groups/discovery/phase-b');
-                const data = await res.json();
-                setPhaseBCampaigns(data.campaigns ?? []);
-                if (!data.running) {
-                    clearInterval(interval);
-                    setPhaseBRunning(false);
-                    setPhaseBLoading(false);
-                }
-            }, 5000);
+            const response = await fetch('/api/groups/discovery/phase-b', { method: 'POST' });
+            const data = await response.json() as { success?: boolean; error?: string };
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error ?? 'Phase B failed to start');
+            }
+
+            await pollPhaseBStatus();
+            startPhaseBPolling();
         } catch (err) {
             setPhaseBError(err instanceof Error ? err.message : 'Phase B failed');
+            clearPhaseBPollingInterval();
             setPhaseBLoading(false);
             setPhaseBRunning(false);
         }
     };
 
     const handleLoadPhaseBStatus = async () => {
-        await pollPhaseBStatus();
+        try {
+            await pollPhaseBStatus();
+        } catch (err) {
+            setPhaseBError(err instanceof Error ? err.message : 'Failed to load Phase B status');
+        }
     };
 
     const hasPhaseAResults = blueprints.length > 0;

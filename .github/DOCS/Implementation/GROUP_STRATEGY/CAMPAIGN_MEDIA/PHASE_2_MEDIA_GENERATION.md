@@ -3,7 +3,7 @@
 
 **Input:** `CampaignAestheticBrief` (from Phase 1, status `'approved'`)  
 **Output:** `CampaignMediaManifest` — fully populated index of all generated assets with CDN URLs  
-**Endpoint:** `POST /api/campaigns/[slug]/media/generate`
+**Endpoint:** `POST /api/groups/campaign/[slug]/media/generate`
 
 ---
 
@@ -21,7 +21,7 @@
 | Cinematic B-roll clips | 3–4 | RunwayML Gen-3 | Video compositing |
 | Landing page ambient narration | 1 | ElevenLabs | Landing page hero audio |
 | Threshold hype clip | 1 | ElevenLabs | SMS hook (Twilio), email |
-| Campaign theme music | 1 | Suno AI | Video background, landing page |
+| Campaign theme music | 1 | Replicate MusicGen | Video background, landing page |
 | Merch design files | 3–5 | DALL-E 3 | Printful / Printify upload |
 | Email header graphics | 3 | Derived from hero images | Klaviyo template stages 1–3 |
 | Facebook / Meta ad creatives | 3 | Derived from hero images + copy | Meta Ads Manager |
@@ -60,7 +60,7 @@ type GeneratorService =
   | 'midjourney' | 'stability_ai' | 'dalle3' 
   | 'heygen' | 'runwayml' | 'kling'
   | 'elevenlabs' | 'openai_tts'
-  | 'suno' | 'udio'
+  | 'replicate' | 'udio'
   | 'sharp'; // server-side image processing
 ```
 
@@ -210,16 +210,43 @@ await elevenlabs.textToSpeech({
 High-energy delivery. Voice settings adjusted: stability 0.45 (more expressive), style 0.70.  
 Script: `CampaignAestheticBrief.audio.hypeClipScript`
 
-### Campaign Theme Music (60–120s loop)
-**Tool:** Suno AI  
+### Campaign Theme Music (30s loop)
+**Tool:** Shared Default Library or Replicate MusicGen  
 **Purpose:** Video background audio, landing page ambient music option
 
-Generated from `CampaignAestheticBrief.audio.musicMood` as the Suno prompt seed.  
-Output: one instrumental loop, 60–120 seconds, loopable. Exported as `.mp3`.
+Two supported paths now exist:
+
+1. **Default Library** — selects the best premade track from a shared global library using AI-agent-friendly tags plus prompt notes stored with each track record.
+2. **Replicate MusicGen** — generates a fresh instrumental track from the approved brief when a custom track is preferred.
+
+Output: one instrumental loop, 30 seconds, exported as `.mp3`.
 
 ```
-Suno Prompt: {musicMood}, instrumental only, no lyrics, loop-friendly, 
-upbeat but not frantic, [BPM estimate from mood], [genre keywords from aesthetic]
+Default Library selection inputs: stored tags + prompt notes matched against {aestheticLabel}, {imageryMood}, {musicMood}, tone keywords, and niche hashtags
+
+Replicate Prompt: ambient instrumental music, {aestheticLabel} vibe, {imageryMood} atmosphere, background loop, no vocals, high quality
+```
+
+### Shared Theme Music Library
+Premade tracks are stored under a reserved shared slug and exposed through library endpoints so both the UI and external agents can use the same selection pool.
+
+**Capabilities:**
+- Bulk upload multiple `.mp3` tracks into the shared library
+- Edit tags per track for AI-agent selection
+- Store freeform prompt notes / usage notes per track
+- Return the best current match for a specific campaign slug
+
+**Endpoints:**
+```
+GET   /api/groups/theme-music-library
+GET   /api/groups/theme-music-library?campaignSlug={slug}
+POST  /api/groups/theme-music-library
+PATCH /api/groups/theme-music-library/{assetId}
+```
+
+**UI Test Page:**
+```
+/tests/theme-music-library
 ```
 
 ---

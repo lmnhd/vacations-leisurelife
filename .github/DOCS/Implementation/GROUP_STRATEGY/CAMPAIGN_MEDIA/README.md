@@ -91,8 +91,8 @@ CAMPAIGN CONFIG OBJECT (Phase D → GROUP_CAMPAIGN_STRATEGY §6.4)
 Human-in-the-loop session. Displays the Aesthetic Brief for review/edit, allows individual asset regeneration, manual overrides, and one-click distribution scheduling.
 
 ### Agent Entry Point
-`POST /api/campaigns/[slug]/media/generate`  
-Fully automated pipeline invocation.  Accepts a `CampaignConfig` object, runs all four phases end-to-end, and returns the `CampaignMediaManifest`. Designed for batch invocation inside the monthly Blueprint Sprint.
+`POST /api/groups/campaign/[slug]/media/generate`  
+Fully automated pipeline invocation. Accepts optional `assetTypes` and optional `themeMusicSource: 'default' | 'replicate'`, runs the active Phase 2 media path, and returns generation status / manifest summary.
 
 ```typescript
 // Agent invocation signature
@@ -115,7 +115,7 @@ interface MediaGenerationRequest {
 | Video — Avatar | HeyGen | D-ID | Host explainer videos, TikTok/Reels face-to-camera |
 | Video — Cinematic | RunwayML Gen-3 | Kling AI | Scene clips, mood reels, B-roll |
 | Voice / Audio | ElevenLabs | OpenAI TTS | Narration, hype clips, landing page ambient audio |
-| Music / Soundscape | Suno AI | Udio | Background music for video, theme song ("audio logo") |
+| Music / Soundscape | Shared Default Library + Replicate MusicGen | Udio | Background music for video, theme song ("audio logo") |
 | Copy / Captions | GPT-4o | Claude 3.5 Sonnet | Platform captions, email copy, slogan generation |
 | Merch Design | DALL-E 3 → Printful | Midjourney → Printify | T-shirts, lanyards, niche-specific items |
 

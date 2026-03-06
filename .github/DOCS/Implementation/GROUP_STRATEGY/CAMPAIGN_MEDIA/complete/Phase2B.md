@@ -17,7 +17,7 @@ Aesthetic Brief (Phase 1 output)
 │    • Stability AI    │  hero images (5×) + concept art (4×)
 │    • DALL-E 3        │  merch designs (3–5×)
 │    • ElevenLabs      │  narration + hype clip
-│    • Suno (stub)     │  theme music (Not Implemented)
+│    • Theme Music     │  shared default library OR Replicate MusicGen
 │    • GPT-4o copy     │  captions, ad variants, email subjects
 │                      │
 │  Group 2 (parallel): │  ← depends on hero images
@@ -43,13 +43,15 @@ Aesthetic Brief (Phase 1 output)
 | Generator | [heygen-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/heygen-generator.ts) | HeyGen avatar videos (TikTok, explainer, threshold) |
 | Generator | [runway-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/runway-generator.ts) | RunwayML countdown + B-roll |
 | Generator | [elevenlabs-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/elevenlabs-generator.ts) | ElevenLabs narration + hype clip |
-| Generator | [suno-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/suno-generator.ts) | Suno stub (Not Implemented) |
+| Generator | [replicate-music-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/replicate-music-generator.ts) | Replicate MusicGen theme music |
+| Library | [theme-music-library.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/theme-music-library.ts) | Shared default theme music library selection + metadata helpers |
 | Generator | [copy-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/copy-generator.ts) | GPT-4o copy batch via LLM gateway |
 | Orchestrator | [media-orchestrator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/media-orchestrator.ts) | Two-phase parallel coordinator |
 | API | [generate/route.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/%5Bslug%5D/media/generate/route.ts) | POST trigger with optional assetTypes filter |
 | API | [manifest/route.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/%5Bslug%5D/media/manifest/route.ts) | GET manifest retrieval |
 | API | [assets/route.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/%5Bslug%5D/media/assets/route.ts) | GET assets by type |
 | Test | [page.tsx](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/%28tests%29/tests/media-generation/page.tsx) | Per-category generation UI with cost warnings |
+| Test | [theme-music-library/page.tsx](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/%28tests%29/tests/theme-music-library/page.tsx) | Shared theme music library bulk upload + tag editor |
 
 ## Dependencies Added
 
@@ -63,4 +65,5 @@ Aesthetic Brief (Phase 1 output)
 ## Remaining
 
 - End-to-end test with live campaign (requires API keys)
-- Update [PROGRESS.md](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/.github/DOCS/Implementation/GROUP_STRATEGY/PROGRESS.md) and [API_REFERENCE.md](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/.github/DOCS/Implementation/GROUP_STRATEGY/API_REFERENCE.md)
+- Validate shared default library selection quality against multiple campaigns
+- Confirm library tags produce acceptable default picks before full agent rollout

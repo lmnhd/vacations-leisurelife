@@ -23,6 +23,7 @@ import { generateTikTokSeed, generateHeroExplainer, generateThresholdAnnouncemen
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip, GeneratedAudio } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
+import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { randomUUID } from 'crypto';
 
@@ -36,6 +37,7 @@ const activeGenerations = new Set<string>();
 export interface GenerationOptions {
     /** Specific asset types to generate. If omitted, generates everything. */
     assetTypes?: AssetType[];
+    themeMusicSource?: 'replicate' | 'default';
 }
 
 export interface GenerationResult {
@@ -160,19 +162,21 @@ export async function runMediaGeneration(
     slug: string,
     options?: GenerationOptions
 ): Promise<GenerationResult> {
-    // In-flight lock
     if (activeGenerations.has(slug)) {
         throw new Error(`Media generation already in progress for campaign ${slug}`);
     }
     activeGenerations.add(slug);
 
     try {
-        // 1. Load campaign + approved aesthetic brief
+        const resolvedOptions: GenerationOptions = options ?? {};
         const campaign = await getCampaignBlueprint(slug);
-        if (!campaign) throw new Error(`Campaign ${slug} not found`);
-
+        if (!campaign) {
+            throw new Error(`Campaign not found: ${slug}`);
+        }
         const brief = await getAestheticBrief(slug);
-        if (!brief) throw new Error(`No aesthetic brief found for ${slug}`);
+        if (!brief) {
+            throw new Error(`No approved aesthetic brief found for campaign: ${slug}`);
+        }
         if (brief.humanReviewStatus !== 'approved') {
             throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus})`);
         }
@@ -218,7 +222,7 @@ export async function runMediaGeneration(
         // ── GROUP 1: Independent generators (parallel) ────────────────
         const group1Promises: Promise<unknown>[] = [];
 
-        if (shouldRun('images', options?.assetTypes)) {
+        if (shouldRun('images', resolvedOptions.assetTypes)) {
             // Hero images
             group1Promises.push(
                 runWithJob(slug, 'hero_image', 'stability_ai', 'hero images', async () => {
@@ -256,7 +260,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRun('merch', options?.assetTypes)) {
+        if (shouldRun('merch', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'merch_design', 'dalle3', 'merch designs', async () => {
                     const designs = await generateMerchDesigns(brief);
@@ -275,7 +279,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRun('copy', options?.assetTypes)) {
+        if (shouldRun('copy', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'ad_creative', 'gpt4o', 'platform copy', async () => {
                     const generatedCopy = await generatePlatformCopy(brief);
@@ -296,7 +300,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRun('audio', options?.assetTypes)) {
+        if (shouldRun('audio', resolvedOptions.assetTypes)) {
             // Ambient narration
             group1Promises.push(
                 runWithJob(slug, 'ambient_narration', 'elevenlabs', 'ambient narration', async () => {
@@ -327,7 +331,20 @@ export async function runMediaGeneration(
 
             // Theme music
             group1Promises.push(
-                runWithJob(slug, 'theme_music', 'replicate', 'theme music', async () => {
+                runWithJob(slug, 'theme_music', resolvedOptions.themeMusicSource === 'default' ? 'default_library' : 'replicate', 'theme music', async () => {
+                    if (resolvedOptions.themeMusicSource === 'default') {
+                        const selectedTrack = await selectDefaultThemeMusicTrack(brief);
+                        if (!selectedTrack) {
+                            throw new Error('No default theme music tracks are available in the shared library');
+                        }
+
+                        const selectionReason = buildThemeMusicSelectionReason(brief, selectedTrack);
+                        const record = buildDefaultThemeMusicRecord(slug, selectedTrack, selectionReason);
+                        await saveAssetRecord(slug, record);
+                        audioRecords.themeMusic = record;
+                        return [record];
+                    }
+
                     const audio = await generateThemeMusic(brief);
                     const rec = await uploadAndRecord(
                         slug, audio.assetId, 'theme_music', 'replicate',
@@ -349,7 +366,7 @@ export async function runMediaGeneration(
         const group2Promises: Promise<unknown>[] = [];
 
         // Platform crops (from hero images)
-        if (shouldRun('images', options?.assetTypes) && heroRecords.length > 0) {
+        if (shouldRun('images', resolvedOptions.assetTypes) && heroRecords.length > 0) {
             for (const heroRec of heroRecords) {
                 group2Promises.push(
                     (async () => {
@@ -377,7 +394,7 @@ export async function runMediaGeneration(
         }
 
         // HeyGen videos (depend on hero image URL for backdrop)
-        if (shouldRun('video', options?.assetTypes) && firstHeroUrl) {
+        if (shouldRun('video', resolvedOptions.assetTypes) && firstHeroUrl) {
             group2Promises.push(
                 runWithJob(slug, 'tiktok_seed_video', 'heygen', 'tiktok seed', async () => {
                     const video = await generateTikTokSeed(brief, firstHeroUrl);

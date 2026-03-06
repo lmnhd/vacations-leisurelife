@@ -5,6 +5,7 @@ import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateThemeMusic } from '@/lib/campaigns/media/generators/replicate-music-generator';
+import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from '@/lib/campaigns/media/theme-music-library';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/audio
@@ -12,7 +13,7 @@ import { generateThemeMusic } from '@/lib/campaigns/media/generators/replicate-m
 // Body: { generator: 'elevenlabs_narration' | 'elevenlabs_hype' | 'replicate_theme' }
 // ────────────────────────────────────────────────────────────────────────────
 
-type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'replicate_theme';
+type AudioTestGenerator = 'elevenlabs_narration' | 'elevenlabs_hype' | 'replicate_theme' | 'default_theme';
 
 interface AudioTestRequestBody {
     generator: AudioTestGenerator;
@@ -120,6 +121,18 @@ export async function POST(
                 active: true,
             });
 
+            return NextResponse.json(record);
+        }
+
+        if (generator === 'default_theme') {
+            const selectedTrack = await selectDefaultThemeMusicTrack(brief);
+            if (!selectedTrack) {
+                return NextResponse.json({ error: 'No default theme music tracks are available in the shared library' }, { status: 404 });
+            }
+
+            const selectionReason = buildThemeMusicSelectionReason(brief, selectedTrack);
+            const record = buildDefaultThemeMusicRecord(slug, selectedTrack, selectionReason);
+            await saveAssetRecord(slug, record);
             return NextResponse.json(record);
         }
 

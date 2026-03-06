@@ -12,6 +12,7 @@ import { AssetType, AssetTypeEnum } from '@/lib/campaigns/schema';
 
 interface GenerateRequestBody {
     assetTypes?: AssetType[];
+    themeMusicSource?: 'replicate' | 'default';
 }
 
 export async function POST(
@@ -40,6 +41,9 @@ export async function POST(
             if (validTypes.length > 0) {
                 options.assetTypes = validTypes;
             }
+        }
+        if (body.themeMusicSource === 'replicate' || body.themeMusicSource === 'default') {
+            options.themeMusicSource = body.themeMusicSource;
         }
     } catch {
         // No body or invalid JSON — run everything

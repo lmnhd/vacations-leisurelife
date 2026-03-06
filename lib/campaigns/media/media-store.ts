@@ -5,6 +5,7 @@ import {
     MediaGenerationJob,
     CampaignMediaManifest,
     AssetType,
+    ReviewStatus,
 } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -108,6 +109,83 @@ export async function deactivateAssetRecord(slug: string, assetId: string): Prom
     }));
 }
 
+function updateAssetInCollection(records: AssetRecord[], updatedRecord: AssetRecord): AssetRecord[] {
+    return records.map((record) => {
+        if (record.assetId !== updatedRecord.assetId) {
+            return record;
+        }
+
+        return updatedRecord;
+    });
+}
+
+function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: AssetRecord): CampaignMediaManifest {
+    return {
+        ...manifest,
+        images: {
+            ...manifest.images,
+            hero: updateAssetInCollection(manifest.images.hero, updatedRecord),
+            aestheticConcepts: updateAssetInCollection(manifest.images.aestheticConcepts, updatedRecord),
+            platformCrops: Object.fromEntries(
+                Object.entries(manifest.images.platformCrops).map(([formatKey, records]) => [
+                    formatKey,
+                    updateAssetInCollection(records, updatedRecord),
+                ])
+            ) as CampaignMediaManifest['images']['platformCrops'],
+        },
+        videos: {
+            tiktokSeed: manifest.videos.tiktokSeed?.assetId === updatedRecord.assetId ? updatedRecord : manifest.videos.tiktokSeed,
+            heroExplainer: manifest.videos.heroExplainer?.assetId === updatedRecord.assetId ? updatedRecord : manifest.videos.heroExplainer,
+            thresholdAnnouncement: manifest.videos.thresholdAnnouncement?.assetId === updatedRecord.assetId ? updatedRecord : manifest.videos.thresholdAnnouncement,
+            countdown: updateAssetInCollection(manifest.videos.countdown, updatedRecord),
+            broll: updateAssetInCollection(manifest.videos.broll, updatedRecord),
+        },
+        audio: {
+            ambientNarration: manifest.audio.ambientNarration?.assetId === updatedRecord.assetId ? updatedRecord : manifest.audio.ambientNarration,
+            hypeClip: manifest.audio.hypeClip?.assetId === updatedRecord.assetId ? updatedRecord : manifest.audio.hypeClip,
+            themeMusic: manifest.audio.themeMusic?.assetId === updatedRecord.assetId ? updatedRecord : manifest.audio.themeMusic,
+        },
+        merch: {
+            ...manifest.merch,
+            designs: updateAssetInCollection(manifest.merch.designs, updatedRecord),
+            mockups: updateAssetInCollection(manifest.merch.mockups, updatedRecord),
+        },
+    };
+}
+
+export async function updateAssetReview(
+    slug: string,
+    assetId: string,
+    reviewStatus: ReviewStatus,
+    reviewNotes?: string,
+): Promise<AssetRecord> {
+    const existingRecord = await getActiveAssetRecord(slug, assetId);
+    if (!existingRecord) {
+        throw new Error(`Media asset not found: ${assetId}`);
+    }
+
+    const updatedRecord: AssetRecord = {
+        ...existingRecord,
+        reviewStatus,
+        reviewedAt: new Date().toISOString(),
+        ...(reviewNotes !== undefined ? { reviewNotes } : {}),
+    };
+
+    if (reviewNotes === undefined && existingRecord.reviewNotes !== undefined) {
+        delete updatedRecord.reviewNotes;
+    }
+
+    await saveAssetRecord(slug, updatedRecord);
+
+    const existingManifest = await getMediaManifest(slug);
+    if (existingManifest) {
+        const updatedManifest = updateAssetInManifest(existingManifest, updatedRecord);
+        await saveMediaManifest(updatedManifest);
+    }
+
+    return updatedRecord;
+}
+
 // ── Media Manifest ─────────────────────────────────────────────────────────
 
 export async function saveMediaManifest(manifest: CampaignMediaManifest): Promise<void> {
@@ -169,7 +247,7 @@ export async function getAssetBinary(
     };
 }
 
-// ── Campaign METADATA Updates ──────────────────────────────────────────────export type MediaStatus = 'not_started' | 'generating' | 'partial' | 'ready';
+export type MediaStatus = 'not_started' | 'generating' | 'partial' | 'ready';
 
 export async function updateCampaignMediaStatus(
     slug: string,

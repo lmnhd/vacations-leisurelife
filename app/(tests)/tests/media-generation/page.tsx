@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { CampaignMediaManifest } from "@/lib/campaigns/schema";
+import { MediaReviewPanel } from "./media-review-panel";
 import {
     Loader2, Wand2, Image, Film, Music, Type, Shirt,
     Zap, Download, Eye, AlertTriangle
@@ -29,18 +31,6 @@ interface GenerateResult {
     jobSummary: JobSummary;
 }
 
-interface ManifestData {
-    slug: string;
-    generatedAt: string;
-    totalAssets: number;
-    completionStatus: string;
-    images: { hero: unknown[]; aestheticConcepts: unknown[]; platformCrops: Record<string, unknown[]> };
-    videos: { tiktokSeed: unknown; heroExplainer: unknown; thresholdAnnouncement: unknown; countdown: unknown[]; broll: unknown[] };
-    audio: { ambientNarration: unknown; hypeClip: unknown; themeMusic: unknown };
-    merch: { designs: unknown[]; mockups: unknown[]; printfulProductIds: string[] };
-    copy: unknown;
-}
-
 const CATEGORIES = [
     { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
     { key: "video", label: "Video", icon: Film, color: "purple", types: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"] },
@@ -63,10 +53,11 @@ const LS_MANIFEST_KEY = "mediaGen_manifest";
 
 export default function MediaGenerationTestPage() {
     const [slug, setSlug] = useState("analog-film-and-darkroom-odyssey-2026");
+    const [themeMusicSource, setThemeMusicSource] = useState<'replicate' | 'default'>('default');
     const [pageState, setPageState] = useState<PageState>("idle");
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [result, setResult] = useState<GenerateResult | null>(null);
-    const [manifest, setManifest] = useState<ManifestData | null>(null);
+    const [manifest, setManifest] = useState<CampaignMediaManifest | null>(null);
     const [error, setError] = useState("");
 
     const isBusy = pageState !== "idle";
@@ -90,7 +81,7 @@ export default function MediaGenerationTestPage() {
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Load failed");
-            setManifest(data as ManifestData);
+            setManifest(data as CampaignMediaManifest);
             localStorage.setItem(LS_MANIFEST_KEY, JSON.stringify(data));
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
@@ -107,7 +98,7 @@ export default function MediaGenerationTestPage() {
             if (savedManifest) {
                 // Restore from cache immediately, then re-fetch to get fresh data
                 try {
-                    setManifest(JSON.parse(savedManifest) as ManifestData);
+                    setManifest(JSON.parse(savedManifest) as CampaignMediaManifest);
                 } catch { /* ignore malformed cache */ }
             } else {
                 // No cached manifest — auto-fetch from API
@@ -133,7 +124,10 @@ export default function MediaGenerationTestPage() {
         setResult(null);
 
         try {
-            const body = assetTypes ? JSON.stringify({ assetTypes }) : "{}";
+            const body = JSON.stringify({
+                ...(assetTypes ? { assetTypes } : {}),
+                themeMusicSource,
+            });
             const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -207,6 +201,22 @@ export default function MediaGenerationTestPage() {
                             }
                             {pageState === "loading" ? "Loading..." : "Load Manifest"}
                         </button>
+                    </div>
+
+                    <div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Theme Music Source</div>
+                        <select
+                            value={themeMusicSource}
+                            onChange={(event) => setThemeMusicSource(event.target.value === 'replicate' ? 'replicate' : 'default')}
+                            disabled={isBusy}
+                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
+                        >
+                            <option value="default">Default Library</option>
+                            <option value="replicate">Replicate MusicGen</option>
+                        </select>
+                        <p className="mt-2 text-[11px] text-slate-500">
+                            Audio generation will either reuse a tagged shared library track or call Replicate for a new one.
+                        </p>
                     </div>
 
                     {error && (
@@ -301,6 +311,10 @@ export default function MediaGenerationTestPage() {
                             )}
                         </div>
                     </div>
+                )}
+
+                {manifest && (
+                    <MediaReviewPanel slug={slug.trim()} manifest={manifest} onManifestRefresh={handleLoadManifestRef} />
                 )}
 
                 {/* Manifest Viewer */}

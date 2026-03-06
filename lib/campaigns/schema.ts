@@ -195,7 +195,7 @@ export const GeneratorServiceEnum = z.enum([
     // Video generators
     'heygen', 'runwayml', 'kling',
     // Audio generators
-    'elevenlabs', 'openai_tts', 'replicate', 'udio',
+    'elevenlabs', 'openai_tts', 'replicate', 'udio', 'default_library',
     // Image processing
     'sharp',
     // OpenAI LLM
@@ -233,6 +233,8 @@ export const AssetRecordSchema = z.object({
     tags: z.array(z.string()),
     createdAt: z.string(),
     reviewStatus: ReviewStatusEnum,
+    reviewNotes: z.string().optional(),
+    reviewedAt: z.string().optional(),
     version: z.number().default(1),
     active: z.boolean().default(true),
 });

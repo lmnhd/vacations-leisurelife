@@ -15,7 +15,8 @@
 | Kling AI | Video fallback | 2 | Pay-per-generation |
 | ElevenLabs | Voice narration / hype clips | 2 | $5–$22/mo (characters) |
 | OpenAI TTS | Voice fallback | 2 | Pay-per-character |
-| Suno AI | Campaign theme music | 2 | $8–$24/mo (subscription) |
+| Shared Theme Music Library | Premade default campaign theme music | 2 | Existing licensed / owned assets |
+| Replicate MusicGen | Generated campaign theme music | 2 | Pay-per-generation |
 | Cloudflare R2 | Binary asset storage + CDN | 3 | $0.015/GB-month, free egress |
 | DynamoDB | Asset metadata index | 3 | Pay-per-request (negligible) |
 | TikTok Content API | TikTok organic posting | 4 | Free (quota-based) |
@@ -231,23 +232,35 @@ ELEVENLABS_API_KEY=
 
 ---
 
-### Suno AI
-**Role:** Campaign theme music / background audio  
-**Access:** Suno API (currently in limited beta — use web automation or partner API key)  
-**Alternative:** Udio API (`https://udio.com`) — similar capability, API available
+### Shared Theme Music Library
+**Role:** Default campaign theme music source using premade tracks  
+**Access:** Internal shared library endpoints + shared R2/Dynamo asset records  
 
-**Prompt structure for Suno:**
+**Selection Inputs:**
 ```
-{musicMood from aesthetic brief}, instrumental, no vocals, loop-friendly,
-{BPM range}, {genre}, {mood keywords from colorPalette/aestheticLabel}
+{aestheticLabel}, {imageryMood}, {musicMood}, tone keywords, niche hashtags
+        ↓
+best match from stored tags + prompt notes on shared library tracks
+```
 
-Example: "lo-fi tropical surf, 88bpm, nostalgic nostalgia, gentle guitar, 
-warm synth pads, instrumental only, loop-friendly, chill upbeat"
+**Operational Notes:**
+- Tracks are uploaded in bulk through `/api/groups/theme-music-library`
+- Tracks are tagged for AI-agent selection in `/tests/theme-music-library`
+- The media pipeline can request `themeMusicSource: 'default'`
+
+### Replicate MusicGen
+**Role:** Generated campaign theme music / background audio  
+**Access:** Replicate model invocation via `replicate` SDK  
+
+**Prompt structure:**
+```
+ambient instrumental music, {aestheticLabel} vibe, {imageryMood} atmosphere,
+background loop, no vocals, high quality
 ```
 
 **Environment Variables:**
 ```env
-SUNO_API_KEY=      # Or UDIO_API_KEY= if using Udio
+REPLICATE_API_TOKEN=
 ```
 
 ---
