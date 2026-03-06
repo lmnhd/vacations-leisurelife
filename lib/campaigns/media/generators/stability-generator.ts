@@ -1,4 +1,4 @@
-import { CampaignAestheticBrief } from '../../schema';
+import { CampaignAestheticBrief, ShipReferenceCandidate } from '../../schema';
 import { STABILITY_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -44,6 +44,22 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     );
 }
 
+function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipName: string, candidate: ShipReferenceCandidate): string {
+    const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette } = brief.visual;
+    const toneKeywords = brief.messaging.toneKeywords.join(', ');
+    const heroSlogan = brief.messaging.heroSlogan;
+    return [
+        `Transform this real photo of ${shipName} into a premium campaign hero image while preserving the ship identity, architecture, deck geometry, and believable photographic realism`,
+        `Use ${candidate.category.replace(/_/g, ' ')} as the anchor scene and keep the vessel clearly recognizable`,
+        `Apply ${aestheticLabel} atmosphere, ${imageryMood}, ${lightingStyle}, ${compositionNotes}`,
+        `Embellish the scene with cinematic campaign styling, subtle surreal travel details, immersive themed energy, refined environmental storytelling, and elevated editorial composition`,
+        `Incorporate the campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}, ${colorPalette.background}`,
+        `Reflect the campaign slogan energy: ${heroSlogan}`,
+        `Tone direction: ${toneKeywords}`,
+        `Create a luxurious, polished, aspirational hero frame with depth, spectacle, and emotional resonance while avoiding cartoonish fantasy or loss of ship fidelity`,
+    ].join('. ');
+}
+
 async function generateImage(
     prompt: string,
     negativePrompt: string,
@@ -54,6 +70,41 @@ async function generateImage(
     formData.append('negative_prompt', negativePrompt);
     formData.append('aspect_ratio', aspectRatio);
     formData.append('output_format', STABILITY_CONFIG.outputFormat);
+
+    const response = await fetch(
+        `${STABILITY_CONFIG.apiBase}${STABILITY_CONFIG.endpoint}`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getApiKey()}`,
+                'Accept': 'image/*',
+            },
+            body: formData,
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Stability AI error ${response.status}: ${errorText}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+}
+
+async function generateImageFromReference(
+    prompt: string,
+    negativePrompt: string,
+    referenceImage: Buffer,
+    aspectRatio: typeof STABILITY_CONFIG.heroAspectRatio | typeof STABILITY_CONFIG.conceptAspectRatio
+): Promise<Buffer> {
+    const referenceImageBytes = new Uint8Array(referenceImage);
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('negative_prompt', negativePrompt);
+    formData.append('aspect_ratio', aspectRatio);
+    formData.append('output_format', STABILITY_CONFIG.outputFormat);
+    formData.append('strength', String(STABILITY_CONFIG.referenceTransformStrength));
+    formData.append('image', new Blob([referenceImageBytes], { type: 'image/jpeg' }), 'reference.jpg');
 
     const response = await fetch(
         `${STABILITY_CONFIG.apiBase}${STABILITY_CONFIG.endpoint}`,
@@ -99,6 +150,40 @@ export async function generateHeroImages(
             prompt: prompts[i],
             assetId: `img_hero_${idx}`,
             fileName: `images/hero/hero_${idx}_source.webp`,
+        });
+    }
+
+    return results;
+}
+
+export async function generateReferenceGroundedHeroImages(
+    brief: CampaignAestheticBrief,
+    shipName: string,
+    referenceCandidate: ShipReferenceCandidate,
+    count: number = 1
+): Promise<GeneratedImage[]> {
+    const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate);
+    const negativePrompt = [...brief.visual.avoidList, 'cartoon', 'illustration', 'diagram', 'floor plan', 'logo', 'deformed ship', 'wrong ship'].join(', ');
+    const referenceResponse = await fetch(referenceCandidate.imageUrl);
+    if (!referenceResponse.ok) {
+        throw new Error(`Failed to fetch hero reference image (${referenceResponse.status}): ${referenceCandidate.imageUrl}`);
+    }
+    const referenceBuffer = Buffer.from(await referenceResponse.arrayBuffer());
+    const results: GeneratedImage[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+        const transformedBuffer = await generateImageFromReference(
+            prompt,
+            negativePrompt,
+            referenceBuffer,
+            STABILITY_CONFIG.heroAspectRatio
+        );
+        const itemIndex = String(index + 1).padStart(3, '0');
+        results.push({
+            buffer: transformedBuffer,
+            prompt,
+            assetId: `img_hero_${itemIndex}`,
+            fileName: `images/hero/hero_${itemIndex}_embellished.${STABILITY_CONFIG.outputFormat}`,
         });
     }
 

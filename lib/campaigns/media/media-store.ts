@@ -124,6 +124,7 @@ function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: A
         ...manifest,
         images: {
             ...manifest.images,
+            shipReferences: updateAssetInCollection(manifest.images.shipReferences, updatedRecord),
             hero: updateAssetInCollection(manifest.images.hero, updatedRecord),
             aestheticConcepts: updateAssetInCollection(manifest.images.aestheticConcepts, updatedRecord),
             platformCrops: Object.fromEntries(

@@ -3,7 +3,6 @@ import { getCampaignBlueprint } from '../campaign-store';
 import {
     AssetRecord,
     AssetType,
-    CampaignAestheticBrief,
     CampaignMediaManifest,
     MediaGenerationJob,
     ImageFormat,
@@ -13,18 +12,24 @@ import {
     updateMediaJobStatus,
     saveAssetRecord,
     saveMediaManifest,
+    getMediaManifest,
     updateCampaignMediaStatus,
 } from './media-store';
 import { storeAsset, getAssetUrl } from './storage-client';
-import { generateHeroImages, generateAestheticConcepts, GeneratedImage } from './generators/stability-generator';
-import { generatePlatformCrops, CroppedImage } from './generators/sharp-processor';
+import { generateAestheticConcepts } from './generators/stability-generator';
+import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateTikTokSeed, generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
-import { generateAmbientNarration, generateHypeClip, GeneratedAudio } from './generators/elevenlabs-generator';
+import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
+import {
+    discoverShipReferenceCandidates,
+    importHeroAssetsFromReferences,
+    importShipReferenceAssets,
+} from './ship-reference-service';
 import { randomUUID } from 'crypto';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -59,7 +64,7 @@ function shouldRun(
 ): boolean {
     if (!assetTypes) return true;
     const categoryMap: Record<GeneratorCategory, AssetType[]> = {
-        images: ['hero_image', 'aesthetic_concept', 'platform_crop'],
+        images: ['ship_reference_image', 'hero_image', 'aesthetic_concept', 'platform_crop'],
         video: ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'],
         audio: ['ambient_narration', 'hype_clip', 'theme_music'],
         merch: ['merch_design'],
@@ -185,6 +190,7 @@ export async function runMediaGeneration(
         await updateCampaignMediaStatus(slug, 'generating');
 
         const errors: string[] = [];
+        const shipReferenceRecords: AssetRecord[] = [];
         const heroRecords: AssetRecord[] = [];
         const conceptRecords: AssetRecord[] = [];
         const cropRecords: AssetRecord[] = [];
@@ -217,27 +223,22 @@ export async function runMediaGeneration(
             themeMusic: null,
         };
 
-        const shipName = campaign.shipTarget || 'cruise ship';
-
         // ── GROUP 1: Independent generators (parallel) ────────────────
         const group1Promises: Promise<unknown>[] = [];
 
         if (shouldRun('images', resolvedOptions.assetTypes)) {
-            // Hero images
+            // Real ship reference import + hero selection
             group1Promises.push(
-                runWithJob(slug, 'hero_image', 'stability_ai', 'hero images', async () => {
-                    const images = await generateHeroImages(brief, shipName);
-                    const records: AssetRecord[] = [];
-                    for (const img of images) {
-                        const rec = await uploadAndRecord(
-                            slug, img.assetId, 'hero_image', 'stability_ai',
-                            img.prompt, img.buffer, img.fileName, 'image/webp',
-                            ['hero', 'source'], { width: 1920, height: 1080 }
-                        );
-                        records.push(rec);
+                runWithJob(slug, 'hero_image', 'serpapi', 'real ship hero imagery', async () => {
+                    const candidates = await discoverShipReferenceCandidates(campaign, 2);
+                    if (candidates.length === 0) {
+                        throw new Error(`No usable ship reference images found for ${slug}`);
                     }
-                    heroRecords.push(...records);
-                    return records;
+                    const referenceRecords = await importShipReferenceAssets(slug, candidates);
+                    const selectedHeroRecords = await importHeroAssetsFromReferences(slug, campaign, brief, candidates, 5);
+                    shipReferenceRecords.push(...referenceRecords);
+                    heroRecords.push(...selectedHeroRecords);
+                    return [...referenceRecords, ...selectedHeroRecords];
                 }, errors)
             );
 
@@ -476,72 +477,105 @@ export async function runMediaGeneration(
         await Promise.all(group2Promises);
 
         // ── Build manifest ────────────────────────────────────────────
-        const allRecords = [
-            ...heroRecords, ...conceptRecords, ...cropRecords, ...merchRecords,
-            ...(videoRecords.tiktokSeed ? [videoRecords.tiktokSeed] : []),
-            ...(videoRecords.heroExplainer ? [videoRecords.heroExplainer] : []),
-            ...(videoRecords.thresholdAnnouncement ? [videoRecords.thresholdAnnouncement] : []),
-            ...videoRecords.countdown, ...videoRecords.broll,
-            ...(audioRecords.ambientNarration ? [audioRecords.ambientNarration] : []),
-            ...(audioRecords.hypeClip ? [audioRecords.hypeClip] : []),
-            ...(audioRecords.themeMusic ? [audioRecords.themeMusic] : []),
-        ];
+        const existingManifest = await getMediaManifest(slug);
 
-        // Group crops by format
         const cropsByFormat: Record<string, AssetRecord[]> = {};
         for (const crop of cropRecords) {
-            const formatTag = crop.tags.find(t =>
-                ['hero_16x9', 'hero_4x5', 'story_9x16', 'square_1x1', 'banner_3x1', 'email_header', 'og_image', 'thumbnail'].includes(t)
+            const formatTag = crop.tags.find((tag) =>
+                ['hero_16x9', 'hero_4x5', 'story_9x16', 'square_1x1', 'banner_3x1', 'email_header', 'og_image', 'thumbnail'].includes(tag)
             ) || 'unknown';
-            if (!cropsByFormat[formatTag]) cropsByFormat[formatTag] = [];
+            if (!cropsByFormat[formatTag]) {
+                cropsByFormat[formatTag] = [];
+            }
             cropsByFormat[formatTag].push(crop);
         }
+
+        const mergedImages = {
+            shipReferences: shipReferenceRecords.length > 0 ? shipReferenceRecords : (existingManifest?.images.shipReferences ?? []),
+            hero: heroRecords.length > 0 ? heroRecords : (existingManifest?.images.hero ?? []),
+            aestheticConcepts: conceptRecords.length > 0 ? conceptRecords : (existingManifest?.images.aestheticConcepts ?? []),
+            platformCrops: (Object.keys(cropsByFormat).length > 0
+                ? cropsByFormat
+                : (existingManifest?.images.platformCrops ?? {})) as Record<ImageFormat, AssetRecord[]>,
+        };
+
+        const mergedVideos = {
+            tiktokSeed: videoRecords.tiktokSeed ?? existingManifest?.videos.tiktokSeed ?? null,
+            heroExplainer: videoRecords.heroExplainer ?? existingManifest?.videos.heroExplainer ?? null,
+            thresholdAnnouncement: videoRecords.thresholdAnnouncement ?? existingManifest?.videos.thresholdAnnouncement ?? null,
+            countdown: videoRecords.countdown.length > 0 ? videoRecords.countdown : (existingManifest?.videos.countdown ?? []),
+            broll: videoRecords.broll.length > 0 ? videoRecords.broll : (existingManifest?.videos.broll ?? []),
+        };
+
+        const mergedAudio = {
+            ambientNarration: audioRecords.ambientNarration ?? existingManifest?.audio.ambientNarration ?? null,
+            hypeClip: audioRecords.hypeClip ?? existingManifest?.audio.hypeClip ?? null,
+            themeMusic: audioRecords.themeMusic ?? existingManifest?.audio.themeMusic ?? null,
+        };
+
+        const mergedMerch = {
+            designs: merchRecords.length > 0 ? merchRecords : (existingManifest?.merch.designs ?? []),
+            mockups: existingManifest?.merch.mockups ?? [],
+            printfulProductIds: existingManifest?.merch.printfulProductIds ?? [],
+        };
+
+        const mergedCopy = hasCopy && copyCaptions
+            ? {
+                carouselSlides: copyCarouselSlides,
+                adVariants: copyAdVariants,
+                captions: copyCaptions,
+                emailSubjectLines: copyEmailSubjectLines,
+            }
+            : (existingManifest?.copy ?? null);
+
+        const allRecords = [
+            ...mergedImages.shipReferences,
+            ...mergedImages.hero,
+            ...mergedImages.aestheticConcepts,
+            ...Object.values(mergedImages.platformCrops).flat(),
+            ...(mergedVideos.tiktokSeed ? [mergedVideos.tiktokSeed] : []),
+            ...(mergedVideos.heroExplainer ? [mergedVideos.heroExplainer] : []),
+            ...(mergedVideos.thresholdAnnouncement ? [mergedVideos.thresholdAnnouncement] : []),
+            ...mergedVideos.countdown,
+            ...mergedVideos.broll,
+            ...(mergedAudio.ambientNarration ? [mergedAudio.ambientNarration] : []),
+            ...(mergedAudio.hypeClip ? [mergedAudio.hypeClip] : []),
+            ...(mergedAudio.themeMusic ? [mergedAudio.themeMusic] : []),
+            ...mergedMerch.designs,
+            ...mergedMerch.mockups,
+        ];
 
         const manifest: CampaignMediaManifest = {
             slug,
             generatedAt: new Date().toISOString(),
             totalAssets: allRecords.length,
             completionStatus: errors.length > 0 ? 'partial' : 'complete',
-            images: {
-                hero: heroRecords,
-                aestheticConcepts: conceptRecords,
-                platformCrops: cropsByFormat as Record<ImageFormat, AssetRecord[]>,
-            },
-            videos: videoRecords,
-            audio: audioRecords,
-            merch: {
-                designs: merchRecords,
-                mockups: [], // Printful mockup generation deferred to Phase 2D
-                printfulProductIds: [],
-            },
-            copy: hasCopy && copyCaptions ? {
-                carouselSlides: copyCarouselSlides,
-                adVariants: copyAdVariants,
-                captions: copyCaptions,
-                emailSubjectLines: copyEmailSubjectLines,
-            } : null,
+            images: mergedImages,
+            videos: mergedVideos,
+            audio: mergedAudio,
+            merch: mergedMerch,
+            copy: mergedCopy,
         };
 
-        // Save manifest to DynamoDB (always)
         await saveMediaManifest(manifest);
 
-        // Also persist manifest binary — non-fatal if storage unavailable
         let manifestUrl = getAssetUrl(slug, 'manifests/media_manifest.json');
         try {
             const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2));
             const storedUrl = await storeAsset(
-                slug, 'manifest_json', 'manifests/media_manifest.json',
-                manifestBuffer, 'application/json'
+                slug,
+                'manifest_json',
+                'manifests/media_manifest.json',
+                manifestBuffer,
+                'application/json'
             );
             if (!storedUrl.startsWith('r2://pending')) {
                 manifestUrl = storedUrl;
             }
-        } catch (manifestStoreErr) {
-            // DynamoDB manifest is the source of truth; binary upload failure is non-fatal
+        } catch (manifestStoreErr: unknown) {
             errors.push(`[manifest/storage] ${manifestStoreErr instanceof Error ? manifestStoreErr.message : String(manifestStoreErr)}`);
         }
 
-        // Update campaign status
         const finalStatus = errors.length > 0 ? 'partial' as const : 'ready' as const;
         await updateCampaignMediaStatus(slug, finalStatus, manifestUrl);
 

@@ -174,13 +174,12 @@ export type PinterestConceptSet = z.infer<typeof PinterestConceptSetSchema>;
 export type EmailConceptSet = z.infer<typeof EmailConceptSetSchema>;
 export type DiscordConceptSet = z.infer<typeof DiscordConceptSetSchema>;
 export type CampaignAestheticBrief = z.infer<typeof CampaignAestheticBriefSchema>;
-
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 2B: Media Generation Pipeline — Types
 // ────────────────────────────────────────────────────────────────────────────
 
 export const AssetTypeEnum = z.enum([
-    'hero_image', 'aesthetic_concept', 'platform_crop',
+    'ship_reference_image', 'hero_image', 'aesthetic_concept', 'platform_crop',
     'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
     'countdown_video', 'broll_clip',
     'ambient_narration', 'hype_clip', 'theme_music',
@@ -191,7 +190,7 @@ export type AssetType = z.infer<typeof AssetTypeEnum>;
 
 export const GeneratorServiceEnum = z.enum([
     // Image generators
-    'midjourney', 'stability_ai', 'dalle3',
+    'midjourney', 'stability_ai', 'dalle3', 'serpapi',
     // Video generators
     'heygen', 'runwayml', 'kling',
     // Audio generators
@@ -226,6 +225,10 @@ export const AssetRecordSchema = z.object({
     url: z.string(),
     generator: GeneratorServiceEnum,
     promptUsed: z.string(),
+    sourcePageUrl: z.string().optional(),
+    sourceThumbnailUrl: z.string().optional(),
+    sourceQuery: z.string().optional(),
+    selectionScore: z.number().optional(),
     dimensions: z.object({ width: z.number(), height: z.number() }).optional(),
     durationSeconds: z.number().optional(),
     fileSizeBytes: z.number(),
@@ -239,6 +242,19 @@ export const AssetRecordSchema = z.object({
     active: z.boolean().default(true),
 });
 export type AssetRecord = z.infer<typeof AssetRecordSchema>;
+
+export const ShipReferenceCandidateSchema = z.object({
+    title: z.string(),
+    imageUrl: z.string(),
+    thumbnailUrl: z.string(),
+    contextUrl: z.string(),
+    width: z.number(),
+    height: z.number(),
+    category: z.string(),
+    query: z.string(),
+    selectionScore: z.number(),
+});
+export type ShipReferenceCandidate = z.infer<typeof ShipReferenceCandidateSchema>;
 
 export const MediaJobStatusEnum = z.enum([
     'queued', 'in_progress', 'complete', 'failed', 'needs_review',
@@ -289,6 +305,7 @@ export const CampaignMediaManifestSchema = z.object({
     completionStatus: z.enum(['partial', 'complete']),
 
     images: z.object({
+        shipReferences: z.array(AssetRecordSchema),
         hero: z.array(AssetRecordSchema),
         aestheticConcepts: z.array(AssetRecordSchema),
         platformCrops: z.record(ImageFormatEnum, z.array(AssetRecordSchema)),

@@ -110,7 +110,7 @@
 |--------|------|------|---------|
 | `POST` | `/api/groups/campaign/:slug/media/test/copy` | `{}` | Full copy JSON (slides, variants, captions, subjects) |
 | `POST` | `/api/groups/campaign/:slug/media/test/audio` | `{ generator: 'elevenlabs_narration' \| 'elevenlabs_hype' \| 'replicate_theme' \| 'default_theme' }` | AssetRecord with CDN URL |
-| `POST` | `/api/groups/campaign/:slug/media/test/images` | `{ generator: 'stability_hero' \| 'stability_concepts' \| 'sharp_crops', sourceImageBase64? }` | base64 image or crop array |
+| `POST` | `/api/groups/campaign/:slug/media/test/images` | `{ generator: 'ship_reference_search' \| 'real_ship_hero' \| 'stability_concepts' \| 'sharp_crops', sourceImageCdnUrl? }` | ranked ship reference candidates, imported hero asset, or crop array |
 | `POST` | `/api/groups/campaign/:slug/media/test/merch` | `{ itemIndex: 0\|1\|2... }` | base64 image + revised prompt |
 
 ---

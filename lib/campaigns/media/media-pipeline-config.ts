@@ -70,6 +70,7 @@ export const STABILITY_CONFIG = {
     outputFormat: 'webp' as const,
     heroAspectRatio: '16:9' as const,
     conceptAspectRatio: '1:1' as const,
+    referenceTransformStrength: 0.38,
     heroCount: 5,
     conceptCount: 4,
 } as const;

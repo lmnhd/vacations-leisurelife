@@ -155,6 +155,8 @@ export async function upsertCampaignPricingMatch(
             'startingPrice = :price',
             'priceSource = :source',
             'pricingStatus = :pricingStatus',
+            'matchedShipName = :matchedShipName',
+            'matchedSailDate = :matchedSailDate',
             'updatedAt = :now',
         ].join(', '),
         ExpressionAttributeValues: {
@@ -164,6 +166,8 @@ export async function upsertCampaignPricingMatch(
             ':price': match.computedStartingPrice,
             ':source': match.priceSource,
             ':pricingStatus': 'CB_MATCHED' as const,
+            ':matchedShipName': match.matchedShipName,
+            ':matchedSailDate': match.matchedSailDate,
             ':now': new Date().toISOString(),
         },
     };

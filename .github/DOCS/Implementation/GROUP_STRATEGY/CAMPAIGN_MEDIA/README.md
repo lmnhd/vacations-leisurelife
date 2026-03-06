@@ -52,7 +52,7 @@ CAMPAIGN CONFIG OBJECT (Phase D → GROUP_CAMPAIGN_STRATEGY §6.4)
 ┌────────────────────────────────────────────────────────────────┐
 │  PHASE 2: MEDIA GENERATION                                     │
 │  Batch production of all assets from the Aesthetic Brief:      │
-│  • Hero images (Midjourney / Stability AI)                    │
+│  • Real ship references + hero imagery (SerpAPI-based)        │
 │  • Video content (HeyGen avatars, RunwayML scenes)            │
 │  • Voice narration (ElevenLabs)                               │
 │  • Copy / captions (GPT-4o)                                   │

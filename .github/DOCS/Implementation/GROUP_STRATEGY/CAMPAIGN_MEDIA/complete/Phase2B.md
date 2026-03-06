@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-Complete media generation pipeline consuming an **approved aesthetic brief** and producing images, video, audio, copy, and merch assets — uploaded to R2 with DynamoDB tracking.
+Complete media generation pipeline consuming an **approved aesthetic brief** and producing ship-reference-grounded images, cinematic video, audio, copy, and merch assets — uploaded to R2 with DynamoDB tracking.
 
 ## Architecture
 
@@ -14,7 +14,8 @@ Aesthetic Brief (Phase 1 output)
 │  media-orchestrator   │  ← coordinates everything
 │                      │
 │  Group 1 (parallel): │
-│    • Stability AI    │  hero images (5×) + concept art (4×)
+│    • SerpAPI         │  ship reference discovery + real hero import
+│    • Stability AI    │  concept art (4×)
 │    • DALL-E 3        │  merch designs (3–5×)
 │    • ElevenLabs      │  narration + hype clip
 │    • Theme Music     │  shared default library OR Replicate MusicGen
@@ -37,7 +38,8 @@ Aesthetic Brief (Phase 1 output)
 | Types | [schema.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/schema.ts) | 13 new Zod schemas + type exports |
 | Storage | [r2-client.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/r2-client.ts) | R2 upload/delete, CDN URL builder |
 | Storage | [media-store.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/media-store.ts) | DynamoDB ops for jobs, assets, manifests |
-| Generator | [stability-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/stability-generator.ts) | Stability AI hero + concept images |
+| Source Discovery | [ship-reference-service.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/ship-reference-service.ts) | SerpAPI ship reference discovery, scoring, import, and real hero selection |
+| Generator | [stability-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/stability-generator.ts) | Stability AI concept images |
 | Generator | [sharp-processor.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/sharp-processor.ts) | 8-format platform crops |
 | Generator | [dalle-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/dalle-generator.ts) | DALL-E 3 merch designs |
 | Generator | [heygen-generator.ts](file:///c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/lib/campaigns/media/generators/heygen-generator.ts) | HeyGen avatar videos (TikTok, explainer, threshold) |
@@ -65,5 +67,7 @@ Aesthetic Brief (Phase 1 output)
 ## Remaining
 
 - End-to-end test with live campaign (requires API keys)
+- Validate SerpAPI ship-reference quality across multiple matched ships and cruise lines
+- Decide whether to add a second still-image service for themed ship-faithful transformations beyond direct real-photo hero imports
 - Validate shared default library selection quality against multiple campaigns
 - Confirm library tags produce acceptable default picks before full agent rollout

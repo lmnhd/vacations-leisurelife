@@ -116,6 +116,10 @@ export interface Campaign {
      */
     cbPriceAdvantage?: number;
 
+    matchedShipName?: string;
+
+    matchedSailDate?: string;
+
     /**
      * Invite link to the campaign's private community channel (Discord, WhatsApp, Facebook Group).
      * Populated during pre-launch campaign config and sent in the "Trip is GO!" email.

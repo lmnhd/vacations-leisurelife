@@ -22,6 +22,9 @@ function formatFileSize(fileSizeBytes: number): string {
 function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ section: string; title: string; asset: AssetRecord; }> {
     const reviewEntries: Array<{ section: string; title: string; asset: AssetRecord; }> = [];
 
+    manifest.images.shipReferences.forEach((asset, index) => {
+        reviewEntries.push({ section: 'Images', title: `Reference ${index + 1}`, asset });
+    });
     manifest.images.hero.forEach((asset, index) => {
         reviewEntries.push({ section: 'Images', title: `Hero ${index + 1}`, asset });
     });

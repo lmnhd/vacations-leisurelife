@@ -11,6 +11,7 @@ export interface EnvCheckResponse {
     OPENAI: boolean;
     ELEVENLABS: boolean;
     REPLICATE: boolean;
+    SERPAPI: boolean;
     STABILITY: boolean;
     HEYGEN: boolean;
     RUNWAYML: boolean;
@@ -22,6 +23,7 @@ export async function GET() {
         OPENAI: !!process.env.OPENAI_API_KEY,
         ELEVENLABS: !!process.env.ELEVENLABS_API_KEY,
         REPLICATE: !!process.env.REPLICATE_API_TOKEN,
+        SERPAPI: !!process.env.SERPAPI_KEY,
         STABILITY: !!process.env.STABILITY_API_KEY,
         HEYGEN: !!process.env.HEYGEN_API_KEY,
         RUNWAYML: !!process.env.RUNWAYML_API_KEY,

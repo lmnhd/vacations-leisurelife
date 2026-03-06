@@ -11,8 +11,9 @@
 
 | Asset Type | Count | Tool | Destination |
 |------------|-------|------|-------------|
-| Hero images (landing page) | 5–6 | Midjourney / Stability AI | Landing page hero section |
-| Aesthetic concept art | 4–5 | Midjourney | Moodboard, email headers |
+| Ship reference images | 6–12 | SerpAPI Google Images discovery | Source-of-truth for real ship visuals |
+| Hero images (landing page) | 3–5 | SerpAPI real photo import | Landing page hero section |
+| Aesthetic concept art | 4–5 | Stability AI | Moodboard, email headers |
 | Platform-sized image crops | Varies | Sharp (server-side resize) | Each social format |
 | TikTok / Reels seed video | 1 | HeyGen + ElevenLabs | TikTok organic, Instagram Reels |
 | Hero explainer video | 1 | HeyGen | Landing page, YouTube |
@@ -50,14 +51,14 @@ interface MediaGenerationJob {
 }
 
 type AssetType =
-  | 'hero_image' | 'aesthetic_concept' | 'platform_crop'
+  | 'ship_reference_image' | 'hero_image' | 'aesthetic_concept' | 'platform_crop'
   | 'tiktok_seed_video' | 'hero_explainer_video' | 'threshold_video'
   | 'countdown_video' | 'broll_clip'
   | 'ambient_narration' | 'hype_clip' | 'theme_music'
   | 'merch_design' | 'email_header' | 'ad_creative' | 'carousel_slide';
 
 type GeneratorService = 
-  | 'midjourney' | 'stability_ai' | 'dalle3' 
+  | 'midjourney' | 'stability_ai' | 'dalle3' | 'serpapi'
   | 'heygen' | 'runwayml' | 'kling'
   | 'elevenlabs' | 'openai_tts'
   | 'replicate' | 'udio'
@@ -68,34 +69,32 @@ type GeneratorService =
 
 ## Image Generation
 
-### Hero Images (5–6 images)
-**Tool:** Midjourney (via API or automation layer) → fallback Stability AI SDXL  
+### Ship Reference Discovery
+**Tool:** SerpAPI Google Images  
+**Purpose:** Gather real photos of the actual matched ship as the source-of-truth visual layer
+
+The pipeline resolves the campaign's matched ship identity, then runs structured image searches for multiple venue categories:
+
+- exterior
+- pool deck
+- dining
+- stateroom
+- atrium
+- destination-facing deck view
+
+Candidate images are ranked automatically using ship-name match, cruise-line tokens, category match, and image size, while penalizing floor plans, logos, brochures, and illustrations.
+
+### Hero Images (3–5 images)
+**Tool:** SerpAPI real photo import  
 **Purpose:** Primary landing page hero, email headers, social backgrounds
 
-Each image prompt is assembled from the `CampaignAestheticBrief.visual` fields:
-
-```
-{imageryMood} on {ship.name}, {lightingStyle}, {compositionNotes},
-editorial travel photography, --ar 16:9 --style raw --v 6.1
-```
-
-**Prohibit tokens** (appended automatically from `avoidList`):  
-`--no {avoidList.join(', ')}`
-
-**Five prompt variants generated per campaign:**
-1. Wide exterior deck shot — ship identity anchor
-2. Niche event scene — the unique activity happening on deck
-3. Intimate cabin/stateroom — aspirational lifestyle, price-tier anchor
-4. Social gathering shot — group energy, community feeling
-5. Destination arrival — port/day excursion
-
-**Quality Gate:** Each image passes through a CLIP-score check against the aesthetic label. Images scoring below threshold auto-trigger a regeneration with a refined prompt. Max 3 retries before flagging for human review.
+Hero assets are now selected from the ranked real ship reference set rather than synthesized from a ship prompt. This makes the landing page visually anchored to the actual vessel.
 
 ### Aesthetic Concept Art (4–5 images)
-**Tool:** Midjourney → fallback DALL-E 3  
+**Tool:** Stability AI  
 **Purpose:** Brand moodboard, email headers, social carousel backgrounds
 
-These are less literal than hero images — they establish the aesthetic *feeling* rather than the cruise location. Generated from the `imageryMood` + `colorPalette` + `aestheticLabel` fields with artistic latitude:
+These are less literal than hero images — they establish the aesthetic *feeling* rather than the literal ship identity. Generated from the `imageryMood` + `colorPalette` + `aestheticLabel` fields with artistic latitude:
 
 ```
 {aestheticLabel} aesthetic, {imageryMood}, {colorPalette.primary} dominant palette,
@@ -121,12 +120,12 @@ All generated images are automatically processed into the required platform crop
 ## Video Generation
 
 ### TikTok Seed Video (30–45s)
-**Tool:** HeyGen (avatar) + ElevenLabs (voice) + Midjourney images (background)  
+**Tool:** HeyGen (avatar) + ElevenLabs (voice) + real hero image background  
 **Purpose:** §5.5A organic seeding — the zero-budget proof-of-concept post
 
 **Assembly:**
 1. ElevenLabs renders the `tiktokSeed.scriptOrNarration` in the specified `voiceProfile`
-2. HeyGen generates avatar footage: talking head speaking to camera, campaign-aesthetic background (hero image as HeyGen backdrop)
+2. HeyGen generates avatar footage: talking head speaking to camera, real-ship hero image as background
 3. B-roll inserts: 2–3 ship reference images cut in at key narrative moments
 4. On-screen text overlays: hook line (first 3 seconds), CTA slug at end
 
@@ -162,7 +161,7 @@ You have 72 hours to complete your details and lock in your spot."
 **Purpose:** Social posts during Seed Phase — "X cabins to go" urgency content
 
 Three variants generated: 3 cabins remaining, 2 remaining, 1 remaining. RunwayML receives:
-- Source image: landing page hero image
+- Source image: real-ship hero image
 - Motion prompt: subtle camera push, atmosphere movement (waves, neon flicker, leaves)
 - Duration: 15 seconds
 - On-screen text rendered in post via Sharp
@@ -171,7 +170,7 @@ Three variants generated: 3 cabins remaining, 2 remaining, 1 remaining. RunwayML
 **Tool:** RunwayML Gen-3 Alpha  
 **Purpose:** Video compositing inserts for explainer and ad videos
 
-Short atmospheric motion clips derived from Midjourney images. RunwayML `image-to-video` endpoint with motion prompts tuned to the `lightingStyle`:
+Short atmospheric motion clips derived from real ship hero/reference images. RunwayML `image-to-video` endpoint with motion prompts tuned to the `lightingStyle`:
 - Pool deck, late afternoon — ambient movement
 - Dining venue — candlelight, light crowd motion
 - Port arrival — ship deck, destination in background
@@ -327,6 +326,7 @@ interface CampaignMediaManifest {
   completionStatus: 'partial' | 'complete';
   
   images: {
+    shipReferences: AssetRecord[];
     hero: AssetRecord[];
     aestheticConcepts: AssetRecord[];
     platformCrops: Record<ImageFormat, AssetRecord[]>;

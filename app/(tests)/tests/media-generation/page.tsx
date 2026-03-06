@@ -32,7 +32,7 @@ interface GenerateResult {
 }
 
 const CATEGORIES = [
-    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
+    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["ship_reference_image", "hero_image", "aesthetic_concept", "platform_crop"] },
     { key: "video", label: "Video", icon: Film, color: "purple", types: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
     { key: "copy", label: "Copy", icon: Type, color: "amber", types: ["ad_creative", "carousel_slide", "email_header"] },
@@ -40,7 +40,7 @@ const CATEGORIES = [
 ] as const;
 
 const COST_ESTIMATES: Record<string, string> = {
-    images: "~$0.50 (Stability AI × 9 images)",
+    images: "~search + import + concept art",
     video: "~$5–$15 (HeyGen × 3 + RunwayML × 6–7)",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
     copy: "~$0.05 (GPT-4o single call)",
@@ -172,8 +172,8 @@ export default function MediaGenerationTestPage() {
                         🎬 Media Generation — Phase 2B
                     </h1>
                     <p className="text-xs text-slate-500 mt-1">
-                        Generate images, video, audio, copy, and merch from an approved aesthetic brief.
-                        Each category can be run independently. Requires approved brief.
+                        Generate real-ship reference imagery, cinematic video, audio, copy, and merch from an approved aesthetic brief.
+                        Each category can be run independently. Requires approved brief and a resolved ship target.
                     </p>
                 </div>
 
@@ -317,6 +317,96 @@ export default function MediaGenerationTestPage() {
                     <MediaReviewPanel slug={slug.trim()} manifest={manifest} onManifestRefresh={handleLoadManifestRef} />
                 )}
 
+                {manifest?.copy && (
+                    <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
+                        <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
+                            <span className="text-xs text-slate-400 uppercase tracking-widest">Copy Results</span>
+                            <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                                <span>{manifest.copy.carouselSlides.length} slides</span>
+                                <span>{manifest.copy.adVariants.length} ad variants</span>
+                                <span>{manifest.copy.emailSubjectLines.length} email subjects</span>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 p-4 md:grid-cols-2">
+                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500">Carousel Slides</div>
+                                {manifest.copy.carouselSlides.map((slide, index) => (
+                                    <div key={`carousel-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 px-3 py-2 text-xs text-slate-200">
+                                        <span className="mr-2 text-slate-500">{index + 1}.</span>
+                                        {slide}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500">Email Subject Lines</div>
+                                {manifest.copy.emailSubjectLines.map((subjectLine, index) => (
+                                    <div key={`subject-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 space-y-2">
+                                        <div className="text-[10px] uppercase tracking-widest text-slate-500">{subjectLine.stage}</div>
+                                        <div className="space-y-1">
+                                            {subjectLine.variants.map((variant, variantIndex) => (
+                                                <div key={`subject-${index}-variant-${variantIndex}`}>
+                                                    <span className="mr-2 text-slate-500">{variantIndex + 1}.</span>
+                                                    {variant}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3 md:col-span-2">
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500">Ad Variants</div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    {manifest.copy.adVariants.map((adVariant, index) => (
+                                        <div key={`ad-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                            <div className="text-[10px] uppercase tracking-widest text-slate-500">Variant {index + 1}</div>
+                                            <div><span className="text-slate-500">Headline:</span> {adVariant.headline}</div>
+                                            <div><span className="text-slate-500">Primary Text:</span> {adVariant.primaryText}</div>
+                                            <div><span className="text-slate-500">Description:</span> {adVariant.description}</div>
+                                            <div><span className="text-slate-500">CTA:</span> {adVariant.cta}</div>
+                                            <div><span className="text-slate-500">Variant Key:</span> {adVariant.variant}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3 md:col-span-2">
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500">Captions</div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                        <div className="text-[10px] uppercase tracking-widest text-slate-500">TikTok</div>
+                                        <div className="space-y-2">
+                                            {manifest.copy.captions.tiktok.map((captionSet, index) => (
+                                                <div key={`tiktok-${index}`} className="rounded-md border border-white/5 bg-slate-950/40 px-3 py-2">
+                                                    <div>{captionSet.caption}</div>
+                                                    <div className="mt-2 text-[10px] text-slate-500">{captionSet.hashtags.join(' ')}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                        <div className="text-[10px] uppercase tracking-widest text-slate-500">Pinterest</div>
+                                        <div className="space-y-2">
+                                            {manifest.copy.captions.pinterest.map((pinSet, index) => (
+                                                <div key={`pinterest-${index}`} className="rounded-md border border-white/5 bg-slate-950/40 px-3 py-2">
+                                                    <div><span className="text-slate-500">Title:</span> {pinSet.title}</div>
+                                                    <div><span className="text-slate-500">Description:</span> {pinSet.description}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2 md:col-span-2">
+                                        <div className="text-[10px] uppercase tracking-widest text-slate-500">Discord</div>
+                                        <div>{manifest.copy.captions.discord}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Manifest Viewer */}
                 {manifest && (
                     <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
@@ -333,9 +423,9 @@ export default function MediaGenerationTestPage() {
                         <div className="p-4 grid grid-cols-5 gap-3">
                             <div className="text-center p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
                                 <div className="text-lg font-bold text-cyan-400">
-                                    {manifest.images.hero.length + manifest.images.aestheticConcepts.length}
+                                    {manifest.images.shipReferences.length + manifest.images.hero.length + manifest.images.aestheticConcepts.length}
                                 </div>
-                                <div className="text-[9px] text-slate-500">Images</div>
+                                <div className="text-[9px] text-slate-500">Images + References</div>
                             </div>
                             <div className="text-center p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
                                 <div className="text-lg font-bold text-purple-400">

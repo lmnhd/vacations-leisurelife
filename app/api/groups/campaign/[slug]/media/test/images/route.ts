@@ -1,30 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
-import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
-import { uploadAsset } from '@/lib/campaigns/media/r2-client';
+import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import {
-    generateHeroImages,
     generateAestheticConcepts,
 } from '@/lib/campaigns/media/generators/stability-generator';
 import { generatePlatformCrops } from '@/lib/campaigns/media/generators/sharp-processor';
+import {
+    discoverShipReferenceCandidates,
+    importHeroAssetsFromReferences,
+    importShipReferenceAssets,
+} from '@/lib/campaigns/media/ship-reference-service';
+import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/images
 // Generate → upload to R2 → save AssetRecord to DynamoDB → return CDN URL.
 //
 // Body: {
-//   generator: 'stability_hero' | 'stability_concepts' | 'sharp_crops'
-//   shipName?: string           (stability_hero, defaults to 'Norwegian Gem')
+//   generator: 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'sharp_crops'
 //   sourceImageCdnUrl?: string  (sharp_crops: CDN URL of uploaded hero image)
 // }
 // ────────────────────────────────────────────────────────────────────────────
 
-type ImageTestGenerator = 'stability_hero' | 'stability_concepts' | 'sharp_crops';
+type ImageTestGenerator = 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'sharp_crops';
 
 interface ImageTestRequestBody {
     generator: ImageTestGenerator;
-    shipName?: string;
     sourceImageCdnUrl?: string;
 }
 
@@ -34,11 +35,15 @@ export async function POST(
 ) {
     const { slug } = await params;
     const body = await request.json() as ImageTestRequestBody;
-    const { generator, shipName = 'Norwegian Gem', sourceImageCdnUrl } = body;
+    const { generator, sourceImageCdnUrl } = body;
 
     const brief = await getAestheticBrief(slug);
+    const campaign = await getCampaignBlueprint(slug);
     if (!brief) {
         return NextResponse.json({ error: `No aesthetic brief found for ${slug}` }, { status: 404 });
+    }
+    if (!campaign) {
+        return NextResponse.json({ error: `No campaign blueprint found for ${slug}` }, { status: 404 });
     }
     if (brief.humanReviewStatus !== 'approved') {
         return NextResponse.json({
@@ -47,31 +52,33 @@ export async function POST(
     }
 
     try {
-        if (generator === 'stability_hero') {
-            const images = await generateHeroImages(brief, shipName, 1);
-            const img = images[0];
-            const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/webp');
-            await saveAssetRecord(slug, {
-                assetId: img.assetId,
-                assetType: 'hero_image',
-                url: cdnUrl,
-                generator: 'stability_ai',
-                promptUsed: img.prompt,
-                fileSizeBytes: img.buffer.length,
-                mimeType: 'image/webp',
-                tags: ['hero', 'stability'],
-                createdAt: new Date().toISOString(),
-                reviewStatus: 'needs_review',
-                version: 1,
-                active: true,
-            });
+        if (generator === 'ship_reference_search') {
+            const candidates = await discoverShipReferenceCandidates(campaign, 2);
             return NextResponse.json({
-                generator: 'stability_ai',
-                assetId: img.assetId,
-                fileName: img.fileName,
-                promptUsed: img.prompt,
-                fileSizeBytes: img.buffer.length,
-                cdnUrl,
+                generator: 'serpapi',
+                shipName: campaign.matchedShipName ?? campaign.shipTarget ?? '',
+                candidateCount: candidates.length,
+                candidates,
+            });
+        }
+
+        if (generator === 'real_ship_hero') {
+            const candidates = await discoverShipReferenceCandidates(campaign, 2);
+            if (candidates.length === 0) {
+                return NextResponse.json({ error: `No usable ship reference images found for ${slug}` }, { status: 404 });
+            }
+
+            const referenceRecords = await importShipReferenceAssets(slug, candidates);
+            const heroRecords = await importHeroAssetsFromReferences(slug, campaign, brief, candidates, 1);
+            const heroRecord = heroRecords[0];
+            return NextResponse.json({
+                generator: heroRecord.generator,
+                assetId: heroRecord.assetId,
+                promptUsed: heroRecord.promptUsed,
+                fileSizeBytes: heroRecord.fileSizeBytes,
+                cdnUrl: heroRecord.url,
+                sourcePageUrl: heroRecord.sourcePageUrl,
+                referenceCount: referenceRecords.length,
             });
         }
 
@@ -106,7 +113,7 @@ export async function POST(
         if (generator === 'sharp_crops') {
             if (!sourceImageCdnUrl) {
                 return NextResponse.json({
-                    error: 'sourceImageCdnUrl required. Run stability_hero first and paste back the returned cdnUrl.'
+                    error: 'sourceImageCdnUrl required. Run real_ship_hero first and paste back the returned cdnUrl.'
                 }, { status: 400 });
             }
             const sourceResponse = await fetch(sourceImageCdnUrl);

@@ -18,6 +18,7 @@ const KEY_META: Record<string, { label: string; cost: string }> = {
     OPENAI: { label: "OpenAI", cost: "" },
     ELEVENLABS: { label: "ElevenLabs", cost: "" },
     REPLICATE: { label: "Replicate", cost: "~$0.01" },
+    SERPAPI: { label: "SerpAPI", cost: "~search" },
     STABILITY: { label: "Stability AI", cost: "~$0.05/img" },
     HEYGEN: { label: "HeyGen", cost: "~$1–3/video" },
     RUNWAYML: { label: "RunwayML", cost: "~$0.50/clip" },
@@ -27,6 +28,18 @@ const KEY_META: Record<string, { label: string; cost: string }> = {
 type KeyStatus = Record<string, boolean>;
 
 type ResultState = "idle" | "loading" | "success" | "error" | "not_implemented";
+
+interface ShipReferenceCandidateResult {
+    title: string;
+    imageUrl: string;
+    thumbnailUrl: string;
+    contextUrl: string;
+    width: number;
+    height: number;
+    category: string;
+    query: string;
+    selectionScore: number;
+}
 
 interface GeneratorResult {
     state: ResultState;
@@ -58,6 +71,9 @@ function ResultPanel({ result, previewType }: { result: GeneratorResult; preview
     if (result.state === "idle") return null;
 
     const cdnUrl = result.cdnUrl || (result.data?.cdnUrl as string ?? "");
+    const shipReferenceCandidates = Array.isArray(result.data?.candidates)
+        ? result.data.candidates as ShipReferenceCandidateResult[]
+        : [];
 
     return (
         <div className="mt-3 rounded-lg border border-white/10 bg-slate-950/60 overflow-hidden">
@@ -89,6 +105,39 @@ function ResultPanel({ result, previewType }: { result: GeneratorResult; preview
                     {/* Image preview */}
                     {previewType === "image" && cdnUrl && !result.data?.crops && (
                         <img src={cdnUrl} alt="Generated" className="rounded-lg max-h-64 object-contain border border-white/10" />
+                    )}
+
+                    {shipReferenceCandidates.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {shipReferenceCandidates.map((candidate) => (
+                                <div key={`${candidate.imageUrl}-${candidate.category}`} className="rounded-lg border border-white/10 bg-slate-900/60 overflow-hidden">
+                                    <a href={candidate.imageUrl} target="_blank" rel="noopener noreferrer" className="block bg-slate-950">
+                                        <img
+                                            src={candidate.thumbnailUrl || candidate.imageUrl}
+                                            alt={candidate.title}
+                                            className="w-full h-40 object-cover border-b border-white/10"
+                                        />
+                                    </a>
+                                    <div className="p-3 space-y-2">
+                                        <div className="text-[11px] text-slate-200 line-clamp-2">{candidate.title}</div>
+                                        <div className="flex flex-wrap gap-1 text-[9px]">
+                                            <span className="px-1.5 py-0.5 rounded-full border border-cyan-500/20 text-cyan-300 bg-cyan-500/5">{candidate.category}</span>
+                                            <span className="px-1.5 py-0.5 rounded-full border border-emerald-500/20 text-emerald-300 bg-emerald-500/5">score {candidate.selectionScore}</span>
+                                            <span className="px-1.5 py-0.5 rounded-full border border-white/10 text-slate-400 bg-white/5">{candidate.width}×{candidate.height}</span>
+                                        </div>
+                                        <div className="text-[9px] text-slate-500 break-words">{candidate.query}</div>
+                                        <div className="flex flex-col gap-1 text-[10px]">
+                                            <a href={candidate.imageUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline break-all">
+                                                Open image
+                                            </a>
+                                            <a href={candidate.contextUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 underline break-all">
+                                                Source page
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
 
                     {/* Crop grid from R2 */}
@@ -147,6 +196,7 @@ export default function MediaGenerationTestPage() {
     }, []);
 
     // Per-generator state
+    const [shipReferenceResult, setShipReferenceResult] = useState<GeneratorResult>(makeResult());
     const [heroResult, setHeroResult] = useState<GeneratorResult>(makeResult());
     const [conceptResult, setConceptResult] = useState<GeneratorResult>(makeResult());
     const [cropResult, setCropResult] = useState<GeneratorResult>(makeResult());
@@ -305,22 +355,37 @@ export default function MediaGenerationTestPage() {
                     onRun={() => runGenerator(`${base}/audio`, { generator: themeMusicSource === 'default' ? "default_theme" : "replicate_theme" }, setReplicateResult)}
                 />
 
-                {/* ── Stability Hero ───────────────────────────────────── */}
+                {/* ── SerpAPI Ship References ───────────────────────────── */}
+                <GeneratorCard
+                    id="gen-ship-references"
+                    keyStatus={keyStatus}
+                    title="SerpAPI — Ship Reference Search"
+                    icon={<Image className="h-4 w-4" />}
+                    color="cyan"
+                    description="Searches for real photos of the matched ship across exterior, pool deck, dining, cabin, atrium, and destination-view categories. Returns ranked candidates only."
+                    cost="~search"
+                    apiKeys={["SERPAPI"]}
+                    result={shipReferenceResult}
+                    previewType="json"
+                    onRun={() => runGenerator(`${base}/images`, { generator: "ship_reference_search" }, setShipReferenceResult)}
+                />
+
+                {/* ── Real Ship Hero ────────────────────────────────────── */}
                 <GeneratorCard
                     id="gen-hero"
                     keyStatus={keyStatus}
-                    title="Stability AI — Hero Image (×1)"
+                    title="SerpAPI — Real Ship Hero Image (×1)"
                     icon={<Image className="h-4 w-4" />}
                     color="cyan"
-                    description="Generates the first hero image variant: wide exterior deck shot. Uploaded to R2. CDN URL auto-filled into video generator inputs below."
-                    cost="~$0.05"
-                    apiKeys={["STABILITY", "R2"]}
+                    description="Imports the top-ranked real ship photo as the hero asset and uploads it to R2. CDN URL auto-filled into the video generator inputs below."
+                    cost="~search + import"
+                    apiKeys={["SERPAPI", "R2"]}
                     result={heroResult}
                     previewType="image"
                     onRun={async () => {
                         await runGenerator(
                             `${base}/images`,
-                            { generator: "stability_hero", shipName: "Norwegian Gem" },
+                            { generator: "real_ship_hero" },
                             (r) => {
                                 if (r.cdnUrl) {
                                     lastHeroCdnUrl.current = r.cdnUrl;
@@ -339,7 +404,7 @@ export default function MediaGenerationTestPage() {
                     title="Stability AI — Aesthetic Concept (×1)"
                     icon={<Image className="h-4 w-4" />}
                     color="cyan"
-                    description="Generates first aesthetic concept art image. Square 1:1, abstract aesthetic representation. Uploaded to R2."
+                    description="Generates abstract mood/concept art only. This is no longer the ship-faithful hero path. Uploaded to R2."
                     cost="~$0.05"
                     apiKeys={["STABILITY", "R2"]}
                     result={conceptResult}
@@ -354,14 +419,14 @@ export default function MediaGenerationTestPage() {
                     title="Sharp — Platform Crops"
                     icon={<Crop className="h-4 w-4" />}
                     color="purple"
-                    description="Crops the uploaded hero image into all 8 platform formats. Fetches source from R2 CDN, uploads all crops back to R2. Run after Stability Hero."
+                    description="Crops the uploaded real-ship hero image into all 8 platform formats. Fetches source from R2 CDN and uploads all crops back to R2. Run after Real Ship Hero."
                     cost="free"
                     apiKeys={["R2"]}
                     result={cropResult}
                     previewType="image"
                     onRun={() => {
                         if (!lastHeroCdnUrl.current) {
-                            setCropResult({ state: "error", data: null, error: "Run Stability Hero first — need a CDN URL.", cdnUrl: "" });
+                            setCropResult({ state: "error", data: null, error: "Run Real Ship Hero first — need a CDN URL.", cdnUrl: "" });
                             return;
                         }
                         runGenerator(`${base}/images`, { generator: "sharp_crops", sourceImageCdnUrl: lastHeroCdnUrl.current }, setCropResult);
@@ -370,12 +435,12 @@ export default function MediaGenerationTestPage() {
 
                 {/* ── Video: Hero Image URL input ──────────────────────── */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">Hero Image CDN URL — used by all video generators below</label>
+                    <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">Real Hero Image CDN URL — used by all video generators below</label>
                     <input
                         type="text"
                         value={heroImageUrl}
                         onChange={e => setHeroImageUrl(e.target.value)}
-                        placeholder="Auto-filled when Stability Hero runs. Or paste any public image URL."
+                        placeholder="Auto-filled when Real Ship Hero runs. Or paste any public image URL."
                         className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500/40"
                     />
                 </div>
