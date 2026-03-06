@@ -1,4 +1,5 @@
 import { ModelName, modelForTask } from '@/lib/ai/llm-gateway';
+import type { GeneratorService } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // MEDIA PIPELINE CONFIGURATION
@@ -9,12 +10,39 @@ import { ModelName, modelForTask } from '@/lib/ai/llm-gateway';
 //
 // ── HOW TO CHANGE A MODEL ────────────────────────────────────────────────────
 // 1. Update the ModelName value in the LLM_TASKS section below.
-// 2. That's it. All generators import from this file — no other changes needed.
+// 2. That's it. All generators and routes derive the generator name
+//    automatically via modelNameToGeneratorService().
 //
 // ── HOW TO CHANGE A MEDIA API SETTING ────────────────────────────────────────
 // Update the relevant section below (STABILITY, ELEVENLABS, HEYGEN, RUNWAYML).
-// Generators import directly from this config — no raw strings in generators.
 // ────────────────────────────────────────────────────────────────────────────
+
+// ── ModelName → GeneratorService mapper ──────────────────────────────────────
+// Keeps AssetRecord.generator accurate regardless of which model is active.
+// Add new entries here when new ModelName values are added to the gateway.
+
+const MODEL_TO_GENERATOR: Record<ModelName, GeneratorService> = {
+    [ModelName.CLAUDE_4_OPUS]: 'claude4_opus',
+    [ModelName.CLAUDE_4_SONNET]: 'claude4_sonnet',
+    [ModelName.GPT_5_HIGH]: 'gpt4o',
+    [ModelName.GPT_5_MEDIUM]: 'gpt4o',
+    [ModelName.GPT_5_INSTANT]: 'gpt4o',
+    [ModelName.GEMINI_3_PRO]: 'gemini3_pro',
+    [ModelName.GEMINI_3_FLASH]: 'gemini3_flash',
+    [ModelName.GEMINI_3_FLASH_LITE]: 'gemini3_flash_lite',
+    [ModelName.LLAMA_4_MAVERICK]: 'llama4',
+};
+
+/**
+ * Derives the GeneratorService enum value from a ModelName.
+ * Use this in routes when building AssetRecord.generator.
+ *
+ * @example
+ *   generator: modelNameToGeneratorService(MEDIA_LLM_CONFIG.platformCopy)
+ */
+export function modelNameToGeneratorService(model: ModelName): GeneratorService {
+    return MODEL_TO_GENERATOR[model];
+}
 
 // ── LLM Task → Model Assignments ────────────────────────────────────────────
 // Every text-generation task in the pipeline routes through the LLM gateway.

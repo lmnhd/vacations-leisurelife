@@ -4,10 +4,12 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { generatePlatformCopy } from '@/lib/campaigns/media/generators/copy-generator';
+import { MEDIA_LLM_CONFIG, modelNameToGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/copy
-// Generate copy via GPT-4o → upload JSON to R2 → save AssetRecord → return.
+// Model: MEDIA_LLM_CONFIG.platformCopy (currently CLAUDE_4_OPUS via creative task)
+// Generate copy → upload JSON to R2 → save AssetRecord → return CDN URL + copy.
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function POST(
@@ -26,6 +28,9 @@ export async function POST(
         }, { status: 400 });
     }
 
+    const activeModel = MEDIA_LLM_CONFIG.platformCopy;
+    const generatorService = modelNameToGeneratorService(activeModel);
+
     try {
         const copy = await generatePlatformCopy(brief);
         const copyJson = JSON.stringify(copy, null, 2);
@@ -36,9 +41,9 @@ export async function POST(
         const cdnUrl = await uploadAsset(slug, fileName, copyBuffer, 'application/json');
         await saveAssetRecord(slug, {
             assetId,
-            assetType: 'ad_creative',
+            assetType: 'copy_batch',
             url: cdnUrl,
-            generator: 'gpt4o',
+            generator: generatorService,
             promptUsed: `Platform copy batch for ${brief.themeName}`,
             fileSizeBytes: copyBuffer.length,
             mimeType: 'application/json',
@@ -50,7 +55,8 @@ export async function POST(
         });
 
         return NextResponse.json({
-            generator: 'gpt4o',
+            generator: generatorService,
+            model: activeModel,
             campaignSlug: slug,
             themeName: brief.themeName,
             assetId,

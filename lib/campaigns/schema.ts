@@ -184,17 +184,28 @@ export const AssetTypeEnum = z.enum([
     'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
     'countdown_video', 'broll_clip',
     'ambient_narration', 'hype_clip', 'theme_music',
-    'merch_design', 'email_header', 'ad_creative', 'carousel_slide',
+    'merch_design', 'email_header', 'ad_creative',
+    'carousel_slide', 'copy_batch',
 ]);
 export type AssetType = z.infer<typeof AssetTypeEnum>;
 
 export const GeneratorServiceEnum = z.enum([
+    // Image generators
     'midjourney', 'stability_ai', 'dalle3',
+    // Video generators
     'heygen', 'runwayml', 'kling',
-    'elevenlabs', 'openai_tts',
-    'suno', 'udio',
+    // Audio generators
+    'elevenlabs', 'openai_tts', 'suno', 'udio',
+    // Image processing
     'sharp',
+    // OpenAI LLM
     'gpt4o',
+    // Anthropic LLM
+    'claude4_opus', 'claude4_sonnet',
+    // Google LLM
+    'gemini3_pro', 'gemini3_flash', 'gemini3_flash_lite',
+    // Meta / Groq
+    'llama4',
 ]);
 export type GeneratorService = z.infer<typeof GeneratorServiceEnum>;
 
