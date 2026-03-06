@@ -1,5 +1,5 @@
 import { CampaignAestheticBrief, ShipReferenceCandidate } from '../../schema';
-import { STABILITY_CONFIG } from '../media-pipeline-config';
+import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Stability AI Image Generator
@@ -8,8 +8,8 @@ import { STABILITY_CONFIG } from '../media-pipeline-config';
 // ────────────────────────────────────────────────────────────────────────────
 
 function getApiKey(): string {
-    const key = process.env.STABILITY_API_KEY;
-    if (!key) throw new Error('STABILITY_API_KEY not set in environment');
+    const key = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY not set in environment');
     return key;
 }
 
@@ -80,70 +80,71 @@ function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipNam
     ].join('. ');
 }
 
-async function generateImage(
+async function generateNanoBananaImage(
     prompt: string,
-    negativePrompt: string,
-    aspectRatio: typeof STABILITY_CONFIG.heroAspectRatio | typeof STABILITY_CONFIG.conceptAspectRatio
+    aspectRatio: typeof NANO_BANANA_CONFIG.heroAspectRatio | typeof NANO_BANANA_CONFIG.conceptAspectRatio | typeof NANO_BANANA_CONFIG.merchAspectRatio,
+    imageSize: typeof NANO_BANANA_CONFIG.heroImageSize | typeof NANO_BANANA_CONFIG.conceptImageSize | typeof NANO_BANANA_CONFIG.merchImageSize,
+    referenceImage?: Buffer,
+    referenceMimeType?: string
 ): Promise<Buffer> {
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('negative_prompt', negativePrompt);
-    formData.append('aspect_ratio', aspectRatio);
-    formData.append('output_format', STABILITY_CONFIG.outputFormat);
+    const parts = referenceImage
+        ? [
+            { text: prompt },
+            {
+                inline_data: {
+                    mime_type: referenceMimeType ?? 'image/jpeg',
+                    data: referenceImage.toString('base64'),
+                },
+            },
+        ]
+        : [{ text: prompt }];
 
     const response = await fetch(
-        `${STABILITY_CONFIG.apiBase}${STABILITY_CONFIG.endpoint}`,
+        `${NANO_BANANA_CONFIG.apiBase}/models/${NANO_BANANA_CONFIG.model}:generateContent`,
         {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${getApiKey()}`,
-                'Accept': 'image/*',
+                'x-goog-api-key': getApiKey(),
+                'Content-Type': 'application/json',
             },
-            body: formData,
+            body: JSON.stringify({
+                contents: [{ role: 'user', parts }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                    imageConfig: {
+                        aspectRatio,
+                        imageSize,
+                    },
+                },
+            }),
         }
     );
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Stability AI error ${response.status}: ${errorText}`);
+        throw new Error(`Nano-Banana error ${response.status}: ${errorText}`);
     }
 
-    return Buffer.from(await response.arrayBuffer());
-}
+    const payload = await response.json() as {
+        candidates?: Array<{
+            content?: {
+                parts?: Array<{
+                    text?: string;
+                    inlineData?: { data?: string; mimeType?: string };
+                    inline_data?: { data?: string; mime_type?: string };
+                }>;
+            };
+        }>;
+    };
+    const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
+    const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
 
-async function generateImageFromReference(
-    prompt: string,
-    negativePrompt: string,
-    referenceImage: Buffer,
-    aspectRatio: typeof STABILITY_CONFIG.heroAspectRatio | typeof STABILITY_CONFIG.conceptAspectRatio
-): Promise<Buffer> {
-    const referenceImageBytes = new Uint8Array(referenceImage);
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('negative_prompt', negativePrompt);
-    formData.append('aspect_ratio', aspectRatio);
-    formData.append('output_format', STABILITY_CONFIG.outputFormat);
-    formData.append('strength', String(STABILITY_CONFIG.referenceTransformStrength));
-    formData.append('image', new Blob([referenceImageBytes], { type: 'image/jpeg' }), 'reference.jpg');
-
-    const response = await fetch(
-        `${STABILITY_CONFIG.apiBase}${STABILITY_CONFIG.endpoint}`,
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${getApiKey()}`,
-                'Accept': 'image/*',
-            },
-            body: formData,
-        }
-    );
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Stability AI error ${response.status}: ${errorText}`);
+    if (!imageData) {
+        throw new Error('Nano-Banana did not return an image payload');
     }
 
-    return Buffer.from(await response.arrayBuffer());
+    return Buffer.from(imageData, 'base64');
 }
 
 export interface GeneratedImage {
@@ -156,20 +157,23 @@ export interface GeneratedImage {
 export async function generateHeroImages(
     brief: CampaignAestheticBrief,
     shipName: string,
-    count: number = STABILITY_CONFIG.heroCount
+    count: number = 5
 ): Promise<GeneratedImage[]> {
     const prompts = buildHeroPrompts(brief, shipName).slice(0, count);
-    const negativePrompt = brief.visual.avoidList.join(', ');
     const results: GeneratedImage[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateImage(prompts[i], negativePrompt, STABILITY_CONFIG.heroAspectRatio);
+        const buffer = await generateNanoBananaImage(
+            prompts[i],
+            NANO_BANANA_CONFIG.heroAspectRatio,
+            NANO_BANANA_CONFIG.heroImageSize
+        );
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
             prompt: prompts[i],
             assetId: `img_hero_${idx}`,
-            fileName: `images/hero/hero_${idx}_source.webp`,
+            fileName: `images/hero/hero_${idx}_source.png`,
         });
     }
 
@@ -183,27 +187,28 @@ export async function generateReferenceGroundedHeroImages(
     count: number = 1
 ): Promise<GeneratedImage[]> {
     const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate);
-    const negativePrompt = [...brief.visual.avoidList, 'cartoon', 'illustration', 'diagram', 'floor plan', 'logo', 'deformed ship', 'wrong ship'].join(', ');
     const referenceResponse = await fetch(referenceCandidate.imageUrl);
     if (!referenceResponse.ok) {
         throw new Error(`Failed to fetch hero reference image (${referenceResponse.status}): ${referenceCandidate.imageUrl}`);
     }
     const referenceBuffer = Buffer.from(await referenceResponse.arrayBuffer());
+    const referenceMimeType = referenceResponse.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
     const results: GeneratedImage[] = [];
 
     for (let index = 0; index < count; index += 1) {
-        const transformedBuffer = await generateImageFromReference(
+        const transformedBuffer = await generateNanoBananaImage(
             prompt,
-            negativePrompt,
+            NANO_BANANA_CONFIG.heroAspectRatio,
+            NANO_BANANA_CONFIG.heroImageSize,
             referenceBuffer,
-            STABILITY_CONFIG.heroAspectRatio
+            referenceMimeType
         );
         const itemIndex = String(index + 1).padStart(3, '0');
         results.push({
             buffer: transformedBuffer,
             prompt,
             assetId: `img_hero_${itemIndex}`,
-            fileName: `images/hero/hero_${itemIndex}_embellished.${STABILITY_CONFIG.outputFormat}`,
+            fileName: `images/hero/hero_${itemIndex}_embellished.png`,
         });
     }
 
@@ -212,20 +217,23 @@ export async function generateReferenceGroundedHeroImages(
 
 export async function generateAestheticConcepts(
     brief: CampaignAestheticBrief,
-    count: number = STABILITY_CONFIG.conceptCount
+    count: number = 4
 ): Promise<GeneratedImage[]> {
     const prompts = buildConceptPrompts(brief).slice(0, count);
-    const negativePrompt = brief.visual.avoidList.join(', ');
     const results: GeneratedImage[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateImage(prompts[i], negativePrompt, STABILITY_CONFIG.conceptAspectRatio);
+        const buffer = await generateNanoBananaImage(
+            prompts[i],
+            NANO_BANANA_CONFIG.conceptAspectRatio,
+            NANO_BANANA_CONFIG.conceptImageSize
+        );
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
             prompt: prompts[i],
             assetId: `img_concept_${idx}`,
-            fileName: `images/concepts/concept_${idx}.webp`,
+            fileName: `images/concepts/concept_${idx}.png`,
         });
     }
 

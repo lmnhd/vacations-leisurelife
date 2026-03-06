@@ -12,7 +12,7 @@ export interface EnvCheckResponse {
     ELEVENLABS: boolean;
     REPLICATE: boolean;
     SERPAPI: boolean;
-    STABILITY: boolean;
+    GOOGLE: boolean;
     HEYGEN: boolean;
     RUNWAYML: boolean;
     R2: boolean;
@@ -24,7 +24,7 @@ export async function GET() {
         ELEVENLABS: !!process.env.ELEVENLABS_API_KEY,
         REPLICATE: !!process.env.REPLICATE_API_TOKEN,
         SERPAPI: !!process.env.SERPAPI_KEY,
-        STABILITY: !!process.env.STABILITY_API_KEY,
+        GOOGLE: !!(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
         HEYGEN: !!process.env.HEYGEN_API_KEY,
         RUNWAYML: !!process.env.RUNWAYML_API_KEY,
         R2: !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY),

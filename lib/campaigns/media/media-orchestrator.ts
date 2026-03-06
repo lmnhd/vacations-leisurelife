@@ -31,6 +31,7 @@ import {
     importShipReferenceAssets,
 } from './ship-reference-service';
 import { randomUUID } from 'crypto';
+import { getMediaImageGeneratorService } from './media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Media Generation Orchestrator
@@ -229,7 +230,7 @@ export async function runMediaGeneration(
         if (shouldRun('images', resolvedOptions.assetTypes)) {
             // Real ship reference import + hero selection
             group1Promises.push(
-                runWithJob(slug, 'hero_image', 'serpapi', 'real ship hero imagery', async () => {
+                runWithJob(slug, 'hero_image', getMediaImageGeneratorService(), 'real ship hero imagery', async () => {
                     const candidates = await discoverShipReferenceCandidates(campaign, 2);
                     if (candidates.length === 0) {
                         throw new Error(`No usable ship reference images found for ${slug}`);
@@ -244,13 +245,13 @@ export async function runMediaGeneration(
 
             // Concept art
             group1Promises.push(
-                runWithJob(slug, 'aesthetic_concept', 'stability_ai', 'concept art', async () => {
+                runWithJob(slug, 'aesthetic_concept', getMediaImageGeneratorService(), 'concept art', async () => {
                     const images = await generateAestheticConcepts(brief);
                     const records: AssetRecord[] = [];
                     for (const img of images) {
                         const rec = await uploadAndRecord(
-                            slug, img.assetId, 'aesthetic_concept', 'stability_ai',
-                            img.prompt, img.buffer, img.fileName, 'image/webp',
+                            slug, img.assetId, 'aesthetic_concept', getMediaImageGeneratorService(),
+                            img.prompt, img.buffer, img.fileName, 'image/png',
                             ['concept', 'moodboard'], { width: 1080, height: 1080 }
                         );
                         records.push(rec);
@@ -263,12 +264,12 @@ export async function runMediaGeneration(
 
         if (shouldRun('merch', resolvedOptions.assetTypes)) {
             group1Promises.push(
-                runWithJob(slug, 'merch_design', 'dalle3', 'merch designs', async () => {
+                runWithJob(slug, 'merch_design', getMediaImageGeneratorService(), 'merch designs', async () => {
                     const designs = await generateMerchDesigns(brief);
                     const records: AssetRecord[] = [];
                     for (const img of designs) {
                         const rec = await uploadAndRecord(
-                            slug, img.assetId, 'merch_design', 'dalle3',
+                            slug, img.assetId, 'merch_design', getMediaImageGeneratorService(),
                             img.prompt, img.buffer, img.fileName, 'image/png',
                             ['merch', 'design'], { width: 1024, height: 1024 }
                         );

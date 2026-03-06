@@ -40,11 +40,11 @@ const CATEGORIES = [
 ] as const;
 
 const COST_ESTIMATES: Record<string, string> = {
-    images: "~search + import + concept art",
+    images: "~search + Nano-Banana image generation",
     video: "~$5–$15 (HeyGen × 3 + RunwayML × 6–7)",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
     copy: "~$0.05 (GPT-4o single call)",
-    merch: "~$0.40 (DALL-E 3 × 3–5 designs)",
+    merch: "~$0.40 (Nano-Banana × 3–5 designs)",
     all: "~$6–$16 total",
 };
 
@@ -189,7 +189,7 @@ export default function MediaGenerationTestPage() {
                         🎬 Media Generation — Phase 2B
                     </h1>
                     <p className="text-xs text-slate-500 mt-1">
-                        Generate real-ship reference imagery, cinematic video, audio, copy, and merch from an approved aesthetic brief.
+                        Generate real-ship reference imagery, Nano-Banana-powered image assets, cinematic video, audio, copy, and merch from an approved aesthetic brief.
                         Each category can be run independently. Requires approved brief and a resolved ship target.
                     </p>
                 </div>

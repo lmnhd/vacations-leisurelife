@@ -1,6 +1,6 @@
 import { CampaignAestheticBrief } from '../../schema';
 import { GeneratedImage } from './stability-generator';
-import { DALLE_CONFIG } from '../media-pipeline-config';
+import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // DALL-E 3 Merch Design Generator
@@ -9,40 +9,54 @@ import { DALLE_CONFIG } from '../media-pipeline-config';
 // ────────────────────────────────────────────────────────────────────────────
 
 function getApiKey(): string {
-    const key = process.env.OPENAI_API_KEY;
-    if (!key) throw new Error('OPENAI_API_KEY not set in environment');
+    const key = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY not set in environment');
     return key;
 }
 
-interface DalleImageResponse {
-    data: Array<{ b64_json: string }>;
-}
-
-async function generateDalleImage(prompt: string): Promise<Buffer> {
-    const response = await fetch(`${DALLE_CONFIG.apiBase}/images/generations`, {
+async function generateNanoBananaMerchImage(prompt: string): Promise<Buffer> {
+    const response = await fetch(`${NANO_BANANA_CONFIG.apiBase}/models/${NANO_BANANA_CONFIG.model}:generateContent`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${getApiKey()}`,
+            'x-goog-api-key': getApiKey(),
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: DALLE_CONFIG.model,
-            prompt,
-            size: DALLE_CONFIG.size,
-            quality: DALLE_CONFIG.quality,
-            style: DALLE_CONFIG.style,
-            response_format: DALLE_CONFIG.responseFormat,
-            n: 1,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseModalities: ['TEXT', 'IMAGE'],
+                imageConfig: {
+                    aspectRatio: NANO_BANANA_CONFIG.merchAspectRatio,
+                    imageSize: NANO_BANANA_CONFIG.merchImageSize,
+                },
+            },
         }),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`DALL-E 3 error ${response.status}: ${errorText}`);
+        throw new Error(`Nano-Banana error ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json() as DalleImageResponse;
-    return Buffer.from(data.data[0].b64_json, 'base64');
+    const payload = await response.json() as {
+        candidates?: Array<{
+            content?: {
+                parts?: Array<{
+                    inlineData?: { data?: string };
+                    inline_data?: { data?: string };
+                }>;
+            };
+        }>;
+    };
+    const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
+    const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
+
+    if (!imageData) {
+        throw new Error('Nano-Banana did not return a merch image payload');
+    }
+
+    return Buffer.from(imageData, 'base64');
 }
 
 /**
@@ -57,7 +71,7 @@ export async function generateMerchDesigns(
     const { merch } = brief;
     const results: GeneratedImage[] = [];
 
-    const coreBuffer = await generateDalleImage(merch.coreItem.dallePrompt);
+    const coreBuffer = await generateNanoBananaMerchImage(merch.coreItem.dallePrompt);
     results.push({
         buffer: coreBuffer,
         prompt: merch.coreItem.dallePrompt,
@@ -65,7 +79,7 @@ export async function generateMerchDesigns(
         fileName: `merch/designs/core_tshirt_design.png`,
     });
 
-    const practicalBuffer = await generateDalleImage(merch.practicalItem.dallePrompt);
+    const practicalBuffer = await generateNanoBananaMerchImage(merch.practicalItem.dallePrompt);
     results.push({
         buffer: practicalBuffer,
         prompt: merch.practicalItem.dallePrompt,
@@ -75,7 +89,7 @@ export async function generateMerchDesigns(
 
     for (let i = 0; i < merch.nicheSpecificItems.length; i++) {
         const item = merch.nicheSpecificItems[i];
-        const buffer = await generateDalleImage(item.dallePrompt);
+        const buffer = await generateNanoBananaMerchImage(item.dallePrompt);
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
+import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 import {
     generateAestheticConcepts,
 } from '@/lib/campaigns/media/generators/stability-generator';
@@ -88,16 +90,16 @@ export async function POST(
         if (generator === 'stability_concepts') {
             const images = await generateAestheticConcepts(brief, 1);
             const img = images[0];
-            const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/webp');
+            const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/png');
             const record: AssetRecord = {
                 assetId: img.assetId,
                 assetType: 'aesthetic_concept',
                 url: cdnUrl,
-                generator: 'stability_ai',
+                generator: getMediaImageGeneratorService(),
                 promptUsed: img.prompt,
                 fileSizeBytes: img.buffer.length,
-                mimeType: 'image/webp',
-                tags: ['concept', 'stability'],
+                mimeType: 'image/png',
+                tags: ['concept', 'nano-banana'],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
@@ -106,7 +108,7 @@ export async function POST(
             await saveAssetRecord(slug, record);
             await upsertManifestAssetSection(slug, 'aestheticConcepts', [record]);
             return NextResponse.json({
-                generator: 'stability_ai',
+                generator: getMediaImageGeneratorService(),
                 assetId: img.assetId,
                 fileName: img.fileName,
                 promptUsed: img.prompt,
@@ -128,7 +130,9 @@ export async function POST(
                 }, { status: 400 });
             }
             const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
-            const crops = await generatePlatformCrops(sourceBuffer, 'hero_001');
+            const sourceHash = createHash('sha1').update(sourceImageCdnUrl).digest('hex').slice(0, 10);
+            const cropSourceId = `hero_${sourceHash}_${Date.now()}`;
+            const crops = await generatePlatformCrops(sourceBuffer, cropSourceId);
 
             const uploadedCrops = await Promise.all(crops.map(async (crop) => {
                 const cdnUrl = await uploadAsset(slug, crop.fileName, crop.buffer, 'image/webp');

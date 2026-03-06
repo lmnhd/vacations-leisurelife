@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
-import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
+import { NANO_BANANA_CONFIG, getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
+import type { AssetRecord } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/merch
@@ -12,10 +14,6 @@ import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 
 interface MerchTestRequestBody {
     itemIndex?: number;
-}
-
-interface DalleResponse {
-    data: Array<{ b64_json: string; revised_prompt?: string }>;
 }
 
 export async function POST(
@@ -57,41 +55,62 @@ export async function POST(
     const targetItem = allItems[itemIndex];
 
     try {
-        const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
+        const googleApiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+        if (!googleApiKey) {
+            throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY not set in environment');
+        }
+
+        const imageResponse = await fetch(`${NANO_BANANA_CONFIG.apiBase}/models/${NANO_BANANA_CONFIG.model}:generateContent`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'x-goog-api-key': googleApiKey,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'dall-e-3',
-                prompt: targetItem.prompt,
-                size: '1024x1024',
-                quality: 'hd',
-                style: 'natural',
-                response_format: 'b64_json',
-                n: 1,
+                contents: [{ role: 'user', parts: [{ text: targetItem.prompt }] }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                    imageConfig: {
+                        aspectRatio: NANO_BANANA_CONFIG.merchAspectRatio,
+                        imageSize: NANO_BANANA_CONFIG.merchImageSize,
+                    },
+                },
             }),
         });
 
-        if (!dalleResponse.ok) {
-            const errorText = await dalleResponse.text();
-            throw new Error(`DALL-E 3 error ${dalleResponse.status}: ${errorText}`);
+        if (!imageResponse.ok) {
+            const errorText = await imageResponse.text();
+            throw new Error(`Nano-Banana error ${imageResponse.status}: ${errorText}`);
         }
 
-        const dalleData = await dalleResponse.json() as DalleResponse;
-        const result = dalleData.data[0];
-        const imageBuffer = Buffer.from(result.b64_json, 'base64');
+        const payload = await imageResponse.json() as {
+            candidates?: Array<{
+                content?: {
+                    parts?: Array<{
+                        inlineData?: { data?: string };
+                        inline_data?: { data?: string };
+                    }>;
+                };
+            }>;
+        };
+        const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
+        const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
+        const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
+        if (!imageData) {
+            throw new Error('Nano-Banana did not return a merch image payload');
+        }
+
+        const imageBuffer = Buffer.from(imageData, 'base64');
         const assetId = `merch_${targetItem.type}_${randomUUID().slice(0, 8)}`;
         const fileName = `merch/${targetItem.type}_design.png`;
 
         const cdnUrl = await uploadAsset(slug, fileName, imageBuffer, 'image/png');
-        await saveAssetRecord(slug, {
+        const record: AssetRecord = {
             assetId,
             assetType: 'merch_design',
             url: cdnUrl,
-            generator: 'dalle3',
-            promptUsed: result.revised_prompt ?? targetItem.prompt,
+            generator: getMediaImageGeneratorService(),
+            promptUsed: targetItem.prompt,
             dimensions: { width: 1024, height: 1024 },
             fileSizeBytes: imageBuffer.length,
             mimeType: 'image/png',
@@ -100,15 +119,16 @@ export async function POST(
             reviewStatus: 'needs_review',
             version: 1,
             active: true,
-        });
+        };
+        await saveAssetRecord(slug, record);
+        await upsertManifestAssetSection(slug, 'designs', [record]);
 
         return NextResponse.json({
-            generator: 'dalle3',
+            generator: getMediaImageGeneratorService(),
             itemIndex,
             itemType: targetItem.type,
             productLabel: targetItem.label,
             promptUsed: targetItem.prompt,
-            revisedPrompt: result.revised_prompt,
             assetId,
             fileSizeBytes: imageBuffer.length,
             cdnUrl,

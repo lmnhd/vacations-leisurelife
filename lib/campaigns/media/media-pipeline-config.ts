@@ -44,6 +44,10 @@ export function modelNameToGeneratorService(model: ModelName): GeneratorService 
     return MODEL_TO_GENERATOR[model];
 }
 
+export function getMediaImageGeneratorService(): GeneratorService {
+    return 'gemini3_flash';
+}
+
 // ── LLM Task → Model Assignments ────────────────────────────────────────────
 // Every text-generation task in the pipeline routes through the LLM gateway.
 // Change campaign copy model here to instantly swap all copy generation.
@@ -74,6 +78,18 @@ export const STABILITY_CONFIG = {
     heroCount: 5,
     conceptCount: 4,
 } as const;
+
+export const NANO_BANANA_CONFIG = {
+    apiBase: 'https://generativelanguage.googleapis.com/v1beta',
+    model: 'gemini-2.5-flash-image' as const,
+    heroAspectRatio: '16:9' as const,
+    conceptAspectRatio: '1:1' as const,
+    merchAspectRatio: '1:1' as const,
+    heroImageSize: '2K' as const,
+    conceptImageSize: '2K' as const,
+    merchImageSize: '1K' as const,
+    outputMimeType: 'image/png' as const,
+};
 
 // ── ElevenLabs Settings ───────────────────────────────────────────────────────
 // Voice IDs from ElevenLabs voice library. Update to swap voices without

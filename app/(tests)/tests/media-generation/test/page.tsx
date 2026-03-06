@@ -24,7 +24,7 @@ const KEY_META: Record<string, { label: string; cost: string }> = {
     ELEVENLABS: { label: "ElevenLabs", cost: "" },
     REPLICATE: { label: "Replicate", cost: "~$0.01" },
     SERPAPI: { label: "SerpAPI", cost: "~search" },
-    STABILITY: { label: "Stability AI", cost: "~$0.05/img" },
+    GOOGLE: { label: "Google Nano-Banana", cost: "~image gen" },
     HEYGEN: { label: "HeyGen", cost: "~$1–3/video" },
     RUNWAYML: { label: "RunwayML", cost: "~$0.50/clip" },
     R2: { label: "Cloudflare R2", cost: "" },
@@ -526,12 +526,12 @@ export default function MediaGenerationTestPage() {
                 <GeneratorCard
                     id="gen-hero"
                     keyStatus={keyStatus}
-                    title="SerpAPI — Real Ship Hero Image (×1)"
+                    title="Nano-Banana — Real Ship Hero Image (×1)"
                     icon={<Image className="h-4 w-4" />}
                     color="cyan"
-                    description="Imports the top-ranked real ship photo as the hero asset and uploads it to R2. CDN URL auto-filled into the video generator inputs below."
+                    description="Discovers real ship references with SerpAPI, then uses Nano-Banana to transform the best match into a niche-coded hero image. CDN URL auto-filled into the video generator inputs below."
                     cost="~search + import"
-                    apiKeys={["SERPAPI", "R2"]}
+                    apiKeys={["SERPAPI", "GOOGLE", "R2"]}
                     result={heroResult}
                     previewType="image"
                     onRun={async () => {
@@ -549,16 +549,16 @@ export default function MediaGenerationTestPage() {
                     }}
                 />
 
-                {/* ── Stability Concepts ───────────────────────────────── */}
+                {/* ── Nano-Banana Concepts ─────────────────────────────── */}
                 <GeneratorCard
                     id="gen-concepts"
                     keyStatus={keyStatus}
-                    title="Stability AI — Aesthetic Concept (×1)"
+                    title="Nano-Banana — Aesthetic Concept (×1)"
                     icon={<Image className="h-4 w-4" />}
                     color="cyan"
-                    description="Generates abstract mood/concept art only. This is no longer the ship-faithful hero path. Uploaded to R2."
+                    description="Generates abstract mood/concept art with Nano-Banana. This is separate from the ship-faithful hero path. Uploaded to R2."
                     cost="~$0.05"
-                    apiKeys={["STABILITY", "R2"]}
+                    apiKeys={["GOOGLE", "R2"]}
                     result={conceptResult}
                     previewType="image"
                     onRun={() => runGenerator(`${base}/images`, { generator: "stability_concepts" }, setConceptResult)}
@@ -672,16 +672,16 @@ export default function MediaGenerationTestPage() {
                     onRun={() => runGenerator(`${base}/video`, { generator: "runway_broll", heroImageUrl }, setRunwayBrollResult)}
                 />
 
-                {/* ── DALL-E Merch ─────────────────────────────────────── */}
+                {/* ── Nano-Banana Merch ────────────────────────────────── */}
                 <GeneratorCard
                     id="gen-merch"
                     keyStatus={keyStatus}
-                    title="DALL-E 3 — Merch Design (Core Item)"
+                    title="Nano-Banana — Merch Design (Core Item)"
                     icon={<Shirt className="h-4 w-4" />}
                     color="pink"
-                    description="Generates the core merch item design (index 0 = t-shirt) using brief.merch.coreItem.dallePrompt. DALL-E returns revised_prompt — useful to inspect what OpenAI actually used."
+                    description="Generates the core merch item design (index 0 = t-shirt) using brief.merch.coreItem.dallePrompt via Nano-Banana and uploads the result to R2."
                     cost="~$0.12"
-                    apiKeys={["OPENAI"]}
+                    apiKeys={["GOOGLE", "R2"]}
                     result={merch0Result}
                     previewType="image"
                     onRun={() => runGenerator(`${base}/merch`, { itemIndex: 0 }, setMerch0Result)}

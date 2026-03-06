@@ -26,8 +26,8 @@ In practice, this means copy, audio, image, video, merch, and review actions sho
 | Asset Type | Count | Tool | Destination |
 |------------|-------|------|-------------|
 | Ship reference images | 6–12 | SerpAPI Google Images discovery | Source-of-truth for real ship visuals |
-| Hero images (landing page) | 3–5 | SerpAPI real photo import | Landing page hero section |
-| Aesthetic concept art | 4–5 | Stability AI | Moodboard, email headers |
+| Hero images (landing page) | 3–5 | Nano-Banana image edit over SerpAPI references | Landing page hero section |
+| Aesthetic concept art | 4–5 | Nano-Banana | Moodboard, email headers |
 | Platform-sized image crops | Varies | Sharp (server-side resize) | Each social format |
 | TikTok / Reels seed video | 1 | HeyGen + ElevenLabs | TikTok organic, Instagram Reels |
 | Hero explainer video | 1 | HeyGen | Landing page, YouTube |
@@ -37,7 +37,7 @@ In practice, this means copy, audio, image, video, merch, and review actions sho
 | Landing page ambient narration | 1 | ElevenLabs | Landing page hero audio |
 | Threshold hype clip | 1 | ElevenLabs | SMS hook (Twilio), email |
 | Campaign theme music | 1 | Replicate MusicGen | Video background, landing page |
-| Merch design files | 3–5 | DALL-E 3 | Printful / Printify upload |
+| Merch design files | 3–5 | Nano-Banana | Printful / Printify upload |
 | Email header graphics | 3 | Derived from hero images | Klaviyo template stages 1–3 |
 | Facebook / Meta ad creatives | 3 | Derived from hero images + copy | Meta Ads Manager |
 | Social carousel (Instagram) | 1 (7 slides) | Generated per slide spec | Instagram feed |
@@ -99,13 +99,13 @@ The pipeline resolves the campaign's matched ship identity, then runs structured
 Candidate images are ranked automatically using ship-name match, cruise-line tokens, category match, and image size, while penalizing floor plans, logos, brochures, and illustrations.
 
 ### Hero Images (3–5 images)
-**Tool:** SerpAPI reference discovery + Stability AI guided transform  
+**Tool:** SerpAPI reference discovery + Nano-Banana guided transform  
 **Purpose:** Primary landing page hero, email headers, social backgrounds
 
-Hero assets are selected from the ranked real ship reference set, then transformed through a reference-grounded Stability pass that preserves ship identity while adding campaign-specific cinematic embellishment. This keeps the landing page visually anchored to the actual vessel without reducing the hero to a plain import.
+Hero assets are selected from the ranked real ship reference set, then transformed through a reference-grounded Nano-Banana pass that preserves ship identity while adding campaign-specific cinematic embellishment. This keeps the landing page visually anchored to the actual vessel without reducing the hero to a plain import.
 
 ### Aesthetic Concept Art (4–5 images)
-**Tool:** Stability AI  
+**Tool:** Nano-Banana  
 **Purpose:** Brand moodboard, email headers, social carousel backgrounds
 
 These are less literal than hero images — they establish the aesthetic *feeling* rather than the literal ship identity. Generated from the `imageryMood` + `colorPalette` + `aestheticLabel` fields with artistic latitude:
@@ -222,6 +222,12 @@ await elevenlabs.textToSpeech({
 
 High-energy delivery. Voice settings adjusted: stability 0.45 (more expressive), style 0.70.  
 Script: `CampaignAestheticBrief.audio.hypeClipScript`
+
+### Merch Design Images
+**Tool:** Nano-Banana  
+**Purpose:** Print-ready campaign merch art derived from the approved merch prompts in the brief
+
+All merch design image generation now flows through the same media-pipeline image provider as hero and concept images. This keeps the visual language more coherent across hero art, moodboards, and merchandise.
 
 ### Campaign Theme Music (30s loop)
 **Tool:** Shared Default Library or Replicate MusicGen  

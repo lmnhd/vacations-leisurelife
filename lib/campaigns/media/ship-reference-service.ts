@@ -4,6 +4,7 @@ import { searchGoogleImages } from '@/lib/services/media/google-images';
 import { saveAssetRecord } from './media-store';
 import { storeAsset } from './storage-client';
 import { generateReferenceGroundedHeroImages } from './generators/stability-generator';
+import { getMediaImageGeneratorService } from './media-pipeline-config';
 
 function normalizeText(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
@@ -238,12 +239,12 @@ export async function importHeroAssetsFromReferences(
         const candidate = selectedCandidates[index];
         const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, 1);
         const generatedHero = generatedHeroImages[0];
-        const url = await storeAsset(slug, generatedHero.assetId, generatedHero.fileName, generatedHero.buffer, 'image/webp');
+        const url = await storeAsset(slug, generatedHero.assetId, generatedHero.fileName, generatedHero.buffer, 'image/png');
         const record: AssetRecord = {
             assetId: generatedHero.assetId,
             assetType: 'hero_image',
             url,
-            generator: 'stability_ai',
+            generator: getMediaImageGeneratorService(),
             promptUsed: generatedHero.prompt,
             sourcePageUrl: candidate.contextUrl,
             sourceThumbnailUrl: candidate.thumbnailUrl,
@@ -254,7 +255,7 @@ export async function importHeroAssetsFromReferences(
                 height: candidate.height,
             },
             fileSizeBytes: generatedHero.buffer.length,
-            mimeType: 'image/webp',
+            mimeType: 'image/png',
             tags: ['ship-reference', candidate.category, 'hero', 'embellished'],
             createdAt: new Date().toISOString(),
             reviewStatus: 'needs_review',
