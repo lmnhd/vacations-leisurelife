@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { AssetRecord, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import {
     Loader2, Image, Music, Type, Shirt, Crop, ChevronDown,
     ChevronRight, CheckCircle2, XCircle, AlertTriangle, KeyRound, Play
@@ -94,6 +95,148 @@ function createEmptyPersistedState(): PersistedTestPageState {
         heygenThresholdResult: makeResult(),
         runwayCountdownResult: makeResult(),
         runwayBrollResult: makeResult(),
+    };
+}
+
+function createSuccessResult(data: Record<string, unknown>, cdnUrl: string): GeneratorResult {
+    return {
+        state: "success",
+        data,
+        error: "",
+        cdnUrl,
+    };
+}
+
+function getLatestAsset(records: AssetRecord[]): AssetRecord | null {
+    return records.length > 0 ? records[records.length - 1] : null;
+}
+
+function assetRecordToResult(record: AssetRecord | null): GeneratorResult {
+    if (!record) {
+        return makeResult();
+    }
+
+    return createSuccessResult({
+        assetId: record.assetId,
+        assetType: record.assetType,
+        generator: record.generator,
+        promptUsed: record.promptUsed,
+        durationSeconds: record.durationSeconds,
+        fileSizeBytes: record.fileSizeBytes,
+        mimeType: record.mimeType,
+        tags: record.tags,
+        createdAt: record.createdAt,
+        reviewStatus: record.reviewStatus,
+        dimensions: record.dimensions,
+    }, record.url);
+}
+
+function copyToResult(copy: CampaignMediaManifest["copy"]): GeneratorResult {
+    return copy ? createSuccessResult(copy as unknown as Record<string, unknown>, "") : makeResult();
+}
+
+function shipReferencesToResult(records: AssetRecord[]): GeneratorResult {
+    if (records.length === 0) {
+        return makeResult();
+    }
+
+    return createSuccessResult({
+        candidates: records.map((record) => ({
+            title: record.tags.join(" • ") || record.assetId,
+            imageUrl: record.url,
+            thumbnailUrl: record.sourceThumbnailUrl || record.url,
+            contextUrl: record.sourcePageUrl || record.url,
+            width: record.dimensions?.width ?? 0,
+            height: record.dimensions?.height ?? 0,
+            category: record.tags[0] ?? "reference",
+            query: record.sourceQuery ?? "",
+            selectionScore: record.selectionScore ?? 0,
+        })),
+    }, "");
+}
+
+function cropsToResult(platformCrops: CampaignMediaManifest["images"]["platformCrops"]): GeneratorResult {
+    const crops = Object.entries(platformCrops).flatMap(([format, records]) => {
+        const latestRecord = getLatestAsset(records);
+        if (!latestRecord) {
+            return [];
+        }
+
+        return [{
+            format,
+            width: latestRecord.dimensions?.width ?? 0,
+            height: latestRecord.dimensions?.height ?? 0,
+            cdnUrl: latestRecord.url,
+            fileSizeBytes: latestRecord.fileSizeBytes,
+        }];
+    });
+
+    return crops.length > 0 ? createSuccessResult({ crops }, "") : makeResult();
+}
+
+function manifestToPersistedState(manifest: CampaignMediaManifest): PersistedTestPageState {
+    const latestHero = getLatestAsset(manifest.images.hero);
+
+    return {
+        heroImageUrl: latestHero?.url ?? "",
+        themeMusicSource: 'default',
+        shipReferenceResult: shipReferencesToResult(manifest.images.shipReferences),
+        heroResult: assetRecordToResult(latestHero),
+        conceptResult: assetRecordToResult(getLatestAsset(manifest.images.aestheticConcepts)),
+        cropResult: cropsToResult(manifest.images.platformCrops),
+        copyResult: copyToResult(manifest.copy),
+        narrationResult: assetRecordToResult(manifest.audio.ambientNarration),
+        hypeResult: assetRecordToResult(manifest.audio.hypeClip),
+        replicateResult: assetRecordToResult(manifest.audio.themeMusic),
+        merch0Result: assetRecordToResult(getLatestAsset(manifest.merch.designs)),
+        tiktokVoiceoverResult: assetRecordToResult(manifest.videos.tiktokSeed),
+        heygenExplainerResult: assetRecordToResult(manifest.videos.heroExplainer),
+        heygenThresholdResult: assetRecordToResult(manifest.videos.thresholdAnnouncement),
+        runwayCountdownResult: assetRecordToResult(getLatestAsset(manifest.videos.countdown)),
+        runwayBrollResult: assetRecordToResult(getLatestAsset(manifest.videos.broll)),
+    };
+}
+
+function hasPersistedResults(state: PersistedTestPageState): boolean {
+    return [
+        state.shipReferenceResult,
+        state.heroResult,
+        state.conceptResult,
+        state.cropResult,
+        state.copyResult,
+        state.narrationResult,
+        state.hypeResult,
+        state.replicateResult,
+        state.merch0Result,
+        state.tiktokVoiceoverResult,
+        state.heygenExplainerResult,
+        state.heygenThresholdResult,
+        state.runwayCountdownResult,
+        state.runwayBrollResult,
+    ].some((result) => result.state !== "idle");
+}
+
+function normalizePersistedState(rawState: string): PersistedTestPageState {
+    const parsedState = JSON.parse(rawState) as Record<string, unknown>;
+    const emptyState = createEmptyPersistedState();
+
+    return {
+        heroImageUrl: typeof parsedState.heroImageUrl === "string" ? parsedState.heroImageUrl : emptyState.heroImageUrl,
+        themeMusicSource: parsedState.themeMusicSource === 'replicate' ? 'replicate' : 'default',
+        shipReferenceResult: (parsedState.shipReferenceResult as GeneratorResult | undefined) ?? emptyState.shipReferenceResult,
+        heroResult: (parsedState.heroResult as GeneratorResult | undefined) ?? emptyState.heroResult,
+        conceptResult: (parsedState.conceptResult as GeneratorResult | undefined) ?? emptyState.conceptResult,
+        cropResult: (parsedState.cropResult as GeneratorResult | undefined) ?? emptyState.cropResult,
+        copyResult: (parsedState.copyResult as GeneratorResult | undefined) ?? emptyState.copyResult,
+        narrationResult: (parsedState.narrationResult as GeneratorResult | undefined) ?? emptyState.narrationResult,
+        hypeResult: (parsedState.hypeResult as GeneratorResult | undefined) ?? emptyState.hypeResult,
+        replicateResult: (parsedState.replicateResult as GeneratorResult | undefined) ?? emptyState.replicateResult,
+        merch0Result: (parsedState.merch0Result as GeneratorResult | undefined) ?? emptyState.merch0Result,
+        tiktokVoiceoverResult: (parsedState.tiktokVoiceoverResult as GeneratorResult | undefined) ?? (parsedState.heygenTiktokResult as GeneratorResult | undefined) ?? emptyState.tiktokVoiceoverResult,
+        heygenExplainerResult: (parsedState.heygenExplainerResult as GeneratorResult | undefined) ?? emptyState.heygenExplainerResult,
+        heygenThresholdResult: (parsedState.heygenThresholdResult as GeneratorResult | undefined) ?? emptyState.heygenThresholdResult,
+        runwayCountdownResult: (parsedState.runwayCountdownResult as GeneratorResult | undefined) ?? emptyState.runwayCountdownResult,
+        runwayBrollResult: (parsedState.runwayBrollResult as GeneratorResult | undefined) ?? emptyState.runwayBrollResult,
     };
 }
 
@@ -258,6 +401,26 @@ export default function MediaGenerationTestPage() {
 
     // CDN URL of last uploaded hero image – passed to Sharp crops + video generators
     const lastHeroCdnUrl = useRef<string>("");
+
+    function applyPersistedState(nextState: PersistedTestPageState) {
+        setThemeMusicSource(nextState.themeMusicSource);
+        setHeroImageUrl(nextState.heroImageUrl);
+        setShipReferenceResult(nextState.shipReferenceResult);
+        setHeroResult(nextState.heroResult);
+        setConceptResult(nextState.conceptResult);
+        setCropResult(nextState.cropResult);
+        setCopyResult(nextState.copyResult);
+        setNarrationResult(nextState.narrationResult);
+        setHypeResult(nextState.hypeResult);
+        setReplicateResult(nextState.replicateResult);
+        setMerch0Result(nextState.merch0Result);
+        setTiktokVoiceoverResult(nextState.tiktokVoiceoverResult);
+        setHeygenExplainerResult(nextState.heygenExplainerResult);
+        setHeygenThresholdResult(nextState.heygenThresholdResult);
+        setRunwayCountdownResult(nextState.runwayCountdownResult);
+        setRunwayBrollResult(nextState.runwayBrollResult);
+        lastHeroCdnUrl.current = nextState.heroResult.cdnUrl || nextState.heroImageUrl;
+    }
     // User-editable heroImageUrl for video generators (can paste any CDN URL)
     const [heroImageUrl, setHeroImageUrl] = useState("")
 
@@ -269,6 +432,9 @@ export default function MediaGenerationTestPage() {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
+
+        async function hydrateState(): Promise<void> {
         const trimmedSlug = slug.trim();
         if (!trimmedSlug) {
             return;
@@ -277,49 +443,45 @@ export default function MediaGenerationTestPage() {
         localStorage.setItem(TEST_PAGE_SLUG_KEY, trimmedSlug);
         const savedState = localStorage.getItem(getTestPageStateKey(trimmedSlug));
         if (!savedState) {
-            const emptyState = createEmptyPersistedState();
-            setThemeMusicSource(emptyState.themeMusicSource);
-            setHeroImageUrl(emptyState.heroImageUrl);
-            setShipReferenceResult(emptyState.shipReferenceResult);
-            setHeroResult(emptyState.heroResult);
-            setConceptResult(emptyState.conceptResult);
-            setCropResult(emptyState.cropResult);
-            setCopyResult(emptyState.copyResult);
-            setNarrationResult(emptyState.narrationResult);
-            setHypeResult(emptyState.hypeResult);
-            setReplicateResult(emptyState.replicateResult);
-            setMerch0Result(emptyState.merch0Result);
-            setTiktokVoiceoverResult(emptyState.tiktokVoiceoverResult);
-            setHeygenExplainerResult(emptyState.heygenExplainerResult);
-            setHeygenThresholdResult(emptyState.heygenThresholdResult);
-            setRunwayCountdownResult(emptyState.runwayCountdownResult);
-            setRunwayBrollResult(emptyState.runwayBrollResult);
-            lastHeroCdnUrl.current = "";
-            return;
+            applyPersistedState(createEmptyPersistedState());
+        } else {
+            try {
+                const parsedState = normalizePersistedState(savedState);
+                applyPersistedState(parsedState);
+
+                if (hasPersistedResults(parsedState)) {
+                    return;
+                }
+            } catch {
+                localStorage.removeItem(getTestPageStateKey(trimmedSlug));
+                applyPersistedState(createEmptyPersistedState());
+            }
         }
 
         try {
-            const parsedState = JSON.parse(savedState) as PersistedTestPageState;
-            setThemeMusicSource(parsedState.themeMusicSource);
-            setHeroImageUrl(parsedState.heroImageUrl);
-            setShipReferenceResult(parsedState.shipReferenceResult);
-            setHeroResult(parsedState.heroResult);
-            setConceptResult(parsedState.conceptResult);
-            setCropResult(parsedState.cropResult);
-            setCopyResult(parsedState.copyResult);
-            setNarrationResult(parsedState.narrationResult);
-            setHypeResult(parsedState.hypeResult);
-            setReplicateResult(parsedState.replicateResult);
-            setMerch0Result(parsedState.merch0Result);
-            setTiktokVoiceoverResult(parsedState.tiktokVoiceoverResult);
-            setHeygenExplainerResult(parsedState.heygenExplainerResult);
-            setHeygenThresholdResult(parsedState.heygenThresholdResult);
-            setRunwayCountdownResult(parsedState.runwayCountdownResult);
-            setRunwayBrollResult(parsedState.runwayBrollResult);
-            lastHeroCdnUrl.current = parsedState.heroResult.cdnUrl || parsedState.heroImageUrl;
+            const response = await fetch(`/api/groups/campaign/${trimmedSlug}/media/manifest`);
+            if (!response.ok) {
+                return;
+            }
+
+            const manifest = await response.json() as CampaignMediaManifest;
+            if (cancelled) {
+                return;
+            }
+
+            const manifestState = manifestToPersistedState(manifest);
+            applyPersistedState(manifestState);
         } catch {
-            localStorage.removeItem(getTestPageStateKey(trimmedSlug));
+            return;
         }
+
+        }
+
+        void hydrateState();
+
+        return () => {
+            cancelled = true;
+        };
     }, [slug]);
 
     useEffect(() => {

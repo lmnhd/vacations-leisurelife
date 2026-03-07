@@ -1,6 +1,5 @@
 import { spawn } from 'child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
-import ffmpegPath from 'ffmpeg-static';
+import { access, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -8,17 +7,28 @@ function toUint8Array(buffer: Buffer): Uint8Array {
     return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 }
 
-function getFfmpegPath(): string {
-    if (!ffmpegPath) {
-        throw new Error('ffmpeg-static binary not available');
+async function getFfmpegPath(): Promise<string> {
+    const candidates = [
+        join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
+        join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    ];
+
+    for (const candidate of candidates) {
+        try {
+            await access(candidate);
+            return candidate;
+        } catch {
+            continue;
+        }
     }
 
-    return ffmpegPath;
+    throw new Error(`ffmpeg binary not found. Checked: ${candidates.join(', ')}`);
 }
 
-function runFfmpeg(argumentsList: readonly string[]): Promise<void> {
+async function runFfmpeg(argumentsList: readonly string[]): Promise<void> {
+    const resolvedFfmpegPath = await getFfmpegPath();
     return new Promise((resolve, reject) => {
-        const ffmpegProcess = spawn(getFfmpegPath(), argumentsList, { stdio: ['ignore', 'pipe', 'pipe'] });
+        const ffmpegProcess = spawn(resolvedFfmpegPath, argumentsList, { stdio: ['ignore', 'pipe', 'pipe'] });
         let stderrOutput = '';
 
         ffmpegProcess.stderr.on('data', (chunk: Buffer) => {
