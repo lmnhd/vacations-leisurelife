@@ -106,7 +106,9 @@ export async function generateStoryboardVideo(
     brief: CampaignAestheticBrief,
     storyboard: Storyboard,
     sceneImageMap: ReadonlyMap<string, string>,
-    fallbackHeroImageUrl: string
+    fallbackHeroImageUrl: string,
+    revisionNote?: string,
+    motionPromptOverride?: string
 ): Promise<StoryboardVideoResult> {
     const runId = createRunId();
 
@@ -127,7 +129,13 @@ export async function generateStoryboardVideo(
 
     for (const shot of storyboard.shotSequence) {
         const scene = sceneLibrary.find(s => s.sceneId === shot.sceneId);
-        shotPrompts.push(buildShotMotionPrompt(shot, brief, scene));
+        const basePrompt = buildShotMotionPrompt(shot, brief, scene);
+        const finalPrompt = motionPromptOverride
+            ? `${basePrompt}. OVERRIDE: ${motionPromptOverride}`
+            : revisionNote
+            ? `${basePrompt}. REVISION: ${revisionNote}`
+            : basePrompt;
+        shotPrompts.push(finalPrompt);
         shotImageUrls.push(sceneImageMap.get(shot.sceneId) ?? fallbackHeroImageUrl);
     }
 

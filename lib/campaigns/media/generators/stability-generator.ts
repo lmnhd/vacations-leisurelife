@@ -318,3 +318,15 @@ export async function generateSceneImages(
 
     return results;
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Prompt-driven single image generation — used by revision regeneration
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function generateImageFromPrompt(prompt: string): Promise<Buffer> {
+    return generateNanoBananaImage(
+        prompt,
+        NANO_BANANA_CONFIG.heroAspectRatio,
+        NANO_BANANA_CONFIG.heroImageSize
+    );
+}

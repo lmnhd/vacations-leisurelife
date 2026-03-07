@@ -9,7 +9,9 @@ import type {
     Storyboard,
     ShotSpec,
     AssetRecord,
+    AssetType,
 } from "@/lib/campaigns/schema";
+import { ReviseRegenerateModal } from "./ReviseRegenerateModal";
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
@@ -72,6 +74,7 @@ export default function ProductionBibleTestPage() {
     const [creditCheck, setCreditCheck] = useState<CreditCheckData | null>(null);
     const [creditCheckLoading, setCreditCheckLoading] = useState(false);
     const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+    const [revisionModal, setRevisionModal] = useState<{ assetId: string; assetType: AssetType; promptUsed: string } | null>(null);
 
     const isBusy = pageState !== "idle";
     const bible: ProductionBible | undefined = brief?.productionBible ?? undefined;
@@ -115,6 +118,12 @@ export default function ProductionBibleTestPage() {
             setPageState("idle");
         }
     }, []);
+
+    const handleRevisionComplete = useCallback(async () => {
+        setRevisionModal(null);
+        setGenerateLog(prev => [...prev, 'Revision regeneration complete — manifest refreshed.']);
+        await loadData(slug.trim());
+    }, [slug, loadData]);
 
     useEffect(() => {
         if (slug.trim()) loadData(slug.trim());
@@ -700,14 +709,24 @@ export default function ProductionBibleTestPage() {
                                     <div className="p-2 text-xs space-y-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="font-medium text-zinc-300 truncate">{rec.assetId}</div>
-                                            <button
-                                                className="bg-red-900/40 hover:bg-red-800/50 border border-red-700 text-red-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40 shrink-0"
-                                                onClick={() => void handleDeleteSceneImageArtifact(rec.assetId)}
-                                                disabled={deletingAssetId === rec.assetId || isBusy}
-                                            >
-                                                {deletingAssetId === rec.assetId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                                                Delete
-                                            </button>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                    className="bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
+                                                    onClick={() => setRevisionModal({ assetId: rec.assetId, assetType: 'scene_image', promptUsed: rec.promptUsed })}
+                                                    disabled={isBusy}
+                                                    title="Revise prompt and regenerate"
+                                                >
+                                                    <Wand2 className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    className="bg-red-900/40 hover:bg-red-800/50 border border-red-700 text-red-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
+                                                    onClick={() => void handleDeleteSceneImageArtifact(rec.assetId)}
+                                                    disabled={deletingAssetId === rec.assetId || isBusy}
+                                                    title="Delete"
+                                                >
+                                                    {deletingAssetId === rec.assetId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="flex flex-wrap gap-1">
                                             {rec.tags.map((tag: string) => (
@@ -755,12 +774,20 @@ export default function ProductionBibleTestPage() {
                                                         <span className="text-xs text-zinc-500">{rec.durationSeconds}s</span>
                                                     )}
                                                     <button
+                                                        className="bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
+                                                        onClick={() => setRevisionModal({ assetId: rec.assetId, assetType: rec.assetType, promptUsed: rec.promptUsed })}
+                                                        disabled={isBusy}
+                                                        title="Revise prompt and regenerate"
+                                                    >
+                                                        <Wand2 className="w-3 h-3" />
+                                                    </button>
+                                                    <button
                                                         className="bg-red-900/40 hover:bg-red-800/50 border border-red-700 text-red-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
                                                         onClick={() => void handleDeleteVideoArtifact(rec.assetId)}
                                                         disabled={deletingAssetId === rec.assetId || isBusy}
+                                                        title="Delete"
                                                     >
                                                         {deletingAssetId === rec.assetId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                                                        Delete
                                                     </button>
                                                 </div>
                                             </div>
@@ -792,6 +819,18 @@ export default function ProductionBibleTestPage() {
                     </div>
                 )}
             </div>
+
+            {/* Revise & Regenerate modal */}
+            {revisionModal && (
+                <ReviseRegenerateModal
+                    slug={slug}
+                    assetId={revisionModal.assetId}
+                    assetType={revisionModal.assetType}
+                    currentPrompt={revisionModal.promptUsed}
+                    onComplete={() => void handleRevisionComplete()}
+                    onClose={() => setRevisionModal(null)}
+                />
+            )}
         </div>
     );
 }
