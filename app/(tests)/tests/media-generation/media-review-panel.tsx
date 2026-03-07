@@ -3,6 +3,10 @@
 import { useMemo, useState } from 'react';
 import type { AssetRecord, CampaignMediaManifest, ReviewStatus } from '@/lib/campaigns/schema';
 
+function buildEntryKey(section: string, title: string, asset: AssetRecord): string {
+    return `${section}::${title}::${asset.assetId}`;
+}
+
 function formatReviewStatus(reviewStatus: ReviewStatus): string {
     return reviewStatus.replace(/_/g, ' ');
 }
@@ -19,59 +23,89 @@ function formatFileSize(fileSizeBytes: number): string {
     return `${(fileSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ section: string; title: string; asset: AssetRecord; }> {
-    const reviewEntries: Array<{ section: string; title: string; asset: AssetRecord; }> = [];
+function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ entryKey: string; section: string; title: string; asset: AssetRecord; }> {
+    const reviewEntries: Array<{ entryKey: string; section: string; title: string; asset: AssetRecord; }> = [];
 
     manifest.images.shipReferences.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Images', title: `Reference ${index + 1}`, asset });
+        const section = 'Images';
+        const title = `Reference ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     manifest.images.hero.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Images', title: `Hero ${index + 1}`, asset });
+        const section = 'Images';
+        const title = `Hero ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     (manifest.images.sceneImages ?? []).forEach((asset, index) => {
         const sceneId = asset.tags.find(t => t !== 'scene') ?? `scene_${index + 1}`;
-        reviewEntries.push({ section: 'Scene Images', title: sceneId, asset });
+        const section = 'Scene Images';
+        const title = sceneId;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     manifest.images.aestheticConcepts.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Images', title: `Concept ${index + 1}`, asset });
+        const section = 'Images';
+        const title = `Concept ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     Object.entries(manifest.images.platformCrops).forEach(([formatKey, assets]) => {
         assets.forEach((asset, index) => {
-            reviewEntries.push({ section: 'Images', title: `${formatKey} ${index + 1}`, asset });
+            const section = 'Images';
+            const title = `${formatKey} ${index + 1}`;
+            reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
         });
     });
 
     if (manifest.videos.tiktokSeed) {
-        reviewEntries.push({ section: 'Video', title: 'TikTok Seed', asset: manifest.videos.tiktokSeed });
+        const section = 'Video';
+        const title = 'TikTok Seed';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.tiktokSeed), section, title, asset: manifest.videos.tiktokSeed });
     }
     if (manifest.videos.heroExplainer) {
-        reviewEntries.push({ section: 'Video', title: 'Hero Explainer', asset: manifest.videos.heroExplainer });
+        const section = 'Video';
+        const title = 'Hero Explainer';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.heroExplainer), section, title, asset: manifest.videos.heroExplainer });
     }
     if (manifest.videos.thresholdAnnouncement) {
-        reviewEntries.push({ section: 'Video', title: 'Threshold Announcement', asset: manifest.videos.thresholdAnnouncement });
+        const section = 'Video';
+        const title = 'Threshold Announcement';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.thresholdAnnouncement), section, title, asset: manifest.videos.thresholdAnnouncement });
     }
     manifest.videos.countdown.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Video', title: `Countdown ${index + 1}`, asset });
+        const section = 'Video';
+        const title = `Countdown ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     manifest.videos.broll.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Video', title: `B-roll ${index + 1}`, asset });
+        const section = 'Video';
+        const title = `B-roll ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
 
     if (manifest.audio.ambientNarration) {
-        reviewEntries.push({ section: 'Audio', title: 'Ambient Narration', asset: manifest.audio.ambientNarration });
+        const section = 'Audio';
+        const title = 'Ambient Narration';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.ambientNarration), section, title, asset: manifest.audio.ambientNarration });
     }
     if (manifest.audio.hypeClip) {
-        reviewEntries.push({ section: 'Audio', title: 'Hype Clip', asset: manifest.audio.hypeClip });
+        const section = 'Audio';
+        const title = 'Hype Clip';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.hypeClip), section, title, asset: manifest.audio.hypeClip });
     }
     if (manifest.audio.themeMusic) {
-        reviewEntries.push({ section: 'Audio', title: 'Theme Music', asset: manifest.audio.themeMusic });
+        const section = 'Audio';
+        const title = 'Theme Music';
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.themeMusic), section, title, asset: manifest.audio.themeMusic });
     }
 
     manifest.merch.designs.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Merch', title: `Design ${index + 1}`, asset });
+        const section = 'Merch';
+        const title = `Design ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
     manifest.merch.mockups.forEach((asset, index) => {
-        reviewEntries.push({ section: 'Merch', title: `Mockup ${index + 1}`, asset });
+        const section = 'Merch';
+        const title = `Mockup ${index + 1}`;
+        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
     });
 
     return reviewEntries;
@@ -152,12 +186,12 @@ export function MediaReviewPanel(
             </div>
             <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
                 {reviewEntries.map((entry) => {
-                    const isSaving = savingState[entry.asset.assetId] === true;
-                    const errorMessage = errorState[entry.asset.assetId];
-                    const currentNotes = noteValues[entry.asset.assetId] ?? entry.asset.reviewNotes ?? '';
+                    const isSaving = savingState[entry.entryKey] === true;
+                    const errorMessage = errorState[entry.entryKey];
+                    const currentNotes = noteValues[entry.entryKey] ?? entry.asset.reviewNotes ?? '';
 
                     return (
-                        <div key={entry.asset.assetId} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 space-y-3">
+                        <div key={entry.entryKey} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 space-y-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] uppercase tracking-widest text-slate-500">{entry.section}</div>
@@ -183,7 +217,7 @@ export function MediaReviewPanel(
 
                             <textarea
                                 value={currentNotes}
-                                onChange={(event) => setNoteValues((currentState) => ({ ...currentState, [entry.asset.assetId]: event.target.value }))}
+                                onChange={(event) => setNoteValues((currentState) => ({ ...currentState, [entry.entryKey]: event.target.value }))}
                                 placeholder="Optional review notes"
                                 className="min-h-20 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                             />
