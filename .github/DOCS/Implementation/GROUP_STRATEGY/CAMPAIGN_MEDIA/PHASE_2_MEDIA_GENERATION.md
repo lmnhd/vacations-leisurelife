@@ -27,6 +27,7 @@ In practice, this means copy, audio, image, video, merch, and review actions sho
 |------------|-------|------|-------------|
 | Ship reference images | 6–12 | SerpAPI Google Images discovery | Source-of-truth for real ship visuals |
 | Hero images (landing page) | 3–5 | Nano-Banana image edit over SerpAPI references | Landing page hero section |
+| Scene images (Production Bible) | 8–12 | Nano-Banana + ship references | Source images for storyboard video shots |
 | Aesthetic concept art | 4–5 | Nano-Banana | Moodboard, email headers |
 | Platform-sized image crops | Varies | Sharp (server-side resize) | Each social format |
 | TikTok / Reels seed video | 1 | RunwayML multi-shot image-to-video + ElevenLabs + local ffmpeg | TikTok organic, Instagram Reels |
@@ -65,7 +66,7 @@ interface MediaGenerationJob {
 }
 
 type AssetType =
-  | 'ship_reference_image' | 'hero_image' | 'aesthetic_concept' | 'platform_crop'
+  | 'ship_reference_image' | 'hero_image' | 'aesthetic_concept' | 'scene_image' | 'platform_crop'
   | 'tiktok_seed_video' | 'hero_explainer_video' | 'threshold_video'
   | 'countdown_video' | 'broll_clip'
   | 'ambient_narration' | 'hype_clip' | 'theme_music'
@@ -133,6 +134,32 @@ All generated images are automatically processed into the required platform crop
 
 ## Video Generation
 
+### Production Bible Path (Primary)
+
+When the `CampaignAestheticBrief` includes a `productionBible`, all video deliverables use **storyboard-driven assembly**:
+
+1. Each storyboard's `shotSequence` maps shots → scenes from the scene library
+2. Each shot gets its **OWN source image** (from the scene image generated for that scene), not one shared hero
+3. Per-shot RunwayML motion prompts are built from `ShotSpec.cameraMovement`, `subjectMotion`, `environmentMotion`
+4. ElevenLabs renders narration from the storyboard's `narrationScript`
+5. `ffmpeg-static` composes clips with narration + optional background music via `composeProductionVideo()`
+
+**Key improvements over legacy:**
+- Multiple distinct source images per video (not one hero repeated)
+- Camera movements vary per shot (dolly, crane, orbit, tracking, etc.)
+- Emotional arc enforced (hook → build → peak → resolve)
+- Film-standard transitions between shots
+- Background music layering with narration ducking
+
+**Files:**
+- `lib/campaigns/media/generators/tiktok-seed-generator.ts` → `generateStoryboardVideo()`
+- `lib/campaigns/media/generators/runway-generator.ts` → `generatePromptedClipFromScenes()`
+- `lib/campaigns/media/video-composer.ts` → `composeProductionVideo()`
+
+### Legacy Path (Fallback)
+
+When no Production Bible exists (briefs generated before this architecture), the legacy flow runs:
+
 ### TikTok Seed Video (30–45s)
 **Tool:** RunwayML image-to-video + ElevenLabs narration + local ffmpeg composition  
 **Purpose:** §5.5A organic seeding — the zero-budget proof-of-concept post
@@ -143,7 +170,7 @@ All generated images are automatically processed into the required platform crop
 3. Local `ffmpeg-static` concatenates the generated clips into one vertical sequence and muxes the narration track over the final output MP4
 4. The generated TikTok asset is stored with a unique asset ID and filename per run to avoid stale CDN/browser cache collisions on immutable asset URLs
 
-**Current shot-plan strategy:**
+**Legacy shot-plan strategy:**
 ```
 Shot 1: premium social ad opener with immediate forward camera momentum and visible scene energy
 Shot 2: experiential reveal with layered foreground action, crowd movement, luxury details, and ship fidelity
@@ -151,11 +178,10 @@ Shot 3: emotional peak with dramatic reveal, celebration energy, and destination
 Shot 4: polished CTA finish with aspirational momentum and a strong end-frame for overlay/call-to-action treatment
 ```
 
-**Current implementation notes:**
+**Legacy implementation notes:**
 - Voiceover-first flow — no HeyGen dependency for the TikTok seed asset
-- Single approved hero image still acts as the visual source, so the output is stronger than the original single moving still but may still need higher-end model/provider options later
-- Prompting is now explicitly biased away from slideshow pan/parallax behavior and toward environmental motion, subject movement, and cinematic blocking
-- This exact implementation should be revisited during later **Distribution** phases if the campaign needs more premium social output quality or broader model choice evaluation (for example, `fal.ai` provider comparisons)
+- Single approved hero image still acts as the visual source
+- Prompting is biased away from slideshow pan/parallax behavior and toward environmental motion
 
 ### Hero Explainer Video (60s)
 **Tool:** HeyGen  

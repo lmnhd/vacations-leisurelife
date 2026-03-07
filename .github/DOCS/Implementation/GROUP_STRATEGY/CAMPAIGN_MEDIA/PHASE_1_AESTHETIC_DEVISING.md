@@ -266,3 +266,69 @@ The `heroSlogan` and subSlogan fields pass through a quality rubric before the b
 | Distinct per campaign | No slogan reuse across active campaigns |
 
 If a generated slogan fails 2+ criteria, Phase 1 automatically re-runs the messaging section with failure feedback appended to the prompt.
+
+---
+
+## Phase 1B: Production Bible (Pass 3)
+
+After the core aesthetic identity (Pass 1) and platform concepts (Pass 2) are locked, a third LLM pass generates the **Production Bible** — the creative blueprint for all downstream image and video generation.
+
+### What It Produces
+
+```typescript
+interface ProductionBible {
+  sceneLibrary: SceneSpec[];      // 8-12 distinct visual setups
+  storyboards: Storyboard[];      // One per video deliverable
+  globalDirectionNotes: string;   // Overarching visual language
+  avoidDirectives: string[];      // Explicit anti-patterns
+}
+```
+
+### Scene Library
+
+Each `SceneSpec` describes a unique visual setup that will become a **dedicated source image** for video shots:
+
+| Field | Purpose |
+|-------|---------|
+| `sceneId` | Unique identifier (e.g., `scene_pool_sunset`) |
+| `location` | Physical location on ship or at destination |
+| `timeOfDay` | Lighting context (e.g., "Golden hour, 6:30pm") |
+| `lighting` | Specific lighting direction |
+| `cameraAngle` | Lens/angle specification |
+| `subjectAction` | What people are doing in frame |
+| `environmentDetails` | Set dressing and environment |
+| `mood` | Emotional tone of the scene |
+| `imagePrompt` | Complete, self-contained image generation prompt |
+| `referenceCategory` | Which ship reference category to use as seed (`exterior`, `pool_deck`, `dining`, etc.) |
+
+**Key rules enforced by the prompt:**
+- Every scene depicts a DIFFERENT location, angle, or activity
+- Scenes spread across at least 6 different reference categories
+- Each imagePrompt is ready-to-use for Nano-Banana generation
+
+### Storyboards
+
+Each `Storyboard` defines a complete shot sequence for one video deliverable:
+
+| Field | Purpose |
+|-------|---------|
+| `deliverableId` | Maps to video type (`tiktok_seed`, `hero_explainer`, etc.) |
+| `shotSequence` | Ordered array of `ShotSpec` with camera, motion, transitions |
+| `narrationScript` | Full script with timing context |
+| `musicDirection` | Overall music guidance |
+| `editingStyle` | Cut rhythm (e.g., "Fast-cut energy") |
+
+Each `ShotSpec` references a scene from the library and adds cinematic direction:
+- `cameraMovement`: Dolly, crane, orbit, tracking, push-in, etc.
+- `subjectMotion` / `environmentMotion`: What moves in frame
+- `transitionIn` / `transitionOut`: Film-standard transitions
+- `emotionalBeat`: Position in the narrative arc (hook → build → peak → resolve)
+- `narrationSegment`: Exact spoken words for this shot
+
+### Files
+
+| File | Role |
+|------|------|
+| `lib/campaigns/schema.ts` | `SceneSpecSchema`, `ShotSpecSchema`, `StoryboardSchema`, `ProductionBibleSchema` |
+| `lib/campaigns/aesthetic-engine.ts` | `generateProductionBible()` — Pass 3 LLM call |
+| `app/(tests)/tests/production-bible/page.tsx` | Test page for previewing and generating from the Production Bible |
