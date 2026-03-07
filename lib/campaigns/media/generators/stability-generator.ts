@@ -1,4 +1,4 @@
-import { CampaignAestheticBrief, ShipReferenceCandidate } from '../../schema';
+import { CampaignAestheticBrief, ShipReferenceCandidate, SceneSpec } from '../../schema';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -234,6 +234,82 @@ export async function generateAestheticConcepts(
             prompt: prompts[i],
             assetId: `img_concept_${idx}`,
             fileName: `images/concepts/concept_${idx}.png`,
+        });
+    }
+
+    return results;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scene-Driven Image Generation (Production Bible)
+// Each scene in the library gets its own distinct source image.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface GeneratedSceneImage extends GeneratedImage {
+    sceneId: string;
+}
+
+export async function generateSceneImages(
+    scenes: readonly SceneSpec[],
+    shipReferences: readonly ShipReferenceCandidate[],
+    shipName: string
+): Promise<GeneratedSceneImage[]> {
+    const results: GeneratedSceneImage[] = [];
+
+    for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i];
+        const matchedReference = shipReferences.find(
+            (ref) => ref.category === scene.referenceCategory
+        );
+
+        const enrichedPrompt = [
+            scene.imagePrompt,
+            `Scene location: ${scene.location}`,
+            `Time of day: ${scene.timeOfDay}`,
+            `Lighting: ${scene.lighting}`,
+            `Camera angle: ${scene.cameraAngle}`,
+            `Subject action: ${scene.subjectAction}`,
+            `Environment: ${scene.environmentDetails}`,
+            `Mood: ${scene.mood}`,
+            shipName !== 'TBD' ? `Ship: ${shipName}` : '',
+            'Photorealistic, cinematic, 8K, editorial travel photography',
+        ].filter(Boolean).join('. ');
+
+        let buffer: Buffer;
+        if (matchedReference) {
+            const refResponse = await fetch(matchedReference.imageUrl);
+            if (refResponse.ok) {
+                const refBuffer = Buffer.from(await refResponse.arrayBuffer());
+                const refMime = refResponse.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+                buffer = await generateNanoBananaImage(
+                    enrichedPrompt,
+                    NANO_BANANA_CONFIG.heroAspectRatio,
+                    NANO_BANANA_CONFIG.heroImageSize,
+                    refBuffer,
+                    refMime
+                );
+            } else {
+                buffer = await generateNanoBananaImage(
+                    enrichedPrompt,
+                    NANO_BANANA_CONFIG.heroAspectRatio,
+                    NANO_BANANA_CONFIG.heroImageSize
+                );
+            }
+        } else {
+            buffer = await generateNanoBananaImage(
+                enrichedPrompt,
+                NANO_BANANA_CONFIG.heroAspectRatio,
+                NANO_BANANA_CONFIG.heroImageSize
+            );
+        }
+
+        const idx = String(i + 1).padStart(3, '0');
+        results.push({
+            buffer,
+            prompt: enrichedPrompt,
+            assetId: `img_scene_${scene.sceneId}_${idx}`,
+            fileName: `images/scenes/${scene.sceneId}_${idx}.png`,
+            sceneId: scene.sceneId,
         });
     }
 

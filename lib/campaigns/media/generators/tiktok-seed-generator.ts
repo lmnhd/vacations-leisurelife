@@ -1,13 +1,17 @@
-import { CampaignAestheticBrief } from '../../schema';
+import { CampaignAestheticBrief, Storyboard, ShotSpec } from '../../schema';
 import { generateAmbientNarration } from './elevenlabs-generator';
-import { generatePromptedClips } from './runway-generator';
+import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo } from './runway-generator';
 import { composeNarratedVerticalVideoSequence } from '../video-composer';
 
-function createTikTokSeedRunId(): string {
+function createRunId(): string {
     return Date.now().toString(36);
 }
 
-function buildTikTokShotPlan(brief: CampaignAestheticBrief): string[] {
+// ────────────────────────────────────────────────────────────────────────────
+// Legacy shot plan builder — used as fallback when no Production Bible exists
+// ────────────────────────────────────────────────────────────────────────────
+
+function buildLegacyShotPlan(brief: CampaignAestheticBrief): string[] {
     const hook = brief.socialConcepts.tiktokOrganic.hook.trim();
     const callToAction = brief.socialConcepts.tiktokOrganic.callToAction.trim();
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette } = brief.visual;
@@ -51,6 +55,100 @@ function buildTikTokShotPlan(brief: CampaignAestheticBrief): string[] {
     ];
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Storyboard-driven shot prompt builder
+// Converts ShotSpec into a rich RunwayML motion prompt
+// ────────────────────────────────────────────────────────────────────────────
+
+function buildShotMotionPrompt(shot: ShotSpec, brief: CampaignAestheticBrief): string {
+    const { colorPalette, lightingStyle } = brief.visual;
+    return [
+        shot.cameraMovement,
+        `Subject motion: ${shot.subjectMotion}`,
+        `Environment motion: ${shot.environmentMotion}`,
+        `Emotional beat: ${shot.emotionalBeat}`,
+        `Lighting: ${lightingStyle}`,
+        `Color emphasis: ${colorPalette.primary}, ${colorPalette.accent}`,
+        `Avoid slideshow parallax, avoid static framing, avoid warped anatomy`,
+    ].join('. ');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Storyboard-driven video generation
+// Each shot uses its OWN scene image from the sceneImageMap
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface StoryboardVideoResult {
+    buffer: Buffer;
+    script: string;
+    durationSeconds: number;
+    assetId: string;
+    fileName: string;
+    motionPrompt: string;
+    deliverableId: string;
+}
+
+export async function generateStoryboardVideo(
+    brief: CampaignAestheticBrief,
+    storyboard: Storyboard,
+    sceneImageMap: ReadonlyMap<string, string>,
+    fallbackHeroImageUrl: string
+): Promise<StoryboardVideoResult> {
+    const runId = createRunId();
+
+    // Build narration brief from the storyboard's script
+    const compositeBrief: CampaignAestheticBrief = {
+        ...brief,
+        audio: {
+            ...brief.audio,
+            ambientNarrationScript: storyboard.narrationScript,
+        },
+    };
+
+    // Build per-shot motion prompts and resolve source images
+    const shotPrompts: string[] = [];
+    const shotImageUrls: string[] = [];
+
+    for (const shot of storyboard.shotSequence) {
+        shotPrompts.push(buildShotMotionPrompt(shot, brief));
+        shotImageUrls.push(sceneImageMap.get(shot.sceneId) ?? fallbackHeroImageUrl);
+    }
+
+    // Generate narration + visual clips in parallel
+    const [narrationAudio, visualClips] = await Promise.all([
+        generateAmbientNarration(compositeBrief),
+        generatePromptedClipFromScenes(
+            shotImageUrls,
+            shotPrompts,
+            `video/${storyboard.deliverableId}_shot`,
+            `vid_${storyboard.deliverableId}_shot`
+        ),
+    ]);
+
+    if (visualClips.length === 0) {
+        throw new Error(`RunwayML did not return any clips for storyboard: ${storyboard.deliverableId}`);
+    }
+
+    const finalVideoBuffer = await composeNarratedVerticalVideoSequence(
+        visualClips.map((clip) => clip.buffer),
+        narrationAudio.buffer
+    );
+
+    return {
+        buffer: finalVideoBuffer,
+        script: narrationAudio.script,
+        durationSeconds: storyboard.totalDurationSeconds,
+        assetId: `vid_${storyboard.deliverableId}_${runId}`,
+        fileName: `video/${storyboard.deliverableId}_${runId}.mp4`,
+        motionPrompt: shotPrompts.join('\n\n---\n\n'),
+        deliverableId: storyboard.deliverableId,
+    };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Legacy TikTok seed (fallback when no Production Bible)
+// ────────────────────────────────────────────────────────────────────────────
+
 export async function generateTikTokSeed(
     brief: CampaignAestheticBrief,
     heroImageUrl: string
@@ -65,8 +163,8 @@ export async function generateTikTokSeed(
             ambientNarrationScript: [hook, bodyScript, callToAction].filter(Boolean).join('\n\n'),
         },
     };
-    const shotPlan = buildTikTokShotPlan(brief);
-    const runId = createTikTokSeedRunId();
+    const shotPlan = buildLegacyShotPlan(brief);
+    const runId = createRunId();
 
     const [narrationAudio, visualClips] = await Promise.all([
         generateAmbientNarration(compositeBrief),

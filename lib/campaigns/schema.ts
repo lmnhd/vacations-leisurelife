@@ -80,6 +80,62 @@ export const DiscordConceptSetSchema = z.object({
     welcomeMessageDirection: z.string(),
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 1B: Production Bible — Scene Library + Storyboard Architecture
+// ────────────────────────────────────────────────────────────────────────────
+
+export const SceneSpecSchema = z.object({
+    sceneId: z.string(),
+    location: z.string(),
+    timeOfDay: z.string(),
+    lighting: z.string(),
+    cameraAngle: z.string(),
+    subjectAction: z.string(),
+    environmentDetails: z.string(),
+    mood: z.string(),
+    imagePrompt: z.string(),
+    referenceCategory: z.string(),
+});
+export type SceneSpec = z.infer<typeof SceneSpecSchema>;
+
+export const ShotSpecSchema = z.object({
+    shotNumber: z.number(),
+    sceneId: z.string(),
+    durationSeconds: z.number(),
+    cameraMovement: z.string(),
+    subjectMotion: z.string(),
+    environmentMotion: z.string(),
+    transitionIn: z.string(),
+    transitionOut: z.string(),
+    emotionalBeat: z.string(),
+    narrationSegment: z.string(),
+    musicCue: z.string(),
+});
+export type ShotSpec = z.infer<typeof ShotSpecSchema>;
+
+export const StoryboardSchema = z.object({
+    deliverableId: z.string(),
+    title: z.string(),
+    totalDurationSeconds: z.number(),
+    shotSequence: z.array(ShotSpecSchema),
+    narrationScript: z.string(),
+    musicDirection: z.string(),
+    editingStyle: z.string(),
+});
+export type Storyboard = z.infer<typeof StoryboardSchema>;
+
+export const ProductionBibleSchema = z.object({
+    sceneLibrary: z.array(SceneSpecSchema),
+    storyboards: z.array(StoryboardSchema),
+    globalDirectionNotes: z.string(),
+    avoidDirectives: z.array(z.string()),
+});
+export type ProductionBible = z.infer<typeof ProductionBibleSchema>;
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 1A + 1B Combined: Campaign Aesthetic Brief
+// ────────────────────────────────────────────────────────────────────────────
+
 export const CampaignAestheticBriefSchema = z.object({
     slug: z.string(),
     themeName: z.string(),
@@ -156,6 +212,8 @@ export const CampaignAestheticBriefSchema = z.object({
         musicMood: z.string(),
     }),
 
+    productionBible: ProductionBibleSchema.optional(),
+
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
     humanReviewStatus: z.enum(['pending', 'approved', 'revised']),
@@ -174,12 +232,13 @@ export type PinterestConceptSet = z.infer<typeof PinterestConceptSetSchema>;
 export type EmailConceptSet = z.infer<typeof EmailConceptSetSchema>;
 export type DiscordConceptSet = z.infer<typeof DiscordConceptSetSchema>;
 export type CampaignAestheticBrief = z.infer<typeof CampaignAestheticBriefSchema>;
+
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 2B: Media Generation Pipeline — Types
 // ────────────────────────────────────────────────────────────────────────────
 
 export const AssetTypeEnum = z.enum([
-    'ship_reference_image', 'hero_image', 'aesthetic_concept', 'platform_crop',
+    'ship_reference_image', 'hero_image', 'aesthetic_concept', 'scene_image', 'platform_crop',
     'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
     'countdown_video', 'broll_clip',
     'ambient_narration', 'hype_clip', 'theme_music',
@@ -307,6 +366,7 @@ export const CampaignMediaManifestSchema = z.object({
     images: z.object({
         shipReferences: z.array(AssetRecordSchema),
         hero: z.array(AssetRecordSchema),
+        sceneImages: z.array(AssetRecordSchema),
         aestheticConcepts: z.array(AssetRecordSchema),
         platformCrops: z.record(ImageFormatEnum, z.array(AssetRecordSchema)),
     }),

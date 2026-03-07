@@ -14,7 +14,9 @@ import {
     PinterestConceptSetSchema,
     EmailConceptSetSchema,
     DiscordConceptSetSchema,
-    VideoBriefSchema
+    VideoBriefSchema,
+    ProductionBibleSchema,
+    ProductionBible,
 } from './schema';
 
 function buildTShirtMerchPrompt(themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
@@ -63,6 +65,7 @@ function normalizeMerchBrief(themeName: string, merch: z.infer<typeof Pass1Schem
 const Pass1Schema = CampaignAestheticBriefSchema.omit({
     socialConcepts: true,
     videoConcepts: true,
+    productionBible: true,
     generatedAt: true,
     generatedBy: true,
     humanReviewStatus: true,
@@ -197,6 +200,14 @@ Return ONLY the socialConcepts and videoConcepts conforming to the schema.
         prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`
     });
 
+    // PASS 3: Production Bible — Scene Library + Storyboards
+    const productionBible = await generateProductionBible(
+        model,
+        campaign,
+        coreAesthetic,
+        platformConcepts
+    );
+
     // Assemble final brief
     const finalBrief: CampaignAestheticBrief = {
         slug: campaign.id,
@@ -204,10 +215,92 @@ Return ONLY the socialConcepts and videoConcepts conforming to the schema.
         ...coreAesthetic,
         socialConcepts: platformConcepts.socialConcepts,
         videoConcepts: platformConcepts.videoConcepts,
+        productionBible,
         generatedAt: new Date().toISOString(),
         generatedBy: 'agent',
         humanReviewStatus: 'pending' // pending by default
     };
 
     return finalBrief;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Pass 3: Production Bible Generation
+// Generates the Scene Library and Storyboards for multi-shot video production.
+// ────────────────────────────────────────────────────────────────────────────
+
+const SHIP_REFERENCE_CATEGORIES = [
+    'exterior', 'pool_deck', 'dining', 'stateroom', 'atrium',
+    'nightclub', 'spa', 'destination_port', 'theater', 'sports_deck',
+] as const;
+
+const VIDEO_DELIVERABLES = [
+    { id: 'tiktok_seed', title: 'TikTok Seed Video', durationSeconds: 35, shotCount: 4 },
+    { id: 'hero_explainer', title: 'Hero Explainer Video', durationSeconds: 60, shotCount: 6 },
+    { id: 'threshold_announcement', title: 'Threshold Announcement', durationSeconds: 30, shotCount: 4 },
+    { id: 'countdown_1', title: 'Countdown — 3 Cabins Left', durationSeconds: 15, shotCount: 3 },
+] as const;
+
+async function generateProductionBible(
+    model: ReturnType<typeof openai>,
+    campaign: Campaign,
+    coreAesthetic: z.infer<typeof Pass1Schema>,
+    platformConcepts: z.infer<typeof Pass2Schema>
+): Promise<ProductionBible> {
+    const { visual, messaging, audio } = coreAesthetic;
+    const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
+    const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
+
+    const systemPromptPass3 = `
+You are the Production Director for Leisure Life Interactive.
+You are building the Production Bible for a niche cruise campaign promotional video package.
+Your output drives EVERY downstream image and video generation call — precision matters.
+
+You will produce:
+1. A SCENE LIBRARY of 10 distinct scenes — each a unique visual setup (location, time, angle, action)
+2. STORYBOARDS for each video deliverable — ordered shot sequences referencing scenes from the library
+
+RULES:
+- Every scene MUST depict a DIFFERENT location, camera angle, or activity. No two scenes may describe the same visual.
+- Camera angles must vary across scenes: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
+- Each scene's imagePrompt must be a complete, self-contained image generation prompt (photorealistic, cinematic, 8K) that will produce a DISTINCT source image.
+- referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
+- Each storyboard shot must reference a sceneId from the scene library. No two CONSECUTIVE shots may use the same sceneId.
+- Camera movements must vary per shot: dolly forward, dolly back, crane rise, crane drop, orbit left, orbit right, steadicam tracking, push-in, pull-out, handheld follow, whip pan, slow arc.
+- Each storyboard must follow an emotional arc: hook → build → peak → resolve/CTA.
+- transitionIn/transitionOut use film terminology: hard cut, cross-dissolve, whip pan, match cut, fade from black, fade to black, J-cut, L-cut.
+- narrationSegment contains the EXACT spoken words for that shot's duration.
+- musicCue describes the audio energy: "silence into bass hit", "building synth swell", "full drop", "ambient bed", "fade out".
+- avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty/unpopulated scenes".
+`.trim();
+
+    const contextPrompt = `
+Campaign: ${campaign.name}
+Ship: ${campaign.shipTarget || 'TBD'}
+Destination: ${campaign.targetDestination || 'TBD'}
+Highlight Events: ${(campaign.highlightEvents || []).join(', ')}
+Aesthetic: ${visual.aestheticLabel}
+Imagery Mood: ${visual.imageryMood}
+Lighting: ${visual.lightingStyle}
+Composition: ${visual.compositionNotes}
+Color Palette: Primary ${visual.colorPalette.primary}, Secondary ${visual.colorPalette.secondary}, Accent ${visual.colorPalette.accent}
+Tone: ${messaging.toneKeywords.join(', ')}
+Hero Slogan: ${messaging.heroSlogan}
+Elevator Pitch: ${messaging.elevatorPitch}
+Music Mood: ${audio.musicMood}
+TikTok Hook: ${tiktokHook}
+TikTok CTA: ${tiktokCTA}
+
+Video Deliverables to storyboard:
+${VIDEO_DELIVERABLES.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join('\n')}
+`.trim();
+
+    const { object: bible } = await generateObject({
+        model,
+        schema: ProductionBibleSchema,
+        system: systemPromptPass3,
+        prompt: contextPrompt,
+    });
+
+    return bible;
 }

@@ -150,6 +150,7 @@ function createEmptyManifest(slug: string): CampaignMediaManifest {
         images: {
             shipReferences: [],
             hero: [],
+            sceneImages: [],
             aestheticConcepts: [],
             platformCrops: { ...EMPTY_PLATFORM_CROPS },
         },

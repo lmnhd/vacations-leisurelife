@@ -121,6 +121,36 @@ export async function generatePromptedClips(
     return results;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Scene-aware clip generation — each shot gets its OWN source image
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function generatePromptedClipFromScenes(
+    sourceImageUrls: readonly string[],
+    prompts: readonly string[],
+    fileNamePrefix: string,
+    assetIdPrefix: string,
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
+): Promise<GeneratedVideo[]> {
+    const results: GeneratedVideo[] = [];
+    const clipCount = Math.min(sourceImageUrls.length, prompts.length);
+
+    for (let i = 0; i < clipCount; i++) {
+        const result = await createImageToVideo(sourceImageUrls[i], prompts[i], durationSeconds);
+        const buffer = await downloadVideo(result.videoUrl);
+        const idx = String(i + 1).padStart(3, '0');
+        results.push({
+            buffer,
+            motionPrompt: prompts[i],
+            durationSeconds: result.durationSeconds,
+            assetId: `${assetIdPrefix}_${idx}`,
+            fileName: `${fileNamePrefix}_${idx}.mp4`,
+        });
+    }
+
+    return results;
+}
+
 /** 3× countdown videos — generates all 3 in sequence (use test route for single clip) */
 export async function generateCountdownVideos(
     brief: CampaignAestheticBrief,
