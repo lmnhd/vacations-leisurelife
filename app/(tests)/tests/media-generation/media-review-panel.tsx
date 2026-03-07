@@ -1,262 +1,240 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { AssetRecord, CampaignMediaManifest, ReviewStatus } from '@/lib/campaigns/schema';
+import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import { ReviewAssetCard } from './review-asset-card';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt } from 'lucide-react';
 
-function buildEntryKey(section: string, title: string, asset: AssetRecord): string {
-    return `${section}::${title}::${asset.assetId}`;
+// ────────────────────────────────────────────────────────────────────────────
+// Tab definitions
+// ────────────────────────────────────────────────────────────────────────────
+
+const TABS = [
+    { id: 'references', label: 'References', icon: Search },
+    { id: 'heroes',     label: 'Heroes & Concepts', icon: ImageIcon },
+    { id: 'scenes',     label: 'Scenes', icon: Layers },
+    { id: 'video',      label: 'Video', icon: Film },
+    { id: 'audio',      label: 'Audio', icon: Music },
+    { id: 'merch',      label: 'Merch', icon: Shirt },
+] as const;
+
+// ────────────────────────────────────────────────────────────────────────────
+// Extract tab entries from manifest
+// ────────────────────────────────────────────────────────────────────────────
+
+function getTabEntries(
+    tabId: string,
+    manifest: CampaignMediaManifest,
+): Array<{ entryKey: string; title: string; asset: AssetRecord }> {
+    const entries: Array<{ entryKey: string; title: string; asset: AssetRecord }> = [];
+
+    switch (tabId) {
+        case 'references':
+            manifest.images.shipReferences.forEach((asset, i) => {
+                entries.push({ entryKey: `ref::${i}::${asset.assetId}`, title: `Reference ${i + 1}`, asset });
+            });
+            break;
+
+        case 'heroes':
+            manifest.images.hero.forEach((asset, i) => {
+                entries.push({ entryKey: `hero::${i}::${asset.assetId}`, title: `Hero ${i + 1}`, asset });
+            });
+            manifest.images.aestheticConcepts.forEach((asset, i) => {
+                entries.push({ entryKey: `concept::${i}::${asset.assetId}`, title: `Concept ${i + 1}`, asset });
+            });
+            Object.entries(manifest.images.platformCrops).forEach(([fmt, assets]) => {
+                assets.forEach((asset, i) => {
+                    entries.push({ entryKey: `crop::${fmt}::${i}::${asset.assetId}`, title: `${fmt} ${i + 1}`, asset });
+                });
+            });
+            break;
+
+        case 'scenes':
+            (manifest.images.sceneImages ?? []).forEach((asset, i) => {
+                const sceneId = asset.tags.find(t => t !== 'scene') ?? `scene_${i + 1}`;
+                entries.push({ entryKey: `scene::${i}::${asset.assetId}`, title: sceneId, asset });
+            });
+            break;
+
+        case 'video':
+            if (manifest.videos.tiktokSeed) {
+                entries.push({ entryKey: `vid::tiktok::${manifest.videos.tiktokSeed.assetId}`, title: 'TikTok Seed', asset: manifest.videos.tiktokSeed });
+            }
+            if (manifest.videos.heroExplainer) {
+                entries.push({ entryKey: `vid::explainer::${manifest.videos.heroExplainer.assetId}`, title: 'Hero Explainer', asset: manifest.videos.heroExplainer });
+            }
+            if (manifest.videos.thresholdAnnouncement) {
+                entries.push({ entryKey: `vid::threshold::${manifest.videos.thresholdAnnouncement.assetId}`, title: 'Threshold', asset: manifest.videos.thresholdAnnouncement });
+            }
+            manifest.videos.countdown.forEach((asset, i) => {
+                entries.push({ entryKey: `vid::countdown::${i}::${asset.assetId}`, title: `Countdown ${i + 1}`, asset });
+            });
+            manifest.videos.broll.forEach((asset, i) => {
+                entries.push({ entryKey: `vid::broll::${i}::${asset.assetId}`, title: `B-roll ${i + 1}`, asset });
+            });
+            break;
+
+        case 'audio':
+            if (manifest.audio.ambientNarration) {
+                entries.push({ entryKey: `aud::narration::${manifest.audio.ambientNarration.assetId}`, title: 'Ambient Narration', asset: manifest.audio.ambientNarration });
+            }
+            if (manifest.audio.hypeClip) {
+                entries.push({ entryKey: `aud::hype::${manifest.audio.hypeClip.assetId}`, title: 'Hype Clip', asset: manifest.audio.hypeClip });
+            }
+            if (manifest.audio.themeMusic) {
+                entries.push({ entryKey: `aud::theme::${manifest.audio.themeMusic.assetId}`, title: 'Theme Music', asset: manifest.audio.themeMusic });
+            }
+            break;
+
+        case 'merch':
+            manifest.merch.designs.forEach((asset, i) => {
+                entries.push({ entryKey: `merch::design::${i}::${asset.assetId}`, title: `Design ${i + 1}`, asset });
+            });
+            manifest.merch.mockups.forEach((asset, i) => {
+                entries.push({ entryKey: `merch::mockup::${i}::${asset.assetId}`, title: `Mockup ${i + 1}`, asset });
+            });
+            break;
+    }
+
+    return entries;
 }
 
-function formatReviewStatus(reviewStatus: ReviewStatus): string {
-    return reviewStatus.replace(/_/g, ' ');
+// ────────────────────────────────────────────────────────────────────────────
+// Status summary helper
+// ────────────────────────────────────────────────────────────────────────────
+
+function countStatuses(entries: Array<{ asset: AssetRecord }>) {
+    let approved = 0;
+    let flagged = 0;
+    let auto = 0;
+    for (const e of entries) {
+        if (e.asset.reviewStatus === 'human_approved') approved++;
+        else if (e.asset.reviewStatus === 'needs_review') flagged++;
+        else auto++;
+    }
+    return { approved, flagged, auto };
 }
 
-function formatFileSize(fileSizeBytes: number): string {
-    if (fileSizeBytes < 1024) {
-        return `${fileSizeBytes} B`;
-    }
-
-    if (fileSizeBytes < 1024 * 1024) {
-        return `${(fileSizeBytes / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(fileSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ entryKey: string; section: string; title: string; asset: AssetRecord; }> {
-    const reviewEntries: Array<{ entryKey: string; section: string; title: string; asset: AssetRecord; }> = [];
-
-    manifest.images.shipReferences.forEach((asset, index) => {
-        const section = 'Images';
-        const title = `Reference ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    manifest.images.hero.forEach((asset, index) => {
-        const section = 'Images';
-        const title = `Hero ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    (manifest.images.sceneImages ?? []).forEach((asset, index) => {
-        const sceneId = asset.tags.find(t => t !== 'scene') ?? `scene_${index + 1}`;
-        const section = 'Scene Images';
-        const title = sceneId;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    manifest.images.aestheticConcepts.forEach((asset, index) => {
-        const section = 'Images';
-        const title = `Concept ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    Object.entries(manifest.images.platformCrops).forEach(([formatKey, assets]) => {
-        assets.forEach((asset, index) => {
-            const section = 'Images';
-            const title = `${formatKey} ${index + 1}`;
-            reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-        });
-    });
-
-    if (manifest.videos.tiktokSeed) {
-        const section = 'Video';
-        const title = 'TikTok Seed';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.tiktokSeed), section, title, asset: manifest.videos.tiktokSeed });
-    }
-    if (manifest.videos.heroExplainer) {
-        const section = 'Video';
-        const title = 'Hero Explainer';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.heroExplainer), section, title, asset: manifest.videos.heroExplainer });
-    }
-    if (manifest.videos.thresholdAnnouncement) {
-        const section = 'Video';
-        const title = 'Threshold Announcement';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.videos.thresholdAnnouncement), section, title, asset: manifest.videos.thresholdAnnouncement });
-    }
-    manifest.videos.countdown.forEach((asset, index) => {
-        const section = 'Video';
-        const title = `Countdown ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    manifest.videos.broll.forEach((asset, index) => {
-        const section = 'Video';
-        const title = `B-roll ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-
-    if (manifest.audio.ambientNarration) {
-        const section = 'Audio';
-        const title = 'Ambient Narration';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.ambientNarration), section, title, asset: manifest.audio.ambientNarration });
-    }
-    if (manifest.audio.hypeClip) {
-        const section = 'Audio';
-        const title = 'Hype Clip';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.hypeClip), section, title, asset: manifest.audio.hypeClip });
-    }
-    if (manifest.audio.themeMusic) {
-        const section = 'Audio';
-        const title = 'Theme Music';
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, manifest.audio.themeMusic), section, title, asset: manifest.audio.themeMusic });
-    }
-
-    manifest.merch.designs.forEach((asset, index) => {
-        const section = 'Merch';
-        const title = `Design ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-    manifest.merch.mockups.forEach((asset, index) => {
-        const section = 'Merch';
-        const title = `Mockup ${index + 1}`;
-        reviewEntries.push({ entryKey: buildEntryKey(section, title, asset), section, title, asset });
-    });
-
-    return reviewEntries;
-}
-
-function renderAssetPreview(asset: AssetRecord) {
-    if (asset.mimeType.startsWith('image/')) {
-        return <img src={`${asset.url}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-40 w-full rounded-lg object-cover" />;
-    }
-
-    if (asset.mimeType.startsWith('audio/')) {
-        return <audio controls src={asset.url} className="w-full" />;
-    }
-
-    if (asset.mimeType.startsWith('video/')) {
-        return <video controls src={asset.url} className="h-40 w-full rounded-lg bg-slate-950" />;
-    }
-
-    return (
-        <a
-            href={asset.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-24 items-center justify-center rounded-lg border border-white/10 bg-slate-950 text-xs text-cyan-400 hover:text-cyan-300"
-        >
-            Open asset
-        </a>
-    );
-}
+// ────────────────────────────────────────────────────────────────────────────
+// MediaReviewPanel — Tabbed asset review
+// ────────────────────────────────────────────────────────────────────────────
 
 export function MediaReviewPanel(
-    { slug, manifest, onManifestRefresh }: { slug: string; manifest: CampaignMediaManifest; onManifestRefresh: (targetSlug: string) => Promise<void>; }
+    { slug, manifest, onManifestRefresh }: {
+        slug: string;
+        manifest: CampaignMediaManifest;
+        onManifestRefresh: (targetSlug: string) => Promise<void>;
+    }
 ) {
-    const reviewEntries = useMemo(() => buildReviewEntries(manifest), [manifest]);
-    const [noteValues, setNoteValues] = useState<Record<string, string>>({});
-    const [savingState, setSavingState] = useState<Record<string, boolean>>({});
-    const [errorState, setErrorState] = useState<Record<string, string>>({});
+    const [activeTab, setActiveTab] = useState('references');
 
-    const handleReviewUpdate = async (asset: AssetRecord, reviewStatus: ReviewStatus) => {
-        setSavingState((currentState) => ({ ...currentState, [asset.assetId]: true }));
-        setErrorState((currentState) => ({ ...currentState, [asset.assetId]: '' }));
-
-        try {
-            const reviewNotes = noteValues[asset.assetId]?.trim();
-            const response = await fetch(`/api/groups/campaign/${slug}/media/review`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    assetId: asset.assetId,
-                    reviewStatus,
-                    ...(reviewNotes ? { reviewNotes } : {}),
-                }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Review update failed');
-            }
-            await onManifestRefresh(slug);
-        } catch (error: unknown) {
-            setErrorState((currentState) => ({
-                ...currentState,
-                [asset.assetId]: error instanceof Error ? error.message : 'Unknown error',
-            }));
-        } finally {
-            setSavingState((currentState) => ({ ...currentState, [asset.assetId]: false }));
+    const tabEntryMap = useMemo(() => {
+        const map: Record<string, Array<{ entryKey: string; title: string; asset: AssetRecord }>> = {};
+        for (const tab of TABS) {
+            map[tab.id] = getTabEntries(tab.id, manifest);
         }
+        return map;
+    }, [manifest]);
+
+    const totalEntries = useMemo(() => Object.values(tabEntryMap).reduce((sum, arr) => sum + arr.length, 0), [tabEntryMap]);
+    const totalStatus = useMemo(() => {
+        const all = Object.values(tabEntryMap).flat();
+        return countStatuses(all);
+    }, [tabEntryMap]);
+
+    const activeEntries = tabEntryMap[activeTab] ?? [];
+    const activeTabDef = TABS.find(t => t.id === activeTab) ?? TABS[0];
+    const ActiveIcon = activeTabDef.icon;
+
+    const handleRefresh = async () => {
+        await onManifestRefresh(slug);
     };
 
-    if (reviewEntries.length === 0) {
-        return null;
-    }
+    if (totalEntries === 0) return null;
 
     return (
         <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
-            <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
+            {/* ── Summary header ───────────────────────────────────────── */}
+            <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
                 <span className="text-xs text-slate-400 uppercase tracking-widest">Review Assets</span>
-                <span className="text-[10px] text-slate-500">{reviewEntries.length} reviewable assets</span>
+                <div className="flex items-center gap-4 text-[10px] text-slate-500">
+                    <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        {totalStatus.approved} approved
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                        {totalStatus.auto} auto
+                    </span>
+                    {totalStatus.flagged > 0 && (
+                        <span className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            {totalStatus.flagged} flagged
+                        </span>
+                    )}
+                    <span>{totalEntries} total</span>
+                </div>
             </div>
-            <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
-                {reviewEntries.map((entry) => {
-                    const isSaving = savingState[entry.entryKey] === true;
-                    const errorMessage = errorState[entry.entryKey];
-                    const currentNotes = noteValues[entry.entryKey] ?? entry.asset.reviewNotes ?? '';
+
+            {/* ── Tab bar ──────────────────────────────────────────────── */}
+            <div className="flex gap-0.5 overflow-x-auto border-b border-white/5 px-2">
+                {TABS.map((tab) => {
+                    const entries = tabEntryMap[tab.id] ?? [];
+                    const count = entries.length;
+                    const isActive = activeTab === tab.id;
+                    const Icon = tab.icon;
+                    const status = countStatuses(entries);
+                    const dotColor = count === 0
+                        ? 'bg-slate-700'
+                        : status.flagged > 0
+                            ? 'bg-amber-400'
+                            : status.approved === count
+                                ? 'bg-emerald-400'
+                                : 'bg-cyan-400';
 
                     return (
-                        <div key={entry.entryKey} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <div className="text-[10px] uppercase tracking-widest text-slate-500">{entry.section}</div>
-                                    <div className="text-sm font-medium text-white">{entry.title}</div>
-                                    <div className="text-[10px] text-slate-500">{entry.asset.assetType} · {entry.asset.generator}</div>
-                                </div>
-                                <div className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-wide ${entry.asset.reviewStatus === 'human_approved'
-                                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                                    : entry.asset.reviewStatus === 'auto_approved'
-                                        ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
-                                        : 'border-amber-500/40 bg-amber-500/10 text-amber-300'}`}>
-                                    {formatReviewStatus(entry.asset.reviewStatus)}
-                                </div>
-                            </div>
-
-                            {renderAssetPreview(entry.asset)}
-
-                            <div className="space-y-1 text-[11px] text-slate-400">
-                                <div>Size: {formatFileSize(entry.asset.fileSizeBytes)}</div>
-                                <div>Created: {new Date(entry.asset.createdAt).toLocaleString()}</div>
-                                {entry.asset.reviewedAt ? <div>Reviewed: {new Date(entry.asset.reviewedAt).toLocaleString()}</div> : null}
-                            </div>
-
-                            <textarea
-                                value={currentNotes}
-                                onChange={(event) => setNoteValues((currentState) => ({ ...currentState, [entry.entryKey]: event.target.value }))}
-                                placeholder="Optional review notes"
-                                className="min-h-20 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
-                            />
-
-                            {errorMessage ? (
-                                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
-                                    {errorMessage}
-                                </div>
-                            ) : null}
-
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => void handleReviewUpdate(entry.asset, 'human_approved')}
-                                    disabled={isSaving}
-                                    className="flex-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-50"
-                                >
-                                    {isSaving ? 'Saving...' : 'Approve'}
-                                </button>
-                                <button
-                                    onClick={() => void handleReviewUpdate(entry.asset, 'needs_review')}
-                                    disabled={isSaving}
-                                    className="flex-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50"
-                                >
-                                    {isSaving ? 'Saving...' : 'Needs Review'}
-                                </button>
-                            </div>
-
-                            <a
-                                href={entry.asset.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block text-center text-[11px] text-cyan-400 hover:text-cyan-300"
-                            >
-                                Open original asset
-                            </a>
-                        </div>
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-medium border-b-2 transition-colors whitespace-nowrap ${
+                                isActive
+                                    ? 'border-cyan-400 text-white'
+                                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                            }`}
+                        >
+                            <Icon className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className={`min-w-[1.25rem] text-center px-1 py-0.5 rounded-full text-[9px] leading-none ${
+                                isActive ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-500'
+                            }`}>
+                                {count}
+                            </span>
+                            <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
+                        </button>
                     );
                 })}
             </div>
+
+            {/* ── Tab content ──────────────────────────────────────────── */}
+            {activeEntries.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-16 text-slate-600">
+                    <ActiveIcon className="h-10 w-10 opacity-40" />
+                    <span className="text-xs">No {activeTabDef.label.toLowerCase()} assets generated yet</span>
+                </div>
+            ) : (
+                <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+                    {activeEntries.map((entry) => (
+                        <ReviewAssetCard
+                            key={entry.entryKey}
+                            slug={slug}
+                            asset={entry.asset}
+                            title={entry.title}
+                            entryKey={entry.entryKey}
+                            onRefresh={handleRefresh}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
