@@ -96,6 +96,31 @@ export interface GeneratedVideo {
     fileName: string;
 }
 
+export async function generatePromptedClips(
+    sourceImageUrl: string,
+    prompts: readonly string[],
+    fileNamePrefix: string,
+    assetIdPrefix: string,
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
+): Promise<GeneratedVideo[]> {
+    const results: GeneratedVideo[] = [];
+
+    for (let i = 0; i < prompts.length; i++) {
+        const result = await createImageToVideo(sourceImageUrl, prompts[i], durationSeconds);
+        const buffer = await downloadVideo(result.videoUrl);
+        const idx = String(i + 1).padStart(3, '0');
+        results.push({
+            buffer,
+            motionPrompt: prompts[i],
+            durationSeconds: result.durationSeconds,
+            assetId: `${assetIdPrefix}_${idx}`,
+            fileName: `${fileNamePrefix}_${idx}.mp4`,
+        });
+    }
+
+    return results;
+}
+
 /** 3× countdown videos — generates all 3 in sequence (use test route for single clip) */
 export async function generateCountdownVideos(
     brief: CampaignAestheticBrief,
@@ -111,13 +136,10 @@ export async function generateCountdownVideos(
         `Dramatic slow zoom, ${lightingStyle}, final moment intensity, ${colorPalette.primary} dominant`,
     ];
 
-    for (let i = 0; i < countdownLabels.length; i++) {
-        const result = await createImageToVideo(heroImageUrl, countdownMotions[i]);
-        const buffer = await downloadVideo(result.videoUrl);
+    const generatedClips = await generatePromptedClips(heroImageUrl, countdownMotions, 'video/countdown', 'vid_countdown');
+    for (let i = 0; i < generatedClips.length; i++) {
         results.push({
-            buffer,
-            motionPrompt: countdownMotions[i],
-            durationSeconds: result.durationSeconds,
+            ...generatedClips[i],
             assetId: `vid_countdown_${countdownLabels[i]}`,
             fileName: `video/countdown_${countdownLabels[i]}.mp4`,
         });
@@ -144,16 +166,16 @@ export async function generateBrollClips(
     const clipCount = Math.min(brollMotions.length, heroImageUrls.length);
 
     for (let i = 0; i < clipCount; i++) {
-        const result = await createImageToVideo(heroImageUrls[i], brollMotions[i]);
-        const buffer = await downloadVideo(result.videoUrl);
-        const idx = String(i + 1).padStart(3, '0');
-        results.push({
-            buffer,
-            motionPrompt: brollMotions[i],
-            durationSeconds: result.durationSeconds,
-            assetId: `vid_broll_${idx}`,
-            fileName: `video/broll_${idx}.mp4`,
-        });
+        const generatedClips = await generatePromptedClips(heroImageUrls[i], [brollMotions[i]], 'video/broll', 'vid_broll');
+        const generatedClip = generatedClips[0];
+        if (generatedClip) {
+            const idx = String(i + 1).padStart(3, '0');
+            results.push({
+                ...generatedClip,
+                assetId: `vid_broll_${idx}`,
+                fileName: `video/broll_${idx}.mp4`,
+            });
+        }
     }
 
     return results;

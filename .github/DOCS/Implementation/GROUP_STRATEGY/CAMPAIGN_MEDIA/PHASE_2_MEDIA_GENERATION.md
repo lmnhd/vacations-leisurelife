@@ -29,7 +29,7 @@ In practice, this means copy, audio, image, video, merch, and review actions sho
 | Hero images (landing page) | 3–5 | Nano-Banana image edit over SerpAPI references | Landing page hero section |
 | Aesthetic concept art | 4–5 | Nano-Banana | Moodboard, email headers |
 | Platform-sized image crops | Varies | Sharp (server-side resize) | Each social format |
-| TikTok / Reels seed video | 1 | HeyGen + ElevenLabs | TikTok organic, Instagram Reels |
+| TikTok / Reels seed video | 1 | RunwayML multi-shot image-to-video + ElevenLabs + local ffmpeg | TikTok organic, Instagram Reels |
 | Hero explainer video | 1 | HeyGen | Landing page, YouTube |
 | Threshold announcement video | 1 | HeyGen | Email, social |
 | Countdown video series | 3 | RunwayML + ElevenLabs | Social, email nurture |
@@ -134,21 +134,28 @@ All generated images are automatically processed into the required platform crop
 ## Video Generation
 
 ### TikTok Seed Video (30–45s)
-**Tool:** HeyGen (avatar) + ElevenLabs (voice) + real hero image background  
+**Tool:** RunwayML image-to-video + ElevenLabs narration + local ffmpeg composition  
 **Purpose:** §5.5A organic seeding — the zero-budget proof-of-concept post
 
 **Assembly:**
-1. ElevenLabs renders the `tiktokSeed.scriptOrNarration` in the specified `voiceProfile`
-2. HeyGen generates avatar footage: talking head speaking to camera, real-ship hero image as background
-3. B-roll inserts: 2–3 ship reference images cut in at key narrative moments
-4. On-screen text overlays: hook line (first 3 seconds), CTA slug at end
+1. ElevenLabs renders a combined narration script assembled from `tiktokOrganic.hook`, `videoConcepts.tiktokSeed.scriptOrNarration`, and `tiktokOrganic.callToAction`
+2. RunwayML generates a deterministic multi-shot sequence from the approved real-ship hero image using four explicit shot prompts rather than a single pan/zoom pass
+3. Local `ffmpeg-static` concatenates the generated clips into one vertical sequence and muxes the narration track over the final output MP4
+4. The generated TikTok asset is stored with a unique asset ID and filename per run to avoid stale CDN/browser cache collisions on immutable asset URLs
 
-**Script template:**
+**Current shot-plan strategy:**
 ```
-[HOOK — 0–3s]: {tiktokOrganic.hook}
-[BODY — 3–25s]: {videoConcepts.tiktokSeed.scriptOrNarration}  
-[CTA — 25–30s]: "Sign up below — link in bio."
+Shot 1: premium social ad opener with immediate forward camera momentum and visible scene energy
+Shot 2: experiential reveal with layered foreground action, crowd movement, luxury details, and ship fidelity
+Shot 3: emotional peak with dramatic reveal, celebration energy, and destination-scale atmosphere
+Shot 4: polished CTA finish with aspirational momentum and a strong end-frame for overlay/call-to-action treatment
 ```
+
+**Current implementation notes:**
+- Voiceover-first flow — no HeyGen dependency for the TikTok seed asset
+- Single approved hero image still acts as the visual source, so the output is stronger than the original single moving still but may still need higher-end model/provider options later
+- Prompting is now explicitly biased away from slideshow pan/parallax behavior and toward environmental motion, subject movement, and cinematic blocking
+- This exact implementation should be revisited during later **Distribution** phases if the campaign needs more premium social output quality or broader model choice evaluation (for example, `fal.ai` provider comparisons)
 
 ### Hero Explainer Video (60s)
 **Tool:** HeyGen  
