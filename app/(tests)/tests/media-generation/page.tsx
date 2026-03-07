@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import { MediaReviewPanel } from "./media-review-panel";
+import { CampaignSelector } from "./campaign-selector";
 import {
     Loader2, Wand2, Image, Film, Music, Type, Shirt,
     Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink
@@ -54,7 +55,7 @@ const LS_SLUG_KEY = "mediaGen_slug";
 const getManifestStorageKey = (targetSlug: string) => `mediaGen_manifest_${targetSlug}`;
 
 export default function MediaGenerationTestPage() {
-    const [slug, setSlug] = useState("analog-film-and-darkroom-odyssey-2026");
+    const [slug, setSlug] = useState("");
     const [themeMusicSource, setThemeMusicSource] = useState<'replicate' | 'default'>('default');
     const [pageState, setPageState] = useState<PageState>("idle");
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -223,29 +224,24 @@ export default function MediaGenerationTestPage() {
 
                 {/* Slug Input */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
-                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">Campaign Slug</div>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="e.g. analog-film-and-darkroom-odyssey-2026"
-                            value={slug}
-                            onChange={(e) => setSlug(e.target.value)}
-                            disabled={isBusy}
-                            className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
-                        />
-                        <button
-                            id="btn-load-manifest"
-                            onClick={handleLoadManifest}
-                            disabled={isBusy || !slug.trim()}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700/50 border border-white/10 text-slate-300 hover:bg-slate-700 transition-all disabled:opacity-40 disabled:pointer-events-none"
-                        >
-                            {pageState === "loading"
-                                ? <Loader2 className="h-4 w-4 animate-spin" />
-                                : <Download className="h-4 w-4" />
-                            }
-                            {pageState === "loading" ? "Loading..." : "Load Manifest"}
-                        </button>
-                    </div>
+                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">Campaign</div>
+                    <CampaignSelector
+                        value={slug}
+                        onChange={(s) => { setSlug(s); if (s.trim()) void handleLoadManifestRef(s.trim()); }}
+                        disabled={isBusy}
+                    />
+                    <button
+                        id="btn-load-manifest"
+                        onClick={handleLoadManifest}
+                        disabled={isBusy || !slug.trim()}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700/50 border border-white/10 text-slate-300 hover:bg-slate-700 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                        {pageState === "loading"
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Download className="h-4 w-4" />
+                        }
+                        {pageState === "loading" ? "Loading..." : "Load Manifest"}
+                    </button>
 
                     <div>
                         <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Theme Music Source</div>

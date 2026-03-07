@@ -15,6 +15,7 @@ import {
     ChevronDown, ChevronRight, Play, Layers, Camera,
     AlertTriangle, CheckCircle2, Zap
 } from "lucide-react";
+import { CampaignSelector } from "../media-generation/campaign-selector";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Production Bible Test Page
@@ -28,7 +29,7 @@ type PageState = "idle" | "loading" | "generating";
 const LS_SLUG_KEY = "prodBible_slug";
 
 export default function ProductionBibleTestPage() {
-    const [slug, setSlug] = useState("analog-film-and-darkroom-odyssey-2026");
+    const [slug, setSlug] = useState("");
     const [pageState, setPageState] = useState<PageState>("idle");
     const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
     const [manifest, setManifest] = useState<CampaignMediaManifest | null>(null);
@@ -198,30 +199,31 @@ export default function ProductionBibleTestPage() {
                     </span>
                 </div>
 
-                {/* Slug input + load */}
-                <div className="flex gap-2">
-                    <input
-                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm"
-                        placeholder="Campaign slug"
+                {/* Campaign selector + load */}
+                <div className="space-y-2">
+                    <CampaignSelector
                         value={slug}
-                        onChange={(e) => setSlug(e.target.value)}
+                        onChange={(s) => { setSlug(s); if (s.trim()) void loadData(s.trim()); }}
+                        disabled={isBusy}
                     />
-                    <button
-                        className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded text-sm flex items-center gap-2"
-                        onClick={() => loadData(slug.trim())}
-                        disabled={isBusy}
-                    >
-                        {pageState === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                        Load
-                    </button>
-                    <button
-                        className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded text-sm flex items-center gap-2"
-                        onClick={() => loadData(slug.trim())}
-                        disabled={isBusy}
-                    >
-                        <RefreshCw className="w-4 h-4" />
-                        Refresh
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={() => loadData(slug.trim())}
+                            disabled={isBusy || !slug.trim()}
+                        >
+                            {pageState === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                            {pageState === "loading" ? "Loading..." : "Load"}
+                        </button>
+                        <button
+                            className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={() => loadData(slug.trim())}
+                            disabled={isBusy || !slug.trim()}
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {error && (
