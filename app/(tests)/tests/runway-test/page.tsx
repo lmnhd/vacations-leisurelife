@@ -19,6 +19,14 @@ interface AssetRecord {
     promptUsed?: string;
 }
 
+const PROMOTION_TARGETS = [
+    { value: "tiktokSeed", label: "TikTok Seed" },
+    { value: "heroExplainer", label: "Hero Explainer" },
+    { value: "thresholdAnnouncement", label: "Threshold Announcement" },
+    { value: "countdown", label: "Countdown" },
+    { value: "broll", label: "B-roll" },
+] as const;
+
 interface ManifestVideos {
     tiktokSeed?: AssetRecord | null;
     heroExplainer?: AssetRecord | null;
@@ -40,13 +48,17 @@ interface CampaignManifest {
 }
 
 interface TestResult {
+    assetId: string;
     videoUrl: string;
     taskId: string;
     durationSeconds: number;
     creditsUsed: number;
+    fileSizeBytes: number;
+    mimeType: string;
     label: string;
     motionPrompt: string;
     sourceImageUrl: string;
+    createdAt: string;
     generatedAt: string;
 }
 
@@ -210,14 +222,18 @@ export default function RunwayTestPage() {
             }
 
             const result: TestResult = {
+                assetId: data.assetId!,
                 videoUrl: data.videoUrl!,
                 taskId: data.taskId!,
                 durationSeconds: data.durationSeconds!,
                 creditsUsed: data.creditsUsed!,
+                fileSizeBytes: data.fileSizeBytes!,
+                mimeType: data.mimeType!,
                 label: data.label!,
                 motionPrompt: data.motionPrompt!,
                 sourceImageUrl: data.sourceImageUrl!,
-                generatedAt: new Date().toISOString(),
+                createdAt: data.createdAt!,
+                generatedAt: data.createdAt!,
             };
 
             setResults(prev => [result, ...prev]);
@@ -227,6 +243,35 @@ export default function RunwayTestPage() {
             setGenerating(false);
         }
     }, [slug, selectedImage, customImageUrl, motionPrompt, durationSeconds, label]);
+
+    const handlePromote = useCallback(async (result: TestResult, target: string) => {
+        if (!slug) {
+            throw new Error("Load a campaign manifest before promoting a test clip.");
+        }
+
+        const response = await fetch(`/api/groups/campaign/${slug}/media/runway-test/promote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                assetId: result.assetId,
+                videoUrl: result.videoUrl,
+                durationSeconds: result.durationSeconds,
+                fileSizeBytes: result.fileSizeBytes,
+                mimeType: result.mimeType,
+                motionPrompt: result.motionPrompt,
+                label: result.label,
+                createdAt: result.createdAt,
+                target,
+            }),
+        });
+
+        const data = await response.json() as { error?: string };
+        if (!response.ok || data.error) {
+            throw new Error(data.error ?? `HTTP ${response.status}`);
+        }
+
+        await loadManifest(slug);
+    }, [slug, loadManifest]);
 
     // ── Derived values ────────────────────────────────────────────────────────
 
@@ -315,9 +360,9 @@ export default function RunwayTestPage() {
                                     2 · Pick Source Image (Scene Images)
                                 </h2>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {allSceneImages.map(rec => (
+                                    {allSceneImages.map((rec, index) => (
                                         <SceneImageThumbnail
-                                            key={rec.assetId}
+                                            key={`${rec.assetId}_${rec.createdAt}_${index}`}
                                             rec={rec}
                                             selected={selectedImage?.assetId === rec.assetId}
                                             onSelect={() => {
@@ -338,9 +383,9 @@ export default function RunwayTestPage() {
                                     2b · Hero Images
                                 </h2>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {heroImages.map(rec => (
+                                    {heroImages.map((rec, index) => (
                                         <SceneImageThumbnail
-                                            key={rec.assetId}
+                                            key={`${rec.assetId}_${rec.createdAt}_${index}`}
                                             rec={rec}
                                             selected={selectedImage?.assetId === rec.assetId}
                                             onSelect={() => {
@@ -534,6 +579,7 @@ export default function RunwayTestPage() {
                                     index={results.length - i}
                                     onDelete={() => setResults(prev => prev.filter((_, idx) => idx !== i))}
                                     onReusePrompt={() => setMotionPrompt(result.motionPrompt)}
+                                    onPromote={handlePromote}
                                 />
                             ))}
                         </div>
@@ -553,18 +599,36 @@ function ResultCard({
     index,
     onDelete,
     onReusePrompt,
+    onPromote,
 }: {
     result: TestResult;
     index: number;
     onDelete: () => void;
     onReusePrompt: () => void;
+    onPromote: (result: TestResult, target: string) => Promise<void>;
 }) {
     const [copied, setCopied] = useState(false);
+    const [promotionTarget, setPromotionTarget] = useState<string>("tiktokSeed");
+    const [promoting, setPromoting] = useState(false);
+    const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
 
     const copyPrompt = async () => {
         await navigator.clipboard.writeText(result.motionPrompt);
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
+    };
+
+    const promoteClip = async () => {
+        setPromoting(true);
+        setPromotionMessage(null);
+        try {
+            await onPromote(result, promotionTarget);
+            setPromotionMessage(`Promoted to ${PROMOTION_TARGETS.find(target => target.value === promotionTarget)?.label ?? promotionTarget}`);
+        } catch (err) {
+            setPromotionMessage(err instanceof Error ? err.message : String(err));
+        } finally {
+            setPromoting(false);
+        }
     };
 
     return (
@@ -583,6 +647,22 @@ function ResultCard({
                         className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
                     >
                         Reuse prompt
+                    </button>
+                    <select
+                        value={promotionTarget}
+                        onChange={event => setPromotionTarget(event.target.value)}
+                        className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300"
+                    >
+                        {PROMOTION_TARGETS.map((target) => (
+                            <option key={target.value} value={target.value}>{target.label}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={promoteClip}
+                        disabled={promoting}
+                        className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 rounded px-2 py-1 transition-colors"
+                    >
+                        {promoting ? "Promoting…" : "Promote"}
                     </button>
                     <button
                         onClick={onDelete}
@@ -637,6 +717,11 @@ function ResultCard({
                     Task ID: <span className="font-mono">{result.taskId}</span>
                     {" · "}{new Date(result.generatedAt).toLocaleTimeString()}
                 </div>
+                {promotionMessage && (
+                    <div className="mt-2 text-xs text-zinc-500">
+                        {promotionMessage}
+                    </div>
+                )}
             </div>
         </div>
     );

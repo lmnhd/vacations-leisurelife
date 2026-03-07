@@ -21,13 +21,17 @@ interface RunwayTestRequestBody {
 }
 
 interface RunwayTestResult {
+    assetId: string;
     videoUrl: string;
     taskId: string;
     durationSeconds: number;
     creditsUsed: number;
+    fileSizeBytes: number;
+    mimeType: string;
     label: string;
     motionPrompt: string;
     sourceImageUrl: string;
+    createdAt: string;
 }
 
 interface RunwayCreateResponse {
@@ -137,6 +141,7 @@ export async function POST(
         const videoResponse = await fetch(runwayUrl);
         if (!videoResponse.ok) throw new Error(`Failed to download RunwayML output: ${videoResponse.status}`);
         const buffer = Buffer.from(await videoResponse.arrayBuffer());
+        const createdAt = new Date().toISOString();
 
         const timestamp = Date.now();
         const safeLabel = label.replace(/[^a-z0-9_-]/gi, '_').slice(0, 40);
@@ -148,13 +153,17 @@ export async function POST(
         const creditsUsed = durationSeconds * CREDIT_COSTS.runway.creditsPerSecond;
 
         const result: RunwayTestResult = {
+            assetId,
             videoUrl: persistedUrl,
             taskId,
             durationSeconds,
             creditsUsed,
+            fileSizeBytes: buffer.length,
+            mimeType: 'video/mp4',
             label,
             motionPrompt,
             sourceImageUrl,
+            createdAt,
         };
 
         return NextResponse.json(result);
