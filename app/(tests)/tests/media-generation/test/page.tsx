@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import type { AssetRecord, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import {
     Loader2, Image, Music, Type, Shirt, Crop, ChevronDown,
-    ChevronRight, CheckCircle2, XCircle, AlertTriangle, KeyRound, Play
+    ChevronRight, CheckCircle2, XCircle, AlertTriangle, KeyRound, Play,
+    BookOpen, Layers, ExternalLink, Film
 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -26,7 +27,6 @@ const KEY_META: Record<string, { label: string; cost: string }> = {
     REPLICATE: { label: "Replicate", cost: "~$0.01" },
     SERPAPI: { label: "SerpAPI", cost: "~search" },
     GOOGLE: { label: "Google Nano-Banana", cost: "~image gen" },
-    HEYGEN: { label: "HeyGen", cost: "~$1–3/video" },
     RUNWAYML: { label: "RunwayML", cost: "~$0.50/clip" },
     R2: { label: "Cloudflare R2", cost: "" },
 };
@@ -60,6 +60,7 @@ interface PersistedTestPageState {
     shipReferenceResult: GeneratorResult;
     heroResult: GeneratorResult;
     conceptResult: GeneratorResult;
+    sceneImagesResult: GeneratorResult;
     cropResult: GeneratorResult;
     copyResult: GeneratorResult;
     narrationResult: GeneratorResult;
@@ -67,8 +68,7 @@ interface PersistedTestPageState {
     replicateResult: GeneratorResult;
     merch0Result: GeneratorResult;
     tiktokVoiceoverResult: GeneratorResult;
-    heygenExplainerResult: GeneratorResult;
-    heygenThresholdResult: GeneratorResult;
+    storyboardVideoResult: GeneratorResult;
     runwayCountdownResult: GeneratorResult;
     runwayBrollResult: GeneratorResult;
 }
@@ -84,6 +84,7 @@ function createEmptyPersistedState(): PersistedTestPageState {
         shipReferenceResult: makeResult(),
         heroResult: makeResult(),
         conceptResult: makeResult(),
+        sceneImagesResult: makeResult(),
         cropResult: makeResult(),
         copyResult: makeResult(),
         narrationResult: makeResult(),
@@ -91,8 +92,7 @@ function createEmptyPersistedState(): PersistedTestPageState {
         replicateResult: makeResult(),
         merch0Result: makeResult(),
         tiktokVoiceoverResult: makeResult(),
-        heygenExplainerResult: makeResult(),
-        heygenThresholdResult: makeResult(),
+        storyboardVideoResult: makeResult(),
         runwayCountdownResult: makeResult(),
         runwayBrollResult: makeResult(),
     };
@@ -174,6 +174,14 @@ function cropsToResult(platformCrops: CampaignMediaManifest["images"]["platformC
     return crops.length > 0 ? createSuccessResult({ crops }, "") : makeResult();
 }
 
+function sceneImagesToResult(sceneImages: AssetRecord[]): GeneratorResult {
+    if (sceneImages.length === 0) return makeResult();
+    return createSuccessResult({
+        count: sceneImages.length,
+        scenes: sceneImages.map(r => ({ sceneId: r.tags.find(t => t !== 'scene') ?? r.assetId, url: r.url })),
+    }, sceneImages[0]?.url ?? "");
+}
+
 function manifestToPersistedState(manifest: CampaignMediaManifest): PersistedTestPageState {
     const latestHero = getLatestAsset(manifest.images.hero);
 
@@ -183,6 +191,7 @@ function manifestToPersistedState(manifest: CampaignMediaManifest): PersistedTes
         shipReferenceResult: shipReferencesToResult(manifest.images.shipReferences),
         heroResult: assetRecordToResult(latestHero),
         conceptResult: assetRecordToResult(getLatestAsset(manifest.images.aestheticConcepts)),
+        sceneImagesResult: sceneImagesToResult(manifest.images.sceneImages),
         cropResult: cropsToResult(manifest.images.platformCrops),
         copyResult: copyToResult(manifest.copy),
         narrationResult: assetRecordToResult(manifest.audio.ambientNarration),
@@ -190,8 +199,7 @@ function manifestToPersistedState(manifest: CampaignMediaManifest): PersistedTes
         replicateResult: assetRecordToResult(manifest.audio.themeMusic),
         merch0Result: assetRecordToResult(getLatestAsset(manifest.merch.designs)),
         tiktokVoiceoverResult: assetRecordToResult(manifest.videos.tiktokSeed),
-        heygenExplainerResult: assetRecordToResult(manifest.videos.heroExplainer),
-        heygenThresholdResult: assetRecordToResult(manifest.videos.thresholdAnnouncement),
+        storyboardVideoResult: assetRecordToResult(manifest.videos.heroExplainer),
         runwayCountdownResult: assetRecordToResult(getLatestAsset(manifest.videos.countdown)),
         runwayBrollResult: assetRecordToResult(getLatestAsset(manifest.videos.broll)),
     };
@@ -202,6 +210,7 @@ function hasPersistedResults(state: PersistedTestPageState): boolean {
         state.shipReferenceResult,
         state.heroResult,
         state.conceptResult,
+        state.sceneImagesResult,
         state.cropResult,
         state.copyResult,
         state.narrationResult,
@@ -209,8 +218,7 @@ function hasPersistedResults(state: PersistedTestPageState): boolean {
         state.replicateResult,
         state.merch0Result,
         state.tiktokVoiceoverResult,
-        state.heygenExplainerResult,
-        state.heygenThresholdResult,
+        state.storyboardVideoResult,
         state.runwayCountdownResult,
         state.runwayBrollResult,
     ].some((result) => result.state !== "idle");
@@ -232,9 +240,9 @@ function normalizePersistedState(rawState: string): PersistedTestPageState {
         hypeResult: (parsedState.hypeResult as GeneratorResult | undefined) ?? emptyState.hypeResult,
         replicateResult: (parsedState.replicateResult as GeneratorResult | undefined) ?? emptyState.replicateResult,
         merch0Result: (parsedState.merch0Result as GeneratorResult | undefined) ?? emptyState.merch0Result,
+        sceneImagesResult: (parsedState.sceneImagesResult as GeneratorResult | undefined) ?? emptyState.sceneImagesResult,
         tiktokVoiceoverResult: (parsedState.tiktokVoiceoverResult as GeneratorResult | undefined) ?? (parsedState.heygenTiktokResult as GeneratorResult | undefined) ?? emptyState.tiktokVoiceoverResult,
-        heygenExplainerResult: (parsedState.heygenExplainerResult as GeneratorResult | undefined) ?? emptyState.heygenExplainerResult,
-        heygenThresholdResult: (parsedState.heygenThresholdResult as GeneratorResult | undefined) ?? emptyState.heygenThresholdResult,
+        storyboardVideoResult: (parsedState.storyboardVideoResult as GeneratorResult | undefined) ?? (parsedState.heygenExplainerResult as GeneratorResult | undefined) ?? emptyState.storyboardVideoResult,
         runwayCountdownResult: (parsedState.runwayCountdownResult as GeneratorResult | undefined) ?? emptyState.runwayCountdownResult,
         runwayBrollResult: (parsedState.runwayBrollResult as GeneratorResult | undefined) ?? emptyState.runwayBrollResult,
     };
@@ -393,9 +401,9 @@ export default function MediaGenerationTestPage() {
     const [hypeResult, setHypeResult] = useState<GeneratorResult>(makeResult());
     const [replicateResult, setReplicateResult] = useState<GeneratorResult>(makeResult());
     const [merch0Result, setMerch0Result] = useState<GeneratorResult>(makeResult());
+    const [sceneImagesResult, setSceneImagesResult] = useState<GeneratorResult>(makeResult());
     const [tiktokVoiceoverResult, setTiktokVoiceoverResult] = useState<GeneratorResult>(makeResult());
-    const [heygenExplainerResult, setHeygenExplainerResult] = useState<GeneratorResult>(makeResult());
-    const [heygenThresholdResult, setHeygenThresholdResult] = useState<GeneratorResult>(makeResult());
+    const [storyboardVideoResult, setStoryboardVideoResult] = useState<GeneratorResult>(makeResult());
     const [runwayCountdownResult, setRunwayCountdownResult] = useState<GeneratorResult>(makeResult());
     const [runwayBrollResult, setRunwayBrollResult] = useState<GeneratorResult>(makeResult());
 
@@ -408,6 +416,7 @@ export default function MediaGenerationTestPage() {
         setShipReferenceResult(nextState.shipReferenceResult);
         setHeroResult(nextState.heroResult);
         setConceptResult(nextState.conceptResult);
+        setSceneImagesResult(nextState.sceneImagesResult);
         setCropResult(nextState.cropResult);
         setCopyResult(nextState.copyResult);
         setNarrationResult(nextState.narrationResult);
@@ -415,8 +424,7 @@ export default function MediaGenerationTestPage() {
         setReplicateResult(nextState.replicateResult);
         setMerch0Result(nextState.merch0Result);
         setTiktokVoiceoverResult(nextState.tiktokVoiceoverResult);
-        setHeygenExplainerResult(nextState.heygenExplainerResult);
-        setHeygenThresholdResult(nextState.heygenThresholdResult);
+        setStoryboardVideoResult(nextState.storyboardVideoResult);
         setRunwayCountdownResult(nextState.runwayCountdownResult);
         setRunwayBrollResult(nextState.runwayBrollResult);
         lastHeroCdnUrl.current = nextState.heroResult.cdnUrl || nextState.heroImageUrl;
@@ -496,6 +504,7 @@ export default function MediaGenerationTestPage() {
             shipReferenceResult,
             heroResult,
             conceptResult,
+            sceneImagesResult,
             cropResult,
             copyResult,
             narrationResult,
@@ -503,8 +512,7 @@ export default function MediaGenerationTestPage() {
             replicateResult,
             merch0Result,
             tiktokVoiceoverResult,
-            heygenExplainerResult,
-            heygenThresholdResult,
+            storyboardVideoResult,
             runwayCountdownResult,
             runwayBrollResult,
         };
@@ -517,6 +525,7 @@ export default function MediaGenerationTestPage() {
         shipReferenceResult,
         heroResult,
         conceptResult,
+        sceneImagesResult,
         cropResult,
         copyResult,
         narrationResult,
@@ -524,8 +533,7 @@ export default function MediaGenerationTestPage() {
         replicateResult,
         merch0Result,
         tiktokVoiceoverResult,
-        heygenExplainerResult,
-        heygenThresholdResult,
+        storyboardVideoResult,
         runwayCountdownResult,
         runwayBrollResult,
     ]);
@@ -568,10 +576,25 @@ export default function MediaGenerationTestPage() {
 
                 {/* Header */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <h1 className="text-lg font-semibold text-cyan-400">⚙️ Phase 2B — Per-Generator Tests</h1>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                        <h1 className="text-lg font-semibold text-cyan-400">⚙️ Per-Generator Tests</h1>
+                        <div className="flex items-center gap-2">
+                            <a href="/tests/production-bible"
+                                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 rounded-lg transition">
+                                <BookOpen className="w-3.5 h-3.5" />
+                                Production Bible
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                            <a href="/tests/media-generation"
+                                className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 rounded-lg transition">
+                                Full Pipeline
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">
                         Each card hits one API call. Test individually to verify results before running the full pipeline.
-                        Requires an approved aesthetic brief for the selected campaign.
+                        Requires an approved brief. Production Bible path generates scene images + storyboard-driven video.
                     </p>
                 </div>
 
@@ -759,49 +782,49 @@ export default function MediaGenerationTestPage() {
                     />
                 </div>
 
-                {/* ── TikTok Voiceover Seed ─────────────────────────────── */}
+                {/* ── Scene Images (Production Bible) ───────────────────── */}
+                <GeneratorCard
+                    id="gen-scene-images"
+                    keyStatus={keyStatus}
+                    title="Nano-Banana — Scene Images (Production Bible)"
+                    icon={<Layers className="h-4 w-4" />}
+                    color="teal"
+                    description="Generates one Nano-Banana image per scene in the Production Bible scene library (8–12 images). Each uses a different ship reference category as seed. Requires brief with Production Bible."
+                    cost="~Nano-Banana × scenes"
+                    apiKeys={["GOOGLE", "R2"]}
+                    result={sceneImagesResult}
+                    previewType="json"
+                    onRun={() => runGenerator(`${base}/images`, { generator: "scene_images" }, setSceneImagesResult)}
+                />
+
+                {/* ── TikTok Voiceover Seed ─────────────────────────────────── */}
                 <GeneratorCard
                     id="gen-tiktok-voiceover"
                     keyStatus={keyStatus}
-                    title="RunwayML + ElevenLabs — TikTok Voiceover Video (9:16)"
+                    title="RunwayML + ElevenLabs — TikTok Seed Video (9:16)"
                     icon={<Play className="h-4 w-4" />}
                     color="violet"
-                    description="30s narrated TikTok promo built from a Runway motion clip plus ElevenLabs voiceover, then composed into one vertical MP4 and uploaded to R2. Requires the hero CDN URL above as the visual source."
-                    cost="~$0.60"
+                    description="Storyboard-driven: each shot uses its own scene image from the Production Bible. Falls back to single hero image if no Production Bible exists. Narration from ElevenLabs, composed by ffmpeg."
+                    cost="~RunwayML × shots + ElevenLabs"
                     apiKeys={["RUNWAYML", "ELEVENLABS", "R2"]}
                     result={tiktokVoiceoverResult}
                     previewType="video"
                     onRun={() => runGenerator(`${base}/video`, { generator: "tiktok_voiceover", heroImageUrl }, setTiktokVoiceoverResult)}
                 />
 
-                {/* ── HeyGen Explainer ─────────────────────────────────── */}
+                {/* ── Storyboard Video ─────────────────────────────────────── */}
                 <GeneratorCard
-                    id="gen-heygen-explainer"
+                    id="gen-storyboard-video"
                     keyStatus={keyStatus}
-                    title="HeyGen — Hero Explainer Video (16:9)"
-                    icon={<Play className="h-4 w-4" />}
+                    title="RunwayML + ElevenLabs — Hero Explainer Storyboard Video"
+                    icon={<Film className="h-4 w-4" />}
                     color="violet"
-                    description="60s avatar explainer from brief.videoConcepts.heroExplainer script. Uploaded to R2."
-                    cost="~$2–4"
-                    apiKeys={["HEYGEN", "R2"]}
-                    result={heygenExplainerResult}
+                    description="Generates the hero_explainer storyboard video using Production Bible shot sequences. Each shot gets its own scene image. Requires Production Bible on the brief and generated scene images."
+                    cost="~RunwayML × shots + ElevenLabs"
+                    apiKeys={["RUNWAYML", "ELEVENLABS", "R2"]}
+                    result={storyboardVideoResult}
                     previewType="video"
-                    onRun={() => runGenerator(`${base}/video`, { generator: "heygen_explainer", heroImageUrl }, setHeygenExplainerResult)}
-                />
-
-                {/* ── HeyGen Threshold ─────────────────────────────────── */}
-                <GeneratorCard
-                    id="gen-heygen-threshold"
-                    keyStatus={keyStatus}
-                    title="HeyGen — Threshold Announcement (16:9)"
-                    icon={<Play className="h-4 w-4" />}
-                    color="violet"
-                    description="30s threshold announcement video. Pre-generated and sent when THRESHOLD_MET fires. Uploaded to R2."
-                    cost="~$1–2"
-                    apiKeys={["HEYGEN", "R2"]}
-                    result={heygenThresholdResult}
-                    previewType="video"
-                    onRun={() => runGenerator(`${base}/video`, { generator: "heygen_threshold", heroImageUrl }, setHeygenThresholdResult)}
+                    onRun={() => runGenerator(`${base}/video`, { generator: "storyboard_video", deliverableId: "hero_explainer" }, setStoryboardVideoResult)}
                 />
 
                 {/* ── RunwayML Countdown ───────────────────────────────── */}
@@ -872,6 +895,7 @@ interface GeneratorCardProps {
 
 const colorMap: Record<string, { bg: string; border: string; text: string; btn: string }> = {
     cyan: { bg: "bg-cyan-500/5", border: "border-cyan-500/20", text: "text-cyan-400", btn: "bg-cyan-500/20 hover:bg-cyan-500/30 border-cyan-500/30 text-cyan-300" },
+    teal: { bg: "bg-teal-500/5", border: "border-teal-500/20", text: "text-teal-400", btn: "bg-teal-500/20 hover:bg-teal-500/30 border-teal-500/30 text-teal-300" },
     emerald: { bg: "bg-emerald-500/5", border: "border-emerald-500/20", text: "text-emerald-400", btn: "bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/30 text-emerald-300" },
     amber: { bg: "bg-amber-500/5", border: "border-amber-500/20", text: "text-amber-400", btn: "bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 text-amber-300" },
     purple: { bg: "bg-purple-500/5", border: "border-purple-500/20", text: "text-purple-400", btn: "bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30 text-purple-300" },
