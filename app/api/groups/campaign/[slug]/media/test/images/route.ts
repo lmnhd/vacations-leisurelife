@@ -6,6 +6,7 @@ import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
 import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 import {
     generateAestheticConcepts,
+    generateSceneImages,
 } from '@/lib/campaigns/media/generators/stability-generator';
 import { generatePlatformCrops } from '@/lib/campaigns/media/generators/sharp-processor';
 import {
@@ -25,7 +26,7 @@ import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 // }
 // ────────────────────────────────────────────────────────────────────────────
 
-type ImageTestGenerator = 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'sharp_crops';
+type ImageTestGenerator = 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'scene_images' | 'sharp_crops';
 
 interface ImageTestRequestBody {
     generator: ImageTestGenerator;
@@ -167,6 +168,52 @@ export async function POST(
                 generator: 'sharp',
                 cropCount: uploadedCrops.length,
                 crops: uploadedCrops.map(({ record: _record, ...crop }) => crop),
+            });
+        }
+
+        if (generator === 'scene_images') {
+            if (!brief.productionBible) {
+                return NextResponse.json({
+                    error: 'No Production Bible found on this brief. Regenerate the aesthetic brief first.'
+                }, { status: 400 });
+            }
+            const candidates = await discoverShipReferenceCandidates(campaign, 2);
+            const shipName = campaign.matchedShipName ?? campaign.shipTarget ?? 'TBD';
+            const generatedImages = await generateSceneImages(
+                brief.productionBible.sceneLibrary,
+                candidates,
+                shipName
+            );
+            const records: AssetRecord[] = [];
+            for (const img of generatedImages) {
+                const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/png');
+                const record: AssetRecord = {
+                    assetId: img.assetId,
+                    assetType: 'scene_image',
+                    url: cdnUrl,
+                    generator: getMediaImageGeneratorService(),
+                    promptUsed: img.prompt,
+                    fileSizeBytes: img.buffer.length,
+                    mimeType: 'image/png',
+                    tags: ['scene', img.sceneId],
+                    createdAt: new Date().toISOString(),
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                };
+                await saveAssetRecord(slug, record);
+                records.push(record);
+            }
+            await upsertManifestAssetSection(slug, 'sceneImages', records);
+            return NextResponse.json({
+                generator: getMediaImageGeneratorService(),
+                count: records.length,
+                scenes: records.map(r => ({
+                    sceneId: r.tags[1] ?? r.assetId,
+                    assetId: r.assetId,
+                    url: r.url,
+                    fileSizeBytes: r.fileSizeBytes,
+                })),
             });
         }
 

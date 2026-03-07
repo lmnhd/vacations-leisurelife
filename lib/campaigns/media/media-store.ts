@@ -206,6 +206,7 @@ type ManifestAssetSection =
     | 'shipReferences'
     | 'hero'
     | 'aestheticConcepts'
+    | 'sceneImages'
     | 'platformCrops'
     | 'tiktokSeed'
     | 'heroExplainer'
@@ -227,7 +228,7 @@ export async function upsertManifestAssetSection(
     const baseManifest = existingManifest ?? createEmptyManifest(slug);
     let updatedManifest: CampaignMediaManifest;
 
-    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts') {
+    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts' || section === 'sceneImages') {
         const newRecords = records as AssetRecord[];
         updatedManifest = {
             ...baseManifest,
