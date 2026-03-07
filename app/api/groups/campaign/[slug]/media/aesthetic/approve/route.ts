@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
-import { CampaignAestheticBriefSchema } from "@/lib/campaigns/schema";
 
 export async function POST(
     req: NextRequest,
@@ -9,32 +8,19 @@ export async function POST(
     try {
         const { slug } = await params;
 
-        // Body could contain the fully user-edited brief
-        const body = await req.json();
-
-        // Validate with Zod before saving
-        const parseResult = CampaignAestheticBriefSchema.safeParse(body);
-        if (!parseResult.success) {
-            return NextResponse.json(
-                { error: "Invalid brief schema", details: parseResult.error.format() },
-                { status: 400 }
-            );
+        const brief = await getAestheticBrief(slug);
+        if (!brief) {
+            return NextResponse.json({ error: "Brief not found" }, { status: 404 });
         }
 
-        const brief = parseResult.data;
+        const approvedBrief = {
+            ...brief,
+            humanReviewStatus: 'approved' as const,
+        };
 
-        // Ensure the slug matches the URL
-        if (brief.slug !== slug) {
-            return NextResponse.json({ error: "Slug mismatch" }, { status: 400 });
-        }
+        await saveAestheticBrief(approvedBrief);
 
-        // Mark it as approved
-        brief.humanReviewStatus = 'approved';
-
-        // Save directly back to DynamoDB
-        await saveAestheticBrief(brief);
-
-        return NextResponse.json({ success: true, brief }, { status: 200 });
+        return NextResponse.json({ success: true, brief: approvedBrief }, { status: 200 });
 
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";

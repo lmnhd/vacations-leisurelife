@@ -28,6 +28,10 @@ function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ section: s
     manifest.images.hero.forEach((asset, index) => {
         reviewEntries.push({ section: 'Images', title: `Hero ${index + 1}`, asset });
     });
+    manifest.images.sceneImages.forEach((asset, index) => {
+        const sceneId = asset.tags.find(t => t !== 'scene') ?? `scene_${index + 1}`;
+        reviewEntries.push({ section: 'Scene Images', title: sceneId, asset });
+    });
     manifest.images.aestheticConcepts.forEach((asset, index) => {
         reviewEntries.push({ section: 'Images', title: `Concept ${index + 1}`, asset });
     });

@@ -8,6 +8,19 @@ type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" |
 
 const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
 
+async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+    const responseText = await response.text();
+    if (!responseText) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(responseText) as Record<string, unknown>;
+    } catch {
+        throw new Error(`Server returned non-JSON response (${response.status} ${response.statusText})`);
+    }
+}
+
 export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
     const [briefState, setBriefState] = useState<BriefState>("idle");
@@ -116,14 +129,15 @@ export default function AestheticDevisingTestPage() {
         setError("");
 
         try {
-            const updatedBrief: CampaignAestheticBrief = { ...result, humanReviewStatus: "approved" };
             const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic/approve`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedBrief),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Approval failed");
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = typeof data.error === "string" ? data.error : "Approval failed";
+                const errorDetails = typeof data.details === "string" ? data.details : "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
             setResult(data.brief as CampaignAestheticBrief);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
@@ -305,15 +319,22 @@ export default function AestheticDevisingTestPage() {
                                 {/* Color swatches */}
                                 <div>
                                     <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Color Palette</div>
-                                    <div className="flex gap-2 h-10 rounded-lg overflow-hidden">
-                                        {Object.entries(result.visual?.colorPalette ?? {}).map(([key, hex]) => (
-                                            <div
-                                                key={key}
-                                                className="flex-1"
-                                                style={{ backgroundColor: hex as string }}
-                                                title={`${key}: ${hex}`}
-                                            />
-                                        ))}
+                                    <div className="flex gap-2 flex-wrap">
+                                        {Object.entries(result.visual?.colorPalette ?? {}).map(([key, rawValue]) => {
+                                            const hexMatch = (rawValue as string).match(/#[0-9A-Fa-f]{3,6}/);
+                                            const hexColor = hexMatch ? hexMatch[0] : (rawValue as string);
+                                            return (
+                                                <div key={key} className="flex flex-col items-center gap-1">
+                                                    <div
+                                                        className="w-12 h-10 rounded-md border border-white/10"
+                                                        style={{ backgroundColor: hexColor }}
+                                                        title={`${key}: ${rawValue}`}
+                                                    />
+                                                    <span className="text-[9px] text-slate-500 text-center leading-tight max-w-[52px]">{key}</span>
+                                                    <span className="text-[9px] text-slate-600 font-mono">{hexColor}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 

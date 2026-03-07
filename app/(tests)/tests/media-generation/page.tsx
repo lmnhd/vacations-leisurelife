@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { CampaignMediaManifest } from "@/lib/campaigns/schema";
+import type { CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import { MediaReviewPanel } from "./media-review-panel";
 import {
     Loader2, Wand2, Image, Film, Music, Type, Shirt,
-    Zap, Download, Eye, AlertTriangle
+    Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink
 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -32,7 +32,8 @@ interface GenerateResult {
 }
 
 const CATEGORIES = [
-    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["ship_reference_image", "hero_image", "aesthetic_concept", "platform_crop"] },
+    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["ship_reference_image", "hero_image", "aesthetic_concept", "scene_image", "platform_crop"] },
+    { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
     { key: "video", label: "Video", icon: Film, color: "purple", types: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
     { key: "copy", label: "Copy", icon: Type, color: "amber", types: ["ad_creative", "carousel_slide", "email_header"] },
@@ -40,12 +41,13 @@ const CATEGORIES = [
 ] as const;
 
 const COST_ESTIMATES: Record<string, string> = {
-    images: "~search + Nano-Banana image generation",
-    video: "~$5–$15 (HeyGen × 3 + RunwayML × 6–7)",
+    images: "~SerpAPI search + Nano-Banana × hero + concepts",
+    scenes: "~Nano-Banana × 8–12 scene images (Production Bible)",
+    video: "~RunwayML × shots per storyboard + ElevenLabs",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
     copy: "~$0.05 (GPT-4o single call)",
     merch: "~$0.40 (Nano-Banana × 3–5 designs)",
-    all: "~$6–$16 total",
+    all: "~full pipeline (storyboard path if Production Bible exists)",
 };
 
 const LS_SLUG_KEY = "mediaGen_slug";
@@ -58,6 +60,7 @@ export default function MediaGenerationTestPage() {
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [manifest, setManifest] = useState<CampaignMediaManifest | null>(null);
+    const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
     const [error, setError] = useState("");
 
     const isBusy = pageState !== "idle";
@@ -72,17 +75,26 @@ export default function MediaGenerationTestPage() {
         setPageState("loading");
         setError("");
         try {
-            const res = await fetch(`/api/groups/campaign/${targetSlug}/media/manifest`);
-            if (res.status === 404) {
+            const [manifestRes, briefRes] = await Promise.all([
+                fetch(`/api/groups/campaign/${targetSlug}/media/manifest`),
+                fetch(`/api/groups/campaign/${targetSlug}/media/aesthetic`),
+            ]);
+            if (manifestRes.status === 404) {
                 setManifest(null);
                 setError("No manifest found. Run generation first.");
                 localStorage.removeItem(getManifestStorageKey(targetSlug));
-                return;
+            } else {
+                const data = await manifestRes.json();
+                if (!manifestRes.ok) throw new Error(data.error || "Load failed");
+                setManifest(data as CampaignMediaManifest);
+                localStorage.setItem(getManifestStorageKey(targetSlug), JSON.stringify(data));
             }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Load failed");
-            setManifest(data as CampaignMediaManifest);
-            localStorage.setItem(getManifestStorageKey(targetSlug), JSON.stringify(data));
+            if (briefRes.ok) {
+                const briefData = await briefRes.json();
+                setBrief(briefData.brief ?? briefData);
+            } else {
+                setBrief(null);
+            }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -171,6 +183,7 @@ export default function MediaGenerationTestPage() {
     const colorClass = (color: string, part: "bg" | "text" | "border") => {
         const map: Record<string, Record<string, string>> = {
             cyan: { bg: "bg-cyan-500/20", text: "text-cyan-400", border: "border-cyan-500/40" },
+            teal: { bg: "bg-teal-500/20", text: "text-teal-400", border: "border-teal-500/40" },
             purple: { bg: "bg-purple-500/20", text: "text-purple-400", border: "border-purple-500/40" },
             emerald: { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/40" },
             amber: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/40" },
@@ -179,18 +192,32 @@ export default function MediaGenerationTestPage() {
         return map[color]?.[part] || "";
     };
 
+    const hasProductionBible = !!(brief?.productionBible);
+    const sceneCount = brief?.productionBible?.sceneLibrary?.length ?? 0;
+    const storyboardCount = brief?.productionBible?.storyboards?.length ?? 0;
+
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
             <div className="max-w-5xl mx-auto space-y-4">
 
                 {/* Header */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
-                        🎬 Media Generation — Phase 2B
-                    </h1>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                        <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
+                            🎬 Media Generation — Phase 2
+                        </h1>
+                        <a
+                            href="/tests/production-bible"
+                            className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 rounded-lg transition"
+                        >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Production Bible
+                            <ExternalLink className="w-3 h-3" />
+                        </a>
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">
-                        Generate real-ship reference imagery, Nano-Banana-powered image assets, cinematic video, audio, copy, and merch from an approved aesthetic brief.
-                        Each category can be run independently. Requires approved brief and a resolved ship target.
+                        Generate real-ship reference imagery, scene images, storyboard-driven video, audio, copy, and merch from an approved aesthetic brief.
+                        Each category can be run independently. Requires an approved brief with Production Bible for the storyboard path.
                     </p>
                 </div>
 
@@ -243,6 +270,28 @@ export default function MediaGenerationTestPage() {
                     )}
                 </div>
 
+                {/* Production Bible status strip */}
+                <div className={`border rounded-xl p-3 flex items-center gap-3 text-xs ${
+                    hasProductionBible
+                        ? "border-teal-500/30 bg-teal-500/5 text-teal-300"
+                        : "border-amber-500/30 bg-amber-500/5 text-amber-400"
+                }`}>
+                    <BookOpen className="w-4 h-4 shrink-0" />
+                    {hasProductionBible ? (
+                        <span>
+                            Production Bible ready — <strong>{sceneCount} scenes</strong>, <strong>{storyboardCount} storyboards</strong>.
+                            Video generation will use storyboard-driven assembly with per-shot scene images.
+                        </span>
+                    ) : brief ? (
+                        <span>
+                            No Production Bible on this brief. Video will use the legacy single-hero path.
+                            Regenerate the aesthetic brief to get a Production Bible.
+                        </span>
+                    ) : (
+                        <span className="text-slate-500">Load a campaign to see Production Bible status.</span>
+                    )}
+                </div>
+
                 {/* Per-Category Generator Buttons */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
                     <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Generate by Category</div>
@@ -280,7 +329,7 @@ export default function MediaGenerationTestPage() {
                                 : <Zap className="h-6 w-6" />
                             }
                             <span>{activeCategory === "all" ? "Generating All..." : "⚡ Generate All Media"}</span>
-                            <span className="text-[9px] opacity-60">{COST_ESTIMATES["all"]}</span>
+                            <span className="text-[9px] opacity-60 text-center px-2">{COST_ESTIMATES["all"]}</span>
                         </button>
                     </div>
                 </div>
@@ -437,12 +486,18 @@ export default function MediaGenerationTestPage() {
                         </div>
 
                         {/* Asset count summary */}
-                        <div className="p-4 grid grid-cols-5 gap-3">
+                        <div className="p-4 grid grid-cols-3 md:grid-cols-6 gap-3">
                             <div className="text-center p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
                                 <div className="text-lg font-bold text-cyan-400">
                                     {manifest.images.shipReferences.length + manifest.images.hero.length + manifest.images.aestheticConcepts.length}
                                 </div>
-                                <div className="text-[9px] text-slate-500">Images + References</div>
+                                <div className="text-[9px] text-slate-500">Hero + Refs</div>
+                            </div>
+                            <div className="text-center p-3 rounded-lg bg-teal-500/5 border border-teal-500/10">
+                                <div className="text-lg font-bold text-teal-400">
+                                    {manifest.images.sceneImages.length}
+                                </div>
+                                <div className="text-[9px] text-slate-500">Scene Images</div>
                             </div>
                             <div className="text-center p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
                                 <div className="text-lg font-bold text-purple-400">
