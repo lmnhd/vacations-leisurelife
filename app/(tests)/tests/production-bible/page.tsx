@@ -13,7 +13,7 @@ import type {
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
-    AlertTriangle, CheckCircle2, Zap
+    AlertTriangle, CheckCircle2, Zap, Wand2
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
 
@@ -162,6 +162,27 @@ export default function ProductionBibleTestPage() {
         }
     };
 
+    // ── Regenerate Production Bible (rewrites scene specs) ─────────────────
+    const handleRegenerateBible = async () => {
+        if (!slug.trim()) return;
+        setPageState("generating");
+        setError("");
+        setGenerateLog(["Regenerating Production Bible scene specs with updated creative direction..."]);
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/production-bible`, {
+                method: "POST",
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            setGenerateLog(prev => [...prev, `Done — ${data.brief?.productionBible?.sceneLibrary?.length ?? 0} new scenes generated`]);
+            await loadData(slug.trim());
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setPageState("idle");
+        }
+    };
+
     // ── Toggle helpers ────────────────────────────────────────────────────
     const toggleScene = (sceneId: string) => {
         setExpandedScenes(prev => {
@@ -262,32 +283,47 @@ export default function ProductionBibleTestPage() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex gap-2 flex-wrap">
-                    <button
-                        className="bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-700 text-cyan-300 px-4 py-2 rounded text-sm flex items-center gap-2"
-                        onClick={handleGenerateSceneImages}
-                        disabled={isBusy || !bible}
-                        title={!bible ? "No Production Bible — regenerate the aesthetic brief first" : ""}
-                    >
-                        {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-                        Generate Scene Images
-                    </button>
-                    <button
-                        className="bg-purple-900/50 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-4 py-2 rounded text-sm flex items-center gap-2"
-                        onClick={handleGenerateVideos}
-                        disabled={isBusy || !bible}
-                    >
-                        {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
-                        Generate Storyboard Videos
-                    </button>
-                    <button
-                        className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2"
-                        onClick={handleGenerateAll}
-                        disabled={isBusy}
-                    >
-                        {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                        Full Pipeline
-                    </button>
+                <div className="space-y-2">
+                    <div className="text-xs text-zinc-500 font-medium uppercase tracking-wide">Step 1 — Scene Specs</div>
+                    <div className="flex gap-2 flex-wrap">
+                        <button
+                            className="bg-rose-900/50 hover:bg-rose-800/50 border border-rose-700 text-rose-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={handleRegenerateBible}
+                            disabled={isBusy || !slug.trim()}
+                            title="Rewrites all scene specs using updated creative direction — do this before generating images"
+                        >
+                            {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                            Regenerate Production Bible
+                        </button>
+                    </div>
+                    <div className="text-xs text-zinc-500 font-medium uppercase tracking-wide pt-1">Step 2 — Generate Assets</div>
+                    <div className="flex gap-2 flex-wrap">
+                        <button
+                            className="bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-700 text-cyan-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={handleGenerateSceneImages}
+                            disabled={isBusy || !bible}
+                            title={!bible ? "No Production Bible — regenerate scene specs first" : ""}
+                        >
+                            {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
+                            Generate Scene Images
+                        </button>
+                        <button
+                            className="bg-purple-900/50 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={handleGenerateVideos}
+                            disabled={isBusy || !bible}
+                        >
+                            {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
+                            Generate Storyboard Videos
+                        </button>
+                        <button
+                            className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={handleGenerateAll}
+                            disabled={isBusy}
+                        >
+                            {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            Full Pipeline
+                        </button>
+                    </div>
                 </div>
 
                 {/* Generation log */}
