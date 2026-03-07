@@ -26,19 +26,19 @@ In practice, this means copy, audio, image, video, merch, and review actions sho
 | Asset Type | Count | Tool | Destination |
 |------------|-------|------|-------------|
 | Ship reference images | 6–12 | SerpAPI Google Images discovery | Source-of-truth for real ship visuals |
-| Hero images (landing page) | 3–5 | Nano-Banana image edit over SerpAPI references | Landing page hero section |
-| Scene images (Production Bible) | 8–12 | Nano-Banana + ship references | Source images for storyboard video shots |
-| Aesthetic concept art | 4–5 | Nano-Banana | Moodboard, email headers |
+| Hero images (landing page) | 3–5 | Nano-Banana (Gemini Flash) image edit over SerpAPI references | Landing page hero section |
+| Scene images (Production Bible) | 10 | Nano-Banana (Gemini Flash) + matched ship references | Source images for storyboard video shots |
+| Aesthetic concept art | 4–5 | Nano-Banana (Gemini Flash) | Moodboard, email headers |
 | Platform-sized image crops | Varies | Sharp (server-side resize) | Each social format |
-| TikTok / Reels seed video | 1 | RunwayML multi-shot image-to-video + ElevenLabs + local ffmpeg | TikTok organic, Instagram Reels |
-| Hero explainer video | 1 | HeyGen | Landing page, YouTube |
-| Threshold announcement video | 1 | HeyGen | Email, social |
-| Countdown video series | 3 | RunwayML + ElevenLabs | Social, email nurture |
-| Cinematic B-roll clips | 3–4 | RunwayML Gen-3 | Video compositing |
+| TikTok / Reels seed video | 1 | RunwayML Gen-3 Turbo (4 shots × 10s) + ElevenLabs + ffmpeg | TikTok organic, Instagram Reels |
+| Hero explainer video | 1 | RunwayML Gen-3 Turbo (6 shots × 10s) + ElevenLabs + ffmpeg | Landing page, YouTube |
+| Threshold announcement video | 1 | RunwayML Gen-3 Turbo (4 shots × 10s) + ElevenLabs + ffmpeg | Email, social |
+| Countdown video | 1 | RunwayML Gen-3 Turbo (3 shots × 10s) + ElevenLabs + ffmpeg | Social, email nurture |
+| Cinematic B-roll clips | 3–4 | RunwayML Gen-3 Turbo | Video compositing |
 | Landing page ambient narration | 1 | ElevenLabs | Landing page hero audio |
 | Threshold hype clip | 1 | ElevenLabs | SMS hook (Twilio), email |
-| Campaign theme music | 1 | Replicate MusicGen | Video background, landing page |
-| Merch design files | 3–5 | Nano-Banana | Printful / Printify upload |
+| Campaign theme music | 1 | Shared Default Library or Replicate MusicGen | Video background, landing page |
+| Merch design files | 3–5 | Nano-Banana (Gemini Flash) | Printful / Printify upload |
 | Email header graphics | 3 | Derived from hero images | Klaviyo template stages 1–3 |
 | Facebook / Meta ad creatives | 3 | Derived from hero images + copy | Meta Ads Manager |
 | Social carousel (Instagram) | 1 (7 slides) | Generated per slide spec | Instagram feed |
@@ -73,11 +73,15 @@ type AssetType =
   | 'merch_design' | 'email_header' | 'ad_creative' | 'carousel_slide';
 
 type GeneratorService = 
-  | 'midjourney' | 'stability_ai' | 'dalle3' | 'serpapi'
-  | 'heygen' | 'runwayml' | 'kling'
-  | 'elevenlabs' | 'openai_tts'
-  | 'replicate' | 'udio'
-  | 'sharp'; // server-side image processing
+  | 'gemini3_flash' | 'gemini3_pro'   // Nano-Banana image generation (primary)
+  | 'dalle3' | 'serpapi'              // Merch / ship reference discovery
+  | 'runwayml'                        // All video generation (Production Bible path)
+  | 'heygen'                          // Legacy avatar video (legacy path only)
+  | 'elevenlabs' | 'openai_tts'       // Voice narration
+  | 'replicate'                       // MusicGen theme music
+  | 'sharp'                           // Server-side image resizing
+  | 'claude4_opus' | 'claude4_sonnet' // LLM copy generation
+  | 'gpt4o' | 'llama4';              // LLM copy generation
 ```
 
 ---
@@ -151,7 +155,20 @@ When the `CampaignAestheticBrief` includes a `productionBible`, all video delive
 - Film-standard transitions between shots
 - Background music layering with narration ducking
 
+**Video Deliverables (Production Bible path):**
+
+| Deliverable | Shot Count | Duration | RunwayML Credits | Cost |
+|-------------|-----------|----------|-----------------|------|
+| tiktok_seed | 4 shots | 40s total | 200 | $2.00 |
+| hero_explainer | 6 shots | 60s total | 300 | $3.00 |
+| threshold_announcement | 4 shots | 40s total | 200 | $2.00 |
+| countdown_1 | 3 shots | 30s total | 150 | $1.50 |
+| **TOTAL** | **17 clips** | **170s** | **850 credits** | **$8.50** |
+
+> Credits calculated at gen3a_turbo rate: 5 credits/second × 10s/clip.
+
 **Files:**
+- `lib/campaigns/media/video-deliverable-specs.ts` → `VIDEO_DELIVERABLE_SPECS` (single source of truth for shot counts)
 - `lib/campaigns/media/generators/tiktok-seed-generator.ts` → `generateStoryboardVideo()`
 - `lib/campaigns/media/generators/runway-generator.ts` → `generatePromptedClipFromScenes()`
 - `lib/campaigns/media/video-composer.ts` → `composeProductionVideo()`
@@ -381,22 +398,23 @@ interface CampaignMediaManifest {
   images: {
     shipReferences: AssetRecord[];
     hero: AssetRecord[];
+    sceneImages: AssetRecord[];          // Production Bible path — one per scene
     aestheticConcepts: AssetRecord[];
     platformCrops: Record<ImageFormat, AssetRecord[]>;
   };
   
   videos: {
-    tiktokSeed: AssetRecord;
-    heroExplainer: AssetRecord;
-    thresholdAnnouncement: AssetRecord;
+    tiktokSeed: AssetRecord | null;
+    heroExplainer: AssetRecord | null;
+    thresholdAnnouncement: AssetRecord | null;
     countdown: AssetRecord[];
     broll: AssetRecord[];
   };
   
   audio: {
-    ambientNarration: AssetRecord;
-    hypeClip: AssetRecord;
-    themeMusic: AssetRecord;
+    ambientNarration: AssetRecord | null;
+    hypeClip: AssetRecord | null;
+    themeMusic: AssetRecord | null;
   };
   
   merch: {
@@ -410,21 +428,69 @@ interface CampaignMediaManifest {
     adVariants: AdCopySet[];
     captions: PlatformCaptions;
     emailSubjectLines: EmailSubjectSet;
-  };
+  } | null;
 }
 
 interface AssetRecord {
   assetId: string;
   assetType: AssetType;
-  url: string;                  // CDN URL (Cloudflare R2)
+  url: string;                  // CDN URL (R2) or /api/.../asset-data/:id (DynamoDB fallback)
   generator: GeneratorService;
   promptUsed: string;
   dimensions?: { width: number; height: number };
   durationSeconds?: number;
   fileSizeBytes: number;
   mimeType: string;
-  tags: string[];
-  createdAt: string;
+  tags: string[];               // Scene images include sceneId as a tag
+  createdAt: string;            // ISO timestamp — used as cache-buster on image URLs
   reviewStatus: 'auto_approved' | 'human_approved' | 'needs_review';
 }
 ```
+
+---
+
+## Credit Pre-Check System
+
+Before any video generation starts, the orchestrator performs a **credit pre-flight check** that blocks generation if provider balances are insufficient. This prevents partial burns where some deliverables succeed and others fail mid-run.
+
+### How It Works
+
+```
+GET /api/groups/campaign/[slug]/media/credit-check
+  ?sceneCount=10          // number of scenes in Production Bible (default 10)
+  &estimateOnly=true      // skip live balance queries, return estimate only
+```
+
+**Response:**
+```typescript
+interface CreditCheckResult {
+  canProceed: boolean | null;   // null = estimateOnly mode
+  estimate: {
+    runwayCreditsRequired: number;    // 850 for full Production Bible
+    runwayClipCount: number;          // 17
+    runwayTotalSeconds: number;       // 170
+    runwayUsd: number;                // $8.50
+    geminiUsd: number;                // ~$0.60
+    elevenlabsUsd: number;            // ~$0.07
+    totalUsd: number;                 // ~$9.75
+    deliverables: DeliverableEstimate[];
+  };
+  balances: ServiceBalance[];   // Live RunwayML creditBalance
+  blockers: string[];           // Human-readable block reasons
+  summary: string;              // Full text report for agents
+}
+```
+
+**Orchestrator behavior:** If `canProceed === false`, all video generation jobs are skipped and the blockers are surfaced in the manifest `errors` array. No credits are consumed.
+
+### Skip-If-Exists Guard
+
+The orchestrator also checks `existingManifest` before generating each storyboard deliverable. If a video record already exists for that `assetType + deliverableId`, the job is skipped entirely. This means:
+- A partial run (e.g. only `tiktok_seed` succeeded before credits ran out) is safely resumable
+- Re-running video generation only generates the missing deliverables
+- No duplicate credits burned on already-completed assets
+
+**Files:**
+- `lib/campaigns/media/credit-check-service.ts` — `checkMediaCredits()`, `estimateCampaignCost()`
+- `lib/campaigns/media/video-deliverable-specs.ts` — `VIDEO_DELIVERABLE_SPECS` shared constant
+- `app/api/groups/campaign/[slug]/media/credit-check/route.ts` — agent-callable GET endpoint

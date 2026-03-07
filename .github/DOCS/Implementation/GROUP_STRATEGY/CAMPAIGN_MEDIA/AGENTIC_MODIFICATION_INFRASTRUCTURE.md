@@ -1,0 +1,323 @@
+# Agentic Modification Infrastructure
+### Agent-Callable API Layer for Campaign Media Manifest Management
+
+**Status:** Partially Implemented — Credit Check & Generation live; targeted asset replacement pending  
+**Branch:** `feature/shadow-groups`
+
+---
+
+## Overview
+
+The Campaign Media system exposes a structured API layer that allows external agents (Blueprint Sprint agent, approval agents, creative direction agents) to:
+
+1. **Inspect** the current state of any campaign's media manifest
+2. **Check** credit balances and cost estimates before committing to generation
+3. **Generate** the full pipeline or targeted asset subsets
+4. **Replace** individual assets (re-generate a single scene image, video, or audio track) without touching the rest of the manifest
+5. **Approve / reject** assets for distribution
+6. **Query** what still needs to be generated (manifest gaps)
+
+The same API surface serves both the operator UI (`/tests/production-bible`, `/tests/media-generation`) and fully automated agent workflows. There is no separate "agent mode" — agents call the same endpoints as the UI.
+
+---
+
+## Implemented Endpoints
+
+### Credit Pre-Check
+```
+GET /api/groups/campaign/[slug]/media/credit-check
+```
+
+**Purpose:** Query cost estimate + live provider balances before starting any generation. Agents MUST call this before triggering video generation and MUST NOT proceed if `canProceed === false` without requesting human confirmation.
+
+**Query params:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sceneCount` | number | 10 | Scenes in the Production Bible (affects Gemini estimate) |
+| `estimateOnly` | boolean | false | Skip live API calls, return estimate only |
+
+**Response:**
+```typescript
+{
+  slug: string;
+  canProceed: boolean | null;       // null when estimateOnly=true
+  estimate: {
+    runwayCreditsRequired: number;  // e.g. 850 for full Production Bible
+    runwayClipCount: number;        // 17
+    runwayUsd: number;              // $8.50
+    geminiUsd: number;              // ~$0.60
+    elevenlabsUsd: number;          // ~$0.07
+    totalUsd: number;               // ~$9.75 all services
+    deliverables: Array<{
+      id: string;
+      title: string;
+      shotCount: number;
+      clipDurationSeconds: number;
+      runwayCredits: number;
+      usd: number;
+    }>;
+  };
+  balances: Array<{
+    service: string;
+    available: number | null;       // null if unqueryable
+    unit: string;                   // 'credits' or 'USD quota'
+    fetchError: string | null;
+    unverifiable: boolean;          // true for Gemini (no balance API)
+  }>;
+  blockers: string[];               // Empty array = safe to proceed
+  summary: string;                  // Full human-readable report
+}
+```
+
+**Agent decision flow:**
+```
+canProceed === true  → proceed with generation
+canProceed === false → surface blockers to operator, request confirmation to top up credits
+canProceed === null  → estimate only, no live check was performed
+```
+
+---
+
+### Full Pipeline Generation
+```
+POST /api/groups/campaign/[slug]/media/generate
+```
+
+**Purpose:** Run the full Phase 2 media generation pipeline, or a targeted subset via `assetTypes`.
+
+**Request body:**
+```typescript
+{
+  assetTypes?: AssetType[];           // Omit for full pipeline
+  themeMusicSource?: 'default' | 'replicate';
+}
+```
+
+**Behavior:**
+- Runs credit pre-check internally before any video generation
+- Skips any deliverable already present in the existing manifest (skip-if-exists guard)
+- Merges new assets into existing manifest — never wipes what's already there
+- Returns `jobSummary.errors[]` for any failed assets (other assets still saved)
+
+**Response:**
+```typescript
+{
+  slug: string;
+  manifest: CampaignMediaManifest;
+  jobSummary: {
+    total: number;
+    completed: number;
+    failed: number;
+    errors: string[];
+  };
+}
+```
+
+---
+
+### Production Bible Generation / Regeneration
+```
+POST /api/groups/campaign/[slug]/media/aesthetic/production-bible
+```
+
+**Purpose:** Generate or regenerate the Production Bible (scene library + storyboards) on the campaign's aesthetic brief. This is **Phase 1B** — it writes to the `brief.productionBible` field, not the manifest.
+
+Call this before generating scene images or storyboard videos if the Production Bible doesn't exist or needs a creative refresh.
+
+**Response:**
+```typescript
+{
+  brief: CampaignAestheticBrief;   // Updated brief with productionBible populated
+}
+```
+
+---
+
+### Manifest Fetch
+```
+GET /api/groups/campaign/[slug]/media/manifest
+```
+
+**Purpose:** Retrieve the current `CampaignMediaManifest` for a campaign. Agents use this to determine what exists, what is missing, and what URLs to reference.
+
+**Response:** `CampaignMediaManifest` (see `PHASE_2_MEDIA_GENERATION.md` for full schema)
+
+---
+
+## Manifest Gap Analysis
+
+Agents can determine what needs to be generated by inspecting the manifest:
+
+```typescript
+// Pseudocode — pattern for agent gap detection
+const manifest = await fetch(`/api/groups/campaign/${slug}/media/manifest`).then(r => r.json());
+
+const missing: AssetType[] = [];
+
+if (!manifest.images.sceneImages?.length)          missing.push('scene_image');
+if (!manifest.videos.tiktokSeed)                   missing.push('tiktok_seed_video');
+if (!manifest.videos.heroExplainer)                missing.push('hero_explainer_video');
+if (!manifest.videos.thresholdAnnouncement)        missing.push('threshold_video');
+if (!manifest.videos.countdown?.length)            missing.push('countdown_video');
+if (!manifest.audio.ambientNarration)              missing.push('ambient_narration');
+if (!manifest.audio.themeMusic)                    missing.push('theme_music');
+if (!manifest.images.hero?.length)                 missing.push('hero_image');
+
+// Then selectively generate only what's missing:
+await fetch(`/api/groups/campaign/${slug}/media/generate`, {
+  method: 'POST',
+  body: JSON.stringify({ assetTypes: missing })
+});
+```
+
+---
+
+## Targeted Asset Replacement (Infrastructure Spec — Pending Implementation)
+
+The following describes the planned endpoint for replacing a **single asset** without triggering a full pipeline run. This is the primary mechanism for agent-driven creative iteration.
+
+### Endpoint Design
+
+```
+POST /api/groups/campaign/[slug]/media/asset/regenerate
+```
+
+**Request body:**
+```typescript
+{
+  assetType: AssetType;
+  assetId?: string;           // Specific asset to replace (omit to replace first of type)
+  sceneId?: string;           // For scene_image: regenerate image for specific scene
+  deliverableId?: string;     // For videos: regenerate specific storyboard deliverable
+  promptOverride?: string;    // Agent-supplied prompt to override the stored one
+  reason?: string;            // Logged to AssetRecord for audit trail
+}
+```
+
+**Behavior:**
+1. Fetch the existing `AssetRecord` for the target asset
+2. Re-run only the generator for that asset type, with the existing or overridden prompt
+3. Upload the new asset to R2 (new `assetId` with timestamp suffix to keep old URL working)
+4. Patch the manifest in-place — only the targeted slot is updated
+5. Return the new `AssetRecord`
+
+**Supported asset types for targeted replacement:**
+
+| AssetType | Generator Called | Notes |
+|-----------|-----------------|-------|
+| `scene_image` | Nano-Banana | Requires `sceneId`. Uses scene's `imagePrompt` from Production Bible |
+| `hero_image` | Nano-Banana | Replaces specified hero slot |
+| `aesthetic_concept` | Nano-Banana | Replaces specified concept slot |
+| `tiktok_seed_video` | RunwayML + ElevenLabs | Full storyboard re-run for that deliverable |
+| `hero_explainer_video` | RunwayML + ElevenLabs | Full storyboard re-run |
+| `threshold_video` | RunwayML + ElevenLabs | Full storyboard re-run |
+| `countdown_video` | RunwayML + ElevenLabs | Full storyboard re-run |
+| `ambient_narration` | ElevenLabs | Re-renders narration from brief script |
+| `theme_music` | Replicate MusicGen | Generates new track |
+| `merch_design` | Nano-Banana | Re-generates using brief's merch prompt |
+
+**Credit check behavior:** For any `assetType` that uses RunwayML, the endpoint runs a mini credit check (estimate for just that deliverable) before proceeding.
+
+### Implementation Files (To Be Created)
+
+```
+app/api/groups/campaign/[slug]/media/asset/regenerate/route.ts
+lib/campaigns/media/asset-regenerator.ts   ← core logic, separate from route
+```
+
+---
+
+## Asset Approval / Review
+
+Assets in the manifest carry a `reviewStatus` field:
+```typescript
+reviewStatus: 'auto_approved' | 'human_approved' | 'needs_review'
+```
+
+Currently all assets are auto-approved on generation. The planned approval endpoint:
+
+```
+PATCH /api/groups/campaign/[slug]/media/asset/[assetId]/review
+```
+
+**Request body:**
+```typescript
+{
+  reviewStatus: 'human_approved' | 'needs_review';
+  notes?: string;   // Agent or operator annotation
+}
+```
+
+**Agent use case:** An approval agent reviews generated scene images, marks any that fail the "vacation daydream" test as `needs_review`, and calls the targeted regeneration endpoint for those specific `assetId`s before the campaign goes live.
+
+---
+
+## Agent Authorization Pattern
+
+All media modification endpoints require the same auth as the operator UI (session-based). For agent invocations from the Blueprint Sprint pipeline, agents use an internal service credential:
+
+```
+Authorization: Bearer {AGENT_SERVICE_TOKEN}
+X-Agent-Id: blueprint-sprint-agent   // For audit logging
+```
+
+> `AGENT_SERVICE_TOKEN` is an env var set in the deployment environment. Agents must not hardcode this value.
+
+---
+
+## Human Confirmation Gate
+
+Agents MUST request human confirmation before:
+
+1. **Any video generation** — due to RunwayML credit cost (~$8.50/campaign)
+2. **Full pipeline runs** — total cost ~$9.75/campaign across all services
+3. **Targeted video regeneration** — even single deliverable costs $1.50–$3.00
+
+**Confirmation request pattern (agent output):**
+
+```
+=== APPROVAL REQUIRED: Video Generation ===
+
+Campaign: citizen-science-micro-expeditions-2027
+Estimated cost: $8.50 (RunwayML) + ~$1.25 (other services) = ~$9.75 total
+
+RunwayML balance: 1,000 credits available ($10.00)
+Required:         850 credits ($8.50)
+Remaining after:  150 credits ($1.50)
+
+Deliverables to generate:
+  - Hero Explainer Video: 6 shots × 10s = 300 credits ($3.00)
+  - Threshold Announcement: 4 shots × 10s = 200 credits ($2.00)
+  - Countdown — 3 Cabins Left: 3 shots × 10s = 150 credits ($1.50)
+
+(TikTok Seed Video already exists — skipped)
+
+Reply APPROVE to proceed, or SKIP to defer video generation.
+```
+
+---
+
+## Full API Surface Reference
+
+| Method | Endpoint | Purpose | Status |
+|--------|----------|---------|--------|
+| `GET` | `/api/groups/campaign/[slug]/media/credit-check` | Cost estimate + live balance check | ✅ Live |
+| `POST` | `/api/groups/campaign/[slug]/media/generate` | Full or targeted pipeline generation | ✅ Live |
+| `GET` | `/api/groups/campaign/[slug]/media/manifest` | Fetch current manifest | ✅ Live |
+| `POST` | `/api/groups/campaign/[slug]/media/aesthetic/production-bible` | Generate / regenerate Production Bible | ✅ Live |
+| `POST` | `/api/groups/campaign/[slug]/media/asset/regenerate` | Replace a single asset | 🔲 Pending |
+| `PATCH` | `/api/groups/campaign/[slug]/media/asset/[assetId]/review` | Approve / flag an asset | 🔲 Pending |
+| `GET` | `/api/groups/theme-music-library` | Fetch shared theme music library | ✅ Live |
+| `GET` | `/api/groups/theme-music-library?campaignSlug=[slug]` | Best track match for campaign | ✅ Live |
+| `POST` | `/api/groups/theme-music-library` | Upload track to library | ✅ Live |
+| `PATCH` | `/api/groups/theme-music-library/[assetId]` | Edit track tags / notes | ✅ Live |
+
+---
+
+## Test Pages
+
+| Page | Purpose |
+|------|---------|
+| `/tests/production-bible` | View/regenerate Production Bible, scene images, storyboard videos; cost estimate panel |
+| `/tests/media-generation` | Full pipeline trigger, asset review panel, per-type regeneration |
+| `/tests/theme-music-library` | Upload and manage shared theme music tracks |

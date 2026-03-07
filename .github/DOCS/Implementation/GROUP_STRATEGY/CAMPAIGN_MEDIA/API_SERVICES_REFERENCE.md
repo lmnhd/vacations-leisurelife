@@ -7,12 +7,11 @@
 
 | Service | Role | Phase | Pricing Model |
 |---------|------|-------|--------------|
-| Midjourney | Primary image generation | 2 | $10–$30/mo (subscription) |
-| Stability AI | Image fallback / programmatic | 2 | Pay-per-image API |
-| DALL-E 3 (OpenAI) | Merch design, quick concepts | 2 | Pay-per-image API |
-| HeyGen | AI avatar video production | 2 | $29–$89/mo (credits) |
-| RunwayML | Cinematic video / B-roll | 2 | Pay-per-second generated |
-| Kling AI | Video fallback | 2 | Pay-per-generation |
+| **Nano-Banana (Gemini 2.5 Flash)** | **Primary image generation — ALL image types** | 2 | Pay-per-token (Google AI) |
+| DALL-E 3 (OpenAI) | Merch design fallback | 2 | Pay-per-image API |
+| SerpAPI | Ship reference image discovery | 2 | Pay-per-search |
+| **RunwayML Gen-3 Turbo** | **All video generation (Production Bible path)** | 2 | **5 credits/second · $0.01/credit** |
+| HeyGen | Legacy avatar video (legacy path only) | 2 | $29–$89/mo (credits) |
 | ElevenLabs | Voice narration / hype clips | 2 | $5–$22/mo (characters) |
 | OpenAI TTS | Voice fallback | 2 | Pay-per-character |
 | Shared Theme Music Library | Premade default campaign theme music | 2 | Existing licensed / owned assets |
@@ -26,60 +25,38 @@
 | Printful | Merch production + fulfillment | 4 | Base cost per product order |
 | Discord Webhook | Community channel posting | 4 | Free |
 | Pinterest API | Long-tail organic discovery | 4 | Free |
-| GPT-4o | Copy, slogans, aesthetic brief | 1, 2 | Pay-per-token |
+| LLM Gateway (configurable) | Copy, slogans, aesthetic brief | 1, 2 | Pay-per-token |
 | Sharp | Server-side image resizing | 3 | Open-source (no cost) |
 
 ---
 
 ## Image Generation
 
-### Midjourney
-**Role:** Primary hero image generation  
-**API Access:** Midjourney does not have an official public API. Two approaches:
-1. **Midjourney API (third-party):** Services like `useapi.net` or `imagineapi.dev` expose unofficial Midjourney API wrappers. Viable for automation but subject to ToS risk.
-2. **MidJourney Direct (Discord Automation):** Use a bot token to submit `imagine` commands via the Midjourney Discord bot and scrape results. More brittle but zero cost beyond subscription.
+### Nano-Banana (Gemini 2.5 Flash) — PRIMARY
+**Role:** All image generation — hero transforms, scene images, aesthetic concepts, merch designs  
+**API Base:** `https://generativelanguage.googleapis.com/v1beta`  
+**Model:** `gemini-2.5-flash-image`  
+**Auth:** `?key={GOOGLE_GENERATIVE_AI_API_KEY}` (query param) or `Authorization: Bearer`
 
-**Recommended approach:** Use **Stability AI** as the primary programmatic API (stable, official, versioned) and reserve Midjourney for high-priority UI-initiated hero image generation sessions where quality ceiling matters most.
-
-**Environment Variables:**
-```env
-MIDJOURNEY_API_KEY=           # Third-party wrapper API key
-MIDJOURNEY_CHANNEL_ID=        # Discord channel ID for bot if using automation
-```
-
----
-
-### Stability AI
-**Role:** Primary programmatic image generation  
-**API Base:** `https://api.stability.ai/v2beta`  
-**Auth:** `Authorization: Bearer {STABILITY_API_KEY}`
-
-**Key Endpoint:**
-```
-POST /stable-image/generate/ultra
-Content-Type: multipart/form-data
-
-Fields:
-  prompt: string                  (max 10,000 chars)
-  negative_prompt?: string
-  aspect_ratio: '16:9' | '1:1' | '9:16' | '4:5' | '3:2'
-  output_format: 'webp' | 'png'
-  seed?: number                   (for reproductibility)
-```
-
-**Response:** Binary image stream (set `Accept: image/*`)
-
-**Cost:** Ultra model — $0.008/image. ~$0.40 for a full set of 50 images per campaign.
+**Key characteristics:**
+- Reference-grounded image editing: pass an existing ship reference image as seed, guide the transform via text prompt
+- Maintains ship identity (real vessel architecture preserved) while adding campaign aesthetic
+- Generates at 2K resolution for hero/scene images, 1K for merch
+- Output: `image/png` base64 encoded in response JSON
 
 **Environment Variables:**
 ```env
-STABILITY_API_KEY=
+GOOGLE_GENERATIVE_AI_API_KEY=
 ```
+
+**Cost:** Approximately $0.04/image at 2K. Full campaign set (~20 images) ≈ $0.80.
+
+**Config:** `lib/campaigns/media/media-pipeline-config.ts` → `NANO_BANANA_CONFIG`
 
 ---
 
 ### DALL-E 3 (via OpenAI)
-**Role:** Merch design generation, quick concept drafts  
+**Role:** Merch design fallback  
 **API Base:** `https://api.openai.com/v1/images/generations`  
 
 **Key parameters for merch:**
@@ -150,11 +127,12 @@ HEYGEN_DEFAULT_AVATAR_ID=         # Base avatar for standard campaigns
 ---
 
 ### RunwayML
-**Role:** Cinematic B-roll clips, countdown video motion  
+**Role:** All video generation in the Production Bible path — TikTok seed, hero explainer, threshold announcement, countdown  
 **API Base:** `https://api.dev.runwayml.com/v1`  
-**Auth:** `Authorization: Bearer {RUNWAYML_API_KEY}`
+**Auth:** `Authorization: Bearer {RUNWAYML_API_KEY}`  
+**API Version Header:** `X-Runway-Version: 2024-11-06` (required on all requests)
 
-**Image-to-Video (Gen-3 Alpha):**
+**Image-to-Video (Gen-3 Turbo):**
 ```
 POST /image_to_video
 {
@@ -162,27 +140,49 @@ POST /image_to_video
   "promptImage": "{base64_or_url_of_source_image}",
   "promptText": "{motion description, max 512 chars}",
   "duration": 10,                  // 5 or 10 seconds
-  "ratio": "1280:720",
+  "ratio": "1280:768",
   "seed": 42
 }
 ```
 
 **Poll:** `GET /tasks/{taskId}` — status `PENDING` → `RUNNING` → `SUCCEEDED`  
-**Output:** `response.output[0]` = video URL (download within 24h)
+**Output:** `response.output[0]` = video URL (download promptly — signed URLs expire)
 
-**Motion prompt strategy:**
+**Credit balance check:**
 ```
-"Slow cinematic push forward, [lightingStyle], atmosphere [calm/vibrant], 
-subtle environmental motion [waves/lights/crowd], no camera shake, 
-letterbox aspect, color grade: [colorPalette primary tones]"
-```
+GET /organization
+Authorization: Bearer {RUNWAYML_API_KEY}
+X-Runway-Version: 2024-11-06
 
-**Cost:** RunwayML Gen-3 Alpha Turbo — ~$0.05/second generated = $0.50 per 10s clip
+Response: { "creditBalance": 1000, "tier": {...} }
+```
+Use this before generation to verify sufficient credits. Integrated into `checkMediaCredits()` in `lib/campaigns/media/credit-check-service.ts`.
+
+**Actual pricing (gen3a_turbo):**
+
+| Duration | Credits | Cost |
+|----------|---------|------|
+| 5 seconds | 25 credits | $0.25 |
+| 10 seconds | 50 credits | $0.50 |
+
+> Rate: **5 credits/second**. 1 credit = $0.01. Full Production Bible = 17 clips × 10s = **850 credits = $8.50**.
+
+**Per-campaign video cost breakdown:**
+
+| Deliverable | Shots | Credits | Cost |
+|-------------|-------|---------|------|
+| tiktok_seed | 4 | 200 | $2.00 |
+| hero_explainer | 6 | 300 | $3.00 |
+| threshold_announcement | 4 | 200 | $2.00 |
+| countdown_1 | 3 | 150 | $1.50 |
+| **TOTAL** | **17** | **850** | **$8.50** |
 
 **Environment Variables:**
 ```env
 RUNWAYML_API_KEY=
 ```
+
+**Config:** `lib/campaigns/media/media-pipeline-config.ts` → `RUNWAYML_CONFIG`
 
 ---
 
@@ -432,10 +432,11 @@ Phase 1 (Aesthetic)
   └── GPT-4o (existing OPENAI_API_KEY)
 
 Phase 2 (Generation)
-  ├── Images:  Stability AI → DALL-E 3 (fallback) → Sharp (resize)
-  ├── Video:   HeyGen (avatar) + RunwayML (cinematic)
-  ├── Audio:   ElevenLabs → Suno AI
-  └── Copy:    GPT-4o
+  ├── Images:  Nano-Banana/Gemini → DALL-E 3 (merch fallback) → Sharp (resize)
+  ├── Video:   RunwayML Gen-3 Turbo (Production Bible path) | HeyGen (legacy path fallback)
+  ├── Audio:   ElevenLabs → OpenAI TTS (fallback)
+  ├── Music:   Shared Default Library → Replicate MusicGen
+  └── Copy:    LLM Gateway (configurable model)
 
 Phase 3 (Storage)
   └── Cloudflare R2 + DynamoDB (existing AWS credentials)

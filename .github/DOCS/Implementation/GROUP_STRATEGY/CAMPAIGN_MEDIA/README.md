@@ -29,6 +29,7 @@ The system exposes both a **UI flow** (for human-driven campaign creation sessio
 | [PHASE_3_STORAGE_ORGANIZATION.md](./PHASE_3_STORAGE_ORGANIZATION.md) | Asset storage architecture — DynamoDB schema extensions, file naming, R2/S3 bucket structure |
 | [PHASE_4_DISTRIBUTION.md](./PHASE_4_DISTRIBUTION.md) | Distribution engine — platform mapping, stage-triggered dispatch, scheduling, and automation hooks |
 | [API_SERVICES_REFERENCE.md](./API_SERVICES_REFERENCE.md) | Complete reference for every third-party service in the stack — endpoints, auth, rate limits, cost |
+| [AGENTIC_MODIFICATION_INFRASTRUCTURE.md](./AGENTIC_MODIFICATION_INFRASTRUCTURE.md) | Agent API layer — credit checks, targeted asset regeneration, approval gates, human confirmation patterns |
 
 ---
 
@@ -90,34 +91,39 @@ CAMPAIGN CONFIG OBJECT (Phase D → GROUP_CAMPAIGN_STRATEGY §6.4)
 `/dashboard/campaigns/[slug]/media` — Campaign Media Studio  
 Human-in-the-loop session. Displays the Aesthetic Brief for review/edit, allows individual asset regeneration, manual overrides, and one-click distribution scheduling.
 
-### Agent Entry Point
-`POST /api/groups/campaign/[slug]/media/generate`  
-Fully automated pipeline invocation. Accepts optional `assetTypes` and optional `themeMusicSource: 'default' | 'replicate'`, runs the active Phase 2 media path, and returns generation status / manifest summary.
+### Agent Entry Points
 
-```typescript
-// Agent invocation signature
-interface MediaGenerationRequest {
-  campaignSlug: string;
-  config: CampaignConfig;            // From Phase D config object
-  phases: ('aesthetic' | 'generate' | 'store' | 'distribute')[];
-  distributionSchedule?: DistributionSchedule;
-  overrides?: Partial<AestheticOverrides>;
-}
-```
+**Cost pre-check (always first):**  
+`GET /api/groups/campaign/[slug]/media/credit-check`  
+Query cost estimate and live RunwayML balance before committing to generation. Returns `canProceed`, `blockers`, and a full `summary` string suitable for agent output. Agents must surface this to the operator and request confirmation before any video generation.
+
+**Full or targeted generation:**  
+`POST /api/groups/campaign/[slug]/media/generate`  
+Runs the full pipeline or a targeted `assetTypes` subset. Performs credit pre-check internally. Skips any deliverable already in the manifest. Merges into existing manifest.
+
+**Manifest inspection:**  
+`GET /api/groups/campaign/[slug]/media/manifest`  
+Fetch the current `CampaignMediaManifest` to determine gaps and asset URLs.
+
+**Production Bible (re)generation:**  
+`POST /api/groups/campaign/[slug]/media/aesthetic/production-bible`  
+Rewrites scene library and storyboards. Call before generating scene images or videos when creative direction changes.
+
+See [AGENTIC_MODIFICATION_INFRASTRUCTURE.md](./AGENTIC_MODIFICATION_INFRASTRUCTURE.md) for the full agent API surface, targeted asset replacement spec, and human confirmation patterns.
 
 ---
 
 ## Media Stack Summary
 
 | Category | Primary Tool | Fallback | Use Case |
-|----------|-------------|----------|---------|
-| Image Generation | Midjourney (API/automation) | DALL-E 3 / GPT-4o | Hero images, aesthetic concepts, merch art |
-| Video — Avatar | HeyGen | D-ID | Host explainer videos, TikTok/Reels face-to-camera |
-| Video — Cinematic | RunwayML Gen-3 | Kling AI | Scene clips, mood reels, B-roll |
+|----------|-------------|----------|----------|
+| Image Generation | Nano-Banana (Gemini 2.5 Flash) | — | Hero images, scene images, aesthetic concepts, merch art |
+| Ship Reference Discovery | SerpAPI Google Images | — | Real ship photos as source-of-truth visual anchor |
+| Video — All Deliverables | RunwayML Gen-3 Turbo (Production Bible path) | HeyGen (legacy path) | Storyboard-driven multi-shot videos with per-shot scene images |
 | Voice / Audio | ElevenLabs | OpenAI TTS | Narration, hype clips, landing page ambient audio |
-| Music / Soundscape | Shared Default Library + Replicate MusicGen | Udio | Background music for video, theme song ("audio logo") |
-| Copy / Captions | GPT-4o | Claude 3.5 Sonnet | Platform captions, email copy, slogan generation |
-| Merch Design | DALL-E 3 → Printful | Midjourney → Printify | T-shirts, lanyards, niche-specific items |
+| Music / Soundscape | Shared Default Library + Replicate MusicGen | — | Background music for video, theme song |
+| Copy / Captions | LLM gateway (configurable model) | — | Platform captions, email copy, slogan generation |
+| Merch Design | Nano-Banana (Gemini 2.5 Flash) | DALL-E 3 | T-shirts, lanyards, niche-specific items |
 
 ---
 
