@@ -658,6 +658,53 @@ export default function ProductionBibleTestPage() {
                     </section>
                 )}
 
+                {/* Generated Videos from manifest */}
+                {manifest && (() => {
+                    const videos = [
+                        manifest.videos.tiktokSeed     ? { label: 'TikTok Seed',             rec: manifest.videos.tiktokSeed }            : null,
+                        manifest.videos.heroExplainer  ? { label: 'Hero Explainer',           rec: manifest.videos.heroExplainer }         : null,
+                        manifest.videos.thresholdAnnouncement ? { label: 'Threshold Announcement', rec: manifest.videos.thresholdAnnouncement } : null,
+                        ...(manifest.videos.countdown ?? []).map((rec: AssetRecord, i: number) => ({ label: `Countdown ${i + 1}`, rec })),
+                        ...(manifest.videos.broll ?? []).map((rec: AssetRecord, i: number) => ({ label: `B-roll ${i + 1}`, rec })),
+                    ].filter(Boolean) as { label: string; rec: AssetRecord }[];
+
+                    if (videos.length === 0) return null;
+
+                    return (
+                        <section className="space-y-3">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <Film className="w-5 h-5 text-purple-400" />
+                                Generated Videos ({videos.length})
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {videos.map(({ label, rec }) => (
+                                    <div key={rec.assetId} className="bg-zinc-900 border border-zinc-800 rounded overflow-hidden">
+                                        <video
+                                            controls
+                                            src={`${rec.url}?v=${encodeURIComponent(rec.createdAt)}`}
+                                            className="w-full aspect-video bg-black"
+                                        />
+                                        <div className="p-3 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-zinc-200">{label}</span>
+                                                {rec.durationSeconds && (
+                                                    <span className="text-xs text-zinc-500">{rec.durationSeconds}s</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-zinc-500 truncate">{rec.assetId}</div>
+                                            <div className="flex flex-wrap gap-1">
+                                                {rec.tags.map((tag: string) => (
+                                                    <span key={tag} className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500 text-xs">{tag}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    );
+                })()}
+
                 {/* No bible message */}
                 {brief && !bible && (
                     <div className="bg-amber-900/20 border border-amber-800/50 rounded p-4 text-sm text-amber-300 flex items-center gap-3">
