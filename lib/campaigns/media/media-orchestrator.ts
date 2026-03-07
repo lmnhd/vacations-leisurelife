@@ -46,6 +46,8 @@ const activeGenerations = new Set<string>();
 export interface GenerationOptions {
     /** Specific asset types to generate. If omitted, generates everything. */
     assetTypes?: AssetType[];
+    /** Asset types that must bypass existing-manifest skip logic. */
+    forceRegenerateAssetTypes?: AssetType[];
     themeMusicSource?: 'replicate' | 'default';
 }
 
@@ -76,6 +78,14 @@ function shouldRunAny(
 ): boolean {
     if (!assetTypes) return true;
     return requestedAssetTypes.some((assetType) => assetTypes.includes(assetType));
+}
+
+function shouldForceRegenerateAsset(
+    assetType: AssetType,
+    forceRegenerateAssetTypes?: AssetType[]
+): boolean {
+    if (!forceRegenerateAssetTypes) return false;
+    return forceRegenerateAssetTypes.includes(assetType);
 }
 
 function makeAssetRecord(
@@ -484,6 +494,8 @@ export async function runMediaGeneration(
                                 continue;
                             }
 
+                            const forceRegenerateAsset = shouldForceRegenerateAsset(assetType, resolvedOptions.forceRegenerateAssetTypes);
+
                             // Skip if already in the existing manifest — do not re-burn credits
                             const alreadyExists =
                                 (assetType === 'tiktok_seed_video'      && !!existingManifest?.videos.tiktokSeed) ||
@@ -491,7 +503,7 @@ export async function runMediaGeneration(
                                 (assetType === 'threshold_video'        && !!existingManifest?.videos.thresholdAnnouncement) ||
                                 (assetType === 'countdown_video'        && existingManifest?.videos.countdown.some(r => r.tags.includes(delivId))) ||
                                 (assetType === 'broll_clip'             && existingManifest?.videos.broll.some(r => r.tags.includes(delivId)));
-                            if (alreadyExists) {
+                            if (alreadyExists && !forceRegenerateAsset) {
                                 continue;
                             }
 

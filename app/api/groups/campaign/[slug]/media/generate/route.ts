@@ -5,13 +5,14 @@ import { AssetType, AssetTypeEnum } from '@/lib/campaigns/schema';
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/generate
 // Triggers the full media generation pipeline for a campaign.
-// Body (optional): { assetTypes?: AssetType[] }
+// Body (optional): { assetTypes?: AssetType[]; forceRegenerateAssetTypes?: AssetType[] }
 // Returns: GenerationResult with job summary and manifest.
 // 409 if generation already in progress for this campaign.
 // ────────────────────────────────────────────────────────────────────────────
 
 interface GenerateRequestBody {
     assetTypes?: AssetType[];
+    forceRegenerateAssetTypes?: AssetType[];
     themeMusicSource?: 'replicate' | 'default';
 }
 
@@ -40,6 +41,15 @@ export async function POST(
             });
             if (validTypes.length > 0) {
                 options.assetTypes = validTypes;
+            }
+        }
+        if (body.forceRegenerateAssetTypes && Array.isArray(body.forceRegenerateAssetTypes)) {
+            const validForceTypes = body.forceRegenerateAssetTypes.filter(at => {
+                const result = AssetTypeEnum.safeParse(at);
+                return result.success;
+            });
+            if (validForceTypes.length > 0) {
+                options.forceRegenerateAssetTypes = validForceTypes;
             }
         }
         if (body.themeMusicSource === 'replicate' || body.themeMusicSource === 'default') {
