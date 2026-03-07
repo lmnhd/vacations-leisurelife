@@ -79,6 +79,24 @@ Uses existing `OPENAI_API_KEY` env var (already in project).
 
 ## Video Generation
 
+### Video Provider Architecture
+
+Video generation now resolves through a provider abstraction layer instead of wiring provider-specific HTTP logic into every route and generator.
+
+- Active provider resolution: `lib/campaigns/media/video-providers/provider-registry.ts`
+- Base contract: `lib/campaigns/media/video-providers/base-provider.ts`
+- Current implementation: `lib/campaigns/media/video-providers/runway-provider.ts`
+- Reserved future implementation: `lib/campaigns/media/video-providers/fal-provider.ts`
+- Config source: `lib/campaigns/media/media-pipeline-config.ts` → `VIDEO_PROVIDER_CONFIG`
+
+Current state:
+
+- Active provider: `runway`
+- Active generator service: `runwayml`
+- Planned secondary provider: `fal`
+
+Operationally, this means the full pipeline, storyboard path, `/tests/runway-test`, and the targeted video test route all share the same provider seam.
+
 ### HeyGen
 **Role:** AI avatar video production (explainers, seed videos, threshold announcements)  
 **API Base:** `https://api.heygen.com/v2`  
@@ -182,7 +200,9 @@ Use this before generation to verify sufficient credits. Integrated into `checkM
 RUNWAYML_API_KEY=
 ```
 
-**Config:** `lib/campaigns/media/media-pipeline-config.ts` → `RUNWAYML_CONFIG`
+**Config:** `lib/campaigns/media/media-pipeline-config.ts` → `RUNWAYML_CONFIG` and `VIDEO_PROVIDER_CONFIG`
+
+**Abstraction role:** Runway is now the concrete implementation behind the active video provider registry. To switch providers later, the pipeline should change provider selection in config rather than rewriting storyboard generation or orchestration logic.
 
 ---
 

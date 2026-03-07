@@ -1,26 +1,12 @@
 import { CampaignAestheticBrief } from '../../schema';
 import { RUNWAYML_CONFIG } from '../media-pipeline-config';
+import { getActiveVideoProviderInstance } from '../video-providers/provider-registry';
 
 // ────────────────────────────────────────────────────────────────────────────
 // RunwayML Gen-3 Alpha Video Generator
 // Image-to-video for countdown clips and cinematic B-roll.
 // All settings controlled via RUNWAYML_CONFIG in media-pipeline-config.ts.
 // ────────────────────────────────────────────────────────────────────────────
-
-function getApiKey(): string {
-    const key = process.env.RUNWAYML_API_KEY;
-    if (!key) throw new Error('RUNWAYML_API_KEY not set in environment');
-    return key;
-}
-
-interface RunwayCreateResponse {
-    id: string;
-}
-
-interface RunwayStatusResponse {
-    status: string;
-    output?: string[];
-}
 
 interface RunwayVideoResult {
     videoUrl: string;
@@ -32,54 +18,12 @@ async function createImageToVideo(
     motionPrompt: string,
     durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
 ): Promise<RunwayVideoResult> {
-    const response = await fetch(`${RUNWAYML_CONFIG.apiBase}/image_to_video`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${getApiKey()}`,
-            'Content-Type': 'application/json',
-            'X-Runway-Version': RUNWAYML_CONFIG.apiVersion,
-        },
-        body: JSON.stringify({
-            model: RUNWAYML_CONFIG.model,
-            promptImage: sourceImageUrl,
-            promptText: motionPrompt.slice(0, RUNWAYML_CONFIG.motionPromptMaxChars),
-            duration: durationSeconds,
-            ratio: RUNWAYML_CONFIG.outputRatio,
-        }),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`RunwayML create error ${response.status}: ${errorText}`);
-    }
-
-    const createData = await response.json() as RunwayCreateResponse;
-    const taskId = createData.id;
-
-    for (let attempt = 0; attempt < RUNWAYML_CONFIG.maxPollAttempts; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, RUNWAYML_CONFIG.pollIntervalMs));
-
-        const statusResponse = await fetch(`${RUNWAYML_CONFIG.apiBase}/tasks/${taskId}`, {
-            headers: {
-                'Authorization': `Bearer ${getApiKey()}`,
-                'X-Runway-Version': RUNWAYML_CONFIG.apiVersion,
-            },
-        });
-
-        if (!statusResponse.ok) continue;
-
-        const statusData = await statusResponse.json() as RunwayStatusResponse;
-
-        if (statusData.status === 'SUCCEEDED' && statusData.output?.[0]) {
-            return { videoUrl: statusData.output[0], durationSeconds };
-        }
-
-        if (statusData.status === 'FAILED') {
-            throw new Error(`RunwayML task ${taskId} failed`);
-        }
-    }
-
-    throw new Error(`RunwayML task ${taskId} timed out`);
+    const provider = getActiveVideoProviderInstance();
+    const result = await provider.generateImageToVideo(sourceImageUrl, motionPrompt, durationSeconds);
+    return {
+        videoUrl: result.videoUrl,
+        durationSeconds: result.durationSeconds,
+    };
 }
 
 async function downloadVideo(url: string): Promise<Buffer> {

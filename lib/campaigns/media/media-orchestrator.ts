@@ -33,7 +33,7 @@ import {
     importShipReferenceAssets,
 } from './ship-reference-service';
 import { randomUUID } from 'crypto';
-import { getMediaImageGeneratorService } from './media-pipeline-config';
+import { getActiveVideoGeneratorService, getMediaImageGeneratorService } from './media-pipeline-config';
 import { ShipReferenceCandidate } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -178,6 +178,7 @@ export async function runMediaGeneration(
     activeGenerations.add(slug);
 
     try {
+        const activeVideoGeneratorService = getActiveVideoGeneratorService();
         const resolvedOptions: GenerationOptions = options ?? {};
         const campaign = await getCampaignBlueprint(slug);
         if (!campaign) {
@@ -494,7 +495,7 @@ export async function runMediaGeneration(
                                 continue;
                             }
 
-                            const results = await runWithJob(slug, assetType, 'runwayml', `storyboard: ${delivId}`, async () => {
+                            const results = await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
                                 const video = await generateStoryboardVideo(
                                     brief,
                                     storyboard,
@@ -502,7 +503,7 @@ export async function runMediaGeneration(
                                     fallbackUrl
                                 );
                                 const rec = await uploadAndRecord(
-                                    slug, video.assetId, assetType, 'runwayml',
+                                    slug, video.assetId, assetType, activeVideoGeneratorService,
                                     `${video.motionPrompt}\n\n${video.script}`,
                                     video.buffer, video.fileName, 'video/mp4',
                                     ['video', 'storyboard', delivId, 'narrated'],
@@ -524,10 +525,10 @@ export async function runMediaGeneration(
                 // ── Legacy video generation (no Production Bible) ──────────
                 if (shouldRunAsset('tiktok_seed_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
-                        runWithJob(slug, 'tiktok_seed_video', 'runwayml', 'tiktok seed', async () => {
+                        runWithJob(slug, 'tiktok_seed_video', activeVideoGeneratorService, 'tiktok seed', async () => {
                             const video = await generateTikTokSeed(brief, firstHeroUrl);
                             const rec = await uploadAndRecord(
-                                slug, video.assetId, 'tiktok_seed_video', 'runwayml',
+                                slug, video.assetId, 'tiktok_seed_video', activeVideoGeneratorService,
                                 `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
                                 ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated'], undefined, video.durationSeconds
                             );
@@ -569,12 +570,12 @@ export async function runMediaGeneration(
 
                 if (shouldRunAsset('countdown_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
-                        runWithJob(slug, 'countdown_video', 'runwayml', 'countdown videos', async () => {
+                        runWithJob(slug, 'countdown_video', activeVideoGeneratorService, 'countdown videos', async () => {
                             const videos = await generateCountdownVideos(brief, firstHeroUrl);
                             const records: AssetRecord[] = [];
                             for (const vid of videos) {
                                 const rec = await uploadAndRecord(
-                                    slug, vid.assetId, 'countdown_video', 'runwayml',
+                                    slug, vid.assetId, 'countdown_video', activeVideoGeneratorService,
                                     vid.motionPrompt, vid.buffer, vid.fileName, 'video/mp4',
                                     ['video', 'countdown'], undefined, vid.durationSeconds
                                 );
@@ -588,12 +589,12 @@ export async function runMediaGeneration(
 
                 if (heroImageUrls.length > 0 && shouldRunAsset('broll_clip', resolvedOptions.assetTypes)) {
                     group2Promises.push(
-                        runWithJob(slug, 'broll_clip', 'runwayml', 'broll clips', async () => {
+                        runWithJob(slug, 'broll_clip', activeVideoGeneratorService, 'broll clips', async () => {
                             const videos = await generateBrollClips(brief, heroImageUrls);
                             const records: AssetRecord[] = [];
                             for (const vid of videos) {
                                 const rec = await uploadAndRecord(
-                                    slug, vid.assetId, 'broll_clip', 'runwayml',
+                                    slug, vid.assetId, 'broll_clip', activeVideoGeneratorService,
                                     vid.motionPrompt, vid.buffer, vid.fileName, 'video/mp4',
                                     ['video', 'broll', 'cinematic'], undefined, vid.durationSeconds
                                 );

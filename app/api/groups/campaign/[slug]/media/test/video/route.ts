@@ -12,6 +12,7 @@ import {
     generateCountdownVideos,
     generateBrollClips,
 } from '@/lib/campaigns/media/generators/runway-generator';
+import { getActiveVideoGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/video
@@ -41,6 +42,7 @@ export async function POST(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params;
+    const activeVideoGeneratorService = getActiveVideoGeneratorService();
     const body = await request.json() as VideoTestRequestBody;
     const { generator, heroImageUrl } = body;
 
@@ -68,19 +70,19 @@ export async function POST(
                 assetId: video.assetId,
                 assetType: 'tiktok_seed_video',
                 url: cdnUrl,
-                generator: 'runwayml',
+                generator: activeVideoGeneratorService,
                 promptUsed: `${video.motionPrompt}\n\n${video.script}`,
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
                 mimeType: 'video/mp4',
-                tags: ['video', 'tiktok', 'runwayml', 'elevenlabs', 'narrated'],
+                tags: ['video', 'tiktok', activeVideoGeneratorService, 'elevenlabs', 'narrated'],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
                 active: true,
             });
             return NextResponse.json({
-                generator: 'runwayml+elevenlabs', type: 'tiktok_seed_9x16',
+                generator: `${activeVideoGeneratorService}+elevenlabs`, type: 'tiktok_seed_9x16',
                 assetId: video.assetId, fileName: video.fileName,
                 script: video.script, durationSeconds: video.durationSeconds,
                 motionPrompt: video.motionPrompt,
@@ -149,7 +151,7 @@ export async function POST(
                 assetId: video.assetId,
                 assetType: 'countdown_video',
                 url: cdnUrl,
-                generator: 'runwayml',
+                generator: activeVideoGeneratorService,
                 promptUsed: video.motionPrompt,
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
@@ -161,7 +163,7 @@ export async function POST(
                 active: true,
             });
             return NextResponse.json({
-                generator: 'runwayml', type: 'countdown_3cabins',
+                generator: activeVideoGeneratorService, type: 'countdown_3cabins',
                 note: 'Test mode: generated 1 of 3 countdown clips',
                 assetId: video.assetId, fileName: video.fileName,
                 motionPrompt: video.motionPrompt, durationSeconds: video.durationSeconds,
@@ -178,7 +180,7 @@ export async function POST(
                 assetId: video.assetId,
                 assetType: 'broll_clip',
                 url: cdnUrl,
-                generator: 'runwayml',
+                generator: activeVideoGeneratorService,
                 promptUsed: video.motionPrompt,
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
@@ -190,7 +192,7 @@ export async function POST(
                 active: true,
             });
             return NextResponse.json({
-                generator: 'runwayml', type: 'broll_001',
+                generator: activeVideoGeneratorService, type: 'broll_001',
                 note: 'Test mode: generated 1 of 3–4 B-roll clips',
                 assetId: video.assetId, fileName: video.fileName,
                 motionPrompt: video.motionPrompt, durationSeconds: video.durationSeconds,

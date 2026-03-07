@@ -119,7 +119,7 @@ See [AGENTIC_MODIFICATION_INFRASTRUCTURE.md](./AGENTIC_MODIFICATION_INFRASTRUCTU
 |----------|-------------|----------|----------|
 | Image Generation | Nano-Banana (Gemini 2.5 Flash) | — | Hero images, scene images, aesthetic concepts, merch art |
 | Ship Reference Discovery | SerpAPI Google Images | — | Real ship photos as source-of-truth visual anchor |
-| Video — All Deliverables | RunwayML Gen-3 Turbo (Production Bible path) | HeyGen (legacy path) | Storyboard-driven multi-shot videos with per-shot scene images |
+| Video — All Deliverables | RunwayML Gen-3 Turbo via provider abstraction layer | HeyGen (legacy path), fal.ai (planned) | Storyboard-driven multi-shot videos with per-shot scene images and future provider swapping |
 | Voice / Audio | ElevenLabs | OpenAI TTS | Narration, hype clips, landing page ambient audio |
 | Music / Soundscape | Shared Default Library + Replicate MusicGen | — | Background music for video, theme song |
 | Copy / Captions | LLM gateway (configurable model) | — | Platform captions, email copy, slogan generation |

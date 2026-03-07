@@ -48,6 +48,20 @@ export function getMediaImageGeneratorService(): GeneratorService {
     return 'gemini3_flash';
 }
 
+export const VIDEO_PROVIDER_CONFIG = {
+    activeProvider: 'runway' as const,
+    plannedSecondaryProvider: 'fal' as const,
+    activeGeneratorService: 'runwayml' as const,
+};
+
+export function getActiveVideoProvider(): string {
+    return VIDEO_PROVIDER_CONFIG.activeProvider;
+}
+
+export function getActiveVideoGeneratorService(): GeneratorService {
+    return VIDEO_PROVIDER_CONFIG.activeGeneratorService;
+}
+
 // ── LLM Task → Model Assignments ────────────────────────────────────────────
 // Every text-generation task in the pipeline routes through the LLM gateway.
 // Change campaign copy model here to instantly swap all copy generation.

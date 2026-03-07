@@ -138,6 +138,24 @@ All generated images are automatically processed into the required platform crop
 
 ## Video Generation
 
+### Video Provider Abstraction Layer
+
+Video generation is now routed through a provider abstraction instead of hardcoding RunwayML calls directly into every generator and route.
+
+- `lib/campaigns/media/video-providers/base-provider.ts` defines the canonical image-to-video contract
+- `lib/campaigns/media/video-providers/runway-provider.ts` is the active implementation today
+- `lib/campaigns/media/video-providers/fal-provider.ts` is the reserved integration seam for future multi-model routing
+- `lib/campaigns/media/video-providers/provider-registry.ts` resolves the active provider from config
+- `lib/campaigns/media/media-pipeline-config.ts` is the single source of truth for active provider selection
+
+Current state:
+
+- Active provider: `runway`
+- Active generator service: `runwayml`
+- Planned secondary provider: `fal`
+
+This means the main pipeline, `/tests/runway-test`, and the video test route all execute through the same provider boundary. Swapping providers later should not require rewriting storyboard assembly, prompt construction, manifest storage, or orchestration logic.
+
 ### Production Bible Path (Primary)
 
 When the `CampaignAestheticBrief` includes a `productionBible`, all video deliverables use **storyboard-driven assembly**:
@@ -171,6 +189,7 @@ When the `CampaignAestheticBrief` includes a `productionBible`, all video delive
 - `lib/campaigns/media/video-deliverable-specs.ts` → `VIDEO_DELIVERABLE_SPECS` (single source of truth for shot counts)
 - `lib/campaigns/media/generators/tiktok-seed-generator.ts` → `generateStoryboardVideo()`
 - `lib/campaigns/media/generators/runway-generator.ts` → `generatePromptedClipFromScenes()`
+- `lib/campaigns/media/video-providers/provider-registry.ts` → active video provider resolution
 - `lib/campaigns/media/video-composer.ts` → `composeProductionVideo()`
 
 ### Legacy Path (Fallback)

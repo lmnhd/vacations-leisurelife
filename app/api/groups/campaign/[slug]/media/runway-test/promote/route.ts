@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AssetRecord } from '@/lib/campaigns/schema';
 import { saveAssetRecord, upsertManifestAssetSection, updateCampaignMediaStatus } from '@/lib/campaigns/media/media-store';
+import { getActiveVideoGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 
 const SINGLE_TARGETS = ['tiktokSeed', 'heroExplainer', 'thresholdAnnouncement'] as const;
 const LIST_TARGETS = ['countdown', 'broll'] as const;
@@ -26,6 +27,7 @@ export async function POST(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params;
+    const activeVideoGeneratorService = getActiveVideoGeneratorService();
 
     let body: {
         assetId: string;
@@ -72,7 +74,7 @@ export async function POST(
         assetId: promotedAssetId,
         assetType: targetAssetType,
         url: body.videoUrl,
-        generator: 'runwayml',
+        generator: activeVideoGeneratorService,
         promptUsed: body.motionPrompt,
         durationSeconds: body.durationSeconds,
         fileSizeBytes: body.fileSizeBytes,
