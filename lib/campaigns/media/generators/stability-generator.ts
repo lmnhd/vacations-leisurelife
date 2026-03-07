@@ -263,16 +263,19 @@ export async function generateSceneImages(
         );
 
         const enrichedPrompt = [
+            // Style + emotional framing FIRST — highest weight for image gen
+            'Luxury travel editorial photography, dreamy and aspirational, warm cinematic color grade, shallow depth of field, golden-hour warmth, Condé Nast Traveler aesthetic',
+            `Mood: ${scene.mood}`,
+            // Primary creative direction from Production Bible
             scene.imagePrompt,
-            `Location: ${scene.location}`,
-            `Time of day: ${scene.timeOfDay}`,
-            `Lighting: ${scene.lighting}`,
-            `Camera angle: ${scene.cameraAngle}`,
-            `Action: ${scene.subjectAction}`,
-            `Environment: ${scene.environmentDetails}`,
-            `Emotional tone: ${scene.mood}`,
+            // Atmosphere context (no task descriptions)
+            `Setting: ${scene.location}`,
+            `Time: ${scene.timeOfDay}`,
+            `Light: ${scene.lighting}`,
+            `Framing: ${scene.cameraAngle}`,
             shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
-            'Luxury expedition travel editorial photography, aspirational, warm cinematic color grade, shallow depth of field, National Geographic quality, Condé Nast Traveler aesthetic, authentic human emotion, ocean as backdrop',
+            // Reinforce: vacation, not work
+            'People enjoying themselves, relaxed and joyful, vacation energy, NOT posed or corporate, NOT staged or formal',
         ].filter(Boolean).join('. ');
 
         let buffer: Buffer;

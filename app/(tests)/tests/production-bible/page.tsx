@@ -471,7 +471,7 @@ export default function ProductionBibleTestPage() {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             {manifest.images.sceneImages.map((rec: AssetRecord) => (
                                 <div key={rec.assetId} className="bg-zinc-900 border border-zinc-800 rounded overflow-hidden">
-                                    <img src={rec.url} alt={rec.assetId} className="w-full aspect-video object-cover" />
+                                    <img src={`${rec.url}?v=${encodeURIComponent(rec.createdAt)}`} alt={rec.assetId} className="w-full aspect-video object-cover" />
                                     <div className="p-2 text-xs space-y-1">
                                         <div className="font-medium text-zinc-300 truncate">{rec.assetId}</div>
                                         <div className="flex flex-wrap gap-1">

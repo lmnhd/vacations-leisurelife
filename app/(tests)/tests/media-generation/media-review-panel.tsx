@@ -79,7 +79,7 @@ function buildReviewEntries(manifest: CampaignMediaManifest): Array<{ section: s
 
 function renderAssetPreview(asset: AssetRecord) {
     if (asset.mimeType.startsWith('image/')) {
-        return <img src={asset.url} alt={asset.assetId} className="h-40 w-full rounded-lg object-cover" />;
+        return <img src={`${asset.url}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-40 w-full rounded-lg object-cover" />;
     }
 
     if (asset.mimeType.startsWith('audio/')) {
