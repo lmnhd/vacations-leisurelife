@@ -171,6 +171,32 @@ export default function ProductionBibleTestPage() {
         }
     }, [slug, loadData]);
 
+    const handleDeleteSceneImageArtifact = useCallback(async (assetId: string) => {
+        if (!slug.trim()) return;
+        if (!window.confirm(`Delete scene image artifact ${assetId}?`)) return;
+
+        setDeletingAssetId(assetId);
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/manifest/scene-image-artifact`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assetId }),
+            });
+
+            const data = await res.json() as { error?: string };
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+
+            setGenerateLog(prev => [...prev, `Deleted scene image artifact: ${assetId}`]);
+            await loadData(slug.trim());
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setDeletingAssetId(null);
+        }
+    }, [slug, loadData]);
+
     // ── Generate storyboard videos via the REAL pipeline ──────────────────
     const handleGenerateVideos = async () => {
         setPageState("generating");
@@ -672,7 +698,17 @@ export default function ProductionBibleTestPage() {
                                 <div key={rec.assetId} className="bg-zinc-900 border border-zinc-800 rounded overflow-hidden">
                                     <img src={`${rec.url}?v=${encodeURIComponent(rec.createdAt)}`} alt={rec.assetId} className="w-full aspect-video object-cover" />
                                     <div className="p-2 text-xs space-y-1">
-                                        <div className="font-medium text-zinc-300 truncate">{rec.assetId}</div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="font-medium text-zinc-300 truncate">{rec.assetId}</div>
+                                            <button
+                                                className="bg-red-900/40 hover:bg-red-800/50 border border-red-700 text-red-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40 shrink-0"
+                                                onClick={() => void handleDeleteSceneImageArtifact(rec.assetId)}
+                                                disabled={deletingAssetId === rec.assetId || isBusy}
+                                            >
+                                                {deletingAssetId === rec.assetId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                Delete
+                                            </button>
+                                        </div>
                                         <div className="flex flex-wrap gap-1">
                                             {rec.tags.map((tag: string) => (
                                                 <span key={tag} className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500">{tag}</span>
