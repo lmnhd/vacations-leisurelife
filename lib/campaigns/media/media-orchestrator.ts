@@ -388,6 +388,7 @@ export async function runMediaGeneration(
         const firstHeroUrl = heroImageUrls[0] || '';
 
         const group2Promises: Promise<unknown>[] = [];
+        const existingManifest = await getMediaManifest(slug);
 
         // Platform crops (from hero images)
         if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes) && heroRecords.length > 0) {
@@ -479,6 +480,17 @@ export async function runMediaGeneration(
                                 : 'broll_clip';
 
                             if (!shouldRunAsset(assetType, resolvedOptions.assetTypes)) {
+                                continue;
+                            }
+
+                            // Skip if already in the existing manifest — do not re-burn credits
+                            const alreadyExists =
+                                (assetType === 'tiktok_seed_video'      && !!existingManifest?.videos.tiktokSeed) ||
+                                (assetType === 'hero_explainer_video'   && !!existingManifest?.videos.heroExplainer) ||
+                                (assetType === 'threshold_video'        && !!existingManifest?.videos.thresholdAnnouncement) ||
+                                (assetType === 'countdown_video'        && existingManifest?.videos.countdown.some(r => r.tags.includes(delivId))) ||
+                                (assetType === 'broll_clip'             && existingManifest?.videos.broll.some(r => r.tags.includes(delivId)));
+                            if (alreadyExists) {
                                 continue;
                             }
 
@@ -599,7 +611,6 @@ export async function runMediaGeneration(
         await Promise.all(group2Promises);
 
         // ── Build manifest ────────────────────────────────────────────
-        const existingManifest = await getMediaManifest(slug);
 
         const cropsByFormat: Record<string, AssetRecord[]> = {};
         for (const crop of cropRecords) {
