@@ -568,7 +568,7 @@ export async function runMediaGeneration(
             }
             const fallbackUrl = firstHeroUrl;
 
-            const group3Promises: Promise<unknown>[] = [];
+            // Sequential — each storyboard video calls ElevenLabs; parallel runs hit the concurrent cap
             for (const storyboard of brief.productionBible!.storyboards) {
                 const delivId = storyboard.deliverableId;
                 const assetType: AssetType = delivId.startsWith('tiktok') ? 'tiktok_seed_video'
@@ -588,28 +588,25 @@ export async function runMediaGeneration(
                     (assetType === 'broll_clip'             && existingManifest?.videos.broll.some(r => r.tags.includes(delivId)));
                 if (alreadyExists && !forceRegenerateAsset) continue;
 
-                group3Promises.push(
-                    runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
-                        const video = await generateStoryboardVideo(
-                            brief, storyboard, sceneImageMap, fallbackUrl
-                        );
-                        const rec = await uploadAndRecord(
-                            slug, video.assetId, assetType, activeVideoGeneratorService,
-                            `${video.motionPrompt}\n\n${video.script}`,
-                            video.buffer, video.fileName, 'video/mp4',
-                            ['video', 'storyboard', delivId, 'narrated'],
-                            undefined, video.durationSeconds
-                        );
-                        if (assetType === 'tiktok_seed_video') videoRecords.tiktokSeed = rec;
-                        else if (assetType === 'hero_explainer_video') videoRecords.heroExplainer = rec;
-                        else if (assetType === 'threshold_video') videoRecords.thresholdAnnouncement = rec;
-                        else if (assetType === 'countdown_video') videoRecords.countdown.push(rec);
-                        else videoRecords.broll.push(rec);
-                        return [rec];
-                    }, errors)
-                );
+                await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
+                    const video = await generateStoryboardVideo(
+                        brief, storyboard, sceneImageMap, fallbackUrl
+                    );
+                    const rec = await uploadAndRecord(
+                        slug, video.assetId, assetType, activeVideoGeneratorService,
+                        `${video.motionPrompt}\n\n${video.script}`,
+                        video.buffer, video.fileName, 'video/mp4',
+                        ['video', 'storyboard', delivId, 'narrated'],
+                        undefined, video.durationSeconds
+                    );
+                    if (assetType === 'tiktok_seed_video') videoRecords.tiktokSeed = rec;
+                    else if (assetType === 'hero_explainer_video') videoRecords.heroExplainer = rec;
+                    else if (assetType === 'threshold_video') videoRecords.thresholdAnnouncement = rec;
+                    else if (assetType === 'countdown_video') videoRecords.countdown.push(rec);
+                    else videoRecords.broll.push(rec);
+                    return [rec];
+                }, errors);
             }
-            await Promise.all(group3Promises);
         }
 
         // ── Build manifest ────────────────────────────────────────────
