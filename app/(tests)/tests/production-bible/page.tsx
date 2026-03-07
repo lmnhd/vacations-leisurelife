@@ -74,6 +74,18 @@ export default function ProductionBibleTestPage() {
     const [creditCheck, setCreditCheck] = useState<CreditCheckData | null>(null);
     const [creditCheckLoading, setCreditCheckLoading] = useState(false);
     const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+    const [preflightLoading, setPreflightLoading] = useState(false);
+    const [preflightData, setPreflightData] = useState<null | {
+        sceneLibraryCount: number;
+        sceneImagesInManifest: number;
+        missingScenes: string[];
+        storyboards: Array<{
+            deliverableId: string;
+            alreadyInManifest: boolean;
+            shotsWithMissingImage: number;
+            shots: Array<{ shotIndex: number; sceneId: string; imageUrl: string | null; imageFound: boolean; cameraMovement: string; emotionalBeat: string; }>;
+        }>;
+    }>(null);
     const [revisionModal, setRevisionModal] = useState<{ assetId: string; assetType: AssetType; promptUsed: string } | null>(null);
 
     const isBusy = pageState !== "idle";
@@ -118,6 +130,22 @@ export default function ProductionBibleTestPage() {
             setPageState("idle");
         }
     }, []);
+
+    const handlePreflight = useCallback(async () => {
+        if (!slug.trim()) return;
+        setPreflightLoading(true);
+        setPreflightData(null);
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/generate-plan`);
+            const data = await res.json() as typeof preflightData | { error?: string };
+            if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
+            setPreflightData(data as NonNullable<typeof preflightData>);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setPreflightLoading(false);
+        }
+    }, [slug]);
 
     const handleRevisionComplete = useCallback(async () => {
         setRevisionModal(null);
@@ -506,6 +534,15 @@ export default function ProductionBibleTestPage() {
                             Generate Scene Images
                         </button>
                         <button
+                            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                            onClick={() => void handlePreflight()}
+                            disabled={preflightLoading || isBusy || !slug.trim() || !brief}
+                            title="Validate scene image → shot assignments without calling RunwayML"
+                        >
+                            {preflightLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                            Preflight Check
+                        </button>
+                        <button
                             className="bg-purple-900/50 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={handleGenerateVideos}
                             disabled={isBusy || !bible}
@@ -523,6 +560,70 @@ export default function ProductionBibleTestPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* Preflight results */}
+                {preflightData && (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <Eye className="w-4 h-4 text-blue-400 shrink-0" />
+                            <span className="text-sm font-semibold">Generation Plan</span>
+                            <span className="text-xs text-zinc-500">
+                                {preflightData.sceneImagesInManifest}/{preflightData.sceneLibraryCount} scene images in manifest
+                            </span>
+                            {preflightData.missingScenes.length > 0 ? (
+                                <span className="text-xs text-red-400">⚠ {preflightData.missingScenes.length} missing</span>
+                            ) : (
+                                <span className="text-xs text-green-400">✓ all scenes resolved</span>
+                            )}
+                        </div>
+
+                        {preflightData.missingScenes.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                                {preflightData.missingScenes.map((s: string) => (
+                                    <span key={s} className="bg-red-900/30 border border-red-800 text-red-400 text-xs px-2 py-0.5 rounded-full">{s}</span>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            {preflightData.storyboards.map((sb) => (
+                                <details key={sb.deliverableId} className="bg-zinc-800/50 rounded group">
+                                    <summary className="cursor-pointer p-2.5 text-xs font-medium flex items-center gap-2 list-none [&::-webkit-details-marker]:hidden">
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-open:rotate-90 transition-transform" />
+                                        <span className="font-mono">{sb.deliverableId}</span>
+                                        {sb.alreadyInManifest && (
+                                            <span className="bg-green-900/40 text-green-400 border border-green-800 px-1.5 py-0.5 rounded">already generated</span>
+                                        )}
+                                        {sb.shotsWithMissingImage > 0 ? (
+                                            <span className="bg-red-900/30 text-red-400 border border-red-800 px-1.5 py-0.5 rounded">⚠ {sb.shotsWithMissingImage} shots use fallback</span>
+                                        ) : (
+                                            <span className="bg-green-900/30 text-green-400 border border-green-800 px-1.5 py-0.5 rounded">✓ all shots resolved</span>
+                                        )}
+                                    </summary>
+                                    <div className="border-t border-zinc-700 p-2.5 space-y-1.5">
+                                        {sb.shots.map((shot) => (
+                                            <div key={shot.shotIndex} className="flex items-center gap-2.5">
+                                                <div className="w-16 h-10 rounded overflow-hidden shrink-0 bg-zinc-700 flex items-center justify-center">
+                                                    {shot.imageUrl ? (
+                                                        <img src={shot.imageUrl} alt={shot.sceneId} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 text-xs">
+                                                    <div className={`font-medium ${shot.imageFound ? 'text-zinc-200' : 'text-red-400'}`}>
+                                                        Shot {shot.shotIndex} → <span className="font-mono">{shot.sceneId}</span>{!shot.imageFound && ' (will use fallback)'}
+                                                    </div>
+                                                    <div className="text-zinc-500 truncate">{shot.cameraMovement} · {shot.emotionalBeat}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Generation log */}
                 {generateLog.length > 0 && (
