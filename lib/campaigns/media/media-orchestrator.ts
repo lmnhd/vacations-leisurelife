@@ -61,19 +61,20 @@ export interface GenerationResult {
 
 type GeneratorCategory = 'images' | 'video' | 'audio' | 'merch' | 'copy';
 
-function shouldRun(
-    category: GeneratorCategory,
+function shouldRunAsset(
+    assetType: AssetType,
     assetTypes?: AssetType[]
 ): boolean {
     if (!assetTypes) return true;
-    const categoryMap: Record<GeneratorCategory, AssetType[]> = {
-        images: ['ship_reference_image', 'hero_image', 'aesthetic_concept', 'scene_image', 'platform_crop'],
-        video: ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'],
-        audio: ['ambient_narration', 'hype_clip', 'theme_music'],
-        merch: ['merch_design'],
-        copy: ['ad_creative', 'carousel_slide', 'email_header'],
-    };
-    return assetTypes.some(at => categoryMap[category].includes(at));
+    return assetTypes.includes(assetType);
+}
+
+function shouldRunAny(
+    requestedAssetTypes: readonly AssetType[],
+    assetTypes?: AssetType[]
+): boolean {
+    if (!assetTypes) return true;
+    return requestedAssetTypes.some((assetType) => assetTypes.includes(assetType));
 }
 
 function makeAssetRecord(
@@ -232,7 +233,13 @@ export async function runMediaGeneration(
         // ── GROUP 1: Independent generators (parallel) ────────────────
         const group1Promises: Promise<unknown>[] = [];
 
-        if (shouldRun('images', resolvedOptions.assetTypes)) {
+        if (
+            shouldRunAsset('ship_reference_image', resolvedOptions.assetTypes)
+            || shouldRunAsset('hero_image', resolvedOptions.assetTypes)
+            || shouldRunAsset('platform_crop', resolvedOptions.assetTypes)
+            || shouldRunAsset('scene_image', resolvedOptions.assetTypes)
+            || shouldRunAny(['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'], resolvedOptions.assetTypes)
+        ) {
             // Real ship reference import + hero selection
             group1Promises.push(
                 runWithJob(slug, 'hero_image', getMediaImageGeneratorService(), 'real ship hero imagery', async () => {
@@ -250,25 +257,27 @@ export async function runMediaGeneration(
             );
 
             // Concept art
-            group1Promises.push(
-                runWithJob(slug, 'aesthetic_concept', getMediaImageGeneratorService(), 'concept art', async () => {
-                    const images = await generateAestheticConcepts(brief);
-                    const records: AssetRecord[] = [];
-                    for (const img of images) {
-                        const rec = await uploadAndRecord(
-                            slug, img.assetId, 'aesthetic_concept', getMediaImageGeneratorService(),
-                            img.prompt, img.buffer, img.fileName, 'image/png',
-                            ['concept', 'moodboard'], { width: 1080, height: 1080 }
-                        );
-                        records.push(rec);
-                    }
-                    conceptRecords.push(...records);
-                    return records;
-                }, errors)
-            );
+            if (shouldRunAsset('aesthetic_concept', resolvedOptions.assetTypes)) {
+                group1Promises.push(
+                    runWithJob(slug, 'aesthetic_concept', getMediaImageGeneratorService(), 'concept art', async () => {
+                        const images = await generateAestheticConcepts(brief);
+                        const records: AssetRecord[] = [];
+                        for (const img of images) {
+                            const rec = await uploadAndRecord(
+                                slug, img.assetId, 'aesthetic_concept', getMediaImageGeneratorService(),
+                                img.prompt, img.buffer, img.fileName, 'image/png',
+                                ['concept', 'moodboard'], { width: 1080, height: 1080 }
+                            );
+                            records.push(rec);
+                        }
+                        conceptRecords.push(...records);
+                        return records;
+                    }, errors)
+                );
+            }
         }
 
-        if (shouldRun('merch', resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('merch_design', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'merch_design', getMediaImageGeneratorService(), 'merch designs', async () => {
                     const designs = await generateMerchDesigns(brief);
@@ -287,7 +296,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRun('copy', resolvedOptions.assetTypes)) {
+        if (shouldRunAny(['ad_creative', 'carousel_slide', 'email_header'], resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'ad_creative', 'gpt4o', 'platform copy', async () => {
                     const generatedCopy = await generatePlatformCopy(brief);
@@ -308,7 +317,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRun('audio', resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('ambient_narration', resolvedOptions.assetTypes)) {
             // Ambient narration
             group1Promises.push(
                 runWithJob(slug, 'ambient_narration', 'elevenlabs', 'ambient narration', async () => {
@@ -323,6 +332,9 @@ export async function runMediaGeneration(
                 }, errors)
             );
 
+        }
+
+        if (shouldRunAsset('hype_clip', resolvedOptions.assetTypes)) {
             // Hype clip
             group1Promises.push(
                 runWithJob(slug, 'hype_clip', 'elevenlabs', 'hype clip', async () => {
@@ -337,6 +349,9 @@ export async function runMediaGeneration(
                 }, errors)
             );
 
+        }
+
+        if (shouldRunAsset('theme_music', resolvedOptions.assetTypes)) {
             // Theme music
             group1Promises.push(
                 runWithJob(slug, 'theme_music', resolvedOptions.themeMusicSource === 'default' ? 'default_library' : 'replicate', 'theme music', async () => {
@@ -374,7 +389,7 @@ export async function runMediaGeneration(
         const group2Promises: Promise<unknown>[] = [];
 
         // Platform crops (from hero images)
-        if (shouldRun('images', resolvedOptions.assetTypes) && heroRecords.length > 0) {
+        if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes) && heroRecords.length > 0) {
             for (const heroRec of heroRecords) {
                 group2Promises.push(
                     (async () => {
@@ -402,7 +417,7 @@ export async function runMediaGeneration(
         }
 
         // ── Scene image generation (Production Bible path) ──────────
-        if (shouldRun('images', resolvedOptions.assetTypes) && hasProductionBible) {
+        if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && hasProductionBible) {
             group2Promises.push(
                 runWithJob(slug, 'scene_image', getMediaImageGeneratorService(), 'scene images from production bible', async () => {
                     const sceneImages = await generateSceneImages(
@@ -426,7 +441,7 @@ export async function runMediaGeneration(
         }
 
         // ── Video generation ──────────────────────────────────────────
-        if (shouldRun('video', resolvedOptions.assetTypes)) {
+        if (shouldRunAny(['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'], resolvedOptions.assetTypes)) {
             if (hasProductionBible && brief.productionBible!.storyboards.length > 0) {
                 // ── Storyboard-driven video assembly (Production Bible path) ──
                 // Build sceneImageMap: sceneId → asset URL
@@ -453,6 +468,10 @@ export async function runMediaGeneration(
                                 : delivId.startsWith('threshold') ? 'threshold_video'
                                 : delivId.startsWith('countdown') ? 'countdown_video'
                                 : 'broll_clip';
+
+                            if (!shouldRunAsset(assetType, resolvedOptions.assetTypes)) {
+                                continue;
+                            }
 
                             const results = await runWithJob(slug, assetType, 'runwayml', `storyboard: ${delivId}`, async () => {
                                 const video = await generateStoryboardVideo(
@@ -482,63 +501,71 @@ export async function runMediaGeneration(
                 );
             } else if (firstHeroUrl) {
                 // ── Legacy video generation (no Production Bible) ──────────
-                group2Promises.push(
-                    runWithJob(slug, 'tiktok_seed_video', 'runwayml', 'tiktok seed', async () => {
-                        const video = await generateTikTokSeed(brief, firstHeroUrl);
-                        const rec = await uploadAndRecord(
-                            slug, video.assetId, 'tiktok_seed_video', 'runwayml',
-                            `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
-                            ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated'], undefined, video.durationSeconds
-                        );
-                        videoRecords.tiktokSeed = rec;
-                        return [rec];
-                    }, errors)
-                );
-
-                group2Promises.push(
-                    runWithJob(slug, 'hero_explainer_video', 'heygen', 'hero explainer', async () => {
-                        const video = await generateHeroExplainer(brief, firstHeroUrl);
-                        const rec = await uploadAndRecord(
-                            slug, video.assetId, 'hero_explainer_video', 'heygen',
-                            video.script, video.buffer, video.fileName, 'video/mp4',
-                            ['video', 'explainer', 'landing_page'], undefined, video.durationSeconds
-                        );
-                        videoRecords.heroExplainer = rec;
-                        return [rec];
-                    }, errors)
-                );
-
-                group2Promises.push(
-                    runWithJob(slug, 'threshold_video', 'heygen', 'threshold announcement', async () => {
-                        const video = await generateThresholdAnnouncement(brief, firstHeroUrl);
-                        const rec = await uploadAndRecord(
-                            slug, video.assetId, 'threshold_video', 'heygen',
-                            video.script, video.buffer, video.fileName, 'video/mp4',
-                            ['video', 'threshold', 'announcement'], undefined, video.durationSeconds
-                        );
-                        videoRecords.thresholdAnnouncement = rec;
-                        return [rec];
-                    }, errors)
-                );
-
-                group2Promises.push(
-                    runWithJob(slug, 'countdown_video', 'runwayml', 'countdown videos', async () => {
-                        const videos = await generateCountdownVideos(brief, firstHeroUrl);
-                        const records: AssetRecord[] = [];
-                        for (const vid of videos) {
+                if (shouldRunAsset('tiktok_seed_video', resolvedOptions.assetTypes)) {
+                    group2Promises.push(
+                        runWithJob(slug, 'tiktok_seed_video', 'runwayml', 'tiktok seed', async () => {
+                            const video = await generateTikTokSeed(brief, firstHeroUrl);
                             const rec = await uploadAndRecord(
-                                slug, vid.assetId, 'countdown_video', 'runwayml',
-                                vid.motionPrompt, vid.buffer, vid.fileName, 'video/mp4',
-                                ['video', 'countdown'], undefined, vid.durationSeconds
+                                slug, video.assetId, 'tiktok_seed_video', 'runwayml',
+                                `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
+                                ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated'], undefined, video.durationSeconds
                             );
-                            records.push(rec);
-                        }
-                        videoRecords.countdown.push(...records);
-                        return records;
-                    }, errors)
-                );
+                            videoRecords.tiktokSeed = rec;
+                            return [rec];
+                        }, errors)
+                    );
+                }
 
-                if (heroImageUrls.length > 0) {
+                if (shouldRunAsset('hero_explainer_video', resolvedOptions.assetTypes)) {
+                    group2Promises.push(
+                        runWithJob(slug, 'hero_explainer_video', 'heygen', 'hero explainer', async () => {
+                            const video = await generateHeroExplainer(brief, firstHeroUrl);
+                            const rec = await uploadAndRecord(
+                                slug, video.assetId, 'hero_explainer_video', 'heygen',
+                                video.script, video.buffer, video.fileName, 'video/mp4',
+                                ['video', 'explainer', 'landing_page'], undefined, video.durationSeconds
+                            );
+                            videoRecords.heroExplainer = rec;
+                            return [rec];
+                        }, errors)
+                    );
+                }
+
+                if (shouldRunAsset('threshold_video', resolvedOptions.assetTypes)) {
+                    group2Promises.push(
+                        runWithJob(slug, 'threshold_video', 'heygen', 'threshold announcement', async () => {
+                            const video = await generateThresholdAnnouncement(brief, firstHeroUrl);
+                            const rec = await uploadAndRecord(
+                                slug, video.assetId, 'threshold_video', 'heygen',
+                                video.script, video.buffer, video.fileName, 'video/mp4',
+                                ['video', 'threshold', 'announcement'], undefined, video.durationSeconds
+                            );
+                            videoRecords.thresholdAnnouncement = rec;
+                            return [rec];
+                        }, errors)
+                    );
+                }
+
+                if (shouldRunAsset('countdown_video', resolvedOptions.assetTypes)) {
+                    group2Promises.push(
+                        runWithJob(slug, 'countdown_video', 'runwayml', 'countdown videos', async () => {
+                            const videos = await generateCountdownVideos(brief, firstHeroUrl);
+                            const records: AssetRecord[] = [];
+                            for (const vid of videos) {
+                                const rec = await uploadAndRecord(
+                                    slug, vid.assetId, 'countdown_video', 'runwayml',
+                                    vid.motionPrompt, vid.buffer, vid.fileName, 'video/mp4',
+                                    ['video', 'countdown'], undefined, vid.durationSeconds
+                                );
+                                records.push(rec);
+                            }
+                            videoRecords.countdown.push(...records);
+                            return records;
+                        }, errors)
+                    );
+                }
+
+                if (heroImageUrls.length > 0 && shouldRunAsset('broll_clip', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'broll_clip', 'runwayml', 'broll clips', async () => {
                             const videos = await generateBrollClips(brief, heroImageUrls);
