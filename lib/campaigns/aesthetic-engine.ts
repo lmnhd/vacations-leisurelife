@@ -200,22 +200,13 @@ Return ONLY the socialConcepts and videoConcepts conforming to the schema.
         prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`
     });
 
-    // PASS 3: Production Bible — Scene Library + Storyboards
-    const productionBible = await generateProductionBible(
-        model,
-        campaign,
-        coreAesthetic,
-        platformConcepts
-    );
-
-    // Assemble final brief
+    // Assemble final brief (Production Bible generated separately via /media/aesthetic/production-bible)
     const finalBrief: CampaignAestheticBrief = {
         slug: campaign.id,
         themeName: campaign.name,
         ...coreAesthetic,
         socialConcepts: platformConcepts.socialConcepts,
         videoConcepts: platformConcepts.videoConcepts,
-        productionBible,
         generatedAt: new Date().toISOString(),
         generatedBy: 'agent',
         humanReviewStatus: 'pending' // pending by default
@@ -240,6 +231,30 @@ const VIDEO_DELIVERABLES = [
     { id: 'threshold_announcement', title: 'Threshold Announcement', durationSeconds: 30, shotCount: 4 },
     { id: 'countdown_1', title: 'Countdown — 3 Cabins Left', durationSeconds: 15, shotCount: 3 },
 ] as const;
+
+// Public entry point — called from the dedicated /media/aesthetic/production-bible route.
+// Takes the already-saved brief so the route doesn't need the internal Pass types.
+export async function generateProductionBibleFromBrief(
+    campaign: Campaign,
+    brief: CampaignAestheticBrief
+): Promise<ProductionBible> {
+    const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
+    const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
+
+    const coreAesthetic = {
+        visual: brief.visual,
+        messaging: brief.messaging,
+        audio: brief.audio,
+        merch: brief.merch,
+    } as z.infer<typeof Pass1Schema>;
+
+    const platformConcepts = {
+        socialConcepts: brief.socialConcepts,
+        videoConcepts: brief.videoConcepts,
+    } as z.infer<typeof Pass2Schema>;
+
+    return generateProductionBible(model, campaign, coreAesthetic, platformConcepts);
+}
 
 async function generateProductionBible(
     model: ReturnType<typeof openai>,

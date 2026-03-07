@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
 
-type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving";
+type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible";
+
+const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
 
 export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
@@ -26,7 +28,7 @@ export default function AestheticDevisingTestPage() {
             const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic`);
             if (res.status === 404) {
                 setResult(null);
-                setError("No brief found for this slug.");
+                setError("");
                 return;
             }
             const data = await res.json();
@@ -80,6 +82,26 @@ export default function AestheticDevisingTestPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Delete failed");
             setResult(null);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
+    // ── GENERATE PRODUCTION BIBLE ─────────────────────────────────────────────
+    const handleGenerateBible = async () => {
+        if (!slug.trim() || !result) return;
+        setBriefState("generating_bible");
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic/production-bible`, {
+                method: "POST",
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Production Bible generation failed");
+            setResult(data.brief as CampaignAestheticBrief);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -162,6 +184,11 @@ export default function AestheticDevisingTestPage() {
                             {error}
                         </div>
                     )}
+                    {!error && !result && slug.trim() && briefState === "idle" && (
+                        <div className="rounded-lg px-3 py-2 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                            {EMPTY_BRIEF_MESSAGE}
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Bar — only shown when slug is entered */}
@@ -203,6 +230,28 @@ export default function AestheticDevisingTestPage() {
                                         : <Wand2 className="h-4 w-4" />
                                     }
                                     {briefState === "generating" ? "Generating..." : result ? "Re-generate" : "Generate Brief"}
+                                </button>
+                            )}
+
+                            {/* Production Bible */}
+                            {result && (
+                                <button
+                                    id="btn-generate-bible"
+                                    onClick={handleGenerateBible}
+                                    disabled={isBusy}
+                                    title={result.productionBible ? "Regenerate Production Bible" : "Generate Production Bible (Pass 3 — slow, ~2-4 min)"}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {briefState === "generating_bible"
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <Wand2 className="h-4 w-4" />
+                                    }
+                                    {briefState === "generating_bible"
+                                        ? "Generating Bible..."
+                                        : result.productionBible
+                                            ? "Re-gen Bible"
+                                            : "Generate Bible"
+                                    }
                                 </button>
                             )}
 
