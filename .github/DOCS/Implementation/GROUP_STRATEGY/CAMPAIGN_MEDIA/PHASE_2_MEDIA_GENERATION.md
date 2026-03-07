@@ -84,6 +84,148 @@ type GeneratorService =
   | 'gpt4o' | 'llama4';              // LLM copy generation
 ```
 
+### Planned Future Capability: Instruction-Aware Regeneration
+
+The platform needs a true regeneration path that changes the **instruction source**, not just reruns the same asset with the same prompt.
+
+Current state:
+
+- `POST /api/groups/campaign/[slug]/media/generate` can now force a rerun for specific asset types.
+- `POST /api/groups/campaign/[slug]/media/regenerate` already exists, but it is only a **binary version-swap endpoint**.
+- The current `regenerate` route accepts a replacement file payload plus metadata and writes a new `AssetRecord` version.
+- It does **not** revise Production Bible scene specs, storyboard shot instructions, motion prompts, or image prompts.
+- It does **not** give an external agent a structured way to say what was wrong and what must change in the next generation.
+
+Required future capability:
+
+- A human operator must be able to select an artifact, describe what is wrong, and trigger a revision-aware regeneration.
+- An external agent must be able to call the same capability with structured instructions.
+- The system must revise the upstream prompt inputs before generation rather than appending random freeform text at the last second.
+- The original asset, revised asset, revision reason, and effective prompt/instruction snapshot must remain auditable.
+
+Recommended scope model:
+
+- **Asset-level regeneration** — regenerate one scene image or one video deliverable.
+- **Scene-level regeneration** — revise one `SceneSpec`, then regenerate that scene image and optionally dependent videos.
+- **Storyboard-level regeneration** — revise one `Storyboard` or selected `ShotSpec` items, then regenerate only that deliverable.
+- **Production-Bible-level regeneration** — revise global direction and re-run scene/storyboard generation from the Bible layer downward.
+
+Recommended rule: operators and agents should target the **highest correct source-of-truth layer**.
+
+- If the problem is visual composition in a scene image, revise `SceneSpec` fields and `scene.imagePrompt`.
+- If the problem is motion, pacing, or camera behavior, revise `ShotSpec` and storyboard instructions.
+- If the problem is overall campaign tone, revise Production Bible global direction or approved brief inputs.
+- Do **not** treat prompt revision as a blind suffix appended to `promptUsed`.
+
+Recommended future endpoint shape:
+
+- `POST /api/groups/campaign/[slug]/media/regenerate-with-revision`
+- Route handler should remain thin.
+- Core business logic should live in `app/api/groups/campaign/[slug]/media/regenerate-with-revision/core-logic.ts`.
+
+Recommended request contract:
+
+```json
+{
+  "targetType": "scene_image",
+  "targetId": "img_scene_pooldeck_001",
+  "revisionScope": "scene_spec",
+  "revisionInstruction": "Reduce crowd density, make the deck feel more premium and sunset-forward, keep the ship architecture exactly as referenced.",
+  "applyMode": "replace_source_instruction",
+  "regenerateDependencies": true,
+  "requestedBy": "human",
+  "requestSource": "tests/production-bible"
+}
+```
+
+Required request semantics:
+
+- `targetType` identifies the current artifact category.
+- `targetId` identifies the asset record or deliverable being revised.
+- `revisionScope` determines which upstream model input must change.
+- `revisionInstruction` captures what must change in plain language.
+- `applyMode` should default to replacing or rewriting source instructions, not merely appending text.
+- `regenerateDependencies` controls whether downstream assets are also refreshed.
+- `requestedBy` should support both human and agent callers.
+
+Recommended supported `revisionScope` values:
+
+- `scene_spec`
+- `shot_spec`
+- `storyboard`
+- `production_bible`
+- `asset_prompt_only`
+
+Use `asset_prompt_only` only as a narrow escape hatch. Preferred operation is to revise the structured source objects that produce the prompt.
+
+Recommended processing flow:
+
+1. Resolve the active asset and its manifest slot.
+2. Resolve the correct upstream source object for that asset.
+3. Build a structured revision job record with the original instruction snapshot.
+4. Use an LLM to rewrite the relevant source object deterministically.
+5. Persist the revised source object or revision overlay.
+6. Regenerate the minimum required assets.
+7. Deactivate or replace the superseded asset records.
+8. Update the manifest in place while preserving audit history.
+9. Persist the final effective prompt/instruction snapshot on the new asset record.
+
+Recommended implementation detail:
+
+- Prompt assembly must stay separate from orchestration logic.
+- Revision application must be programmatic and deterministic.
+- Do not put conditional logic inside the prompt itself.
+- Build prompt fragments in code, then render the final prompt from structured fields.
+- Prefer JSON-shaped revision payloads for agent calls.
+
+Recommended storage model:
+
+- Keep the existing `AssetRecord.promptUsed` field as the final rendered prompt snapshot.
+- Keep asset versioning and `active` state as the current audit mechanism for binaries.
+- Add a dedicated revision record store for instruction changes rather than overloading `AssetRecord` alone.
+- Each revision record should preserve:
+  - target asset or deliverable
+  - upstream source layer revised
+  - original structured input snapshot
+  - revised structured input snapshot
+  - human or agent revision instruction
+  - dependency regeneration policy
+  - resulting asset IDs
+
+Dependency rules that future implementation must enforce:
+
+- Revising a `SceneSpec` invalidates that scene image.
+- Revising a `SceneSpec` may also invalidate every storyboard shot referencing that scene.
+- Revising `ShotSpec` invalidates only the parent deliverable unless shared elsewhere.
+- Revising a `Storyboard` invalidates the deliverable tied to that `deliverableId`.
+- Revising Production Bible global direction invalidates all scene images and all storyboard-driven videos.
+
+Manual operator workflow requirement:
+
+- From `/tests/production-bible`, the operator should be able to click a future `Revise & Regenerate` action on an artifact.
+- The UI should capture:
+  - what is wrong
+  - what must stay unchanged
+  - whether dependencies should also re-run
+- The operator should be shown the revised effective prompt or source instruction before final execution.
+
+External agent workflow requirement:
+
+- The same regeneration capability must be callable via API without UI dependencies.
+- The agent must be able to target a scene, shot, storyboard, or asset directly.
+- The agent should receive back:
+  - revision record ID
+  - affected source layer
+  - final effective prompt snapshot
+  - regenerated asset IDs
+  - manifest impact summary
+
+Important constraint:
+
+- Future implementation should reuse the existing provider abstraction, manifest, and asset-versioning model.
+- It should not create a parallel media state system.
+- The current `/media/regenerate` binary-swap endpoint should remain available for direct replacement uploads, but it is **not** the long-term answer for instruction-driven regeneration.
+
 ---
 
 ## Image Generation
