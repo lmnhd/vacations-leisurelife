@@ -264,15 +264,15 @@ export async function generateSceneImages(
 
         const enrichedPrompt = [
             scene.imagePrompt,
-            `Scene location: ${scene.location}`,
+            `Location: ${scene.location}`,
             `Time of day: ${scene.timeOfDay}`,
             `Lighting: ${scene.lighting}`,
             `Camera angle: ${scene.cameraAngle}`,
-            `Subject action: ${scene.subjectAction}`,
+            `Action: ${scene.subjectAction}`,
             `Environment: ${scene.environmentDetails}`,
-            `Mood: ${scene.mood}`,
-            shipName !== 'TBD' ? `Ship: ${shipName}` : '',
-            'Photorealistic, cinematic, 8K, editorial travel photography',
+            `Emotional tone: ${scene.mood}`,
+            shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
+            'Luxury expedition travel editorial photography, aspirational, warm cinematic color grade, shallow depth of field, National Geographic quality, Condé Nast Traveler aesthetic, authentic human emotion, ocean as backdrop',
         ].filter(Boolean).join('. ');
 
         let buffer: Buffer;
