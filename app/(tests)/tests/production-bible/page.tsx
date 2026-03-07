@@ -13,7 +13,7 @@ import type {
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
-    AlertTriangle, CheckCircle2, Zap, Wand2
+    AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
 
@@ -26,6 +26,38 @@ import { CampaignSelector } from "../media-generation/campaign-selector";
 
 type PageState = "idle" | "loading" | "generating";
 
+interface DeliverableEstimate {
+    id: string;
+    title: string;
+    shotCount: number;
+    clipDurationSeconds: number;
+    runwayCredits: number;
+    usd: number;
+}
+
+interface ServiceBalance {
+    service: string;
+    available: number | null;
+    unit: string;
+    fetchError: string | null;
+    unverifiable: boolean;
+}
+
+interface CreditCheckData {
+    canProceed: boolean | null;
+    estimate: {
+        runwayCreditsRequired: number;
+        runwayClipCount: number;
+        runwayUsd: number;
+        geminiUsd: number;
+        elevenlabsUsd: number;
+        totalUsd: number;
+        deliverables: DeliverableEstimate[];
+    };
+    balances: ServiceBalance[];
+    blockers: string[];
+}
+
 const LS_SLUG_KEY = "prodBible_slug";
 
 export default function ProductionBibleTestPage() {
@@ -37,6 +69,8 @@ export default function ProductionBibleTestPage() {
     const [expandedScenes, setExpandedScenes] = useState<Set<string>>(new Set());
     const [expandedStoryboards, setExpandedStoryboards] = useState<Set<string>>(new Set());
     const [generateLog, setGenerateLog] = useState<string[]>([]);
+    const [creditCheck, setCreditCheck] = useState<CreditCheckData | null>(null);
+    const [creditCheckLoading, setCreditCheckLoading] = useState(false);
 
     const isBusy = pageState !== "idle";
     const bible: ProductionBible | undefined = brief?.productionBible ?? undefined;
@@ -162,6 +196,23 @@ export default function ProductionBibleTestPage() {
         }
     };
 
+    // ── Credit check ──────────────────────────────────────────────────
+    const handleCreditCheck = async () => {
+        if (!slug.trim()) return;
+        setCreditCheckLoading(true);
+        try {
+            const sceneCount = bible?.sceneLibrary.length ?? 10;
+            const res = await fetch(`/api/groups/campaign/${slug}/media/credit-check?sceneCount=${sceneCount}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            setCreditCheck(data as CreditCheckData);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setCreditCheckLoading(false);
+        }
+    };
+
     // ── Regenerate Production Bible (rewrites scene specs) ─────────────────
     const handleRegenerateBible = async () => {
         if (!slug.trim()) return;
@@ -281,6 +332,91 @@ export default function ProductionBibleTestPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Credit Check Panel */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-green-400" />
+                            <span className="text-sm font-semibold">Cost Estimate &amp; Balance Check</span>
+                        </div>
+                        <button
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded flex items-center gap-1.5 disabled:opacity-40"
+                            onClick={handleCreditCheck}
+                            disabled={creditCheckLoading || !slug.trim()}
+                        >
+                            {creditCheckLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                            {creditCheck ? "Refresh" : "Check Now"}
+                        </button>
+                    </div>
+
+                    {!creditCheck && !creditCheckLoading && (
+                        <p className="text-xs text-zinc-500">Click &quot;Check Now&quot; to see cost estimate and verify you have enough credits before generating videos.</p>
+                    )}
+
+                    {creditCheck && (
+                        <div className="space-y-3">
+                            {/* Status banner */}
+                            <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded ${
+                                creditCheck.canProceed === true ? "bg-green-900/30 border border-green-800 text-green-300"
+                                : creditCheck.canProceed === false ? "bg-red-900/30 border border-red-800 text-red-300"
+                                : "bg-zinc-800 text-zinc-400"
+                            }`}>
+                                {creditCheck.canProceed === true && <ShieldCheck className="w-4 h-4 shrink-0" />}
+                                {creditCheck.canProceed === false && <ShieldAlert className="w-4 h-4 shrink-0" />}
+                                {creditCheck.canProceed === true && "Ready to proceed"}
+                                {creditCheck.canProceed === false && `Blocked: ${creditCheck.blockers[0]}`}
+                                {creditCheck.canProceed === null && "Estimate only"}
+                            </div>
+
+                            {/* Cost breakdown */}
+                            <div className="space-y-1">
+                                <div className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-1">Video Generation (RunwayML)</div>
+                                {creditCheck.estimate.deliverables.map((d: DeliverableEstimate) => (
+                                    <div key={d.id} className="flex justify-between text-xs text-zinc-400">
+                                        <span>{d.title} ({d.shotCount} shots × {d.clipDurationSeconds}s)</span>
+                                        <span className="text-zinc-300">{d.runwayCredits.toLocaleString()} cr / ${d.usd.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between text-xs font-semibold text-zinc-200 border-t border-zinc-700 pt-1 mt-1">
+                                    <span>Runway subtotal</span>
+                                    <span>{creditCheck.estimate.runwayCreditsRequired.toLocaleString()} cr / ${creditCheck.estimate.runwayUsd.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-zinc-800 rounded px-2 py-1.5">
+                                    <div className="text-zinc-500">Gemini images (est.)</div>
+                                    <div className="text-zinc-200 font-medium">${creditCheck.estimate.geminiUsd.toFixed(2)}</div>
+                                </div>
+                                <div className="bg-zinc-800 rounded px-2 py-1.5">
+                                    <div className="text-zinc-500">ElevenLabs narration (est.)</div>
+                                    <div className="text-zinc-200 font-medium">${creditCheck.estimate.elevenlabsUsd.toFixed(2)}</div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between text-sm font-bold border-t border-zinc-700 pt-2">
+                                <span>Total Estimated Cost</span>
+                                <span className="text-amber-300">~${creditCheck.estimate.totalUsd.toFixed(2)}</span>
+                            </div>
+
+                            {/* Balances */}
+                            <div className="space-y-1">
+                                <div className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Live Balances</div>
+                                {creditCheck.balances.map((b: ServiceBalance) => (
+                                    <div key={b.service} className="flex justify-between text-xs">
+                                        <span className="text-zinc-400">{b.service}</span>
+                                        <span className={b.fetchError ? "text-red-400" : b.unverifiable ? "text-zinc-500 italic" : "text-zinc-200"}>
+                                            {b.unverifiable ? "not queryable via API" :
+                                             b.fetchError ? `error: ${b.fetchError}` :
+                                             `${(b.available ?? 0).toLocaleString()} ${b.unit}`}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Action buttons */}
                 <div className="space-y-2">
