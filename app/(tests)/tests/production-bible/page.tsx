@@ -13,7 +13,7 @@ import type {
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
-    AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert
+    AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert, Trash2
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
 
@@ -71,6 +71,7 @@ export default function ProductionBibleTestPage() {
     const [generateLog, setGenerateLog] = useState<string[]>([]);
     const [creditCheck, setCreditCheck] = useState<CreditCheckData | null>(null);
     const [creditCheckLoading, setCreditCheckLoading] = useState(false);
+    const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
 
     const isBusy = pageState !== "idle";
     const bible: ProductionBible | undefined = brief?.productionBible ?? undefined;
@@ -144,6 +145,32 @@ export default function ProductionBibleTestPage() {
         }
     };
 
+    const handleDeleteVideoArtifact = useCallback(async (assetId: string) => {
+        if (!slug.trim()) return;
+        if (!window.confirm(`Delete video artifact ${assetId}?`)) return;
+
+        setDeletingAssetId(assetId);
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/manifest/video-artifact`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assetId }),
+            });
+
+            const data = await res.json() as { error?: string };
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+
+            setGenerateLog(prev => [...prev, `Deleted video artifact: ${assetId}`]);
+            await loadData(slug.trim());
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setDeletingAssetId(null);
+        }
+    }, [slug, loadData]);
+
     // ── Generate storyboard videos via the REAL pipeline ──────────────────
     const handleGenerateVideos = async () => {
         setPageState("generating");
@@ -154,7 +181,7 @@ export default function ProductionBibleTestPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    assetTypes: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video"],
+                    assetTypes: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"],
                 }),
             });
             const data = await res.json();
@@ -687,9 +714,19 @@ export default function ProductionBibleTestPage() {
                                         <div className="p-3 space-y-1">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-zinc-200">{label}</span>
-                                                {rec.durationSeconds && (
-                                                    <span className="text-xs text-zinc-500">{rec.durationSeconds}s</span>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {rec.durationSeconds && (
+                                                        <span className="text-xs text-zinc-500">{rec.durationSeconds}s</span>
+                                                    )}
+                                                    <button
+                                                        className="bg-red-900/40 hover:bg-red-800/50 border border-red-700 text-red-300 px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
+                                                        onClick={() => void handleDeleteVideoArtifact(rec.assetId)}
+                                                        disabled={deletingAssetId === rec.assetId || isBusy}
+                                                    >
+                                                        {deletingAssetId === rec.assetId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="text-xs text-zinc-500 truncate">{rec.assetId}</div>
                                             <div className="flex flex-wrap gap-1">
