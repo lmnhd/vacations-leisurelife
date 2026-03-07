@@ -1,4 +1,5 @@
 import { generateObject } from 'ai';
+import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { Campaign } from './types';
@@ -225,12 +226,7 @@ const SHIP_REFERENCE_CATEGORIES = [
     'nightclub', 'spa', 'destination_port', 'theater', 'sports_deck',
 ] as const;
 
-const VIDEO_DELIVERABLES = [
-    { id: 'tiktok_seed', title: 'TikTok Seed Video', durationSeconds: 35, shotCount: 4 },
-    { id: 'hero_explainer', title: 'Hero Explainer Video', durationSeconds: 60, shotCount: 6 },
-    { id: 'threshold_announcement', title: 'Threshold Announcement', durationSeconds: 30, shotCount: 4 },
-    { id: 'countdown_1', title: 'Countdown — 3 Cabins Left', durationSeconds: 15, shotCount: 3 },
-] as const;
+const VIDEO_DELIVERABLES = VIDEO_DELIVERABLE_SPECS;
 
 // Public entry point — called from the dedicated /media/aesthetic/production-bible route.
 // Takes the already-saved brief so the route doesn't need the internal Pass types.

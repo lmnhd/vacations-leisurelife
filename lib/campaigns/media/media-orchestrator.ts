@@ -25,6 +25,7 @@ import { generateCountdownVideos, generateBrollClips } from './generators/runway
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
+import { checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import {
     discoverShipReferenceCandidates,
@@ -442,6 +443,14 @@ export async function runMediaGeneration(
 
         // ── Video generation ──────────────────────────────────────────
         if (shouldRunAny(['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'], resolvedOptions.assetTypes)) {
+            // Credit pre-check: verify RunwayML balance before burning any credits
+            const sceneCount = brief.productionBible?.sceneLibrary.length ?? 10;
+            const creditCheck = await checkMediaCredits(sceneCount);
+            if (!creditCheck.canProceed) {
+                const msg = `Media generation blocked by credit pre-check:\n${creditCheck.blockers.join('\n')}`;
+                errors.push(msg);
+                // Skip all video generation — do not enter the block below
+            } else {
             if (hasProductionBible && brief.productionBible!.storyboards.length > 0) {
                 // ── Storyboard-driven video assembly (Production Bible path) ──
                 // Build sceneImageMap: sceneId → asset URL
@@ -584,6 +593,7 @@ export async function runMediaGeneration(
                     );
                 }
             }
+            } // end else (credit check passed)
         }
 
         await Promise.all(group2Promises);
