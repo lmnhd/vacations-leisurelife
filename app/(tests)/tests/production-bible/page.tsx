@@ -460,7 +460,7 @@ export default function ProductionBibleTestPage() {
                 )}
 
                 {/* Scene images from manifest */}
-                {manifest && manifest.images.sceneImages.length > 0 && (
+                {manifest && (manifest.images.sceneImages?.length ?? 0) > 0 && (
                     <section className="space-y-3">
                         <h2 className="text-lg font-semibold flex items-center gap-2">
                             <Image className="w-5 h-5 text-green-400" />

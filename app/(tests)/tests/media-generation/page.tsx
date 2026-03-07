@@ -495,7 +495,7 @@ export default function MediaGenerationTestPage() {
                             </div>
                             <div className="text-center p-3 rounded-lg bg-teal-500/5 border border-teal-500/10">
                                 <div className="text-lg font-bold text-teal-400">
-                                    {manifest.images.sceneImages.length}
+                                    {manifest.images.sceneImages?.length ?? 0}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Scene Images</div>
                             </div>
