@@ -1,4 +1,4 @@
-import { CampaignAestheticBrief, Storyboard, ShotSpec } from '../../schema';
+import { CampaignAestheticBrief, Storyboard, ShotSpec, SceneSpec } from '../../schema';
 import { generateAmbientNarration } from './elevenlabs-generator';
 import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo } from './runway-generator';
 import { composeNarratedVerticalVideoSequence } from '../video-composer';
@@ -60,16 +60,30 @@ function buildLegacyShotPlan(brief: CampaignAestheticBrief): string[] {
 // Converts ShotSpec into a rich RunwayML motion prompt
 // ────────────────────────────────────────────────────────────────────────────
 
-function buildShotMotionPrompt(shot: ShotSpec, brief: CampaignAestheticBrief): string {
+function buildShotMotionPrompt(shot: ShotSpec, brief: CampaignAestheticBrief, scene: SceneSpec | undefined): string {
     const { colorPalette, lightingStyle } = brief.visual;
+
+    // Scene-grounding block — tells RunwayML exactly what is in the source image
+    // so it animates the image rather than generating its own visuals.
+    const sceneAnchor = scene
+        ? [
+              `The source image shows: ${scene.imagePrompt.split('.')[0]}`,
+              `Location: ${scene.location}`,
+              `Time of day: ${scene.timeOfDay}`,
+              `Lighting: ${scene.lighting}`,
+              `Keep all subjects, faces, ship architecture, ocean, and environment EXACTLY as shown in the source image`,
+              `Do NOT replace, morph, or invent any new scene elements`,
+          ].join('. ')
+        : 'Preserve all visual elements from the source image exactly as shown. Do not replace or invent scene content.';
+
     return [
-        shot.cameraMovement,
+        sceneAnchor,
+        `CAMERA: ${shot.cameraMovement}`,
         `Subject motion: ${shot.subjectMotion}`,
         `Environment motion: ${shot.environmentMotion}`,
         `Emotional beat: ${shot.emotionalBeat}`,
-        `Lighting: ${lightingStyle}`,
-        `Color emphasis: ${colorPalette.primary}, ${colorPalette.accent}`,
-        `Avoid slideshow parallax, avoid static framing, avoid warped anatomy`,
+        `Color grade: ${colorPalette.primary} and ${colorPalette.accent} tones, ${lightingStyle}`,
+        `Avoid slideshow parallax, avoid warped anatomy, avoid scene replacement`,
     ].join('. ');
 }
 
@@ -109,8 +123,11 @@ export async function generateStoryboardVideo(
     const shotPrompts: string[] = [];
     const shotImageUrls: string[] = [];
 
+    const sceneLibrary = brief.productionBible?.sceneLibrary ?? [];
+
     for (const shot of storyboard.shotSequence) {
-        shotPrompts.push(buildShotMotionPrompt(shot, brief));
+        const scene = sceneLibrary.find(s => s.sceneId === shot.sceneId);
+        shotPrompts.push(buildShotMotionPrompt(shot, brief, scene));
         shotImageUrls.push(sceneImageMap.get(shot.sceneId) ?? fallbackHeroImageUrl);
     }
 
