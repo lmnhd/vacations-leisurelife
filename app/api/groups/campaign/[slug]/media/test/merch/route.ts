@@ -102,7 +102,7 @@ export async function POST(
 
         const imageBuffer = Buffer.from(imageData, 'base64');
         const assetId = `merch_${targetItem.type}_${randomUUID().slice(0, 8)}`;
-        const fileName = `merch/${targetItem.type}_design.png`;
+        const fileName = `merch/${targetItem.type}_design_${assetId}.png`;
 
         const cdnUrl = await uploadAsset(slug, fileName, imageBuffer, 'image/png');
         const record: AssetRecord = {
