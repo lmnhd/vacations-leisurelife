@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { ReviewAssetCard } from './review-asset-card';
 import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Trash2, Loader2 } from 'lucide-react';
 
@@ -133,6 +134,10 @@ function countStatuses(entries: Array<{ asset: AssetRecord }>) {
     return { approved, flagged, auto };
 }
 
+function isHumanApproved(asset: AssetRecord): boolean {
+    return normalizeAssetCuration(asset).approvalState === 'human_approved';
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // MediaReviewPanel — Tabbed asset review
 // ────────────────────────────────────────────────────────────────────────────
@@ -166,17 +171,19 @@ export function MediaReviewPanel(
     const activeTabDef = TABS.find(t => t.id === activeTab) ?? TABS[0];
     const ActiveIcon = activeTabDef.icon;
     const removableEntries = activeEntries.filter((entry) => getDeleteEndpoint(slug, entry.asset.assetType) !== null);
+    const removableUnapprovedEntries = removableEntries.filter((entry) => !isHumanApproved(entry.asset));
 
     const handleRefresh = async () => {
         await onManifestRefresh(slug);
     };
 
-    const handleRemoveAllInTab = async () => {
-        if (removableEntries.length === 0 || bulkRemoving) return;
+    const handleBulkRemove = async (
+        entriesToRemove: Array<{ entryKey: string; title: string; asset: AssetRecord }>,
+        confirmationMessage: string,
+    ) => {
+        if (entriesToRemove.length === 0 || bulkRemoving) return;
 
-        const confirmed = window.confirm(
-            `Remove all ${removableEntries.length} assets from "${activeTabDef.label}"?\n\nThis deactivates the asset records and removes them from the manifest.`
-        );
+        const confirmed = window.confirm(confirmationMessage);
         if (!confirmed) return;
 
         setBulkRemoving(true);
@@ -184,7 +191,7 @@ export function MediaReviewPanel(
 
         try {
             const settled = await Promise.allSettled(
-                removableEntries.map(async (entry) => {
+                entriesToRemove.map(async (entry) => {
                     const endpoint = getDeleteEndpoint(slug, entry.asset.assetType);
                     if (!endpoint) return;
 
@@ -213,6 +220,20 @@ export function MediaReviewPanel(
         } finally {
             setBulkRemoving(false);
         }
+    };
+
+    const handleRemoveAllInTab = async () => {
+        await handleBulkRemove(
+            removableEntries,
+            `Remove all ${removableEntries.length} assets from "${activeTabDef.label}"?\n\nThis deactivates the asset records and removes them from the manifest.`
+        );
+    };
+
+    const handleRemoveNotApprovedInTab = async () => {
+        await handleBulkRemove(
+            removableUnapprovedEntries,
+            `Remove ${removableUnapprovedEntries.length} non-approved assets from "${activeTabDef.label}"?\n\nOnly human-approved assets will be kept in this tab.`
+        );
     };
 
     if (totalEntries === 0) return null;
@@ -292,16 +313,28 @@ export function MediaReviewPanel(
                         <div className="text-[11px] text-slate-500">
                             {activeEntries.length} assets in {activeTabDef.label}
                         </div>
-                        {removableEntries.length > 0 && (
-                            <button
-                                onClick={() => void handleRemoveAllInTab()}
-                                disabled={bulkRemoving}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] text-red-300 hover:bg-red-500/20 transition disabled:opacity-40"
-                            >
-                                {bulkRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                {bulkRemoving ? 'Removing…' : 'Remove All In Tab'}
-                            </button>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {removableUnapprovedEntries.length > 0 && (
+                                <button
+                                    onClick={() => void handleRemoveNotApprovedInTab()}
+                                    disabled={bulkRemoving}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-200 hover:bg-amber-500/20 transition disabled:opacity-40"
+                                >
+                                    {bulkRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                    {bulkRemoving ? 'Removing…' : 'Remove Not Approved'}
+                                </button>
+                            )}
+                            {removableEntries.length > 0 && (
+                                <button
+                                    onClick={() => void handleRemoveAllInTab()}
+                                    disabled={bulkRemoving}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] text-red-300 hover:bg-red-500/20 transition disabled:opacity-40"
+                                >
+                                    {bulkRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                    {bulkRemoving ? 'Removing…' : 'Remove All In Tab'}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {bulkError && (
