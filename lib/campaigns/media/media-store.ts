@@ -4,6 +4,7 @@ import type { GeneratedCopy } from './generators/copy-generator';
 import {
     AssetRecord,
     AssetCuration,
+    AssetApprovalState,
     MediaGenerationJob,
     CampaignMediaManifest,
     AssetType,
@@ -140,6 +141,12 @@ function upsertAssetRecord(records: AssetRecord[], newRecord: AssetRecord): Asse
     }
 
     return records.map((record) => record.assetId === newRecord.assetId ? newRecord : record);
+}
+
+function mapReviewStatusToApprovalState(reviewStatus: ReviewStatus): AssetApprovalState {
+    if (reviewStatus === 'human_approved') return 'human_approved';
+    if (reviewStatus === 'auto_approved') return 'auto_approved';
+    return 'revision_required';
 }
 
 function createEmptyManifest(slug: string): CampaignMediaManifest {
@@ -370,6 +377,18 @@ export async function updateAssetReview(
         ...existingRecord,
         reviewStatus,
         reviewedAt: new Date().toISOString(),
+        curation: {
+            approvalState: mapReviewStatusToApprovalState(reviewStatus),
+            globalPriority: existingRecord.curation?.globalPriority ?? 50,
+            contextPriorities: existingRecord.curation?.contextPriorities ?? {},
+            approvedContexts: existingRecord.curation?.approvedContexts ?? [],
+            blockedContexts: existingRecord.curation?.blockedContexts ?? [],
+            suitabilityTags: existingRecord.curation?.suitabilityTags ?? [],
+            antiTags: existingRecord.curation?.antiTags ?? [],
+            downstreamLocked: existingRecord.curation?.downstreamLocked ?? false,
+            curatorNotes: existingRecord.curation?.curatorNotes,
+            updatedAt: new Date().toISOString(),
+        },
         ...(reviewNotes !== undefined ? { reviewNotes } : {}),
     };
 

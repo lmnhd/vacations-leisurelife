@@ -242,6 +242,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 const d = await res.json();
                 throw new Error(d.error || 'Review update failed');
             }
+            setApprovalState(reviewStatus === 'human_approved' ? 'human_approved' : 'revision_required');
             await onRefresh();
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Unknown error');
