@@ -1,5 +1,6 @@
 import { CampaignAestheticBrief, ShipReferenceCandidate, SceneSpec } from '../../schema';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
+import sharp from 'sharp';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Stability AI Image Generator
@@ -61,32 +62,54 @@ function buildTravelFirstHeroDirection(brief: CampaignAestheticBrief, shipName: 
     ].join('. ');
 }
 
-function getHeroShotVariant(index: number): { label: string; framing: string; activity: string } {
+function getHeroShotVariant(index: number): {
+    label: string;
+    framing: string;
+    activity: string;
+    cameraBias: string;
+    temporalBias: string;
+    stagingBias: string;
+} {
     const variants = [
         {
             label: 'iconic rail moment',
             framing: 'single subject, medium-wide frame, subject offset to one side with open ocean negative space',
             activity: 'one person holding a sample jar or field notebook at the rail',
+            cameraBias: 'eye-level perspective with clean side-profile or three-quarter orientation, avoiding straight-on repetition',
+            temporalBias: 'soft early-golden or late-golden light with crisp separation between subject and sea',
+            stagingBias: 'keep the ship visible but secondary, with ocean and horizon doing most of the visual work',
         },
         {
             label: 'paired discovery close-up',
             framing: 'two subjects max, medium shot, shallow composition, uncluttered background',
             activity: 'two people sharing one discovery moment over a microscope or specimen',
+            cameraBias: 'closer crop with intimate documentary distance, tighter than a classic hero wide shot',
+            temporalBias: 'neutral daylight or soft overcast realism rather than dramatic sunset repetition',
+            stagingBias: 'background should collapse into simple ship lines or sea tones, not a readable full-ship portrait',
         },
         {
             label: 'instrument-first field beat',
             framing: 'hands and instrument dominant in foreground, simple horizon or deck lines behind',
             activity: 'one clean scientific action such as labeling, measuring, or observing',
+            cameraBias: 'foreground-led composition with partial subject framing and subtle deck geometry',
+            temporalBias: 'clear daytime realism with natural contrast and no theatrical sky',
+            stagingBias: 'make the action lead the frame while keeping background minimal and abstracted',
         },
         {
             label: 'quiet observation frame',
             framing: 'single subject with strong negative space and minimal deck information',
             activity: 'one participant scanning the sea or recording a field note',
+            cameraBias: 'wider environmental frame with the subject placed near an edge rather than centered',
+            temporalBias: 'calm blue-hour or pale-morning atmosphere with restrained color',
+            stagingBias: 'favor sky and sea over ship mass so this slot does not repeat the exterior-profile look',
         },
         {
             label: 'dawn or dusk hero silhouette',
             framing: 'one or two figures max against calm sea and sky, sparse visual field',
             activity: 'one restrained moment of focus, wonder, or observation at sea',
+            cameraBias: 'graphic silhouette read with strong horizon separation and minimal vessel detail',
+            temporalBias: 'true dawn or dusk tonality reserved specifically for this slot only',
+            stagingBias: 'treat the ship as a framing edge or implied location, not the main subject mass',
         },
     ] as const;
 
@@ -138,6 +161,9 @@ function buildReferenceGroundedHeroPrompt(
         `Overall direction: ${travelFirstDirection}`,
         `Mood and tone: ${imageryMood}, ${lightingStyle}`,
         `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement`,
+        `Variation bias: ${heroVariant.cameraBias}`,
+        `Time-of-day bias: ${heroVariant.temporalBias}`,
+        `Staging bias: ${heroVariant.stagingBias}`,
         `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
         `Framing constraints: ${heroVariant.framing}, one focal plane, 1-2 people preferred and never more than 3, background simplified and readable`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
@@ -273,7 +299,7 @@ export async function generateReferenceGroundedHeroImages(
             referenceBuffer,
             referenceMimeType
         );
-        const itemIndex = String(index + 1).padStart(3, '0');
+        const itemIndex = String(heroIndex + index + 1).padStart(3, '0');
         results.push({
             buffer: transformedBuffer,
             prompt,
@@ -399,4 +425,38 @@ export async function generateImageFromPrompt(prompt: string): Promise<Buffer> {
         NANO_BANANA_CONFIG.heroAspectRatio,
         NANO_BANANA_CONFIG.heroImageSize
     );
+}
+
+export interface ImageFingerprint {
+    width: number;
+    height: number;
+    grayscalePixels: Uint8Array;
+}
+
+export async function createImageFingerprint(buffer: Buffer): Promise<ImageFingerprint> {
+    const resized = await sharp(buffer)
+        .resize(24, 24, { fit: 'fill' })
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    return {
+        width: resized.info.width,
+        height: resized.info.height,
+        grayscalePixels: resized.data,
+    };
+}
+
+export function measureImageFingerprintDistance(left: ImageFingerprint, right: ImageFingerprint): number {
+    const sampleCount = Math.min(left.grayscalePixels.length, right.grayscalePixels.length);
+    if (sampleCount === 0) {
+        return 1;
+    }
+
+    let totalDifference = 0;
+    for (let index = 0; index < sampleCount; index += 1) {
+        totalDifference += Math.abs(left.grayscalePixels[index] - right.grayscalePixels[index]);
+    }
+
+    return totalDifference / (sampleCount * 255);
 }

@@ -3,8 +3,81 @@ import { AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../
 import { searchGoogleImages } from '@/lib/services/media/google-images';
 import { saveAssetRecord } from './media-store';
 import { storeAsset } from './storage-client';
-import { generateReferenceGroundedHeroImages } from './generators/stability-generator';
+import {
+    createImageFingerprint,
+    generateReferenceGroundedHeroImages,
+    measureImageFingerprintDistance,
+} from './generators/stability-generator';
 import { getMediaImageGeneratorService } from './media-pipeline-config';
+
+const HERO_SIMILARITY_STOP_WORDS = new Set([
+    'the', 'and', 'with', 'from', 'cruise', 'ship', 'photo', 'professional', 'view', 'deck', 'ocean', 'sea',
+    'sunset', 'sunrise', 'exterior', 'interior', 'room', 'area', 'line', 'voyage', 'travel', 'outdoor',
+]);
+
+function tokenizeHeroSimilarityText(value: string): string[] {
+    return normalizeText(value)
+        .split(/\s+/)
+        .filter((token) => token.length > 2)
+        .filter((token) => !HERO_SIMILARITY_STOP_WORDS.has(token));
+}
+
+function computeTokenOverlap(leftTokens: readonly string[], rightTokens: readonly string[]): number {
+    const leftSet = new Set(leftTokens);
+    const rightSet = new Set(rightTokens);
+
+    if (leftSet.size === 0 || rightSet.size === 0) {
+        return 0;
+    }
+
+    let sharedCount = 0;
+    for (const token of leftSet) {
+        if (rightSet.has(token)) {
+            sharedCount += 1;
+        }
+    }
+
+    return sharedCount / Math.min(leftSet.size, rightSet.size);
+}
+
+function extractComparablePath(url: string): string {
+    try {
+        const parsed = new URL(url);
+        return normalizeText(parsed.hostname + parsed.pathname);
+    } catch {
+        return normalizeText(url);
+    }
+}
+
+function areHeroCandidatesTooSimilar(leftCandidate: ShipReferenceCandidate, rightCandidate: ShipReferenceCandidate): boolean {
+    const leftTokens = tokenizeHeroSimilarityText(`${leftCandidate.title} ${leftCandidate.contextUrl}`);
+    const rightTokens = tokenizeHeroSimilarityText(`${rightCandidate.title} ${rightCandidate.contextUrl}`);
+    const tokenOverlap = computeTokenOverlap(leftTokens, rightTokens);
+
+    const leftPath = extractComparablePath(leftCandidate.contextUrl);
+    const rightPath = extractComparablePath(rightCandidate.contextUrl);
+    const sameSourcePage = leftPath.length > 0 && leftPath === rightPath;
+    const sameCategory = leftCandidate.category === rightCandidate.category;
+
+    return sameSourcePage || (sameCategory && tokenOverlap >= 0.6) || tokenOverlap >= 0.8;
+}
+
+async function isNearDuplicateHero(candidateBuffer: Buffer, acceptedBuffers: readonly Buffer[]): Promise<boolean> {
+    if (acceptedBuffers.length === 0) {
+        return false;
+    }
+
+    const candidateFingerprint = await createImageFingerprint(candidateBuffer);
+    for (const acceptedBuffer of acceptedBuffers) {
+        const acceptedFingerprint = await createImageFingerprint(acceptedBuffer);
+        const distance = measureImageFingerprintDistance(candidateFingerprint, acceptedFingerprint);
+        if (distance <= 0.075) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 function normalizeText(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
@@ -243,6 +316,7 @@ function selectHeroCandidates(candidates: ReadonlyArray<ShipReferenceCandidate>,
 
     const selected: ShipReferenceCandidate[] = [];
     const categoryCounts = new Map<string, number>();
+    let exteriorFamilyCount = 0;
 
     for (const candidate of rankedCandidates) {
         if (selected.length >= maxHeroCount) {
@@ -250,13 +324,51 @@ function selectHeroCandidates(candidates: ReadonlyArray<ShipReferenceCandidate>,
         }
 
         const categoryCount = categoryCounts.get(candidate.category) ?? 0;
-        const allowMultipleFromCategory = candidate.category === 'exterior' || candidate.category === 'destination_view';
-        if (!allowMultipleFromCategory && categoryCount >= 1) {
+        const categoryCap = candidate.category === 'exterior' || candidate.category === 'destination_view' ? 2 : 1;
+        if (categoryCount >= categoryCap) {
+            continue;
+        }
+
+        const isExteriorFamily = candidate.category === 'exterior' || candidate.category === 'destination_view';
+        if (isExteriorFamily && exteriorFamilyCount >= 3) {
+            continue;
+        }
+
+        if (selected.some((selectedCandidate) => areHeroCandidatesTooSimilar(selectedCandidate, candidate))) {
             continue;
         }
 
         selected.push(candidate);
         categoryCounts.set(candidate.category, categoryCount + 1);
+        if (isExteriorFamily) {
+            exteriorFamilyCount += 1;
+        }
+    }
+
+    for (const candidate of rankedCandidates) {
+        if (selected.length >= maxHeroCount) {
+            break;
+        }
+        if (selected.includes(candidate)) {
+            continue;
+        }
+
+        const categoryCount = categoryCounts.get(candidate.category) ?? 0;
+        const categoryCap = candidate.category === 'exterior' || candidate.category === 'destination_view' ? 2 : 1;
+        if (categoryCount >= categoryCap) {
+            continue;
+        }
+
+        const isExteriorFamily = candidate.category === 'exterior' || candidate.category === 'destination_view';
+        if (isExteriorFamily && exteriorFamilyCount >= 3) {
+            continue;
+        }
+
+        selected.push(candidate);
+        categoryCounts.set(candidate.category, categoryCount + 1);
+        if (isExteriorFamily) {
+            exteriorFamilyCount += 1;
+        }
     }
 
     return selected;
@@ -269,16 +381,28 @@ export async function importHeroAssetsFromReferences(
     candidates: ReadonlyArray<ShipReferenceCandidate>,
     maxHeroCount: number = 5
 ): Promise<AssetRecord[]> {
-    const selectedCandidates = selectHeroCandidates(candidates, maxHeroCount);
+    const selectedCandidates = selectHeroCandidates(candidates, Math.min(candidates.length, maxHeroCount + 4));
     const shipName = getResolvedShipName(campaign);
     const records: AssetRecord[] = [];
+    const acceptedHeroBuffers: Buffer[] = [];
     for (let index = 0; index < selectedCandidates.length; index += 1) {
+        if (records.length >= maxHeroCount) {
+            break;
+        }
+
         const candidate = selectedCandidates[index];
-        const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, index, 1);
+        const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, records.length, 1);
         const generatedHero = generatedHeroImages[0];
-        const url = await storeAsset(slug, generatedHero.assetId, generatedHero.fileName, generatedHero.buffer, 'image/png');
+        if (await isNearDuplicateHero(generatedHero.buffer, acceptedHeroBuffers)) {
+            continue;
+        }
+
+        const heroOrdinal = String(records.length + 1).padStart(3, '0');
+        const assetId = `img_hero_${heroOrdinal}`;
+        const fileName = `images/hero/hero_${heroOrdinal}_embellished.png`;
+        const url = await storeAsset(slug, assetId, fileName, generatedHero.buffer, 'image/png');
         const record: AssetRecord = {
-            assetId: generatedHero.assetId,
+            assetId,
             assetType: 'hero_image',
             url,
             generator: getMediaImageGeneratorService(),
@@ -300,6 +424,7 @@ export async function importHeroAssetsFromReferences(
             active: true,
         };
         await saveAssetRecord(slug, record);
+        acceptedHeroBuffers.push(generatedHero.buffer);
         records.push(record);
     }
     return records;
