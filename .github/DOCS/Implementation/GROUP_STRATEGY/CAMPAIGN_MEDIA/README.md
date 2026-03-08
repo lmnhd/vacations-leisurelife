@@ -30,6 +30,7 @@ The system exposes both a **UI flow** (for human-driven campaign creation sessio
 | [PHASE_4_DISTRIBUTION.md](./PHASE_4_DISTRIBUTION.md) | Distribution engine — platform mapping, stage-triggered dispatch, scheduling, and automation hooks |
 | [API_SERVICES_REFERENCE.md](./API_SERVICES_REFERENCE.md) | Complete reference for every third-party service in the stack — endpoints, auth, rate limits, cost |
 | [AGENTIC_MODIFICATION_INFRASTRUCTURE.md](./AGENTIC_MODIFICATION_INFRASTRUCTURE.md) | Agent API layer — credit checks, targeted asset regeneration, approval gates, human confirmation patterns |
+| [IMAGE_GOVERNANCE_SELECTION_SYSTEM.md](./IMAGE_GOVERNANCE_SELECTION_SYSTEM.md) | Human-guided image curation, approval rules, context-aware downstream asset selection, and implementation progress |
 
 ---
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { KeyboardEvent, useState } from 'react';
 import type { AssetApprovalState, AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
-import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal } from 'lucide-react';
+import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal, MoreHorizontal, X, Plus } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Asset types that support delete / regenerate-with-revision
@@ -18,6 +18,28 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
 const IMAGE_ARTIFACT_TYPES = new Set<AssetType>([
     'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
 ]);
+
+const SUGGESTED_SUITABILITY_TAGS = [
+    'minimal',
+    'travel-first',
+    'ocean-forward',
+    'headline-safe',
+    'quiet',
+    'iconic',
+    'welcoming',
+    'brandable',
+];
+
+const SUGGESTED_ANTI_TAGS = [
+    'busy',
+    'interior-heavy',
+    'workshop-like',
+    'literal-activity',
+    'crowded',
+    'cluttered',
+    'muddy',
+    'off-brief',
+];
 
 function getDeleteEndpoint(slug: string, assetType: AssetType): string | null {
     if (assetType === 'scene_image') return `/api/groups/campaign/${slug}/media/manifest/scene-image-artifact`;
@@ -67,6 +89,23 @@ function renderPreview(asset: AssetRecord) {
     );
 }
 
+function formatContextLabel(value: string): string {
+    return value
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function toggleArrayValue(values: string[], value: string): string[] {
+    return values.includes(value)
+        ? values.filter((item) => item !== value)
+        : [...values, value];
+}
+
+function normalizeTagValue(value: string): string {
+    return value.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // ReviewAssetCard
 // ────────────────────────────────────────────────────────────────────────────
@@ -87,15 +126,18 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const [showRegenForm, setShowRegenForm] = useState(false);
     const [showPromptViewer, setShowPromptViewer] = useState(false);
     const [showCurationForm, setShowCurationForm] = useState(false);
+    const [showMoreActions, setShowMoreActions] = useState(false);
     const [regenMode, setRegenMode] = useState<'append_note' | 'manual_override'>('append_note');
     const [regenText, setRegenText] = useState('');
     const [editablePrompt, setEditablePrompt] = useState(asset.promptUsed);
     const [approvalState, setApprovalState] = useState<AssetApprovalState>(initialCuration.approvalState);
     const [globalPriority, setGlobalPriority] = useState(String(initialCuration.globalPriority));
-    const [approvedContexts, setApprovedContexts] = useState(initialCuration.approvedContexts.join(', '));
-    const [blockedContexts, setBlockedContexts] = useState(initialCuration.blockedContexts.join(', '));
-    const [suitabilityTags, setSuitabilityTags] = useState(initialCuration.suitabilityTags.join(', '));
-    const [antiTags, setAntiTags] = useState(initialCuration.antiTags.join(', '));
+    const [approvedContexts, setApprovedContexts] = useState<string[]>(initialCuration.approvedContexts);
+    const [blockedContexts, setBlockedContexts] = useState<string[]>(initialCuration.blockedContexts);
+    const [suitabilityTags, setSuitabilityTags] = useState<string[]>(initialCuration.suitabilityTags);
+    const [antiTags, setAntiTags] = useState<string[]>(initialCuration.antiTags);
+    const [suitabilityInput, setSuitabilityInput] = useState('');
+    const [antiInput, setAntiInput] = useState('');
     const [curatorNotes, setCuratorNotes] = useState(initialCuration.curatorNotes ?? '');
     const [downstreamLocked, setDownstreamLocked] = useState(initialCuration.downstreamLocked);
     const [error, setError] = useState('');
@@ -104,18 +146,50 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const canRegen = isRegenerableType(asset.assetType);
     const isBusy = saving || deleting || regenerating || savingCuration;
 
-    const parseCommaList = (value: string): string[] => value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
+    const addTag = (kind: 'suitability' | 'anti', rawValue: string) => {
+        const nextTag = normalizeTagValue(rawValue);
+        if (!nextTag) return;
+
+        if (kind === 'suitability') {
+            setSuitabilityTags((current) => current.includes(nextTag) ? current : [...current, nextTag]);
+            setSuitabilityInput('');
+            return;
+        }
+
+        setAntiTags((current) => current.includes(nextTag) ? current : [...current, nextTag]);
+        setAntiInput('');
+    };
+
+    const removeTag = (kind: 'suitability' | 'anti', tag: string) => {
+        if (kind === 'suitability') {
+            setSuitabilityTags((current) => current.filter((item) => item !== tag));
+            return;
+        }
+        setAntiTags((current) => current.filter((item) => item !== tag));
+    };
+
+    const handleTagInputKeyDown = (event: KeyboardEvent<HTMLInputElement>, kind: 'suitability' | 'anti') => {
+        if (event.key !== 'Enter' && event.key !== ',') return;
+        event.preventDefault();
+        addTag(kind, kind === 'suitability' ? suitabilityInput : antiInput);
+    };
+
+    const toggleContextSelection = (context: string, kind: 'approved' | 'blocked') => {
+        if (kind === 'approved') {
+            setApprovedContexts((current) => toggleArrayValue(current, context));
+            setBlockedContexts((current) => current.filter((item) => item !== context));
+            return;
+        }
+
+        setBlockedContexts((current) => toggleArrayValue(current, context));
+        setApprovedContexts((current) => current.filter((item) => item !== context));
+    };
 
     const handleSaveCuration = async () => {
         setSavingCuration(true);
         setError('');
         try {
-            const approvedContextList = parseCommaList(approvedContexts);
-            const blockedContextList = parseCommaList(blockedContexts);
-            const invalidContexts = [...approvedContextList, ...blockedContextList]
+            const invalidContexts = [...approvedContexts, ...blockedContexts]
                 .filter((context) => !IMAGE_CONTEXT_VALUES.includes(context as typeof IMAGE_CONTEXT_VALUES[number]));
             if (invalidContexts.length > 0) {
                 throw new Error(`Invalid contexts: ${invalidContexts.join(', ')}`);
@@ -128,10 +202,10 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                     assetId: asset.assetId,
                     approvalState,
                     globalPriority: Number(globalPriority),
-                    approvedContexts: approvedContextList,
-                    blockedContexts: blockedContextList,
-                    suitabilityTags: parseCommaList(suitabilityTags),
-                    antiTags: parseCommaList(antiTags),
+                    approvedContexts,
+                    blockedContexts,
+                    suitabilityTags,
+                    antiTags,
                     curatorNotes: curatorNotes.trim() || undefined,
                     downstreamLocked,
                 }),
@@ -287,37 +361,50 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 </button>
             </div>
 
-            {/* ── Secondary actions: Delete / Revise / Open ────────────── */}
+            {/* ── Secondary actions: Curate + More ────────────────────── */}
             <div className="flex gap-1.5">
-                {deleteEndpoint && (
-                    <button onClick={() => void handleDelete()} disabled={isBusy}
-                        className="flex items-center justify-center gap-1 rounded-lg border border-red-500/20 bg-red-500/5 px-2.5 py-1.5 text-[11px] text-red-400 hover:bg-red-500/15 transition disabled:opacity-40">
-                        {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                        Remove
-                    </button>
-                )}
-                {canRegen && (
-                    <button onClick={() => setShowRegenForm(!showRegenForm)} disabled={isBusy}
-                        className="flex items-center justify-center gap-1 rounded-lg border border-purple-500/20 bg-purple-500/5 px-2.5 py-1.5 text-[11px] text-purple-400 hover:bg-purple-500/15 transition disabled:opacity-40">
-                        <RefreshCw className="h-3 w-3" />
-                        Revise
-                    </button>
-                )}
                 <button onClick={() => setShowCurationForm(!showCurationForm)} disabled={isBusy}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/5 px-2.5 py-1.5 text-[11px] text-fuchsia-300 hover:bg-fuchsia-500/15 transition disabled:opacity-40">
+                    className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/5 px-2.5 py-1.5 text-[11px] text-fuchsia-300 hover:bg-fuchsia-500/15 transition disabled:opacity-40">
                     <SlidersHorizontal className="h-3 w-3" />
                     Curate
                 </button>
-                <button onClick={() => setShowPromptViewer(!showPromptViewer)} disabled={isBusy}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-[11px] text-cyan-400 hover:bg-cyan-500/15 transition disabled:opacity-40">
-                    Prompt
+                <button onClick={() => setShowMoreActions(!showMoreActions)} disabled={isBusy}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-300 hover:text-white hover:bg-white/10 transition disabled:opacity-40">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                    More
                 </button>
-                <a href={asset.url} target="_blank" rel="noreferrer"
-                    className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-400 hover:text-white transition ml-auto">
-                    <ExternalLink className="h-3 w-3" />
-                    Open
-                </a>
             </div>
+
+            {showMoreActions && (
+                <div className="rounded-lg border border-white/10 bg-slate-900/80 p-3 space-y-2">
+                    <div className="text-[10px] uppercase tracking-widest text-slate-500">More Actions</div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {canRegen && (
+                            <button onClick={() => { setShowRegenForm(!showRegenForm); setShowMoreActions(false); }} disabled={isBusy}
+                                className="flex items-center justify-center gap-1 rounded-lg border border-purple-500/20 bg-purple-500/5 px-2.5 py-1.5 text-[11px] text-purple-400 hover:bg-purple-500/15 transition disabled:opacity-40">
+                                <RefreshCw className="h-3 w-3" />
+                                Revise
+                            </button>
+                        )}
+                        <button onClick={() => { setShowPromptViewer(!showPromptViewer); setShowMoreActions(false); }} disabled={isBusy}
+                            className="flex items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-[11px] text-cyan-400 hover:bg-cyan-500/15 transition disabled:opacity-40">
+                            Prompt
+                        </button>
+                        <a href={asset.url} target="_blank" rel="noreferrer"
+                            className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-400 hover:text-white transition">
+                            <ExternalLink className="h-3 w-3" />
+                            Open
+                        </a>
+                        {deleteEndpoint && (
+                            <button onClick={() => void handleDelete()} disabled={isBusy}
+                                className="flex items-center justify-center gap-1 rounded-lg border border-red-500/20 bg-red-500/5 px-2.5 py-1.5 text-[11px] text-red-400 hover:bg-red-500/15 transition disabled:opacity-40">
+                                {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                Remove
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ── Prompt Viewer (expandable) ───────────────────────────── */}
             {showPromptViewer && (
@@ -397,42 +484,142 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
 
                     <div className="space-y-1">
                         <div className="text-[10px] text-slate-400">Approved Contexts</div>
-                        <input
-                            value={approvedContexts}
-                            onChange={(e) => setApprovedContexts(e.target.value)}
-                            placeholder="landing_hero_primary, email_header"
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
-                        />
+                        <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-slate-900/60 p-2">
+                            {IMAGE_CONTEXT_VALUES.map((context) => {
+                                const selected = approvedContexts.includes(context);
+                                return (
+                                    <button
+                                        key={`approved-${context}`}
+                                        type="button"
+                                        onClick={() => toggleContextSelection(context, 'approved')}
+                                        className={`rounded-full border px-2.5 py-1 text-[10px] transition ${selected
+                                            ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200'
+                                            : 'border-white/10 bg-slate-950 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-200'
+                                        }`}
+                                    >
+                                        {formatContextLabel(context)}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="space-y-1">
                         <div className="text-[10px] text-slate-400">Blocked Contexts</div>
-                        <input
-                            value={blockedContexts}
-                            onChange={(e) => setBlockedContexts(e.target.value)}
-                            placeholder="landing_hero_primary, storyboard_fallback"
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
-                        />
+                        <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-slate-900/60 p-2">
+                            {IMAGE_CONTEXT_VALUES.map((context) => {
+                                const selected = blockedContexts.includes(context);
+                                return (
+                                    <button
+                                        key={`blocked-${context}`}
+                                        type="button"
+                                        onClick={() => toggleContextSelection(context, 'blocked')}
+                                        className={`rounded-full border px-2.5 py-1 text-[10px] transition ${selected
+                                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-200'
+                                            : 'border-white/10 bg-slate-950 text-slate-400 hover:border-amber-500/30 hover:text-amber-200'
+                                        }`}
+                                    >
+                                        {formatContextLabel(context)}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="space-y-1">
                         <div className="text-[10px] text-slate-400">Suitability Tags</div>
-                        <input
-                            value={suitabilityTags}
-                            onChange={(e) => setSuitabilityTags(e.target.value)}
-                            placeholder="minimal, travel-first, ocean-forward, headline-safe"
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
-                        />
+                        <div className="rounded-lg border border-white/10 bg-slate-900/60 p-2 space-y-2">
+                            <div className="flex flex-wrap gap-1.5">
+                                {suitabilityTags.map((tag) => (
+                                    <button
+                                        key={`suitability-chip-${tag}`}
+                                        type="button"
+                                        onClick={() => removeTag('suitability', tag)}
+                                        className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-200"
+                                    >
+                                        {tag}
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    value={suitabilityInput}
+                                    onChange={(e) => setSuitabilityInput(e.target.value)}
+                                    onKeyDown={(e) => handleTagInputKeyDown(e, 'suitability')}
+                                    placeholder="Add tag"
+                                    className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => addTag('suitability', suitabilityInput)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-300 hover:text-white"
+                                >
+                                    <Plus className="h-3 w-3" />
+                                    Add
+                                </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {SUGGESTED_SUITABILITY_TAGS.map((tag) => (
+                                    <button
+                                        key={`suggested-suitability-${tag}`}
+                                        type="button"
+                                        onClick={() => addTag('suitability', tag)}
+                                        className="rounded-full border border-white/10 bg-slate-950 px-2.5 py-1 text-[10px] text-slate-400 hover:border-emerald-500/30 hover:text-emerald-200"
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-1">
                         <div className="text-[10px] text-slate-400">Anti Tags</div>
-                        <input
-                            value={antiTags}
-                            onChange={(e) => setAntiTags(e.target.value)}
-                            placeholder="busy, interior-heavy, workshop-like"
-                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
-                        />
+                        <div className="rounded-lg border border-white/10 bg-slate-900/60 p-2 space-y-2">
+                            <div className="flex flex-wrap gap-1.5">
+                                {antiTags.map((tag) => (
+                                    <button
+                                        key={`anti-chip-${tag}`}
+                                        type="button"
+                                        onClick={() => removeTag('anti', tag)}
+                                        className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] text-amber-200"
+                                    >
+                                        {tag}
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    value={antiInput}
+                                    onChange={(e) => setAntiInput(e.target.value)}
+                                    onKeyDown={(e) => handleTagInputKeyDown(e, 'anti')}
+                                    placeholder="Add anti tag"
+                                    className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => addTag('anti', antiInput)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-300 hover:text-white"
+                                >
+                                    <Plus className="h-3 w-3" />
+                                    Add
+                                </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {SUGGESTED_ANTI_TAGS.map((tag) => (
+                                    <button
+                                        key={`suggested-anti-${tag}`}
+                                        type="button"
+                                        onClick={() => addTag('anti', tag)}
+                                        className="rounded-full border border-white/10 bg-slate-950 px-2.5 py-1 text-[10px] text-slate-400 hover:border-amber-500/30 hover:text-amber-200"
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-1">
@@ -446,7 +633,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                     </div>
 
                     <div className="text-[10px] text-slate-500">
-                        Valid contexts: {IMAGE_CONTEXT_VALUES.join(', ')}
+                        Click context chips to add or remove them. Click selected tags to remove them.
                     </div>
 
                     <button onClick={() => void handleSaveCuration()} disabled={savingCuration}
