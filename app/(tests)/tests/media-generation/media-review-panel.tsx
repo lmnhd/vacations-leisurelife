@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Trash2, Loader2 } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -17,6 +17,24 @@ const TABS = [
     { id: 'audio',      label: 'Audio', icon: Music },
     { id: 'merch',      label: 'Merch', icon: Shirt },
 ] as const;
+
+type DeletableAssetType = AssetRecord['assetType'];
+
+const VIDEO_ASSET_TYPES = new Set<DeletableAssetType>([
+    'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
+    'countdown_video', 'broll_clip',
+]);
+
+const IMAGE_ARTIFACT_TYPES = new Set<DeletableAssetType>([
+    'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+]);
+
+function getDeleteEndpoint(slug: string, assetType: DeletableAssetType): string | null {
+    if (assetType === 'scene_image') return `/api/groups/campaign/${slug}/media/manifest/scene-image-artifact`;
+    if (VIDEO_ASSET_TYPES.has(assetType)) return `/api/groups/campaign/${slug}/media/manifest/video-artifact`;
+    if (IMAGE_ARTIFACT_TYPES.has(assetType)) return `/api/groups/campaign/${slug}/media/manifest/image-artifact`;
+    return null;
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Extract tab entries from manifest
@@ -127,6 +145,8 @@ export function MediaReviewPanel(
     }
 ) {
     const [activeTab, setActiveTab] = useState('references');
+    const [bulkRemoving, setBulkRemoving] = useState(false);
+    const [bulkError, setBulkError] = useState('');
 
     const tabEntryMap = useMemo(() => {
         const map: Record<string, Array<{ entryKey: string; title: string; asset: AssetRecord }>> = {};
@@ -145,9 +165,54 @@ export function MediaReviewPanel(
     const activeEntries = tabEntryMap[activeTab] ?? [];
     const activeTabDef = TABS.find(t => t.id === activeTab) ?? TABS[0];
     const ActiveIcon = activeTabDef.icon;
+    const removableEntries = activeEntries.filter((entry) => getDeleteEndpoint(slug, entry.asset.assetType) !== null);
 
     const handleRefresh = async () => {
         await onManifestRefresh(slug);
+    };
+
+    const handleRemoveAllInTab = async () => {
+        if (removableEntries.length === 0 || bulkRemoving) return;
+
+        const confirmed = window.confirm(
+            `Remove all ${removableEntries.length} assets from "${activeTabDef.label}"?\n\nThis deactivates the asset records and removes them from the manifest.`
+        );
+        if (!confirmed) return;
+
+        setBulkRemoving(true);
+        setBulkError('');
+
+        try {
+            const settled = await Promise.allSettled(
+                removableEntries.map(async (entry) => {
+                    const endpoint = getDeleteEndpoint(slug, entry.asset.assetType);
+                    if (!endpoint) return;
+
+                    const response = await fetch(endpoint, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ assetId: entry.asset.assetId }),
+                    });
+
+                    if (!response.ok) {
+                        const payload = await response.json().catch(() => ({}));
+                        const message = payload?.error ?? `Delete failed (${response.status})`;
+                        throw new Error(`${entry.asset.assetId}: ${message}`);
+                    }
+                })
+            );
+
+            const failures = settled.filter((item): item is PromiseRejectedResult => item.status === 'rejected');
+            if (failures.length > 0) {
+                setBulkError(`Removed ${settled.length - failures.length}/${settled.length}. ${failures[0].reason instanceof Error ? failures[0].reason.message : 'Some deletions failed.'}`);
+            }
+
+            await handleRefresh();
+        } catch (error: unknown) {
+            setBulkError(error instanceof Error ? error.message : 'Bulk remove failed');
+        } finally {
+            setBulkRemoving(false);
+        }
     };
 
     if (totalEntries === 0) return null;
@@ -222,17 +287,41 @@ export function MediaReviewPanel(
                     <span className="text-xs">No {activeTabDef.label.toLowerCase()} assets generated yet</span>
                 </div>
             ) : (
-                <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
-                    {activeEntries.map((entry) => (
-                        <ReviewAssetCard
-                            key={entry.entryKey}
-                            slug={slug}
-                            asset={entry.asset}
-                            title={entry.title}
-                            entryKey={entry.entryKey}
-                            onRefresh={handleRefresh}
-                        />
-                    ))}
+                <div className="space-y-3 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="text-[11px] text-slate-500">
+                            {activeEntries.length} assets in {activeTabDef.label}
+                        </div>
+                        {removableEntries.length > 0 && (
+                            <button
+                                onClick={() => void handleRemoveAllInTab()}
+                                disabled={bulkRemoving}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] text-red-300 hover:bg-red-500/20 transition disabled:opacity-40"
+                            >
+                                {bulkRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                {bulkRemoving ? 'Removing…' : 'Remove All In Tab'}
+                            </button>
+                        )}
+                    </div>
+
+                    {bulkError && (
+                        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+                            {bulkError}
+                        </div>
+                    )}
+
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {activeEntries.map((entry) => (
+                            <ReviewAssetCard
+                                key={entry.entryKey}
+                                slug={slug}
+                                asset={entry.asset}
+                                title={entry.title}
+                                entryKey={entry.entryKey}
+                                onRefresh={handleRefresh}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
