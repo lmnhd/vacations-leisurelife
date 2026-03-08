@@ -139,6 +139,12 @@ Target Audience/Keywords: ${(campaign.targetingKeywords || []).join(', ')}
 Highlight Events: ${(campaign.highlightEvents || []).join(', ')}
 Ship Target: ${campaign.shipTarget || 'TBD'}
 Destination: ${campaign.targetDestination || 'TBD'}
+
+Visual Priority Rules:
+- For visual identity fields, prioritize durable cruise/travel truths that would still feel correct even if no niche activity is happening in frame.
+- Hero-safe imagery should read first as travel/cruising at sea, second as niche identity.
+- Highlight events and targeting keywords are flavor cues, not mandatory literal scene directions.
+- Niche cues should usually be subtle: wardrobe hints, one prop, one gesture, one environmental clue.
 `;
 
     const merchGuidelines = `
@@ -155,6 +161,12 @@ You are the Creative Director for Leisure Life Interactive, a boutique cruise ca
 Your role is to devise the core aesthetic identity (visuals, messaging, merch, audio) for a niche-targeted group cruise.
 Return a partial CampaignAestheticBrief JSON object conforming to the schema.
 Make it aspirational, highly specific to the niche, and avoid generic cruise industry tropes.
+
+CRITICAL VISUAL RULES:
+- Do not overfit the visual identity to speculative activities that may not happen in most hero images.
+- visual.imageryMood, visual.lightingStyle, and visual.compositionNotes must describe an enduring travel atmosphere, not a busy scene treatment.
+- The best hero direction is cruise-first, ocean-first, ship-first, with niche identity expressed through subtle believable cues.
+- Avoid writing visual guidance that requires groups, workshops, signage, whiteboards, crowded tables, or multi-step activities.
 `.trim();
 
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;

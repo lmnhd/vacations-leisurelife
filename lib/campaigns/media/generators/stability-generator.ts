@@ -47,6 +47,20 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
     );
 }
 
+function buildTravelFirstHeroDirection(brief: CampaignAestheticBrief, shipName: string): string {
+    const destinationSignals = [brief.themeName, brief.visual.aestheticLabel, shipName]
+        .filter(Boolean)
+        .join(', ');
+
+    return [
+        `Travel-first hero direction for ${destinationSignals}`,
+        `The frame should primarily sell being on a cruise: open sea, horizon, ship identity, atmosphere, light, and emotional escape`,
+        `The niche identity must appear only as one subtle believable cue, not as a staged activity or workshop`,
+        `Prefer timeless cruise emotions: wonder, anticipation, calm, belonging, discovery, freedom`,
+        `Keep the image legible in one second as a landing-page hero`,
+    ].join('. ');
+}
+
 function getHeroShotVariant(index: number): { label: string; framing: string; activity: string } {
     const variants = [
         {
@@ -80,22 +94,22 @@ function getHeroShotVariant(index: number): { label: string; framing: string; ac
 }
 
 function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
-    const { aestheticLabel, imageryMood, colorPalette, lightingStyle, avoidList } = brief.visual;
-    const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
+    const { aestheticLabel, imageryMood, colorPalette, lightingStyle } = brief.visual;
+    const travelFirstDirection = buildTravelFirstHeroDirection(brief, brief.themeName);
 
     const concepts = [
-        `${aestheticLabel}: authentic activity moment on deck with ${colorPalette.primary} accents and ${imageryMood} atmosphere; documentary style`,
-        `${aestheticLabel} lifestyle essence through ${colorPalette.secondary} and ${colorPalette.accent} tones; hands-on activity, genuine engagement`,
-        `${aestheticLabel} scene atmosphere, ${imageryMood}, grounded reality; ${lightingStyle}; human-centered composition`,
-        `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; documentary authenticity`,
+        `${aestheticLabel}: cruise travel mood image with ${colorPalette.primary} accents and ${imageryMood} atmosphere`,
+        `${aestheticLabel} lifestyle essence through ${colorPalette.secondary} and ${colorPalette.accent} tones; niche cues kept subtle and believable`,
+        `${aestheticLabel} scene atmosphere, ${imageryMood}, grounded reality; ${lightingStyle}; ocean-forward composition`,
+        `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; calm travel editorial`,
     ];
 
     return concepts.map(concept =>
         [
             concept,
-            `Direction: ${docDirection.slice(0, 100)}...`,
-            `Style: Photorealistic, documentary-authentic, grounded in reality`,
-            `Avoid: generic luxury imagery, over-designed concept art, fantasy elements, loss of authenticity`,
+            `Direction: ${travelFirstDirection}`,
+            `Style: Photorealistic, grounded travel editorial, authentic and restrained`,
+            `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, fantasy elements, loss of authenticity`,
         ].join('. ')
     );
 }
@@ -107,16 +121,11 @@ function buildReferenceGroundedHeroPrompt(
     heroIndex: number = 0,
 ): string {
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette, avoidList } = brief.visual;
-    const toneKeywords = brief.messaging.toneKeywords.join(', ');
     const heroSlogan = brief.messaging.heroSlogan;
     const heroVariant = getHeroShotVariant(heroIndex);
-    
-    // Extract Production Bible direction if available
-    const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
+
+    const travelFirstDirection = buildTravelFirstHeroDirection(brief, shipName);
     const avoidDirectives = brief.productionBible?.avoidDirectives ?? [];
-    const sceneExamples = brief.productionBible?.sceneLibrary.slice(0, 3).map(s => 
-        `${s.location}: ${s.subjectAction} (${s.mood})`
-    ).join('; ') ?? '';
 
     const avoidText = [...(avoidList ?? []), ...avoidDirectives].join(', ').slice(0, 150);
 
@@ -126,19 +135,17 @@ function buildReferenceGroundedHeroPrompt(
         `Campaign identity: ${aestheticLabel}`,
         `Slogan energy: "${heroSlogan}"`,
         `Hero shot type: ${heroVariant.label}`,
-        `Visual direction from scene library:`,
-        `  ${sceneExamples}`,
-        `Overall production direction: ${docDirection}`,
-        `Mood and tone: ${imageryMood}, ${lightingStyle}; ${toneKeywords}`,
-        `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moments, clear subject engagement`,
+        `Overall direction: ${travelFirstDirection}`,
+        `Mood and tone: ${imageryMood}, ${lightingStyle}`,
+        `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement`,
         `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
         `Framing constraints: ${heroVariant.framing}, one focal plane, 1-2 people preferred and never more than 3, background simplified and readable`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
-        `Apply campaign palette through lighting and atmosphere: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
-        `Wardrobe, props, and environment should reflect the niche identity naturally with sparse set dressing`,
-        `Style: Documentary-authentic photography; grounded reality; photorealistic; depth and natural composition`,
+        `Apply campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
+        `Wardrobe, props, and environment should reflect the niche identity naturally with one subtle cue only`,
+        `Style: Grounded travel photography; photorealistic; natural composition; elegant restraint`,
         `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot`,
-        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; conference-room energy; workshop-table compositions; wide busy interiors`,
+        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; conference-room energy; workshop-table compositions; wide busy interiors; literal activity demos that may not actually happen`,
     ].join('. ');
 }
 
