@@ -47,6 +47,38 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
     );
 }
 
+function getHeroShotVariant(index: number): { label: string; framing: string; activity: string } {
+    const variants = [
+        {
+            label: 'iconic rail moment',
+            framing: 'single subject, medium-wide frame, subject offset to one side with open ocean negative space',
+            activity: 'one person holding a sample jar or field notebook at the rail',
+        },
+        {
+            label: 'paired discovery close-up',
+            framing: 'two subjects max, medium shot, shallow composition, uncluttered background',
+            activity: 'two people sharing one discovery moment over a microscope or specimen',
+        },
+        {
+            label: 'instrument-first field beat',
+            framing: 'hands and instrument dominant in foreground, simple horizon or deck lines behind',
+            activity: 'one clean scientific action such as labeling, measuring, or observing',
+        },
+        {
+            label: 'quiet observation frame',
+            framing: 'single subject with strong negative space and minimal deck information',
+            activity: 'one participant scanning the sea or recording a field note',
+        },
+        {
+            label: 'dawn or dusk hero silhouette',
+            framing: 'one or two figures max against calm sea and sky, sparse visual field',
+            activity: 'one restrained moment of focus, wonder, or observation at sea',
+        },
+    ] as const;
+
+    return variants[index % variants.length];
+}
+
 function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     const { aestheticLabel, imageryMood, colorPalette, lightingStyle, avoidList } = brief.visual;
     const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
@@ -68,10 +100,16 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     );
 }
 
-function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipName: string, candidate: ShipReferenceCandidate): string {
+function buildReferenceGroundedHeroPrompt(
+    brief: CampaignAestheticBrief,
+    shipName: string,
+    candidate: ShipReferenceCandidate,
+    heroIndex: number = 0,
+): string {
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette, avoidList } = brief.visual;
     const toneKeywords = brief.messaging.toneKeywords.join(', ');
     const heroSlogan = brief.messaging.heroSlogan;
+    const heroVariant = getHeroShotVariant(heroIndex);
     
     // Extract Production Bible direction if available
     const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
@@ -87,19 +125,20 @@ function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipNam
         `Use ${candidate.category.replace(/_/g, ' ')} as the anchor scene`,
         `Campaign identity: ${aestheticLabel}`,
         `Slogan energy: "${heroSlogan}"`,
+        `Hero shot type: ${heroVariant.label}`,
         `Visual direction from scene library:`,
         `  ${sceneExamples}`,
         `Overall production direction: ${docDirection}`,
         `Mood and tone: ${imageryMood}, ${lightingStyle}; ${toneKeywords}`,
-        `Art direction: Feature one real activity, one dominant subject story beat, genuine human moments, clear subject engagement`,
+        `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moments, clear subject engagement`,
         `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
-        `Framing constraints: medium or wide with one focal plane, 1-3 people max, background simplified and readable`,
+        `Framing constraints: ${heroVariant.framing}, one focal plane, 1-2 people preferred and never more than 3, background simplified and readable`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Apply campaign palette through lighting and atmosphere: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
         `Wardrobe, props, and environment should reflect the niche identity naturally with sparse set dressing`,
         `Style: Documentary-authentic photography; grounded reality; photorealistic; depth and natural composition`,
         `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot`,
-        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage`,
+        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; conference-room energy; workshop-table compositions; wide busy interiors`,
     ].join('. ');
 }
 
@@ -207,9 +246,10 @@ export async function generateReferenceGroundedHeroImages(
     brief: CampaignAestheticBrief,
     shipName: string,
     referenceCandidate: ShipReferenceCandidate,
+    heroIndex: number = 0,
     count: number = 1
 ): Promise<GeneratedImage[]> {
-    const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate);
+    const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate, heroIndex);
     const referenceResponse = await fetch(referenceCandidate.imageUrl);
     if (!referenceResponse.ok) {
         throw new Error(`Failed to fetch hero reference image (${referenceResponse.status}): ${referenceCandidate.imageUrl}`);

@@ -193,12 +193,12 @@ export async function importShipReferenceAssets(slug: string, candidates: Readon
 
 function scoreHeroCandidate(candidate: ShipReferenceCandidate): number {
     const categoryBonusMap: Record<string, number> = {
-        exterior: 30,
-        destination_view: 24,
-        pool_deck: 18,
-        atrium: 10,
-        dining: 6,
-        stateroom: -12,
+        exterior: 42,
+        destination_view: 34,
+        pool_deck: 10,
+        atrium: -28,
+        dining: -34,
+        stateroom: -40,
     };
     const title = normalizeText(candidate.title);
     let score = candidate.selectionScore + (categoryBonusMap[candidate.category] ?? 0);
@@ -209,6 +209,24 @@ function scoreHeroCandidate(candidate: ShipReferenceCandidate): number {
     if (title.includes('cabin')) {
         score -= 8;
     }
+    const busyInteriorTerms = [
+        'atrium', 'restaurant', 'dining', 'buffet', 'bar', 'lounge', 'casino', 'interior', 'lobby', 'theater'
+    ];
+    for (const term of busyInteriorTerms) {
+        if (title.includes(term)) {
+            score -= 18;
+        }
+    }
+
+    const sparseHeroTerms = [
+        'exterior', 'deck', 'ocean view', 'sea view', 'outdoor', 'sunset', 'sunrise', 'horizon', 'bow', 'stern'
+    ];
+    for (const term of sparseHeroTerms) {
+        if (title.includes(term)) {
+            score += 10;
+        }
+    }
+
     if (candidate.width >= 1800) {
         score += 8;
     }
@@ -220,9 +238,28 @@ function scoreHeroCandidate(candidate: ShipReferenceCandidate): number {
 }
 
 function selectHeroCandidates(candidates: ReadonlyArray<ShipReferenceCandidate>, maxHeroCount: number): ShipReferenceCandidate[] {
-    return [...candidates]
-        .sort((leftCandidate, rightCandidate) => scoreHeroCandidate(rightCandidate) - scoreHeroCandidate(leftCandidate))
-        .slice(0, maxHeroCount);
+    const rankedCandidates = [...candidates]
+        .sort((leftCandidate, rightCandidate) => scoreHeroCandidate(rightCandidate) - scoreHeroCandidate(leftCandidate));
+
+    const selected: ShipReferenceCandidate[] = [];
+    const categoryCounts = new Map<string, number>();
+
+    for (const candidate of rankedCandidates) {
+        if (selected.length >= maxHeroCount) {
+            break;
+        }
+
+        const categoryCount = categoryCounts.get(candidate.category) ?? 0;
+        const allowMultipleFromCategory = candidate.category === 'exterior' || candidate.category === 'destination_view';
+        if (!allowMultipleFromCategory && categoryCount >= 1) {
+            continue;
+        }
+
+        selected.push(candidate);
+        categoryCounts.set(candidate.category, categoryCount + 1);
+    }
+
+    return selected;
 }
 
 export async function importHeroAssetsFromReferences(
@@ -237,7 +274,7 @@ export async function importHeroAssetsFromReferences(
     const records: AssetRecord[] = [];
     for (let index = 0; index < selectedCandidates.length; index += 1) {
         const candidate = selectedCandidates[index];
-        const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, 1);
+        const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, index, 1);
         const generatedHero = generatedHeroImages[0];
         const url = await storeAsset(slug, generatedHero.assetId, generatedHero.fileName, generatedHero.buffer, 'image/png');
         const record: AssetRecord = {
