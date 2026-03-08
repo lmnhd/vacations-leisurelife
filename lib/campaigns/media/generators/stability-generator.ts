@@ -38,8 +38,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Atmosphere: ${docDirection}`,
             `Lighting: ${lightingStyle}`,
             `Composition: ${compositionNotes}`,
+            `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
+            `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
+            `People count: 1-3 max, no crowds, no dense group scenes`,
             `Style: Documentary-authentic photography, photorealistic, grounded reality (not cinematic fantasy), 8k`,
-            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses`,
+            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, visual clutter`,
         ].join('. ')
     );
 }
@@ -65,22 +68,6 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     );
 }
 
-function buildNicheHeroDetails(brief: CampaignAestheticBrief): string {
-    const instagramVisual = brief.socialConcepts.instagramFeed.singlePostConcept;
-    const reelVisual = brief.socialConcepts.instagramReels.visualConcept;
-    const adVisual = brief.socialConcepts.facebookAd.visualDescription;
-    const heroExplainerBackground = brief.videoConcepts.heroExplainer.backgroundDescription;
-    const merchAesthetic = brief.merch.conceptStatement;
-
-    return [
-        `Niche visual world: ${instagramVisual}`,
-        `Motion-inspired atmosphere: ${reelVisual}`,
-        `Ad-surface styling cues: ${adVisual}`,
-        `Hero scene background language: ${heroExplainerBackground}`,
-        `Merch and group identity styling: ${merchAesthetic}`,
-    ].join('. ');
-}
-
 function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipName: string, candidate: ShipReferenceCandidate): string {
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette, avoidList } = brief.visual;
     const toneKeywords = brief.messaging.toneKeywords.join(', ');
@@ -104,12 +91,15 @@ function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipNam
         `  ${sceneExamples}`,
         `Overall production direction: ${docDirection}`,
         `Mood and tone: ${imageryMood}, ${lightingStyle}; ${toneKeywords}`,
-        `Art direction: Feature real activity, hands-on work, genuine human moments, clear subject engagement`,
+        `Art direction: Feature one real activity, one dominant subject story beat, genuine human moments, clear subject engagement`,
+        `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
+        `Framing constraints: medium or wide with one focal plane, 1-3 people max, background simplified and readable`,
+        `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Apply campaign palette through lighting and atmosphere: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
-        `Wardrobe, props, and environment should reflect the niche identity naturally—not through over-designed set dressing`,
+        `Wardrobe, props, and environment should reflect the niche identity naturally with sparse set dressing`,
         `Style: Documentary-authentic photography; grounded reality; photorealistic; depth and natural composition`,
         `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot`,
-        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity`,
+        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage`,
     ].join('. ');
 }
 
