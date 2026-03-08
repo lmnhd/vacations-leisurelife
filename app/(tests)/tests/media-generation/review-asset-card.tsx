@@ -13,14 +13,22 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
     'countdown_video', 'broll_clip',
 ]);
 
+const IMAGE_ARTIFACT_TYPES = new Set<AssetType>([
+    'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+]);
+
 function getDeleteEndpoint(slug: string, assetType: AssetType): string | null {
     if (assetType === 'scene_image') return `/api/groups/campaign/${slug}/media/manifest/scene-image-artifact`;
     if (VIDEO_ASSET_TYPES.has(assetType)) return `/api/groups/campaign/${slug}/media/manifest/video-artifact`;
+    if (IMAGE_ARTIFACT_TYPES.has(assetType)) return `/api/groups/campaign/${slug}/media/manifest/image-artifact`;
     return null;
 }
 
 function isRegenerableType(assetType: AssetType): boolean {
-    return assetType === 'scene_image' || VIDEO_ASSET_TYPES.has(assetType);
+    return assetType === 'scene_image'
+        || assetType === 'hero_image'
+        || assetType === 'aesthetic_concept'
+        || VIDEO_ASSET_TYPES.has(assetType);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -73,8 +81,10 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const [deleting, setDeleting] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
     const [showRegenForm, setShowRegenForm] = useState(false);
+    const [showPromptViewer, setShowPromptViewer] = useState(false);
     const [regenMode, setRegenMode] = useState<'append_note' | 'manual_override'>('append_note');
     const [regenText, setRegenText] = useState('');
+    const [editablePrompt, setEditablePrompt] = useState(asset.promptUsed);
     const [error, setError] = useState('');
 
     const deleteEndpoint = getDeleteEndpoint(slug, asset.assetType);
@@ -133,7 +143,9 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
 
     // ── Regenerate with Revision ─────────────────────────────────────────────
     const handleRegenerate = async () => {
-        if (!regenText.trim()) return;
+        if (!regenText.trim() && regenMode === 'append_note') return;
+        if (regenMode === 'manual_override' && !editablePrompt.trim()) return;
+        
         setRegenerating(true);
         setError('');
         try {
@@ -142,7 +154,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 applyMode: regenMode,
                 ...(regenMode === 'append_note'
                     ? { revisionNote: regenText.trim() }
-                    : { revisedPrompt: regenText.trim() }),
+                    : { revisedPrompt: editablePrompt.trim() }),
             };
             const res = await fetch(`/api/groups/campaign/${slug}/media/regenerate-with-revision`, {
                 method: 'POST',
@@ -232,6 +244,10 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         Revise
                     </button>
                 )}
+                <button onClick={() => setShowPromptViewer(!showPromptViewer)} disabled={isBusy}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-[11px] text-cyan-400 hover:bg-cyan-500/15 transition disabled:opacity-40">
+                    Prompt
+                </button>
                 <a href={asset.url} target="_blank" rel="noreferrer"
                     className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-slate-400 hover:text-white transition ml-auto">
                     <ExternalLink className="h-3 w-3" />
@@ -239,27 +255,79 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 </a>
             </div>
 
+            {/* ── Prompt Viewer (expandable) ───────────────────────────── */}
+            {showPromptViewer && (
+                <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="text-[10px] uppercase tracking-widest text-cyan-400">Generation Prompt</div>
+                        <button 
+                            onClick={() => { setEditablePrompt(asset.promptUsed); }}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 underline"
+                        >
+                            Reset to original
+                        </button>
+                    </div>
+                    <textarea 
+                        value={editablePrompt}
+                        onChange={(e) => setEditablePrompt(e.target.value)}
+                        readOnly={regenMode === 'append_note' && !showRegenForm}
+                        className={`w-full min-h-32 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500/40 resize-y font-mono leading-relaxed ${regenMode === 'append_note' && !showRegenForm ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    />
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => { navigator.clipboard.writeText(editablePrompt); }}
+                            className="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        >
+                            Copy to clipboard
+                        </button>
+                        <button 
+                            onClick={() => { setRegenMode('manual_override'); setShowRegenForm(true); }}
+                            className="text-[10px] px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30"
+                        >
+                            Use for regeneration →
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── Regeneration form (expandable) ───────────────────────── */}
             {showRegenForm && (
                 <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 space-y-2">
                     <div className="text-[10px] uppercase tracking-widest text-purple-400">Regenerate with Revision</div>
                     <select value={regenMode}
-                        onChange={(e) => setRegenMode(e.target.value as 'append_note' | 'manual_override')}
+                        onChange={(e) => {
+                            const mode = e.target.value as 'append_note' | 'manual_override';
+                            setRegenMode(mode);
+                            if (mode === 'manual_override') {
+                                setEditablePrompt(asset.promptUsed);
+                            }
+                        }}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500/40">
-                        <option value="append_note">Append revision note</option>
-                        <option value="manual_override">Override prompt entirely</option>
+                        <option value="append_note">Append revision note to original</option>
+                        <option value="manual_override">Edit full prompt manually</option>
                     </select>
-                    <textarea value={regenText} onChange={(e) => setRegenText(e.target.value)}
-                        placeholder={regenMode === 'append_note' ? 'Describe what to change...' : 'Full replacement prompt...'}
-                        className="w-full min-h-16 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/40 resize-y"
-                    />
-                    <div className="text-[10px] text-slate-600 truncate" title={asset.promptUsed}>
-                        Current: {asset.promptUsed.slice(0, 120)}{asset.promptUsed.length > 120 ? '…' : ''}
-                    </div>
-                    <button onClick={() => void handleRegenerate()} disabled={regenerating || !regenText.trim()}
+                    
+                    {regenMode === 'append_note' ? (
+                        <textarea value={regenText} onChange={(e) => setRegenText(e.target.value)}
+                            placeholder="Describe what to change (e.g., 'make it more vibrant', 'add sunset lighting')..."
+                            className="w-full min-h-16 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/40 resize-y"
+                        />
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="text-[10px] text-slate-400">Edit the full prompt below:</div>
+                            <textarea 
+                                value={editablePrompt} 
+                                onChange={(e) => setEditablePrompt(e.target.value)}
+                                placeholder="Full replacement prompt..."
+                                className="w-full min-h-32 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/40 resize-y font-mono leading-relaxed"
+                            />
+                        </div>
+                    )}
+                    
+                    <button onClick={() => void handleRegenerate()} disabled={regenerating || (regenMode === 'append_note' ? !regenText.trim() : !editablePrompt.trim())}
                         className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-300 hover:bg-purple-500/20 transition disabled:opacity-40">
                         {regenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                        {regenerating ? 'Regenerating…' : 'Regenerate Asset'}
+                        {regenerating ? 'Regenerating…' : regenMode === 'append_note' ? 'Regenerate with Note' : 'Regenerate with Edited Prompt'}
                     </button>
                 </div>
             )}

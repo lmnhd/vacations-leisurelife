@@ -228,6 +228,163 @@ Important constraint:
 
 ---
 
+## CRITICAL ISSUES DISCOVERED (March 2026)
+
+The following architectural flaws were identified during debugging of the media generation pipeline. These issues undermine the fundamental design intent of Phase 1 → Phase 2 handoff and must be corrected before campaign production scaling.
+
+---
+
+### Issue 1: Live Search Bypasses Pre-Approved Ship References
+
+**Status:** CRITICAL — BREAKS PHASE 1 → PHASE 2 CONTRACT
+
+**The Problem:**
+The `discoverShipReferenceCandidates()` function in `lib/campaigns/media/ship-reference-service.ts` performs **live Google/SerpAPI searches every time media generation runs**, completely ignoring the ship reference research and approval workflow that occurs during Phase 1 Discovery.
+
+```typescript
+// ship-reference-service.ts:86-91 — LIVE SEARCH EVERY RUN
+export async function discoverShipReferenceCandidates(campaign, maxPerCategory) {
+    const queryConfigs = buildReferenceQueries(campaign);
+    for (const queryConfig of queryConfigs) {
+        const response = await searchGoogleImages(queryConfig.query, 10);  // ← WRONG
+```
+
+**Why This Breaks The Design:**
+- Phase 1 Discovery has a dedicated research phase where ship images are found, ranked, and **human-approved**
+- The approved references should be stored on the campaign record and used as the canonical source
+- Current implementation re-runs discovery every time, potentially returning DIFFERENT images than what was approved
+- This makes the "approval" step in Phase 1 meaningless
+
+**Required Fix:**
+
+1. **Schema Change:** Add `approvedShipReferences: ShipReferenceCandidate[]` to the campaign record during Phase 1 approval
+2. **Service Refactor:** Modify `ship-reference-service.ts` to accept an optional `approvedReferences` parameter
+   - If provided: use only those references (skip live search)
+   - If not provided: fall back to live search (for legacy/backward compatibility)
+3. **Orchestrator Update:** Pass `campaign.approvedShipReferences` to the service when available
+
+**Files To Modify:**
+- `lib/campaigns/schema.ts` — add `approvedShipReferences` to campaign type
+- `lib/campaigns/media/ship-reference-service.ts` — refactor to use stored references
+- `lib/campaigns/media/media-orchestrator.ts` — pass stored references instead of triggering discovery
+
+---
+
+### Issue 2: Heroes 1–5 Are Identical (Not Scene-Diverse)
+
+**Status:** CRITICAL — HERO IMAGES LACK VISUAL VARIETY
+
+**The Problem:**
+The current hero generation in `importHeroAssetsFromReferences()` takes 5 different reference photos and runs **the same generic Nano-Banana transform** on each. This produces 5 heroes that are visually similar (same "embellished photo" treatment) rather than the intended 5 distinct scene types.
+
+```typescript
+// ship-reference-service.ts:238-240 — SAME PROMPT FOR ALL 5
+for (let index = 0; index < selectedCandidates.length; index += 1) {
+    const candidate = selectedCandidates[index];
+    const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, 1);
+```
+
+**Original Design Intent (from `buildHeroPrompts()` in `stability-generator.ts`):**
+- **Hero 1:** Wide exterior deck shot, panoramic ocean view
+- **Hero 2:** Themed event happening on deck, participants engaged
+- **Hero 3:** Intimate luxury stateroom interior, aspirational lifestyle
+- **Hero 4:** Social gathering of enthusiasts, community connection (Discord, "join us" messaging)
+- **Hero 5:** Destination port arrival, exotic port in background, golden hour
+
+**Why This Matters:**
+- Hero 4 specifically is designed for community/social messaging (Discord invites, "join fellow enthusiasts")
+- The 5-scene diversity provides visual range for different campaign touchpoints
+- Current implementation wastes generation credits on near-duplicates
+
+**Required Fix:**
+
+Two implementation options:
+
+**Option A (Recommended):** One reference, 5 distinct scene generations
+- Select ONE high-quality reference (exterior or destination_view category)
+- Generate 5 heroes from that single reference using the 5 distinct scene prompts from `buildHeroPrompts()`
+- Map: Hero 1 → deck, Hero 2 → event, Hero 3 → stateroom, Hero 4 → social, Hero 5 → port
+
+**Option B:** Category-matched references
+- Select 5 references, one per category (exterior, pool_deck, stateroom, atrium, destination_view)
+- Map each reference category to the appropriate scene prompt
+- Requires matching categories to scene types
+
+**Files To Modify:**
+- `lib/campaigns/media/generators/stability-generator.ts` — ensure `buildHeroPrompts()` is exported and used
+- `lib/campaigns/media/ship-reference-service.ts` — rewrite `importHeroAssetsFromReferences()` to use distinct prompts per hero slot
+- Consider: `generateReferenceGroundedHeroImages()` signature may need to accept specific scene type
+
+---
+
+### Issue 3: Aesthetic Concepts Are Generated But Never Used Downstream
+
+**Status:** CRITICAL — CONCEPT ART IS ORPHANED
+
+**The Problem:**
+The 4 aesthetic concept images are generated and stored in the manifest under `images.aestheticConcepts`, but **no downstream generator references them**. This means:
+
+- **Merch designs** (`generateMerchDesigns`) use only `merch.*.dallePrompt` — no concept reference
+- **Platform copy** (`generatePlatformCopy`) receives only the brief text — no concept URLs to describe visually
+- **Scene images** (`generateSceneImages`) use ship references only — no concept palette grounding
+- **Video generation** uses scene images and hero images — never concepts
+
+**Concept Purpose (from original design):**
+- Concept 1: Abstract aesthetic mood representation (primary palette)
+- Concept 2: Lifestyle essence, aspirational feeling (secondary + accent tones)
+- Concept 3: Atmosphere, ethereal quality (imagery mood)
+- Concept 4: Design elements, patterns and textures (primary + background)
+
+**These should drive:**
+- Merch pattern/texture overlays
+- Carousel slide backgrounds
+- Copy description of visual mood
+- Scene image color palette guidance
+
+**Required Fix:**
+
+This requires updating the orchestrator-to-generator contract to pass concept records through the pipeline:
+
+1. **Orchestrator:** After concept generation completes, pass `conceptRecords` to all downstream generators
+2. **Generator Updates:**
+   - `generateMerchDesigns(brief, conceptRecords)` — inject concept URLs into prompts for pattern/texture reference
+   - `generatePlatformCopy(brief, conceptRecords)` — include concept descriptions in copy generation context
+   - `generateSceneImages(sceneLibrary, shipReferences, conceptRecords)` — use concept palette for color guidance
+   - Video generators — consider concept mood for motion/atmosphere prompts
+
+3. **Prompt Engineering:** Update all generator prompts to reference concept images where applicable:
+   - Merch: "Design should incorporate visual elements from reference concept images: [urls]"
+   - Copy: "Describe the visual aesthetic shown in these moodboard concepts: [urls]"
+   - Scenes: "Use color palette guidance from these aesthetic concepts: [urls]"
+
+**Scope Assessment:**
+This is the largest fix — it touches ~6 generators and requires updating function signatures throughout the pipeline. However, without this fix, the concept generation step is **wasted compute and storage**.
+
+**Files To Modify:**
+- `lib/campaigns/media/media-orchestrator.ts` — pass concept records to downstream generators
+- `lib/campaigns/media/generators/dalle-generator.ts` — accept and use concept records
+- `lib/campaigns/media/generators/copy-generator.ts` — accept and describe concept visuals
+- `lib/campaigns/media/generators/stability-generator.ts` — use concept palette in scene generation
+- `lib/campaigns/media/generators/tiktok-seed-generator.ts` — consider concept mood in motion prompts
+- `lib/campaigns/media/generators/heygen-generator.ts` — consider concept mood in avatar/script
+
+---
+
+### Implementation Priority
+
+| Issue | Priority | Complexity | Files Touched |
+|-------|----------|------------|---------------|
+| #1: Live Search vs Pre-Approved | **P0** — Blocks Phase 1→2 contract | Medium | 3 files (schema, service, orchestrator) |
+| #2: Identical Heroes | **P0** — Wastes generation, misses use cases | Medium | 2 files (service, stability-generator) |
+| #3: Orphaned Concepts | **P1** — Wasted compute, incoherent visuals | Large | 6+ generators + orchestrator |
+
+**Recommended Approach:**
+1. Fix Issue #1 first — restores the Phase 1 → Phase 2 handoff integrity
+2. Fix Issue #2 in parallel — ensures hero diversity for campaign needs
+3. Fix Issue #3 as a focused refactor sprint — connects the aesthetic layer to all outputs
+
+---
+
 ## Image Generation
 
 ### Ship Reference Discovery

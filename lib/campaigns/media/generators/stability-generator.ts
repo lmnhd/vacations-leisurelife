@@ -15,32 +15,53 @@ function getApiKey(): string {
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
     const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
+    const docDirection = brief.productionBible?.globalDirectionNotes ?? compositionNotes;
 
-    const scenes = [
-        `Wide exterior deck shot on ${shipName}, panoramic ocean view, ship architecture prominent`,
-        `${brief.themeName} themed event happening on deck of ${shipName}, participants engaged in niche activity`,
-        `Intimate luxury stateroom interior on ${shipName}, aspirational lifestyle, premium cabin details`,
-        `Social gathering of ${brief.themeName} enthusiasts on ${shipName}, group energy, community connection`,
-        `Destination port arrival from deck of ${shipName}, exotic port in background, golden hour`,
+    // Use Production Bible scene library as examples if available
+    const scenes = brief.productionBible?.sceneLibrary.slice(0, 5).map(scene => ({
+        description: scene.subjectAction,
+        location: scene.location,
+        mood: scene.mood,
+    })) ?? [
+        { description: 'hands-on activity with deck backdrop', location: `${shipName} exterior deck`, mood: 'authentic engagement' },
+        { description: 'focused participant work or discovery moment', location: `${shipName} observation area`, mood: 'genuine curiosity' },
+        { description: 'community moment around shared activity', location: `${shipName} social gathering space`, mood: 'collaborative energy' },
+        { description: 'individual against horizon or landscape', location: `${shipName} observation point`, mood: 'personal connection' },
+        { description: 'detailed work in progress, hands or tools visible', location: `${shipName} activity deck`, mood: 'unvarnished focus' },
     ];
 
     return scenes.map(scene =>
-        `${imageryMood}, ${scene}, ${lightingStyle}, ${compositionNotes}, editorial travel photography, photorealistic, 8k`
+        [
+            `On ${shipName}`,
+            `Scene: ${scene.description} at ${scene.location}`,
+            `Mood: ${scene.mood}, ${imageryMood}`,
+            `Atmosphere: ${docDirection}`,
+            `Lighting: ${lightingStyle}`,
+            `Composition: ${compositionNotes}`,
+            `Style: Documentary-authentic photography, photorealistic, grounded reality (not cinematic fantasy), 8k`,
+            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses`,
+        ].join('. ')
     );
 }
 
 function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
-    const { aestheticLabel, imageryMood, colorPalette, lightingStyle } = brief.visual;
+    const { aestheticLabel, imageryMood, colorPalette, lightingStyle, avoidList } = brief.visual;
+    const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
 
     const concepts = [
-        `${aestheticLabel} aesthetic mood, abstract representation, ${colorPalette.primary} dominant palette`,
-        `${aestheticLabel} lifestyle essence, aspirational feeling, ${colorPalette.secondary} and ${colorPalette.accent} tones`,
-        `${aestheticLabel} atmosphere, ethereal quality, ${imageryMood}`,
-        `${aestheticLabel} design elements, pattern and texture study, ${colorPalette.primary} and ${colorPalette.background}`,
+        `${aestheticLabel}: authentic activity moment on deck with ${colorPalette.primary} accents and ${imageryMood} atmosphere; documentary style`,
+        `${aestheticLabel} lifestyle essence through ${colorPalette.secondary} and ${colorPalette.accent} tones; hands-on activity, genuine engagement`,
+        `${aestheticLabel} scene atmosphere, ${imageryMood}, grounded reality; ${lightingStyle}; human-centered composition`,
+        `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; documentary authenticity`,
     ];
 
     return concepts.map(concept =>
-        `${concept}, ${lightingStyle}, conceptual editorial, high contrast, artistic composition`
+        [
+            concept,
+            `Direction: ${docDirection.slice(0, 100)}...`,
+            `Style: Photorealistic, documentary-authentic, grounded in reality`,
+            `Avoid: generic luxury imagery, over-designed concept art, fantasy elements, loss of authenticity`,
+        ].join('. ')
     );
 }
 
@@ -61,22 +82,34 @@ function buildNicheHeroDetails(brief: CampaignAestheticBrief): string {
 }
 
 function buildReferenceGroundedHeroPrompt(brief: CampaignAestheticBrief, shipName: string, candidate: ShipReferenceCandidate): string {
-    const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette } = brief.visual;
+    const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette, avoidList } = brief.visual;
     const toneKeywords = brief.messaging.toneKeywords.join(', ');
     const heroSlogan = brief.messaging.heroSlogan;
-    const nicheHeroDetails = buildNicheHeroDetails(brief);
+    
+    // Extract Production Bible direction if available
+    const docDirection = brief.productionBible?.globalDirectionNotes ?? '';
+    const avoidDirectives = brief.productionBible?.avoidDirectives ?? [];
+    const sceneExamples = brief.productionBible?.sceneLibrary.slice(0, 3).map(s => 
+        `${s.location}: ${s.subjectAction} (${s.mood})`
+    ).join('; ') ?? '';
+
+    const avoidText = [...(avoidList ?? []), ...avoidDirectives].join(', ').slice(0, 150);
+
     return [
-        `Transform this real photo of ${shipName} into a premium niche campaign hero image while preserving the ship identity, architecture, deck geometry, and believable photographic realism`,
-        `Use ${candidate.category.replace(/_/g, ' ')} as the anchor scene and keep the vessel clearly recognizable`,
-        `Apply ${aestheticLabel} atmosphere, ${imageryMood}, ${lightingStyle}, ${compositionNotes}`,
-        nicheHeroDetails,
-        `Embellish the scene with bold niche-coded art direction, immersive themed set dressing, wardrobe cues, props, signage, lighting treatments, and refined surreal environmental storytelling that make the community identity obvious at a glance`,
-        `Incorporate the campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}, ${colorPalette.background}`,
-        `Reflect the campaign slogan energy: ${heroSlogan}`,
-        `Tone direction: ${toneKeywords}`,
-        `Create a luxurious, polished, aspirational hero frame with depth, spectacle, stylized atmosphere, and emotional resonance` ,
-        `The final image must feel like a branded campaign key art frame for a very specific subculture gathering at sea, not a generic cruise brochure photo`,
-        `Avoid cartoon fantasy, generic tourism visuals, plain documentary realism, and loss of ship fidelity`,
+        `Transform this photo of ${shipName} into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and photographic realism`,
+        `Use ${candidate.category.replace(/_/g, ' ')} as the anchor scene`,
+        `Campaign identity: ${aestheticLabel}`,
+        `Slogan energy: "${heroSlogan}"`,
+        `Visual direction from scene library:`,
+        `  ${sceneExamples}`,
+        `Overall production direction: ${docDirection}`,
+        `Mood and tone: ${imageryMood}, ${lightingStyle}; ${toneKeywords}`,
+        `Art direction: Feature real activity, hands-on work, genuine human moments, clear subject engagement`,
+        `Apply campaign palette through lighting and atmosphere: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
+        `Wardrobe, props, and environment should reflect the niche identity naturally—not through over-designed set dressing`,
+        `Style: Documentary-authentic photography; grounded reality; photorealistic; depth and natural composition`,
+        `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot`,
+        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; generic cruise tourism; loss of ship authenticity`,
     ].join('. ');
 }
 

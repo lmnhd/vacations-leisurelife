@@ -162,30 +162,34 @@ Full schema and generation process: [PHASE_1_AESTHETIC_DEVISING.md](./CAMPAIGN_M
 
 Spec: [PHASE_2_MEDIA_GENERATION.md](./CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION.md)
 
-### 2C. Storage & Organization (Phase C.3) — NOT STARTED
+### 2C. Storage & Organization (Phase C.3) — ✅ COMPLETE
 
 **Binary Storage**
-- [ ] Cloudflare R2 bucket `lll-campaign-media` with deterministic path structure: `campaigns/{slug}/{type}/...`
-- [ ] All assets served via CDN `https://cdn.leisurelifeinteractive.com/campaigns/{slug}/...` (zero egress cost)
-- [ ] AWS S3 as fallback / large video overflow only
-- [ ] WebP for all static images (Sharp post-processing); MP4 H.264 for video; MP3 for audio
+- [x] Cloudflare R2 bucket `lll-campaign-media` with deterministic path structure: `campaigns/{slug}/{type}/...`
+- [x] All assets served via CDN `https://cdn.leisurelifeinteractive.com/campaigns/{slug}/...` (zero egress cost)
+- [x] AWS S3 as fallback / large video overflow only
+- [x] WebP for all static images (Sharp post-processing); MP4 H.264 for video; MP3 for audio
 
 **DynamoDB Schema Extensions**
-- [ ] `MEDIA#AESTHETIC_BRIEF` record — serialized `CampaignAestheticBrief` JSON
-- [ ] `MEDIA#MANIFEST` record — serialized `CampaignMediaManifest` with total asset count + CDN URLs
-- [ ] `MEDIA#ASSET#{assetId}` records — per-asset metadata (generator, prompt, dimensions, review status)
-- [ ] `MEDIAJOB#{jobId}` records — generation job tracking (status, retries, cost audit)
-- [ ] `METADATA` record updated with `mediaStatus`, `mediaGeneratedAt`, `mediaManifestUrl`
+- [x] `MEDIA#AESTHETIC_BRIEF` record — serialized `CampaignAestheticBrief` JSON
+- [x] `MEDIA#MANIFEST` record — serialized `CampaignMediaManifest` with total asset count + CDN URLs
+- [x] `MEDIA#ASSET#{assetId}` records — per-asset metadata (generator, prompt, dimensions, review status)
+- [x] `MEDIAJOB#{jobId}` records — generation job tracking (status, retries, cost audit)
+- [x] `METADATA` record updated with `mediaStatus`, `mediaGeneratedAt`, `mediaManifestUrl`
 
 **Asset Versioning**
-- [ ] `version` + `active` fields on each `MEDIA#ASSET#` record — prior versions retained on regeneration
-- [ ] Manifest always references `active: true` version per `assetId`
+- [x] `version` + `active` fields on each `MEDIA#ASSET#` record — prior versions retained on regeneration
+- [x] Manifest always references `active: true` version per `assetId`
 
 **Storage API**
-- [ ] `POST /api/groups/campaign/:slug/media/store` — upload asset binary to R2 + write `MEDIA#ASSET#` record
-- [ ] `GET /api/groups/campaign/:slug/media/manifest` — retrieve `CampaignMediaManifest`
-- [ ] `GET /api/groups/campaign/:slug/media/assets?type=&format=` — query assets by type/format
-- [ ] `POST /api/groups/campaign/:slug/media/regenerate` — swap asset version, optionally override prompt
+- [x] `POST /api/groups/campaign/:slug/media/store` — upload asset binary to R2 + write `MEDIA#ASSET#` record
+- [x] `GET /api/groups/campaign/:slug/media/manifest` — retrieve `CampaignMediaManifest`
+- [x] `GET /api/groups/campaign/:slug/media/assets?type=&format=` — query assets by type/format
+- [x] `POST /api/groups/campaign/:slug/media/regenerate` — swap asset version, optionally override prompt
+- [x] `DELETE /api/groups/campaign/:slug/media/manifest/image-artifact` — remove hero_image, aesthetic_concept, platform_crop, ship_reference_image from manifest
+- [x] `DELETE /api/groups/campaign/:slug/media/manifest/scene-image-artifact` — remove scene_image from manifest
+- [x] `DELETE /api/groups/campaign/:slug/media/manifest/video-artifact` — remove video assets from manifest
+- [x] `POST /api/groups/campaign/:slug/media/regenerate-with-revision` — revise prompt and regenerate; supports scene_image, hero_image, aesthetic_concept, and all video types
 
 Spec: [PHASE_3_STORAGE_ORGANIZATION.md](./CAMPAIGN_MEDIA/PHASE_3_STORAGE_ORGANIZATION.md)
 

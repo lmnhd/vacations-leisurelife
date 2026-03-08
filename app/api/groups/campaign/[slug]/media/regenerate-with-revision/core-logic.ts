@@ -62,6 +62,20 @@ function replaceSlotInManifest(
         ];
         return { ...manifest, images: { ...manifest.images, sceneImages } };
     }
+    if (assetType === 'hero_image') {
+        const hero = [
+            ...manifest.images.hero.filter(r => r.assetId !== oldAssetId),
+            newRecord,
+        ];
+        return { ...manifest, images: { ...manifest.images, hero } };
+    }
+    if (assetType === 'aesthetic_concept') {
+        const aestheticConcepts = [
+            ...manifest.images.aestheticConcepts.filter(r => r.assetId !== oldAssetId),
+            newRecord,
+        ];
+        return { ...manifest, images: { ...manifest.images, aestheticConcepts } };
+    }
     if (assetType === 'tiktok_seed_video') {
         return { ...manifest, videos: { ...manifest.videos, tiktokSeed: newRecord } };
     }
@@ -143,7 +157,7 @@ export async function handleRegenerateWithRevisionRequest(
 
         let newRecord: AssetRecord;
 
-        if (assetType === 'scene_image') {
+        if (assetType === 'scene_image' || assetType === 'hero_image' || assetType === 'aesthetic_concept') {
             const newPrompt = buildRevisedSceneImagePrompt(
                 existingAsset.promptUsed,
                 applyMode,
@@ -151,11 +165,12 @@ export async function handleRegenerateWithRevisionRequest(
                 revisedPrompt
             );
             const imageBuffer = await generateImageFromPrompt(newPrompt);
-            const newAssetId = `img_scene_rev_${shortId}`;
-            const url = await storeAsset(slug, newAssetId, `images/scenes/revised_${shortId}.png`, imageBuffer, 'image/png');
+            const typePrefix = assetType === 'hero_image' ? 'hero' : assetType === 'aesthetic_concept' ? 'concept' : 'scene';
+            const newAssetId = `img_${typePrefix}_rev_${shortId}`;
+            const url = await storeAsset(slug, newAssetId, `images/${typePrefix}s/revised_${shortId}.png`, imageBuffer, 'image/png');
             newRecord = {
                 assetId: newAssetId,
-                assetType: 'scene_image',
+                assetType,
                 url,
                 generator: imageService,
                 promptUsed: newPrompt,
@@ -163,7 +178,7 @@ export async function handleRegenerateWithRevisionRequest(
                 mimeType: 'image/png',
                 tags: [...existingAsset.tags, 'revised'],
                 createdAt: new Date().toISOString(),
-                reviewStatus: 'auto_approved',
+                reviewStatus: 'needs_review',
                 version: (existingAsset.version ?? 1) + 1,
                 active: true,
                 dimensions: { width: 1920, height: 1080 },
