@@ -17,6 +17,25 @@ import {
 
 type PageState = "idle" | "generating" | "loading";
 
+interface DiscoveryCampaignSnapshot {
+    id: string;
+    name: string;
+    description: string;
+    aesthetic: string | null;
+    status: string;
+    targetDates: string;
+    targetDestination: string | null;
+    shipTarget: string | null;
+    highlightEvents: string[];
+    targetingKeywords: string[];
+    startingPrice: number | null;
+    priceSource: string | null;
+    pricingStatus: string | null;
+    cbagenttoolsBookingLink: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 interface JobSummary {
     total: number;
     completed: number;
@@ -62,6 +81,7 @@ export default function MediaGenerationTestPage() {
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [manifest, setManifest] = useState<CampaignMediaManifest | null>(null);
     const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
+    const [campaign, setCampaign] = useState<DiscoveryCampaignSnapshot | null>(null);
     const [error, setError] = useState("");
 
     const isBusy = pageState !== "idle";
@@ -76,9 +96,10 @@ export default function MediaGenerationTestPage() {
         setPageState("loading");
         setError("");
         try {
-            const [manifestRes, briefRes] = await Promise.all([
+            const [manifestRes, briefRes, campaignRes] = await Promise.all([
                 fetch(`/api/groups/campaign/${targetSlug}/media/manifest`),
                 fetch(`/api/groups/campaign/${targetSlug}/media/aesthetic`),
+                fetch(`/api/groups/campaign/${targetSlug}`),
             ]);
             if (manifestRes.status === 404) {
                 setManifest(null);
@@ -95,6 +116,12 @@ export default function MediaGenerationTestPage() {
                 setBrief(briefData.brief ?? briefData);
             } else {
                 setBrief(null);
+            }
+            if (campaignRes.ok) {
+                const campaignData = await campaignRes.json();
+                setCampaign(campaignData.campaign ?? null);
+            } else {
+                setCampaign(null);
             }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
@@ -196,6 +223,15 @@ export default function MediaGenerationTestPage() {
     const hasProductionBible = !!(brief?.productionBible);
     const sceneCount = brief?.productionBible?.sceneLibrary?.length ?? 0;
     const storyboardCount = brief?.productionBible?.storyboards?.length ?? 0;
+    const manifestImageCount = manifest
+        ? manifest.images.shipReferences.length
+            + manifest.images.hero.length
+            + manifest.images.aestheticConcepts.length
+            + (manifest.images.sceneImages?.length ?? 0)
+        : 0;
+    const discoveryFactsReady = campaign !== null;
+    const creativeReady = brief !== null;
+    const outputsReady = manifest !== null;
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
@@ -264,6 +300,73 @@ export default function MediaGenerationTestPage() {
                             {error}
                         </div>
                     )}
+                </div>
+
+                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Source Of Truth</div>
+                            <p className="text-xs text-slate-400 mt-1">
+                                Discovery owns factual campaign constraints. Aesthetic Devising owns creative direction. The manifest owns the currently active generated outputs.
+                            </p>
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                            {slug.trim() ? `Campaign: ${slug.trim()}` : 'Select a campaign'}
+                        </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <div className={`rounded-xl border p-3 ${discoveryFactsReady ? 'border-cyan-500/30 bg-cyan-500/5' : 'border-white/10 bg-slate-950/40'}`}>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-[10px] uppercase tracking-widest text-cyan-400">Discovery</div>
+                                <div className={`text-[9px] px-2 py-0.5 rounded-full border ${discoveryFactsReady ? 'border-cyan-500/30 text-cyan-300 bg-cyan-500/10' : 'border-white/10 text-slate-500'}`}>
+                                    {discoveryFactsReady ? 'facts' : 'missing'}
+                                </div>
+                            </div>
+                            <div className="mt-2 space-y-1 text-xs text-slate-300">
+                                <div>{campaign?.name ?? 'No campaign loaded'}</div>
+                                <div className="text-slate-500">{campaign?.shipTarget ?? 'Ship unknown'} · {campaign?.targetDates ?? 'Dates unknown'}</div>
+                                <div className="text-slate-500">{campaign?.pricingStatus ?? 'No pricing status'}{campaign?.startingPrice ? ` · From $${campaign.startingPrice.toLocaleString()}` : ''}</div>
+                            </div>
+                            <div className="mt-3 text-[11px] text-slate-400">
+                                Use this layer for ship, itinerary, price, booking link, and audience facts.
+                            </div>
+                        </div>
+
+                        <div className={`rounded-xl border p-3 ${creativeReady ? 'border-teal-500/30 bg-teal-500/5' : 'border-white/10 bg-slate-950/40'}`}>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-[10px] uppercase tracking-widest text-teal-400">Aesthetic Devising</div>
+                                <div className={`text-[9px] px-2 py-0.5 rounded-full border ${creativeReady ? 'border-teal-500/30 text-teal-300 bg-teal-500/10' : 'border-white/10 text-slate-500'}`}>
+                                    {creativeReady ? 'creative' : 'missing'}
+                                </div>
+                            </div>
+                            <div className="mt-2 space-y-1 text-xs text-slate-300">
+                                <div>{brief?.visual.aestheticLabel ?? 'No approved brief loaded'}</div>
+                                <div className="text-slate-500">{brief?.messaging.heroSlogan ?? 'No hero slogan'}</div>
+                                <div className="text-slate-500">{hasProductionBible ? `${sceneCount} scenes · ${storyboardCount} storyboards` : 'No Production Bible attached'}</div>
+                            </div>
+                            <div className="mt-3 text-[11px] text-slate-400">
+                                Use this layer for vibe, image prompts, visual language, and the Production Bible.
+                            </div>
+                        </div>
+
+                        <div className={`rounded-xl border p-3 ${outputsReady ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/10 bg-slate-950/40'}`}>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-[10px] uppercase tracking-widest text-purple-400">Media Manifest</div>
+                                <div className={`text-[9px] px-2 py-0.5 rounded-full border ${outputsReady ? 'border-purple-500/30 text-purple-300 bg-purple-500/10' : 'border-white/10 text-slate-500'}`}>
+                                    {outputsReady ? 'outputs' : 'missing'}
+                                </div>
+                            </div>
+                            <div className="mt-2 space-y-1 text-xs text-slate-300">
+                                <div>{outputsReady ? `${manifest?.totalAssets ?? 0} total active assets` : 'No manifest loaded'}</div>
+                                <div className="text-slate-500">{outputsReady ? `${manifestImageCount} images · ${manifest?.completionStatus ?? 'unknown'}` : 'Generate or load manifest first'}</div>
+                                <div className="text-slate-500">{manifest?.generatedAt ? new Date(manifest.generatedAt).toLocaleString() : 'No generation timestamp'}</div>
+                            </div>
+                            <div className="mt-3 text-[11px] text-slate-400">
+                                Use this layer to see what is currently active, reviewable, removable, and live in the asset ledger.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Production Bible status strip */}
