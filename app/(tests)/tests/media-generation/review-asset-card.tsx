@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import type { AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
-import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
+import type { AssetApprovalState, AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
+import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
+import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
+import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Asset types that support delete / regenerate-with-revision
@@ -76,20 +78,77 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     entryKey: string;
     onRefresh: () => Promise<void>;
 }) {
+    const initialCuration = normalizeAssetCuration(asset);
     const [notes, setNotes] = useState(asset.reviewNotes ?? '');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
+    const [savingCuration, setSavingCuration] = useState(false);
     const [showRegenForm, setShowRegenForm] = useState(false);
     const [showPromptViewer, setShowPromptViewer] = useState(false);
+    const [showCurationForm, setShowCurationForm] = useState(false);
     const [regenMode, setRegenMode] = useState<'append_note' | 'manual_override'>('append_note');
     const [regenText, setRegenText] = useState('');
     const [editablePrompt, setEditablePrompt] = useState(asset.promptUsed);
+    const [approvalState, setApprovalState] = useState<AssetApprovalState>(initialCuration.approvalState);
+    const [globalPriority, setGlobalPriority] = useState(String(initialCuration.globalPriority));
+    const [approvedContexts, setApprovedContexts] = useState(initialCuration.approvedContexts.join(', '));
+    const [blockedContexts, setBlockedContexts] = useState(initialCuration.blockedContexts.join(', '));
+    const [suitabilityTags, setSuitabilityTags] = useState(initialCuration.suitabilityTags.join(', '));
+    const [antiTags, setAntiTags] = useState(initialCuration.antiTags.join(', '));
+    const [curatorNotes, setCuratorNotes] = useState(initialCuration.curatorNotes ?? '');
+    const [downstreamLocked, setDownstreamLocked] = useState(initialCuration.downstreamLocked);
     const [error, setError] = useState('');
 
     const deleteEndpoint = getDeleteEndpoint(slug, asset.assetType);
     const canRegen = isRegenerableType(asset.assetType);
-    const isBusy = saving || deleting || regenerating;
+    const isBusy = saving || deleting || regenerating || savingCuration;
+
+    const parseCommaList = (value: string): string[] => value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    const handleSaveCuration = async () => {
+        setSavingCuration(true);
+        setError('');
+        try {
+            const approvedContextList = parseCommaList(approvedContexts);
+            const blockedContextList = parseCommaList(blockedContexts);
+            const invalidContexts = [...approvedContextList, ...blockedContextList]
+                .filter((context) => !IMAGE_CONTEXT_VALUES.includes(context as typeof IMAGE_CONTEXT_VALUES[number]));
+            if (invalidContexts.length > 0) {
+                throw new Error(`Invalid contexts: ${invalidContexts.join(', ')}`);
+            }
+
+            const response = await fetch(`/api/groups/campaign/${slug}/media/curation`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId: asset.assetId,
+                    approvalState,
+                    globalPriority: Number(globalPriority),
+                    approvedContexts: approvedContextList,
+                    blockedContexts: blockedContextList,
+                    suitabilityTags: parseCommaList(suitabilityTags),
+                    antiTags: parseCommaList(antiTags),
+                    curatorNotes: curatorNotes.trim() || undefined,
+                    downstreamLocked,
+                }),
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload?.error ?? 'Failed to save curation');
+            }
+
+            await onRefresh();
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Unknown error');
+        } finally {
+            setSavingCuration(false);
+        }
+    };
 
     // ── Review (Approve / Flag) ──────────────────────────────────────────────
     const handleReview = async (reviewStatus: ReviewStatus) => {
@@ -244,6 +303,11 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         Revise
                     </button>
                 )}
+                <button onClick={() => setShowCurationForm(!showCurationForm)} disabled={isBusy}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/5 px-2.5 py-1.5 text-[11px] text-fuchsia-300 hover:bg-fuchsia-500/15 transition disabled:opacity-40">
+                    <SlidersHorizontal className="h-3 w-3" />
+                    Curate
+                </button>
                 <button onClick={() => setShowPromptViewer(!showPromptViewer)} disabled={isBusy}
                     className="flex items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-[11px] text-cyan-400 hover:bg-cyan-500/15 transition disabled:opacity-40">
                     Prompt
@@ -287,6 +351,109 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                             Use for regeneration →
                         </button>
                     </div>
+                </div>
+            )}
+
+            {showCurationForm && (
+                <div className="rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 space-y-3">
+                    <div className="text-[10px] uppercase tracking-widest text-fuchsia-300">Image Governance</div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                            <div className="text-[10px] text-slate-400">Approval State</div>
+                            <select
+                                value={approvalState}
+                                onChange={(e) => setApprovalState(e.target.value as AssetApprovalState)}
+                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                            >
+                                <option value="pending_review">pending_review</option>
+                                <option value="auto_approved">auto_approved</option>
+                                <option value="human_approved">human_approved</option>
+                                <option value="rejected">rejected</option>
+                                <option value="revision_required">revision_required</option>
+                                <option value="hold">hold</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-[10px] text-slate-400">Global Priority (0-100)</div>
+                            <input
+                                value={globalPriority}
+                                onChange={(e) => setGlobalPriority(e.target.value)}
+                                inputMode="numeric"
+                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                            />
+                        </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-300">
+                        <input
+                            type="checkbox"
+                            checked={downstreamLocked}
+                            onChange={(e) => setDownstreamLocked(e.target.checked)}
+                            className="rounded border-white/20 bg-slate-900"
+                        />
+                        Lock from downstream usage until explicitly approved
+                    </label>
+
+                    <div className="space-y-1">
+                        <div className="text-[10px] text-slate-400">Approved Contexts</div>
+                        <input
+                            value={approvedContexts}
+                            onChange={(e) => setApprovedContexts(e.target.value)}
+                            placeholder="landing_hero_primary, email_header"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[10px] text-slate-400">Blocked Contexts</div>
+                        <input
+                            value={blockedContexts}
+                            onChange={(e) => setBlockedContexts(e.target.value)}
+                            placeholder="landing_hero_primary, storyboard_fallback"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[10px] text-slate-400">Suitability Tags</div>
+                        <input
+                            value={suitabilityTags}
+                            onChange={(e) => setSuitabilityTags(e.target.value)}
+                            placeholder="minimal, travel-first, ocean-forward, headline-safe"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[10px] text-slate-400">Anti Tags</div>
+                        <input
+                            value={antiTags}
+                            onChange={(e) => setAntiTags(e.target.value)}
+                            placeholder="busy, interior-heavy, workshop-like"
+                            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-fuchsia-500/40"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[10px] text-slate-400">Curator Notes</div>
+                        <textarea
+                            value={curatorNotes}
+                            onChange={(e) => setCuratorNotes(e.target.value)}
+                            placeholder="Why this image should or should not be used downstream"
+                            className="w-full min-h-16 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-fuchsia-500/40 resize-y"
+                        />
+                    </div>
+
+                    <div className="text-[10px] text-slate-500">
+                        Valid contexts: {IMAGE_CONTEXT_VALUES.join(', ')}
+                    </div>
+
+                    <button onClick={() => void handleSaveCuration()} disabled={savingCuration}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-2 text-xs font-medium text-fuchsia-200 hover:bg-fuchsia-500/20 transition disabled:opacity-40">
+                        {savingCuration ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SlidersHorizontal className="h-3.5 w-3.5" />}
+                        {savingCuration ? 'Saving Governance…' : 'Save Governance'}
+                    </button>
                 </div>
             )}
 

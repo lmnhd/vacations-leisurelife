@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { AssetRecord, CampaignMediaManifest } from "@/lib/campaigns/schema";
+import { selectPreferredAssetForContext } from "@/lib/campaigns/media/image-selection";
 import { CampaignSelector } from "../campaign-selector";
 import {
     Loader2, Image, Music, Type, Shirt, Crop, ChevronDown,
@@ -108,8 +109,9 @@ function createSuccessResult(data: Record<string, unknown>, cdnUrl: string): Gen
     };
 }
 
-function getLatestAsset(records: AssetRecord[]): AssetRecord | null {
-    return records.length > 0 ? records[records.length - 1] : null;
+function getLatestAsset(records: AssetRecord[], manifest?: CampaignMediaManifest): AssetRecord | null {
+    return selectPreferredAssetForContext(records, 'general_moodboard', manifest)
+        ?? (records.length > 0 ? records[records.length - 1] : null);
 }
 
 function assetRecordToResult(record: AssetRecord | null): GeneratorResult {
@@ -184,25 +186,28 @@ function sceneImagesToResult(sceneImages: AssetRecord[]): GeneratorResult {
 }
 
 function manifestToPersistedState(manifest: CampaignMediaManifest): PersistedTestPageState {
-    const latestHero = getLatestAsset(manifest.images.hero);
+    const latestHero = selectPreferredAssetForContext(manifest.images.hero, 'landing_hero_primary', manifest)
+        ?? getLatestAsset(manifest.images.hero, manifest);
+    const selectedConcept = selectPreferredAssetForContext(manifest.images.aestheticConcepts, 'general_moodboard', manifest)
+        ?? getLatestAsset(manifest.images.aestheticConcepts, manifest);
 
     return {
         heroImageUrl: latestHero?.url ?? "",
         themeMusicSource: 'default',
         shipReferenceResult: shipReferencesToResult(manifest.images.shipReferences),
         heroResult: assetRecordToResult(latestHero),
-        conceptResult: assetRecordToResult(getLatestAsset(manifest.images.aestheticConcepts)),
+        conceptResult: assetRecordToResult(selectedConcept),
         sceneImagesResult: sceneImagesToResult(manifest.images.sceneImages),
         cropResult: cropsToResult(manifest.images.platformCrops),
         copyResult: copyToResult(manifest.copy),
         narrationResult: assetRecordToResult(manifest.audio.ambientNarration),
         hypeResult: assetRecordToResult(manifest.audio.hypeClip),
         replicateResult: assetRecordToResult(manifest.audio.themeMusic),
-        merch0Result: assetRecordToResult(getLatestAsset(manifest.merch.designs)),
+        merch0Result: assetRecordToResult(getLatestAsset(manifest.merch.designs, manifest)),
         tiktokVoiceoverResult: assetRecordToResult(manifest.videos.tiktokSeed),
         storyboardVideoResult: assetRecordToResult(manifest.videos.heroExplainer),
-        runwayCountdownResult: assetRecordToResult(getLatestAsset(manifest.videos.countdown)),
-        runwayBrollResult: assetRecordToResult(getLatestAsset(manifest.videos.broll)),
+        runwayCountdownResult: assetRecordToResult(getLatestAsset(manifest.videos.countdown, manifest)),
+        runwayBrollResult: assetRecordToResult(getLatestAsset(manifest.videos.broll, manifest)),
     };
 }
 

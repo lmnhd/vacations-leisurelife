@@ -11,6 +11,7 @@ import {
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
 import { generateImageFromPrompt } from '@/lib/campaigns/media/generators/stability-generator';
 import { generateStoryboardVideo } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
+import { selectPreferredAssetForContext } from '@/lib/campaigns/media/image-selection';
 import { AssetRecord, AssetType, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import {
     getMediaImageGeneratorService,
@@ -205,7 +206,9 @@ export async function handleRegenerateWithRevisionRequest(
                 const sceneIdTag = rec.tags.find(t => t !== 'scene' && t !== 'revised');
                 if (sceneIdTag) sceneImageMap.set(sceneIdTag, rec.url);
             }
-            const fallbackUrl = manifest.images.hero[0]?.url ?? manifest.images.shipReferences[0]?.url ?? '';
+            const preferredHero = selectPreferredAssetForContext(manifest.images.hero, 'storyboard_fallback', manifest)
+                ?? selectPreferredAssetForContext(manifest.images.hero, 'landing_hero_primary', manifest);
+            const fallbackUrl = preferredHero?.url ?? manifest.images.shipReferences[0]?.url ?? '';
 
             const resolvedRevisionNote = applyMode === 'append_note' ? revisionNote : undefined;
             const resolvedMotionOverride = applyMode === 'manual_override' ? (revisedPrompt ?? undefined) : undefined;

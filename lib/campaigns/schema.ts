@@ -278,6 +278,67 @@ export const ReviewStatusEnum = z.enum([
 ]);
 export type ReviewStatus = z.infer<typeof ReviewStatusEnum>;
 
+export const ImageContextEnum = z.enum([
+    'landing_hero_primary',
+    'landing_hero_alt',
+    'waitlist_page_hero',
+    'email_header',
+    'meta_ad_creative',
+    'instagram_cover',
+    'storyboard_fallback',
+    'explainer_backplate',
+    'general_moodboard',
+]);
+export type ImageContext = z.infer<typeof ImageContextEnum>;
+export const IMAGE_CONTEXT_VALUES = ImageContextEnum.options;
+
+export const AssetApprovalStateEnum = z.enum([
+    'pending_review',
+    'auto_approved',
+    'human_approved',
+    'rejected',
+    'revision_required',
+    'hold',
+]);
+export type AssetApprovalState = z.infer<typeof AssetApprovalStateEnum>;
+
+export const AssetCurationSchema = z.object({
+    approvalState: AssetApprovalStateEnum.default('pending_review'),
+    globalPriority: z.number().int().min(0).max(100).default(50),
+    contextPriorities: z.record(z.string(), z.number().int().min(0).max(100)).default({}),
+    approvedContexts: z.array(ImageContextEnum).default([]),
+    blockedContexts: z.array(ImageContextEnum).default([]),
+    suitabilityTags: z.array(z.string()).default([]),
+    antiTags: z.array(z.string()).default([]),
+    downstreamLocked: z.boolean().default(false),
+    curatorNotes: z.string().optional(),
+    updatedAt: z.string(),
+});
+export type AssetCuration = z.infer<typeof AssetCurationSchema>;
+
+export const ImageSelectionModeEnum = z.enum([
+    'approved_only',
+    'approved_if_any_else_fallback',
+    'priority_only',
+]);
+export type ImageSelectionMode = z.infer<typeof ImageSelectionModeEnum>;
+
+export const MediaGovernancePolicySchema = z.object({
+    imageSelectionMode: ImageSelectionModeEnum.default('approved_if_any_else_fallback'),
+    revisionRequiredBlocksUsage: z.boolean().default(true),
+    rejectedBlocksUsage: z.boolean().default(true),
+    holdBlocksUsage: z.boolean().default(true),
+    pendingReviewBlocksWhenLocked: z.boolean().default(true),
+});
+export type MediaGovernancePolicy = z.infer<typeof MediaGovernancePolicySchema>;
+
+export const ContextSelectionEntrySchema = z.object({
+    assetIds: z.array(z.string()),
+    resolvedAt: z.string(),
+    strategy: z.string(),
+});
+export type ContextSelectionEntry = z.infer<typeof ContextSelectionEntrySchema>;
+
 export const AssetRecordSchema = z.object({
     assetId: z.string(),
     assetType: AssetTypeEnum,
@@ -299,6 +360,7 @@ export const AssetRecordSchema = z.object({
     reviewedAt: z.string().optional(),
     version: z.number().default(1),
     active: z.boolean().default(true),
+    curation: AssetCurationSchema.optional(),
 });
 export type AssetRecord = z.infer<typeof AssetRecordSchema>;
 
@@ -362,6 +424,10 @@ export const CampaignMediaManifestSchema = z.object({
     generatedAt: z.string(),
     totalAssets: z.number(),
     completionStatus: z.enum(['partial', 'complete']),
+    governance: MediaGovernancePolicySchema.optional(),
+    selections: z.object({
+        images: z.record(z.string(), ContextSelectionEntrySchema).default({}),
+    }).optional(),
 
     images: z.object({
         shipReferences: z.array(AssetRecordSchema),

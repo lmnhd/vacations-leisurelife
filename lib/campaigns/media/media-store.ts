@@ -3,6 +3,7 @@ import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import type { GeneratedCopy } from './generators/copy-generator';
 import {
     AssetRecord,
+    AssetCuration,
     MediaGenerationJob,
     CampaignMediaManifest,
     AssetType,
@@ -147,6 +148,16 @@ function createEmptyManifest(slug: string): CampaignMediaManifest {
         generatedAt: new Date().toISOString(),
         totalAssets: 0,
         completionStatus: 'partial',
+        governance: {
+            imageSelectionMode: 'approved_if_any_else_fallback',
+            revisionRequiredBlocksUsage: true,
+            rejectedBlocksUsage: true,
+            holdBlocksUsage: true,
+            pendingReviewBlocksWhenLocked: true,
+        },
+        selections: {
+            images: {},
+        },
         images: {
             shipReferences: [],
             hero: [],
@@ -365,6 +376,32 @@ export async function updateAssetReview(
     if (reviewNotes === undefined && existingRecord.reviewNotes !== undefined) {
         delete updatedRecord.reviewNotes;
     }
+
+    await saveAssetRecord(slug, updatedRecord);
+
+    const existingManifest = await getMediaManifest(slug);
+    if (existingManifest) {
+        const updatedManifest = updateAssetInManifest(existingManifest, updatedRecord);
+        await saveMediaManifest(updatedManifest);
+    }
+
+    return updatedRecord;
+}
+
+export async function updateAssetCuration(
+    slug: string,
+    assetId: string,
+    curation: AssetCuration,
+): Promise<AssetRecord> {
+    const existingRecord = await getActiveAssetRecord(slug, assetId);
+    if (!existingRecord) {
+        throw new Error(`Media asset not found: ${assetId}`);
+    }
+
+    const updatedRecord: AssetRecord = {
+        ...existingRecord,
+        curation,
+    };
 
     await saveAssetRecord(slug, updatedRecord);
 
