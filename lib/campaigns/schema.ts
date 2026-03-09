@@ -80,6 +80,16 @@ export const DiscordConceptSetSchema = z.object({
     welcomeMessageDirection: z.string(),
 });
 
+export const VisualPlausibilityFrameworkSchema = z.object({
+    governingPrinciple: z.string().default('Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.'),
+    cruiseNativeMoments: z.array(z.string()).default([]),
+    nicheEnhancedMoments: z.array(z.string()).default([]),
+    implausibleLiteralizations: z.array(z.string()).default([]),
+    allowedProps: z.array(z.string()).default([]),
+    discouragedProps: z.array(z.string()).default([]),
+});
+export type VisualPlausibilityFramework = z.infer<typeof VisualPlausibilityFrameworkSchema>;
+
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 1B: Production Bible — Scene Library + Storyboard Architecture
 // ────────────────────────────────────────────────────────────────────────────
@@ -160,6 +170,14 @@ export const CampaignAestheticBriefSchema = z.object({
         compositionNotes: z.string(),
         avoidList: z.array(z.string()),
         referenceMoodboard: z.array(z.string()),
+        plausibilityFramework: VisualPlausibilityFrameworkSchema.default({
+            governingPrinciple: 'Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.',
+            cruiseNativeMoments: [],
+            nicheEnhancedMoments: [],
+            implausibleLiteralizations: [],
+            allowedProps: [],
+            discouragedProps: [],
+        }),
     }),
 
     messaging: z.object({

@@ -145,6 +145,7 @@ Visual Priority Rules:
 - Hero-safe imagery should read first as travel/cruising at sea, second as niche identity.
 - Highlight events and targeting keywords are flavor cues, not mandatory literal scene directions.
 - Niche cues should usually be subtle: wardrobe hints, one prop, one gesture, one environmental clue.
+- The brief must explicitly distinguish what is cruise-native, what is niche-enhanced but believable, and what would feel like staged promo fiction.
 `;
 
     const merchGuidelines = `
@@ -167,6 +168,13 @@ CRITICAL VISUAL RULES:
 - visual.imageryMood, visual.lightingStyle, and visual.compositionNotes must describe an enduring travel atmosphere, not a busy scene treatment.
 - The best hero direction is cruise-first, ocean-first, ship-first, with niche identity expressed through subtle believable cues.
 - Avoid writing visual guidance that requires groups, workshops, signage, whiteboards, crowded tables, or multi-step activities.
+- visual.plausibilityFramework is mandatory and must act like a reality filter for downstream image generation.
+- visual.plausibilityFramework.governingPrinciple must articulate the single rule for how the niche shows up within believable cruise life.
+- visual.plausibilityFramework.cruiseNativeMoments should name moments that would feel normal and desirable on the ship even without the niche theme.
+- visual.plausibilityFramework.nicheEnhancedMoments should name believable ways the niche can lightly modulate those cruise-native moments.
+- visual.plausibilityFramework.implausibleLiteralizations should name specific staged, props-heavy, or operationally awkward scenes to avoid.
+- visual.plausibilityFramework.allowedProps should be lightweight, plausible, guest-friendly objects.
+- visual.plausibilityFramework.discouragedProps should include equipment or setups that make the cruise feel like a lab, classroom, or trade-show demo.
 `.trim();
 
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
@@ -271,6 +279,7 @@ async function generateProductionBible(
     platformConcepts: z.infer<typeof Pass2Schema>
 ): Promise<ProductionBible> {
     const { visual, messaging, audio } = coreAesthetic;
+    const plausibility = visual.plausibilityFramework;
     const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
     const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
 
@@ -286,6 +295,12 @@ The viewer is NOT signing up for work, a class, or a job. They are signing up fo
 If the theme is "citizen science," the scenes show people HAVING FUN while casually doing something science-adjacent — NOT conducting research.
 If the theme is "photography," the scenes show people capturing breathtaking moments — NOT attending a workshop.
 Every single scene must pass this test: "Would I post this on Instagram to make my friends jealous?" If no, rewrite it.
+
+## PLAUSIBILITY RULE (EQUALLY IMPORTANT)
+Every scene must feel operationally believable on a real cruise ship for real guests.
+Depict the niche as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.
+If a prop, setup, or behavior feels like it requires a lab, classroom, field station, training room, or formal workshop environment, do not use it.
+Prefer lightweight cues, outward-looking behavior, guided noticing, conversation, observation, and emotional reaction over equipment-heavy literalizations.
 
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
@@ -305,6 +320,11 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Body language: laughing, arms outstretched, leaning over railings in wonder, toasting, hugging, pointing excitedly. NEVER: hunched over work, writing on clipboards, staring at screens, standing in formal rows.
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
+- Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
+- Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join('; ') || 'guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues'}.
+- Implausible literalizations to ban: ${plausibility.implausibleLiteralizations.join('; ') || 'microscope lab on open deck; classroom workshop staging; equipment-heavy field station setups; conference-style demos'}.
+- Allowed props: ${plausibility.allowedProps.join('; ') || 'notebook; binoculars; sample jar; map; field guide'}.
+- Discouraged props: ${plausibility.discouragedProps.join('; ') || 'microscope; clipboard stacks; lab bench gear; presentation boards; elaborate instruments'}.
 
 ## IMAGE PROMPT RULES
 - Each imagePrompt is the SINGLE MOST IMPORTANT field. It drives the generated image directly.
@@ -344,6 +364,7 @@ Elevator Pitch: ${messaging.elevatorPitch}
 Music Mood: ${audio.musicMood}
 
 REMINDER: The above describes the campaign THEME. Your job is to turn that theme into VACATION DAYDREAM imagery — artsy, warm, joyful, never formal or serious.
+Plausibility Governing Principle: ${plausibility.governingPrinciple}
 TikTok Hook: ${tiktokHook}
 TikTok CTA: ${tiktokCTA}
 

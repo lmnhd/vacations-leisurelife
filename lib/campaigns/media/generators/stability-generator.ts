@@ -99,6 +99,10 @@ async function fetchUsableReferenceImage(url: string): Promise<{ buffer: Buffer;
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
     const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
     const docDirection = brief.productionBible?.globalDirectionNotes ?? compositionNotes;
+    const plausibility = brief.visual.plausibilityFramework;
+    const allowedPropsText = plausibility.allowedProps.slice(0, 5).join(', ');
+    const discouragedPropsText = plausibility.discouragedProps.slice(0, 5).join(', ');
+    const implausibleText = plausibility.implausibleLiteralizations.slice(0, 5).join(', ');
 
     // Use Production Bible scene library as examples if available
     const scenes = brief.productionBible?.sceneLibrary.slice(0, 5).map(scene => ({
@@ -106,11 +110,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
         location: scene.location,
         mood: scene.mood,
     })) ?? [
-        { description: 'hands-on activity with deck backdrop', location: `${shipName} exterior deck`, mood: 'authentic engagement' },
-        { description: 'focused participant work or discovery moment', location: `${shipName} observation area`, mood: 'genuine curiosity' },
-        { description: 'community moment around shared activity', location: `${shipName} social gathering space`, mood: 'collaborative energy' },
-        { description: 'individual against horizon or landscape', location: `${shipName} observation point`, mood: 'personal connection' },
-        { description: 'detailed work in progress, hands or tools visible', location: `${shipName} activity deck`, mood: 'unvarnished focus' },
+        { description: 'quiet rail-side observation with one subtle field cue', location: `${shipName} exterior deck`, mood: 'authentic wonder' },
+        { description: 'shared discovery moment while looking outward to sea', location: `${shipName} observation area`, mood: 'genuine curiosity' },
+        { description: 'small conversational moment shaped by wind, light, and horizon', location: `${shipName} social deck`, mood: 'collaborative ease' },
+        { description: 'individual pause against ocean and sky', location: `${shipName} observation point`, mood: 'personal connection' },
+        { description: 'hands, notebook, and sea breeze in a simple observational beat', location: `${shipName} open-air deck`, mood: 'grounded discovery' },
     ];
 
     return scenes.map(scene =>
@@ -121,11 +125,13 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Atmosphere: ${docDirection}`,
             `Lighting: ${lightingStyle}`,
             `Composition: ${compositionNotes}`,
+            `Plausibility rule: ${plausibility.governingPrinciple}`,
             `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
             `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
             `People count: 1-3 max, no crowds, no dense group scenes`,
+            `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
             `Style: Documentary-authentic photography, photorealistic, grounded reality (not cinematic fantasy), 8k`,
-            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, visual clutter`,
+            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, visual clutter, ${discouragedPropsText || 'microscope, clipboards, lab bench gear'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, field-station setups'}`,
         ].join('. ')
     );
 }
@@ -164,7 +170,7 @@ function getHeroShotVariant(index: number): {
         {
             label: 'paired discovery close-up',
             framing: 'two subjects max, medium shot, shallow composition, uncluttered background',
-            activity: 'two people sharing one discovery moment over a microscope or specimen',
+            activity: 'two people sharing one discovery moment over a notebook, sample jar, or simple field guide',
             cameraBias: 'closer crop with intimate documentary distance, tighter than a classic hero wide shot',
             temporalBias: 'neutral daylight or soft overcast realism rather than dramatic sunset repetition',
             stagingBias: 'background should collapse into simple ship lines or sea tones, not a readable full-ship portrait',
@@ -172,7 +178,7 @@ function getHeroShotVariant(index: number): {
         {
             label: 'instrument-first field beat',
             framing: 'hands and instrument dominant in foreground, simple horizon or deck lines behind',
-            activity: 'one clean scientific action such as labeling, measuring, or observing',
+            activity: 'one clean observational action such as holding binoculars, comparing a field note, or examining a small sample jar',
             cameraBias: 'foreground-led composition with partial subject framing and subtle deck geometry',
             temporalBias: 'clear daytime realism with natural contrast and no theatrical sky',
             stagingBias: 'make the action lead the frame while keeping background minimal and abstracted',
@@ -226,13 +232,21 @@ function buildReferenceGroundedHeroPrompt(
     heroIndex: number = 0,
 ): string {
     const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette, avoidList } = brief.visual;
+    const plausibility = brief.visual.plausibilityFramework;
     const heroSlogan = brief.messaging.heroSlogan;
     const heroVariant = getHeroShotVariant(heroIndex);
 
     const travelFirstDirection = buildTravelFirstHeroDirection(brief, shipName);
     const avoidDirectives = brief.productionBible?.avoidDirectives ?? [];
 
-    const avoidText = [...(avoidList ?? []), ...avoidDirectives].join(', ').slice(0, 150);
+    const avoidText = [
+        ...(avoidList ?? []),
+        ...avoidDirectives,
+        ...plausibility.discouragedProps,
+        ...plausibility.implausibleLiteralizations,
+    ].join(', ').slice(0, 220);
+    const allowedPropsText = plausibility.allowedProps.slice(0, 5).join(', ');
+    const plausibleMomentsText = plausibility.nicheEnhancedMoments.slice(0, 4).join(', ');
 
     return [
         `Transform this photo of ${shipName} into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and photographic realism`,
@@ -241,8 +255,10 @@ function buildReferenceGroundedHeroPrompt(
         `Slogan energy: "${heroSlogan}"`,
         `Hero shot type: ${heroVariant.label}`,
         `Overall direction: ${travelFirstDirection}`,
+        `Plausibility rule: ${plausibility.governingPrinciple}`,
         `Mood and tone: ${imageryMood}, ${lightingStyle}`,
         `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement`,
+        `Believable niche expression: ${plausibleMomentsText || 'guided noticing, field notes, simple observation, conversational discovery'}`,
         `Variation bias: ${heroVariant.cameraBias}`,
         `Time-of-day bias: ${heroVariant.temporalBias}`,
         `Staging bias: ${heroVariant.stagingBias}`,
@@ -250,7 +266,7 @@ function buildReferenceGroundedHeroPrompt(
         `Framing constraints: ${heroVariant.framing}, one focal plane, 1-2 people preferred and never more than 3, background simplified and readable`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Apply campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
-        `Wardrobe, props, and environment should reflect the niche identity naturally with one subtle cue only`,
+        `Wardrobe, props, and environment should reflect the niche identity naturally with one subtle cue only using lightweight believable props such as ${allowedPropsText || 'notebook, binoculars, sample jar, field guide'}`,
         `Style: Grounded travel photography; photorealistic; natural composition; elegant restraint`,
         `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot`,
         `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; conference-room energy; workshop-table compositions; wide busy interiors; literal activity demos that may not actually happen`,
