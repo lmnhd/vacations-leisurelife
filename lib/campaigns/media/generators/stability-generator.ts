@@ -29,34 +29,71 @@ function trimPromptForNanoBanana(prompt: string): string {
 async function optimizeReferenceImageForNanoBanana(
     sourceBuffer: Buffer,
     sourceMimeType?: string,
-): Promise<{ buffer: Buffer; mimeType: string }> {
-    const pipeline = sharp(sourceBuffer).rotate();
-    const metadata = await pipeline.metadata();
-    const width = metadata.width ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
-    const height = metadata.height ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
-
-    const needsResize = Math.max(width, height) > NANO_BANANA_REFERENCE_MAX_DIMENSION;
-    const normalizedPipeline = needsResize
-        ? pipeline.resize({
-            width: NANO_BANANA_REFERENCE_MAX_DIMENSION,
-            height: NANO_BANANA_REFERENCE_MAX_DIMENSION,
-            fit: 'inside',
-            withoutEnlargement: true,
-        })
-        : pipeline;
-
-    const hasAlpha = metadata.hasAlpha === true;
-    if (hasAlpha && sourceMimeType === 'image/png') {
-        return {
-            buffer: await normalizedPipeline.png({ compressionLevel: 9, palette: true }).toBuffer(),
-            mimeType: 'image/png',
-        };
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    if (!sourceMimeType?.startsWith('image/')) {
+        return null;
     }
 
-    return {
-        buffer: await normalizedPipeline.jpeg({ quality: NANO_BANANA_REFERENCE_JPEG_QUALITY, mozjpeg: true }).toBuffer(),
-        mimeType: 'image/jpeg',
-    };
+    try {
+        const pipeline = sharp(sourceBuffer).rotate();
+        const metadata = await pipeline.metadata();
+        const width = metadata.width ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
+        const height = metadata.height ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
+
+        const needsResize = Math.max(width, height) > NANO_BANANA_REFERENCE_MAX_DIMENSION;
+        const normalizedPipeline = needsResize
+            ? pipeline.resize({
+                width: NANO_BANANA_REFERENCE_MAX_DIMENSION,
+                height: NANO_BANANA_REFERENCE_MAX_DIMENSION,
+                fit: 'inside',
+                withoutEnlargement: true,
+            })
+            : pipeline;
+
+        const hasAlpha = metadata.hasAlpha === true;
+        if (hasAlpha && sourceMimeType === 'image/png') {
+            return {
+                buffer: await normalizedPipeline.png({ compressionLevel: 9, palette: true }).toBuffer(),
+                mimeType: 'image/png',
+            };
+        }
+
+        return {
+            buffer: await normalizedPipeline.jpeg({ quality: NANO_BANANA_REFERENCE_JPEG_QUALITY, mozjpeg: true }).toBuffer(),
+            mimeType: 'image/jpeg',
+        };
+    } catch (error) {
+        console.warn('Skipping unusable Nano-Banana reference image', {
+            sourceMimeType,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
+}
+
+async function fetchUsableReferenceImage(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            return null;
+        }
+
+        const mimeType = response.headers.get('content-type')?.split(';')[0] ?? '';
+        if (!mimeType.startsWith('image/')) {
+            return null;
+        }
+
+        return {
+            buffer: Buffer.from(await response.arrayBuffer()),
+            mimeType,
+        };
+    } catch (error) {
+        console.warn('Failed to fetch reference image for generation', {
+            url,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
 }
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
@@ -333,12 +370,7 @@ export async function generateReferenceGroundedHeroImages(
     count: number = 1
 ): Promise<GeneratedImage[]> {
     const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate, heroIndex);
-    const referenceResponse = await fetch(referenceCandidate.imageUrl);
-    if (!referenceResponse.ok) {
-        throw new Error(`Failed to fetch hero reference image (${referenceResponse.status}): ${referenceCandidate.imageUrl}`);
-    }
-    const referenceBuffer = Buffer.from(await referenceResponse.arrayBuffer());
-    const referenceMimeType = referenceResponse.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+    const referenceImage = await fetchUsableReferenceImage(referenceCandidate.imageUrl);
     const results: GeneratedImage[] = [];
 
     for (let index = 0; index < count; index += 1) {
@@ -346,8 +378,8 @@ export async function generateReferenceGroundedHeroImages(
             prompt,
             NANO_BANANA_CONFIG.heroAspectRatio,
             NANO_BANANA_CONFIG.heroImageSize,
-            referenceBuffer,
-            referenceMimeType
+            referenceImage?.buffer,
+            referenceImage?.mimeType
         );
         const itemIndex = String(heroIndex + index + 1).padStart(3, '0');
         results.push({
@@ -426,16 +458,14 @@ export async function generateSceneImages(
 
         let buffer: Buffer;
         if (matchedReference) {
-            const refResponse = await fetch(matchedReference.imageUrl);
-            if (refResponse.ok) {
-                const refBuffer = Buffer.from(await refResponse.arrayBuffer());
-                const refMime = refResponse.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+            const referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
+            if (referenceImage) {
                 buffer = await generateNanoBananaImage(
                     enrichedPrompt,
                     NANO_BANANA_CONFIG.heroAspectRatio,
                     NANO_BANANA_CONFIG.heroImageSize,
-                    refBuffer,
-                    refMime
+                    referenceImage.buffer,
+                    referenceImage.mimeType
                 );
             } else {
                 buffer = await generateNanoBananaImage(
