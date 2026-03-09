@@ -2,6 +2,10 @@ import { CampaignAestheticBrief, ShipReferenceCandidate, SceneSpec } from '../..
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 import sharp from 'sharp';
 
+const NANO_BANANA_PROMPT_CHAR_LIMIT = 6000;
+const NANO_BANANA_REFERENCE_MAX_DIMENSION = 1280;
+const NANO_BANANA_REFERENCE_JPEG_QUALITY = 70;
+
 // ────────────────────────────────────────────────────────────────────────────
 // Stability AI Image Generator
 // Primary hero image + aesthetic concept art generation.
@@ -12,6 +16,47 @@ function getApiKey(): string {
     const key = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
     if (!key) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY not set in environment');
     return key;
+}
+
+function trimPromptForNanoBanana(prompt: string): string {
+    if (prompt.length <= NANO_BANANA_PROMPT_CHAR_LIMIT) {
+        return prompt;
+    }
+
+    return `${prompt.slice(0, NANO_BANANA_PROMPT_CHAR_LIMIT - 32).trimEnd()}... [truncated]`;
+}
+
+async function optimizeReferenceImageForNanoBanana(
+    sourceBuffer: Buffer,
+    sourceMimeType?: string,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+    const pipeline = sharp(sourceBuffer).rotate();
+    const metadata = await pipeline.metadata();
+    const width = metadata.width ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
+    const height = metadata.height ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
+
+    const needsResize = Math.max(width, height) > NANO_BANANA_REFERENCE_MAX_DIMENSION;
+    const normalizedPipeline = needsResize
+        ? pipeline.resize({
+            width: NANO_BANANA_REFERENCE_MAX_DIMENSION,
+            height: NANO_BANANA_REFERENCE_MAX_DIMENSION,
+            fit: 'inside',
+            withoutEnlargement: true,
+        })
+        : pipeline;
+
+    const hasAlpha = metadata.hasAlpha === true;
+    if (hasAlpha && sourceMimeType === 'image/png') {
+        return {
+            buffer: await normalizedPipeline.png({ compressionLevel: 9, palette: true }).toBuffer(),
+            mimeType: 'image/png',
+        };
+    }
+
+    return {
+        buffer: await normalizedPipeline.jpeg({ quality: NANO_BANANA_REFERENCE_JPEG_QUALITY, mozjpeg: true }).toBuffer(),
+        mimeType: 'image/jpeg',
+    };
 }
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
@@ -182,17 +227,22 @@ async function generateNanoBananaImage(
     referenceImage?: Buffer,
     referenceMimeType?: string
 ): Promise<Buffer> {
-    const parts = referenceImage
+    const normalizedPrompt = trimPromptForNanoBanana(prompt);
+    const optimizedReference = referenceImage
+        ? await optimizeReferenceImageForNanoBanana(referenceImage, referenceMimeType)
+        : null;
+
+    const parts = optimizedReference
         ? [
-            { text: prompt },
+            { text: normalizedPrompt },
             {
                 inline_data: {
-                    mime_type: referenceMimeType ?? 'image/jpeg',
-                    data: referenceImage.toString('base64'),
+                    mime_type: optimizedReference.mimeType,
+                    data: optimizedReference.buffer.toString('base64'),
                 },
             },
         ]
-        : [{ text: prompt }];
+        : [{ text: normalizedPrompt }];
 
     const response = await fetch(
         `${NANO_BANANA_CONFIG.apiBase}/models/${NANO_BANANA_CONFIG.model}:generateContent`,
