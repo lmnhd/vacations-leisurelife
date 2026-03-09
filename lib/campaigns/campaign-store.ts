@@ -2,7 +2,7 @@ import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } fro
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import { Campaign } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
-import { CampaignAestheticBrief } from './schema';
+import { CampaignAestheticBrief, CampaignAestheticBriefSchema } from './schema';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
@@ -58,12 +58,13 @@ export async function getCampaignBlueprint(slug: string): Promise<Campaign | nul
 }
 
 export async function saveAestheticBrief(brief: CampaignAestheticBrief): Promise<void> {
+    const normalizedBrief = CampaignAestheticBriefSchema.parse(brief);
     const params = {
         TableName: TABLE_NAME,
         Item: {
-            PK: `CAMPAIGN#${brief.slug}`,
+            PK: `CAMPAIGN#${normalizedBrief.slug}`,
             SK: 'MEDIA#AESTHETIC_BRIEF',
-            ...brief,
+            ...normalizedBrief,
         },
     };
 
@@ -74,19 +75,19 @@ export async function saveAestheticBrief(brief: CampaignAestheticBrief): Promise
         const updateParams = {
             TableName: TABLE_NAME,
             Key: {
-                PK: `CAMPAIGN#${brief.slug}`,
+                PK: `CAMPAIGN#${normalizedBrief.slug}`,
                 SK: 'METADATA',
             },
             UpdateExpression: 'SET aestheticBriefStatus = :status, aestheticGeneratedAt = :now',
             ExpressionAttributeValues: {
-                ':status': brief.humanReviewStatus,
+                ':status': normalizedBrief.humanReviewStatus,
                 ':now': new Date().toISOString()
             }
         };
         await chatDynamoDocumentClient.send(new UpdateCommand(updateParams));
 
     } catch (error) {
-        console.error(`Failed to save aesthetic brief for ${brief.slug}:`, error);
+        console.error(`Failed to save aesthetic brief for ${normalizedBrief.slug}:`, error);
         throw error;
     }
 }
@@ -105,7 +106,7 @@ export async function getAestheticBrief(slug: string): Promise<CampaignAesthetic
         if (!response.Item) return null;
 
         const { PK, SK, ...briefData } = response.Item;
-        return briefData as CampaignAestheticBrief;
+        return CampaignAestheticBriefSchema.parse(briefData);
     } catch (error) {
         console.error(`Failed to get aesthetic brief for ${slug}:`, error);
         throw error;
