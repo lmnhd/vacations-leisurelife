@@ -72,6 +72,8 @@ function buildCbInventoryContext(): string {
     }
 }
 
+const CRUISE_REALISM_GOVERNING_PRINCIPLE = 'A valid group cruise theme must feel like a desirable vacation first, and only secondarily like a niche identity expression.';
+
 const PerplexityResponseSchema = z.object({
     choices: z.array(
         z.object({
@@ -164,10 +166,28 @@ const ThemeBlueprintSchema = z.object({
             "Why this niche was selected: reference the specific community data, platform signals, or trend observations from the research that identified this theme as viable. Be specific — name subreddits, hashtag metrics, Discord server sizes, etc."
         ),
         successLogic: z.string().describe(
-            "The commercial and psychological reasoning this niche+cruise pairing will convert: explain audience spending willingness, the 'IRL meetup' pull factor, what market gap this fills, and why the controlled cruise environment is uniquely suited to this community."
+            "The commercial and psychological reasoning this niche+cruise pairing will convert: explain audience spending willingness, the IRL meetup pull factor, what market gap this fills, and why a relaxed cruise vacation is uniquely suited to this community."
         ),
         audienceSignals: z.array(z.string()).min(2).max(4).describe(
             "2-4 concrete, specific data signals from the research that validate this niche. Each should be a single-sentence fact, e.g. 'r/solotravel recorded 15k+ upvotes on an IRL meetup thread in Jan 2026', or 'TikTok #darkacademia has 3.2B views with >60% Gen-Z engagement'."
+        ),
+        vacationFitRationale: z.string().describe(
+            "Explain why this theme feels like a great cruise vacation rather than a retreat, workshop, residency, lab, or conference."
+        ),
+        cruiseNativeMoments: z.array(z.string()).min(3).max(5).describe(
+            "3-5 believable cruise-native moments that make this theme feel enjoyable on a ship, such as deck conversations, listening sessions, scenic hobby practice, sunset mixers, or relaxed themed rituals."
+        ),
+        nicheExpressionMode: z.string().describe(
+            "Describe how the niche should show up lightly and pleasantly during the cruise, as a social flavor layer rather than the operational center of the trip."
+        ),
+        implausibleLiteralizations: z.array(z.string()).min(3).max(5).describe(
+            "3-5 examples of how this theme should NOT be expressed because they would feel too industrial, clinical, workshop-like, academic, or operationally awkward on a cruise."
+        ),
+        allowedThemeSignals: z.array(z.string()).min(3).max(6).describe(
+            "Lightweight aesthetic or behavioral cues that are good to use when expressing the theme on a cruise, such as clothing, props, rituals, music, decor, or conversational energy."
+        ),
+        discouragedThemeSignals: z.array(z.string()).min(3).max(6).describe(
+            "Signals, props, environments, or programming cues that would make the theme feel too formal, technical, or unrealistic for a cruise vacation."
         ),
     })).length(5, "Must provide exactly 5 blueprints")
 });
@@ -200,7 +220,33 @@ export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResu
     } else {
         console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
         const psychographicPrompt = `
-Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate.${existingThemesBlock}
+    You are researching niche communities for a vacation-first group cruise business.
+
+    ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+
+    Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation.
+
+    Prioritize communities that are:
+    - hobby-centric, taste-centric, fandom-driven, aesthetic-led, or socially expressive
+    - compatible with low-pressure mingling, scenic exploration, shared rituals, listening, reading, creating, collecting, or playful participation
+    - likely to enjoy an all-in-one floating getaway with built-in social energy
+    - visually distinctive without requiring heavy gear, lab spaces, formal instruction, or structured productivity
+
+    Explicitly avoid communities whose appeal depends on:
+    - clinical or diagnostic culture
+    - optimization protocols
+    - professional advancement
+    - formal workshops or masterclasses as the core attraction
+    - industrial systems, activist labor, or technical infrastructure demos
+    - gear-heavy practice that would feel awkward, unsafe, or unrealistic on a cruise ship
+
+    For each community, explain:
+    1. Why the niche has strong market momentum and spend willingness
+    2. Why it would feel natural in a relaxed shipboard vacation environment
+    3. What the cruise-native appeal is: conversation, discovery, music, scenic participation, hobby bonding, dressing the part, or themed social rituals
+    4. What would make the niche feel too formal, technical, or retreat-like if interpreted too literally
+
+    Do not optimize for the most intense or industrial niche. Optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, and ownable aesthetic.${existingThemesBlock}
         `.trim();
         psychographicData = await callPerplexity(psychographicPrompt);
         cache.psychographicData = psychographicData;
@@ -226,7 +272,40 @@ Analyze current community growth and sentiment for niche subcultures discussing 
 Based on the following subcultures we identified:
 ${psychographicData}
 
-For each theme retreat, what onboard amenities are most requested? Now cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement.${cbInventoryContext}
+    ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+
+    For each promising theme, analyze it in this order:
+
+    1. What are the most believable cruise-native expressions of this theme?
+    2. What guest behaviors, moods, and lightweight rituals make it feel delightful at sea?
+    3. What would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward on a cruise?
+    4. Only then, which cruise lines or ships could support the believable version of the theme naturally, without requiring major customization or infrastructure fantasy?
+
+    Focus on:
+    - deck life
+    - scenic participation
+    - lounges and listening spaces
+    - dining and gathering rhythms
+    - soft hobby rituals
+    - port-day exploration
+    - social identity and group cohesion
+
+    Do not focus primarily on:
+    - equipment rooms
+    - formal classrooms
+    - lab infrastructure
+    - treatment suites
+    - maker residencies
+    - workshop stations
+    - technical demonstration areas
+
+    For each theme, return insight on:
+    - cruise-native moments
+    - niche-enhanced moments
+    - plausible props or aesthetic signals
+    - discouraged literalizations
+    - best-fit ship environments
+    - why the concept still feels like a great vacation even if the guest only lightly participates in the niche${cbInventoryContext}
         `.trim();
         aestheticData = await callPerplexity(aestheticPrompt);
         cache.aestheticData = aestheticData;
@@ -249,6 +328,28 @@ CRITICAL REQUIREMENTS for each blueprint:
 1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, or metrics the Sonar data surfaced. Do not generalise.
 2. successLogic: Explain the commercial + psychological case for why this niche will convert to bookings. Include spend willingness signals, the IRL pull factor, and what market gap this fills.
 3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available).
+4. vacationFitRationale: Prove that this concept feels like a desirable cruise vacation, not a retreat, class, residency, lab, or conference.
+5. cruiseNativeMoments: Name 3-5 believable shipboard moments that make the theme feel pleasurable and cruise-native.
+6. nicheExpressionMode: Explain how the niche acts as a social flavor layer rather than the operational center of the trip.
+7. implausibleLiteralizations: Name 3-5 ways this theme should not be interpreted because they would feel too workshop-like, industrial, clinical, or unrealistic on a ship.
+8. allowedThemeSignals and discouragedThemeSignals must clearly separate lightweight, vacation-friendly cues from overly formal or technical cues.
+
+NON-NEGOTIABLE REALISM BOUNDARY:
+${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+
+Reject any blueprint that primarily reads like:
+- a field lab
+- a clinical retreat
+- a formal workshop sailing
+- a residency program
+- a conference at sea
+- an activist or systems project installed onto a ship
+
+Prefer blueprints where the guest fantasy is:
+- mingling with their people
+- dressing into a shared vibe
+- listening, exploring, tasting, observing, reading, collecting, photographing, or playing together
+- enjoying the ship and destination first, with the niche amplifying the mood
 
 Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}
         `.trim(),
@@ -274,6 +375,12 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
             researchRationale: bp.researchRationale,
             successLogic: bp.successLogic,
             audienceSignals: bp.audienceSignals,
+            vacationFitRationale: bp.vacationFitRationale,
+            cruiseNativeMoments: bp.cruiseNativeMoments,
+            nicheExpressionMode: bp.nicheExpressionMode,
+            implausibleLiteralizations: bp.implausibleLiteralizations,
+            allowedThemeSignals: bp.allowedThemeSignals,
+            discouragedThemeSignals: bp.discouragedThemeSignals,
             status: 'DRAFT',
             createdAt: now,
             updatedAt: now

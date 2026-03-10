@@ -366,7 +366,9 @@ The pipeline executes two Perplexity Sonar Deep Research calls sequentially, the
 
 The pipeline sends this prompt to `sonar-deep-research`:
 
-> *"Analyze current community growth and sentiment for niche subcultures discussing 'digital burnout,' 'IRL meetups,' or 'aesthetic retreats.' Identify 5 high-engagement communities with a high willingness to spend and a specific, ownable aesthetic (e.g., Solar-punk, Dark Academia, Biohacking, Retro-Gaming). For each, explain why a 4-day 'controlled environment' like a cruise would resonate."*
+> *"Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation. Prioritize communities that are visually ownable, conversation-rich, vacation-positive, and compatible with low-pressure mingling, scenic exploration, shared rituals, listening, reading, collecting, dressing the part, playful participation, or soft creative practice. Exclude communities whose appeal depends on clinical testing, optimization protocols, formal workshops, professional advancement, activist labor, industrial systems, or specialized gear-heavy practice. For each community, explain why it would feel natural in a laid-back shipboard getaway and what would make it feel too formal, technical, or retreat-like if interpreted too literally."*
+
+**Reality Boundary:** Discovery must optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, and ownable aesthetic — not simply the most intense or operationally interesting niche.
 
 The full Sonar response is cached in `.github/data/discovery-research-cache.json` (keyed by date) and is **viewable in the discovery UI** — expand the "Sonar Deep Research → Step 1" panel after a run.
 
@@ -376,7 +378,9 @@ The full Sonar response is cached in `.github/data/discovery-research-cache.json
 
 Follow-up prompt fed back to `sonar-deep-research`, with the Step 1 output + live CB inventory context injected:
 
-> *"For each theme retreat identified above, what onboard amenities are most requested? Cross-reference which cruise lines — focus on ships with newer fleet builds — already have that infrastructure without requiring a full-scale custom arrangement."*
+> *"For each shortlisted theme, first identify the most believable cruise-native expressions of the niche: guest behaviors, moods, lightweight rituals, social scenes, and scenic participation that would feel delightful at sea. Then identify what would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward on a cruise. Only after defining the believable version, cross-reference which ships and cruise lines can support that version naturally without major customization or infrastructure fantasy."*
+
+**Critical Order:** The system must analyze *experiential fit before infrastructure fit*. Ship amenities are secondary to whether the theme already feels pleasurable and cruise-native.
 
 The CB inventory context (`cb-deals-cache.json`) is automatically appended if it exists. Run `scripts/scrape-cb-deals.ts` first for inventory-first theming. The full Step 2 response is also viewable in the "Step 2 — Aesthetic Gap / Ship Match" panel in the discovery UI.
 
@@ -391,6 +395,26 @@ Both Sonar responses are fed to the blueprint-generation model (`callGlobalGener
 | `researchRationale` | **Why this niche was selected** — cites specific community data, platform signals, and trend observations from the Sonar data that identified the theme as viable. Must name subreddits, hashtag metrics, Discord sizes, etc. |
 | `successLogic` | **Why this will convert** — the commercial and psychological case: audience spend willingness, the IRL pull factor, what market gap this fills, and why the cruise environment uniquely suits this community. |
 | `audienceSignals` | **2–4 concrete data signals** — specific, single-sentence facts with platform, metric, and date context where available (e.g., `r/solotravel 15k+ upvotes on IRL meetup thread, Jan 2026`). |
+| `vacationFitRationale` | **Why this feels like a cruise vacation** — proves the concept is leisure-first rather than a retreat, class, residency, lab, or conference. |
+| `cruiseNativeMoments` | **3–5 believable shipboard moments** — deck life, listening, observing, mingling, themed rituals, scenic hobby moments, or soft port-day expressions that make the concept feel naturally cruise-native. |
+| `nicheExpressionMode` | **How the niche shows up** — defines the niche as a social flavor layer rather than the operational center of the trip. |
+| `implausibleLiteralizations` | **What to ban** — examples of interpretations that would make the theme feel too workshop-like, industrial, academic, clinical, or operationally awkward on a ship. |
+
+**Blueprint Governing Rule:** A valid group cruise theme must feel like a desirable vacation first, and only secondarily like a niche identity expression.
+
+The Gateway model must reject concepts that primarily read like:
+- field labs
+- clinical retreats
+- formal workshop sailings
+- residencies at sea
+- conferences at sea
+- industrial systems showcases or activist projects installed onto a ship
+
+It must prefer concepts where the guest fantasy is:
+- mingling with their people
+- dressing into a shared vibe
+- listening, exploring, tasting, reading, observing, collecting, photographing, or playing together
+- enjoying the ship and destination first, with the niche amplifying the mood
 
 > **Why this matters:** Blueprints that cannot explain their own rationale are guesses. These fields make every Phase A result auditable — you can see exactly which Sonar data point triggered each campaign idea and assess commercial viability before spending money on Phase B.
 

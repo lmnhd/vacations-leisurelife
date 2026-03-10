@@ -162,6 +162,39 @@ export interface Campaign {
      */
     audienceSignals?: string[];
 
+    /**
+     * Why this concept still feels like a cruise vacation rather than a retreat,
+     * lab, residency, or workshop.
+     */
+    vacationFitRationale?: string;
+
+    /**
+     * Believable cruise-native moments that define how this theme feels on board.
+     */
+    cruiseNativeMoments?: string[];
+
+    /**
+     * How the niche should express itself lightly and socially during the cruise.
+     */
+    nicheExpressionMode?: string;
+
+    /**
+     * Theme expressions that should be rejected because they feel too formal,
+     * technical, industrial, clinical, or unrealistic for a cruise.
+     */
+    implausibleLiteralizations?: string[];
+
+    /**
+     * Lightweight signals, props, rituals, or atmospherics that help the theme
+     * feel cruise-compatible.
+     */
+    allowedThemeSignals?: string[];
+
+    /**
+     * Signals, environments, props, or programming cues that should be avoided.
+     */
+    discouragedThemeSignals?: string[];
+
     createdAt: string;
     updatedAt: string;
 }

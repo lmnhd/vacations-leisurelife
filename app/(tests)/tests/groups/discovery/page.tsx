@@ -26,8 +26,8 @@ function SonarResearchPanel({ research }: { research: SonarResearch }) {
     const [openKey, setOpenKey] = useState<'psychographic' | 'aesthetic' | null>(null);
 
     const sections: Array<{ key: 'psychographic' | 'aesthetic'; label: string; description: string }> = [
-        { key: 'psychographic', label: 'Step 1 — Psychographic Discovery', description: 'Community growth & niche subculture analysis' },
-        { key: 'aesthetic', label: 'Step 2 — Aesthetic Gap / Ship Match', description: 'Amenity needs × available CB inventory' },
+        { key: 'psychographic', label: 'Step 1 — Psychographic Discovery', description: 'Cruise-compatible community and leisure-fit analysis' },
+        { key: 'aesthetic', label: 'Step 2 — Cruise Expression / Ship Match', description: 'Believable theme expression × available CB inventory' },
     ];
 
     return (
@@ -70,7 +70,17 @@ function SonarResearchPanel({ research }: { research: SonarResearch }) {
 
 function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
     const [open, setOpen] = useState(false);
-    const hasRationale = !!(campaign.researchRationale || campaign.successLogic || campaign.audienceSignals?.length);
+    const hasRationale = !!(
+        campaign.researchRationale
+        || campaign.successLogic
+        || campaign.audienceSignals?.length
+        || campaign.vacationFitRationale
+        || campaign.cruiseNativeMoments?.length
+        || campaign.nicheExpressionMode
+        || campaign.implausibleLiteralizations?.length
+        || campaign.allowedThemeSignals?.length
+        || campaign.discouragedThemeSignals?.length
+    );
     if (!hasRationale) return null;
 
     return (
@@ -107,6 +117,70 @@ function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
                         <div>
                             <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Success Logic</div>
                             <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.successLogic}</p>
+                        </div>
+                    )}
+                    {campaign.vacationFitRationale && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Vacation Fit</div>
+                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.vacationFitRationale}</p>
+                        </div>
+                    )}
+                    {campaign.nicheExpressionMode && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Niche Expression Mode</div>
+                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.nicheExpressionMode}</p>
+                        </div>
+                    )}
+                    {campaign.cruiseNativeMoments && campaign.cruiseNativeMoments.length > 0 && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Cruise-Native Moments</div>
+                            <ul className="space-y-1">
+                                {campaign.cruiseNativeMoments.map((moment, idx) => (
+                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                        <span className="text-cyan-500 mt-0.5">▸</span>
+                                        <span>{moment}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {campaign.allowedThemeSignals && campaign.allowedThemeSignals.length > 0 && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-emerald-500 mb-1.5">Allowed Theme Signals</div>
+                            <ul className="space-y-1">
+                                {campaign.allowedThemeSignals.map((signal, idx) => (
+                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                        <span className="text-emerald-400 mt-0.5">▸</span>
+                                        <span>{signal}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {campaign.discouragedThemeSignals && campaign.discouragedThemeSignals.length > 0 && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1.5">Discouraged Theme Signals</div>
+                            <ul className="space-y-1">
+                                {campaign.discouragedThemeSignals.map((signal, idx) => (
+                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                        <span className="text-amber-400 mt-0.5">▸</span>
+                                        <span>{signal}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {campaign.implausibleLiteralizations && campaign.implausibleLiteralizations.length > 0 && (
+                        <div>
+                            <div className="text-[9px] uppercase tracking-widest text-red-500 mb-1.5">Implausible Literalizations</div>
+                            <ul className="space-y-1">
+                                {campaign.implausibleLiteralizations.map((signal, idx) => (
+                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                        <span className="text-red-400 mt-0.5">▸</span>
+                                        <span>{signal}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
