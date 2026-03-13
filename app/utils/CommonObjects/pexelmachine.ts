@@ -1,5 +1,70 @@
 import { createClient } from "pexels";
-import prismadb from "@/lib/prismadb";
+import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
+
+const APP_CACHE_TABLE_NAME = process.env.APP_CACHE_TABLE_NAME ?? "lll-app-cache";
+const PEXELS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+const PEXELS_CACHE_TTL_MS = PEXELS_CACHE_TTL_SECONDS * 1000;
+
+const inMemoryPexelsCache = new Map<string, { images: PexelPhotoResult[]; expiresAt: number }>();
+
+let pexelsCacheDbEnabled = true;
+let pexelsCacheDbWarningLogged = false;
+
+function shouldSkipPexelsDbAccess(): boolean {
+  if (!pexelsCacheDbEnabled) {
+    if (!pexelsCacheDbWarningLogged) {
+      console.warn("Pexels cache backend disabled, skipping DynamoDB lookups/writes");
+      pexelsCacheDbWarningLogged = true;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function disablePexelsDbAccess(error: unknown): void {
+  pexelsCacheDbEnabled = false;
+  if (!pexelsCacheDbWarningLogged) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("Disabling Pexels cache backend after DynamoDB error:", message);
+    pexelsCacheDbWarningLogged = true;
+  }
+}
+
+function getLocalPexelsCache(query: string): PexelPhotoResult[] {
+  const key = normalizePexelsQuery(query);
+  const cached = inMemoryPexelsCache.get(key);
+  if (!cached) {
+    return [];
+  }
+
+  if (cached.expiresAt <= Date.now()) {
+    inMemoryPexelsCache.delete(key);
+    return [];
+  }
+
+  return cached.images;
+}
+
+function setLocalPexelsCache(query: string, images: PexelPhotoResult[]): void {
+  inMemoryPexelsCache.set(normalizePexelsQuery(query), {
+    images,
+    expiresAt: Date.now() + PEXELS_CACHE_TTL_MS,
+  });
+}
+
+function normalizePexelsQuery(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function buildPexelsCachePk(query: string): string {
+  return `PEXELS#QUERY#${normalizePexelsQuery(query)}`;
+}
+
+function buildPexelsCacheSk(original: string): string {
+  return `IMAGE#${original}`;
+}
 
 const examplePhoto = {
   id: 2014422,
@@ -96,67 +161,97 @@ export async function shuffleArray(array:any[]){
 //TO DO
 function cacheSearchedImages() {}
 async function storeImageData(data: PexelPhotoResource, query: string) {
+  const localItem: PexelPhotoResult = {
+    searchQuery: query,
+    width: data.width,
+    height: data.height,
+    url: data.url,
+    alt: data.alt,
+    photographer: data.photographer,
+    photographerUrl: data.photographer_url,
+    avgColor: data.avg_color,
+    srcOriginal: data.src.original,
+    srcLarge2x: data.src.large2x,
+    srcLarge: data.src.large,
+    srcMedium: data.src.medium,
+    srcSmall: data.src.small,
+    srcPortrait: data.src.portrait,
+    srcLandscape: data.src.landscape,
+    srcTiny: data.src.tiny,
+  };
+
+  const existingLocal = getLocalPexelsCache(query);
+  if (!existingLocal.find((item) => item.srcOriginal === localItem.srcOriginal)) {
+    setLocalPexelsCache(query, [...existingLocal, localItem]);
+  }
+
   try {
-    if (!process.env.DATABASE_URL) {
-      console.warn('DATABASE_URL not configured, skipping image storage');
+    if (shouldSkipPexelsDbAccess()) {
       return;
     }
-    await prismadb.pexelPhotoResource.create({
-      data: {
-        searchQuery: query,
-        width: data.width,
-        height: data.height,
-        url: data.url,
-        alt: data.alt,
-        photographer: data.photographer,
-        photographerUrl: data.photographer_url,
-        avgColor: data.avg_color,
-        srcOriginal: data.src.original,
-        srcLarge2x: data.src.large2x,
-        srcLarge: data.src.large,
-        srcMedium: data.src.medium,
-        srcSmall: data.src.small,
-        srcPortrait: data.src.portrait,
-        srcLandscape: data.src.landscape,
-        srcTiny: data.src.tiny,
-      },
-    });
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const ttl = nowSeconds + PEXELS_CACHE_TTL_SECONDS;
+
+    await chatDynamoDocumentClient.send(
+      new PutCommand({
+        TableName: APP_CACHE_TABLE_NAME,
+        Item: {
+          PK: buildPexelsCachePk(query),
+          SK: buildPexelsCacheSk(data.src.original),
+          cacheType: "pexels_image",
+          searchQuery: query,
+          width: data.width,
+          height: data.height,
+          url: data.url,
+          alt: data.alt,
+          photographer: data.photographer,
+          photographerUrl: data.photographer_url,
+          avgColor: data.avg_color,
+          srcOriginal: data.src.original,
+          srcLarge2x: data.src.large2x,
+          srcLarge: data.src.large,
+          srcMedium: data.src.medium,
+          srcSmall: data.src.small,
+          srcPortrait: data.src.portrait,
+          srcLandscape: data.src.landscape,
+          srcTiny: data.src.tiny,
+          createdAt: new Date().toISOString(),
+          ttl,
+        },
+      })
+    );
   } catch (error) {
-    console.warn('Error storing image data:', error);
+    disablePexelsDbAccess(error);
     // Continue without storing - non-critical operation
   }
 }
 async function checkForStoredImages(query: string) {
-  try {
-    if (!process.env.DATABASE_URL) {
-      console.warn('DATABASE_URL not configured, skipping database lookup');
-      return [];
-    }
-    const storedImages = await prismadb.pexelPhotoResource.findMany({
-      where: {
-        searchQuery: query,
-      },
-    });
-    return storedImages;
-  } catch (error) {
-    console.warn('Error checking stored images:', error);
-    return [];
+  const localImages = getLocalPexelsCache(query);
+  if (localImages.length > 0) {
+    return localImages;
   }
-}
-async function checkForStoredImage(original: string) {
+
   try {
-    if (!process.env.DATABASE_URL) {
-      console.warn('DATABASE_URL not configured, skipping database lookup');
+    if (shouldSkipPexelsDbAccess()) {
       return [];
     }
-    const storedImages = await prismadb.pexelPhotoResource.findMany({
-      where: {
-        srcOriginal: original,
-      },
-    });
+    const result = await chatDynamoDocumentClient.send(
+      new QueryCommand({
+        TableName: APP_CACHE_TABLE_NAME,
+        KeyConditionExpression: "PK = :pk",
+        ExpressionAttributeValues: {
+          ":pk": buildPexelsCachePk(query),
+        },
+      })
+    );
+
+    const storedImages = (result.Items ?? []) as PexelPhotoResult[];
+    if (storedImages.length > 0) {
+      setLocalPexelsCache(query, storedImages);
+    }
     return storedImages;
   } catch (error) {
-    console.warn('Error checking stored image:', error);
+    disablePexelsDbAccess(error);
     return [];
   }
 }
@@ -181,6 +276,7 @@ async function mapPexelImagesToNewObjectArray(images:PexelPhotoResource[],query:
       srcTiny: image.src.tiny,
     }
   })
+  setLocalPexelsCache(query, res);
   return res;
 }
 export default async (
@@ -222,17 +318,13 @@ export default async (
       locale: "en-US",
       page: getRandomNumberBetween(1, 10)
     })
-    .then((photos) => {
+    .then(async (photos) => {
       photoResults = photos;
-      photoResults.photos.forEach(async (photo:PexelPhotoResource) => {
-        const storedImages = await checkForStoredImage(photo.src.original);
-        if (storedImages.length > 0) {
-          console.log("image already stored");
-        } else {
+      await Promise.all(
+        photoResults.photos.map(async (photo: PexelPhotoResource) => {
           await storeImageData(photo, query);
-        }
-        
-      })
+        })
+      )
     })
     .catch((err) => console.log(err));
   console.log(photoResults.photos.length + " images retrieved");

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
-import { callLLM, ModelName } from '@/lib/ai/llm-gateway';
+import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -47,8 +47,8 @@ async function selectRelevantEntries(
         'Respond with JSON: { "indices": [<number>, ...], "reasoning": "<one sentence>" }',
     ].join(' ');
 
-    // GPT_5_INSTANT: fast, cheap binary decision routed through the gateway
-    const { content } = await callLLM(ModelName.GPT_5_INSTANT, `QUERY: ${query}\n\nINDEX:\n${index}`, {
+    // Route through semantic task mapping so legacy/fast decision model stays centralized.
+    const { content } = await callLLM(modelForTask('legacy_decision'), `QUERY: ${query}\n\nINDEX:\n${index}`, {
         systemPrompt,
         temperature: 0,
         maxTokens:   200,

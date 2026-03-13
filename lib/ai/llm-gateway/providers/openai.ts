@@ -7,6 +7,36 @@
 
 import type { LLMCallOptions, LLMResponse } from '../types';
 
+const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
+
+function tokenParam(model: string, count: number): Record<string, number> {
+  return COMPLETION_TOKENS_MODELS.some((prefix) => model.startsWith(prefix))
+    ? { max_completion_tokens: count }
+    : { max_tokens: count };
+}
+
+function tempParam(model: string, value: number | undefined): Record<string, number> {
+  if (value === undefined) {
+    return {};
+  }
+
+  return COMPLETION_TOKENS_MODELS.some((prefix) => model.startsWith(prefix))
+    ? {}
+    : { temperature: value };
+}
+
+function isModelAccessError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return message.includes('does not exist') || message.includes('do not have access') || message.includes('model');
+}
+
+function getOpenAIFallbackModel(primaryModel: string): string {
+  const configuredFallback = process.env.OPENAI_FALLBACK_MODEL?.trim();
+  const fallback = configuredFallback && configuredFallback.length > 0 ? configuredFallback : 'gpt-5-mini';
+  return fallback;
+}
+
 export async function callOpenAI(
   apiId: string,
   prompt: string,
@@ -22,15 +52,35 @@ export async function callOpenAI(
   }
   messages.push({ role: 'user', content: prompt });
 
-  const response = await client.chat.completions.create(
-    {
-      model:       apiId,
-      messages,
-      max_tokens:  maxTokens,
-      temperature: options.temperature,
-    },
-    { signal: options.signal }
-  );
+  const request = {
+    model:       apiId,
+    messages,
+    ...tokenParam(apiId, maxTokens),
+    ...tempParam(apiId, options.temperature),
+  };
+
+  let response;
+  try {
+    response = await client.chat.completions.create(request, { signal: options.signal });
+  } catch (error) {
+    if (!isModelAccessError(error)) {
+      throw error;
+    }
+
+    const fallbackModel = getOpenAIFallbackModel(apiId);
+    if (fallbackModel === apiId) {
+      throw error;
+    }
+
+    console.warn(`[AI Gateway] OpenAI model "${apiId}" unavailable. Retrying with "${fallbackModel}".`);
+    response = await client.chat.completions.create(
+      {
+        ...request,
+        model: fallbackModel,
+      },
+      { signal: options.signal }
+    );
+  }
 
   const choice = response.choices[0];
   return {

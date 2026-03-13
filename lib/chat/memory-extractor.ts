@@ -1,4 +1,4 @@
-import { callLLM, ModelName } from '@/lib/ai/llm-gateway';
+import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -53,8 +53,8 @@ export async function extractMemoryFacts(input: {
     const extractionPrompt = await loadExtractionPrompt();
     const userMessage = buildExtractionUserMessage(input);
 
-    // GPT_5_INSTANT: cheap, fast extraction task — routed through the gateway
-    const { content: rawReply } = await callLLM(ModelName.GPT_5_INSTANT, userMessage, {
+    // Legacy extraction profile: cheap, deterministic extraction task — routed through the gateway
+    const { content: rawReply } = await callLLM(modelForTask('legacy_extraction'), userMessage, {
         systemPrompt: extractionPrompt,
         maxTokens:    400,
         temperature:  0,

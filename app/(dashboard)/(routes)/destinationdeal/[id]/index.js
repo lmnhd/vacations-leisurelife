@@ -1,11 +1,26 @@
 import { load } from "cheerio";
 
+const CB_PICKS_REVALIDATE_SECONDS = 60 * 60 * 24 * 30;
+const CB_PICKS_REVALIDATE_MS = CB_PICKS_REVALIDATE_SECONDS * 1000;
+
+let cbPicksMemoryCache = {
+  data: [],
+  expiresAt: 0,
+};
+
 export async function cbPicks() {
   const url = "https://www.cruisebrothers.com/cb/brothers_picks/";
   const baseURL = "https://www.cruisebrothers.com";
+
+  if (cbPicksMemoryCache.data.length > 0 && cbPicksMemoryCache.expiresAt > Date.now()) {
+    console.log("Using cached CB picks from memory");
+    return cbPicksMemoryCache.data;
+  }
   
   try {
-    const data = await fetch(url, { cache: 'no-store' });
+    const data = await fetch(url, {
+      next: { revalidate: CB_PICKS_REVALIDATE_SECONDS },
+    });
     const resultData = await data.text();
     const $ = load(resultData);
     
@@ -125,6 +140,10 @@ export async function cbPicks() {
     });
     
     console.log('=== Total picks found:', arr.length, '===');
+    cbPicksMemoryCache = {
+      data: arr,
+      expiresAt: Date.now() + CB_PICKS_REVALIDATE_MS,
+    };
     return arr;
   } catch (error) {
     console.error('Error scraping CB Picks:', error.message);

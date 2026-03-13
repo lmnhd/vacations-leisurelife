@@ -19,10 +19,10 @@ import { callGroq }      from './providers/groq';
 
 // ─── Logging ─────────────────────────────────────────────────────────────────
 
-function log(model: ModelName, provider: string, scores: Record<string, number>) {
+function log(model: ModelName, provider: string, apiId: string, scores: Record<string, number>) {
   if (process.env.LLM_GATEWAY_VERBOSE === 'true') {
     console.log(
-      `[AI Gateway] → ${model} (${provider}) | coding:${scores.coding} logic:${scores.logic} speed:${scores.speed}`
+      `[AI Gateway] → ${model} (${provider}) apiId:${apiId} | coding:${scores.coding} logic:${scores.logic} speed:${scores.speed}`
     );
   }
 }
@@ -51,7 +51,7 @@ export async function callLLM(
   const maxTokens   = options.maxTokens    ?? config.maxTokens;
   const apiId       = config.apiId         ?? model;
 
-  log(model, config.provider, config.scores);
+  log(model, config.provider, apiId, config.scores);
 
   const resolvedOptions: LLMCallOptions = {
     ...options,

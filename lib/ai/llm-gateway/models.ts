@@ -26,6 +26,11 @@ export enum ModelName {
   GPT_5_INSTANT       = 'gpt-5.3-instant',
   GEMINI_3_FLASH_LITE = 'gemini-3-lite',
   LLAMA_4_MAVERICK    = 'llama-4-maverick',
+
+  // LEGACY · Low-Complexity Website Tasks
+  LEGACY_CHAT         = 'legacy-chat',
+  LEGACY_EXTRACTION   = 'legacy-extraction',
+  LEGACY_FALLBACK     = 'legacy-fallback',
 }
 
 // ─── Task → Default Model Mapping ────────────────────────────────────────────
@@ -67,6 +72,12 @@ export const TASK_MODEL_MAP: Record<string, ModelName> = {
   simulation:         ModelName.CLAUDE_4_SONNET,
   /** Creative campaign briefs */
   creative:           ModelName.CLAUDE_4_OPUS,
+  /** Legacy website chat endpoint compatibility tier */
+  legacy_chat:        ModelName.LEGACY_CHAT,
+  /** Legacy website extraction / formatting tier */
+  legacy_extraction:  ModelName.LEGACY_EXTRACTION,
+  /** Legacy website binary decision tier */
+  legacy_decision:    ModelName.LEGACY_FALLBACK,
 };
 
 // ─── Registry ────────────────────────────────────────────────────────────────
@@ -141,7 +152,7 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_INSTANT]: {
     provider:      'openai',
-    apiId:         'gpt-5.3-instant',
+    apiId:         process.env.OPENAI_INSTANT_MODEL?.trim() || process.env.OPENAI_FALLBACK_MODEL?.trim() || 'gpt-5-mini',
     maxTokens:     4_096,
     defaultTemp:   0.5,
     contextWindow: 128_000,
@@ -167,6 +178,38 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
     contextWindow: 1_000_000,
     lastVerified:  '2026-03-01',
     scores:        { coding: 65, logic: 70, speed: 98, context: 80 },
+  },
+
+  // ── LEGACY ─────────────────────────────────────────────────────────────────
+
+  [ModelName.LEGACY_CHAT]: {
+    provider:      'openai',
+    apiId:         process.env.OPENAI_LEGACY_CHAT_MODEL?.trim() || process.env.OPENAI_INSTANT_MODEL?.trim() || 'gpt-5-mini',
+    maxTokens:     1_024,
+    defaultTemp:   0.6,
+    contextWindow: 128_000,
+    lastVerified:  '2026-03-01',
+    scores:        { coding: 50, logic: 58, speed: 96, context: 70 },
+  },
+
+  [ModelName.LEGACY_EXTRACTION]: {
+    provider:      'openai',
+    apiId:         process.env.OPENAI_LEGACY_EXTRACTION_MODEL?.trim() || process.env.OPENAI_INSTANT_MODEL?.trim() || 'gpt-5-mini',
+    maxTokens:     800,
+    defaultTemp:   0,
+    contextWindow: 128_000,
+    lastVerified:  '2026-03-01',
+    scores:        { coding: 45, logic: 60, speed: 97, context: 70 },
+  },
+
+  [ModelName.LEGACY_FALLBACK]: {
+    provider:      'openai',
+    apiId:         process.env.OPENAI_LEGACY_FALLBACK_MODEL?.trim() || process.env.OPENAI_FALLBACK_MODEL?.trim() || 'gpt-5-mini',
+    maxTokens:     600,
+    defaultTemp:   0,
+    contextWindow: 128_000,
+    lastVerified:  '2026-03-01',
+    scores:        { coding: 40, logic: 55, speed: 98, context: 68 },
   },
 };
 

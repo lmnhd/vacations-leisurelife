@@ -14,13 +14,10 @@ function accentShadow(color: string): string {
     return `0 24px 90px ${color}33`;
 }
 
-const SCATTER_POSITIONS = [
-    'top-6 -right-2 h-32 w-24 rotate-6 md:h-40 md:w-32 z-10',
-    'bottom-24 -left-2 h-28 w-20 -rotate-3 md:h-32 md:w-24 z-10',
-    'top-[40%] right-[30%] h-24 w-32 -rotate-6 md:h-32 md:w-40 z-10',
-] as const;
-
 export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
+    const galleryImages = landing.galleryImages.filter((image) => image.url.trim().length > 0);
+    const getGalleryImage = (index: number) => galleryImages.length > 0 ? galleryImages[index % galleryImages.length] : null;
+
     const heroBackground = landing.heroImage?.url
         ? {
             backgroundImage: `linear-gradient(135deg, rgba(15,23,42,0.84), rgba(15,23,42,0.44)), url(${landing.heroImage.url})`,
@@ -73,25 +70,25 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                     ))}
                                 </div>
 
-                                <div className="grid gap-4 md:grid-cols-2">
+                                <div className="grid gap-4 xl:grid-cols-2">
                                     {landing.ctas.primary.disabled ? (
-                                        <Button size="lg" className="h-12" disabled>
+                                        <Button size="lg" className="min-h-[56px] h-auto whitespace-normal px-5 py-3 text-center leading-5" disabled>
                                             {landing.ctas.primary.label}
                                         </Button>
                                     ) : (
-                                        <Button asChild size="lg" className="h-12 bg-slate-950 text-slate-50 hover:bg-slate-800">
-                                            <a href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined} rel={primaryHref.startsWith('http') ? 'noreferrer' : undefined}>
+                                        <Button asChild size="lg" className="min-h-[56px] h-auto whitespace-normal px-5 py-3 text-center leading-5 bg-slate-950 text-slate-50 hover:bg-slate-800">
+                                            <a className="whitespace-normal" href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined} rel={primaryHref.startsWith('http') ? 'noreferrer' : undefined}>
                                                 {landing.ctas.primary.label}
                                             </a>
                                         </Button>
                                     )}
                                     {landing.ctas.secondary.disabled ? (
-                                        <Button size="lg" variant="outline" className="h-12 border-slate-300" disabled>
+                                        <Button size="lg" variant="outline" className="min-h-[56px] h-auto whitespace-normal px-5 py-3 text-center leading-5 border-slate-300" disabled>
                                             {landing.ctas.secondary.label}
                                         </Button>
                                     ) : (
-                                        <Button asChild size="lg" variant="outline" className="h-12 border-slate-300 bg-white">
-                                            <a href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined} rel={secondaryHref.startsWith('http') ? 'noreferrer' : undefined}>
+                                        <Button asChild size="lg" variant="outline" className="min-h-[56px] h-auto whitespace-normal px-5 py-3 text-center leading-5 border-slate-300 bg-white">
+                                            <a className="whitespace-normal" href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined} rel={secondaryHref.startsWith('http') ? 'noreferrer' : undefined}>
                                                 {landing.ctas.secondary.label}
                                             </a>
                                         </Button>
@@ -99,14 +96,20 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                 </div>
                             </div>
 
-                            <div className="relative min-h-[380px] overflow-hidden border-l border-stone-200" style={heroBackground}>
-                                {landing.galleryImages[0] && (
+                            <div className="relative min-h-[460px] overflow-hidden border-l border-stone-200" style={heroBackground}>
+                                {getGalleryImage(0) && (
                                     <div
                                         className="pointer-events-none absolute right-8 top-8 hidden h-32 w-32 rotate-[8deg] rounded-sm border-[6px] border-white shadow-xl opacity-95 lg:block z-10"
-                                        style={{ backgroundImage: `url(${landing.galleryImages[0].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                        style={{ backgroundImage: `url(${getGalleryImage(0)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                     />
                                 )}
-                                <div className="flex relative z-20 h-full flex-col justify-end gap-4 p-8 text-white md:p-10">
+                                {getGalleryImage(1) && (
+                                    <div
+                                        className="pointer-events-none absolute bottom-4 left-8 hidden h-28 w-36 -rotate-[7deg] rounded-sm border-[6px] border-white shadow-xl opacity-95 xl:block z-10"
+                                        style={{ backgroundImage: `url(${getGalleryImage(1)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                    />
+                                )}
+                                <div className="flex relative z-20 h-full flex-col justify-start gap-4 p-8 pb-40 text-white md:p-10 md:pb-44">
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/70">{landing.title}</p>
                                     <p className="max-w-xl text-base leading-7 text-white/88">
                                         {landing.elevatorPitch}
@@ -159,11 +162,11 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                         {landing.pricing.detail}
                                     </div>
                                 </div>
-                                {landing.galleryImages[3] && (
+                                {getGalleryImage(3) && (
                                     <div className="relative mt-2 h-32 w-full overflow-hidden border border-slate-200 bg-slate-100">
-                                        <div 
+                                        <div
                                             className="absolute inset-0 bg-cover bg-center opacity-90 saturate-[0.8]"
-                                            style={{ backgroundImage: `url(${landing.galleryImages[3].url})` }}
+                                            style={{ backgroundImage: `url(${getGalleryImage(3)?.url})` }}
                                         />
                                     </div>
                                 )}
@@ -188,18 +191,18 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                             </CardContent>
                         </Card>
 
-                        {landing.galleryImages.length > 1 && (
+                        {galleryImages.length > 0 && (
                             <div className="hidden lg:flex w-full flex-col items-center justify-center pt-8 pointer-events-none">
-                                {landing.galleryImages[1] && (
+                                {getGalleryImage(1) && (
                                     <div
                                         className="h-36 w-44 -rotate-6 rounded-sm border-[6px] border-white shadow-xl"
-                                        style={{ backgroundImage: `url(${landing.galleryImages[1].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                        style={{ backgroundImage: `url(${getGalleryImage(1)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                     />
                                 )}
-                                {landing.galleryImages[2] && (
+                                {getGalleryImage(2) && (
                                     <div
                                         className="-mt-12 ml-16 h-32 w-24 rotate-12 rounded-sm border-[6px] border-white shadow-xl"
-                                        style={{ backgroundImage: `url(${landing.galleryImages[2].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                        style={{ backgroundImage: `url(${getGalleryImage(2)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                     />
                                 )}
                             </div>
@@ -233,6 +236,15 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             <div>
                                                 <h2 className="text-xl font-semibold text-slate-950">What This Trip Feels Like</h2>
                                             </div>
+                                            {getGalleryImage(4) && (
+                                                <div className="relative h-40 overflow-hidden border border-slate-200 bg-slate-100">
+                                                    <div
+                                                        className="absolute inset-0 bg-cover bg-center"
+                                                        style={{ backgroundImage: `url(${getGalleryImage(4)?.url})` }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent" />
+                                                </div>
+                                            )}
                                             {landing.experienceBullets.map((bullet) => (
                                                 <div key={bullet} className="border border-slate-200 bg-stone-50 p-4 text-sm leading-7 text-slate-700">
                                                     {bullet}
@@ -250,12 +262,12 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             </div>
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 {landing.story.whatToExpect.map((item, idx) => (
-                                                    <div key={item} className="relative overflow-hidden border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                                                        <span className="relative z-10">{item}</span>
-                                                        {landing.galleryImages[4 + idx] && (
-                                                            <div 
-                                                                className="absolute right-0 top-0 h-full w-1/3 opacity-20 transition-opacity hover:opacity-30" 
-                                                                style={{ backgroundImage: `url(${landing.galleryImages[4 + idx].url})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to right, transparent, black)' }}
+                                                    <div key={item} className="relative overflow-hidden border border-slate-200 bg-slate-50 p-4 pr-24 text-sm leading-7 text-slate-700">
+                                                        <span className="relative z-10 block">{item}</span>
+                                                        {getGalleryImage(4 + idx) && (
+                                                            <div
+                                                                className="pointer-events-none absolute bottom-3 right-3 h-20 w-16 rotate-[6deg] rounded-sm border-[4px] border-white shadow-lg"
+                                                                style={{ backgroundImage: `url(${getGalleryImage(4 + idx)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                                             />
                                                         )}
                                                     </div>
@@ -267,6 +279,15 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             <div>
                                                 <h2 className="text-xl font-semibold text-slate-950">Before You Commit</h2>
                                             </div>
+                                            {getGalleryImage(7) && (
+                                                <div className="relative h-36 overflow-hidden border border-slate-200 bg-slate-100">
+                                                    <div
+                                                        className="absolute inset-0 bg-cover bg-center"
+                                                        style={{ backgroundImage: `url(${getGalleryImage(7)?.url})` }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-transparent to-slate-950/20" />
+                                                </div>
+                                            )}
                                             {landing.trustBullets.map((bullet) => (
                                                 <div key={bullet} className="border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
                                                     {bullet}
@@ -314,16 +335,16 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                 </section>
 
                 <section id="save-your-place" className="relative">
-                    {landing.galleryImages[8] && (
+                    {getGalleryImage(8) && (
                         <div
-                            className="pointer-events-none absolute -left-4 -top-8 z-10 hidden h-32 w-32 -rotate-12 rounded-sm border-[6px] border-white shadow-xl opacity-90 lg:block"
-                            style={{ backgroundImage: `url(${landing.galleryImages[8].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                            className="pointer-events-none absolute -left-10 -top-14 z-10 hidden h-32 w-32 -rotate-12 rounded-sm border-[6px] border-white shadow-xl opacity-90 xl:block"
+                            style={{ backgroundImage: `url(${getGalleryImage(8)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                         />
                     )}
-                    {landing.galleryImages[9] && (
+                    {getGalleryImage(9) && (
                         <div
                             className="pointer-events-none absolute -bottom-6 -right-6 z-10 hidden h-28 w-40 rotate-[14deg] rounded-sm border-[6px] border-white shadow-xl opacity-95 lg:block"
-                            style={{ backgroundImage: `url(${landing.galleryImages[9].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                            style={{ backgroundImage: `url(${getGalleryImage(9)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                         />
                     )}
                     <CampaignWaitlistForm

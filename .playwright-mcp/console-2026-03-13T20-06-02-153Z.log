@@ -1,0 +1,237 @@
+[  341922ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[  341924ms] [ERROR] Failed to fetch RSC payload for http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026. Falling back to browser navigation. TypeError: Failed to fetch
+    at createFetch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:2588:24)
+    at fetchServerResponse (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:2490:27)
+    at fetchMissingDynamicData (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:3654:75)
+    at spawnDynamicRequests (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:3501:35)
+    at navigateToSeededRoute (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:7741:50)
+    at refreshDynamicData (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:8347:58)
+    at hmrRefreshReducer (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:8513:51)
+    at clientReducer (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9081:65)
+    at Object.action (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9310:55)
+    at runAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9215:38)
+    at dispatchAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9278:9)
+    at Object.dispatch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9308:40)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1489:29
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:5500:31)
+    at dispatch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1488:13)
+    at dispatchAppRouterAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1470:5)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9439:61
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:1279:31)
+    at Object.hmrRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9438:40)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:11620:64
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:1279:31)
+    at processMessage (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:11619:44)
+    at WebSocket.handleMessage (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10914:52) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  949320ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  966941ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  967798ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  968273ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  986428ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  986508ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  986569ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  986616ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  987938ms] [ERROR] ./app/utils/CommonObjects/pexelmachine.ts:265:7
+Parsing ecmascript source code failed
+  263 |     .then((photos) => {
+  264 |       photoResults = photos;
+> 265 |       await Promise.all(
+      |       ^^^^^
+  266 |         photoResults.photos.map(async (photo: PexelPhotoResource) => {
+  267 |           await storeImageData(photo, query);
+  268 |         })
+
+await isn't allowed in non-async function
+
+Import trace:
+  Server Component:
+    ./app/utils/CommonObjects/pexelmachine.ts
+    ./components/cb/cbdestinationpickstile.tsx
+    ./components/landing-content.tsx
+    ./app/(landing)/page.tsx @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[  991637ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[  994998ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[  998351ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1001714ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1005056ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1012435ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1019819ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1027192ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1034568ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1041947ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1049363ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1056801ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=MQzgwxTvPE1ofxKVU_1VA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 1956096ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[ 1956098ms] [ERROR] Failed to fetch RSC payload for http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026. Falling back to browser navigation. TypeError: Failed to fetch
+    at createFetch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:2588:24)
+    at fetchServerResponse (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:2490:27)
+    at fetchMissingDynamicData (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:3654:75)
+    at spawnDynamicRequests (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:3501:35)
+    at navigateToSeededRoute (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:7741:50)
+    at refreshDynamicData (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:8347:58)
+    at hmrRefreshReducer (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:8513:51)
+    at clientReducer (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9081:65)
+    at Object.action (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9310:55)
+    at runAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9215:38)
+    at dispatchAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9278:9)
+    at Object.dispatch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9308:40)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1489:29
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:5500:31)
+    at dispatch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1488:13)
+    at dispatchAppRouterAction (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:1470:5)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9439:61
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:1279:31)
+    at Object.hmrRefresh (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:9438:40)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:11620:64
+    at startTransition (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js:1279:31)
+    at processMessage (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:11619:44)
+    at WebSocket.handleMessage (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10914:52) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 1958481ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/__nextjs_original-stack-frames:0
+[ 2117188ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2120536ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2123889ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2127244ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2130605ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2137959ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2145310ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2152651ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2160003ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2167363ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2174732ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[ 2182078ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=H8Qs6947K09tlQq3XlhMQ' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878

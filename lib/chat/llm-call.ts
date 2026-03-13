@@ -11,7 +11,7 @@ const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2'
 /** Primary reasoning / agentic chat model */
 export const MODEL_MAIN  = ModelName.CLAUDE_4_SONNET;  // agentic: balanced utility + tool-use
 /** Lightweight tasks: classification, intent, JSON extraction */
-export const MODEL_FAST  = ModelName.GPT_5_INSTANT;    // decision: lowest latency
+export const MODEL_FAST  = modelForTask('legacy_decision'); // legacy lightweight decision profile
 /** Voice pipeline text-mode fallback */
 export const MODEL_VOICE = ModelName.CLAUDE_4_SONNET;  // agentic
 
@@ -34,7 +34,7 @@ export async function callGlobalGenerateObject<T>(options: {
     schema: z.ZodSchema<T>;
     modelName?: ModelName;
 }) {
-    // Resolve model through the gateway registry — falls back to MODEL_FAST (GPT_5_INSTANT)
+    // Resolve model through the gateway registry — falls back to MODEL_FAST (legacy decision profile)
     const targetModel = options.modelName ?? MODEL_FAST;
     const apiId = resolveModelApiId(targetModel);
     const model = vercelOpenAI(apiId);

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { callLLM, ModelName } from "@/lib/ai/llm-gateway";
+import { callLLM, modelForTask } from "@/lib/ai/llm-gateway";
 
 import { increaseApiLimit, checkApiLImit } from "@/lib/api-limit";
 
@@ -23,14 +23,14 @@ export async function POST(req: Request) {
       return new NextResponse("Free trial limit exceeded", { status: 403 });
     }
 
-    // Route through the gateway — ModelName.GPT_5_INSTANT for fast, low-latency conversation
+    // Route through the gateway legacy chat profile for low-latency website conversation
     const lastUserMessage = (messages as Array<{ role: string; content: string }>)
       .filter((m) => m.role === 'user')
       .pop()?.content ?? '';
     const systemMessage = (messages as Array<{ role: string; content: string }>)
       .find((m) => m.role === 'system')?.content;
 
-    const { content, raw } = await callLLM(ModelName.GPT_5_INSTANT, lastUserMessage, {
+    const { content, raw } = await callLLM(modelForTask("legacy_chat"), lastUserMessage, {
       systemPrompt: systemMessage,
       maxTokens:    150,
     });

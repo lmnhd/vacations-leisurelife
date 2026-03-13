@@ -37,6 +37,9 @@ const MODEL_TO_GENERATOR: Record<ModelName, GeneratorService> = {
     [ModelName.GEMINI_3_FLASH]: 'gemini3_flash',
     [ModelName.GEMINI_3_FLASH_LITE]: 'gemini3_flash_lite',
     [ModelName.LLAMA_4_MAVERICK]: 'llama4',
+    [ModelName.LEGACY_CHAT]: 'gpt4o',
+    [ModelName.LEGACY_EXTRACTION]: 'gpt4o',
+    [ModelName.LEGACY_FALLBACK]: 'gpt4o',
 };
 
 /**
@@ -68,7 +71,7 @@ export const MEDIA_LLM_CONFIG = {
     /** Niche theme discovery research */
     nicheDiscovery: ModelName.GEMINI_3_PRO,
     /** Campaign match scoring and decision logic */
-    campaignDecision: ModelName.GPT_5_INSTANT,
+    campaignDecision: modelForTask('decision'),
 } as const satisfies Record<string, ModelName>;
 
 // ── Stability AI Settings ─────────────────────────────────────────────────────

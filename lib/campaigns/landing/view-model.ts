@@ -189,8 +189,10 @@ function buildGalleryImages(
     manifest: CampaignMediaManifest | null,
     heroImage: LandingImageAsset | null,
 ): LandingImageAsset[] {
+    const maxGalleryImages = 10;
+
     if (!manifest) {
-        return heroImage ? [heroImage] : [];
+        return heroImage?.url ? [heroImage] : [];
     }
 
     const candidates = [
@@ -217,9 +219,13 @@ function buildGalleryImages(
             alt: `${campaign.name} campaign image`,
         });
 
-        if (gallery.length === 3) {
+        if (gallery.length === maxGalleryImages) {
             break;
         }
+    }
+
+    if (gallery.length === 0 && heroImage?.url) {
+        gallery.push(heroImage);
     }
 
     return gallery;

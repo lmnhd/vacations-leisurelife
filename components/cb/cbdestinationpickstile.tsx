@@ -87,6 +87,25 @@ export default async function CBDestinationPicksTiles() {
     //console.log(foundDestinations);
     return result;
   }
+
+  function normalizeAiResponse(value: string | undefined, fallback: string): string {
+    if (!value) {
+      return fallback;
+    }
+
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return fallback;
+    }
+
+    const lowered = trimmed.toLowerCase();
+    if (lowered === "no response found" || lowered === "error" || lowered === "null" || lowered === "undefined") {
+      return fallback;
+    }
+
+    return trimmed;
+  }
+
   async function formatPorts(ports: string) {
     const functionId = "formatPorts";
     const instructions =
@@ -100,7 +119,7 @@ export default async function CBDestinationPicksTiles() {
       "",
       true
     );
-    return response;
+    return normalizeAiResponse(response, "Top cruise ports");
   }
   async function formatDescription(info: string) {
     const functionId = "formatDescription";
@@ -115,7 +134,7 @@ export default async function CBDestinationPicksTiles() {
       "",
       true
     );
-    return response || "bad response";
+    return normalizeAiResponse(response, "Cruise highlights and benefits");
   }
   async function formatPrice(info: string) {
     const functionId = "formatPrice";
@@ -130,7 +149,7 @@ export default async function CBDestinationPicksTiles() {
       "",
       true
     );
-    return response;
+    return normalizeAiResponse(response, "See rates");
   }
 
   async function mapTile(pick: CBPickData) {
@@ -140,29 +159,33 @@ export default async function CBDestinationPicksTiles() {
       pick.other.includes("dining") ||
       pick.other.includes("beverage") ||
       pick.other.includes("WIFI");
+    const fetchedImages = await pexelmachine(
+      3,
+      pick.destination.replace("Destination:", "").replace(" ", "") +
+        " vacation"
+    );
+
+    const imageSrc = fetchedImages[0]?.srcMedium ?? pick.img;
+    const formattedPorts = await formatPorts(
+      pick.go.replace("Where you go:", "").replace(" ", "")
+    );
+    const formattedDescription = await formatDescription(
+      pick.other.replace("Other details:", "").replace(" ", "")
+    );
+    const formattedPrice = await formatPrice(
+      pick.price.replace("Prices:", "").replace(" ", "")
+    );
+
     const promotionTileProps: PromotionTileProps = {
-      imageSrc: (
-        await pexelmachine(
-          3,
-          pick.destination.replace("Destination:", "").replace(" ", "") +
-            " vacation"
-        )
-      )[0].srcMedium,
+      imageSrc,
       alt: pick.destination,
       day: pick.when.replace("When:", "").replace(" ", ""),
-      port: await formatPorts(
-        pick.go.replace("Where you go:", "").replace(" ", "")
-      ),
+      port: formattedPorts,
       header1: pick.destination.replace("Destination:", "").replace(" ", ""),
       header2: pick.what.replace("What:", "").replace(" ", ""),
-      description: await formatDescription(
-        pick.other.replace("Other details:", "").replace(" ", "")
-      ),
+      description: formattedDescription,
       price: {
-        perPerson:
-          (await formatPrice(
-            pick.price.replace("Prices:", "").replace(" ", "")
-          )) + "(*starting)",
+        perPerson: `${formattedPrice}(*starting)`,
       },
       toolTips: hasOptions
         ? {
@@ -176,8 +199,8 @@ export default async function CBDestinationPicksTiles() {
     };
     return <PromotionTile promotion={promotionTileProps} />;
   }
-  async function mapTileData(sortedDests: any[]) {
-    return sortedDests.map(async (dest: sortedDestination, index) => {
+  async function mapTileData(sortedDests: sortedDestination[]) {
+    return Promise.all(sortedDests.map(async (dest: sortedDestination, index) => {
       return (
         <div
           key={index}
@@ -197,7 +220,7 @@ export default async function CBDestinationPicksTiles() {
           </div>
         </div>
       );
-    });
+    }));
   }
   // const test = await mapTile(cbpickTestData)
   //  console.log(test.props.promotion.price.perPerson)
