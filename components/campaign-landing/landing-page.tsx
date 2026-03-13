@@ -159,6 +159,14 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                         {landing.pricing.detail}
                                     </div>
                                 </div>
+                                {landing.galleryImages[3] && (
+                                    <div className="relative mt-2 h-32 w-full overflow-hidden border border-slate-200 bg-slate-100">
+                                        <div 
+                                            className="absolute inset-0 bg-cover bg-center opacity-90 saturate-[0.8]"
+                                            style={{ backgroundImage: `url(${landing.galleryImages[3].url})` }}
+                                        />
+                                    </div>
+                                )}
                                 <p className="text-sm leading-7 text-slate-700">You are not paying on this page. This is where you decide whether this sailing is for you.</p>
                             </CardContent>
                         </Card>
@@ -241,9 +249,15 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                                 <h2 className="text-xl font-semibold text-slate-950">What Guests Can Expect</h2>
                                             </div>
                                             <div className="grid gap-4 md:grid-cols-2">
-                                                {landing.story.whatToExpect.map((item) => (
-                                                    <div key={item} className="border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-                                                        {item}
+                                                {landing.story.whatToExpect.map((item, idx) => (
+                                                    <div key={item} className="relative overflow-hidden border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+                                                        <span className="relative z-10">{item}</span>
+                                                        {landing.galleryImages[4 + idx] && (
+                                                            <div 
+                                                                className="absolute right-0 top-0 h-full w-1/3 opacity-20 transition-opacity hover:opacity-30" 
+                                                                style={{ backgroundImage: `url(${landing.galleryImages[4 + idx].url})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to right, transparent, black)' }}
+                                                            />
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
