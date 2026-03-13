@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { CampaignLandingPage } from '@/components/campaign-landing/landing-page';
 import { getCampaignLandingBySlug } from '@/lib/campaigns/landing/view-model';
 
+export const dynamic = 'force-dynamic';
+
 export default async function GroupCampaignLandingPage(
     {
         params,

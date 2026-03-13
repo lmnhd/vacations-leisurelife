@@ -13,6 +13,11 @@ export interface LandingImageAsset {
     alt: string;
 }
 
+export interface LandingStorySection {
+    title: string;
+    body: string;
+}
+
 export interface LandingFact {
     label: string;
     value: string;
@@ -47,10 +52,17 @@ export interface CampaignLandingViewModel {
     subSlogan: string;
     elevatorPitch: string;
     heroImage: LandingImageAsset | null;
+    galleryImages: LandingImageAsset[];
     accentColor: string;
     surfaceColor: string;
     textColor: string;
     facts: LandingFact[];
+    story: {
+        whatItIs: LandingStorySection;
+        whyJoinNow: string[];
+        whatToExpect: string[];
+        howItWorks: LandingStorySection[];
+    };
     threshold: {
         requiredCabins: number;
         joinedEntries: number;
@@ -94,12 +106,26 @@ export interface CampaignLandingLoadResult {
 }
 
 const STATE_LABELS: Record<Campaign['status'], string> = {
-    DRAFT: 'Preview',
-    GATHERING_INTEREST: 'Gathering Interest',
-    THRESHOLD_MET: 'Threshold Met',
-    CONVERTED: 'Booking Active',
-    EXPIRED: 'Expired',
+    DRAFT: 'Private Preview',
+    GATHERING_INTEREST: 'Now Forming',
+    THRESHOLD_MET: 'Ready For Booking',
+    CONVERTED: 'Now Booking',
+    EXPIRED: 'Closed',
 };
+
+function normalizeColorToken(value: string | undefined, fallback: string): string {
+    if (!value) {
+        return fallback;
+    }
+
+    const hexMatch = value.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/);
+    if (hexMatch) {
+        return hexMatch[0];
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+}
 
 function formatCurrency(value?: number): string {
     if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -158,6 +184,47 @@ function resolveHeroImage(
     };
 }
 
+function buildGalleryImages(
+    campaign: Campaign,
+    manifest: CampaignMediaManifest | null,
+    heroImage: LandingImageAsset | null,
+): LandingImageAsset[] {
+    if (!manifest) {
+        return heroImage ? [heroImage] : [];
+    }
+
+    const candidates = [
+        ...manifest.images.sceneImages,
+        ...manifest.images.aestheticConcepts,
+        ...manifest.images.shipReferences,
+        ...manifest.images.hero,
+    ];
+    const seen = new Set<string>();
+    const gallery: LandingImageAsset[] = [];
+
+    for (const asset of candidates) {
+        if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) {
+            continue;
+        }
+
+        if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') {
+            continue;
+        }
+
+        seen.add(asset.url);
+        gallery.push({
+            url: asset.url,
+            alt: `${campaign.name} campaign image`,
+        });
+
+        if (gallery.length === 3) {
+            break;
+        }
+    }
+
+    return gallery;
+}
+
 function getPercentOfThreshold(requiredCabins: number, joinedEntries: number): number {
     if (requiredCabins <= 0) {
         return 100;
@@ -170,20 +237,20 @@ function getPricingDetail(campaign: Campaign): { sourceLabel: string; detail: st
     if (campaign.pricingStatus === 'CB_MATCHED') {
         return {
             sourceLabel: 'Confirmed group pricing',
-            detail: 'Pricing reflects a matched Cruise Brothers group record and can convert directly to a booking link when the trip is open.',
+            detail: 'This price is tied to matched Cruise Brothers inventory and reflects the strongest booking-ready number currently attached to this sailing.',
         };
     }
 
     if (campaign.pricingStatus === 'AI_ESTIMATE') {
         return {
             sourceLabel: 'Estimated pricing',
-            detail: 'The current price is an estimate used to explain the trip while live group inventory is still being finalized.',
+            detail: 'This price is directional for now. It helps you understand the sailing while live group inventory is still being finalized.',
         };
     }
 
     return {
         sourceLabel: 'Pricing in progress',
-        detail: 'Live pricing is still being matched. Join the list and we will confirm the booking path as soon as inventory is ready.',
+        detail: 'Live pricing is still being matched. You can still raise your hand now, and we will send the next step once pricing is ready.',
     };
 }
 
@@ -193,42 +260,42 @@ function getThresholdCopy(
 ): { headline: string; detail: string } {
     if (campaign.status === 'THRESHOLD_MET' || campaign.status === 'CONVERTED') {
         return {
-            headline: 'This sailing has enough interest to move forward.',
-            detail: 'Booking can move from interest into cabin selection and final payment flow. The page keeps both paths visible so guests still understand how the group formed.',
+            headline: 'This sailing is ready to move into booking.',
+            detail: 'Enough cabins have been claimed to open the next step. If you are ready, you can move toward traveler details and the booking handoff now.',
         };
     }
 
     if (campaign.status === 'EXPIRED') {
         return {
-            headline: 'This campaign window has closed.',
-            detail: 'The threshold was not met before the expiry date, so the public booking flow is paused while the team decides whether to relaunch or retire the concept.',
+            headline: 'This sailing is no longer gathering new guests.',
+            detail: 'The group did not reach its target in time, so new signups are closed for now while the team decides whether to relaunch the concept.',
         };
     }
 
     if (waitlistSummary.totalEntries === 0) {
         return {
-            headline: 'The first group is forming now.',
-            detail: 'Guests can either join the group waitlist or signal immediate booking intent so the team can track both demand paths honestly from day one.',
+            headline: 'Be among the first to join this sailing.',
+            detail: 'If this trip feels like your pace, you can join the group list now and be first to hear when the next step opens.',
         };
     }
 
     return {
-        headline: 'Interest is building toward the group threshold.',
-        detail: 'Each entry counts toward the cabin threshold that unlocks the next booking stage. The group path stays explicit so guests know exactly what has to happen before the trip is considered live.',
+        headline: 'The group is taking shape.',
+        detail: 'Each cabin request moves this sailing closer to launch. You can either join the group list or tell us you want the earliest booking handoff.',
     };
 }
 
 function getBookingChoices(campaign: Campaign, brief: CampaignAestheticBrief | null): LandingPathChoice[] {
-    const waitlistLabel = brief?.messaging.ctaVariants.waitlist ?? 'Join the waitlist';
-    const bookNowLabel = brief?.messaging.ctaVariants.bookNow ?? 'Book now';
+    const waitlistLabel = brief?.messaging.ctaVariants.waitlist ?? 'Join the group list';
+    const bookNowLabel = brief?.messaging.ctaVariants.bookNow ?? 'Start the booking path';
 
     const waitDescription = campaign.status === 'THRESHOLD_MET' || campaign.status === 'CONVERTED'
-        ? 'Stay close to the trip even if you are not ready to pick a cabin today.'
-        : 'Register interest and let the campaign reach its group threshold before cabin handoff begins.';
+        ? 'Choose this if you want to stay close to the sailing, even if you are not ready to pick a cabin today.'
+        : 'Choose this if you want the shared group version of the trip and are happy to hear from us when the sailing opens further.';
 
     const bookDescription = campaign.status === 'GATHERING_INTEREST'
-        ? 'Signal stronger intent now. This keeps the immediate-booking path visible even while the group threshold is still forming.'
-        : 'Move directly into the booking-ready path for this sailing.';
+        ? 'Choose this if you are already leaning yes and want the earliest booking handoff once the next step opens.'
+        : 'Choose this if you are ready to move toward traveler details and booking now.';
 
     return [
         {
@@ -269,15 +336,15 @@ function getCtas(campaign: Campaign, brief: CampaignAestheticBrief | null): { pr
     if (campaign.status === 'EXPIRED') {
         return {
             primary: {
-                label: 'Campaign closed',
+                label: 'Signups closed',
                 mode: 'GROUP_WAIT',
-                description: 'New entries are paused for this campaign.',
+                description: 'New entries are paused for this sailing.',
                 disabled: true,
             },
             secondary: {
                 label: bookingChoice.label,
                 mode: 'BOOK_NOW',
-                description: 'Immediate booking is no longer available through this campaign.',
+                description: 'Direct booking is no longer available through this sailing.',
                 disabled: true,
             },
         };
@@ -310,37 +377,102 @@ function buildExperienceBullets(campaign: Campaign, brief: CampaignAestheticBrie
     }
 
     return [
-        'Cruise-first pacing with the theme expressed as atmosphere, not as a retreat or workshop.',
-        'A stable public product surface that explains the trip, the threshold, and what happens next.',
-        'Campaign identity applied through approved media, tone, and accents while the page architecture stays consistent.',
+        'A cruise-first rhythm shaped by the ship, the sea, and the feel of the itinerary.',
+        'Optional shared moments that support the theme without turning the sailing into a scheduled retreat.',
+        'A clear booking path that starts with interest and opens into the next step when the group is ready.',
     ];
+}
+
+function buildWhatToExpect(campaign: Campaign, brief: CampaignAestheticBrief | null): string[] {
+    const enhancedMoments = brief?.visual.plausibilityFramework.nicheEnhancedMoments ?? [];
+    const cruiseMoments = brief?.visual.plausibilityFramework.cruiseNativeMoments ?? campaign.cruiseNativeMoments ?? [];
+    const combined = [...enhancedMoments, ...cruiseMoments].filter((value, index, array) => array.indexOf(value) === index);
+
+    if (combined.length > 0) {
+        return combined.slice(0, 4);
+    }
+
+    return [
+        'A real cruise rhythm with enough open time to enjoy the ship your own way.',
+        'A themed mood that shows up through atmosphere, shared moments, and the people who join.',
+        'Clear next steps so you know when to simply raise your hand and when booking actually opens.',
+    ];
+}
+
+function buildWhyJoinNow(campaign: Campaign): string[] {
+    const reasons = [
+        'Early interest helps shape which version of the group experience becomes real.',
+        'Joining now puts you first in line for the next booking step when the sailing opens further.',
+    ];
+
+    if (campaign.pricingStatus === 'CB_MATCHED' && campaign.startingPrice) {
+        reasons.unshift(`Current matched pricing starts around ${formatCurrency(campaign.startingPrice)}, so you are not evaluating this trip blind.`);
+    } else if (campaign.startingPrice) {
+        reasons.unshift(`Current pricing is tracking around ${formatCurrency(campaign.startingPrice)}, which gives you a real budget signal early.`);
+    }
+
+    if (campaign.expiresAt) {
+        reasons.push('This campaign window is time-bound, so joining early matters if this sailing fits your pace.');
+    }
+
+    return reasons.slice(0, 3);
+}
+
+function buildHowItWorks(campaign: Campaign, brief: CampaignAestheticBrief | null): LandingStorySection[] {
+    const waitlistLabel = brief?.messaging.ctaVariants.waitlist ?? 'Join the group list';
+    const bookingLabel = brief?.messaging.ctaVariants.bookNow ?? 'Start the booking path';
+
+    return [
+        {
+            title: '1. Choose your pace',
+            body: `You can ${waitlistLabel.toLowerCase()} if you want the shared group version of the trip, or choose ${bookingLabel.toLowerCase()} if you want the earliest booking handoff.`,
+        },
+        {
+            title: '2. We keep your place warm',
+            body: 'We save your party size, cabin preference, and contact details so you hear the right next step as the sailing develops.',
+        },
+        {
+            title: '3. Booking opens at the right moment',
+            body: campaign.cbagenttoolsBookingLink
+                ? 'If direct booking is already ready for this sailing, we can move you there. Otherwise, we send the proper handoff as soon as your path opens.'
+                : 'When your path is ready, we send the proper booking handoff. You are not paying on this page today.',
+        },
+    ];
+}
+
+function buildWhatItIs(campaign: Campaign, brief: CampaignAestheticBrief | null): LandingStorySection {
+    return {
+        title: `What ${campaign.name} Is`,
+        body: brief?.messaging.elevatorPitch
+            ?? `${campaign.name} is a themed group sailing built around the feel of the trip, the ship, and the people who want to travel that way together.`,
+    };
 }
 
 function buildTrustBullets(campaign: Campaign): string[] {
     return [
-        `No local payment is implied by this page. Booking moves through the proper handoff once the campaign status allows it.`,
-        `The group threshold is explicit: ${campaign.minCabinsRequired} cabins are required before the trip is considered fully live.`,
+        'You are not paying on this page. This step only saves your interest, party size, and cabin preference.',
+        `The sailing opens fully once ${campaign.minCabinsRequired} cabins are represented, which helps support the group energy and shared perks.`,
         campaign.expiresAt
-            ? `If the threshold is not met by ${campaign.expiresAt}, the campaign can expire instead of silently drifting into an unclear state.`
-            : 'The campaign can expire if the threshold is not reached in time, rather than leaving guests in an ambiguous state.',
+            ? `If the cabin target is not reached by ${campaign.expiresAt}, this version of the sailing can close instead of drifting without a clear answer.`
+            : 'If the cabin target is not reached in time, this version of the sailing can close instead of drifting without a clear answer.',
     ];
 }
 
 function buildFaq(campaign: Campaign): LandingFaqItem[] {
     return [
         {
-            question: 'What happens when I choose the group wait path?',
-            answer: 'Your interest is saved against the campaign threshold. Once the group is ready, the follow-up flow can move into manifest collection and the correct booking handoff.',
+            question: 'What happens after I join the group list?',
+            answer: 'We save your interest against the sailing target. Once the trip is ready for its next step, we email you the correct traveler-details and booking handoff.',
         },
         {
-            question: 'What does book now mean before the threshold is met?',
-            answer: 'It signals stronger purchase intent early. The team can track immediate demand separately from the standard waitlist while the campaign is still forming.',
+            question: 'What if I already know I want to go?',
+            answer: 'Choose the early booking path. That tells the team you want the fastest handoff once booking opens, even while the full group is still forming.',
         },
         {
-            question: 'How should I read the displayed price?',
+            question: 'How should I read the listed price?',
             answer: campaign.pricingStatus === 'CB_MATCHED'
-                ? 'The displayed price is tied to matched inventory and is the strongest booking-ready price currently available.'
-                : 'The displayed price is directional until live inventory is matched. It explains the trip without pretending that booking is already finalized.',
+                ? 'It reflects matched inventory and is the strongest booking-ready price currently attached to this sailing.'
+                : 'It is a directional price until live inventory is matched, which means it helps frame the trip without pretending booking is already finalized.',
         },
     ];
 }
@@ -348,9 +480,9 @@ function buildFaq(campaign: Campaign): LandingFaqItem[] {
 function buildFacts(campaign: Campaign, waitlistSummary: CampaignWaitlistSummary): LandingFact[] {
     return [
         { label: 'Sailing', value: campaign.targetDates },
-        { label: 'Ship or focus', value: campaign.shipTarget ?? campaign.targetDestination ?? campaign.name },
-        { label: 'Threshold', value: `${campaign.minCabinsRequired} cabins` },
-        { label: 'Interest logged', value: `${waitlistSummary.totalEntries} entries` },
+        { label: 'Ship', value: campaign.shipTarget ?? campaign.targetDestination ?? campaign.name },
+        { label: 'Cabins needed', value: `${campaign.minCabinsRequired}` },
+        { label: 'Groups interested', value: `${waitlistSummary.totalEntries}` },
     ];
 }
 
@@ -365,6 +497,7 @@ function buildLandingViewModel(
     const thresholdCopy = getThresholdCopy(campaign, waitlistSummary);
     const ctas = getCtas(campaign, brief);
     const heroImage = resolveHeroImage(campaign, brief, manifest);
+    const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
     const percentOfThreshold = getPercentOfThreshold(campaign.minCabinsRequired, waitlistSummary.totalEntries);
 
     return {
@@ -377,10 +510,17 @@ function buildLandingViewModel(
         subSlogan: brief?.messaging.subSlogan ?? campaign.description,
         elevatorPitch: brief?.messaging.elevatorPitch ?? campaign.description,
         heroImage,
-        accentColor: brief?.visual.colorPalette.accent ?? '#2962FF',
-        surfaceColor: brief?.visual.colorPalette.background ?? '#0F172A',
-        textColor: brief?.visual.colorPalette.textOnDark ?? '#F8FAFC',
+        galleryImages,
+        accentColor: normalizeColorToken(brief?.visual.colorPalette.accent, '#2962FF'),
+        surfaceColor: normalizeColorToken(brief?.visual.colorPalette.background, '#0F172A'),
+        textColor: normalizeColorToken(brief?.visual.colorPalette.textOnDark, '#F8FAFC'),
         facts: buildFacts(campaign, waitlistSummary),
+        story: {
+            whatItIs: buildWhatItIs(campaign, brief),
+            whyJoinNow: buildWhyJoinNow(campaign),
+            whatToExpect: buildWhatToExpect(campaign, brief),
+            howItWorks: buildHowItWorks(campaign, brief),
+        },
         threshold: {
             requiredCabins: campaign.minCabinsRequired,
             joinedEntries: waitlistSummary.totalEntries,

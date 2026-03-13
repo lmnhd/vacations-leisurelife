@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 
+export const dynamic = 'force-dynamic';
+
 const WaitlistRequestSchema = z.object({
     firstName: z.string().trim().min(1),
     lastName: z.string().trim().min(1),

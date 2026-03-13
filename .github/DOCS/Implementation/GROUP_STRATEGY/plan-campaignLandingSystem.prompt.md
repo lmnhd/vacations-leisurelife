@@ -53,4 +53,7 @@ The plan is saved to session memory as `plan.md`. If you want the next planning 
 - Added waitlist submission endpoint at `app/api/groups/campaign/[slug]/waitlist/route.ts` with next-step metadata responses.
 - Added the first public landing route at `app/(landing)/groups/[slug]/page.tsx`.
 - Added landing UI components in `components/campaign-landing/landing-page.tsx` and `components/campaign-landing/waitlist-form.tsx`.
+- Added a preview-safe review route at `app/(tests)/tests/campaign-landing/[slug]/page.tsx` so draft campaigns with paid media can be inspected without exposing them as public pages.
+- Normalized aesthetic palette color tokens in the landing view-model so labels embedded in stored palette values do not break inline CSS rendering.
+- Added `scripts/use-local-next-cache.ps1` and `npm run next:prepare-local-cache` to move `.next` behind a LocalAppData junction, reducing Windows Dropbox/Turbopack `EPERM` rename failures that were blocking preview/test routes.
 - Current implementation status: read-model + public page + waitlist submission are in place; manifest collection flow, post-threshold conversion handling, and preview/test harnesses still need follow-up implementation.

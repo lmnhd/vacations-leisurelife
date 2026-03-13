@@ -78,14 +78,14 @@ export function CampaignWaitlistForm({
 
             const payload = (await response.json()) as WaitlistResponse;
             if (!response.ok || !payload.success) {
-                setError(payload.error ?? 'The waitlist request failed.');
+                setError(payload.error ?? 'We could not save your spot right now.');
                 setResult(null);
                 return;
             }
 
             setResult(payload);
         } catch {
-            setError('The waitlist request failed.');
+            setError('We could not save your spot right now.');
             setResult(null);
         } finally {
             setSubmitting(false);
@@ -96,9 +96,9 @@ export function CampaignWaitlistForm({
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
             <Card className="border-white/15 bg-slate-950/80 text-slate-50 shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Save Your Place</CardTitle>
+                    <CardTitle className="text-2xl">Save Your Place In Line</CardTitle>
                     <CardDescription className="text-slate-300">
-                        Join {campaignName} through the path that matches how ready you are to move.
+                        Choose the path that matches your timing. No payment is taken on this page today.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -179,8 +179,8 @@ export function CampaignWaitlistForm({
                                         <SelectValue placeholder="Choose a path" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="GROUP_WAIT">Group wait</SelectItem>
-                                        <SelectItem value="BOOK_NOW">Book now</SelectItem>
+                                        <SelectItem value="GROUP_WAIT">Join the group list</SelectItem>
+                                        <SelectItem value="BOOK_NOW">I want the early booking path</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -200,10 +200,10 @@ export function CampaignWaitlistForm({
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <Button type="submit" size="lg" className="bg-slate-50 text-slate-950 hover:bg-white" disabled={!enabled || submitting}>
-                                {submitting ? 'Saving...' : 'Save interest'}
+                                {submitting ? 'Saving...' : 'Save my spot'}
                             </Button>
                             <div className="rounded-lg border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
-                                This stores your intent and returns the next step metadata for the current campaign state.
+                                We will use your selection to send the right next step for this sailing.
                             </div>
                         </div>
 
@@ -218,9 +218,9 @@ export function CampaignWaitlistForm({
 
             <Card className="border-white/15 bg-white/90 text-slate-950 shadow-[0_24px_80px_rgba(148,163,184,0.2)]">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Next Step</CardTitle>
+                    <CardTitle className="text-2xl">What Happens Next</CardTitle>
                     <CardDescription>
-                        The endpoint returns a concrete next action instead of a bare success flag.
+                        After you submit, this panel will show the next step for the path you chose.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 text-sm text-slate-700">
@@ -237,26 +237,26 @@ export function CampaignWaitlistForm({
                             ) : null}
                             {result.progress ? (
                                 <div className="grid gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-                                    <p className="font-semibold text-slate-950">Progress snapshot</p>
+                                    <p className="font-semibold text-slate-950">Current pulse</p>
                                     <div className="grid gap-2 md:grid-cols-2">
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Entries</p>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Groups</p>
                                             <p className="text-lg font-semibold text-slate-950">{result.progress.joinedEntries}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Passengers</p>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Guests</p>
                                             <p className="text-lg font-semibold text-slate-950">{result.progress.joinedPassengers}</p>
                                         </div>
                                     </div>
                                     <p>
-                                        {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin threshold is currently represented by saved entries.
+                                        {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin target is currently represented by saved entries.
                                     </p>
                                 </div>
                             ) : null}
                         </>
                     ) : (
                         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                            Submit the form to see the exact campaign response for the current status and selected booking path.
+                            Submit the form to see the next step for the current sailing state and the path you chose.
                         </div>
                     )}
                 </CardContent>

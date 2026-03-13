@@ -90,6 +90,11 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 
 ## ✅ Phase 2: Campaign Media Pipeline — IN PROGRESS
 
+### Dev Environment Notes
+- Windows + Dropbox can lock `.next` during Next.js manifest rewrites and surface `EPERM` rename failures under Turbopack.
+- Repo recovery helper: `npm run next:prepare-local-cache` moves `.next` behind a junction rooted in `%LOCALAPPDATA%\LeisureLifeInteractive\next-cache` so generated build artifacts stop competing with Dropbox sync.
+- Recommended local dev command after preparing the cache: `npm run dev:webpack`
+
 **test campaign**: `analog-film-and-darkroom-odyssey-2026`
 
 *Corresponds to Strategy §6.3 "Vibe Asset Generation." This is a multi-step sub-pipeline with its own phased docs in [`CAMPAIGN_MEDIA/`](./CAMPAIGN_MEDIA/README.md).*

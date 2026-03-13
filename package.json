@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
+    "next:prepare-local-cache": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/use-local-next-cache.ps1",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
