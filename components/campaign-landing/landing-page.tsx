@@ -313,7 +313,19 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                     </Card>
                 </section>
 
-                <section id="save-your-place">
+                <section id="save-your-place" className="relative">
+                    {landing.galleryImages[8] && (
+                        <div
+                            className="pointer-events-none absolute -left-4 -top-8 z-10 hidden h-32 w-32 -rotate-12 rounded-sm border-[6px] border-white shadow-xl opacity-90 lg:block"
+                            style={{ backgroundImage: `url(${landing.galleryImages[8].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                        />
+                    )}
+                    {landing.galleryImages[9] && (
+                        <div
+                            className="pointer-events-none absolute -bottom-6 -right-6 z-10 hidden h-28 w-40 rotate-[14deg] rounded-sm border-[6px] border-white shadow-xl opacity-95 lg:block"
+                            style={{ backgroundImage: `url(${landing.galleryImages[9].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                        />
+                    )}
                     <CampaignWaitlistForm
                         campaignName={landing.title}
                         endpoint={landing.form.endpoint}
