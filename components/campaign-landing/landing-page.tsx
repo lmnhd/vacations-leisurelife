@@ -49,20 +49,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
 
     return (
         <div className={`${prompt.className} min-h-screen bg-stone-50 text-slate-950`}>
-            <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 overflow-hidden px-4 py-8 md:px-6 lg:px-8">
-                {landing.galleryImages.map((image, index) => (
-                    <div
-                        key={`${image.url}-scatter-${index}`}
-                        className={`pointer-events-none absolute hidden overflow-hidden rounded-sm border-[6px] border-white bg-stone-200 shadow-xl lg:block ${SCATTER_POSITIONS[index % SCATTER_POSITIONS.length]}`}
-                        aria-hidden="true"
-                    >
-                        <div
-                            className="h-full w-full bg-cover bg-center"
-                            style={{ backgroundImage: `url(${image.url})` }}
-                        />
-                    </div>
-                ))}
-                
+            <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
                 <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
                     <Card className="overflow-hidden border-stone-300 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.10)]">
                         <CardContent className="grid gap-0 p-0 lg:grid-cols-[1.05fr_0.95fr]">
@@ -112,8 +99,14 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                 </div>
                             </div>
 
-                            <div className="min-h-[380px] border-l border-stone-200" style={heroBackground}>
-                                <div className="flex h-full flex-col justify-end gap-4 p-8 text-white md:p-10">
+                            <div className="relative min-h-[380px] overflow-hidden border-l border-stone-200" style={heroBackground}>
+                                {landing.galleryImages[0] && (
+                                    <div
+                                        className="pointer-events-none absolute right-8 top-8 hidden h-32 w-32 rotate-[8deg] rounded-sm border-[6px] border-white shadow-xl opacity-95 lg:block z-10"
+                                        style={{ backgroundImage: `url(${landing.galleryImages[0].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                    />
+                                )}
+                                <div className="flex relative z-20 h-full flex-col justify-end gap-4 p-8 text-white md:p-10">
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/70">{landing.title}</p>
                                     <p className="max-w-xl text-base leading-7 text-white/88">
                                         {landing.elevatorPitch}
@@ -186,23 +179,26 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                 ))}
                             </CardContent>
                         </Card>
+
+                        {landing.galleryImages.length > 1 && (
+                            <div className="hidden lg:flex w-full flex-col items-center justify-center pt-8 pointer-events-none">
+                                {landing.galleryImages[1] && (
+                                    <div
+                                        className="h-36 w-44 -rotate-6 rounded-sm border-[6px] border-white shadow-xl"
+                                        style={{ backgroundImage: `url(${landing.galleryImages[1].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                    />
+                                )}
+                                {landing.galleryImages[2] && (
+                                    <div
+                                        className="-mt-12 ml-16 h-32 w-24 rotate-12 rounded-sm border-[6px] border-white shadow-xl"
+                                        style={{ backgroundImage: `url(${landing.galleryImages[2].url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                    />
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    <Card className="relative border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-                        {landing.galleryImages.slice(0, 2).map((image, index) => (
-                            <div
-                                key={`${image.url}-panel-${index}`}
-                                className={index === 0
-                                    ? 'pointer-events-none absolute -right-6 top-10 hidden h-32 w-24 rotate-[8deg] overflow-hidden rounded-sm border-[6px] border-white shadow-lg lg:block z-10'
-                                    : 'pointer-events-none absolute -left-6 bottom-10 hidden h-28 w-20 -rotate-[7deg] overflow-hidden rounded-sm border-[6px] border-white shadow-lg lg:block z-10'}
-                                aria-hidden="true"
-                            >
-                                <div
-                                    className="h-full w-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${image.url})` }}
-                                />
-                            </div>
-                        ))}
+                    <Card className="border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
                         <CardHeader>
                             <CardTitle className="text-2xl">Why This Sailing Feels Different</CardTitle>
                         </CardHeader>

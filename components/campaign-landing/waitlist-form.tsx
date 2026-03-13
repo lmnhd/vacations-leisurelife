@@ -202,13 +202,13 @@ export function CampaignWaitlistForm({
                             <Button type="submit" size="lg" className="bg-slate-50 text-slate-950 hover:bg-white" disabled={!enabled || submitting}>
                                 {submitting ? 'Saving...' : 'Save my spot'}
                             </Button>
-                            <div className="rounded-lg border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                            <div className="px-4 py-3 text-sm border rounded-lg border-white/10 bg-slate-900/80 text-slate-300">
                                 We will use your selection to send the right next step for this sailing.
                             </div>
                         </div>
 
                         {error ? (
-                            <div className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                            <div className="px-4 py-3 text-sm border rounded-lg border-rose-400/30 bg-rose-500/10 text-rose-100">
                                 {error}
                             </div>
                         ) : null}
@@ -226,7 +226,7 @@ export function CampaignWaitlistForm({
                 <CardContent className="grid gap-4 text-sm text-slate-700">
                     {result?.nextStep ? (
                         <>
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="px-4 py-3 border rounded-lg border-slate-200 bg-slate-50">
                                 <p className="font-semibold text-slate-950">{result.nextStep.title}</p>
                                 <p className="mt-2">{result.nextStep.detail}</p>
                             </div>
@@ -236,7 +236,7 @@ export function CampaignWaitlistForm({
                                 </Button>
                             ) : null}
                             {result.progress ? (
-                                <div className="grid gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                <div className="grid gap-3 px-4 py-3 bg-white border rounded-lg border-slate-200">
                                     <p className="font-semibold text-slate-950">Current pulse</p>
                                     <div className="grid gap-2 md:grid-cols-2">
                                         <div>
@@ -255,7 +255,7 @@ export function CampaignWaitlistForm({
                             ) : null}
                         </>
                     ) : (
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div className="px-4 py-3 border rounded-lg border-slate-200 bg-slate-50">
                             Submit the form to see the next step for the current sailing state and the path you chose.
                         </div>
                     )}
