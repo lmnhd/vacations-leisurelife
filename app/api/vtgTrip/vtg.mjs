@@ -6,9 +6,16 @@ import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const cookies = getCookies();
-const cookie = `${cookies[4].name}=${cookies[4].value}`;
-console.log(cookie);
+
+function getCookieHeader() {
+  const cookies = getCookies();
+  const selectedCookie = cookies[4] ?? cookies[0];
+  if (!selectedCookie?.name || !selectedCookie?.value) {
+    return "";
+  }
+
+  return `${selectedCookie.name}=${selectedCookie.value}`;
+}
 
 export async function getDealData(dealNum = 13289, shipNum = 837) {
   //https://www.vacationstogo.com/fastdeal_tab.cfm?deal=13289&ship=837&type=wifi
@@ -92,13 +99,16 @@ export async function getDealData(dealNum = 13289, shipNum = 837) {
 }
 function getFastDeal(dealNumber) {
   const url = `https://www.vacationstogo.com/fastdeal.cfm?deal=${dealNumber}`;
+  const cookie = getCookieHeader();
   return new Promise((resolve, reject) => {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(cookie ? { Cookie: cookie } : {}),
+    };
+
     axios
       .get(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: cookie,
-        },
+        headers,
       })
       .then((response) => {
         const page = load(response.data);
@@ -368,13 +378,17 @@ function createDeckPlanOBJ(html) {
 }
 function getFastDealTab(dealNumber, ship, tab) {
   const url = `https://www.vacationstogo.com/fastdeal_tab.cfm?deal=${dealNumber}&ship=${ship}&type=${tab}`;
+  const cookie = getCookieHeader();
+
   return new Promise((resolve, reject) => {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(cookie ? { Cookie: cookie } : {}),
+    };
+
     axios
       .get(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: cookie,
-        },
+        headers,
       })
       .then((response) => {
         const page = load(response.data);

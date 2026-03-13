@@ -814,7 +814,7 @@ export async function generateImageFromPrompt(prompt: string): Promise<Buffer> {
 export interface ImageFingerprint {
     width: number;
     height: number;
-    grayscalePixels: Uint8Array;
+    grayscalePixels: Buffer;
 }
 
 export async function createImageFingerprint(buffer: Buffer): Promise<ImageFingerprint> {

@@ -30,14 +30,14 @@ import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-p
 
 type PageState = "idle" | "loading" | "generating";
 
-async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+async function readJsonResponse<T = Record<string, unknown>>(response: Response): Promise<T> {
     const responseText = await response.text();
     if (!responseText) {
-        return {};
+        return {} as T;
     }
 
     try {
-        return JSON.parse(responseText) as Record<string, unknown>;
+        return JSON.parse(responseText) as T;
     } catch {
         throw new Error(`Server returned non-JSON response (${response.status} ${response.statusText})`);
     }
@@ -176,7 +176,7 @@ export default function ProductionBibleTestPage() {
             ]);
 
             if (briefRes.ok) {
-                const data = await readJsonResponse(briefRes);
+                const data = await readJsonResponse<{ brief?: CampaignAestheticBrief } & CampaignAestheticBrief>(briefRes);
                 setBrief(data.brief ?? data);
             } else {
                 setBrief(null);
@@ -184,7 +184,7 @@ export default function ProductionBibleTestPage() {
             }
 
             if (manifestRes.ok) {
-                const data = await readJsonResponse(manifestRes);
+                const data = await readJsonResponse<{ manifest?: CampaignMediaManifest } & CampaignMediaManifest>(manifestRes);
                 setManifest(data.manifest ?? data);
             } else {
                 setManifest(null);
@@ -237,11 +237,13 @@ export default function ProductionBibleTestPage() {
             if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
             const jobSummary = data.jobSummary as GenerationJobSummary | undefined;
-            if (jobSummary?.warnings?.length) {
-                setGenerateLog(prev => [...prev, ...jobSummary.warnings.map((warning) => `WARNING: ${warning}`)]);
+            const warnings = jobSummary?.warnings ?? [];
+            if (warnings.length > 0) {
+                setGenerateLog(prev => [...prev, ...warnings.map((warning) => `WARNING: ${warning}`)]);
             }
-            if (jobSummary?.errors?.length > 0) {
-                setGenerateLog(prev => [...prev, ...jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
+            const errors = jobSummary?.errors ?? [];
+            if (errors.length > 0) {
+                setGenerateLog(prev => [...prev, ...errors.map((e: string) => `ERROR: ${e}`)]);
             }
             await loadData(slug);
         } catch (err) {
@@ -330,11 +332,13 @@ export default function ProductionBibleTestPage() {
             if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
             const jobSummary = data.jobSummary as GenerationJobSummary | undefined;
-            if (jobSummary?.warnings?.length) {
-                setGenerateLog(prev => [...prev, ...jobSummary.warnings.map((warning) => `WARNING: ${warning}`)]);
+            const warnings = jobSummary?.warnings ?? [];
+            if (warnings.length > 0) {
+                setGenerateLog(prev => [...prev, ...warnings.map((warning) => `WARNING: ${warning}`)]);
             }
-            if (jobSummary?.errors?.length > 0) {
-                setGenerateLog(prev => [...prev, ...jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
+            const errors = jobSummary?.errors ?? [];
+            if (errors.length > 0) {
+                setGenerateLog(prev => [...prev, ...errors.map((e: string) => `ERROR: ${e}`)]);
             }
             await loadData(slug);
         } catch (err) {
@@ -359,8 +363,10 @@ export default function ProductionBibleTestPage() {
             const data = await readJsonResponse(res);
             if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
-            if (data.jobSummary?.errors?.length > 0) {
-                setGenerateLog(prev => [...prev, ...data.jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
+            const jobSummary = data.jobSummary as GenerationJobSummary | undefined;
+            const errors = jobSummary?.errors ?? [];
+            if (errors.length > 0) {
+                setGenerateLog(prev => [...prev, ...errors.map((e: string) => `ERROR: ${e}`)]);
             }
             await loadData(slug);
         } catch (err) {
@@ -381,8 +387,8 @@ export default function ProductionBibleTestPage() {
                 params.set('storyboardDeliverableIds', creditCheckScope);
             }
             const res = await fetch(`/api/groups/campaign/${slug}/media/credit-check?${params.toString()}`);
-            const data = await readJsonResponse(res);
-            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            const data = await readJsonResponse<CreditCheckData | { error?: string }>(res);
+            if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
             setCreditCheck(data as CreditCheckData);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -401,7 +407,11 @@ export default function ProductionBibleTestPage() {
             const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/production-bible`, {
                 method: "POST",
             });
-            const data = await readJsonResponse(res);
+            const data = await readJsonResponse<{
+                brief?: CampaignAestheticBrief;
+                error?: string;
+                details?: string;
+            }>(res);
             if (!res.ok) {
                 const errorMessage = (data.error as string | undefined) ?? `HTTP ${res.status}`;
                 const errorDetails = (data.details as string | undefined) ?? "";

@@ -72,7 +72,7 @@ export async function POST(
                 return NextResponse.json({ error: `No usable ship reference images found for ${slug}` }, { status: 404 });
             }
 
-            const referenceRecords = await importShipReferenceAssets(slug, candidates);
+            const referenceRecords = await importShipReferenceAssets(slug, campaign, candidates);
             const heroRecords = await importHeroAssetsFromReferences(slug, campaign, brief, candidates, 1);
             const heroRecord = heroRecords[0];
             await upsertManifestAssetSection(slug, 'shipReferences', referenceRecords);

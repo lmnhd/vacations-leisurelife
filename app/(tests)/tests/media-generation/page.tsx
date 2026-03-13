@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { VoicePreferencePanel } from "@/components/voice-preference-panel";
-import type { CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
+import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
@@ -73,7 +73,15 @@ interface PreflightData {
     storyboards: PreflightStoryboardPlan[];
 }
 
-const CATEGORIES = [
+interface CategoryConfig {
+    key: string;
+    label: string;
+    icon: typeof Layers;
+    color: string;
+    types: readonly AssetType[];
+}
+
+const CATEGORIES: readonly CategoryConfig[] = [
     { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
     { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
     { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
@@ -81,7 +89,7 @@ const CATEGORIES = [
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
     { key: "copy", label: "Copy", icon: Type, color: "amber", types: ["ad_creative", "carousel_slide", "email_header"] },
     { key: "merch", label: "Merch", icon: Shirt, color: "pink", types: ["merch_design"] },
-] as const;
+];
 
 const COST_ESTIMATES: Record<string, string> = {
     references: "~SerpAPI search + import only",
@@ -217,7 +225,7 @@ export default function MediaGenerationTestPage() {
         }
     };
 
-    const handleGenerate = async (assetTypes?: string[]) => {
+    const handleGenerate = async (assetTypes?: readonly AssetType[]) => {
         if (!slug.trim()) return;
 
         if (assetTypes?.includes('scene_image') && !hasProductionBible) {
@@ -559,7 +567,7 @@ export default function MediaGenerationTestPage() {
                                 <button
                                     key={cat.key}
                                     id={`btn-gen-${cat.key}`}
-                                    onClick={() => handleGenerate(cat.types as unknown as string[])}
+                                    onClick={() => handleGenerate(cat.types)}
                                     disabled={isBusy || !slug.trim() || isBlocked}
                                     title={isBlocked ? 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.' : ''}
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}

@@ -132,7 +132,7 @@ function selectPreferredAsset(manifest: CampaignMediaManifest | null): AssetReco
 
     const candidates = [
         ...manifest.images.hero,
-        ...manifest.images.platformCrops.hero_16x9,
+        ...(manifest.images.platformCrops.hero_16x9 ?? []),
         ...manifest.images.aestheticConcepts,
         ...manifest.images.sceneImages,
         ...manifest.images.shipReferences,

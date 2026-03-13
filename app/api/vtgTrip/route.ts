@@ -1,7 +1,5 @@
 
-
-import { auth } from "@clerk/nextjs/server";
-import { getDealData, start } from "./vtg.mjs";
+import { getDealData } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
 
@@ -21,8 +19,9 @@ export async function POST(req:Request) {
   //console.log(results)
   //const results = {"111": "222"};
   return NextResponse.json(results);
-  } catch (error: any) {
-    return new Response(error.message, { status: 501 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(message, { status: 501 });
   }
   
 }

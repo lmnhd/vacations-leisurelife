@@ -68,6 +68,9 @@ export async function generateThemeMusic(brief: CampaignAestheticBrief): Promise
             script: prompt,
             assetId: 'audio_theme_music',
             fileName: 'audio/theme_music.mp3',
+            voiceId: 'instrumental',
+            voiceName: null,
+            voiceRole: 'narration',
         };
     } catch (error) {
         console.error('[Replicate] Generation failed:', error);

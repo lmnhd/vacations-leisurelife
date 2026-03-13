@@ -2,7 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { Suspense, ReactNode, useEffect, useState } from "react";
+import { Suspense, ReactNode } from "react";
 import Loading from "./(dashboard)/loading";
 
 import { ModalProvider } from "@/components/modal-provider";
@@ -12,12 +12,7 @@ import { BookingProvider } from "./contexts/BookingContext";
 
 export function RootLayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [shouldMountAppProviders, setShouldMountAppProviders] = useState(false);
-
-  useEffect(() => {
-    const isTestRoute = pathname === "/tests" || pathname.startsWith("/tests/");
-    setShouldMountAppProviders(!isTestRoute);
-  }, [pathname]);
+  const shouldMountAppProviders = !(pathname === "/tests" || pathname.startsWith("/tests/"));
 
   if (!shouldMountAppProviders) {
     return (

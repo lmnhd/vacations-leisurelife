@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { search, start } from "./vtg.mjs";
+import { search } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
 
@@ -16,8 +16,9 @@ export async function POST(req: Request) {
   //console.log(results);
   //return NextResponse.json("checking");
   return NextResponse.json(results);
-  } catch (error: any) {
-    return new Response(error.message, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(message, { status: 500 });
   }
   
 }

@@ -161,7 +161,7 @@ export default function VideoModelLabPage() {
     const [brief, setBrief] = useState<CampaignBrief | null>(null);
     const [labMode, setLabMode] = useState<LabMode>("storyboard_shot");
     const [selectedSourceUrl, setSelectedSourceUrl] = useState("");
-    const [prompt, setPrompt] = useState(PROMPT_PRESETS[0].prompt);
+    const [prompt, setPrompt] = useState<string>(PROMPT_PRESETS[0].prompt);
     const [durationSeconds, setDurationSeconds] = useState("5");
     const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
     const [results, setResults] = useState<TestClipResult[]>([]);

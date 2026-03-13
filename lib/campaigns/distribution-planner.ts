@@ -44,15 +44,15 @@ function addIfPresent(posts: PostDraft[], draft: PostDraft | null): void {
 }
 
 function getPrimaryHeroAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.hero[0]?.assetId ?? manifest.images.platformCrops.hero_16x9[0]?.assetId ?? null;
+    return manifest.images.hero[0]?.assetId ?? manifest.images.platformCrops.hero_16x9?.[0]?.assetId ?? null;
 }
 
 function getEmailHeaderAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.platformCrops.email_header[0]?.assetId ?? null;
+    return manifest.images.platformCrops.email_header?.[0]?.assetId ?? null;
 }
 
 function getOgImageAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.platformCrops.og_image[0]?.assetId ?? null;
+    return manifest.images.platformCrops.og_image?.[0]?.assetId ?? null;
 }
 
 export function buildDistributionSchedule(
@@ -70,6 +70,7 @@ export function buildDistributionSchedule(
     const countdownIds = manifest.videos.countdown.map((asset) => asset.assetId);
     const merchMockupId = manifest.merch.mockups[0]?.assetId ?? null;
     const pinterestAssetId = manifest.images.aestheticConcepts[0]?.assetId ?? primaryHeroAssetId;
+    const squareFeedAssetId = manifest.images.platformCrops.square_1x1?.[0]?.assetId ?? null;
 
     addIfPresent(drafts, ogImageAssetId ? {
         platform: 'email',
@@ -105,9 +106,9 @@ export function buildDistributionSchedule(
         campaignStage: 'prelaunch_setup',
     } : null);
 
-    addIfPresent(drafts, manifest.images.platformCrops.square_1x1[0] ? {
+    addIfPresent(drafts, squareFeedAssetId ? {
         platform: 'instagram_feed',
-        assetId: manifest.images.platformCrops.square_1x1[0].assetId,
+        assetId: squareFeedAssetId,
         copyVariant: 'carousel_day_3',
         scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_3',

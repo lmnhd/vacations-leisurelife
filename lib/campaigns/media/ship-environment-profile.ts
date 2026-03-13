@@ -1,4 +1,11 @@
-const SHIP_FAMILY_PROFILES = [
+interface ShipFamilyProfile {
+    ships: readonly string[];
+    familyKeywords: readonly string[];
+    supportsRealGrassDeck: boolean;
+    supportsBotanicalGardenDeck: boolean;
+}
+
+const SHIP_FAMILY_PROFILES: readonly ShipFamilyProfile[] = [
     {
         ships: [
             'celebrity silhouette',
@@ -23,7 +30,7 @@ const SHIP_FAMILY_PROFILES = [
         supportsRealGrassDeck: false,
         supportsBotanicalGardenDeck: true,
     },
-] as const;
+];
 
 function normalizeShipText(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
