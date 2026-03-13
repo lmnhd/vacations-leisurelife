@@ -15,9 +15,9 @@ function accentShadow(color: string): string {
 }
 
 const SCATTER_POSITIONS = [
-    'top-8 right-8 h-28 w-20 rotate-6 opacity-[0.16] md:h-36 md:w-24',
-    'bottom-10 left-6 h-24 w-16 -rotate-3 opacity-[0.12] md:h-32 md:w-24',
-    'top-1/3 right-1/4 h-20 w-28 -rotate-6 opacity-[0.10] md:h-24 md:w-36',
+    'top-6 -right-2 h-32 w-24 rotate-6 md:h-40 md:w-32 z-10',
+    'bottom-24 -left-2 h-28 w-20 -rotate-3 md:h-32 md:w-24 z-10',
+    'top-[40%] right-[30%] h-24 w-32 -rotate-6 md:h-32 md:w-40 z-10',
 ] as const;
 
 export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
@@ -53,11 +53,11 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                 {landing.galleryImages.map((image, index) => (
                     <div
                         key={`${image.url}-scatter-${index}`}
-                        className={`pointer-events-none absolute hidden overflow-hidden border border-white/40 bg-stone-200 shadow-[0_18px_40px_rgba(15,23,42,0.08)] saturate-[0.85] lg:block ${SCATTER_POSITIONS[index % SCATTER_POSITIONS.length]}`}
+                        className={`pointer-events-none absolute hidden overflow-hidden rounded-sm border-[6px] border-white bg-stone-200 shadow-xl lg:block ${SCATTER_POSITIONS[index % SCATTER_POSITIONS.length]}`}
                         aria-hidden="true"
                     >
                         <div
-                            className="h-full w-full bg-cover bg-center grayscale"
+                            className="h-full w-full bg-cover bg-center"
                             style={{ backgroundImage: `url(${image.url})` }}
                         />
                     </div>
@@ -193,12 +193,12 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                             <div
                                 key={`${image.url}-panel-${index}`}
                                 className={index === 0
-                                    ? 'pointer-events-none absolute -right-6 top-10 hidden h-28 w-20 rotate-[8deg] overflow-hidden border border-stone-200 opacity-[0.10] lg:block'
-                                    : 'pointer-events-none absolute -left-6 bottom-10 hidden h-24 w-16 -rotate-[7deg] overflow-hidden border border-stone-200 opacity-[0.08] lg:block'}
+                                    ? 'pointer-events-none absolute -right-6 top-10 hidden h-32 w-24 rotate-[8deg] overflow-hidden rounded-sm border-[6px] border-white shadow-lg lg:block z-10'
+                                    : 'pointer-events-none absolute -left-6 bottom-10 hidden h-28 w-20 -rotate-[7deg] overflow-hidden rounded-sm border-[6px] border-white shadow-lg lg:block z-10'}
                                 aria-hidden="true"
                             >
                                 <div
-                                    className="h-full w-full bg-cover bg-center grayscale"
+                                    className="h-full w-full bg-cover bg-center"
                                     style={{ backgroundImage: `url(${image.url})` }}
                                 />
                             </div>
