@@ -5,15 +5,38 @@ import { saveAssetRecord } from './media-store';
 import { storeAsset } from './storage-client';
 import {
     createImageFingerprint,
+    generateHeroImages,
     generateReferenceGroundedHeroImages,
     measureImageFingerprintDistance,
 } from './generators/stability-generator';
 import { getMediaImageGeneratorService } from './media-pipeline-config';
+import {
+    getShipFamilyKeywords,
+    getSiblingShipNames,
+    metadataSupportsShipLandscapeFeature,
+} from './ship-environment-profile';
+
+type ReferenceMatchLevel = 'exact_ship' | 'same_class' | 'generic_cruise';
 
 const HERO_SIMILARITY_STOP_WORDS = new Set([
     'the', 'and', 'with', 'from', 'cruise', 'ship', 'photo', 'professional', 'view', 'deck', 'ocean', 'sea',
     'sunset', 'sunrise', 'exterior', 'interior', 'room', 'area', 'line', 'voyage', 'travel', 'outdoor',
 ]);
+
+const HARD_REJECT_REFERENCE_TERMS = [
+    'hotel', 'resort', 'villa', 'backyard', 'patio',
+    'real estate', 'apartment', 'airbnb', 'wedding venue', 'event venue', 'banquet hall',
+    'render', 'illustration', 'vector', 'floor plan', 'site plan', 'brochure', 'stock photo',
+];
+
+const LANDSCAPE_MISMATCH_TERMS = [
+    'garden', 'lawn', 'grass', 'hedge', 'hedges', 'flower bed', 'flower beds', 'courtyard',
+];
+
+const MARITIME_SIGNAL_TERMS = [
+    'cruise', 'ship', 'deck', 'stateroom', 'cabin', 'atrium', 'pool', 'ocean', 'sea',
+    'voyage', 'port', 'promenade', 'balcony', 'lido', 'bow', 'stern', 'bridge',
+];
 
 function tokenizeHeroSimilarityText(value: string): string[] {
     return normalizeText(value)
@@ -83,14 +106,56 @@ function normalizeText(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
 }
 
-function getResolvedShipName(campaign: Campaign): string {
-    const matchedShipName = campaign.matchedShipName?.trim();
-    if (matchedShipName) {
-        return matchedShipName;
+function getShipIdentityTokens(campaign: Campaign): { lineToken: string; shipTokens: string[]; fullShipName: string } {
+    const fullShipName = normalizeText(getResolvedShipName(campaign)).replace(/\s+/g, ' ').trim();
+    const rawTokens = fullShipName.split(/\s+/).filter((token) => token.length > 2);
+    const lineToken = rawTokens[0] ?? '';
+    const shipTokens = rawTokens.slice(1);
+
+    return {
+        lineToken,
+        shipTokens,
+        fullShipName,
+    };
+}
+
+function classifyReferenceMatchLevel(
+    campaign: Campaign,
+    title: string,
+    contextUrl: string,
+): ReferenceMatchLevel {
+    const metadataHaystack = `${normalizeText(title)} ${normalizeText(contextUrl)}`.replace(/\s+/g, ' ').trim();
+    const { lineToken, shipTokens, fullShipName } = getShipIdentityTokens(campaign);
+    const shipName = getResolvedShipName(campaign);
+    const familyKeywords = getShipFamilyKeywords(shipName);
+    const siblingShipNames = getSiblingShipNames(shipName);
+    const hasMaritimeSignal = MARITIME_SIGNAL_TERMS.some((term) => metadataHaystack.includes(term));
+    const hasFullShipName = fullShipName.length > 0 && metadataHaystack.includes(fullShipName);
+    const hasAllShipTokens = shipTokens.length > 0 && shipTokens.every((token) => metadataHaystack.includes(token));
+    const hasLineToken = lineToken.length > 0 && metadataHaystack.includes(lineToken);
+    const hasFamilyKeyword = familyKeywords.some((keyword) => metadataHaystack.includes(keyword));
+    const mentionsSiblingShip = siblingShipNames.some((siblingShip) => metadataHaystack.includes(siblingShip));
+    const hasAllowedLandscapeCue = metadataSupportsShipLandscapeFeature(shipName, metadataHaystack);
+
+    if ((hasFullShipName || hasAllShipTokens) && hasMaritimeSignal) {
+        return 'exact_ship';
     }
+
+    if (hasLineToken && hasMaritimeSignal && (hasFamilyKeyword || mentionsSiblingShip || hasAllowedLandscapeCue)) {
+        return 'same_class';
+    }
+
+    return 'generic_cruise';
+}
+
+function getResolvedShipName(campaign: Campaign): string {
     const shipTarget = campaign.shipTarget?.trim();
     if (shipTarget) {
         return shipTarget;
+    }
+    const matchedShipName = campaign.matchedShipName?.trim();
+    if (matchedShipName) {
+        return matchedShipName;
     }
     throw new Error(`Campaign ${campaign.id} does not have a ship target for reference discovery`);
 }
@@ -121,20 +186,30 @@ function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: st
 function scoreReferenceCandidate(campaign: Campaign, category: string, query: string, title: string, contextUrl: string, width: number, height: number): number {
     const shipName = normalizeText(getResolvedShipName(campaign));
     const cruiseTokens = getCruiseLineTokens(campaign);
-    const haystack = `${normalizeText(title)} ${normalizeText(contextUrl)} ${normalizeText(query)}`;
+    const metadataHaystack = `${normalizeText(title)} ${normalizeText(contextUrl)}`;
+    const queryHaystack = normalizeText(query);
+    const matchLevel = classifyReferenceMatchLevel(campaign, title, contextUrl);
     let score = 0;
 
-    if (haystack.includes(shipName)) {
+    if (matchLevel === 'exact_ship') {
+        score += 140;
+    } else if (matchLevel === 'same_class') {
+        score += 25;
+    } else {
+        score -= 120;
+    }
+
+    if (metadataHaystack.includes(shipName)) {
         score += 80;
     }
 
     for (const token of cruiseTokens) {
-        if (haystack.includes(token)) {
+        if (metadataHaystack.includes(token)) {
             score += 12;
         }
     }
 
-    if (haystack.includes(category.replace(/_/g, ' '))) {
+    if (metadataHaystack.includes(category.replace(/_/g, ' ')) || queryHaystack.includes(category.replace(/_/g, ' '))) {
         score += 20;
     }
 
@@ -148,7 +223,7 @@ function scoreReferenceCandidate(campaign: Campaign, category: string, query: st
 
     const penalties = ['deck plan', 'floor plan', 'map', 'brochure', 'logo', 'icon', 'render', 'illustration'];
     for (const penalty of penalties) {
-        if (haystack.includes(penalty)) {
+        if (metadataHaystack.includes(penalty)) {
             score -= 40;
         }
     }
@@ -156,13 +231,60 @@ function scoreReferenceCandidate(campaign: Campaign, category: string, query: st
     return score;
 }
 
+function shouldHardRejectReferenceCandidate(
+    campaign: Campaign,
+    title: string,
+    contextUrl: string,
+): boolean {
+    const metadataHaystack = `${normalizeText(title)} ${normalizeText(contextUrl)}`;
+    const shipName = getResolvedShipName(campaign);
+
+    if (HARD_REJECT_REFERENCE_TERMS.some((term) => metadataHaystack.includes(term))) {
+        return true;
+    }
+
+    if (
+        LANDSCAPE_MISMATCH_TERMS.some((term) => metadataHaystack.includes(term))
+        && !metadataSupportsShipLandscapeFeature(shipName, metadataHaystack)
+    ) {
+        return true;
+    }
+
+    return classifyReferenceMatchLevel(campaign, title, contextUrl) === 'generic_cruise';
+}
+
+function buildReferenceMatchTag(matchLevel: ReferenceMatchLevel): string {
+    if (matchLevel === 'exact_ship') return 'match:exact_ship';
+    if (matchLevel === 'same_class') return 'match:same_class';
+    return 'match:generic_cruise';
+}
+
 export async function discoverShipReferenceCandidates(campaign: Campaign, maxPerCategory: number = 2): Promise<ShipReferenceCandidate[]> {
     const queryConfigs = buildReferenceQueries(campaign);
     const candidateMap = new Map<string, ShipReferenceCandidate>();
 
-    for (const queryConfig of queryConfigs) {
-        const response = await searchGoogleImages(queryConfig.query, 10);
+    const settledResponses = await Promise.allSettled(
+        queryConfigs.map(async (queryConfig) => ({
+            queryConfig,
+            response: await searchGoogleImages(queryConfig.query, 6),
+        }))
+    );
+
+    for (const settledResponse of settledResponses) {
+        if (settledResponse.status !== 'fulfilled') {
+            console.warn('Ship reference search failed for one category', {
+                campaignId: campaign.id,
+                error: settledResponse.reason instanceof Error ? settledResponse.reason.message : String(settledResponse.reason),
+            });
+            continue;
+        }
+
+        const { queryConfig, response } = settledResponse.value;
         for (const result of response.results) {
+            if (shouldHardRejectReferenceCandidate(campaign, result.title, result.contextUrl)) {
+                continue;
+            }
+
             const selectionScore = scoreReferenceCandidate(
                 campaign,
                 queryConfig.category,
@@ -201,16 +323,72 @@ export async function discoverShipReferenceCandidates(campaign: Campaign, maxPer
 
     const limitedCandidates: ShipReferenceCandidate[] = [];
     const categoryCounts = new Map<string, number>();
-    for (const candidate of rankedCandidates) {
-        const currentCount = categoryCounts.get(candidate.category) ?? 0;
-        if (currentCount >= maxPerCategory) {
-            continue;
+    const exactShipCandidates = rankedCandidates.filter(
+        (candidate) => classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl) === 'exact_ship'
+    );
+    const sameClassCandidates = rankedCandidates.filter(
+        (candidate) => classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl) === 'same_class'
+    );
+    const candidatePasses = exactShipCandidates.length > 0
+        ? [exactShipCandidates, sameClassCandidates]
+        : [sameClassCandidates];
+
+    for (const candidatePass of candidatePasses) {
+        for (const candidate of candidatePass) {
+            const currentCount = categoryCounts.get(candidate.category) ?? 0;
+            if (currentCount >= maxPerCategory) {
+                continue;
+            }
+
+            categoryCounts.set(candidate.category, currentCount + 1);
+            limitedCandidates.push(candidate);
         }
-        categoryCounts.set(candidate.category, currentCount + 1);
-        limitedCandidates.push(candidate);
     }
 
     return limitedCandidates;
+}
+
+function inferReferenceMimeType(candidate: ShipReferenceCandidate): string {
+    const lowerUrl = candidate.imageUrl.toLowerCase();
+    if (lowerUrl.includes('.png')) {
+        return 'image/png';
+    }
+    if (lowerUrl.includes('.webp')) {
+        return 'image/webp';
+    }
+    return 'image/jpeg';
+}
+
+function buildExternalReferenceAssetRecord(
+    campaign: Campaign,
+    candidate: ShipReferenceCandidate,
+    assetId: string,
+    reviewStatus: AssetRecord['reviewStatus'],
+): AssetRecord {
+    const matchLevel = classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl);
+
+    return {
+        assetId,
+        assetType: 'ship_reference_image',
+        url: candidate.imageUrl,
+        generator: 'serpapi',
+        promptUsed: candidate.title,
+        sourcePageUrl: candidate.contextUrl,
+        sourceThumbnailUrl: candidate.thumbnailUrl,
+        sourceQuery: candidate.query,
+        selectionScore: candidate.selectionScore,
+        dimensions: {
+            width: candidate.width,
+            height: candidate.height,
+        },
+        fileSizeBytes: 0,
+        mimeType: inferReferenceMimeType(candidate),
+        tags: ['ship-reference', candidate.category, 'reference', buildReferenceMatchTag(matchLevel)],
+        createdAt: new Date().toISOString(),
+        reviewStatus,
+        version: 1,
+        active: true,
+    };
 }
 
 async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCandidate, assetType: 'ship_reference_image' | 'hero_image', assetId: string, reviewStatus: AssetRecord['reviewStatus']): Promise<AssetRecord> {
@@ -254,14 +432,34 @@ async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCand
     return record;
 }
 
-export async function importShipReferenceAssets(slug: string, candidates: ReadonlyArray<ShipReferenceCandidate>): Promise<AssetRecord[]> {
-    const records: AssetRecord[] = [];
-    for (let index = 0; index < candidates.length; index += 1) {
-        const candidate = candidates[index];
+export async function importShipReferenceAssets(slug: string, campaign: Campaign, candidates: ReadonlyArray<ShipReferenceCandidate>): Promise<AssetRecord[]> {
+    const records = candidates.map((candidate, index) => {
         const assetId = `img_ship_reference_${String(index + 1).padStart(3, '0')}`;
-        records.push(await importCandidateAsAsset(slug, candidate, 'ship_reference_image', assetId, 'auto_approved'));
-    }
+        return buildExternalReferenceAssetRecord(campaign, candidate, assetId, 'needs_review');
+    });
+
+    await Promise.all(records.map((record) => saveAssetRecord(slug, record)));
     return records;
+}
+
+export function assetRecordToShipReferenceCandidate(record: AssetRecord): ShipReferenceCandidate | null {
+    if (record.assetType !== 'ship_reference_image') {
+        return null;
+    }
+
+    const category = record.tags.find((tag) => tag !== 'ship-reference' && tag !== 'reference') ?? 'exterior';
+
+    return {
+        title: record.promptUsed || record.assetId,
+        imageUrl: record.url,
+        thumbnailUrl: record.sourceThumbnailUrl || record.url,
+        contextUrl: record.sourcePageUrl || record.url,
+        width: record.dimensions?.width ?? 0,
+        height: record.dimensions?.height ?? 0,
+        category,
+        query: record.sourceQuery || '',
+        selectionScore: record.selectionScore ?? 0,
+    };
 }
 
 function scoreHeroCandidate(candidate: ShipReferenceCandidate): number {
@@ -385,47 +583,94 @@ export async function importHeroAssetsFromReferences(
     const shipName = getResolvedShipName(campaign);
     const records: AssetRecord[] = [];
     const acceptedHeroBuffers: Buffer[] = [];
+    const heroErrors: string[] = [];
     for (let index = 0; index < selectedCandidates.length; index += 1) {
         if (records.length >= maxHeroCount) {
             break;
         }
 
         const candidate = selectedCandidates[index];
-        const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, records.length, 1);
-        const generatedHero = generatedHeroImages[0];
-        if (await isNearDuplicateHero(generatedHero.buffer, acceptedHeroBuffers)) {
+        try {
+            const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, records.length, 1);
+            const generatedHero = generatedHeroImages[0];
+            if (await isNearDuplicateHero(generatedHero.buffer, acceptedHeroBuffers)) {
+                continue;
+            }
+
+            const heroOrdinal = String(records.length + 1).padStart(3, '0');
+            const assetId = `img_hero_${heroOrdinal}`;
+            const fileName = `images/hero/hero_${heroOrdinal}_embellished.png`;
+            const url = await storeAsset(slug, assetId, fileName, generatedHero.buffer, 'image/png');
+            const record: AssetRecord = {
+                assetId,
+                assetType: 'hero_image',
+                url,
+                generator: getMediaImageGeneratorService(),
+                promptUsed: generatedHero.prompt,
+                sourcePageUrl: candidate.contextUrl,
+                sourceThumbnailUrl: candidate.thumbnailUrl,
+                sourceQuery: candidate.query,
+                selectionScore: scoreHeroCandidate(candidate),
+                dimensions: {
+                    width: candidate.width,
+                    height: candidate.height,
+                },
+                fileSizeBytes: generatedHero.buffer.length,
+                mimeType: 'image/png',
+                tags: ['ship-reference', candidate.category, 'hero', 'embellished'],
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            };
+            await saveAssetRecord(slug, record);
+            acceptedHeroBuffers.push(generatedHero.buffer);
+            records.push(record);
+        } catch (error) {
+            heroErrors.push(error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    if (records.length > 0) {
+        return records;
+    }
+
+    const fallbackHeroes = await generateHeroImages(brief, shipName, maxHeroCount);
+    for (const hero of fallbackHeroes) {
+        if (await isNearDuplicateHero(hero.buffer, acceptedHeroBuffers)) {
             continue;
         }
 
         const heroOrdinal = String(records.length + 1).padStart(3, '0');
         const assetId = `img_hero_${heroOrdinal}`;
-        const fileName = `images/hero/hero_${heroOrdinal}_embellished.png`;
-        const url = await storeAsset(slug, assetId, fileName, generatedHero.buffer, 'image/png');
+        const fileName = `images/hero/hero_${heroOrdinal}_fallback.png`;
+        const url = await storeAsset(slug, assetId, fileName, hero.buffer, 'image/png');
         const record: AssetRecord = {
             assetId,
             assetType: 'hero_image',
             url,
             generator: getMediaImageGeneratorService(),
-            promptUsed: generatedHero.prompt,
-            sourcePageUrl: candidate.contextUrl,
-            sourceThumbnailUrl: candidate.thumbnailUrl,
-            sourceQuery: candidate.query,
-            selectionScore: scoreHeroCandidate(candidate),
-            dimensions: {
-                width: candidate.width,
-                height: candidate.height,
-            },
-            fileSizeBytes: generatedHero.buffer.length,
+            promptUsed: hero.prompt,
+            fileSizeBytes: hero.buffer.length,
             mimeType: 'image/png',
-            tags: ['ship-reference', candidate.category, 'hero', 'embellished'],
+            tags: ['hero', 'fallback'],
             createdAt: new Date().toISOString(),
             reviewStatus: 'needs_review',
             version: 1,
             active: true,
         };
         await saveAssetRecord(slug, record);
-        acceptedHeroBuffers.push(generatedHero.buffer);
+        acceptedHeroBuffers.push(hero.buffer);
         records.push(record);
+
+        if (records.length >= maxHeroCount) {
+            break;
+        }
     }
+
+    if (records.length === 0 && heroErrors.length > 0) {
+        throw new Error(`Failed to generate hero images: ${heroErrors.join(' | ')}`);
+    }
+
     return records;
 }

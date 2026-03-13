@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
-import { scanUnmatchedCampaigns } from '@/lib/campaigns/campaign-store';
+import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
 export const maxDuration = 300;
 
@@ -26,15 +26,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // Status-only response
     try {
-        const campaigns = await scanUnmatchedCampaigns();
+        const campaigns = await scanAllCampaigns();
+        const sortedCampaigns = [...campaigns].sort((left, right) => left.name.localeCompare(right.name));
+        const unmatchedCount = sortedCampaigns.filter(c => c.pricingStatus !== 'CB_MATCHED').length;
+        const matchedCount = sortedCampaigns.filter(c => c.pricingStatus === 'CB_MATCHED').length;
+
         return NextResponse.json({
             running: phaseBRunning,
-            unmatchedCount: campaigns.length,
-            campaigns: campaigns.map(c => ({
+            unmatchedCount,
+            matchedCount,
+            campaigns: sortedCampaigns.map(c => ({
                 slug: c.id,
                 name: c.name,
                 pricingStatus: c.pricingStatus ?? 'AI_ESTIMATE',
                 shipTarget: c.shipTarget,
+                matchedShipName: c.matchedShipName,
+                matchedSailDate: c.matchedSailDate,
+                startingPrice: c.startingPrice,
+                priceSource: c.priceSource,
+                cbPriceAdvantage: c.cbPriceAdvantage,
+                cbagenttoolsBookingLink: c.cbagenttoolsBookingLink,
             })),
         });
     } catch (error) {

@@ -25,28 +25,33 @@ export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
     const [briefState, setBriefState] = useState<BriefState>("idle");
     const [result, setResult] = useState<CampaignAestheticBrief | null>(null);
+    const [loadedSlug, setLoadedSlug] = useState("");
     const [error, setError] = useState("");
     const [confirmOverwrite, setConfirmOverwrite] = useState(false);
 
     const isBusy = briefState !== "idle";
+    const normalizedSlug = slug.trim();
+    const hasLoadedBriefForCurrentSlug = Boolean(result) && loadedSlug === normalizedSlug;
 
     // ── LOAD ─────────────────────────────────────────────────────────────────
     const handleLoad = async () => {
-        if (!slug.trim()) return;
+        if (!normalizedSlug) return;
         setBriefState("loading");
         setError("");
         setConfirmOverwrite(false);
 
         try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic`);
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`);
             if (res.status === 404) {
                 setResult(null);
+                setLoadedSlug("");
                 setError("");
                 return;
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Load failed");
             setResult(data as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -56,10 +61,10 @@ export default function AestheticDevisingTestPage() {
 
     // ── GENERATE ─────────────────────────────────────────────────────────────
     const handleGenerate = async () => {
-        if (!slug.trim()) return;
+        if (!normalizedSlug) return;
 
         // If a result is already loaded, require confirmation before overwriting
-        if (result && !confirmOverwrite) {
+        if (hasLoadedBriefForCurrentSlug && !confirmOverwrite) {
             setConfirmOverwrite(true);
             return;
         }
@@ -69,12 +74,13 @@ export default function AestheticDevisingTestPage() {
         setConfirmOverwrite(false);
 
         try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic`, {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`, {
                 method: "POST",
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Generation failed");
             setResult(data as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -84,17 +90,18 @@ export default function AestheticDevisingTestPage() {
 
     // ── DELETE ────────────────────────────────────────────────────────────────
     const handleDelete = async () => {
-        if (!slug.trim() || !result) return;
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("deleting");
         setError("");
 
         try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic`, {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`, {
                 method: "DELETE",
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Delete failed");
             setResult(null);
+            setLoadedSlug("");
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -104,17 +111,18 @@ export default function AestheticDevisingTestPage() {
 
     // ── GENERATE PRODUCTION BIBLE ─────────────────────────────────────────────
     const handleGenerateBible = async () => {
-        if (!slug.trim() || !result) return;
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("generating_bible");
         setError("");
 
         try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic/production-bible`, {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/production-bible`, {
                 method: "POST",
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Production Bible generation failed");
             setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -124,12 +132,12 @@ export default function AestheticDevisingTestPage() {
 
     // ── APPROVE ───────────────────────────────────────────────────────────────
     const handleApprove = async () => {
-        if (!slug.trim() || !result) return;
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("approving");
         setError("");
 
         try {
-            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/aesthetic/approve`, {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/approve`, {
                 method: "POST",
             });
             const data = await readJsonResponse(res);
@@ -139,6 +147,7 @@ export default function AestheticDevisingTestPage() {
                 throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
             }
             setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -198,15 +207,20 @@ export default function AestheticDevisingTestPage() {
                             {error}
                         </div>
                     )}
-                    {!error && !result && slug.trim() && briefState === "idle" && (
+                    {!error && !hasLoadedBriefForCurrentSlug && normalizedSlug && briefState === "idle" && (
                         <div className="rounded-lg px-3 py-2 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300">
                             {EMPTY_BRIEF_MESSAGE}
+                        </div>
+                    )}
+                    {!error && result && loadedSlug && loadedSlug !== normalizedSlug && (
+                        <div className="rounded-lg px-3 py-2 text-xs bg-sky-500/10 border border-sky-500/20 text-sky-300">
+                            Loaded brief is for <span className="font-semibold">{loadedSlug}</span>. Load or generate the current slug before approving, deleting, or generating a bible.
                         </div>
                     )}
                 </div>
 
                 {/* Action Bar — only shown when slug is entered */}
-                {slug.trim() && (
+                {normalizedSlug && (
                     <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
                         <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Actions</div>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -236,19 +250,19 @@ export default function AestheticDevisingTestPage() {
                                 <button
                                     id="btn-generate"
                                     onClick={handleGenerate}
-                                    disabled={isBusy || !slug.trim()}
+                                    disabled={isBusy || !normalizedSlug}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                                 >
                                     {briefState === "generating"
                                         ? <Loader2 className="h-4 w-4 animate-spin" />
                                         : <Wand2 className="h-4 w-4" />
                                     }
-                                    {briefState === "generating" ? "Generating..." : result ? "Re-generate" : "Generate Brief"}
+                                    {briefState === "generating" ? "Generating..." : hasLoadedBriefForCurrentSlug ? "Re-generate" : "Generate Brief"}
                                 </button>
                             )}
 
                             {/* Production Bible */}
-                            {result && (
+                            {hasLoadedBriefForCurrentSlug && result && (
                                 <button
                                     id="btn-generate-bible"
                                     onClick={handleGenerateBible}
@@ -270,7 +284,7 @@ export default function AestheticDevisingTestPage() {
                             )}
 
                             {/* Approve */}
-                            {result && result.humanReviewStatus !== "approved" && (
+                            {hasLoadedBriefForCurrentSlug && result && result.humanReviewStatus !== "approved" && (
                                 <button
                                     id="btn-approve"
                                     onClick={handleApprove}
@@ -286,7 +300,7 @@ export default function AestheticDevisingTestPage() {
                             )}
 
                             {/* Delete */}
-                            {result && (
+                            {hasLoadedBriefForCurrentSlug && result && (
                                 <button
                                     id="btn-delete"
                                     onClick={handleDelete}

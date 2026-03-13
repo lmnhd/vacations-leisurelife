@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import { AssetRecord } from '@/lib/campaigns/schema';
+import { analyzeStoryboardShot, buildStoryboardShotPrompt } from '@/lib/campaigns/media/storyboard-motion-policy';
 
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/groups/campaign/[slug]/media/generate-plan
@@ -61,7 +62,10 @@ export async function GET(
         const alreadyInManifest = (existingVideos as Record<string, boolean>)[assetType] ?? false;
 
         const shots = sb.shotSequence.map((shot, idx) => {
+            const scene = sceneLibrary.find(s => s.sceneId === shot.sceneId);
             const resolved = sceneImageMap[shot.sceneId];
+            const diagnostic = analyzeStoryboardShot(shot, scene);
+            const motionPromptPreview = buildStoryboardShotPrompt(shot, brief, scene);
             return {
                 shotIndex: idx + 1,
                 sceneId: shot.sceneId,
@@ -72,10 +76,19 @@ export async function GET(
                 subjectMotion: shot.subjectMotion,
                 environmentMotion: shot.environmentMotion,
                 emotionalBeat: shot.emotionalBeat,
+                motionRiskLevel: diagnostic.riskLevel,
+                motionRiskFlags: diagnostic.riskFlags,
+                hasVisiblePeople: diagnostic.hasVisiblePeople,
+                sourceImageAdvice: diagnostic.recommendedSourceImageDirection,
+                motionPromptPreview,
+                promptFitsRunwayBudget: motionPromptPreview.length <= 512,
             };
         });
 
         const shotsWithMissingImage = shots.filter(s => !s.imageFound).length;
+        const missingShotSceneIds = shots.filter(s => !s.imageFound).map(s => s.sceneId);
+        const highRiskShotCount = shots.filter(s => s.motionRiskLevel === 'high').length;
+        const mediumRiskShotCount = shots.filter(s => s.motionRiskLevel === 'medium').length;
 
         return {
             deliverableId: delivId,
@@ -83,7 +96,11 @@ export async function GET(
             alreadyInManifest,
             totalShots: shots.length,
             shotsWithMissingImage,
-            willUseFallbackForShots: shotsWithMissingImage,
+            missingShotSceneIds,
+            highRiskShotCount,
+            mediumRiskShotCount,
+            readyForStoryboardGeneration: shotsWithMissingImage === 0,
+            willFailVideoGeneration: shotsWithMissingImage > 0,
             shots,
         };
     });
@@ -93,6 +110,7 @@ export async function GET(
         sceneLibraryCount: sceneLibrary.length,
         sceneImagesInManifest: sceneImageRecords.length,
         missingScenes,
+        readyForStoryboardGeneration: missingScenes.length === 0 && storyboardPlans.every(sb => sb.readyForStoryboardGeneration),
         storyboards: storyboardPlans,
     });
 }

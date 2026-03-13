@@ -134,7 +134,7 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_INSTANT]: {
     provider:      'openai',
-    apiId:         'gpt-5-instant',
+    apiId:         'gpt-5.3-instant',
     maxTokens:     4_096,
     defaultTemp:   0.5,
     contextWindow: 128_000,

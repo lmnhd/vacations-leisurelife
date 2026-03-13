@@ -10,7 +10,9 @@ import {
 } from '@/lib/campaigns/media/media-store';
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
 import { generateImageFromPrompt } from '@/lib/campaigns/media/generators/stability-generator';
+import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateStoryboardVideo } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
+import { buildElevenLabsVoiceTags, isElevenLabsVoiceTag } from '@/lib/campaigns/media/elevenlabs-voices';
 import { selectPreferredAssetForContext } from '@/lib/campaigns/media/image-selection';
 import { AssetRecord, AssetType, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import {
@@ -30,6 +32,8 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
     'countdown_video', 'broll_clip',
 ]);
 
+const AUDIO_ASSET_TYPES = new Set<AssetType>(['ambient_narration', 'hype_clip']);
+
 const KNOWN_VIDEO_TAGS = new Set(['video', 'storyboard', 'narrated', 'revised']);
 
 const RegenerateWithRevisionSchema = z.object({
@@ -48,6 +52,34 @@ function buildRevisedSceneImagePrompt(
     if (applyMode === 'manual_override' && revisedPrompt) return revisedPrompt;
     if (applyMode === 'append_note' && revisionNote) return `${existingPrompt}. REVISION: ${revisionNote}`;
     return existingPrompt;
+}
+
+function buildRevisedAudioScript(
+    existingScript: string,
+    applyMode: 'append_note' | 'manual_override',
+    revisionNote: string | undefined,
+    revisedPrompt: string | undefined
+): string {
+    if (applyMode === 'manual_override' && revisedPrompt?.trim()) return revisedPrompt.trim();
+    if (applyMode === 'append_note' && revisionNote?.trim()) return `${existingScript}\n\n${revisionNote.trim()}`;
+    return existingScript;
+}
+
+function stripVoiceTags(tags: string[]): string[] {
+    return tags.filter((tag) => !isElevenLabsVoiceTag(tag));
+}
+
+function buildRevisedTags(existingTags: string[], additions: string[]): string[] {
+    return Array.from(new Set([...stripVoiceTags(existingTags), ...additions]));
+}
+
+async function downloadAssetBuffer(url: string): Promise<Buffer> {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to download asset: ${response.status}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
 }
 
 function replaceSlotInManifest(
@@ -99,6 +131,12 @@ function replaceSlotInManifest(
             newRecord,
         ];
         return { ...manifest, videos: { ...manifest.videos, broll } };
+    }
+    if (assetType === 'ambient_narration') {
+        return { ...manifest, audio: { ...manifest.audio, ambientNarration: newRecord } };
+    }
+    if (assetType === 'hype_clip') {
+        return { ...manifest, audio: { ...manifest.audio, hypeClip: newRecord } };
     }
     return manifest;
 }
@@ -191,7 +229,7 @@ export async function handleRegenerateWithRevisionRequest(
                 return { status: 422, data: { error: 'No Production Bible found — cannot regenerate storyboard video' } };
             }
 
-            const delivId = existingAsset.tags.find(t => !KNOWN_VIDEO_TAGS.has(t));
+            const delivId = existingAsset.tags.find((tag) => !KNOWN_VIDEO_TAGS.has(tag) && !isElevenLabsVoiceTag(tag));
             if (!delivId) {
                 return { status: 422, data: { error: `Cannot determine storyboard deliverableId from tags: [${existingAsset.tags.join(', ')}]` } };
             }
@@ -212,14 +250,26 @@ export async function handleRegenerateWithRevisionRequest(
 
             const resolvedRevisionNote = applyMode === 'append_note' ? revisionNote : undefined;
             const resolvedMotionOverride = applyMode === 'manual_override' ? (revisedPrompt ?? undefined) : undefined;
+            let themeMusicBuffer: Buffer | null = null;
+
+            if (manifest.audio.themeMusic?.url) {
+                try {
+                    themeMusicBuffer = await downloadAssetBuffer(manifest.audio.themeMusic.url);
+                } catch {
+                    themeMusicBuffer = null;
+                }
+            }
 
             const video = await generateStoryboardVideo(
                 brief,
                 storyboard,
                 sceneImageMap,
                 fallbackUrl,
+                themeMusicBuffer,
                 resolvedRevisionNote,
                 resolvedMotionOverride
+                ,undefined,
+                slug
             );
 
             const newAssetId = `vid_${delivId}_rev_${shortId}`;
@@ -232,12 +282,56 @@ export async function handleRegenerateWithRevisionRequest(
                 promptUsed: `${video.motionPrompt}\n\n${video.script}`,
                 fileSizeBytes: video.buffer.length,
                 mimeType: 'video/mp4',
-                tags: [...existingAsset.tags, 'revised'],
+                tags: buildRevisedTags(existingAsset.tags, ['revised', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)]),
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'auto_approved',
                 version: (existingAsset.version ?? 1) + 1,
                 active: true,
                 durationSeconds: video.durationSeconds,
+            };
+            await saveAssetRecord(slug, newRecord);
+
+        } else if (AUDIO_ASSET_TYPES.has(assetType)) {
+            const revisedScript = buildRevisedAudioScript(
+                existingAsset.promptUsed,
+                applyMode,
+                revisionNote,
+                revisedPrompt
+            );
+            const revisedBrief = {
+                ...brief,
+                audio: {
+                    ...brief.audio,
+                    ...(assetType === 'ambient_narration'
+                        ? { ambientNarrationScript: revisedScript }
+                        : { hypeClipScript: revisedScript }),
+                },
+            };
+
+            const audio = assetType === 'ambient_narration'
+                ? await generateAmbientNarration(revisedBrief)
+                : await generateHypeClip(revisedBrief);
+            const newAssetId = assetType === 'ambient_narration'
+                ? `audio_ambient_narration_rev_${shortId}`
+                : `audio_hype_clip_rev_${shortId}`;
+            const fileName = assetType === 'ambient_narration'
+                ? `audio/ambient_narration_revised_${shortId}.mp3`
+                : `audio/hype_clip_revised_${shortId}.mp3`;
+            const url = await storeAsset(slug, newAssetId, fileName, audio.buffer, 'audio/mpeg');
+            newRecord = {
+                assetId: newAssetId,
+                assetType,
+                url,
+                generator: 'elevenlabs',
+                promptUsed: audio.script,
+                fileSizeBytes: audio.buffer.length,
+                mimeType: 'audio/mpeg',
+                tags: buildRevisedTags(existingAsset.tags, ['revised', ...buildElevenLabsVoiceTags(audio.voiceRole, audio.voiceId, audio.voiceName)]),
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'needs_review',
+                version: (existingAsset.version ?? 1) + 1,
+                active: true,
+                durationSeconds: existingAsset.durationSeconds,
             };
             await saveAssetRecord(slug, newRecord);
 

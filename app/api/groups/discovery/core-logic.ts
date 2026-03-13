@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
+import { ModelName } from '@/lib/ai/llm-gateway';
 import { Campaign } from '@/lib/campaigns/types';
 import { saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
@@ -16,9 +17,12 @@ const CB_DEALS_CACHE_FILE = path.join(CACHE_DIR, 'cb-deals-cache.json');
 
 type ResearchCache = {
     date: string;
+    promptVersion?: string;
     psychographicData?: string;
     aestheticData?: string;
 };
+
+const DISCOVERY_PROMPT_VERSION = '2026-03-09-cottagecore-grounding';
 
 type CbDealsCache = {
     generatedAtIso: string;
@@ -32,20 +36,23 @@ type CbDealsCache = {
 
 function readResearchCache(): ResearchCache {
     const today = new Date().toISOString().slice(0, 10);
-    if (!existsSync(CACHE_FILE)) return { date: today };
+    if (!existsSync(CACHE_FILE)) return { date: today, promptVersion: DISCOVERY_PROMPT_VERSION };
     try {
         const raw = readFileSync(CACHE_FILE, 'utf-8');
         const parsed = JSON.parse(raw) as ResearchCache;
-        if (parsed.date !== today) return { date: today };
+        if (parsed.date !== today) return { date: today, promptVersion: DISCOVERY_PROMPT_VERSION };
+        if (parsed.promptVersion !== DISCOVERY_PROMPT_VERSION) {
+            return { date: today, promptVersion: DISCOVERY_PROMPT_VERSION };
+        }
         return parsed;
     } catch {
-        return { date: today };
+        return { date: today, promptVersion: DISCOVERY_PROMPT_VERSION };
     }
 }
 
 function writeResearchCache(cache: ResearchCache): void {
     mkdirSync(CACHE_DIR, { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+    writeFileSync(CACHE_FILE, JSON.stringify({ ...cache, promptVersion: DISCOVERY_PROMPT_VERSION }, null, 2), 'utf-8');
 }
 
 /**
@@ -155,6 +162,7 @@ const ThemeBlueprintSchema = z.object({
         description: z.string().describe("Short promotional description"),
         aesthetic: z.string().describe("The aesthetic or vibe of the campaign"),
         targetDates: z.string().describe("Planned departure dates, e.g. 'November 2026'"),
+        targetDestination: z.string().describe("Primary route or destination region, e.g. 'Greek Isles' or 'Western Caribbean'"),
         shipTarget: z.string().describe("Target cruise line or ship class"),
         highlightEvents: z.array(z.string()).describe("List of suggested activities or meetups (3-5 items)"),
         targetingKeywords: z.array(z.string()).describe("List of targeting keywords for ads (3-5 items)"),
@@ -232,6 +240,12 @@ export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResu
     - likely to enjoy an all-in-one floating getaway with built-in social energy
     - visually distinctive without requiring heavy gear, lab spaces, formal instruction, or structured productivity
 
+    IMPORTANT AESTHETIC FILTER:
+    - do not substitute broad luxury-travel language for the actual niche identity
+    - "quiet luxury," "elevated escape," "refined sophistication," and "wellness getaway" are not niches by themselves
+    - when evaluating slow-living, pastoral, bookish, or cozy communities, prefer handmade warmth, tactile rituals, scenic softness, casual social rituals, and modest beauty over status-signaling luxury cues
+    - if a theme only sounds compelling after being translated into generic upscale travel language, reject it
+
     Explicitly avoid communities whose appeal depends on:
     - clinical or diagnostic culture
     - optimization protocols
@@ -305,7 +319,12 @@ ${psychographicData}
     - plausible props or aesthetic signals
     - discouraged literalizations
     - best-fit ship environments
-    - why the concept still feels like a great vacation even if the guest only lightly participates in the niche${cbInventoryContext}
+    - why the concept still feels like a great vacation even if the guest only lightly participates in the niche
+
+    ANTI-DRIFT RULE:
+    - do not let pastoral, cottagecore, bookish, or slow-living themes collapse into generic luxury hotel language
+    - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
+    - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${cbInventoryContext}
         `.trim();
         aestheticData = await callPerplexity(aestheticPrompt);
         cache.aestheticData = aestheticData;
@@ -313,9 +332,10 @@ ${psychographicData}
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Saved to cache.');
     }
 
-    console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5-mini)');
+    console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
     const { object } = await callGlobalGenerateObject({
         schema: ThemeBlueprintSchema,
+        modelName: ModelName.GPT_5_HIGH,
         prompt: `
 You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Perplexity Sonar Deep Research regarding niche subcultures and ship infrastructure:
 
@@ -351,6 +371,11 @@ Prefer blueprints where the guest fantasy is:
 - listening, exploring, tasting, observing, reading, collecting, photographing, or playing together
 - enjoying the ship and destination first, with the niche amplifying the mood
 
+WORDING GUARDRAILS:
+- avoid generic luxury-signaling descriptors unless luxury is itself the niche
+- for pastoral, cottagecore, or slow-living concepts, prefer language like unhurried, handmade, garden, tea, deck reading, market strolls, pressed flowers, natural textures, and shared quiet rituals
+- avoid aesthetic labels that flatten the niche into upscale sameness, especially phrases like quiet luxury, elevated escape, or low-key luxe
+
 Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}
         `.trim(),
     });
@@ -366,6 +391,7 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
             description: bp.description,
             aesthetic: bp.aesthetic,
             targetDates: bp.targetDates,
+            targetDestination: bp.targetDestination,
             shipTarget: bp.shipTarget,
             highlightEvents: bp.highlightEvents,
             targetingKeywords: bp.targetingKeywords,

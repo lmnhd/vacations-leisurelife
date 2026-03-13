@@ -1,0 +1,366 @@
+﻿{
+    "slug":  "sundown-spirits-2026",
+    "themeName":  "Sundown Spirits: Craft Cocktail Discovery at Sea",
+    "visual":  {
+                   "aestheticLabel":  "Sundown Spirits â Modern Aperitif at Sea",
+                   "colorPalette":  {
+                                        "primary":  "#0B1E33",
+                                        "secondary":  "#F4EDE3",
+                                        "accent":  "#F25C4C",
+                                        "background":  "#0F1220",
+                                        "textOnDark":  "#F5F7FA",
+                                        "textOnLight":  "#1B1E23"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "Crisp geometric sans with tight tracking and generous scale; defer to LLI brand display on landing, with clean numeral styling for pour counts.",
+                                               "bodyStyle":  "Readable humanist sans with relaxed line-height; use restrained italics for spirit names and origins.",
+                                               "suggestedFonts":  [
+                                                                      "Suisse Intl",
+                                                                      "Inter",
+                                                                      "Apercu",
+                                                                      "Noe Display (sparingly for menu numerals)"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Twilight hush over open waterâglassware sparkle, teak warmth, and cobalt sea calm with a faint bar-back glow.",
+                   "lightingStyle":  "Golden hour to blue-hour gradient; practical bar lighting and soft neon edges; specular highlights on cut glass, gentle falloff on skin tones.",
+                   "compositionNotes":  "Ship-first frames: horizon line and rail in view, teak deck texture, or The Lime \u0026 Coconut bar glow. 1â2 guests max, relaxed posture, hands at rest near a single coupe or rocks glass. Negative space for typography. Shallow depth of field with glass highlights; bartenders shown in natural service flow. Avoid crowded tables, flight boards dominating the frame, or any staged grid layouts.",
+                   "avoidList":  [
+                                     "Classroom-style seating or tasting mats",
+                                     "Whiteboards or technique diagrams",
+                                     "Crowded promo clusters or step-and-repeat walls",
+                                     "Matching lanyards as focal detail",
+                                     "Trade-show carts blocking sightlines",
+                                     "Scoreboards or leaderboards on venue TVs"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Modern aperitivo editorial lighting (twilight, specular glass highlights)",
+                                              "Oasis-class open deck at dusk with horizon and rail prominent",
+                                              "The Lime \u0026 Coconut signage glow at blue hour",
+                                              "Minimal coupe-on-ledge compositions with ocean negative space",
+                                              "Smart-casual eveningwear in navy, cream, and bitter-orange accents"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "Aperitif culture appears as a light, daily feature threaded through normal bar and sunset routinesâone highlighted pour or brief story at natural social timesânever converting spaces into classes or demos.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Sailaway toast on the open deck with horizon views",
+                                                                             "Pre-dinner drift through the Royal Promenade en route to venues",
+                                                                             "Poolside refreshers on sea days",
+                                                                             "Rail-side sunset lean with a single glass",
+                                                                             "After-dinner lounge linger with soft music",
+                                                                             "Late-night nightcap at a quiet bar nook"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A bartender shares a 10â15 second origin note while serving a mini three-pour at The Lime \u0026 Coconut, then lets guests linger",
+                                                                              "A roaming garnish/vermouth cart passes briefly along the Royal Promenade before dinnerâorder if the mood strikes",
+                                                                              "Low-ABV spritzes at sail with a citrus twist; one signature name on the menu that day",
+                                                                              "After-dessert digestivo compare: two friends trade amaro favorites at a quiet table",
+                                                                              "Menus grouped by flavor journey (bitter/bright/aromatic) without altering normal service",
+                                                                              "A tiny passport stamp on a coaster or card tucked with your checkâpurely for fun"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "Bartender certification or formal coursework aboard",
+                                                                                    "Technique-heavy workshops with whiteboards or exams",
+                                                                                    "Guest flair competitions or rehearsal-based contests",
+                                                                                    "Eight-hour spirits history seminars",
+                                                                                    "Onboard barrel-aging or any distillation stunt",
+                                                                                    "Staged tasting theaters with rows of numbered stations",
+                                                                                    "Big-screen leaderboards or scoring ceremonies"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Elegant coupes and rocks glasses",
+                                                                      "Thin coasters with understated marks",
+                                                                      "Citrus peels, olives, clear ice",
+                                                                      "Small wooden flight board (2â3 mini stems) used sparingly",
+                                                                      "Minimal story cards at the bar",
+                                                                      "Pocketable âpassportâ stamp at receipt close",
+                                                                      "Smart-casual wardrobe hints in bitter-orange or coral accents"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Tasting grids or placemats",
+                                                                          "Whiteboards, clipboards, exam sheets",
+                                                                          "Lab coats, pipettes, spittoons",
+                                                                          "Camera rigs, ring lights, or mic headsets",
+                                                                          "Banners, podiums, or branded backdrops",
+                                                                          "Numbered stations, barricade ropes, or table tents",
+                                                                          "Visible lanyards as a primary signal"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Sundown Spirits, aboard Utopia of the Seas",
+                      "subSlogan":  "Modern aperitif energy meets openâocean eveningsâglassware sparkle, lowlight ease, easy discovery.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Keep me posted",
+                                          "bookNow":  "Sail the 6âNight Western Caribbean date",
+                                          "merch":  "Shop the Spritz Tee",
+                                          "share":  "Send a toast to a friend"
+                                      },
+                      "elevatorPitch":  "Aperitif culture lands right where cruise life already shines: sailaway, sunset, the preâdinner drift, and an unhurried nightcap. Each day, one storyâled pour or mini flight appears naturally in a working barâno schedules to chase, just a soft nudge toward something delicious. Think a spritz at sail, a twilight threeâpour at The Lime \u0026 Coconut with a quick origin note, and lateânight Negroni riffs you can sample. Dip in when it feels right, then return to the horizon and the company youâre keeping.",
+                      "toneKeywords":  [
+                                           "oceanâfirst",
+                                           "modern aperitif",
+                                           "warm",
+                                           "urbane",
+                                           "unhurried",
+                                           "glassware sparkle",
+                                           "welcoming",
+                                           "storyâled",
+                                           "lowâABV friendly"
+                                       ],
+                      "voicePersona":  "Your wellâtraveled bartender friendâconfident but unpretentious, speaking in easy, twilightâslow sentences."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Horizon Coupe: a minimalist coupe whose bowl doubles as a sunset disc above a thin horizon line and tiny ship silhouette. Wordmark âSundown Spiritsâ centered; microline: âUtopia of the Seas â Western Caribbeanâ. Twoâink spot color.",
+                                   "colorway":  "Navy tee; coral (sunset) + warm cream (linework/type) inks",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Sip the sunset.. Concept direction: Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.. Design direction: Horizon Coupe: a minimalist coupe whose bowl doubles as a sunset disc above a thin horizon line and tiny ship silhouette. Wordmark âSundown Spiritsâ centered; microline: âUtopia of the Seas â Western Caribbeanâ. Twoâink spot color.. Print style: 2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos.. Colorway: Navy tee; coral (sunset) + warm cream (linework/type) inks. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "pf_3001_unisex_soft_tee"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Typeâled front: âGolden Hour, Bitter Orange.â set in a refined sans with a small citrusâtwist icon. Back neck: micro shipâbow mark.",
+                                        "colorway":  "Vintage white with navy rings; bitterâorange ink + small cream accent",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Sip the sunset.. Concept direction: Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.. Design direction: Typeâled front: âGolden Hour, Bitter Orange.â set in a refined sans with a small citrusâtwist icon. Back neck: micro shipâbow mark.. Print style: 2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos.. Colorway: Vintage white with navy rings; bitterâorange ink + small cream accent. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "pf_3153_unisex_ringer_tee"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "ThreeâPour Drift: three small circles labeled âbitter â¢ bright â¢ aromaticâ with a tiny horizon line passing through; discreet Lime \u0026 Coconut palmâleaf hint as negative space.",
+                                                 "colorway":  "Deep navy tee; cream linework + coral labels",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Sip the sunset.. Concept direction: Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.. Design direction: ThreeâPour Drift: three small circles labeled âbitter â¢ bright â¢ aromaticâ with a tiny horizon line passing through; discreet Lime \u0026 Coconut palmâleaf hint as negative space.. Print style: 2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos.. Colorway: Deep navy tee; cream linework + coral labels. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "pf_3001_three_pour"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Equal Parts, Open Water: typographic lockup with three tiny icons (ice cube, orange peel, ship light) forming a quiet triangle under the phrase.",
+                                                 "colorway":  "Charcoal tee; warm cream ink only",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Sip the sunset.. Concept direction: Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.. Design direction: Equal Parts, Open Water: typographic lockup with three tiny icons (ice cube, orange peel, ship light) forming a quiet triangle under the phrase.. Print style: 2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos.. Colorway: Charcoal tee; warm cream ink only. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "pf_3001_equal_parts"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Aperitivo Walk: âStroll â¢ Sip â¢ Sunsetâ in a vertical stack with a slim promenadeâline motif and a small wheelâandâgarnish mark at the base.",
+                                                 "colorway":  "Vintage navy; coral headline + cream linework",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Sip the sunset.. Concept direction: Clean, witty tees that read instantly as âcruise nights + modern aperitifââsunset orb, coupe silhouette, tiny ship detail, and typeâforward charm in 2â3 inks.. Design direction: Aperitivo Walk: âStroll â¢ Sip â¢ Sunsetâ in a vertical stack with a slim promenadeâline motif and a small wheelâandâgarnish mark at the base.. Print style: 2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos.. Colorway: Vintage navy; coral headline + cream linework. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "pf_3001_aperitivo_walk"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "Wordmark âSundown Spiritsâ in a clean sans with a gentle ligature suggestive of a citrus twist; micro icon: coupe + tiny ship bow. Keep the LLI wordmark intact elsewhere.",
+                  "tagline":  "Sip the sunset.",
+                  "printStyle":  "2â3 spot colors, vector linework, optional halftone sun; front print onlyâno fullâbleed photos."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "Blue hour settles over the rail. Glass catches the last warm light, and the sea turns cobalt. A spritz lifts with citrus and a little salt in the air. The bartender offers a quick origin noteâjust enough to spark a smileâthen lets the evening breathe. You drift from deck to bar, from story to sip, from sunset to nightcap. Utopia of the Seas hums softly, and every pour feels like it belongs to the ocean.",
+                  "hypeClipScript":  "Sunset. A quiet sparkle in the glass. One story, one sip, and the sea doing the rest. Sundown Spiritsâmodern aperitif at sea, aboard Utopia of the Seas.",
+                  "voiceProfile":  "Warm, genderâneutral, midâlow register; relaxed cadence with cosmopolitan ease.",
+                  "musicMood":  "Aperitivoâadjacent: mellow jazzâlounge, neoâbossa, and soft house at 92â108 BPM; brushed drums, vibraphone, airy padsânever roomâcommanding, always conversationâfriendly."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "Blue hour on Utopia of the Seasâwho are you toasting?",
+                                                 "narrative":  {
+                                                                   "title":  "Railside TwoâGlance Toast",
+                                                                   "durationSeconds":  14,
+                                                                   "tool":  "runwayml",
+                                                                   "scriptOrNarration":  "[Sea hush + soft clink] Voice: \"Sunset does most of the work. We just add citrus.\" Bartender (natural audio): \"Bright, a little bitterâquick sailaway favorite.\" [Two friends share a small smile, turn back to the horizon] Voice: \"Sundown Spirits, aboard Utopia of the Seas.\"",
+                                                                   "visualDirectionNotes":  "Start on cobalt water and rail, then reveal two guests shoulderâtoâshoulder, relaxed posture, navy/cream styling with a coral accent. One coupe enters frame, then exitsâglassware is not the hero. Soft neon edge from The Lime \u0026 Coconut in background bokeh. Shipâfirst composition, negative space left for type.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "Open deck rail near The Lime \u0026 Coconut at goldenâtoâblue hour; teak underfoot, horizon clear.",
+                                                                   "musicMood":  "Neoâbossa instrumental around 98 BPM; brushed drums, vibraphone, airy pads."
+                                                               },
+                                                 "caption":  "One small story, then back to the view. Sundown Spiritsâmodern aperitif at sea, aboard Utopia of the Seas. Sip the sunset.",
+                                                 "hashtags":  [
+                                                                  "#SundownSpirits",
+                                                                  "#UtopiaoftheSeas",
+                                                                  "#AperitifAtSea",
+                                                                  "#CruiseNights",
+                                                                  "#GoldenHour",
+                                                                  "#ModernSpritz"
+                                                              ],
+                                                 "callToAction":  "Send a toast to a friend"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Twilight drift from rail to The Lime \u0026 Coconut glow: a passing garnish moment, a soft grin, and a gentle turn back to the water. Wardrobe carries the cueânavy linen, coral pocket squareâglassware stays peripheral.",
+                                                  "audioTrackType":  "Mellow jazzâlounge, 96 BPM instrumental",
+                                                  "caption":  "Aperitif energy where the ocean already shines. If you pass the bar and feel a nudgeâfollow it. Sundown Spirits, aboard Utopia of the Seas. Sip the sunset.",
+                                                  "hashtags":  [
+                                                                   "#SundownSpirits",
+                                                                   "#UtopiaoftheSeas",
+                                                                   "#BlueHour",
+                                                                   "#SpritzTime",
+                                                                   "#SeaDays",
+                                                                   "#CruiseEvenings"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Blue hour belongs to the rail.",
+                                                                            "bodyText":  "Find your horizon; let the ship set the tempo.",
+                                                                            "visualDescription":  "Wide frame of teak rail and cobalt sea; no drink in hand, just relaxed posture and negative space."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "A tiny origin note, then air.",
+                                                                            "bodyText":  "A bartender shares 10 seconds of story as a bright pour passes through.",
+                                                                            "visualDescription":  "Close, cinematic peel over a coupe; The Lime \u0026 Coconut signage blurred behind."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "Company first.",
+                                                                            "bodyText":  "Two friends trade favorites, then watch the sky change together.",
+                                                                            "visualDescription":  "Shoulderâtoâshoulder profile, soft smiles; glassware low in frame, horizon high."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "Find the glow, not a schedule.",
+                                                                            "bodyText":  "Menus nudge by flavorâbitter, bright, aromaticâwoven into normal service.",
+                                                                            "visualDescription":  "Minimal menu corner on bar wood; type clean, no grids or stations in sight."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "Western Caribbean evenings hit different.",
+                                                                            "bodyText":  "Salt in the air, slow breeze, and a gentle spritz before dinner.",
+                                                                            "visualDescription":  "Deck walkway at dusk; warm signage glow, ocean beyond, no crowding."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Minimal coupe silhouette resting near a sunâsoft rail with ample ocean negative space; headline type: âSundown Spirits, aboard Utopia of the Seas.â",
+                                                 "caption":  "Modern aperitif at seaâone small discovery threaded into the moments you already love: sailaway, preâdinner drift, and a quiet nightcap. Utopia of the Seas. Sip the sunset."
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Sundown Spirits, aboard Utopia of the Seas",
+                                              "primaryText":  "Twilight hush, a bright pour, and the horizon doing the heavy lifting. Aperitif culture, woven into real cruise eveningsâno chase, just a gentle nudge when it feels right.",
+                                              "description":  "Sail the 6âNight Western Caribbean date and meet golden hour with bitterâbright ease.",
+                                              "cta":  "Sail the 6âNight Western Caribbean date",
+                                              "visualDescription":  "Shipâfirst frame at The Lime \u0026 Coconut during blue hour: horizon and rail prominent, soft bar glow, a single coupe at the edge with specular highlightsânever centerâstage."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "Sundown Spirits â Utopia of the Seas",
+                                                "visualConcept":  "Microâmontage: horizon shimmer, teak rail texture, bartenderâs quiet peel, sideâbyâside lean, soft clink, The Lime \u0026 Coconut glowâtype accent: âSip the sunset.â",
+                                                "description":  "Modern aperitif energy meets openâocean evenings. One story, one sip, then back to the view. Aboard Utopia of the Seas. No scheduleâjust a soft nudge when the sky turns cobalt.",
+                                                "hashtags":  [
+                                                                 "#SundownSpirits",
+                                                                 "#UtopiaoftheSeas",
+                                                                 "#AperitifAtSea",
+                                                                 "#CruiseLife",
+                                                                 "#BlueHour"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Twilight Spritz at the Rail",
+                                             "pinDescription":  "Cobalt sea, warm teak, and a bright, modern pour that lets the horizon lead. Sundown Spiritsâaboard Utopia of the Seas.",
+                                             "visualConcept":  "Minimal coupe catching sunset sparkle on a teak rail; ocean negative space for type; coral accent from a discreet peel."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Sundown Spirits, aboard Utopia of the Seas",
+                                               "preheader":  "Golden hour, bitter orange, open waterâsip the sunset.",
+                                               "bodyDirection":  "Warm, twilightâslow copy inviting guests to drift by the bar when the mood hitsâspritz at sail, a brief story at dusk, an easy nightcap after dessert.",
+                                               "visualDirection":  "Hero: ship rail and horizon with soft bar glow; small coupe highlight; clean geometric headline type in cream over navy."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Blueâtoâcobalt gradient with a slim rail line, tiny coupeâandâbow icon, and the line: âSundown Spirits â Utopia of the Seas.â",
+                                                 "welcomeMessageDirection":  "Pinned welcome: friendly, oceanâfirst. âFind your rail, weâll handle the citrus. Share a window view, a song for blue hour, or tonightâs favorite bitterâbright.â"
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Modern Aperitif at Sea â Sundown Spirits",
+                                                "durationSeconds":  45,
+                                                "tool":  "composite",
+                                                "scriptOrNarration":  "Voice (warm, unhurried): \"Blue hour settles over the rail. Glass catches the last warm light, and the sea turns cobalt. A spritz lifts with citrus and a little salt in the air. A quick origin noteâjust enough to spark a smileâthen the evening breathes. Drift from deck to bar, from story to sip, from sunset to nightcap. This is Sundown Spirits, aboard Utopia of the Seasâmodern aperitif woven into nights you already love.\" Onâscreen type beats: Sailaway â¢ PreâDinner Drift â¢ Nightcap.",
+                                                "visualDirectionNotes":  "Cinematic shipâfirst montage: horizon, rail textures, The Lime \u0026 Coconut glow, relaxed twoâperson chemistry, bartender in natural service. Glassware sparkle as accent, never staged boards or mats. Type overlays with generous negative space.",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Open decks and The Lime \u0026 Coconut at golden/blue hour; quiet lounge nook for nightcap end beat.",
+                                                "musicMood":  "Aperitivoâadjacent: mellow jazzâlounge 94â100 BPM; brushed drums, soft vibraphone, airy pads."
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "Peel, Pause, Horizon",
+                                             "durationSeconds":  12,
+                                             "tool":  "runwayml",
+                                             "scriptOrNarration":  "[Natural sound: peel whisper] Voice: \"Bright, then quiet.\" Onâscreen: âSip the sunset.â Tag: âUtopia of the Seas.â",
+                                             "visualDirectionNotes":  "Macro peel over glass for 1 second, immediate cut to wide horizon with two silhouettes leaning at the rail. No table, no flights. Coral accent via wardrobe pocket square.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Teak rail at dusk; ocean negative space; The Lime \u0026 Coconut glow in bokeh.",
+                                             "musicMood":  "Soft house at 100 BPM, airy pads; conversationâfriendly."
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "When the Sky Turns Cobalt",
+                                                        "durationSeconds":  15,
+                                                        "tool":  "runwayml",
+                                                        "scriptOrNarration":  "Voice: \"When the sky deepens, a bright pour tends to appear. No rushâcatch it if you do, keep walking if you donât.\" Onâscreen: âSundown Spirits â Utopia of the Seas.â",
+                                                        "visualDirectionNotes":  "Timeâlapse glow of The Lime \u0026 Coconut signage coming alive, guests drifting by. Quick bar handâoff moment, then back to horizon. Ship architecture and ambient flow are the hero.",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Royal Promenade to open deck transition at blue hour.",
+                                                        "musicMood":  "Neoâbossa 92 BPM with brushed drums and light keys."
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Spritz Tee at Sea â Horizon Coupe",
+                                              "durationSeconds":  18,
+                                              "tool":  "composite",
+                                              "scriptOrNarration":  "Voice: \"Horizon in a glass, coral sun on navy. The Spritz Tee, for golden hour and beyond.\" Onâscreen CTA: âShop the Spritz Tee.â",
+                                              "visualDirectionNotes":  "Tee draped on a teak rail with ocean negative space; close on coral sunset orb in the coupe graphic; cut to guest wearing tee during sailaway lean. No retail racks, just breeze and blue hour.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Open deck at sailaway; warm cream type over deep navy palette.",
+                                              "musicMood":  "Soft lounge 96 BPM; vibraphone lead."
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "Tâ5: The Rail",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Onâscreen text only: âFind your spot. Let the sea set the pace.â",
+                                                      "visualDirectionNotes":  "Empty rail, cobalt sea, gentle wake line; no drinks visible. Posture cue via a hand resting on rail entering frame at the end.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Aft rail with horizon line centered.",
+                                                      "musicMood":  "Airy pads, 92 BPM."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ4: A Bright Twist",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "SFX: soft peel. Onâscreen: âBitter â¢ Bright â¢ Aromatic.â",
+                                                      "visualDirectionNotes":  "Macro citrus peel over a coupe with specular highlights; glass exits frame quickly so the ocean holds.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Bar ledge near open window; blue hour outside.",
+                                                      "musicMood":  "Mellow jazzâlounge 96 BPM."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ3: Sign Glow",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Onâscreen: âFollow the glow. Not a schedule.â",
+                                                      "visualDirectionNotes":  "The Lime \u0026 Coconut neon flickers to life; guests drift past in soft focus; architectural cue is primary.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Pool deck approach to The Lime \u0026 Coconut; warm signage against deep navy ambient light.",
+                                                      "musicMood":  "Soft house 100 BPM, understated."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ2: Wardrobe Whisper",
+                                                      "durationSeconds":  7,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Onâscreen: âNavy and a hint of coral.â Voice (whisper): âThatâs the brief.â",
+                                                      "visualDirectionNotes":  "Close on coral pocket square and cream knit over navy; no drinks in frame. Turn toward the window, ocean bokeh.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Corridor opening to deck; blueâhour spill.",
+                                                      "musicMood":  "Neoâbossa 94 BPM, minimal."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ1: Quiet Clink",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "[Soft clink] Voice: \"One story, one sip, the sea does the rest.\"",
+                                                      "visualDirectionNotes":  "Two friends sideâbyâside, clink low in frame, hold the moment on horizon. Chemistry and posture as the signal; glassware secondary.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Windâsheltered deck nook with horizon view.",
+                                                      "musicMood":  "Lounge 98 BPM; vibraphone + brushed kit."
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T23:46:08.050Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}

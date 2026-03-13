@@ -197,6 +197,7 @@ function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
     return [
         ...manifest.images.shipReferences,
         ...manifest.images.hero,
+        ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
@@ -334,6 +335,7 @@ function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: A
             ...manifest.images,
             shipReferences: updateAssetInCollection(manifest.images.shipReferences, updatedRecord),
             hero: updateAssetInCollection(manifest.images.hero, updatedRecord),
+            sceneImages: updateAssetInCollection(manifest.images.sceneImages, updatedRecord),
             aestheticConcepts: updateAssetInCollection(manifest.images.aestheticConcepts, updatedRecord),
             platformCrops: Object.fromEntries(
                 Object.entries(manifest.images.platformCrops).map(([formatKey, records]) => [

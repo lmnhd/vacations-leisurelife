@@ -1,5 +1,11 @@
 import { ModelName, modelForTask } from '@/lib/ai/llm-gateway';
 import type { GeneratorService } from '@/lib/campaigns/schema';
+import {
+    getActiveVideoGeneratorService as getResolvedVideoGeneratorService,
+    getActiveVideoProvider as getResolvedVideoProvider,
+    getActiveVideoProviderLabel as getResolvedVideoProviderLabel,
+    type VideoProviderId,
+} from './video-models';
 
 // ────────────────────────────────────────────────────────────────────────────
 // MEDIA PIPELINE CONFIGURATION
@@ -46,20 +52,6 @@ export function modelNameToGeneratorService(model: ModelName): GeneratorService 
 
 export function getMediaImageGeneratorService(): GeneratorService {
     return 'gemini3_flash';
-}
-
-export const VIDEO_PROVIDER_CONFIG = {
-    activeProvider: 'runway' as const,
-    plannedSecondaryProvider: 'fal' as const,
-    activeGeneratorService: 'runwayml' as const,
-};
-
-export function getActiveVideoProvider(): string {
-    return VIDEO_PROVIDER_CONFIG.activeProvider;
-}
-
-export function getActiveVideoGeneratorService(): GeneratorService {
-    return VIDEO_PROVIDER_CONFIG.activeGeneratorService;
 }
 
 // ── LLM Task → Model Assignments ────────────────────────────────────────────
@@ -152,6 +144,25 @@ export const RUNWAYML_CONFIG = {
     pollIntervalMs: 10_000,
     maxPollAttempts: 60,
 } as const;
+
+export const FAL_CONFIG = {
+    apiBase: 'https://queue.fal.run',
+    defaultDurationSeconds: 10,
+    pollIntervalMs: 10_000,
+    maxPollAttempts: 60,
+} as const;
+
+export function getActiveVideoProvider(presetId?: string | null): VideoProviderId {
+    return getResolvedVideoProvider(presetId);
+}
+
+export function getActiveVideoGeneratorService(presetId?: string | null): GeneratorService {
+    return getResolvedVideoGeneratorService(presetId);
+}
+
+export function getActiveVideoProviderLabel(presetId?: string | null): string {
+    return getResolvedVideoProviderLabel(presetId);
+}
 
 // ── DALL-E 3 Settings (Merch Designs) ────────────────────────────────────────
 // Image generation settings for merch design output.

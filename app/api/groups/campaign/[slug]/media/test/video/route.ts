@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { buildElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import {
@@ -64,7 +65,7 @@ export async function POST(
 
     try {
         if (generator === 'tiktok_voiceover') {
-            const video = await generateTikTokSeed(brief, heroImageUrl);
+            const video = await generateTikTokSeed(brief, heroImageUrl, null, undefined, slug);
             const cdnUrl = await uploadAsset(slug, video.fileName, video.buffer, 'video/mp4');
             await saveAssetRecord(slug, {
                 assetId: video.assetId,
@@ -75,7 +76,7 @@ export async function POST(
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
                 mimeType: 'video/mp4',
-                tags: ['video', 'tiktok', activeVideoGeneratorService, 'elevenlabs', 'narrated'],
+                tags: ['video', 'tiktok', activeVideoGeneratorService, 'elevenlabs', 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
@@ -85,6 +86,8 @@ export async function POST(
                 generator: `${activeVideoGeneratorService}+elevenlabs`, type: 'tiktok_seed_9x16',
                 assetId: video.assetId, fileName: video.fileName,
                 script: video.script, durationSeconds: video.durationSeconds,
+                voiceId: video.narrationVoiceId,
+                voiceName: video.narrationVoiceName,
                 motionPrompt: video.motionPrompt,
                 fileSizeBytes: video.buffer.length, cdnUrl,
             });

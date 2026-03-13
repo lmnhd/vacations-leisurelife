@@ -18,6 +18,9 @@ import {
     VideoBriefSchema,
     ProductionBibleSchema,
     ProductionBible,
+    LandingStillBibleSchema,
+    LandingStillBible,
+    normalizeVisualPlausibilityFramework,
 } from './schema';
 
 function buildTShirtMerchPrompt(themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
@@ -67,6 +70,7 @@ const Pass1Schema = CampaignAestheticBriefSchema.omit({
     socialConcepts: true,
     videoConcepts: true,
     productionBible: true,
+    landingStillBible: true,
     generatedAt: true,
     generatedBy: true,
     humanReviewStatus: true,
@@ -96,6 +100,17 @@ const Pass2Schema = z.object({
     })
 });
 
+const RefinementSchema = CampaignAestheticBriefSchema.omit({
+    slug: true,
+    themeName: true,
+    productionBible: true,
+    landingStillBible: true,
+    generatedAt: true,
+    generatedBy: true,
+    humanReviewStatus: true,
+    revisionNotes: true,
+});
+
 function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
     const failures: string[] = [];
     const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
@@ -118,11 +133,220 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
     return failures;
 }
 
+function joinCampaignList(values?: string[]): string {
+    if (!values || values.length === 0) {
+        return 'None provided';
+    }
+
+    return values.join(', ');
+}
+
+function sanitizePromptText(value?: string): string {
+    if (!value) {
+        return 'Not provided';
+    }
+
+    return value
+        .replace(/leave[- ]one\/?take[- ]one shelf/gi, 'guest-to-guest book passing')
+        .replace(/book[- ]swap shelf/gi, 'guest-to-guest book passing')
+        .replace(/shared shelf/gi, 'guest-to-guest recommendation flow')
+        .replace(/curated shelf/gi, 'personal recommendation flow')
+        .replace(/book[- ]swap station/gi, 'casual guest book exchange')
+        .replace(/book swap/gi, 'casual guest book exchange')
+        .replace(/optional salons/gi, 'optional after-dinner conversation')
+        .replace(/salon-style/gi, 'easy conversational')
+        .replace(/\bsalons\b/gi, 'after-dinner conversations')
+        .replace(/\bsalon\b/gi, 'after-dinner conversation')
+        .replace(/listening room/gi, 'window-side listening mood')
+        .replace(/hosted talk/gi, 'easy conversation')
+        .replace(/teach-and-play/gi, 'easy guest-led play')
+        .trim();
+}
+
+function sanitizePromptList(values?: string[]): string[] {
+    if (!values || values.length === 0) {
+        return [];
+    }
+
+    return values.map((value) => sanitizePromptText(value));
+}
+
+function getCanonicalShipName(campaign: Campaign): string {
+    const shipTarget = campaign.shipTarget?.trim();
+    if (shipTarget) {
+        return shipTarget;
+    }
+
+    const matchedShipName = campaign.matchedShipName?.trim();
+    if (matchedShipName) {
+        return matchedShipName;
+    }
+
+    return 'TBD';
+}
+
+function buildShipContext(campaign: Campaign): string {
+    const canonicalShip = getCanonicalShipName(campaign);
+    const matchedShipName = campaign.matchedShipName?.trim();
+
+    if (matchedShipName && campaign.shipTarget?.trim() && matchedShipName !== campaign.shipTarget.trim()) {
+        return `${canonicalShip} | Inventory metadata conflict: ${matchedShipName} (do not use conflicting ship name in outward copy)`;
+    }
+
+    if (matchedShipName) {
+        return `${canonicalShip} | Inventory matched ship: ${matchedShipName}`;
+    }
+
+    return canonicalShip;
+}
+
+function buildRouteContext(campaign: Campaign): string {
+    const routeParts = [
+        campaign.targetDestination,
+        campaign.matchedDeparturePort ? `Departure Port: ${campaign.matchedDeparturePort}` : undefined,
+        campaign.matchedNights ? `Duration: ${campaign.matchedNights}` : undefined,
+        campaign.matchedSailDate ? `Matched Sail Date: ${campaign.matchedSailDate}` : undefined,
+    ].filter(Boolean);
+
+    return routeParts.length > 0 ? routeParts.join(' | ') : 'No route context provided';
+}
+
+function buildEventFramingGuidance(campaign: Campaign): string {
+    const highlightEvents = sanitizePromptList(campaign.highlightEvents);
+
+    if (highlightEvents.length === 0) {
+        return 'No highlight events provided. Do not invent event-specific spectacle, themed operations, or special-viewing infrastructure.';
+    }
+
+    return [
+        `Highlight events provided: ${joinCampaignList(highlightEvents)}.`,
+        'Treat real itinerary-timed events, seasonal phenomena, holidays, and cultural moments as backdrop context unless the campaign is explicitly being sold as that event experience.',
+        'Let those events influence lighting, sky color, timing, destination mood, emotional cadence, or shared atmosphere rather than turning them into onboard programming.',
+        'Do not let a secondary event silently hijack the campaign identity, hero slogan, or repeated social/video beats.',
+        'Avoid language that implies ceremony, viewing rituals, special gear, or hosted infrastructure unless that operation is genuinely part of the product.'
+    ].join(' ');
+}
+
+function buildRefinementContext(campaign: Campaign): string {
+    return [
+        `Theme: ${campaign.name}`,
+        `Canonical Ship: ${getCanonicalShipName(campaign)}`,
+        `Ship Context: ${buildShipContext(campaign)}`,
+        `Destination: ${campaign.targetDestination || 'TBD'}`,
+        `Route Context: ${buildRouteContext(campaign)}`,
+        `Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}`,
+        `Event Framing Guidance: ${buildEventFramingGuidance(campaign)}`,
+        `Vacation Fit Rationale: ${sanitizePromptText(campaign.vacationFitRationale)}`,
+        `Cruise-Native Moments: ${joinCampaignList(sanitizePromptList(campaign.cruiseNativeMoments))}`,
+        `Niche Expression Mode: ${sanitizePromptText(campaign.nicheExpressionMode)}`,
+        `Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}`,
+        `Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}`,
+        `Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}`,
+    ].join('\n');
+}
+
+async function refineAestheticBrief(
+    model: ReturnType<typeof openai>,
+    campaign: Campaign,
+    draftBrief: CampaignAestheticBrief,
+): Promise<CampaignAestheticBrief> {
+    const refinementPrompt = `
+You are GitHub Copilot using GPT-5.4 in a dedicated aesthetic refinement phase.
+
+Review the draft aesthetic brief and polish it like a senior creative director performing a final quality pass.
+Preserve what is already strong. Make the smallest set of changes needed to improve precision, plausibility, specificity, and emotional truth.
+
+REFINEMENT OBJECTIVES:
+- Keep the campaign cruise-first, ship-first, and horizon-first.
+- Keep the niche as a soft social flavor layer, not an onboard event architecture.
+- Preserve the exact provided ship identity when one exists. Do not rename the ship, substitute a sister ship, or swap classes.
+- Remove residual organized-program language such as hosted hours, sessions, activations, library cart energy, sign-up energy, or managed social mechanics.
+- Replace those with ambient, human, low-pressure, real-cruise phrasing.
+- Avoid drifting into exclusivity-coded lifestyle language such as quiet-luxe, elevated salon, collector-grade curation, or other wording that makes the trip sound like a rarefied cultural program instead of a welcoming vacation.
+- Reduce repetitive micro-prop dependence across the brief; vary between interpersonal chemistry, wardrobe/detail cues, object cues, and environmental cues.
+- Keep off-ship or destination sentiment light but meaningful when route context exists.
+- Do not invent excursions, exact ports, or shore claims that are unsupported by the route context.
+- Keep hero and social concepts photogenic, restrained, and realistic.
+- Remove anything that makes the campaign feel like a convention, meetup operations plan, or themed program schedule.
+- Do not let a real itinerary event, holiday, or seasonal phenomenon overpower the campaign unless it is explicitly the core product.
+- If an event is referenced, keep it proportional and backdrop-oriented: atmosphere, light, timing, destination mood, or emotional cadence rather than ceremony, viewing ritual, special gear, or onboard programming.
+- Remove repeated named-event phrasing if it starts to sound like the campaign is secretly an event-specific cruise.
+- Prefer passing-recommendation, shared-table, rail-side-friendship, and window-seat companionship language over browseable-cart, shelf infrastructure, table-tent, lanyard, or explicit matching mechanics.
+- If a destination is referenced, make it feel like sail-away atmosphere, waterfront wandering, harbor light, market texture, or hillside distance rather than excursion copy.
+
+SPECIFIC CLEANUP TARGETS:
+- Avoid phrases like borrow shelf, browseable nook, teach-as-you-go, looking for players, host table, or borrow cart unless they are fully dissolved into background ambiance.
+- Prefer spontaneous friend-to-friend phrasing like a recommendation passed across the table, a game someone brought along, a pocket deck appearing between coffees, or an easy shared turn.
+- De-emphasize trays, pencil cups, table tents, scorepads, and other semi-system props unless they are truly incidental and not the conceptual center of the moment.
+- If in doubt, choose social softness over tabletop infrastructure.
+- For music, listening, or audio-forward campaigns, avoid phrasing like curated plays, full-room listen, listening room, rare pressing moment, or the room leans in when it implies a semi-hosted onboard activation.
+- For those campaigns, prefer soundtrack-to-the-view language: a favorite side by the window, a recommendation passed between guests, a song that fits sailaway, or a cabin/lounging mood that happens naturally.
+- Also avoid language that implies control of the venue soundtrack or public playback as the signature event: lounge system takeover, side played through the room, spotlight listening, collector showcase, or featured pressing moment.
+- For those campaigns, prefer low-pressure discovery language over collector prestige language: favorite record, song recommendation, sleeve edge, track note, deep cut, after-dinner drift, or something good quietly shared.
+- For reading/literary campaigns, avoid phrasing like salon-style conversation, influencer guest session, curated shelf, shared shelf, leave-one/take-one shelf, book-swap station, literary activation, or hosted discussion if it implies infrastructure or a formal recurring program.
+- For those campaigns, prefer guest-native reading language: a recommendation passed along, a closed book on a lounger, a ribbon mark at the window, a casual after-dinner chat, or a novel-in-your-bag atmosphere.
+- If a reading campaign references books changing hands, frame it as one guest passing a recommendation or lending a book directly to another guest, not as shelf-based infrastructure.
+- For reading/literary campaigns, do not mention shelves, shared shelves, tucked spines, browsing shelves, or leave-one/take-one setups anywhere in the final brief, even as incidental background texture.
+
+NON-OBJECT DIVERSITY RULES:
+- Diversify niche expression across the brief. Do not let the same object family carry every section.
+- Lean on non-object cues such as posture, shared attention, eye contact, seat choice, pacing, wardrobe texture, color accents, carry-on styling, and environmental framing.
+- At least half of the social and video concepts should communicate the niche without requiring a visible tabletop object as the central beat.
+- If cards, dice, tokens, pencils, pads, or pins appear in one concept, rotate the next concepts toward human chemistry, wardrobe, architecture, harbor atmosphere, or horizon-led framing.
+- Do not let any single cue family dominate the moodboard, carousel, and video concepts all at once.
+
+SPECIFIC QUALITY BAR:
+- Hero slogan and sub-slogan should feel memorable, concise, and natural.
+- Elevator pitch should sound like a desirable vacation, not a programming overview.
+- Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
+- Social and video concepts should feel varied and platform-native without repeating the same token, die, pouch, tray, or leaflet beat over and over.
+- Merch should stay cute and printable, but not dominate the campaign identity or repeat the same icon family across every item.
+
+OUTPUT RULES:
+- Return a fully refined brief matching the schema.
+- Do not add productionBible.
+- Do not change the campaign identity, only sharpen it.
+- Keep changes minimal but meaningful.
+- If the campaign context provides a ship name, use that exact ship name in copy fields and do not invent another ship.
+`.trim();
+
+    const { object } = await generateObject({
+        model,
+        schema: RefinementSchema,
+        system: refinementPrompt,
+        prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
+    });
+
+    const refinedMerch = normalizeMerchBrief(campaign.name, object.merch);
+    const refinedBrief: CampaignAestheticBrief = {
+        ...draftBrief,
+        ...object,
+        slug: campaign.id,
+        themeName: campaign.name,
+        visual: {
+            ...object.visual,
+            plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
+        },
+        merch: refinedMerch,
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'agent',
+        humanReviewStatus: 'pending',
+    };
+
+    return refinedBrief;
+}
+
 export async function generateAestheticBrief(campaign: Campaign): Promise<CampaignAestheticBrief> {
     // Resolve model through the gateway registry. Creative task → GPT_5_HIGH (OpenAI Tier-1).
     // Note: uses @ai-sdk/openai adapter for generateObject structured output.
     const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
     const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
+    const resolvedModelId = aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH;
+
+    console.log(`[aesthetic-engine] Starting aesthetic brief generation for ${campaign.id}`);
+    console.log(
+        `[aesthetic-engine] Model resolved for ${campaign.id}: enum=${ModelName.GPT_5_HIGH}, provider=${aestheticModelConfig.provider}, apiId=${resolvedModelId}`
+    );
 
     const brandGuidelines = `
 Leisure Life Interactive Brand Guidelines:
@@ -136,16 +360,30 @@ Leisure Life Interactive Brand Guidelines:
 Theme: ${campaign.name}
 Aesthetic Request: ${campaign.aesthetic || 'Determine best fit'}
 Target Audience/Keywords: ${(campaign.targetingKeywords || []).join(', ')}
-Highlight Events: ${(campaign.highlightEvents || []).join(', ')}
-Ship Target: ${campaign.shipTarget || 'TBD'}
+Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
+Event Framing Guidance: ${buildEventFramingGuidance(campaign)}
+Canonical Ship: ${getCanonicalShipName(campaign)}
+Ship Context: ${buildShipContext(campaign)}
 Destination: ${campaign.targetDestination || 'TBD'}
+Route Context: ${buildRouteContext(campaign)}
+Vacation Fit Rationale: ${sanitizePromptText(campaign.vacationFitRationale)}
+Cruise-Native Moments: ${joinCampaignList(sanitizePromptList(campaign.cruiseNativeMoments))}
+Niche Expression Mode: ${sanitizePromptText(campaign.nicheExpressionMode)}
+Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}
+Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}
+Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}
 
 Visual Priority Rules:
 - For visual identity fields, prioritize durable cruise/travel truths that would still feel correct even if no niche activity is happening in frame.
 - Hero-safe imagery should read first as travel/cruising at sea, second as niche identity.
 - Highlight events and targeting keywords are flavor cues, not mandatory literal scene directions.
+- If highlight events contain structured, hosted, or promotional wording, reinterpret them into softer guest-native atmosphere rather than repeating them literally.
+- Real itinerary events or seasonal phenomena may shape light, timing, mood, and destination texture, but should not become the campaign's dominant promise unless the campaign is explicitly sold as that event experience.
+- If an event is secondary, mention it sparingly and proportionally. Let it tint the mood rather than take over slogans, merch, or repeated concept beats.
+- Never imply special onboard ceremony, viewing ritual, gear culture, or hosted infrastructure unless that experience is genuinely part of the product.
 - Niche cues should usually be subtle: wardrobe hints, one prop, one gesture, one environmental clue.
 - The brief must explicitly distinguish what is cruise-native, what is niche-enhanced but believable, and what would feel like staged promo fiction.
+- If ship context is provided, preserve the exact ship name and class context. Never substitute a different ship.
 `;
 
     const merchGuidelines = `
@@ -175,12 +413,37 @@ CRITICAL VISUAL RULES:
 - visual.plausibilityFramework.implausibleLiteralizations should name specific staged, props-heavy, or operationally awkward scenes to avoid.
 - visual.plausibilityFramework.allowedProps should be lightweight, plausible, guest-friendly objects.
 - visual.plausibilityFramework.discouragedProps should include equipment or setups that make the cruise feel like a lab, classroom, or trade-show demo.
+
+CRITICAL MESSAGING AND SOCIAL RULES:
+- The niche must remain a social flavor layer, not a scheduled program architecture.
+- Avoid nouns and phrases that imply formal operations or recurring structured programming: classes, sessions, workshops, rotations, sign-up tables, hosted hours, activations, stations, open library, or teaching blocks.
+- Avoid exclusivity or lifestyle-marketing language that turns the trip into a luxury-membership fantasy; keep it welcoming, specific, and human instead of rarefied.
+- If the campaign source fields contain organized wording, convert it into vacation-native language instead of mirroring it. Never copy source phrases like salon, hosted talk, book swap station, listening room, spotlight, or teach-and-play unless they dissolve into incidental background context.
+- Prefer ambient cruise-social phrasing: easy drop-in moment, shared table, passing recommendation, low-pressure evening drift, rail-side chat, café-side laugh.
+- At least some niche expression should come from interpersonal chemistry, posture, wardrobe, or tiny carry-on cues, not only handheld props.
+- Do not let every visual idea rely on the same object repeated over and over; vary between object cue, wardrobe cue, conversational cue, and environmental cue.
+- At least half of the social/video concepts should signal the niche through non-object cues such as seat choice, eye contact, body angle, outfit detail, timing, architecture, or harbor atmosphere rather than a visible game object.
+- If an object cue is used in one concept, the next concepts should deliberately pivot to a different signal family instead of repeating cards, dice, tokens, scorepads, or pins.
+- Preserve calm and restraint, but do not make the campaign feel emotionally empty or solitary; include believable low-pressure human-togetherness where appropriate.
+- If route context exists, lightly use destination or port-day atmosphere where it naturally strengthens the campaign; do not ignore the itinerary completely.
+- Off-ship sentiment must remain secondary to ship life, but at least some messaging or content concepts may reference believable shore mood, local café culture, market strolls, waterfront wandering, or region-specific ambiance when it fits the route.
+- Do not invent specific excursions or port details unless the provided route context genuinely supports them.
+- Do not let a real itinerary event, holiday, or seasonal phenomenon quietly hijack the campaign identity unless it is explicitly the core product. Event context may influence atmosphere, but should not override the niche and cruise promise.
+- If an event is referenced, frame it as contextual backdrop rather than a promised onboard experience.
+- Keep lanyards, table tents, carts, or explicit matching systems out of the aesthetic center unless they are minimized to near-invisible background texture.
+- Avoid naming semi-managed features like borrow shelves, quiet nooks for game selection, or teach-and-play moments as if they are programmed amenities.
+- Prefer language where the niche appears through guests, not infrastructure: a game suggested by a friend, a card passed after dessert, a pocket deck surfacing by the window, a soft laugh over one shared turn.
+- For music/listening campaigns specifically, do not imply a hosted salon, listening-room program, or collector ritual. The music should feel like atmosphere, recommendation culture, and guest-carried mood rather than a formal room event.
+- For music/listening campaigns specifically, avoid making shared public playback the central mechanism of the experience. Use ship soundtrack mood, personal recommendations, side-by-side listening energy, and naturally shared taste rather than room-command or spotlight moments.
+- For reading/literary campaigns specifically, do not imply hosted salons, influencer talks, curated swap infrastructure, shared shelves, leave-one/take-one shelves, or reading-club management. Reading should feel self-directed, socially easy, and naturally embedded in sea days and port downtime.
+- For reading/literary campaigns specifically, never use shelf-based ambient infrastructure as the mechanism for discovery; recommendations should move person-to-person, book-to-hand, or remain purely atmospheric.
 `.trim();
 
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
     let attempts = 0;
     while (attempts < 3) {
         attempts++;
+        console.log(`[aesthetic-engine] Pass 1 core aesthetic attempt ${attempts} for ${campaign.id}`);
         const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
 
         const { object } = await generateObject({
@@ -192,14 +455,22 @@ CRITICAL VISUAL RULES:
 
         const normalizedObject: z.infer<typeof Pass1Schema> = {
             ...object,
+            visual: {
+                ...object.visual,
+                plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
+            },
             merch: normalizeMerchBrief(campaign.name, object.merch),
         };
 
         const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan);
         if (sloganFailures.length < 2) {
+            console.log(`[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`);
             pass1Result = { object: normalizedObject };
             break; // Pass!
         } else {
+            console.warn(
+                `[aesthetic-engine] Pass 1 quality gate failed for ${campaign.id} on attempt ${attempts}: ${sloganFailures.join('; ')}`
+            );
             pass1Result = { object: normalizedObject, failures: sloganFailures };
         }
     }
@@ -212,7 +483,27 @@ CRITICAL VISUAL RULES:
 You are the Creative Director for Leisure Life Interactive. 
 Based on the finalized core aesthetic identity, expand this campaign into precise, platform-native social media and video concepts.
 Return ONLY the socialConcepts and videoConcepts conforming to the schema.
+
+PASS 2 GUARDRAILS:
+- Keep every concept cruise-first and atmosphere-first.
+- Avoid copy that makes the campaign sound like an organized event program or tabletop convention.
+- Do not default to phrases like learn-to-play sessions, hosted hours, open library, programming blocks, workshops, or scheduled activities unless the wording is softened into optional ambient behavior.
+- Avoid exclusivity-coded phrasing such as quiet-luxe, elevated salon, collector-grade, or other copy that makes the campaign feel socially gated or culturally precious.
+- Preserve the exact provided ship name. Do not swap to another ship, even within the same cruise line.
+- Vary niche signals across concepts; do not repeat the same die, token, tuckbox, or prop in every asset.
+- Some concepts should communicate the niche through two-person chemistry, shared glances, side-by-side lounging, or subtle wardrobe details instead of tabletop objects.
+- At least half of the concepts in the total set should not rely on a visible tabletop object as the primary signal.
+- Rotate signal families across the set: object cue, wardrobe cue, posture cue, conversational cue, architectural cue, and destination-atmosphere cue.
+- If one concept uses cards, dice, tokens, scorepads, or pins, the next concept should pivot away from that family and express the niche through mood, behavior, styling, or framing.
+- For music/listening campaigns, keep concepts centered on windows, water, companionship, song-sharing, and ambient atmosphere rather than semi-hosted room-listen setups.
+- For music/listening campaigns, do not make public playback, collector status, or featured rare-record moments the hero beat of the concept set.
+- For reading/literary campaigns, keep concepts centered on quiet corners, page-turn pauses, direct recommendations between guests, and horizon-led calm rather than shelves, hosted chats, or managed literary environments.
+- If route context exists, let a small number of concepts acknowledge believable destination texture or port-day possibility without making the campaign excursion-led.
+- Avoid foregrounding borrow shelves, carts, table tents, score systems, or player-matching cues in social/video concepts.
+- Prefer spontaneous social moments over any copy that implies a managed onboard tabletop ecosystem.
 `.trim();
+
+    console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
     const { object: platformConcepts } = await generateObject({
         model,
@@ -222,7 +513,7 @@ Return ONLY the socialConcepts and videoConcepts conforming to the schema.
     });
 
     // Assemble final brief (Production Bible generated separately via /media/aesthetic/production-bible)
-    const finalBrief: CampaignAestheticBrief = {
+    const draftBrief: CampaignAestheticBrief = {
         slug: campaign.id,
         themeName: campaign.name,
         ...coreAesthetic,
@@ -233,7 +524,8 @@ Return ONLY the socialConcepts and videoConcepts conforming to the schema.
         humanReviewStatus: 'pending' // pending by default
     };
 
-    return finalBrief;
+    console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);
+    return refineAestheticBrief(model, campaign, draftBrief);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -248,12 +540,27 @@ const SHIP_REFERENCE_CATEGORIES = [
 
 const VIDEO_DELIVERABLES = VIDEO_DELIVERABLE_SPECS;
 
+const VisualPlanningBundleSchema = z.object({
+    landingStillBible: LandingStillBibleSchema,
+    productionBible: ProductionBibleSchema,
+});
+
+type VisualPlanningBundle = z.infer<typeof VisualPlanningBundleSchema>;
+
 // Public entry point — called from the dedicated /media/aesthetic/production-bible route.
 // Takes the already-saved brief so the route doesn't need the internal Pass types.
 export async function generateProductionBibleFromBrief(
     campaign: Campaign,
     brief: CampaignAestheticBrief
 ): Promise<ProductionBible> {
+    const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
+    return visualPlanning.productionBible;
+}
+
+export async function generateVisualPlanningFromBrief(
+    campaign: Campaign,
+    brief: CampaignAestheticBrief
+): Promise<VisualPlanningBundle> {
     const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
     const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
 
@@ -269,25 +576,28 @@ export async function generateProductionBibleFromBrief(
         videoConcepts: brief.videoConcepts,
     } as z.infer<typeof Pass2Schema>;
 
-    return generateProductionBible(model, campaign, coreAesthetic, platformConcepts);
+    return generateVisualPlanningBundle(model, campaign, coreAesthetic, platformConcepts);
 }
 
-async function generateProductionBible(
+async function generateVisualPlanningBundle(
     model: ReturnType<typeof openai>,
     campaign: Campaign,
     coreAesthetic: z.infer<typeof Pass1Schema>,
     platformConcepts: z.infer<typeof Pass2Schema>
-): Promise<ProductionBible> {
+): Promise<VisualPlanningBundle> {
     const { visual, messaging, audio } = coreAesthetic;
     const plausibility = visual.plausibilityFramework;
     const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
     const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
 
     const systemPromptPass3 = `
-You are the Creative Director of a luxury travel advertising agency commissioned by Leisure Life Interactive.
+You are the Creative Director of an aspirational travel advertising agency commissioned by Leisure Life Interactive.
 Your ONE job: make someone watching this campaign stop scrolling and think "I NEED to be on that ship."
 
-You are building a Production Bible — a scene library and storyboard package for a niche cruise campaign.
+You are building TWO linked visual-planning outputs for a niche cruise campaign.
+
+1. A Landing Still Bible for owned-channel still imagery.
+2. A Production Bible for scene-library and storyboard-driven motion.
 
 ## THE VACATION REFRAME RULE (MOST IMPORTANT)
 No matter what the campaign theme is — science, photography, wellness, cooking, history — you MUST reframe every activity as a VACATION EXPERIENCE.
@@ -302,13 +612,33 @@ Depict the niche as a believable modulation of ordinary cruise life, not as a st
 If a prop, setup, or behavior feels like it requires a lab, classroom, field station, training room, or formal workshop environment, do not use it.
 Prefer lightweight cues, outward-looking behavior, guided noticing, conversation, observation, and emotional reaction over equipment-heavy literalizations.
 
+## EVENT FRAMING RULE
+If highlight events mention holidays, seasonal phenomena, festivals, or itinerary-timed natural moments, treat them as atmospheric backdrop unless the campaign is explicitly sold as that event experience.
+Those events may shape sky color, light quality, timing, destination mood, and emotional cadence.
+They must not automatically create ceremonies, viewing rituals, dedicated gear, repeated event-specific hero beats, or implied onboard programming unless that is truly part of the product.
+The viewer should feel "this voyage happens during something special," not "this is secretly an event-program cruise," unless the campaign intentionally says so.
+
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
 NO scene should evoke: obligation, seriousness, focus, concentration, rigor, professionalism, or productivity.
 
 ## WHAT YOU PRODUCE
-1. A SCENE LIBRARY of 10 distinct scenes — each a different emotional moment that makes the viewer want to BE THERE
-2. STORYBOARDS for each video deliverable — ordered shot sequences that build desire
+1. A LANDING STILL BIBLE of 6 still specs for still-image marketing needs.
+2. A SCENE LIBRARY of 10 distinct scenes for motion/storyboard generation.
+3. STORYBOARDS for each video deliverable — ordered shot sequences that build desire.
+
+## LANDING STILL BIBLE RULES
+- These are NOT storyboard shots. They are conversion-oriented still-image blueprints.
+- Every still must read instantly as a desirable cruise vacation image even with no motion and no sequence context.
+- Prioritize headline-safe composition, clean focal hierarchy, and breathing room for copy.
+- Keep activity density low. One dominant emotional beat only.
+- Prefer 1-3 people max. No dense crowds. No multi-action scenes.
+- At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
+- At least 2 stills must be suitable for concept/editorial section imagery.
+- use usage values only from: hero_primary, hero_alt, concept, email_header, social_square.
+- Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
+- If a niche cue appears, it must be subtle and secondary to travel emotion.
+- A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
 
 ## SCENE RULES
 - mood field: name the VACATION emotion (e.g. "sunset wonder", "playful discovery", "golden hour magic"), never a work emotion (e.g. "focused", "rigorous", "purposeful")
@@ -318,7 +648,13 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Scenes on deck: the OCEAN is a character — vast, turquoise, cinematic. People are IN the moment, not just near it.
 - Interior scenes: must feel like a boutique hotel AT SEA — warm lighting, portholes with ocean visible, polished wood, elegant curves. NEVER a conference room, classroom, or generic office.
 - Body language: laughing, arms outstretched, leaning over railings in wonder, toasting, hugging, pointing excitedly. NEVER: hunched over work, writing on clipboards, staring at screens, standing in formal rows.
+- Rotate cue families across the scene library: interpersonal chemistry, posture, wardrobe detail, architectural framing, harbor atmosphere, and only occasional lightweight object cues.
+- At least half of the scene library should communicate the niche without requiring a visible niche object as the center of the frame.
+- If one scene uses a card, die, token, notebook, pin, or similar object cue, the next scene should pivot away from that family and let people, ship space, or destination atmosphere carry the scene.
+- Favor easy social recognition, seat choice, timing, clothing texture, rail-side pauses, and window-side intimacy over repeated prop beats.
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
+- For VIDEO scene-library use, do NOT make humans the focal subject of the frame. The ship, sea, sky, light, and architecture should dominate; if people appear, they should usually be backgrounded, side-profiled, silhouetted, or over-the-shoulder accents rather than the hero subject.
+- Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, phones, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
 - Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
 - Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join('; ') || 'guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues'}.
@@ -328,31 +664,51 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 
 ## IMAGE PROMPT RULES
 - Each imagePrompt is the SINGLE MOST IMPORTANT field. It drives the generated image directly.
-- Write it as a dreamy, evocative scene description — like the opening line of a luxury travel magazine feature.
+- Write it as a dreamy, evocative scene description — like the opening line of a premium travel magazine feature.
 - Start with the FEELING and LIGHT, then the setting, then the people:
   GOOD: "Warm golden light spills across a polished teak deck as two friends lean over the rail, laughing at dolphins racing the bow wake, turquoise Caribbean sea stretching to the horizon"
   BAD: "Two participants on the forward deck conduct a marine mammal census using binoculars and tally sheets"
 - ALWAYS include: specific lighting quality, emotional energy, the ocean or ship as backdrop, human connection or joy.
-- Style suffix to include in every prompt: "dreamy luxury travel editorial, aspirational, warm cinematic color grade, f/1.8 bokeh, golden hour warmth"
+- Prefer non-object signals first: eye contact, movement, spacing, clothing detail, architecture, harbor color, sea air, timing, and emotional cadence.
+- If an object cue is used, it must be incidental and must not be repeated as the signature beat of consecutive scenes.
+- For scene-library prompts intended for storyboard video, avoid foreground hands, close handheld objects, mugs, cups, glasses, and face-dominant portrait framing.
+- Style suffix to include in every prompt: "dreamy travel editorial, aspirational, warm cinematic color grade, f/1.8 bokeh, golden hour warmth"
 - BANNED WORDS in imagePrompt: "participant", "conduct", "deploy", "adjust", "conference", "training", "corporate", "business", "focus", "analyze", "study", "examine", "monitor", "record", "clipboard", "whiteboard", "presentation", "organized", "structured".
 - REQUIRED ENERGY: every imagePrompt must feel like a daydream — something you'd see and immediately want to book the trip.
+
+## LANDING STILL PROMPT RULES
+- Each landing still imagePrompt must optimize for a single-frame marketing still rather than a sequence beat.
+- Favor negative space, clean horizon lines, simple subject grouping, and uncluttered edges.
+- Avoid action chains, dense supporting cast, or multiple competing points of interest.
+- The prompt should make the still usable for a homepage hero, alternate hero, or editorial section image without requiring motion.
+- Avoid spectacle dependency. The image should still work if the viewer sees it for one second.
 
 ## STORYBOARD RULES
 - Each storyboard must follow an emotional arc: intrigue/hook → building desire → peak euphoria → "this could be you" CTA.
 - No two CONSECUTIVE shots may use the same sceneId.
 - Camera movements vary per shot: dolly forward, dolly back, crane rise, crane drop, orbit left, orbit right, steadicam tracking, push-in, pull-out, handheld follow, whip pan, slow arc.
 - transitionIn/transitionOut use film terminology: hard cut, cross-dissolve, whip pan, match cut, fade from black, fade to black, J-cut, L-cut.
-- narrationSegment must sound like a luxury travel documentary voiceover — warm, personal, aspirational, making the viewer ache to be there.
+- narrationSegment must sound like a premium travel documentary voiceover — warm, personal, aspirational, making the viewer ache to be there.
 - musicCue describes the audio energy: "silence into bass hit", "building synth swell", "full drop", "ambient bed", "fade out".
+- Assume downstream image-to-video models are weak at ALL human motion, including tiny limb, face, hand, and prop interactions.
+- Do NOT build storyboard shots around human performance. The dominant subject should usually be ship, sea, sky, light, architecture, wake, reflections, or destination atmosphere rather than a person.
+- If people appear, they should be incidental background figures, silhouettes, or over-the-shoulder accents only. They must not be foreground heroes, must not hold focal props, and must not be asked to animate.
+- subjectMotion should default to no human motion at all. The intended output should read as frozen human presence inside a living environment.
+- Let cameraMovement and environmentMotion carry the sensation of life: wake texture, sea shimmer, reflections, clouds, steam, flags, foliage drift, and changing light.
+- Avoid designing shots around walking cycles toward camera, dancing, clinking, sipping, pouring, hand-offs, page flipping, card dealing, repeated hand-to-object choreography, or any handheld close-up beat.
+- If an object cue appears, it must be static, distant, and non-essential. Prefer removing it entirely from video-facing shots.
+- Prefer wide, environment-led frames over portrait-led frames. Avoid close-ups of faces, hands, legs, or side-on full-body walking compositions.
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty/unpopulated scenes", "No corporate body language", "No generic interiors without ship identity", "No formal or staged poses", "No work-like activities".
 `.trim();
 
     const contextPrompt = `
 CAMPAIGN CONTEXT (use as inspiration, but ALWAYS reframe through the vacation lens):
 Campaign: ${campaign.name}
-Ship: ${campaign.shipTarget || 'TBD'}
+Ship: ${getCanonicalShipName(campaign)}
+Ship Context: ${buildShipContext(campaign)}
 Destination: ${campaign.targetDestination || 'TBD'}
-Highlight Events: ${(campaign.highlightEvents || []).join(', ')}
+Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
+Event Framing Guidance: ${buildEventFramingGuidance(campaign)}
 Aesthetic: ${visual.aestheticLabel}
 Imagery Mood: ${visual.imageryMood}
 Lighting: ${visual.lightingStyle}
@@ -372,12 +728,12 @@ Video Deliverables to storyboard:
 ${VIDEO_DELIVERABLES.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join('\n')}
 `.trim();
 
-    const { object: bible } = await generateObject({
+    const { object: visualPlanning } = await generateObject({
         model,
-        schema: ProductionBibleSchema,
+        schema: VisualPlanningBundleSchema,
         system: systemPromptPass3,
         prompt: contextPrompt,
     });
 
-    return bible;
+    return visualPlanning;
 }

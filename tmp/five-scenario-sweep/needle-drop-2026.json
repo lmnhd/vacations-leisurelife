@@ -1,0 +1,364 @@
+﻿{
+    "slug":  "needle-drop-2026",
+    "themeName":  "Needle Drop at Sea: A Vinyl \u0026 Listening Voyage",
+    "visual":  {
+                   "aestheticLabel":  "Needle Drop at Sea â analog warmth meets Arctic blue",
+                   "colorPalette":  {
+                                        "primary":  "#0A2740",
+                                        "secondary":  "#1B3A5A",
+                                        "accent":  "#F04A7B",
+                                        "background":  "#0F1420",
+                                        "textOnDark":  "#F3E9DB",
+                                        "textOnLight":  "#0B1A2B"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "Use LLI brand headline family first; if unavailable, a geometric sans with album-sleeve confidence (e.g., ITC Avant Garde-inspired or Poppins SemiBold).",
+                                               "bodyStyle":  "Use LLI brand body family first; if unavailable, a neutral modern grotesk (e.g., Inter Regular) with slightly relaxed tracking for analog warmth.",
+                                               "suggestedFonts":  [
+                                                                      "LLI Brand Sans (primary)",
+                                                                      "LLI Brand Serif (accent)",
+                                                                      "Poppins SemiBold",
+                                                                      "Inter Regular"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Quietly cinematic fjord passages at blue hour; reflective glass, long horizon lines, soft tungsten interiors breathing against polar dusk; restrained, tactile, travel-first calm.",
+                   "lightingStyle":  "Low-key tungsten and candle-level accents inside; cobalt twilight and silver sea outside; minimal specular on glass and metal; subtle neon-magenta pops echoing album-art inks without overwhelming the frame.",
+                   "compositionNotes":  "Cruise-first vantage: rail-side horizons, floor-to-ceiling windows, cantilevered terrace over water, private veranda silhouettes. Keep humans in relaxed, small-number arrangements or implied by posture/hand details. A single believable cueâlapel pin, era jacket stripe, one album sleeve near a rocks glassâmay whisper the niche. Negative space and horizon lead lines \u003e busy tables. No signage, no gear-forward hero scenes.",
+                   "avoidList":  [
+                                     "Crowds or staged circles around a turntable",
+                                     "Any âlistening roomâ with chairs in rows",
+                                     "DJ booths, visible mixers, or PA stacks in hero frames",
+                                     "Stacked record crates as decor",
+                                     "Whiteboards, placards, or agenda signage"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Blue-hour fjord panorama from an observation lounge",
+                                              "Macro of record edge with warm tungsten rim light",
+                                              "Amber cocktail and coaster on dark wood beside a windowed sea",
+                                              "Edge-class cantilevered terrace at dusk with soft underlighting",
+                                              "Era-cue wardrobe: 80s windbreaker stripe or 90s beanie, low-key against a navy backdrop"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "Let the ship and sea stay lead; music appears as guest-carried mood and light visual cuesânever as a gear-forward setup or room-command event.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Quiet cocktail at a window table while the ship threads a fjord",
+                                                                             "Blue-hour rail lean on a cantilevered terrace with the horizon riding by",
+                                                                             "Slow morning on a private veranda with a blanket and coffee",
+                                                                             "Unhurried stroll past panoramic glass between lounges",
+                                                                             "After-dinner drift into a low-lit bar with soft conversation"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A sleeve set down by a rocks glass while two guests exchange a knowing nod",
+                                                                              "Era-hint outfits at duskâsubtle windbreaker stripe, band tee under a blazerâsharing a smile at the rail",
+                                                                              "A tiny zine or track-note card passed across a table after dessert",
+                                                                              "Vinyl-themed coaster spotted beneath a nightcap; a whispered recommendation follows",
+                                                                              "A discreet enamel pin (favorite label) catching tungsten light during a cafÃ©-side chat"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "DJ/production bootcamps with software tutorials",
+                                                                                    "Audio engineering or acoustics workshops",
+                                                                                    "Full-scale music festival or main-pool takeover",
+                                                                                    "Gear shootouts or technical A/B tests with meters",
+                                                                                    "Rows of chairs facing a âlistening stageâ",
+                                                                                    "Crate markets or vendor rows overtaking lounges"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Single album sleeve (1 per scene)",
+                                                                      "Small zine/track-note card",
+                                                                      "Enamel pins or embroidered patches featuring labels/scenes",
+                                                                      "Vinyl-themed coaster",
+                                                                      "Closed-back headphones worn casually around the neck",
+                                                                      "Stylus-shaped lapel pin or subtle tonearm graphic on a tee"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Mixing consoles and racks",
+                                                                          "Studio monitors and PA stacks",
+                                                                          "Laptop DJ rigs front-and-center",
+                                                                          "Record crates or trolleys",
+                                                                          "Acoustic treatment panels or foam",
+                                                                          "Table tents, lanyards, or visible schedules"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Analog warmth. Arctic horizon.",
+                      "subSlogan":  "Vinyl-soul nights, fjord-blue days aboard Celebrity Apex.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Join the waitlist",
+                                          "bookNow":  "Choose my cabin for the listening voyage",
+                                          "merch":  "Shop the Needle Drop tee",
+                                          "share":  "Pass the vibe to a friend"
+                                      },
+                      "elevatorPitch":  "Needle Drop at Sea is a slow-social vinyl voyage through the Norwegian Fjords \u0026 Arctic Circle. Days are all glass and coastline; nights turn low-lit and analog. Think easy album-side moments, era-hint outfits, and quiet recommendations traded at the rail. Now and then, a favorite side surfacesânever a schedule, just a mood you can slip into whenever the sea feels right. Discovery first, scenery always.",
+                      "toneKeywords":  [
+                                           "analog",
+                                           "welcoming",
+                                           "cinematic",
+                                           "low-pressure",
+                                           "fjord-blue",
+                                           "tape-warm",
+                                           "easy discovery",
+                                           "night-sail glow"
+                                       ],
+                      "voicePersona":  "Your soft-spoken record-store friendâlow on gear talk, high on feelâpointing out the perfect side for blue hour without making a scene."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Front print: A stylized 12-inch record as a midnight fjordâneedle tracing a silver inlet toward a small moon. Text arc: âNeedle Drop at Seaâ up top, âAnalog Warmth â¢ Arctic Horizonâ below. Two to three inks with light halftone for sea texture.",
+                                   "colorway":  "Deep navy tee; print in cream, cobalt, and a whisper of magenta for the moon label.",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Needle Drop at Sea: A Vinyl \u0026 Listening Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Play the AâSide. Watch the horizon.. Concept direction: Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.. Design direction: Front print: A stylized 12-inch record as a midnight fjordâneedle tracing a silver inlet toward a small moon. Text arc: âNeedle Drop at Seaâ up top, âAnalog Warmth â¢ Arctic Horizonâ below. Two to three inks with light halftone for sea texture.. Print style: 2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints.. Colorway: Deep navy tee; print in cream, cobalt, and a whisper of magenta for the moon label.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "Bella+Canvas 3001"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Left chest: small âSide A: Sailawayâ lockup with a tiny tonearm icon. Sleeve print: thin groove lines spiraling once down the right sleeve, ending in a small star by the cuff.",
+                                        "colorway":  "Charcoal or deep indigo; print in bone and soft teal.",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Needle Drop at Sea: A Vinyl \u0026 Listening Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Play the AâSide. Watch the horizon.. Concept direction: Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.. Design direction: Left chest: small âSide A: Sailawayâ lockup with a tiny tonearm icon. Sleeve print: thin groove lines spiraling once down the right sleeve, ending in a small star by the cuff.. Print style: 2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints.. Colorway: Charcoal or deep indigo; print in bone and soft teal.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "Gildan 240"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Front: âMidnight Lounge Departmentâ in rounded sans above a compact record+fjord icon. Back neck: tiny catalog-style code âAPXâ¢FJORDSâ¢12Nâ.",
+                                                 "colorway":  "Black; print in warm ivory with a micro pop of magenta.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Needle Drop at Sea: A Vinyl \u0026 Listening Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Play the AâSide. Watch the horizon.. Concept direction: Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.. Design direction: Front: âMidnight Lounge Departmentâ in rounded sans above a compact record+fjord icon. Back neck: tiny catalog-style code âAPXâ¢FJORDSâ¢12Nâ.. Print style: 2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints.. Colorway: Black; print in warm ivory with a micro pop of magenta.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Gildan 18000"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Cuffed beanie with a woven clip label: tiny tonearm + fjord line icon; subtle âSide Aâ on the cuff tag.",
+                                                 "colorway":  "Deep navy or charcoal; label in bone with cobalt detail.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Needle Drop at Sea: A Vinyl \u0026 Listening Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Play the AâSide. Watch the horizon.. Concept direction: Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.. Design direction: Cuffed beanie with a woven clip label: tiny tonearm + fjord line icon; subtle âSide Aâ on the cuff tag.. Print style: 2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints.. Colorway: Deep navy or charcoal; label in bone with cobalt detail.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Yupoong 1501KC"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "2-inch round patch: slender tonearm crossing a fjord groove into a discreet âNâ. Border stitch in cobalt; fill in deep navy; thread in bone.",
+                                                 "colorway":  "Deep navy base; cobalt border; bone thread.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Needle Drop at Sea: A Vinyl \u0026 Listening Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Play the AâSide. Watch the horizon.. Concept direction: Cute, screenprint-friendly shirts that read cruise-first with vinyl witâalbum-art pops, risograph textures, and fjord silhouettes cut like grooves. Slogans lead; graphics stay simple and POD-realistic.. Design direction: 2-inch round patch: slender tonearm crossing a fjord groove into a discreet âNâ. Border stitch in cobalt; fill in deep navy; thread in bone.. Print style: 2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints.. Colorway: Deep navy base; cobalt border; bone thread.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Embroidered Patch"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "Event mark pairs a slender tonearm with a fjord-silhouette groove forming a discreet âNâ. Keep LLI wordmark untouched and primary on owned assets; event mark functions as a secondary badge on merch and section headers.",
+                  "tagline":  "Play the AâSide. Watch the horizon.",
+                  "printStyle":  "2â3 ink screenprints with risograph-like halftones, soft-touch where available; avoid photographic prints."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "Blue hour settles. Glass meets water. Somewhere between midnight lounge and Arctic hush, a record turnsânot louder than the sea, just close enough to feel the room tilt toward warmth. On Celebrity Apex, fjords draw a silver line and we follow, side by side, trading quiet favorites and small smiles. No rush, no stage. Just the Aâside, the horizon, and the soft thrum of a ship finding its groove.",
+                  "hypeClipScript":  "Needle down. Lights low. Fjord outside, warmth within. A glance, a nod, a sleeve on the tableâplay a side, pass a tip, feel the room breathe. Celebrity Apex to the Arctic Circle. Analog hearts, ocean pace.",
+                  "voiceProfile":  "Warm, unhurried baritone or hushed alto with subtle textureârecord-store calm, not announcer hype.",
+                  "musicMood":  "Downtempo coastal ambient, Norwegian jazz hints, dubby space, gentle tape hissâliving under conversation, never commanding the room."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "Blue hour on the fjord is Side A.",
+                                                 "narrative":  {
+                                                                   "title":  "Side A at Sea",
+                                                                   "durationSeconds":  17,
+                                                                   "tool":  "composite",
+                                                                   "scriptOrNarration":  "Blue hour settles. Window, water, and an easy nod. You pass a favoriteâno rush, just the Aâside and the horizon.",
+                                                                   "visualDirectionNotes":  "Cruise-first frames: start on cobalt water sliding past floor-to-ceiling glass; cut to two guests side-by-side at a window table, subtle beanie/stripe jacket as soft wardrobe cue. One discreet enamel pin catches tungsten light. Keep hands relaxed on glassware; a quiet line between guests replaces any prop exchange. Negative space and horizon lines carry the beat.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "Observation lounge at dusk, reflective glass, silver-blue sea line, warm tungsten pockets.",
+                                                                   "musicMood":  "Downtempo coastal ambient with light tape hiss; under dialogue."
+                                                               },
+                                                 "caption":  "Analog warmth, Arctic horizon. Pass a song, watch the sea do the rest aboard Celebrity Apex.",
+                                                 "hashtags":  [
+                                                                  "#NeedleDropAtSea",
+                                                                  "#CelebrityApex",
+                                                                  "#AnalogAtSea",
+                                                                  "#FjordBlue",
+                                                                  "#VinylMood",
+                                                                  "#BlueHour"
+                                                              ],
+                                                 "callToAction":  "Join the waitlist"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Slow pan from rail-side cobalt horizon to two silhouettes leaning shoulder-to-shoulder, sharing headphones resting around the neckâlaughing quietly. Wardrobe cues: 90s beanie, subtle windbreaker stripe. No gear in frame.",
+                                                  "audioTrackType":  "Soft Norwegian-jazz-tinged ambient; ocean hush audible between notes.",
+                                                  "caption":  "Fjord-blue days, vinyl-soul nights. No stageâjust windows, water, and small smiles.",
+                                                  "hashtags":  [
+                                                                   "#NeedleDropAtSea",
+                                                                   "#NorwegianFjords",
+                                                                   "#CruiseReels",
+                                                                   "#NightSailGlow",
+                                                                   "#AnalogWarmth"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Analog warmth. Arctic horizon.",
+                                                                            "bodyText":  "Celebrity Apex at blue hourâglass, sea, and soft tungsten. The rest is feel.",
+                                                                            "visualDescription":  "Hero wide: observation lounge, horizon riding through cobalt glass; negative space for headline."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "Two seats. One side.",
+                                                                            "bodyText":  "A glance, a nod, a shared idea. Let the ship set the tempo.",
+                                                                            "visualDescription":  "Side-by-side silhouettes at a window table; no visible gear."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "A quiet cue goes a long way.",
+                                                                            "bodyText":  "Beanie, windbreaker stripe, or a tiny pin catching light. Signal without saying much.",
+                                                                            "visualDescription":  "Close on lapel pin glinting against navy blazer; sea blurred behind."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "If a sleeve appears, itâs a whisper.",
+                                                                            "bodyText":  "One album near a rocks glass, more horizon than object. Mood over merch.",
+                                                                            "visualDescription":  "Single sleeve edge and coaster beside amber drink; vast sea beyond the glass."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "Route like a record side.",
+                                                                            "bodyText":  "Fjords by day, low-lit lounges by night. Drift in whenever it feels right.",
+                                                                            "visualDescription":  "Cantilevered terrace at dusk, silver water below; couple at the rail."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  6,
+                                                                            "headline":  "Play the AâSide. Watch the horizon.",
+                                                                            "bodyText":  "Join the voyage. Keep it easy, keep it analog.",
+                                                                            "visualDescription":  "Minimal type over a blue-hour wake line; tiny tonearm badge tucked in corner."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Amber nightcap on dark wood, vinyl-themed coaster barely visible; windowed sea in focus. Caption nods to blue hour and quiet recommendations.",
+                                                 "caption":  "Quietly cinematic: fjord-blue outside, tape-warm inside. Needle Drop at Sea aboard Celebrity Apex. Choose my cabin for the listening voyage."
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Analog warmth. Arctic horizon.",
+                                              "primaryText":  "Blue hour through the fjords, soft tungsten inside, and the kind of side you pass with a smile. No rush, no stageâjust windows, water, and an easy analog mood aboard Celebrity Apex.",
+                                              "description":  "Fjord-blue days, vinyl-soul nights. Celebrity Apex to the Arctic Circle.",
+                                              "cta":  "Choose my cabin for the listening voyage",
+                                              "visualDescription":  "Two guests leaning at the rail on a cantilevered terrace at dusk; cobalt sea and magenta accent glow; no gear in frame."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "Blue Hour, Side A | Needle Drop at Sea",
+                                                "visualConcept":  "30â45 frames of ship-forward calm: fjord sweep past glass; shoulder-to-shoulder lean; enamel pin glint; single sleeve near a rocks glass; terrace at dusk. End on horizon line meeting a subtle tonearm graphic.",
+                                                "description":  "Needle down, lights low, sea wide. Celebrity Apex through the Norwegian Fjordsâanalog hearts, ocean pace.",
+                                                "hashtags":  [
+                                                                 "#NeedleDropAtSea",
+                                                                 "#CelebrityApex",
+                                                                 "#BlueHour",
+                                                                 "#VinylMood",
+                                                                 "#ArcticCircle"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Needle Drop at Sea â Fjord-Blue Moodboard",
+                                             "pinDescription":  "Analog warmth meets Arctic blue: window light, cobalt water, soft tungsten interiors, and tiny cuesâa lapel pin, a sleeve by a nightcap. Celebrity Apex to the fjords.",
+                                             "visualConcept":  "Vertical collage: horizon through panoramic glass; amber cocktail on dark wood; beanie/stripe wardrobe detail; minimal record+fjord icon in corner. Cool-dominant palette with one magenta pop."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Analog warmth. Arctic horizon. Ready to sail?",
+                                               "preheader":  "Fjord-blue days, vinyl-soul nights aboard Celebrity Apex.",
+                                               "bodyDirection":  "Short, cinematic copy inviting a slow-social voyageâemphasize windows, water, and easy album-side moments. Include hero slogan and sub-slogan. Gentle nudge to choose a cabin or join the waitlist.",
+                                               "visualDirection":  "Hero banner: observation lounge at blue hour with long horizon. Secondary: close on enamel pin or tonearm tee detail. Accent with the event mark as a small badge."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Cobalt horizon through floor-to-ceiling glass; subtle magenta accent; two silhouettes at the rail. Small âNeedle Drop at Seaâ badge tucked into a corner.",
+                                                 "welcomeMessageDirection":  "Warm, low-pressure greeting: Share a favorite side, trade a quiet tip, keep windows and water first. No schedulesâjust sea pace and good company."
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Needle Drop at Sea â Ambient Overview",
+                                                "durationSeconds":  55,
+                                                "tool":  "composite",
+                                                "scriptOrNarration":  "Blue hour settles. Glass meets water. Somewhere between midnight lounge and Arctic hush, a record turnsânot louder than the sea, just close enough to feel the room tilt toward warmth. On Celebrity Apex, fjords draw a silver line and we follow, side by side, trading quiet favorites and small smiles. No rush, no stage. Just the Aâside, the horizon, and the soft thrum of a ship finding its groove.",
+                                                "visualDirectionNotes":  "Cruise-first montage: 1) Fjord panorama sliding past panoramic glass. 2) Side-by-side veranda lean, blanket and coffee at morning gray. 3) Tiny enamel pin catching tungsten. 4) Single sleeve resting near a rocks glass (never center frame). 5) Terrace at dusk with magenta accent light. Typography uses geometric sans with album-sleeve confidence. Keep objects recessive; horizon and posture lead.",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Celebrity Apex observation lounge, private veranda, cantilevered terrace; cobalt twilight and silver sea; warm tungsten pools.",
+                                                "musicMood":  "Downtempo coastal ambient with Norwegian jazz hints, dubby space, gentle tape hiss."
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "Pass a Side, Watch the Sea",
+                                             "durationSeconds":  14,
+                                             "tool":  "runwayml",
+                                             "scriptOrNarration":  "A glance, a nod, a quiet line across the table. Thatâs the cue. Side A, blue hour, and the ship doing the rest.",
+                                             "visualDirectionNotes":  "Open on a lean-in and a shared half-smile; cut to horizon glide past glass. Wardrobe cue (windbreaker stripe). No sleeves or note cards in this one. Quick, breathable edits with negative space.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Low-lit bar nook with windowed sea beyond; tungsten against cobalt.",
+                                             "musicMood":  "Sparse ambient chords with soft vinyl texture under ocean hush."
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "A Quiet Milestone at Sea Pace",
+                                                        "durationSeconds":  20,
+                                                        "tool":  "composite",
+                                                        "scriptOrNarration":  "We just crossed a small milestoneâmore friends for blue hour, the same wide horizon. Choose your cabin when it feels right. The Aâside will be waiting.",
+                                                        "visualDirectionNotes":  "Architectural cue lead: slow push along a glass corridor as sea slides by. Overlay discreet animated tonearm badge. End on terrace silhouettes. No numbers on screen; keep it feel-forward, not metrics-led.",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Panoramic corridor with reflective glass; cobalt twilight.",
+                                                        "musicMood":  "Gentle dubby pulse with warm padsâcalm, unhurried."
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Play the AâSide Tee â Dusk on Deck",
+                                              "durationSeconds":  22,
+                                              "tool":  "kling",
+                                              "scriptOrNarration":  "Play the AâSide. Watch the horizon. A soft-touch print for fjord-blue nights.",
+                                              "visualDirectionNotes":  "Macro passes: halftone sea texture on print, tiny moon label in magenta, tonearm tracing the fjord arc. Tee draped over a veranda chair; breeze moves the fabric; horizon in focus. End with subtle badge and URL. No studio backdrops; keep it ship and sea first.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Private veranda at dusk; silver-blue water; warm cabin spill light.",
+                                              "musicMood":  "Airy ambient with light tape hiss; a single glock-style ping on the logo beat."
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "Tâ30: Windows First",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Thirty days to blue hour. Start with a window, let the sea set the tempo.",
+                                                      "visualDirectionNotes":  "Architectural cue: static frame of glass meeting water; soft magenta reflection. No people, no objects.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Observation lounge, cobalt sea.",
+                                                      "musicMood":  "One-note ambient swell with ocean hush."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ21: Wardrobe Whisper",
+                                                      "durationSeconds":  11,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "A stripe, a beanie, a small smile. Thatâs enough of a signal.",
+                                                      "visualDirectionNotes":  "Wardrobe cue: slow tilt from beanie to jacket stripe; partner steps into frame at the rail; shared glance. No props.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Cantilevered terrace at twilight.",
+                                                      "musicMood":  "Soft lo-fi pad with vinyl dust."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ14: The Passing Note",
+                                                      "durationSeconds":  12,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "One tiny card, one easy recommendation. Meet you at the horizon.",
+                                                      "visualDirectionNotes":  "Conversational cue: fingers slide a pocket-size zine/track note across a table; horizon beyond. Keep object small; posture and eye contact lead.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Window table with amber light; fjord line outside.",
+                                                      "musicMood":  "Minimal piano echo with warm tape hiss."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ7: Sleeve Cameo",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "kling",
+                                                      "scriptOrNarration":  "If a sleeve appears, itâs a whisperâmore sea than anything.",
+                                                      "visualDirectionNotes":  "Object cue, restrained: edge of a single album sleeve near a rocks glass; deep negative space to the window and moving water.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Low-lit lounge, reflective glass, cobalt sea.",
+                                                      "musicMood":  "Dubby low-end tick, hushed."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ3: Rail Lean",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Three days. Find your spot at the rail. Let the ship do the mixing.",
+                                                      "visualDirectionNotes":  "Posture cue: two guests side-by-side, elbows on rail, synchronized breath visible in chill air; no objects.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Open deck rail at dusk; fjord cliffs distant.",
+                                                      "musicMood":  "Breathy pad swell, gentle delay."
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T18:50:05.785Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}

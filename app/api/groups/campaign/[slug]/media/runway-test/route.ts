@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
-import { CREDIT_COSTS } from '@/lib/campaigns/media/credit-check-service';
-import { getActiveVideoProviderInstance } from '@/lib/campaigns/media/video-providers/provider-registry';
+import { buildProductionSafeMotionPrompt } from '@/lib/campaigns/media/generators/runway-generator';
+import { getVideoProviderForPreset } from '@/lib/campaigns/media/video-providers/provider-registry';
+import { getPreferredTestDurationSeconds, getVideoModelPreset } from '@/lib/campaigns/media/video-models';
+import { resolveVideoModelPresetIdFromRequest } from '@/lib/campaigns/media/video-model-preference';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/runway-test
@@ -16,8 +18,9 @@ import { getActiveVideoProviderInstance } from '@/lib/campaigns/media/video-prov
 interface RunwayTestRequestBody {
     sourceImageUrl: string;
     motionPrompt: string;
-    durationSeconds?: 5 | 10;
+    durationSeconds?: number;
     label?: string;
+    videoModelPresetId?: string;
 }
 
 interface RunwayTestResult {
@@ -25,11 +28,16 @@ interface RunwayTestResult {
     videoUrl: string;
     taskId: string;
     durationSeconds: number;
-    creditsUsed: number;
+    estimatedCostUsd: number;
+    estimatedCreditsUsed: number | null;
+    creditsUsed: number | null;
+    videoModelPresetId: string;
+    videoModelLabel: string;
     fileSizeBytes: number;
     mimeType: string;
     label: string;
     motionPrompt: string;
+    submittedMotionPrompt: string;
     sourceImageUrl: string;
     createdAt: string;
 }
@@ -37,10 +45,11 @@ interface RunwayTestResult {
 async function createTestClip(
     sourceImageUrl: string,
     motionPrompt: string,
-    durationSeconds: 5 | 10
+    durationSeconds: number,
+    videoModelPresetId: string,
 ): Promise<{ videoUrl: string; taskId: string }> {
-    const provider = getActiveVideoProviderInstance();
-    const result = await provider.generateImageToVideo(sourceImageUrl, motionPrompt, durationSeconds);
+    const provider = getVideoProviderForPreset(videoModelPresetId as never);
+    const result = await provider.generateImageToVideo(sourceImageUrl, motionPrompt, durationSeconds, { presetId: videoModelPresetId as never });
     return {
         videoUrl: result.videoUrl,
         taskId: result.taskId ?? 'provider-task',
@@ -60,7 +69,12 @@ export async function POST(
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    const { sourceImageUrl, motionPrompt, durationSeconds = 5, label = 'test' } = body;
+    const presetId = await resolveVideoModelPresetIdFromRequest(request, body.videoModelPresetId);
+    const preset = getVideoModelPreset(presetId);
+    const requestedDurationSeconds = typeof body.durationSeconds === 'number' ? body.durationSeconds : undefined;
+    const durationSeconds = getPreferredTestDurationSeconds(presetId, requestedDurationSeconds);
+    const { sourceImageUrl, motionPrompt, label = 'test' } = body;
+    const effectiveMotionPrompt = buildProductionSafeMotionPrompt(motionPrompt);
 
     if (!sourceImageUrl || !motionPrompt) {
         return NextResponse.json(
@@ -69,15 +83,8 @@ export async function POST(
         );
     }
 
-    if (durationSeconds !== 5 && durationSeconds !== 10) {
-        return NextResponse.json(
-            { error: 'durationSeconds must be 5 or 10' },
-            { status: 400 }
-        );
-    }
-
     try {
-        const { videoUrl: runwayUrl, taskId } = await createTestClip(sourceImageUrl, motionPrompt, durationSeconds);
+        const { videoUrl: runwayUrl, taskId } = await createTestClip(sourceImageUrl, effectiveMotionPrompt, durationSeconds, presetId);
 
         // Download and re-host on R2 so the signed RunwayML URL doesn't expire
         const videoResponse = await fetch(runwayUrl);
@@ -92,18 +99,26 @@ export async function POST(
 
         const persistedUrl = await storeAsset(slug, assetId, fileName, buffer, 'video/mp4');
 
-        const creditsUsed = durationSeconds * CREDIT_COSTS.runway.creditsPerSecond;
+        const estimatedCreditsUsed = preset.estimatedCreditsPerSecond !== null
+            ? durationSeconds * preset.estimatedCreditsPerSecond
+            : null;
+        const estimatedCostUsd = durationSeconds * preset.estimatedUsdPerSecond;
 
         const result: RunwayTestResult = {
             assetId,
             videoUrl: persistedUrl,
             taskId,
             durationSeconds,
-            creditsUsed,
+            estimatedCostUsd,
+            estimatedCreditsUsed,
+            creditsUsed: estimatedCreditsUsed,
+            videoModelPresetId: preset.id,
+            videoModelLabel: preset.label,
             fileSizeBytes: buffer.length,
             mimeType: 'video/mp4',
             label,
-            motionPrompt,
+            motionPrompt: effectiveMotionPrompt,
+            submittedMotionPrompt: motionPrompt,
             sourceImageUrl,
             createdAt,
         };

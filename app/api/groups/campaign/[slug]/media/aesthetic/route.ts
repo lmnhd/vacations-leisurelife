@@ -25,6 +25,7 @@ export async function POST(
 ) {
     try {
         const { slug } = await params;
+        console.log(`[aesthetic-route] POST requested for ${slug}`);
 
         const campaign = await getCampaignBlueprint(slug);
         if (!campaign) {
@@ -36,6 +37,8 @@ export async function POST(
 
         // Persist to DynamoDB via our storage util
         await saveAestheticBrief(brief);
+
+        console.log(`[aesthetic-route] POST completed for ${slug}`);
 
         return NextResponse.json(brief, { status: 200 });
 

@@ -259,3 +259,67 @@ Displays:
 - Manual post triggers for each asset (override schedule, post immediately)
 - Asset swap UI — replace a scheduled asset with a regenerated version before it posts
 - "Kill switch" — halt all distribution for a campaign immediately
+
+---
+
+## Immediate Test Playbook (Phase 2 -> Phase 4)
+
+Use this sequence to test ad and promotion dispatch directly from generated `CampaignMediaManifest` assets.
+
+### 1) Confirm Phase 2 manifest exists
+
+```powershell
+Invoke-RestMethod -Method GET -Uri "http://localhost:3000/api/groups/campaign/<slug>/media/manifest"
+```
+
+If this returns `404`, run Phase 2 generation first.
+
+### 2) Preview schedule plan for ad platforms
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://localhost:3000/api/groups/campaign/<slug>/media/distribute" -ContentType "application/json" -Body '{"mode":"plan","dryRun":true,"caller":"human","platforms":["tiktok","instagram_feed","facebook_ad"]}'
+```
+
+### 3) Simulate dispatch (recommended first)
+
+`forceDispatch: true` bypasses time/event gates so you can test immediately.
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://localhost:3000/api/groups/campaign/<slug>/media/distribute" -ContentType "application/json" -Body '{"mode":"dispatch","dryRun":true,"providerMode":"simulate","forceDispatch":true,"caller":"human","platforms":["tiktok","instagram_feed","facebook_ad"]}'
+```
+
+Inspect the returned `previews` array. Each item contains the exact platform payload derived from manifest asset URLs and campaign copy.
+
+### 4) Live Meta Ads dispatch (PAUSED ad creation)
+
+Live mode currently supports `facebook_ad` only. TikTok/Instagram remain simulation-only in this phase.
+
+Required environment variables:
+
+- `META_ACCESS_TOKEN`
+- `META_AD_ACCOUNT_ID`
+- `META_AD_SET_ID`
+- `META_PAGE_ID`
+- `META_INSTAGRAM_ACTOR_ID` (optional)
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://localhost:3000/api/groups/campaign/<slug>/media/distribute" -ContentType "application/json" -Body '{"mode":"dispatch","dryRun":false,"providerMode":"live","forceDispatch":true,"caller":"human","platforms":["facebook_ad"]}'
+```
+
+Behavior:
+
+- Creates a Meta Ad Creative from Phase 2 manifest media URL + generated copy.
+- Creates an Ad in **PAUSED** status for safety.
+- Persists `externalPostId` onto the distribution schedule post.
+
+### 5) Verify status and executions
+
+```powershell
+Invoke-RestMethod -Method GET -Uri "http://localhost:3000/api/groups/campaign/<slug>/media/distribution"
+```
+
+Check:
+
+- `schedule.posts[].status`
+- `schedule.posts[].externalPostId`
+- `executions[]` summary counters

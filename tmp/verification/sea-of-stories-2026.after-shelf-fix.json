@@ -1,0 +1,365 @@
+﻿{
+    "slug":  "sea-of-stories-2026",
+    "themeName":  "Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage",
+    "visual":  {
+                   "aestheticLabel":  "Coastal Library Calm",
+                   "colorPalette":  {
+                                        "primary":  "Aegean Ink #0A2A3B",
+                                        "secondary":  "Linen Parchment #F1E9DF",
+                                        "accent":  "Aged Brass #C6A15B",
+                                        "background":  "Sea Mist #E8F1F4",
+                                        "textOnDark":  "Ivory #F6F4EF",
+                                        "textOnLight":  "Deep Slate #1C2A33"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "High-contrast editorial serif with soft curves and generous tracking to feel bookish yet airy; complements primary brand typefaces (brand fonts remain primary on landing).",
+                                               "bodyStyle":  "Modern humanist sans for calm legibility at small sizes; roomy leading for a breezy, sea-day read.",
+                                               "suggestedFonts":  [
+                                                                      "Canela",
+                                                                      "Cormorant Garamond",
+                                                                      "Libre Caslon Text",
+                                                                      "Inter",
+                                                                      "Source Sans 3"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Open-water hush with linen-and-paper tactility; teak, glass, and horizon lines; a poised calm that reads cruise-first, with a literary whisper in wardrobe and posture.",
+                   "lightingStyle":  "Sublime Mediterranean lightâpale-gold sunrise, pearl overcast midday, warm brass sunset; soft, directional glow with gentle speculars on glass and water; no hard flash or theatrical color.",
+                   "compositionNotes":  "Ship and ocean lead; subjects appear as singles or pairs angled toward windows or rails; negative space, clean horizons, and Edge-class geometry; one subtle cue at most (a slim paperback, linen layer, bookmark tassel); no tables crammed with books, no signage or staged circles. Preferred vantage: rail-side lounges, Rooftop Garden foliage framing sky, Martini Bar glass reflections, teak deck chaises with wide margins.",
+                   "avoidList":  [
+                                     "Crowded tables stacked with novels or props",
+                                     "Lecterns, whiteboards, or mic stands in lounges",
+                                     "Visible signage for swaps or âsalonsâ in hero frames",
+                                     "Author-panel theatrics in the theater",
+                                     "Over-branded lanyards or matching Tâshirts dominating scenes",
+                                     "Table-top still lifes that eclipse the ship or sea",
+                                     "Literal classroom rows or conference posture"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Edgeâclass Rooftop Garden at golden hour with foliage silhouettes and horizon line",
+                                              "Teak deck chaise facing open water, linen throw over arm, espresso cup on side table",
+                                              "Martini Bar glass and brass at duskâsoft bokeh, navy-and-ivory palette",
+                                              "Close of hands resting on a closed paperback, sea beyond the rail",
+                                              "Quiet corridor of stateroom verandas in early morning lightâsheer curtains, pale blues",
+                                              "Window seat duo: one person gazes at wake, the other annotates a dogâeared page"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "Let the ship and sea carry the frame; the reading theme appears as a light, guest-brought accentâone cue, one gesture, never infrastructure.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Lounging solo on a deck chaise with horizon views and bar service",
+                                                                             "Calm pre-breakfast stroll on a quiet deck at sunrise",
+                                                                             "Golden-hour aperitif at the Martini Bar with low conversation",
+                                                                             "Unhurried sea-day window seating with soft background music",
+                                                                             "Rooftop Garden twilight drift under warm architectural lighting"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A linen-clad guest slips a bookmark after a few pages, smiles toward the wake",
+                                                                              "Two friends in low-profile chairs trade a quick recommendation between sipsâno table clutter",
+                                                                              "A navy tote with a subtle book motif rests by the chaise while the ocean fills the frame",
+                                                                              "Menu card notes a literary cocktail name beside a martiniâtypographic, not staged",
+                                                                              "A finished paperback quietly changes handsâor a few spines tucked on a lounge shelf in the background (never centered)"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "Large theater author panels with Q\u0026A roping the room",
+                                                                                    "Mandatory reading checklists or pre-cruise assignments",
+                                                                                    "Classroom-style rows with PowerPoints or handouts",
+                                                                                    "Marathon writing sprints with timers and word-count goals",
+                                                                                    "Crowded âbook fairâ tables or signage-heavy swap stations"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Slim paperback or eâreader (one per scene)",
+                                                                      "Bookmark or page flag",
+                                                                      "Lightweight linen throw or cardigan",
+                                                                      "Small espresso cup or spritz",
+                                                                      "Discreet enamel pin or tote with bookish icon",
+                                                                      "Sunglasses, sun hat, or scarf"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Lecterns, microphones, ring lights, or camera rigs",
+                                                                          "Rolling carts or crates of books",
+                                                                          "Stacks/towers of novels dominating a table",
+                                                                          "Table tents, lanyards, or name badges",
+                                                                          "Whiteboards, flip charts, or pointer sticks",
+                                                                          "QR signage clusters or sponsor placards"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Read by the sea. Drift by chapter.",
+                      "subSlogan":  "A Mediterranean reading voyage aboard Celebrity Ascent.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Hold a quiet chair",
+                                          "bookNow":  "Reserve your stateroom on Celebrity Ascent",
+                                          "merch":  "Shop the Sea of Stories tees",
+                                          "share":  "Send to your reading buddy"
+                                      },
+                      "elevatorPitch":  "Sea of Stories is a calm, book-forward way to sail the Best of Greece \u0026 Turkey on Celebrity Ascent. Think sea-day chapters in sunlit lounges, soft jazz and clinking glassware at dusk, and easy, low-pressure moments where recommendations pass across the table. Now and then, a finished paperback finds a new reader, and menus nod to beloved novelsâyet the trip stays vacation-first: ocean air, great food, and time to read exactly as you please.",
+                      "toneKeywords":  [
+                                           "coastal library",
+                                           "linen + paper",
+                                           "soft jazz",
+                                           "approachable",
+                                           "warmly witty",
+                                           "Mediterranean calm",
+                                           "shipâfirst",
+                                           "bookish but light",
+                                           "welcoming",
+                                           "unhurried"
+                                       ],
+                      "voicePersona":  "A wellâread travel friend with seaside mannersâelegant, reassuring, lightly clever; never professorial."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Sea of Stories typographic wave: elegant serif title arcing like a page curl over a minimal openâbook line; tiny star compass; small âAboard Celebrity Ascentâ underline in small caps. Two inks (Aegean ink + brass) on natural.",
+                                   "colorway":  "Natural tee with navy + brass ink",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Linen, paper, portside.. Concept direction: Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.. Design direction: Sea of Stories typographic wave: elegant serif title arcing like a page curl over a minimal openâbook line; tiny star compass; small âAboard Celebrity Ascentâ underline in small caps. Two inks (Aegean ink + brass) on natural.. Print style: Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients.. Colorway: Natural tee with navy + brass ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "Bella+Canvas 3001"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Deck Chapter Checklistâthree minimalist lines with small square boxes: âSunrise page â¢ Port-day paragraph â¢ Moonlit chapterâ. Tiny chaise icon at the hem; airy bookish sans meets small serif accents.",
+                                        "colorway":  "White tee with navy ink",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Linen, paper, portside.. Concept direction: Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.. Design direction: Deck Chapter Checklistâthree minimalist lines with small square boxes: âSunrise page â¢ Port-day paragraph â¢ Moonlit chapterâ. Tiny chaise icon at the hem; airy bookish sans meets small serif accents.. Print style: Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients.. Colorway: White tee with navy ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "Gildan 2400"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Linen, Paper, Portsideâstacked serif lines with a small olive sprig divider; relaxed garment-dyed vibe.",
+                                                 "colorway":  "Ivory or bay with dark navy ink",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Linen, paper, portside.. Concept direction: Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.. Design direction: Linen, Paper, Portsideâstacked serif lines with a small olive sprig divider; relaxed garment-dyed vibe.. Print style: Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients.. Colorway: Ivory or bay with dark navy ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Comfort Colors 1717"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Embroidered tiny openâbook icon over a gentle wave; small âChapters at Seaâ stitched at the side.",
+                                                 "colorway":  "Stone with navy thread",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Linen, paper, portside.. Concept direction: Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.. Design direction: Embroidered tiny openâbook icon over a gentle wave; small âChapters at Seaâ stitched at the side.. Print style: Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients.. Colorway: Stone with navy thread. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Yupoong 6245CM"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Golden Hour Readerâscript + serif lockup with a thin horizon line and small setting sun dot; cozy crew for cool deck nights.",
+                                                 "colorway":  "Heather oatmeal with navy ink",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sea of Stories: A BookTok \u0026 Bookstagram Reading Voyage\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Linen, paper, portside.. Concept direction: Typography-led, cruiseâcute tees that whisper âcoastal libraryâânavy ink, parchment grounds, small literary icons, and a wink of Mediterranean mood. Screenâprintable, twoâcolor max, sized for real deck life.. Design direction: Golden Hour Readerâscript + serif lockup with a thin horizon line and small setting sun dot; cozy crew for cool deck nights.. Print style: Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients.. Colorway: Heather oatmeal with navy ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Gildan 18000"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "A refined serif wordmark where âSeaâ rides a subtle wave baseline and âStoriesâ finishes with a bookmark ribbon terminal; micro star-compass accent; feels like a title page at sea.",
+                  "tagline":  "Linen, paper, portside.",
+                  "printStyle":  "Serif-led typography with restrained line art; 1â2 inks; vector, screenâprint friendly; no photo textures or complex gradients."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "The page opens. Morning light finds the deck quiet, the sea unhurried. You settle into a linenâsoft chair, espresso warming your hand, horizon drawing a fine blue line. On Celebrity Ascent, reading simply fitsâbetween ports, between courses, between small, easy conversations. A bookmark slides in; the breeze answers with its own whisper. Dusk brings brassâwarm jazz and glass catching the last sun, a casual nod to a favorite character, a passing recommendation from the next chair. Best of Greece \u0026 Turkey on the itinerary, but right now itâs just you, the sea, and the next sentence. Breathe in. Turn the page.",
+                  "hypeClipScript":  "Soft jazz. A page turns. Footsteps on teak. Voice: âChapters on the Aegean.â Shipâs wake rises. âCelebrity Ascent. Best of Greece \u0026 Turkey. Bring a paperbackâlet the sea handle the rest.â Clink of glass. Fade.",
+                  "voiceProfile":  "Warm, lowâair, genderâneutral narrator; unhurried cadence; intimate mic proximity; coastal calm.",
+                  "musicMood":  "Soft jazz quartet with brushed drums, upright bass, and restrained piano; a hint of nylonâstring guitar at sunset; ambient ship hush and sea breeze layered lightlyânever spotlight, always atmosphere."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "POV: your next chapter has an ocean view.",
+                                                 "narrative":  {
+                                                                   "title":  "Wake-side Pages on Celebrity Ascent",
+                                                                   "durationSeconds":  18,
+                                                                   "tool":  "kling",
+                                                                   "scriptOrNarration":  "Soft jazz, wake in frame. On-screen text beats: 1) Read by the sea. 2) A linen chair, a blue line of horizon. 3) A quiet nod from the next seat. 4) Drift by chapter. VO (soft, low-air): âCelebrity Ascent. Best of Greece \u0026 Turkey. Bring a bookâlet the sea set the pace.â",
+                                                                   "visualDirectionNotes":  "Start on negative-space horizon through glass; cut to Rooftop Garden foliage at golden hour; a hand slides a bookmark, then relaxes backâthe book never fills the frame. Close on two guests trading a smile, sea leading. End with ship exterior dusk glow.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "Edge-class windows and rail angles, Rooftop Garden silhouettes, Martini Bar glass-and-brass at dusk, stateroom veranda curtains moving in sea breeze.",
+                                                                   "musicMood":  "Soft jazz quartet with brushed drums and sea hush"
+                                                               },
+                                                 "caption":  "Read by the sea. Drift by chapter. Aboard Celebrity Ascent.",
+                                                 "hashtags":  [
+                                                                  "#SeaOfStories",
+                                                                  "#CelebrityAscent",
+                                                                  "#BookTokAtSea",
+                                                                  "#MediterraneanCalm",
+                                                                  "#ReadersWhoCruise",
+                                                                  "#BestOfGreeceAndTurkey",
+                                                                  "#CoastalLibraryMood"
+                                                              ],
+                                                 "callToAction":  "Hold a quiet chair"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Two friends in linen layers lean toward the wake from a window seat; one quietly recommends a line without showing the cover. Focus on glances, hands, and horizon reflections in glass; the shipâs geometry frames the moment.",
+                                                  "audioTrackType":  "Original soft-jazz + sea hush (no vocals)",
+                                                  "caption":  "Between ports, a page. Between sips, a recommendation. Celebrity AscentâBest of Greece \u0026 Turkey.",
+                                                  "hashtags":  [
+                                                                   "#SeaOfStories",
+                                                                   "#CelebrityAscent",
+                                                                   "#RooftopGarden",
+                                                                   "#WakeView",
+                                                                   "#GoldenHourReading",
+                                                                   "#MediterraneanCruise"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Read by the sea. Drift by chapter.",
+                                                                            "bodyText":  "Celebrity Ascent sets the scene; you set the pace.",
+                                                                            "visualDescription":  "Wide horizon through glass; linen throw edge in foreground; ample negative space."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "Ship-first calm.",
+                                                                            "bodyText":  "Rooftop Garden at golden hour. Foliage silhouettes, quiet chairs, a blue line of wake.",
+                                                                            "visualDescription":  "Edge-class geometry, warm brass lighting, sky framed by leaves."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "Tiny bookish nods.",
+                                                                            "bodyText":  "One paperback, one bookmark. Menus wink at classics. The ocean stays center stage.",
+                                                                            "visualDescription":  "Closed book resting by sunglasses on chaise; sea beyondâobject small in frame."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "Best of Greece \u0026 Turkey.",
+                                                                            "bodyText":  "Port mornings for wandering; sea days for pages. Nothing to prove, just time.",
+                                                                            "visualDescription":  "Pearl-overcast morning light, shoreline hints in distance; soft reflections on glass."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "Come as you read.",
+                                                                            "bodyText":  "Reserve your stateroom on Celebrity Ascent.",
+                                                                            "visualDescription":  "Teak deck, clean horizon, subtle type overlay in Aegean Ink + brass accents."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Espresso, horizon, and a page break on the verandaâship and sea lead; paperback stays a whisper.",
+                                                 "caption":  "A Mediterranean reading voyage aboard Celebrity Ascent. Bring a book, leave the rest to the water."
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Read by the sea.",
+                                              "primaryText":  "Celebrity Ascent carries the horizon; you carry one small book. Best of Greece \u0026 Turkey with unhurried seaâday chapters and brassâwarm evenings.",
+                                              "description":  "A Mediterranean reading voyage aboard Celebrity Ascent.",
+                                              "cta":  "Reserve your stateroom on Celebrity Ascent",
+                                              "visualDescription":  "Cinematic wake through floorâtoâceiling glass; linen layer on a chaise; Rooftop Garden glow at duskâbook only lightly present, if at all."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "SeaâDay Page, Aegean Horizon â Celebrity Ascent",
+                                                "visualConcept":  "Microâmontage: wake line, sunlight on brass, a hand slips a bookmark, quick glance between two guests, dusk over Rooftop Garden. Text beats: Read by the sea â¢ Drift by chapter.",
+                                                "description":  "A calm, bookâforward way to sail the Best of Greece \u0026 Turkey aboard Celebrity Ascent. Bring a paperbackâlet the sea handle the rest.",
+                                                "hashtags":  [
+                                                                 "#SeaOfStories",
+                                                                 "#CelebrityAscent",
+                                                                 "#BookTubeShorts",
+                                                                 "#MediterraneanCruise",
+                                                                 "#ReadingVibes"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Coastal Library Mood Aboard Celebrity Ascent",
+                                             "pinDescription":  "Linen layers, open water, and one unhurried chapter between portsâBest of Greece \u0026 Turkey on Celebrity Ascent.",
+                                             "visualConcept":  "Teak chaise angled to horizon; linen throw and espresso cup; paperback hinted but not hero; Aegean Ink + brass accents in type overlay."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Read by the sea. Drift by chapter.",
+                                               "preheader":  "A Mediterranean reading voyage aboard Celebrity AscentâBest of Greece \u0026 Turkey.",
+                                               "bodyDirection":  "Warm, bookish invite: shipâfirst calm, tiny literary touches, and time to read exactly as you please.",
+                                               "visualDirection":  "Hero image: wide wake through glass; secondary: Rooftop Garden at golden hour; typography in editorial serif + humanist sans, Aegean Ink with brass accents."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Soft Aegean horizon with Edgeâclass geometry; navy and parchment palette; subtle openâbook icon near the wake lineâclean, breathable space.",
+                                                 "welcomeMessageDirection":  "Welcome aboard Celebrity Ascent. Share what youâre readingâdeck, dock, or dusk window seat."
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Sea of Stories â Aboard Celebrity Ascent",
+                                                "durationSeconds":  55,
+                                                "tool":  "runwayml",
+                                                "scriptOrNarration":  "The page opens. Morning light finds the deck quiet, the sea unhurried. On Celebrity Ascent, reading simply fitsâbetween ports, between courses, between small, easy conversations. A bookmark slides in; the breeze answers with its own whisper. Best of Greece \u0026 Turkey on the itineraryâbut right now itâs just you, the sea, and the next sentence. Read by the sea. Drift by chapter.",
+                                                "visualDirectionNotes":  "Montage-led: wake through glass; Rooftop Garden silhouettes; veranda sheer curtains; Martini Bar glass catching sunset; two guests trade a low smile. Ship and ocean remain the hero; book appears briefly, never centered. Typography overlays in Aegean Ink and brass.",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Edge-class windows, teak decks, brass-warm lounges, pearl overcast midday and golden sunset tones.",
+                                                "musicMood":  "Soft jazz quartet with brushed drums, upright bass, and nylonâstring guitar at sunset"
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "POV: Your Chapter Finds Its Sea Legs",
+                                             "durationSeconds":  12,
+                                             "tool":  "kling",
+                                             "scriptOrNarration":  "On-screen text: âWake view \u003e one page \u003e exhale.â Soft VO: âCelebrity Ascent. Best of Greece \u0026 Turkey.â Glass clink, sea hush.",
+                                             "visualDirectionNotes":  "Start on horizon; quick cut to relaxed postureâknees toward window, linen hem moving; no cover reveal. End on rooftop foliage against sky.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Window seat along the wake; Rooftop Garden edge; subtle cabin veranda curtain movement.",
+                                             "musicMood":  "Understated piano + brushed drums, airy"
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "Horizon Check â Seats Are Going",
+                                                        "durationSeconds":  10,
+                                                        "tool":  "composite",
+                                                        "scriptOrNarration":  "Text over wake: âAboard Celebrity Ascent.â Cut: âBest of Greece \u0026 Turkey.â Final beat: âHold a quiet chair.â Soft chime + sea hush.",
+                                                        "visualDirectionNotes":  "Clean text overlays on negative-space ocean; quick cut to dusk rail with brass glow; no books on screen.",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Open-water vistas, Edge-class rail lines at golden hour.",
+                                                        "musicMood":  "Airy ambient with a single piano note and ship hush"
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Sea of Stories Tee â Deck Light, Page Light",
+                                              "durationSeconds":  20,
+                                              "tool":  "runwayml",
+                                              "scriptOrNarration":  "VO: âTypography that sails easy: linen, paper, portside.â Text beats: âAegean ink + brass â¢ Natural ground â¢ Ready for deck days.â",
+                                              "visualDirectionNotes":  "Product-on-ship bâroll: tee folded on teak by a sun chair; gentle breeze lifts the hem; close on serif wave mark; cut to shadow play from foliage. No studio backdrops.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Teak deck chaise, soft window light, brass accents nearby; Mediterranean sky in soft focus.",
+                                              "musicMood":  "Light nylonâstring guitar with sea ambience"
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "5 Days: Linen Meets Horizon",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "kling",
+                                                      "scriptOrNarration":  "On-screen: âFive days.â VO whisper: âSave a quiet chair.â",
+                                                      "visualDirectionNotes":  "Wardrobe cueâlinen sleeve brushing a rail; sea beyond; no book in frame.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Railside at sunrise; pale-gold light on glass.",
+                                                      "musicMood":  "Soft brushed snare + sea hush"
+                                                  },
+                                                  {
+                                                      "title":  "4 Days: Rooftop Garden Glow",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Text: âFour.â VO: âGolden hour is its own chapter.â",
+                                                      "visualDirectionNotes":  "Architectural cueâfoliage silhouette framing sky; couple in side profile, relaxed posture.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Edge-class Rooftop Garden at sunset, brass-warm lighting.",
+                                                      "musicMood":  "Warm piano chords, low bass"
+                                                  },
+                                                  {
+                                                      "title":  "3 Days: Port Morning, Slow Page",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Text: âThree.â VO: âWander ashore. Return to the wake.â",
+                                                      "visualDirectionNotes":  "Destination cueâsoft hint of whitewashed shoreline through window; hand rests on closed eâreader, not hero.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Pearl-overcast morning light with distant Greek coast; stateroom veranda.",
+                                                      "musicMood":  "Ambient guitar harmonics"
+                                                  },
+                                                  {
+                                                      "title":  "2 Days: Martini Bar Aside",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âTwo.â VO: âOne sip, one recommendation.â Glass clink.",
+                                                      "visualDirectionNotes":  "Conversational cueâtwo guests lean in at the bar; no book in frame, ship glass and brass glow lead.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Martini Bar dusk reflections, soft bokeh.",
+                                                      "musicMood":  "Soft jazz rim clicks, upright bass"
+                                                  },
+                                                  {
+                                                      "title":  "1 Day: Bookmark Ready",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "kling",
+                                                      "scriptOrNarration":  "Text: âTomorrow.â VO: âRead by the sea. Drift by chapter.â",
+                                                      "visualDirectionNotes":  "Object cueâfingers slide a brassâtone bookmark into a slim paperback; ocean holds most of the frame.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Window seat with open water; gentle breeze moving a sheer curtain.",
+                                                      "musicMood":  "Quiet piano note with sea hush fade"
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T21:27:23.492Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}

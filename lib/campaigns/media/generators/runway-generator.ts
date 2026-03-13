@@ -1,6 +1,8 @@
 import { CampaignAestheticBrief } from '../../schema';
 import { RUNWAYML_CONFIG } from '../media-pipeline-config';
-import { getActiveVideoProviderInstance } from '../video-providers/provider-registry';
+import { type VideoModelPresetId } from '../video-models';
+import { getVideoProviderForPreset } from '../video-providers/provider-registry';
+import { joinSegmentsWithinLimit } from '../storyboard-motion-policy';
 
 // ────────────────────────────────────────────────────────────────────────────
 // RunwayML Gen-3 Alpha Video Generator
@@ -13,13 +15,26 @@ interface RunwayVideoResult {
     durationSeconds: number;
 }
 
+export function buildProductionSafeMotionPrompt(motionPrompt: string): string {
+    const normalizedPrompt = motionPrompt.trim();
+
+    return joinSegmentsWithinLimit([
+        'Preserve the source image, subject identity, and composition',
+        normalizedPrompt,
+        'Favor camera drift, sea shimmer, reflections, clouds, steam, and light over any subject animation',
+        'If people are visible, freeze them completely; no body motion, no hand motion, no facial motion, no walking, no turning, no sipping',
+        'Avoid warped anatomy, extra limbs, prop duplication, mug or cup distortion, or scene swaps',
+    ], RUNWAYML_CONFIG.motionPromptMaxChars);
+}
+
 async function createImageToVideo(
     sourceImageUrl: string,
     motionPrompt: string,
-    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds,
+    presetId?: VideoModelPresetId,
 ): Promise<RunwayVideoResult> {
-    const provider = getActiveVideoProviderInstance();
-    const result = await provider.generateImageToVideo(sourceImageUrl, motionPrompt, durationSeconds);
+    const provider = getVideoProviderForPreset(presetId);
+    const result = await provider.generateImageToVideo(sourceImageUrl, motionPrompt, durationSeconds, { presetId });
     return {
         videoUrl: result.videoUrl,
         durationSeconds: result.durationSeconds,
@@ -45,17 +60,19 @@ export async function generatePromptedClips(
     prompts: readonly string[],
     fileNamePrefix: string,
     assetIdPrefix: string,
-    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds,
+    presetId?: VideoModelPresetId,
 ): Promise<GeneratedVideo[]> {
     const results: GeneratedVideo[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const result = await createImageToVideo(sourceImageUrl, prompts[i], durationSeconds);
+        const safePrompt = buildProductionSafeMotionPrompt(prompts[i]);
+        const result = await createImageToVideo(sourceImageUrl, safePrompt, durationSeconds, presetId);
         const buffer = await downloadVideo(result.videoUrl);
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
-            motionPrompt: prompts[i],
+            motionPrompt: safePrompt,
             durationSeconds: result.durationSeconds,
             assetId: `${assetIdPrefix}_${idx}`,
             fileName: `${fileNamePrefix}_${idx}.mp4`,
@@ -74,18 +91,20 @@ export async function generatePromptedClipFromScenes(
     prompts: readonly string[],
     fileNamePrefix: string,
     assetIdPrefix: string,
-    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds
+    durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds,
+    presetId?: VideoModelPresetId,
 ): Promise<GeneratedVideo[]> {
     const results: GeneratedVideo[] = [];
     const clipCount = Math.min(sourceImageUrls.length, prompts.length);
 
     for (let i = 0; i < clipCount; i++) {
-        const result = await createImageToVideo(sourceImageUrls[i], prompts[i], durationSeconds);
+        const safePrompt = buildProductionSafeMotionPrompt(prompts[i]);
+        const result = await createImageToVideo(sourceImageUrls[i], safePrompt, durationSeconds, presetId);
         const buffer = await downloadVideo(result.videoUrl);
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
-            motionPrompt: prompts[i],
+            motionPrompt: safePrompt,
             durationSeconds: result.durationSeconds,
             assetId: `${assetIdPrefix}_${idx}`,
             fileName: `${fileNamePrefix}_${idx}.mp4`,
@@ -98,7 +117,8 @@ export async function generatePromptedClipFromScenes(
 /** 3× countdown videos — generates all 3 in sequence (use test route for single clip) */
 export async function generateCountdownVideos(
     brief: CampaignAestheticBrief,
-    heroImageUrl: string
+    heroImageUrl: string,
+    presetId?: VideoModelPresetId,
 ): Promise<GeneratedVideo[]> {
     const { lightingStyle, colorPalette } = brief.visual;
     const results: GeneratedVideo[] = [];
@@ -110,7 +130,7 @@ export async function generateCountdownVideos(
         `Dramatic slow zoom, ${lightingStyle}, final moment intensity, ${colorPalette.primary} dominant`,
     ];
 
-    const generatedClips = await generatePromptedClips(heroImageUrl, countdownMotions, 'video/countdown', 'vid_countdown');
+    const generatedClips = await generatePromptedClips(heroImageUrl, countdownMotions, 'video/countdown', 'vid_countdown', RUNWAYML_CONFIG.clipDurationSeconds, presetId);
     for (let i = 0; i < generatedClips.length; i++) {
         results.push({
             ...generatedClips[i],
@@ -125,7 +145,8 @@ export async function generateCountdownVideos(
 /** 3–4× cinematic B-roll clips — one per source image provided */
 export async function generateBrollClips(
     brief: CampaignAestheticBrief,
-    heroImageUrls: string[]
+    heroImageUrls: string[],
+    presetId?: VideoModelPresetId,
 ): Promise<GeneratedVideo[]> {
     const { lightingStyle, colorPalette } = brief.visual;
     const results: GeneratedVideo[] = [];
@@ -140,7 +161,7 @@ export async function generateBrollClips(
     const clipCount = Math.min(brollMotions.length, heroImageUrls.length);
 
     for (let i = 0; i < clipCount; i++) {
-        const generatedClips = await generatePromptedClips(heroImageUrls[i], [brollMotions[i]], 'video/broll', 'vid_broll');
+            const generatedClips = await generatePromptedClips(heroImageUrls[i], [brollMotions[i]], 'video/broll', 'vid_broll', RUNWAYML_CONFIG.clipDurationSeconds, presetId);
         const generatedClip = generatedClips[0];
         if (generatedClip) {
             const idx = String(i + 1).padStart(3, '0');

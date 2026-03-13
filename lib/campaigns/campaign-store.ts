@@ -2,9 +2,19 @@ import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } fro
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import { Campaign } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
-import { CampaignAestheticBrief, CampaignAestheticBriefSchema } from './schema';
+import { CampaignAestheticBrief, CampaignAestheticBriefSchema, normalizeVisualPlausibilityFramework } from './schema';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
+
+function normalizeStoredAestheticBriefShape(brief: CampaignAestheticBrief): CampaignAestheticBrief {
+    return {
+        ...brief,
+        visual: {
+            ...brief.visual,
+            plausibilityFramework: normalizeVisualPlausibilityFramework(brief.visual?.plausibilityFramework),
+        },
+    };
+}
 
 export async function saveCampaignBlueprint(campaign: Campaign): Promise<void> {
     const params = {
@@ -58,7 +68,7 @@ export async function getCampaignBlueprint(slug: string): Promise<Campaign | nul
 }
 
 export async function saveAestheticBrief(brief: CampaignAestheticBrief): Promise<void> {
-    const normalizedBrief = CampaignAestheticBriefSchema.parse(brief);
+    const normalizedBrief = CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(brief));
     const params = {
         TableName: TABLE_NAME,
         Item: {
@@ -106,7 +116,7 @@ export async function getAestheticBrief(slug: string): Promise<CampaignAesthetic
         if (!response.Item) return null;
 
         const { PK, SK, ...briefData } = response.Item;
-        return CampaignAestheticBriefSchema.parse(briefData);
+        return CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(briefData as CampaignAestheticBrief));
     } catch (error) {
         console.error(`Failed to get aesthetic brief for ${slug}:`, error);
         throw error;
@@ -158,6 +168,8 @@ export async function upsertCampaignPricingMatch(
             'pricingStatus = :pricingStatus',
             'matchedShipName = :matchedShipName',
             'matchedSailDate = :matchedSailDate',
+            'matchedDeparturePort = :matchedDeparturePort',
+            'matchedNights = :matchedNights',
             'updatedAt = :now',
         ].join(', '),
         ExpressionAttributeValues: {
@@ -169,6 +181,8 @@ export async function upsertCampaignPricingMatch(
             ':pricingStatus': 'CB_MATCHED' as const,
             ':matchedShipName': match.matchedShipName,
             ':matchedSailDate': match.matchedSailDate,
+            ':matchedDeparturePort': match.matchedDeparturePort ?? '',
+            ':matchedNights': match.matchedNights ?? '',
             ':now': new Date().toISOString(),
         },
     };

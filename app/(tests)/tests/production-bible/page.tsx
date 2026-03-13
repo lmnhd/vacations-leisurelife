@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { VoicePreferencePanel } from "@/components/voice-preference-panel";
 import type {
     CampaignAestheticBrief,
     CampaignMediaManifest,
@@ -18,6 +19,7 @@ import {
     AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert, Trash2
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
+import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Production Bible Test Page
@@ -28,12 +30,26 @@ import { CampaignSelector } from "../media-generation/campaign-selector";
 
 type PageState = "idle" | "loading" | "generating";
 
+async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+    const responseText = await response.text();
+    if (!responseText) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(responseText) as Record<string, unknown>;
+    } catch {
+        throw new Error(`Server returned non-JSON response (${response.status} ${response.statusText})`);
+    }
+}
+
 interface DeliverableEstimate {
     id: string;
     title: string;
     shotCount: number;
     clipDurationSeconds: number;
     runwayCredits: number;
+    videoProviderCredits: number | null;
     usd: number;
 }
 
@@ -47,7 +63,13 @@ interface ServiceBalance {
 
 interface CreditCheckData {
     canProceed: boolean | null;
+    videoProviderId: string;
+    videoProviderLabel: string;
     estimate: {
+        videoProviderId: string;
+        videoProviderLabel: string;
+        videoProviderCreditsRequired: number | null;
+        videoProviderUsd: number;
         runwayCreditsRequired: number;
         runwayClipCount: number;
         runwayUsd: number;
@@ -60,9 +82,28 @@ interface CreditCheckData {
     blockers: string[];
 }
 
+interface GenerationJobSummary {
+    total?: number;
+    completed?: number;
+    failed?: number;
+    errors?: string[];
+    warnings?: string[];
+}
+
+type CreditCheckScope = 'all' | string;
+
+function getAssetTypeForStoryboard(deliverableId: string): AssetType {
+    if (deliverableId.startsWith('tiktok')) return 'tiktok_seed_video';
+    if (deliverableId.startsWith('hero')) return 'hero_explainer_video';
+    if (deliverableId.startsWith('threshold')) return 'threshold_video';
+    if (deliverableId.startsWith('countdown')) return 'countdown_video';
+    return 'broll_clip';
+}
+
 const LS_SLUG_KEY = "prodBible_slug";
 
 export default function ProductionBibleTestPage() {
+    const { presetId, presets } = useVideoModelPreference();
     const [slug, setSlug] = useState("");
     const [pageState, setPageState] = useState<PageState>("idle");
     const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
@@ -73,7 +114,9 @@ export default function ProductionBibleTestPage() {
     const [generateLog, setGenerateLog] = useState<string[]>([]);
     const [creditCheck, setCreditCheck] = useState<CreditCheckData | null>(null);
     const [creditCheckLoading, setCreditCheckLoading] = useState(false);
+    const [creditCheckScope, setCreditCheckScope] = useState<CreditCheckScope>('all');
     const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+    const [generatingStoryboardId, setGeneratingStoryboardId] = useState<string | null>(null);
     const [preflightLoading, setPreflightLoading] = useState(false);
     const [preflightData, setPreflightData] = useState<null | {
         sceneLibraryCount: number;
@@ -81,8 +124,13 @@ export default function ProductionBibleTestPage() {
         missingScenes: string[];
         storyboards: Array<{
             deliverableId: string;
+            assetType: string;
             alreadyInManifest: boolean;
+            totalShots: number;
             shotsWithMissingImage: number;
+            readyForStoryboardGeneration: boolean;
+            highRiskShotCount: number;
+            mediumRiskShotCount: number;
             shots: Array<{ shotIndex: number; sceneId: string; imageUrl: string | null; imageFound: boolean; cameraMovement: string; emotionalBeat: string; }>;
         }>;
     }>(null);
@@ -90,6 +138,23 @@ export default function ProductionBibleTestPage() {
 
     const isBusy = pageState !== "idle";
     const bible: ProductionBible | undefined = brief?.productionBible ?? undefined;
+    const activeVideoPresetLabel = presets.find((entry) => entry.id === presetId)?.label ?? 'Loading video model...';
+    const hasThemeMusic = Boolean(manifest?.audio.themeMusic);
+
+    useEffect(() => {
+        if (!bible) {
+            setCreditCheckScope('all');
+            return;
+        }
+
+        if (creditCheckScope !== 'all' && !bible.storyboards.some((storyboard) => storyboard.deliverableId === creditCheckScope)) {
+            setCreditCheckScope('all');
+        }
+    }, [bible, creditCheckScope]);
+
+    useEffect(() => {
+        setCreditCheck(null);
+    }, [creditCheckScope, slug]);
 
     // ── Persist slug ──────────────────────────────────────────────────────
     useEffect(() => {
@@ -111,7 +176,7 @@ export default function ProductionBibleTestPage() {
             ]);
 
             if (briefRes.ok) {
-                const data = await briefRes.json();
+                const data = await readJsonResponse(briefRes);
                 setBrief(data.brief ?? data);
             } else {
                 setBrief(null);
@@ -119,7 +184,7 @@ export default function ProductionBibleTestPage() {
             }
 
             if (manifestRes.ok) {
-                const data = await manifestRes.json();
+                const data = await readJsonResponse(manifestRes);
                 setManifest(data.manifest ?? data);
             } else {
                 setManifest(null);
@@ -137,7 +202,7 @@ export default function ProductionBibleTestPage() {
         setPreflightData(null);
         try {
             const res = await fetch(`/api/groups/campaign/${slug}/media/generate-plan`);
-            const data = await res.json() as typeof preflightData | { error?: string };
+            const data = await readJsonResponse(res) as typeof preflightData | { error?: string };
             if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
             setPreflightData(data as NonNullable<typeof preflightData>);
         } catch (err) {
@@ -168,11 +233,15 @@ export default function ProductionBibleTestPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ assetTypes: ["scene_image"] }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            const data = await readJsonResponse(res);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
-            if (data.jobSummary?.errors?.length > 0) {
-                setGenerateLog(prev => [...prev, ...data.jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
+            const jobSummary = data.jobSummary as GenerationJobSummary | undefined;
+            if (jobSummary?.warnings?.length) {
+                setGenerateLog(prev => [...prev, ...jobSummary.warnings.map((warning) => `WARNING: ${warning}`)]);
+            }
+            if (jobSummary?.errors?.length > 0) {
+                setGenerateLog(prev => [...prev, ...jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
             }
             await loadData(slug);
         } catch (err) {
@@ -196,7 +265,7 @@ export default function ProductionBibleTestPage() {
                 body: JSON.stringify({ assetId }),
             });
 
-            const data = await res.json() as { error?: string };
+            const data = await readJsonResponse(res) as { error?: string };
             if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
 
             setGenerateLog(prev => [...prev, `Deleted video artifact: ${assetId}`]);
@@ -222,7 +291,7 @@ export default function ProductionBibleTestPage() {
                 body: JSON.stringify({ assetId }),
             });
 
-            const data = await res.json() as { error?: string };
+            const data = await readJsonResponse(res) as { error?: string };
             if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
 
             setGenerateLog(prev => [...prev, `Deleted scene image artifact: ${assetId}`]);
@@ -235,28 +304,43 @@ export default function ProductionBibleTestPage() {
     }, [slug, loadData]);
 
     // ── Generate storyboard videos via the REAL pipeline ──────────────────
-    const handleGenerateVideos = async () => {
+    const handleGenerateVideos = async (deliverableId?: string) => {
         setPageState("generating");
         setError("");
-        setGenerateLog(["Starting storyboard video generation via real pipeline..."]);
+        setGeneratingStoryboardId(deliverableId ?? null);
+        setCreditCheckScope(deliverableId ?? 'all');
+        setGenerateLog([
+            deliverableId
+                ? `Starting storyboard video generation for ${deliverableId} via real pipeline...`
+                : "Starting storyboard video generation via real pipeline...",
+        ]);
         try {
+            const assetTypes = deliverableId
+                ? [getAssetTypeForStoryboard(deliverableId)]
+                : ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"];
             const res = await fetch(`/api/groups/campaign/${slug}/media/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    assetTypes: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"],
+                    assetTypes,
+                    ...(deliverableId ? { storyboardDeliverableIds: [deliverableId] } : {}),
                 }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            const data = await readJsonResponse(res);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
-            if (data.jobSummary?.errors?.length > 0) {
-                setGenerateLog(prev => [...prev, ...data.jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
+            const jobSummary = data.jobSummary as GenerationJobSummary | undefined;
+            if (jobSummary?.warnings?.length) {
+                setGenerateLog(prev => [...prev, ...jobSummary.warnings.map((warning) => `WARNING: ${warning}`)]);
+            }
+            if (jobSummary?.errors?.length > 0) {
+                setGenerateLog(prev => [...prev, ...jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
             }
             await loadData(slug);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
+            setGeneratingStoryboardId(null);
             setPageState("idle");
         }
     };
@@ -272,8 +356,8 @@ export default function ProductionBibleTestPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ themeMusicSource: "default" }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            const data = await readJsonResponse(res);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setGenerateLog(prev => [...prev, `Done: ${data.totalAssets} assets, status: ${data.completionStatus}`]);
             if (data.jobSummary?.errors?.length > 0) {
                 setGenerateLog(prev => [...prev, ...data.jobSummary.errors.map((e: string) => `ERROR: ${e}`)]);
@@ -292,9 +376,13 @@ export default function ProductionBibleTestPage() {
         setCreditCheckLoading(true);
         try {
             const sceneCount = bible?.sceneLibrary.length ?? 10;
-            const res = await fetch(`/api/groups/campaign/${slug}/media/credit-check?sceneCount=${sceneCount}`);
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            const params = new URLSearchParams({ sceneCount: String(sceneCount) });
+            if (creditCheckScope !== 'all') {
+                params.set('storyboardDeliverableIds', creditCheckScope);
+            }
+            const res = await fetch(`/api/groups/campaign/${slug}/media/credit-check?${params.toString()}`);
+            const data = await readJsonResponse(res);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
             setCreditCheck(data as CreditCheckData);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -313,8 +401,12 @@ export default function ProductionBibleTestPage() {
             const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/production-bible`, {
                 method: "POST",
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = (data.error as string | undefined) ?? `HTTP ${res.status}`;
+                const errorDetails = (data.details as string | undefined) ?? "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
             setGenerateLog(prev => [...prev, `Done — ${data.brief?.productionBible?.sceneLibrary?.length ?? 0} new scenes generated`]);
             await loadData(slug.trim());
         } catch (err) {
@@ -349,17 +441,37 @@ export default function ProductionBibleTestPage() {
         return rec?.url ?? null;
     };
 
+    const creditScopeLabel = creditCheckScope === 'all'
+        ? 'All storyboard videos'
+        : bible?.storyboards.find((storyboard) => storyboard.deliverableId === creditCheckScope)?.title ?? creditCheckScope;
+
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center gap-3">
-                    <BookOpen className="w-6 h-6 text-amber-400" />
-                    <h1 className="text-2xl font-bold">Production Bible</h1>
-                    <span className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400">
-                        /tests/production-bible
-                    </span>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="w-6 h-6 text-amber-400" />
+                        <h1 className="text-2xl font-bold">Production Bible</h1>
+                        <span className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400">
+                            /tests/production-bible
+                        </span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap items-center">
+                        <a
+                            href="/tests/video-model-lab"
+                            className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 rounded-lg transition"
+                        >
+                            <Film className="w-3.5 h-3.5" />
+                            Video Model Lab
+                        </a>
+                        <span className="text-xs bg-cyan-950/60 border border-cyan-900 text-cyan-200 px-2.5 py-1 rounded">
+                            {activeVideoPresetLabel}
+                        </span>
+                    </div>
                 </div>
+
+                <VoicePreferencePanel className="bg-zinc-900 border-zinc-800" />
 
                 {/* Campaign selector + load */}
                 <div className="space-y-2">
@@ -392,6 +504,13 @@ export default function ProductionBibleTestPage() {
                     <div className="bg-red-900/30 border border-red-800 text-red-300 rounded p-3 text-sm flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 shrink-0" />
                         {error}
+                    </div>
+                )}
+
+                {!hasThemeMusic && (
+                    <div className="bg-amber-900/25 border border-amber-800 text-amber-200 rounded p-3 text-sm flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        No theme music track is currently selected in the manifest. Narrated storyboard and TikTok videos will generate without background music until you run full pipeline music generation or select an existing theme track.
                     </div>
                 )}
 
@@ -440,12 +559,35 @@ export default function ProductionBibleTestPage() {
                         </button>
                     </div>
 
+                    <div className="space-y-1">
+                        <div className="text-[11px] text-zinc-500 uppercase tracking-wide">Estimate Scope</div>
+                        <select
+                            value={creditCheckScope}
+                            onChange={(event) => setCreditCheckScope(event.target.value)}
+                            disabled={creditCheckLoading || !bible}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-green-500/40 disabled:opacity-40"
+                        >
+                            <option value="all">All storyboard videos</option>
+                            {bible?.storyboards.map((storyboard) => (
+                                <option key={storyboard.deliverableId} value={storyboard.deliverableId}>
+                                    {storyboard.title} ({storyboard.deliverableId})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-[11px] text-zinc-500">
+                            Scope the video estimate to one storyboard when you plan to run a single video.
+                        </p>
+                    </div>
+
                     {!creditCheck && !creditCheckLoading && (
-                        <p className="text-xs text-zinc-500">Click &quot;Check Now&quot; to see cost estimate and verify you have enough credits before generating videos.</p>
+                        <p className="text-xs text-zinc-500">Click &quot;Check Now&quot; to see the {creditScopeLabel.toLowerCase()} estimate and verify you have enough credits before generating videos.</p>
                     )}
 
                     {creditCheck && (
                         <div className="space-y-3">
+                            <div className="text-xs text-zinc-400">
+                                Current scope: <span className="text-zinc-200">{creditScopeLabel}</span>
+                            </div>
                             {/* Status banner */}
                             <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded ${
                                 creditCheck.canProceed === true ? "bg-green-900/30 border border-green-800 text-green-300"
@@ -461,16 +603,24 @@ export default function ProductionBibleTestPage() {
 
                             {/* Cost breakdown */}
                             <div className="space-y-1">
-                                <div className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-1">Video Generation (RunwayML)</div>
+                                <div className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-1">Video Generation ({creditCheck.videoProviderLabel})</div>
                                 {creditCheck.estimate.deliverables.map((d: DeliverableEstimate) => (
                                     <div key={d.id} className="flex justify-between text-xs text-zinc-400">
                                         <span>{d.title} ({d.shotCount} shots × {d.clipDurationSeconds}s)</span>
-                                        <span className="text-zinc-300">{d.runwayCredits.toLocaleString()} cr / ${d.usd.toFixed(2)}</span>
+                                        <span className="text-zinc-300">
+                                            {d.videoProviderCredits !== null
+                                                ? `${d.videoProviderCredits.toLocaleString()} cr / $${d.usd.toFixed(2)}`
+                                                : `$${d.usd.toFixed(2)}`}
+                                        </span>
                                     </div>
                                 ))}
                                 <div className="flex justify-between text-xs font-semibold text-zinc-200 border-t border-zinc-700 pt-1 mt-1">
-                                    <span>Runway subtotal</span>
-                                    <span>{creditCheck.estimate.runwayCreditsRequired.toLocaleString()} cr / ${creditCheck.estimate.runwayUsd.toFixed(2)}</span>
+                                    <span>{creditCheck.videoProviderLabel} subtotal</span>
+                                    <span>
+                                        {creditCheck.estimate.videoProviderCreditsRequired !== null
+                                            ? `${creditCheck.estimate.videoProviderCreditsRequired.toLocaleString()} cr / $${creditCheck.estimate.videoProviderUsd.toFixed(2)}`
+                                            : `$${creditCheck.estimate.videoProviderUsd.toFixed(2)}`}
+                                    </span>
                                 </div>
                             </div>
 
@@ -526,9 +676,9 @@ export default function ProductionBibleTestPage() {
                     <div className="flex gap-2 flex-wrap">
                         <button
                             className="bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-700 text-cyan-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
-                            onClick={handleGenerateSceneImages}
+                            onClick={() => void handleGenerateSceneImages()}
                             disabled={isBusy || !bible}
-                            title={!bible ? "No Production Bible — regenerate scene specs first" : ""}
+                            title={!bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved unless you explicitly force regeneration via the API."}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
                             Generate Scene Images
@@ -544,11 +694,11 @@ export default function ProductionBibleTestPage() {
                         </button>
                         <button
                             className="bg-purple-900/50 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
-                            onClick={handleGenerateVideos}
+                            onClick={() => void handleGenerateVideos()}
                             disabled={isBusy || !bible}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
-                            Generate Storyboard Videos
+                            Generate All Storyboard Videos
                         </button>
                         <button
                             className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
@@ -601,6 +751,27 @@ export default function ProductionBibleTestPage() {
                                         )}
                                     </summary>
                                     <div className="border-t border-zinc-700 p-2.5 space-y-1.5">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                                            <div className="text-zinc-500">
+                                                {sb.totalShots} shots · {sb.assetType}{sb.alreadyInManifest ? ' · already in manifest' : ''}
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                                                {(sb.highRiskShotCount > 0 || sb.mediumRiskShotCount > 0) && (
+                                                    <span className="text-amber-400">
+                                                        Motion risk: {sb.highRiskShotCount} high · {sb.mediumRiskShotCount} medium
+                                                    </span>
+                                                )}
+                                                <button
+                                                    className="bg-purple-900/40 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-2 py-1 rounded text-[11px] flex items-center gap-1 disabled:opacity-40"
+                                                    onClick={() => void handleGenerateVideos(sb.deliverableId)}
+                                                    disabled={isBusy || !sb.readyForStoryboardGeneration}
+                                                    title={sb.readyForStoryboardGeneration ? `Generate only ${sb.deliverableId}` : 'Resolve missing scene images before generating this storyboard'}
+                                                >
+                                                    {generatingStoryboardId === sb.deliverableId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                                                    Generate This Video
+                                                </button>
+                                            </div>
+                                        </div>
                                         {sb.shots.map((shot) => (
                                             <div key={shot.shotIndex} className="flex items-center gap-2.5">
                                                 <div className="w-16 h-10 rounded overflow-hidden shrink-0 bg-zinc-700 flex items-center justify-center">
@@ -713,19 +884,32 @@ export default function ProductionBibleTestPage() {
                                 const isExpanded = expandedStoryboards.has(sb.deliverableId);
                                 return (
                                     <div key={sb.deliverableId} className="bg-zinc-900 border border-zinc-800 rounded">
-                                        <button
-                                            className="w-full flex items-center gap-3 p-3 text-left hover:bg-zinc-800/50"
-                                            onClick={() => toggleStoryboard(sb.deliverableId)}
-                                        >
-                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
-                                            <Play className="w-4 h-4 text-purple-400" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm">{sb.title}</div>
-                                                <div className="text-xs text-zinc-400">
-                                                    {sb.deliverableId} • {sb.totalDurationSeconds}s • {sb.shotSequence.length} shots • {sb.editingStyle}
+                                        <div className="flex items-center gap-3 p-3">
+                                            <button
+                                                className="flex flex-1 items-center gap-3 text-left hover:bg-zinc-800/50 rounded"
+                                                onClick={() => toggleStoryboard(sb.deliverableId)}
+                                            >
+                                                {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+                                                <Play className="w-4 h-4 text-purple-400" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm">{sb.title}</div>
+                                                    <div className="text-xs text-zinc-400">
+                                                        {sb.deliverableId} • {sb.totalDurationSeconds}s • {sb.shotSequence.length} shots • {sb.editingStyle}
+                                                    </div>
                                                 </div>
+                                            </button>
+                                            <div className="shrink-0">
+                                                <button
+                                                    className="bg-purple-900/40 hover:bg-purple-800/50 border border-purple-700 text-purple-300 px-2.5 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-40"
+                                                    onClick={() => void handleGenerateVideos(sb.deliverableId)}
+                                                    disabled={isBusy}
+                                                    title={`Generate only ${sb.deliverableId}`}
+                                                >
+                                                    {generatingStoryboardId === sb.deliverableId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                                                    Generate This Video
+                                                </button>
                                             </div>
-                                        </button>
+                                        </div>
 
                                         {isExpanded && (
                                             <div className="border-t border-zinc-800 p-3 space-y-3">
@@ -913,8 +1097,8 @@ export default function ProductionBibleTestPage() {
                         <div>
                             <p className="font-medium">No Production Bible found on this brief.</p>
                             <p className="text-xs text-amber-400 mt-1">
-                                Regenerate the aesthetic brief to include the Production Bible (Pass 3).
-                                The brief was generated before the Production Bible architecture was added.
+                                Use <span className="font-semibold">Regenerate Production Bible</span> above to create Pass 3 scene specs from the current approved brief.
+                                You do not need to regenerate the full aesthetic brief first.
                             </p>
                         </div>
                     </div>

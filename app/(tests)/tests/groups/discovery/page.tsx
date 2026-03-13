@@ -13,6 +13,42 @@ interface PhaseBCampaignRef {
     name: string;
     pricingStatus: PricingStatus;
     shipTarget?: string;
+    matchedShipName?: string;
+    matchedSailDate?: string;
+    startingPrice?: number;
+    priceSource?: string;
+    cbPriceAdvantage?: number;
+    cbagenttoolsBookingLink?: string;
+}
+
+function mergePhaseBStatusIntoBlueprints(
+    existingBlueprints: Campaign[],
+    phaseBCampaigns: PhaseBCampaignRef[]
+): Campaign[] {
+    if (existingBlueprints.length === 0 || phaseBCampaigns.length === 0) {
+        return existingBlueprints;
+    }
+
+    const bySlug = new Map(phaseBCampaigns.map((campaign) => [campaign.slug, campaign]));
+
+    return existingBlueprints.map((blueprint) => {
+        const phaseBStatus = bySlug.get(blueprint.id);
+        if (!phaseBStatus) {
+            return blueprint;
+        }
+
+        return {
+            ...blueprint,
+            pricingStatus: phaseBStatus.pricingStatus,
+            shipTarget: phaseBStatus.shipTarget ?? blueprint.shipTarget,
+            matchedShipName: phaseBStatus.matchedShipName ?? blueprint.matchedShipName,
+            matchedSailDate: phaseBStatus.matchedSailDate ?? blueprint.matchedSailDate,
+            startingPrice: phaseBStatus.startingPrice ?? blueprint.startingPrice,
+            priceSource: phaseBStatus.priceSource ?? blueprint.priceSource,
+            cbPriceAdvantage: phaseBStatus.cbPriceAdvantage ?? blueprint.cbPriceAdvantage,
+            cbagenttoolsBookingLink: phaseBStatus.cbagenttoolsBookingLink ?? blueprint.cbagenttoolsBookingLink,
+        };
+    });
 }
 
 // ─── Sonar Research Panel ─────────────────────────────────────────────────────
@@ -267,8 +303,8 @@ export default function DiscoveryTestPage() {
 
     const handleGenerate = async () => {
         const confirmed = window.confirm(
-            'This will make 2× Sonar Deep Research calls + 1× GPT-4o-mini call.\n\n' +
-            'Estimated cost: ~$1.60 – $2.00\n\nContinue?'
+            'This will make 2× Sonar Deep Research calls + 1× GPT-5 structured generation call.\n\n' +
+            'Continue?'
         );
         if (!confirmed) return;
 
@@ -335,7 +371,9 @@ export default function DiscoveryTestPage() {
             throw new Error(data.error ?? 'Failed to load Phase B status');
         }
 
-        setPhaseBCampaigns(data.campaigns ?? []);
+        const campaigns = data.campaigns ?? [];
+        setPhaseBCampaigns(campaigns);
+        setBlueprints((current) => mergePhaseBStatusIntoBlueprints(current, campaigns));
         if (!data.running) {
             clearPhaseBPollingInterval();
             setPhaseBRunning(false);
@@ -415,7 +453,7 @@ export default function DiscoveryTestPage() {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
                         <div>
                             <span className="text-xs tracking-widest uppercase text-slate-400">Phase A — AI Discovery</span>
-                            <p className="text-[10px] text-slate-600 mt-0.5">2× Perplexity Sonar + 1× GPT-4o-mini · ~$1.60–$2.00</p>
+                            <p className="text-[10px] text-slate-600 mt-0.5">2× Perplexity Sonar + 1× GPT-5 structured generation</p>
                         </div>
                         <div className="flex gap-2">
                             <button onClick={handleClearAll} className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-400/60 transition-all flex items-center gap-1.5">
@@ -451,6 +489,7 @@ export default function DiscoveryTestPage() {
                                 {blueprints.map((bp, i) => {
                                     const isMatched = bp.pricingStatus === 'CB_MATCHED';
                                     const isUnmatched = bp.pricingStatus === 'UNMATCHED';
+                                    const displayedShip = bp.matchedShipName ?? bp.shipTarget ?? 'TBD';
                                     return (
                                         <div key={bp.id || i} className={`border rounded-lg p-4 bg-slate-800/40 ${isMatched ? 'border-emerald-500/30' : isUnmatched ? 'border-red-500/20' : 'border-white/10'}`}>
                                             {/* Header row */}
@@ -469,7 +508,7 @@ export default function DiscoveryTestPage() {
                                             {/* Ship + pricing */}
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] mb-3">
                                                 <span className="flex items-center gap-1 text-slate-400">
-                                                    <MapPin className="w-3 h-3" /> {bp.shipTarget ?? 'TBD'}
+                                                    <MapPin className="w-3 h-3" /> {displayedShip}
                                                 </span>
                                                 {bp.startingPrice && (
                                                     <span className="text-emerald-400">

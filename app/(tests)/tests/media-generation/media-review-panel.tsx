@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Trash2, Loader2 } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2 } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -13,6 +13,7 @@ import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Trash2, Loader2
 const TABS = [
     { id: 'references', label: 'References', icon: Search },
     { id: 'heroes',     label: 'Heroes & Concepts', icon: ImageIcon },
+    { id: 'crops',      label: 'Crops', icon: Crop },
     { id: 'scenes',     label: 'Scenes', icon: Layers },
     { id: 'video',      label: 'Video', icon: Film },
     { id: 'audio',      label: 'Audio', icon: Music },
@@ -61,6 +62,9 @@ function getTabEntries(
             manifest.images.aestheticConcepts.forEach((asset, i) => {
                 entries.push({ entryKey: `concept::${i}::${asset.assetId}`, title: `Concept ${i + 1}`, asset });
             });
+            break;
+
+        case 'crops':
             Object.entries(manifest.images.platformCrops).forEach(([fmt, assets]) => {
                 assets.forEach((asset, i) => {
                     entries.push({ entryKey: `crop::${fmt}::${i}::${asset.assetId}`, title: `${fmt} ${i + 1}`, asset });
@@ -127,9 +131,10 @@ function countStatuses(entries: Array<{ asset: AssetRecord }>) {
     let flagged = 0;
     let auto = 0;
     for (const e of entries) {
-        if (e.asset.reviewStatus === 'human_approved') approved++;
-        else if (e.asset.reviewStatus === 'needs_review') flagged++;
-        else auto++;
+        const approvalState = normalizeAssetCuration(e.asset).approvalState;
+        if (approvalState === 'human_approved') approved++;
+        else if (approvalState === 'auto_approved') auto++;
+        else flagged++;
     }
     return { approved, flagged, auto };
 }
@@ -190,11 +195,12 @@ export function MediaReviewPanel(
         setBulkError('');
 
         try {
-            const settled = await Promise.allSettled(
-                entriesToRemove.map(async (entry) => {
-                    const endpoint = getDeleteEndpoint(slug, entry.asset.assetType);
-                    if (!endpoint) return;
+            const settled: PromiseSettledResult<void>[] = [];
+            for (const entry of entriesToRemove) {
+                const endpoint = getDeleteEndpoint(slug, entry.asset.assetType);
+                if (!endpoint) continue;
 
+                try {
                     const response = await fetch(endpoint, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
@@ -206,8 +212,15 @@ export function MediaReviewPanel(
                         const message = payload?.error ?? `Delete failed (${response.status})`;
                         throw new Error(`${entry.asset.assetId}: ${message}`);
                     }
-                })
-            );
+
+                    settled.push({ status: 'fulfilled', value: undefined });
+                } catch (error) {
+                    settled.push({
+                        status: 'rejected',
+                        reason: error,
+                    });
+                }
+            }
 
             const failures = settled.filter((item): item is PromiseRejectedResult => item.status === 'rejected');
             if (failures.length > 0) {

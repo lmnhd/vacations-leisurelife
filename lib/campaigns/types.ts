@@ -120,6 +120,10 @@ export interface Campaign {
 
     matchedSailDate?: string;
 
+    matchedDeparturePort?: string;
+
+    matchedNights?: string;
+
     /**
      * Invite link to the campaign's private community channel (Discord, WhatsApp, Facebook Group).
      * Populated during pre-launch campaign config and sent in the "Trip is GO!" email.
@@ -141,6 +145,11 @@ export interface Campaign {
      * ISO timestamp of when the aesthetic brief was generated.
      */
     aestheticGeneratedAt?: string;
+
+    /**
+     * Status tracking for Phase 4 distribution scheduling and dispatch.
+     */
+    distributionStatus?: 'not_started' | 'scheduled' | 'active' | 'halted';
 
     // ─── Phase A Research Intelligence ────────────────────────────────────────
 

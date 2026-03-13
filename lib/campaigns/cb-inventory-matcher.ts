@@ -12,6 +12,7 @@ import { CbGroupInventoryItem } from '../../scripts/cb-inventory-scraper';
 
 const CB_AGENT_SIID = process.env.CB_AGENT_SIID ?? '1049337';
 const THEME_FEE_MULTIPLIER = 1.15;
+const SHIP_TOKEN_STOP_WORDS = new Set(['the', 'and', 'with', 'from', 'ship', 'cruise', 'line', 'class', 'of', 'sea', 'seas']);
 
 export interface CbInventoryMatch {
     cbGroupId: string;
@@ -22,7 +23,50 @@ export interface CbInventoryMatch {
     priceSource: string;
     matchedShipName: string;
     matchedSailDate: string;
+    matchedDeparturePort?: string;
+    matchedNights?: string;
     matchScore: number;              // 0–100 confidence of the match
+}
+
+function normalizeComparableText(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function stripCruiseLinePrefixes(value: string): string {
+    return value
+        .replace(/^(celebrity cruises?|celebrity)\s+/i, '')
+        .replace(/^(royal caribbean(?: international)?)\s+/i, '')
+        .replace(/^(norwegian cruise line|norwegian)\s+/i, '')
+        .trim();
+}
+
+function getSpecificShipName(value?: string): string | null {
+    if (!value) {
+        return null;
+    }
+
+    const normalized = normalizeComparableText(stripCruiseLinePrefixes(value));
+    if (!normalized || normalized.includes(' class')) {
+        return null;
+    }
+
+    return normalized;
+}
+
+function tokenizeShipName(value?: string): string[] {
+    if (!value) {
+        return [];
+    }
+
+    return normalizeComparableText(stripCruiseLinePrefixes(value))
+        .split(/\s+/)
+        .filter(token => token.length > 2)
+        .filter(token => !SHIP_TOKEN_STOP_WORDS.has(token));
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
@@ -38,8 +82,20 @@ function scoreMatch(campaign: Campaign, item: CbGroupInventoryItem): number {
         .join(' ')
         .toLowerCase();
 
+    const requiredShipName = getSpecificShipName(campaign.shipTarget);
+    const itemShipName = getSpecificShipName(item.shipName);
+
+    // When the campaign names a concrete vessel, do not match across sister ships.
+    if (requiredShipName && itemShipName && requiredShipName !== itemShipName) {
+        return 0;
+    }
+
+    if (requiredShipName && itemShipName && requiredShipName === itemShipName) {
+        score += 60;
+    }
+
     // Ship / cruise line name match
-    const shipTokens = (campaign.shipTarget ?? '').toLowerCase().split(/[\s,\-\/]+/).filter(t => t.length > 2);
+    const shipTokens = tokenizeShipName(campaign.shipTarget);
     for (const token of shipTokens) {
         if (itemText.includes(token)) score += 25;
     }
@@ -60,6 +116,10 @@ function scoreMatch(campaign: Campaign, item: CbGroupInventoryItem): number {
     const destTokens = (campaign.targetDestination ?? '').toLowerCase().split(/[\s,]+/).filter(t => t.length > 2);
     for (const token of destTokens) {
         if (itemText.includes(token)) score += 15;
+    }
+
+    if (campaign.targetDates.trim().length > 0 && !item.sailDate?.trim()) {
+        score -= 10;
     }
 
     return Math.min(score, 100);
@@ -118,6 +178,8 @@ export function matchGroupInventoryToCampaign(
         priceSource: 'CB_GROUP_INVENTORY',
         matchedShipName: bestItem.shipName,
         matchedSailDate: bestItem.sailDate,
+        matchedDeparturePort: bestItem.departurePort,
+        matchedNights: bestItem.nights,
         matchScore: bestScore,
     };
 }

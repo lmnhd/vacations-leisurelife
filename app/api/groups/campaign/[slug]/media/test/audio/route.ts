@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { buildElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
@@ -51,7 +52,7 @@ export async function POST(
                 durationSeconds: 30,
                 fileSizeBytes: audio.buffer.length,
                 mimeType: 'audio/mpeg',
-                tags: ['audio', 'narration'],
+                tags: ['audio', 'narration', ...buildElevenLabsVoiceTags(audio.voiceRole, audio.voiceId, audio.voiceName)],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
@@ -64,6 +65,8 @@ export async function POST(
                 assetId: audio.assetId,
                 fileName: audio.fileName,
                 script: audio.script,
+                voiceId: audio.voiceId,
+                voiceName: audio.voiceName,
                 fileSizeBytes: audio.buffer.length,
                 cdnUrl,
             });
@@ -81,7 +84,7 @@ export async function POST(
                 durationSeconds: 15,
                 fileSizeBytes: audio.buffer.length,
                 mimeType: 'audio/mpeg',
-                tags: ['audio', 'hype'],
+                tags: ['audio', 'hype', ...buildElevenLabsVoiceTags(audio.voiceRole, audio.voiceId, audio.voiceName)],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,
@@ -94,6 +97,8 @@ export async function POST(
                 assetId: audio.assetId,
                 fileName: audio.fileName,
                 script: audio.script,
+                voiceId: audio.voiceId,
+                voiceName: audio.voiceName,
                 fileSizeBytes: audio.buffer.length,
                 cdnUrl,
             });

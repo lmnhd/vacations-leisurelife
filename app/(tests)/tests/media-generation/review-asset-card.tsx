@@ -1,9 +1,11 @@
 "use client";
 
 import { KeyboardEvent, useState } from 'react';
+import { getElevenLabsVoiceRoleLabel, parseElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import type { AssetApprovalState, AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
+import { metadataContainsKnownShipLandscapeFeature } from '@/lib/campaigns/media/ship-environment-profile';
 import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal, MoreHorizontal, X, Plus } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -17,6 +19,10 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
 
 const IMAGE_ARTIFACT_TYPES = new Set<AssetType>([
     'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+]);
+
+const AUDIO_ARTIFACT_TYPES = new Set<AssetType>([
+    'ambient_narration', 'hype_clip',
 ]);
 
 const SUGGESTED_SUITABILITY_TAGS = [
@@ -52,6 +58,7 @@ function isRegenerableType(assetType: AssetType): boolean {
     return assetType === 'scene_image'
         || assetType === 'hero_image'
         || assetType === 'aesthetic_concept'
+    || AUDIO_ARTIFACT_TYPES.has(assetType)
         || VIDEO_ASSET_TYPES.has(assetType);
 }
 
@@ -65,15 +72,24 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function reviewStatusClasses(status: ReviewStatus): string {
-    if (status === 'human_approved') return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
-    if (status === 'auto_approved') return 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300';
+function approvalStateClasses(state: AssetApprovalState): string {
+    if (state === 'human_approved') return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
+    if (state === 'auto_approved') return 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300';
+    if (state === 'rejected') return 'border-red-500/40 bg-red-500/10 text-red-300';
+    if (state === 'hold') return 'border-violet-500/40 bg-violet-500/10 text-violet-300';
     return 'border-amber-500/40 bg-amber-500/10 text-amber-300';
+}
+
+function approvalStateLabel(state: AssetApprovalState): string {
+    return state.replace(/_/g, ' ');
 }
 
 function renderPreview(asset: AssetRecord) {
     if (asset.mimeType.startsWith('image/')) {
-        return <img src={`${asset.url}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-44 w-full rounded-lg object-cover" />;
+        const previewUrl = asset.assetType === 'ship_reference_image' && asset.sourceThumbnailUrl
+            ? asset.sourceThumbnailUrl
+            : asset.url;
+        return <img src={`${previewUrl}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-44 w-full rounded-lg object-cover" />;
     }
     if (asset.mimeType.startsWith('video/')) {
         return <video controls src={asset.url} className="h-44 w-full rounded-lg bg-black" />;
@@ -106,6 +122,197 @@ function normalizeTagValue(value: string): string {
     return value.trim().toLowerCase().replace(/\s+/g, '-');
 }
 
+function getReferenceCategory(asset: AssetRecord): string {
+    return asset.tags.find((tag) => tag !== 'ship-reference' && tag !== 'reference') ?? 'unknown';
+}
+
+function getReferenceMatchLevel(asset: AssetRecord): 'exact_ship' | 'same_class' | 'generic_cruise' {
+    const taggedMatchLevel = asset.tags.find((tag) => tag.startsWith('match:'));
+    if (taggedMatchLevel === 'match:exact_ship') return 'exact_ship';
+    if (taggedMatchLevel === 'match:same_class') return 'same_class';
+    return 'generic_cruise';
+}
+
+function getHostnameLabel(url?: string): string {
+    if (!url) return 'Unknown source';
+
+    try {
+        return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+        return url;
+    }
+}
+
+function detectReferenceConcerns(asset: AssetRecord): string[] {
+    const haystack = [asset.promptUsed, asset.sourcePageUrl, asset.sourceQuery, asset.url]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    const knownShipLandscapeFeature = metadataContainsKnownShipLandscapeFeature(haystack);
+
+    const concernTerms = [
+        { term: 'hotel', label: 'hotel wording' },
+        { term: 'resort', label: 'resort wording' },
+        { term: 'villa', label: 'villa wording' },
+        { term: 'courtyard', label: 'courtyard wording' },
+        { term: 'garden', label: 'garden wording', suppressWhenShipNative: true },
+        { term: 'lawn', label: 'lawn wording', suppressWhenShipNative: true },
+        { term: 'backyard', label: 'backyard wording' },
+        { term: 'patio', label: 'patio wording' },
+        { term: 'render', label: 'render wording' },
+        { term: 'illustration', label: 'illustration wording' },
+    ];
+
+    return concernTerms
+        .filter((entry) => haystack.includes(entry.term))
+        .filter((entry) => !(entry.suppressWhenShipNative && knownShipLandscapeFeature))
+        .map((entry) => entry.label);
+}
+
+function getReferenceConfidence(asset: AssetRecord): 'high' | 'medium' | 'low' {
+    const metadataHaystack = [asset.promptUsed, asset.sourcePageUrl, asset.sourceQuery]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    const hasShipSignal = ['cruise', 'ship', 'deck', 'stateroom', 'cabin', 'atrium', 'pool', 'ocean', 'sea', 'voyage', 'port']
+        .some((term) => metadataHaystack.includes(term));
+    const concerns = detectReferenceConcerns(asset);
+
+    const matchLevel = getReferenceMatchLevel(asset);
+
+    if (concerns.length > 0 || matchLevel === 'generic_cruise') return 'low';
+    if (matchLevel === 'exact_ship') return 'high';
+    if (hasShipSignal && (asset.selectionScore ?? 0) >= 120) return 'high';
+    return 'medium';
+}
+
+function buildReferenceSummary(asset: AssetRecord): string {
+    const category = getReferenceCategory(asset).replace(/_/g, ' ');
+    const confidence = getReferenceConfidence(asset);
+    const matchLevel = getReferenceMatchLevel(asset);
+    const title = asset.promptUsed || 'the source result';
+    const query = asset.sourceQuery || 'the saved search query';
+
+    if (confidence === 'low') {
+        return `Low-confidence ${category} reference. It was selected from the query "${query}", but the source metadata for "${title}" contains signals that may point to a non-ship environment. Verify this manually before approval.`;
+    }
+
+    if (matchLevel === 'same_class') {
+        return `Same-class ${category} reference. It lines up with the cruise-line and ship-family search for "${query}", but the metadata does not prove it is the exact named ship. Approve only if the space is still operationally representative.`;
+    }
+
+    if (confidence === 'high') {
+        return `High-confidence ${category} reference. It was selected because the source metadata for "${title}" lines up strongly with the ship-focused query "${query}" and includes cruise or ship signals.`;
+    }
+
+    return `Medium-confidence ${category} reference. It matches the ship-focused query "${query}", but the metadata alone is not strong enough to guarantee that the image is truly the correct ship space.`;
+}
+
+function renderReferenceContext(asset: AssetRecord) {
+    if (asset.assetType !== 'ship_reference_image') {
+        return null;
+    }
+
+    const category = getReferenceCategory(asset);
+    const matchLevel = getReferenceMatchLevel(asset);
+    const concerns = detectReferenceConcerns(asset);
+    const confidence = getReferenceConfidence(asset);
+    const confidenceClasses = confidence === 'high'
+        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+        : confidence === 'low'
+            ? 'border-amber-500/20 bg-amber-500/10 text-amber-200'
+            : 'border-sky-500/20 bg-sky-500/10 text-sky-200';
+    const matchClasses = matchLevel === 'exact_ship'
+        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+        : matchLevel === 'same_class'
+            ? 'border-violet-500/20 bg-violet-500/10 text-violet-200'
+            : 'border-amber-500/20 bg-amber-500/10 text-amber-200';
+    const matchLabel = matchLevel === 'exact_ship'
+        ? 'Exact Ship'
+        : matchLevel === 'same_class'
+            ? 'Same Class'
+            : 'Generic Cruise';
+
+    return (
+        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+                <div className="text-[10px] uppercase tracking-widest text-cyan-400">Reference Context</div>
+                <div className="text-[10px] text-slate-400">score {asset.selectionScore ?? 0}</div>
+            </div>
+
+            <div className={`rounded-lg border px-2.5 py-2 text-[11px] ${confidenceClasses}`}>
+                {buildReferenceSummary(asset)}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <div className={`rounded-full border px-2 py-1 text-[10px] ${matchClasses}`}>
+                    {matchLabel}
+                </div>
+            </div>
+
+            <div className="space-y-1 text-[11px] text-slate-300">
+                <div><span className="text-slate-500">Category:</span> {category}</div>
+                <div><span className="text-slate-500">Confidence:</span> {confidence}</div>
+                <div><span className="text-slate-500">Ship match:</span> {matchLabel}</div>
+                <div><span className="text-slate-500">Source title:</span> {asset.promptUsed || 'No title captured'}</div>
+                <div><span className="text-slate-500">Search query:</span> {asset.sourceQuery || 'No query captured'}</div>
+                <div><span className="text-slate-500">Source site:</span> {getHostnameLabel(asset.sourcePageUrl)}</div>
+                <div className="text-slate-400">
+                    Search result only. Human approval should confirm this is actually the correct ship space or a believable ship-adjacent view.
+                </div>
+            </div>
+
+            {concerns.length > 0 && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-2 text-[11px] text-amber-200">
+                    Potential mismatch signals: {concerns.join(', ')}
+                </div>
+            )}
+
+            <div className="flex gap-2">
+                {asset.sourcePageUrl && (
+                    <a
+                        href={asset.sourcePageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-300 hover:bg-cyan-500/20"
+                    >
+                        <ExternalLink className="h-3 w-3" />
+                        Open source page
+                    </a>
+                )}
+                <a
+                    href={asset.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-300 hover:text-white hover:bg-white/10"
+                >
+                    <ExternalLink className="h-3 w-3" />
+                    Open full image
+                </a>
+            </div>
+        </div>
+    );
+}
+
+function renderVoiceContext(asset: AssetRecord) {
+    const voice = parseElevenLabsVoiceTags(asset.tags);
+    if (!voice.voiceId) {
+        return null;
+    }
+
+    return (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-1.5">
+            <div className="text-[10px] uppercase tracking-widest text-emerald-400">Voice Metadata</div>
+            <div className="text-[11px] text-slate-300">
+                {voice.role ? getElevenLabsVoiceRoleLabel(voice.role) : 'Narration'}
+            </div>
+            <div className="text-xs text-white">{voice.voiceName ?? 'Selected ElevenLabs voice'}</div>
+            <div className="text-[11px] text-slate-500 break-all">{voice.voiceId}</div>
+        </div>
+    );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // ReviewAssetCard
 // ────────────────────────────────────────────────────────────────────────────
@@ -118,6 +325,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     onRefresh: () => Promise<void>;
 }) {
     const initialCuration = normalizeAssetCuration(asset);
+    const effectiveApprovalState = normalizeAssetCuration(asset).approvalState;
     const [notes, setNotes] = useState(asset.reviewNotes ?? '');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -144,6 +352,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
 
     const deleteEndpoint = getDeleteEndpoint(slug, asset.assetType);
     const canRegen = isRegenerableType(asset.assetType);
+    const allowsSharedVoiceRerender = AUDIO_ARTIFACT_TYPES.has(asset.assetType);
     const isBusy = saving || deleting || regenerating || savingCuration;
 
     const addTag = (kind: 'suitability' | 'anti', rawValue: string) => {
@@ -251,6 +460,33 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         }
     };
 
+    const handleQuickApprovalState = async (nextApprovalState: AssetApprovalState) => {
+        setSavingCuration(true);
+        setError('');
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/curation`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId: asset.assetId,
+                    approvalState: nextApprovalState,
+                }),
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload?.error ?? 'Failed to update approval state');
+            }
+
+            setApprovalState(nextApprovalState);
+            await onRefresh();
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Unknown error');
+        } finally {
+            setSavingCuration(false);
+        }
+    };
+
     // ── Delete ───────────────────────────────────────────────────────────────
     const handleDelete = async () => {
         if (!deleteEndpoint) return;
@@ -277,7 +513,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
 
     // ── Regenerate with Revision ─────────────────────────────────────────────
     const handleRegenerate = async () => {
-        if (!regenText.trim() && regenMode === 'append_note') return;
+        if (!allowsSharedVoiceRerender && !regenText.trim() && regenMode === 'append_note') return;
         if (regenMode === 'manual_override' && !editablePrompt.trim()) return;
         
         setRegenerating(true);
@@ -319,8 +555,8 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         {asset.assetType} · {asset.generator} · v{asset.version ?? 1}
                     </div>
                 </div>
-                <div className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${reviewStatusClasses(asset.reviewStatus)}`}>
-                    {asset.reviewStatus.replace(/_/g, ' ')}
+                <div className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${approvalStateClasses(effectiveApprovalState)}`}>
+                    {approvalStateLabel(effectiveApprovalState)}
                 </div>
             </div>
 
@@ -334,6 +570,9 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 {asset.durationSeconds !== undefined && <span>{asset.durationSeconds.toFixed(1)}s</span>}
                 <span>{new Date(asset.createdAt).toLocaleDateString()}</span>
             </div>
+
+            {renderReferenceContext(asset)}
+            {renderVoiceContext(asset)}
 
             {/* ── Notes ────────────────────────────────────────────────── */}
             <textarea
@@ -349,7 +588,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
             )}
 
             {/* ── Primary actions: Approve / Flag ──────────────────────── */}
-            <div className="flex gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
                 <button onClick={() => void handleReview('human_approved')} disabled={isBusy}
                     className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition disabled:opacity-40">
                     {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
@@ -358,7 +597,12 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 <button onClick={() => void handleReview('needs_review')} disabled={isBusy}
                     className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] font-medium text-amber-300 hover:bg-amber-500/20 transition disabled:opacity-40">
                     {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertTriangle className="h-3 w-3" />}
-                    Flag
+                    Revise
+                </button>
+                <button onClick={() => void handleQuickApprovalState('rejected')} disabled={isBusy}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[11px] font-medium text-red-300 hover:bg-red-500/20 transition disabled:opacity-40">
+                    {savingCuration ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                    Reject
                 </button>
             </div>
 
@@ -664,7 +908,9 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                     
                     {regenMode === 'append_note' ? (
                         <textarea value={regenText} onChange={(e) => setRegenText(e.target.value)}
-                            placeholder="Describe what to change (e.g., 'make it more vibrant', 'add sunset lighting')..."
+                            placeholder={allowsSharedVoiceRerender
+                                ? "Optional: append extra spoken text. Leave blank to re-render this script with the current shared voice."
+                                : "Describe what to change (e.g., 'make it more vibrant', 'add sunset lighting')..."}
                             className="w-full min-h-16 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/40 resize-y"
                         />
                     ) : (
@@ -678,8 +924,14 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                             />
                         </div>
                     )}
+
+                    {allowsSharedVoiceRerender && regenMode === 'append_note' && (
+                        <div className="text-[11px] text-slate-400">
+                            Leave the note blank to re-synthesize this same script with the current global ElevenLabs voice.
+                        </div>
+                    )}
                     
-                    <button onClick={() => void handleRegenerate()} disabled={regenerating || (regenMode === 'append_note' ? !regenText.trim() : !editablePrompt.trim())}
+                    <button onClick={() => void handleRegenerate()} disabled={regenerating || (regenMode === 'append_note' ? (!allowsSharedVoiceRerender && !regenText.trim()) : !editablePrompt.trim())}
                         className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-300 hover:bg-purple-500/20 transition disabled:opacity-40">
                         {regenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                         {regenerating ? 'Regenerating…' : regenMode === 'append_note' ? 'Regenerate with Note' : 'Regenerate with Edited Prompt'}

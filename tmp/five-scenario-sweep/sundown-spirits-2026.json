@@ -1,0 +1,364 @@
+﻿{
+    "slug":  "sundown-spirits-2026",
+    "themeName":  "Sundown Spirits: Craft Cocktail Discovery at Sea",
+    "visual":  {
+                   "aestheticLabel":  "Sundown Spirits: Modern Aperitif at Sea",
+                   "colorPalette":  {
+                                        "primary":  "#C62E2E",
+                                        "secondary":  "#1E8E89",
+                                        "accent":  "#F5A623",
+                                        "background":  "#0B1B2B",
+                                        "textOnDark":  "#F6F2E8",
+                                        "textOnLight":  "#0C0E12"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "Brand-first geometric sans, tight caps with airy tracking; elegant, modern aperitif energy.",
+                                               "bodyStyle":  "Humanist sans with calm rhythm for relaxed, sea-day reading.",
+                                               "suggestedFonts":  [
+                                                                      "LLI Display Sans (brand)",
+                                                                      "Inter",
+                                                                      "Manrope",
+                                                                      "Neue Haas Grotesk",
+                                                                      "SÃ¶hne"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Ocean-forward serenity with glassware sparkleâgolden hour easing into blue-hour hush; salt-air poise over lively decks.",
+                   "lightingStyle":  "Warm low-angle sun with cool navy shadows; soft specular highlights on cut glass; after-dusk pools of tungsten warmth against deep cobalt sky.",
+                   "compositionNotes":  "Cruise-first frames: horizon and raillines, open deck banquettes, lounge windows. Keep one subtle cue (a single spritz, a neat garnish, a tasteful menu card). Two to three guests max, relaxed posture, soft eye contact, generous negative space. Avoid crowded tabletops or staged setups; let the shipâs architecture and sea carry the scene.",
+                   "avoidList":  [
+                                     "Crowded tasting mats or grids",
+                                     "Classroom rows, whiteboards, or pointer props",
+                                     "Trade-show signage or banner backdrops",
+                                     "Flair competitions or performance circles",
+                                     "Leaderboards on venue TVs",
+                                     "Lab coats, spittoons, or exam sheets",
+                                     "Lanyards or table tents in focus"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Oasis-class open deck at golden hour, rail catching last light",
+                                              "Blue-hour reflection in a windowed lounge, distant harbor glow",
+                                              "Cut-crystal highball with a single expressed orange peel",
+                                              "The Lime \u0026 Coconut terrace with sea breeze and soft palm shadows",
+                                              "Menu corner: tidy serif numbers, flavor-journey groupings, ample white space"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "If the frame reads as an outstanding cruise moment without the cocktail story, keep itâthen layer the aperitif identity through one quiet, guest-led cue.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Golden-hour rail time on Symphony of the Seas (Oasis-class)",
+                                                                             "Pre-dinner lounge seats with a sea-facing window",
+                                                                             "The Lime \u0026 Coconut terrace at sunset",
+                                                                             "Casual poolside shade during sea days",
+                                                                             "After-dinner drift in a quiet bar nook",
+                                                                             "Promenade stroll under evening lights"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A single spritz lifted at the rail as wake foam trails below, citrus twist catching sun",
+                                                                              "Three small pours on a standard bar mat with a tiny origin card; guests linger and chat with the bartender between normal service",
+                                                                              "A discreet garnish cart gliding past Promenade seating; a vermouth bottle on ice and a handful of fresh peels",
+                                                                              "Menu page grouped from âBitter to Brightâ on a two-top by the window, fingers tracing choices",
+                                                                              "Nightcap negroni riff resting on a coaster while two guests talk, shoulders angled toward the horizon"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "Certification scenes or coursework visuals",
+                                                                                    "Technique-heavy lessons with whiteboards or tasting grids",
+                                                                                    "Guest flair competitions requiring practice or staging",
+                                                                                    "Hours-long spirits history seminars with slides",
+                                                                                    "Onboard barrel-aging or distillation rigs",
+                                                                                    "Leaderboard scoring on venue TVs"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Elegant stemware and balloon spritz glasses",
+                                                                      "Single citrus peel or olive pick",
+                                                                      "Slim story/menu cards",
+                                                                      "Low-profile garnish caddy or small ice bucket",
+                                                                      "Subtle coaster with campaign mark",
+                                                                      "Paper cocktail napkin with a tiny campaign mark"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Spittoons, lab glassware, pipettes, scales",
+                                                                          "Tripods, ring lights, or mic stands",
+                                                                          "Classroom mats or numbered flights with grid scoring",
+                                                                          "Large banners, table tents, or wayfinding signage",
+                                                                          "Barrel props, micro-stills, or chemistry setups"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Golden Hour, Brighter Pours",
+                      "subSlogan":  "Modern aperitif mood aboard Symphony of the Seas â easy discovery woven into sailaway, sunset, and nightcaps.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Join the Sundown Waitlist",
+                                          "bookNow":  "Reserve Your Cabin",
+                                          "merch":  "Shop the Sundown Tee",
+                                          "share":  "Send a Sunset Cheers"
+                                      },
+                      "elevatorPitch":  "Sundown Spirits turns the cruise moments you already loveâsailaway, sunset drift, pre-dinner pause, late-night winkâinto gentle craft-cocktail discovery. On Symphony of the Seas, bartenders fold in a small three-pour story when the moment fits, spritz-forward welcomes, and playful negroni riffsâwithout turning your vacation into a class. Dip in as you please and let the Western Caribbean horizon do the rest.",
+                      "toneKeywords":  [
+                                           "modern aperitif",
+                                           "relaxed sophistication",
+                                           "warm-hued",
+                                           "sea-breezy",
+                                           "craft-forward but friendly",
+                                           "low-ABV savvy",
+                                           "welcoming"
+                                       ],
+                      "voicePersona":  "That clever bar-friend who knows the menu by heart and still keeps it easyâcurious, warm, never instructional."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Minimal line art balloon spritz whose liquid forms a ship-wake swirl; small setting sun tucked in the rim reflection. Text ring: âSundown Spirits â¢ Symphony of the Seasâ with a tiny âBitter â Brightâ scale tick beneath.",
+                                   "colorway":  "Navy tee; coral-red (#C62E2E), sea-teal (#1E8E89), and soft ivory (#F6F2E8) print.",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Bitter to Bright, Carried by the Horizon. Concept direction: Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.. Design direction: Minimal line art balloon spritz whose liquid forms a ship-wake swirl; small setting sun tucked in the rim reflection. Text ring: âSundown Spirits â¢ Symphony of the Seasâ with a tiny âBitter â Brightâ scale tick beneath.. Print style: Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth.. Colorway: Navy tee; coral-red (#C62E2E), sea-teal (#1E8E89), and soft ivory (#F6F2E8) print.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "Bella+Canvas 3001"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Left-shoulder carry tote with micro-mark: tiny sun wedge over a stirring stick monogram; small side print reads âBitter â Brightâ above a slim wave line.",
+                                        "colorway":  "Natural canvas with coral-red and sea-teal ink.",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Bitter to Bright, Carried by the Horizon. Concept direction: Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.. Design direction: Left-shoulder carry tote with micro-mark: tiny sun wedge over a stirring stick monogram; small side print reads âBitter â Brightâ above a slim wave line.. Print style: Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth.. Colorway: Natural canvas with coral-red and sea-teal ink.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "Eco Tote Bag"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Playful type: âBitter Is Better (At Sea)â with a tiny horizon line replacing the crossbar of âAâ. Small spritz icon dotting the âiâ.",
+                                                 "colorway":  "Off-white with coral-red and teal text.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Bitter to Bright, Carried by the Horizon. Concept direction: Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.. Design direction: Playful type: âBitter Is Better (At Sea)â with a tiny horizon line replacing the crossbar of âAâ. Small spritz icon dotting the âiâ.. Print style: Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth.. Colorway: Off-white with coral-red and teal text.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Bella+Canvas 8882"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Retro ringed collar with âThree-Pour at Sunsetâ curved above a tidy trio of tasting nips forming a wave.",
+                                                 "colorway":  "Ivory body with navy rings; coral-red and navy print.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Bitter to Bright, Carried by the Horizon. Concept direction: Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.. Design direction: Retro ringed collar with âThree-Pour at Sunsetâ curved above a tidy trio of tasting nips forming a wave.. Print style: Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth.. Colorway: Ivory body with navy rings; coral-red and navy print.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Anvil 987"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "âAperitivo Walk Clubâ in stacked type with a slim garnish pick underline and a tiny compass point dot.",
+                                                 "colorway":  "Sea teal tank with ivory and coral ink.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Sundown Spirits: Craft Cocktail Discovery at Sea\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Bitter to Bright, Carried by the Horizon. Concept direction: Playful, print-friendly aperitivo-at-sea tees that wink at low-ABV sparkle, negroni culture, and horizon-time without feeling boozy or fussy.. Design direction: âAperitivo Walk Clubâ in stacked type with a slim garnish pick underline and a tiny compass point dot.. Print style: Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth.. Colorway: Sea teal tank with ivory and coral ink.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Next Level 6233"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "Geometric sans wordmark with a soft-stem âSundownâ and a subtle stir-stick ligature bridging NâD; a small sun wedge crowns the âiâ in Spirits.",
+                  "tagline":  "Bitter to Bright, Carried by the Horizon",
+                  "printStyle":  "Clean vector, 2â3 spot colors, screenprint look; no gradients; optional halftone sun for depth."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "The sky leans gold, the glass catches light, and the ship eases toward blue hour. On Symphony of the Seas, aperitif discovery arrives softlyâa spritz at sailaway, a few quiet stories at sunset, a late-night riff that lingers. No keeping time. Just horizon, good company, and pours that drift from bitter to bright.",
+                  "hypeClipScript":  "Glasses clink. Wake rolls. Sundown Spirits on Symphony of the Seasâsix nights, Western Caribbean. Spritz at sailaway, three pours at sunset, negroni after dark. Bitter to brightâcarried by the horizon.",
+                  "voiceProfile":  "Warm, velvety baritone or contralto; intimate, unhurried; understated smile at the ends of lines.",
+                  "musicMood":  "Modern lounge and nuâjazz at sunset (90â105 BPM), brushed drums and Rhodes; late-night negroni mood shifts to 70â85 BPM with soft analog keys and vibraphone; light Caribbean breeze textures without resorting to clichÃ©s."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "Golden hour finds you, not the other way around.",
+                                                 "narrative":  {
+                                                                   "title":  "Rail Lean, Citrus Air",
+                                                                   "durationSeconds":  12,
+                                                                   "tool":  "composite",
+                                                                   "scriptOrNarration":  "Symphony of the Seas does this quiet magic at sunsetâocean first, conversation easy, pours that drift from bitter to bright. No keeping time. Just gold to blue and good company.",
+                                                                   "visualDirectionNotes":  "Two guests sideâbyâside at the rail, hair in the breeze; one wears a Sundown tee in coralâred accents. Horizon and wake lead the frame; no tabletop in focus. A soft sun wedge reflection kisses a window edge. Palette rides #C62E2E pops against #0B1B2B dusk.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "Aft rail of Symphony of the Seas during sailaway; warm low sun, cool navy shadows over open water.",
+                                                                   "musicMood":  "Nuâjazz Rhodes at ~96 BPM; brushed drums, light seaâbreeze foley."
+                                                               },
+                                                 "caption":  "Golden Hour, Brighter Pours. Symphony of the Seas, Western Caribbeanâocean first, then a little aperitif sparkle. Dip in when it feels right.",
+                                                 "hashtags":  [
+                                                                  "#SundownSpirits",
+                                                                  "#SymphonyOfTheSeas",
+                                                                  "#AperitifAtSea",
+                                                                  "#GoldenHour",
+                                                                  "#BlueHour",
+                                                                  "#WesternCaribbean",
+                                                                  "#LowABV",
+                                                                  "#SeaDayVibes"
+                                                              ],
+                                                 "callToAction":  "Send a Sunset Cheers"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Blueâhour window lounge. Reflections of the horizon glide across glass; fingertips trace a small âBitter â Brightâ menu corner as two guests share a quiet look. Ship architecture and sea dominate the frame.",
+                                                  "audioTrackType":  "Warm nuâjazz (95â100 BPM) with brushed drums and Rhodes; gentle wake noise tucked low.",
+                                                  "caption":  "Modern aperitif mood aboard Symphony of the Seasâgold to blue, bitter to bright. Let the water set the pace.",
+                                                  "hashtags":  [
+                                                                   "#SundownSpirits",
+                                                                   "#SymphonyOfTheSeas",
+                                                                   "#AperitifAtSea",
+                                                                   "#SeaBreeze",
+                                                                   "#PreDinnerPause",
+                                                                   "#BlueHour"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Golden Hour, Brighter Pours",
+                                                                            "bodyText":  "Ocean first. Everything else just catches light.",
+                                                                            "visualDescription":  "Symphony of the Seas rail line at sunset; negative space, soft flare; no glass foregrounded."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "Bitter â Bright",
+                                                                            "bodyText":  "A quiet trio of tastes can find you at sunsetâonly if it fits the moment.",
+                                                                            "visualDescription":  "Menu page crop grouped from âBitter to Brightâ on a twoâtop by the window; fingertips hover; sea beyond."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "Seat for Two, Facing the Water",
+                                                                            "bodyText":  "Shoulders turned to the horizon, easy talk in between sips.",
+                                                                            "visualDescription":  "Windowed lounge nook; two guests angled toward the view; tungsten pools against cobalt sky."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "Negroni After Dark",
+                                                                            "bodyText":  "A soft riff and vibraphone glow as harbor lights drift by.",
+                                                                            "visualDescription":  "Single cutâcrystal on a coaster with a thin orange peel; reflections of distant port lights."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "Western Caribbean Week",
+                                                                            "bodyText":  "Let the route set the rhythm, not the clock.",
+                                                                            "visualDescription":  "Wake trailing past low islands at dusk; ship architecture frames the scene."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Promenade stroll at duskâlinked elbows, a wink at the âAperitivo Walk Clubâ tee while the ship eases into night.",
+                                                 "caption":  "Symphony of the Seas, sundown to afterâdark. Modern aperitif mood woven into the moments you already love. #SundownSpirits #SymphonyOfTheSeas #BitterToBright"
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Golden Hour, Brighter Pours",
+                                              "primaryText":  "Sundown Spirits aboard Symphony of the Seasâmodern aperitif mood folded into sailaway, sunset, and nightcaps. Dip in when it feels right; the sea carries the rest.",
+                                              "description":  "Western Caribbean week. Warm nights, easy discovery.",
+                                              "cta":  "Reserve Your Cabin",
+                                              "visualDescription":  "The Lime \u0026 Coconut terrace at golden hour. Two guests relax sideâbyâside facing the horizon; a single expressed orange peel catches sun in the background. Ship lines and sea lead composition."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "Sundown Spirits | Symphony of the Seas â Bitter â Bright at Sea",
+                                                "visualConcept":  "Cruiseâfirst montage: wake foaming under the rail, golden reflections in lounge glass, a quick citrus expression, and blueâhour harbor lights. Two guests share a glance; sea stays hero.",
+                                                "description":  "A modern aperitif drift across sailaway, sunset, and afterâdark aboard Symphony of the Seas. Western Caribbean, warm and unhurried. Golden Hour, Brighter Pours.",
+                                                "hashtags":  [
+                                                                 "#SundownSpirits",
+                                                                 "#SymphonyOfTheSeas",
+                                                                 "#AperitifAtSea",
+                                                                 "#WesternCaribbean",
+                                                                 "#NegroniAfterDark",
+                                                                 "#SeaDay"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Sundown Spirits: Modern Aperitif at Sea (Symphony of the Seas)",
+                                             "pinDescription":  "Oceanâforward serenity from sailaway to blue hourâspritz sparkle, negroni whispers, and horizonâled calm aboard Symphony of the Seas. Bitter â Bright, carried by the horizon.",
+                                             "visualConcept":  "Minimal lineâart spritz overlay in coralâred and seaâteal atop a goldenâhour rail shot; slim âBitter â Brightâ tick beneath; generous negative space in deep navy background."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Golden Hour, Brighter Pours â Symphony of the Seas",
+                                               "preheader":  "Modern aperitif mood from sailaway to nightcap. Western Caribbean, warm and unhurried.",
+                                               "bodyDirection":  "Invite readers into horizonâled evenings: a soft spritz at sailaway, a few quiet stories at sunset, and a lateânight riffâonly if it fits the moment. Keep copy curious, warm, never instructional.",
+                                               "visualDirection":  "Hero image: blueâhour window lounge with tungsten pools and cutâglass sparkle; brand caps headline in LLI Display Sans; palette rides coralâred and seaâteal accents on deep navy."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Cobaltâtoâcoral gradient with a thin horizon line and tiny sun wedge; faint wake texture; Sundown Spirits wordmark centered in soft ivory.",
+                                                 "welcomeMessageDirection":  "Warm, easy greet: âFind your window seat. Share a sunset song or your favorite lowâABV orderâSymphony of the Seas will drift the rest.â"
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Golden Hour, Brighter Pours â Symphony of the Seas",
+                                                "durationSeconds":  45,
+                                                "tool":  "composite",
+                                                "scriptOrNarration":  "The sky leans gold, the glass catches light, and the ship eases toward blue hour. On Symphony of the Seas, aperitif discovery arrives softlyâa spritz at sailaway, a few quiet stories at sunset, a lateânight riff that lingers. No keeping time. Just horizon, good company, and pours that drift from bitter to bright.",
+                                                "visualDirectionNotes":  "Cruiseâfirst cut: wake under the rail; open deck banquettes; windowed lounge reflections; a discreet citrus twist; a smile with the bartender between normal service; harbor lights after dark. Brand caps lowerâthirds in coralâred over deep navy.",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Symphony of the Seas: The Lime \u0026 Coconut terrace, deck rails at golden hour, seaâfacing lounge, Promenade glow; Western Caribbean sea days.",
+                                                "musicMood":  "Start 92â100 BPM nuâjazz with Rhodes; land at 75â82 BPM vibraphone for afterâdark."
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "Rail Toast, Blue Hour",
+                                             "durationSeconds":  9,
+                                             "tool":  "kling",
+                                             "scriptOrNarration":  "Super: âBitter â Bright.â Whispered tag: âCarried by the horizon.â",
+                                             "visualDirectionNotes":  "Sloâmo lift of two spritzes at the rail against sun flare; quick cut to foaming wake; match cut to blueâhour reflection in lounge glass. Object present but horizon remains hero.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Aft rail and window lounge of Symphony of the Seas at sunset into dusk.",
+                                             "musicMood":  "96 BPM lounge groove; soft cymbal swells and seaâair texture."
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "Blue Hour Switch",
+                                                        "durationSeconds":  12,
+                                                        "tool":  "composite",
+                                                        "scriptOrNarration":  "We just crossed into blue hour. Symphony of the Seas turns the lights down; the conversation and the pours do the rest.",
+                                                        "visualDirectionNotes":  "Timelapse sun drop to cobalt; tungsten pockets glow across deck seating; guests lean closer in silhouette. No tabletop foregrounding.",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Midâship deck and windowed lounge zones on Symphony of the Seas; horizon holds center.",
+                                                        "musicMood":  "80â85 BPM vibraphone with soft analog keys, low tide hush."
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Sundown Tee â Bitter â Bright",
+                                              "durationSeconds":  15,
+                                              "tool":  "runwayml",
+                                              "scriptOrNarration":  "New: Sundown Spirits teeâminimal spritz, horizon in the rim. Bitter â Bright, carried by the horizon.",
+                                              "visualDirectionNotes":  "Quick cuts: tee draped on a deck chair; close on the sunâwedge microâmark; back print âNegroni After Darkâ in warm tungsten; guest in tee leaning at the rail, hair in breeze. Wardrobe cue leads, not the drink.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Symphony of the Seas open deck at golden hour; Promenade afterâdark for backâprint glow.",
+                                              "musicMood":  "92 BPM nuâjazz with a clean snap; soft tape delay accents."
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "Tâ5: Window Light Test",
+                                                      "durationSeconds":  7,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Super: âFind your window.â VO whisper: âGolden Hour, Brighter Pours.â",
+                                                      "visualDirectionNotes":  "Guest checks their reflection in a seaâfacing lounge window; horizon and ship lines dominate; no drink in frame.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Window lounge on Symphony of the Seas; late afternoon sun, cool navy shadows.",
+                                                      "musicMood":  "94 BPM soft Rhodes and brushed hats."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ4: Route Mood",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "runwayml",
+                                                      "scriptOrNarration":  "Super: âWestern Caribbean, warm and unhurried.â",
+                                                      "visualDirectionNotes":  "Aerialâstyle wake line animates over ocean surface; soft day markers drift by like constellations. Pure atmosphereâno tabletop.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Open water from Symphony of the Seas; sun haze and cobalt depth.",
+                                                      "musicMood":  "90 BPM ambient lounge with light marimba touches."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ3: Palette Pack",
+                                                      "durationSeconds":  6,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Super: âCoral â¢ Teal â¢ Navy.â VO: âPack the mood, not a plan.â",
+                                                      "visualDirectionNotes":  "Wardrobe laydown in campaign colorsâtee, scarf, sunglasses, slim notebook; soft shadow play. No glassware.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Cabin bed in soft daylight; brand palette accents.",
+                                                      "musicMood":  "92 BPM gentle loâfi with vinyl hiss."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ2: Citrus Practice",
+                                                      "durationSeconds":  7,
+                                                      "tool":  "kling",
+                                                      "scriptOrNarration":  "Super: âOne twist, all sunset.â",
+                                                      "visualDirectionNotes":  "Close peel expression catching last light; micro droplets sparkle; cut to horizon. Object cue here; keep minimal and elegant.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Open deck rail on Symphony of the Seas at golden hour.",
+                                                      "musicMood":  "96 BPM lounge groove; shaker brush and vibraphone hits."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ1: AfterâDark Drift",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Whispered: âSee you at blue hour.â",
+                                                      "visualDirectionNotes":  "Silhouettes lean together by a window; harbor lights smear into bokeh; implied clink offâscreenâno tabletop hero.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Windowed lounge on Symphony of the Seas; deep cobalt night, tungsten pools.",
+                                                      "musicMood":  "78â82 BPM vibraphone and soft analog keys."
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T19:02:43.574Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}

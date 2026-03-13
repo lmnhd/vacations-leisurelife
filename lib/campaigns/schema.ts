@@ -80,15 +80,44 @@ export const DiscordConceptSetSchema = z.object({
     welcomeMessageDirection: z.string(),
 });
 
+export const DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK = {
+    governingPrinciple: 'Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.',
+    cruiseNativeMoments: [],
+    nicheEnhancedMoments: [],
+    implausibleLiteralizations: [],
+    allowedProps: [],
+    discouragedProps: [],
+} satisfies {
+    governingPrinciple: string;
+    cruiseNativeMoments: string[];
+    nicheEnhancedMoments: string[];
+    implausibleLiteralizations: string[];
+    allowedProps: string[];
+    discouragedProps: string[];
+};
+
 export const VisualPlausibilityFrameworkSchema = z.object({
-    governingPrinciple: z.string().default('Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.'),
-    cruiseNativeMoments: z.array(z.string()).default([]),
-    nicheEnhancedMoments: z.array(z.string()).default([]),
-    implausibleLiteralizations: z.array(z.string()).default([]),
-    allowedProps: z.array(z.string()).default([]),
-    discouragedProps: z.array(z.string()).default([]),
+    governingPrinciple: z.string(),
+    cruiseNativeMoments: z.array(z.string()),
+    nicheEnhancedMoments: z.array(z.string()),
+    implausibleLiteralizations: z.array(z.string()),
+    allowedProps: z.array(z.string()),
+    discouragedProps: z.array(z.string()),
 });
 export type VisualPlausibilityFramework = z.infer<typeof VisualPlausibilityFrameworkSchema>;
+
+export function normalizeVisualPlausibilityFramework(
+    input?: Partial<VisualPlausibilityFramework> | null,
+): VisualPlausibilityFramework {
+    return {
+        governingPrinciple: input?.governingPrinciple?.trim() || DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.governingPrinciple,
+        cruiseNativeMoments: input?.cruiseNativeMoments ?? DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.cruiseNativeMoments,
+        nicheEnhancedMoments: input?.nicheEnhancedMoments ?? DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.nicheEnhancedMoments,
+        implausibleLiteralizations: input?.implausibleLiteralizations ?? DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.implausibleLiteralizations,
+        allowedProps: input?.allowedProps ?? DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.allowedProps,
+        discouragedProps: input?.discouragedProps ?? DEFAULT_VISUAL_PLAUSIBILITY_FRAMEWORK.discouragedProps,
+    };
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 1B: Production Bible — Scene Library + Storyboard Architecture
@@ -142,6 +171,37 @@ export const ProductionBibleSchema = z.object({
 });
 export type ProductionBible = z.infer<typeof ProductionBibleSchema>;
 
+export const LandingStillUsageEnum = z.enum([
+    'hero_primary',
+    'hero_alt',
+    'concept',
+    'email_header',
+    'social_square',
+]);
+export type LandingStillUsage = z.infer<typeof LandingStillUsageEnum>;
+
+export const LandingStillSpecSchema = z.object({
+    stillId: z.string(),
+    usage: LandingStillUsageEnum,
+    location: z.string(),
+    timeOfDay: z.string(),
+    lighting: z.string(),
+    composition: z.string(),
+    subjectAction: z.string(),
+    environmentDetails: z.string(),
+    mood: z.string(),
+    imagePrompt: z.string(),
+    referenceCategory: z.string(),
+});
+export type LandingStillSpec = z.infer<typeof LandingStillSpecSchema>;
+
+export const LandingStillBibleSchema = z.object({
+    stillLibrary: z.array(LandingStillSpecSchema),
+    globalDirectionNotes: z.string(),
+    avoidDirectives: z.array(z.string()),
+});
+export type LandingStillBible = z.infer<typeof LandingStillBibleSchema>;
+
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 1A + 1B Combined: Campaign Aesthetic Brief
 // ────────────────────────────────────────────────────────────────────────────
@@ -170,14 +230,7 @@ export const CampaignAestheticBriefSchema = z.object({
         compositionNotes: z.string(),
         avoidList: z.array(z.string()),
         referenceMoodboard: z.array(z.string()),
-        plausibilityFramework: VisualPlausibilityFrameworkSchema.default({
-            governingPrinciple: 'Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.',
-            cruiseNativeMoments: [],
-            nicheEnhancedMoments: [],
-            implausibleLiteralizations: [],
-            allowedProps: [],
-            discouragedProps: [],
-        }),
+        plausibilityFramework: VisualPlausibilityFrameworkSchema,
     }),
 
     messaging: z.object({
@@ -231,6 +284,7 @@ export const CampaignAestheticBriefSchema = z.object({
     }),
 
     productionBible: ProductionBibleSchema.optional(),
+    landingStillBible: LandingStillBibleSchema.optional(),
 
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
@@ -483,3 +537,84 @@ export const CampaignMediaManifestSchema = z.object({
     }).nullable(),
 });
 export type CampaignMediaManifest = z.infer<typeof CampaignMediaManifestSchema>;
+
+export const DistributionPlatformEnum = z.enum([
+    'tiktok',
+    'instagram_feed',
+    'instagram_reels',
+    'instagram_story',
+    'facebook_ad',
+    'youtube',
+    'pinterest',
+    'discord',
+    'sms',
+    'email',
+]);
+export type DistributionPlatform = z.infer<typeof DistributionPlatformEnum>;
+
+export const DistributionPostStatusEnum = z.enum([
+    'scheduled',
+    'posted',
+    'cancelled',
+    'failed',
+    'skipped',
+]);
+export type DistributionPostStatus = z.infer<typeof DistributionPostStatusEnum>;
+
+export const DistributionTriggerTokenEnum = z.enum([
+    'ON_THRESHOLD',
+    'ON_MANIFEST_SUBMIT',
+    'ON_EXPIRY',
+]);
+export type DistributionTriggerToken = z.infer<typeof DistributionTriggerTokenEnum>;
+
+export const DistributionCallerEnum = z.enum([
+    'agent',
+    'human',
+    'system',
+]);
+export type DistributionCaller = z.infer<typeof DistributionCallerEnum>;
+
+export const ScheduledPostSchema = z.object({
+    postId: z.string(),
+    platform: DistributionPlatformEnum,
+    assetId: z.string(),
+    copyVariant: z.string(),
+    scheduledAt: z.union([z.string(), DistributionTriggerTokenEnum]),
+    campaignStage: z.string(),
+    status: DistributionPostStatusEnum,
+    externalPostId: z.string().optional(),
+    notes: z.array(z.string()).default([]),
+});
+export type ScheduledPost = z.infer<typeof ScheduledPostSchema>;
+
+export const DistributionScheduleSchema = z.object({
+    campaignSlug: z.string(),
+    timezone: z.string(),
+    generatedAt: z.string(),
+    generatedBy: DistributionCallerEnum,
+    version: z.number().int().min(1),
+    posts: z.array(ScheduledPostSchema),
+});
+export type DistributionSchedule = z.infer<typeof DistributionScheduleSchema>;
+
+export const DistributionExecutionRecordSchema = z.object({
+    executionId: z.string(),
+    campaignSlug: z.string(),
+    caller: DistributionCallerEnum,
+    mode: z.enum(['plan', 'dispatch']),
+    requestedPlatforms: z.array(DistributionPlatformEnum),
+    requestedStages: z.array(z.string()),
+    dryRun: z.boolean(),
+    status: z.enum(['planned', 'completed', 'failed']),
+    createdAt: z.string(),
+    completedAt: z.string().optional(),
+    error: z.string().optional(),
+    summary: z.object({
+        plannedPosts: z.number().int().min(0),
+        persistedPosts: z.number().int().min(0),
+        dispatchedPosts: z.number().int().min(0),
+        skippedPosts: z.number().int().min(0),
+    }),
+});
+export type DistributionExecutionRecord = z.infer<typeof DistributionExecutionRecordSchema>;

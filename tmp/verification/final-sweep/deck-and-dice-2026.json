@@ -1,0 +1,366 @@
+﻿{
+    "slug":  "deck-and-dice-2026",
+    "themeName":  "Deck \u0026 Dice: Casual Board Game Cruise",
+    "visual":  {
+                   "aestheticLabel":  "Deck \u0026 Dice â Cozy CafÃ© at Sea",
+                   "colorPalette":  {
+                                        "primary":  "Deep Aegean Navy #0B2A3C",
+                                        "secondary":  "Weathered Teak #7C5F43",
+                                        "accent":  "Sunset Coral #FF6F61",
+                                        "background":  "Cream Parchment #F6F0E6",
+                                        "textOnDark":  "Ivory #F8F8F6",
+                                        "textOnLight":  "Charcoal Ink #2D2D2D"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "Use LLL brand headline first; fallback to a warm geometric sans with rounded corners for approachable, cafÃ© energy.",
+                                               "bodyStyle":  "Use LLL brand body first; fallback to a humanist sans with relaxed tracking for easy reading at mobile sizes.",
+                                               "suggestedFonts":  [
+                                                                      "Fallback headlines: Quicksand, Nunito, or Sora",
+                                                                      "Fallback body: Inter, Cabin, or Work Sans"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Calm, window-lit sea life with tactile cafÃ© texturesâlinen, wood grain, soft paperâset against open water and island silhouettes; a mellow, lo-fi hush where conversation and the horizon feel equally present.",
+                   "lightingStyle":  "Soft morning glow through large windows, gentle overcast mid-day blues, and golden-hour warmth drifting into string-light twilight on deck; avoid hard flash or nightclub beams.",
+                   "compositionNotes":  "Lead with ship and ocean: rail lines, panoramic windows, deck teak, horizon. Keep scenes uncluttered, 1â2 people or a single hand detail, an empty chair invitingly pulled back. Use negative space, shallow depth of field, and small, believable cues (a pocket deck, a linen mat corner) rather than tables piled high. Wardrobe hints (soft knits, enamel pin, cuffed sleeves) and posture (lean-in, shared smile) carry the niche without crowding the frame.",
+                   "avoidList":  [
+                                     "Crowded tournament tables and bracket signage",
+                                     "Vendor backdrops, expo banners, or podiums",
+                                     "Whiteboards, rule posters, or staff in matching polos",
+                                     "Mega terrain dioramas, crates of minis, or taped floor plans",
+                                     "PA mics, timers, or loud scoreboards",
+                                     "Overly branded table tents dominating the foreground",
+                                     "Lanyards as focal objects",
+                                     "Any scene that reads like a classroom or convention hall"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Horizon line through a Voyager-class picture window",
+                                              "Teak deck rail with soft dusk reflection",
+                                              "Greek Isles blue dusk with quiet harbor lights",
+                                              "Linen table runner, single pencil, paper score slip corner",
+                                              "Two mugs and a single pocket deck by a window",
+                                              "String-light glow on an open deck lounge chair",
+                                              "Shallow DOF hands-adjusting a small token; ocean blur beyond",
+                                              "Clean ship architecture lines framing sky and water"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "Cruise-first visuals; the board-game vibe appears as gentle, guest-carried habits at cafÃ© tables and rail-side momentsânever as a staged event.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Sunrise coffee in a panoramic lounge",
+                                                                             "Leisurely sea-day reading nook by the window",
+                                                                             "Golden-hour deck stroll beneath string lights",
+                                                                             "Post-dinner dessert and a quiet chat in the cafÃ©",
+                                                                             "Aft-rail sailaway with wind in hair and soft music"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A pocket deck appears after cappuccino; two guests share a few turns, then drift to the rail",
+                                                                              "A slim co-op board on a linen mat for an unhurried sea-day chapter; one pencil, one score slip",
+                                                                              "Twilight social deduction energy suggested by close eye contact and a quick grinâno pile of props",
+                                                                              "A minimalist card tray beside dessert plates; soft rule hint passed across the table",
+                                                                              "A small meeple pin on a cardigan sparks a friendly âwhat do you like to play?â at the bar",
+                                                                              "A traveler tucks a compact box under arm during a deck strollâconversation first, game second"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "Esports-style stage with prize purse and commentators",
+                                                                                    "Vendor expo rows or industry news panels",
+                                                                                    "Rules certification classes or pro clinics",
+                                                                                    "Mandatory marathon sessions occupying a venue for hours",
+                                                                                    "PA-announced events dominating public spaces",
+                                                                                    "Color-coded seating charts, sign-up walls, or check-out kiosks",
+                                                                                    "Giant terrain layouts monopolizing multiple tables"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Pocket-size card decks in neutral boxes",
+                                                                      "Small dice tray or card holder in wood or linen",
+                                                                      "Single compact co-op board with minimal footprint",
+                                                                      "Small score slip and a single pencil",
+                                                                      "Soft cloth or parchment-like play mat",
+                                                                      "Subtle enamel pin (never hero)",
+                                                                      "One small token dish or coaster"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Podiums, clip-on mics, and timers",
+                                                                          "Leaderboards, bracket posters, or foam-core signage",
+                                                                          "Rolling AV carts, ring lights, or cables",
+                                                                          "Multiple tables pushed together into a command center",
+                                                                          "Crates of minis, terrain walls, or neoprene megamats",
+                                                                          "Whiteboards, flip charts, or classroom seating"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Sea days, shared turns.",
+                      "subSlogan":  "A cozy cafÃ©-at-sea vibe for people who love wood-and-cardboard moments, easy conversation, and the Aegean horizon.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Hold a spot on the sailing",
+                                          "bookNow":  "Choose your cabin",
+                                          "merch":  "Shop the Deck \u0026 Dice tee",
+                                          "share":  "Send to a game friend"
+                                      },
+                      "elevatorPitch":  "Deck \u0026 Dice is a mellow, cruise-native take on tabletop life aboard Explorer of the Seas (Voyager-class). Think Greek Isles sunlight, window-side tables, and a friendly culture where a pocket deck or slim co-op board might surface after coffee. You might notice a favorite someone brought along and share a quick tip in a minute or two, and most play happens the way great vacation moments doâat your pace, between ports, with dessert on the way. Ports and dining stay center stage; the games simply add warmth to sea-day downtime and low-key nights under string lights.",
+                      "toneKeywords":  [
+                                           "warm",
+                                           "lo-fi",
+                                           "welcoming",
+                                           "ship-first",
+                                           "Aegean-kissed",
+                                           "tactile",
+                                           "calm-energy",
+                                           "inviting",
+                                           "cafÃ©-soft",
+                                           "human"
+                                       ],
+                      "voicePersona":  "Your kind, rules-light game friend who knows the shipâs best window seats and never rushes a good conversation."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Front: A clean ship-rail line and horizon. Above it, two minimalist dice and a tiny meeple form a loose âconstellationâ. Text beneath in warm sans: âSea Days, Shared Turns.â Small Deck \u0026 Dice wordmark tag near hem.",
+                                   "colorway":  "Navy tee with cream + sunset coral ink",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Deck \u0026 Dice: Casual Board Game Cruise\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Cozy cafÃ© at sea.. Concept direction: Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.. Design direction: Front: A clean ship-rail line and horizon. Above it, two minimalist dice and a tiny meeple form a loose âconstellationâ. Text beneath in warm sans: âSea Days, Shared Turns.â Small Deck \u0026 Dice wordmark tag near hem.. Print style: 2-color max, bold vector lines, halftone-free, POD/screenprint safe.. Colorway: Navy tee with cream + sunset coral ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "Bella+Canvas 3001"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Left chest pocket print: tiny card tray icon with a single card. Sleeve cuff: small horizon line tick. Back neck: micro textâDeck \u0026 Dice.",
+                                        "colorway":  "Cream tee with deep Aegean navy ink",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Deck \u0026 Dice: Casual Board Game Cruise\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Cozy cafÃ© at sea.. Concept direction: Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.. Design direction: Left chest pocket print: tiny card tray icon with a single card. Sleeve cuff: small horizon line tick. Back neck: micro textâDeck \u0026 Dice.. Print style: 2-color max, bold vector lines, halftone-free, POD/screenprint safe.. Colorway: Cream tee with deep Aegean navy ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "Long Sleeve Tee (Gildan 2400 or equivalent)"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Front text stacked: âGreek Isles + Good Tiles.â A simple 3-tile motif (hex-square-triangle) sits under the type; small wave underline.",
+                                                 "colorway":  "Washed teal tee with cream ink",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Deck \u0026 Dice: Casual Board Game Cruise\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Cozy cafÃ© at sea.. Concept direction: Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.. Design direction: Front text stacked: âGreek Isles + Good Tiles.â A simple 3-tile motif (hex-square-triangle) sits under the type; small wave underline.. Print style: 2-color max, bold vector lines, halftone-free, POD/screenprint safe.. Colorway: Washed teal tee with cream ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Bella+Canvas 3001"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Front: Two coffee cups clink over a slim card game silhouette. Text: âCafÃ© Turn, Then We Wander.â",
+                                                 "colorway":  "Heather gray tee with navy + coral accent",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Deck \u0026 Dice: Casual Board Game Cruise\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Cozy cafÃ© at sea.. Concept direction: Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.. Design direction: Front: Two coffee cups clink over a slim card game silhouette. Text: âCafÃ© Turn, Then We Wander.â. Print style: 2-color max, bold vector lines, halftone-free, POD/screenprint safe.. Colorway: Heather gray tee with navy + coral accent. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Bella+Canvas 3001"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Front: Lifebuoy ring framing a small d6 and horizon line. Text around ring: âDeck \u0026 Dice â Aegean Edition.â",
+                                                 "colorway":  "Navy tee with cream ink",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Deck \u0026 Dice: Casual Board Game Cruise\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Cozy cafÃ© at sea.. Concept direction: Cute, print-friendly tees that pair cruise silhouettes with tactile tabletop cuesâdice, tiles, and tiny tokensâstyled in 1â3 colors for real POD production. Tone: cozy, witty, and deck-ready.. Design direction: Front: Lifebuoy ring framing a small d6 and horizon line. Text around ring: âDeck \u0026 Dice â Aegean Edition.â. Print style: 2-color max, bold vector lines, halftone-free, POD/screenprint safe.. Colorway: Navy tee with cream ink. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Bella+Canvas 3001"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "Wordmark âDeck \u0026 Diceâ in rounded sans with a tiny d6 tucked into the ampersand counter; auxiliary mark: horizon line through a simple card tray silhouette.",
+                  "tagline":  "Cozy cafÃ© at sea.",
+                  "printStyle":  "2-color max, bold vector lines, halftone-free, POD/screenprint safe."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "Sea air in the morning, a window seat by the water, and time to linger. On this Greek Isles sailing aboard Explorer of the Seas, the day moves at cafÃ© paceâsoft music, warm wood, and just enough cardboard to spark a smile. A pocket deck after coffee. A quiet co-op as the sun leans low. Dessert arrives, the horizon breathes, and the next turn is yoursâwhenever you feel like taking it.",
+                  "hypeClipScript":  "Blue water. A window wink of sun. A soft tap of dice and a shared nod. Deck lights rise; the Aegean turns to gold. Grab a seat, trade a tip, play a roundâor just watch the sea roll by. Deck \u0026 Dice: cozy cafÃ© at sea, all week long.",
+                  "voiceProfile":  "Warm alto/tenor, unhurried, smile-forward, zero announcer grit; neutral accent, intimate mic, light room tone.",
+                  "musicMood":  "Mellow lo-fi with soft vinyl hiss, brushed percussion, cozy Rhodes keys, and gentle sea ambience; tempo relaxed, no big dropsâship-first, cafÃ©-quiet energy."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "A shared glance \u003e the rulebook. Golden-hour window, sea doing the talking.",
+                                                 "narrative":  {
+                                                                   "title":  "Side-by-Side, One Quiet Read",
+                                                                   "durationSeconds":  15,
+                                                                   "tool":  "composite",
+                                                                   "scriptOrNarration":  "Two people sink into a window seat aboard Explorer of the Seas. The Aegean rolls by. They trade a knowing smile like a secret strategy without pieces on the table. One points lightly at the horizon as if calling a move. Beat of laughter. Text on screen: âSea days, shared turns.â",
+                                                                   "visualDirectionNotes":  "Cruise-first: horizon framed by a large pane, soft knit sleeves, relaxed posture; no visible cards or dice. Shallow DOF on eyes and hands resting on the armrest. Negative space and the sea carry the vibe.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "Panoramic lounge window with soft morning-to-golden light. Teak and linen textures nearby, empty chair slightly pulled back.",
+                                                                   "musicMood":  "Mellow lo-fi, brushed percussion, gentle Rhodes, soft sea ambience"
+                                                               },
+                                                 "caption":  "A little strategy, mostly scenery. Explorer of the Seas makes the best third player. Sea days, shared turns.",
+                                                 "hashtags":  [
+                                                                  "#DeckAndDice",
+                                                                  "#ExplorerOfTheSeas",
+                                                                  "#GreekIsles",
+                                                                  "#CruiseLife",
+                                                                  "#CozyAtSea",
+                                                                  "#SeaDaysSharedTurns"
+                                                              ],
+                                                 "callToAction":  "Hold a spot on the sailing"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Golden-hour deck stroll beneath string lights. Two guests walk shoulder-to-shoulder, jackets light, hair in the breeze. They pause at the rail, trade a quick grin that reads like a bluff but no components shown.",
+                                                  "audioTrackType":  "Lo-fi instrumental with light vinyl hiss and soft sea wash",
+                                                  "caption":  "We take our turns between sunsets. Explorer of the Seas, Aegean-kissed and unhurried.",
+                                                  "hashtags":  [
+                                                                   "#DeckAndDice",
+                                                                   "#ExplorerOfTheSeas",
+                                                                   "#AegeanEvening",
+                                                                   "#StringLights",
+                                                                   "#CruiseVibes"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Window seats \u003e rule sheets",
+                                                                            "bodyText":  "Find your calm, then decide if a turn fits the moment.",
+                                                                            "visualDescription":  "Large picture window, single mug, folded linen napkin; empty chair pulled back. No game items."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "A pocket deck after coffee",
+                                                                            "bodyText":  "Two or three hands, then back to the view.",
+                                                                            "visualDescription":  "A slim neutral deck appears beside a demitasse; ocean blur beyond. One pencil, no clutter."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "The horizon teaches tempo",
+                                                                            "bodyText":  "No rush. Ports and dinner first; play drifts in when it feels right.",
+                                                                            "visualDescription":  "Aft-rail panorama, soft teal water trails, hands resting on the rail; no objects."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "Small board, big exhale",
+                                                                            "bodyText":  "A slim co-op chapter, linen mat, dessert en route.",
+                                                                            "visualDescription":  "Minimalist board with two tokens on a small mat; room for plates and conversation."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "Signal in the knit",
+                                                                            "bodyText":  "A tiny meeple pin, a shared nod, an easy opener at the cafÃ©.",
+                                                                            "visualDescription":  "Close-up of cardigan cuff with subtle enamel pin; bokeh of ship architecture."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Two cappuccinos at a window table with cream parchment menu card and a folded linen; the sea takes center stage.",
+                                                 "caption":  "Deck \u0026 Dice aboard Explorer of the Seas: Greek Isles light, cafÃ© pace, and just enough cardboard to warm a sea day."
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Sea days, shared turns.",
+                                              "primaryText":  "Explorer of the Seas, Greek Isles light, and a cozy cafÃ©-at-sea rhythm. Play a pocket deck after coffee, or simply watch the water. The ship stays the hero; the game is just a warm extra.",
+                                              "description":  "A mellow, ship-first sailing for people who love wood-and-cardboard moments and horizon-led calm.",
+                                              "cta":  "Choose your cabin",
+                                              "visualDescription":  "Window-lit lounge scene: compact co-op board on a linen mat with a single pencil, plates incoming, Aegean horizon through a large pane."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "Deck \u0026 Dice aboard Explorer of the Seas â Aegean Calm, CafÃ© Pace",
+                                                "visualConcept":  "Snap cuts: sunrise window glow â rail-side grin â cup set down â a slim deck appears for a few gentle turns â string-light twilight on the open deck.",
+                                                "description":  "Greek Isles sunlight, soft conversation, and an optional pocket deck between ports. Explorer of the Seas, ship-first, cozy-cafÃ© energy.",
+                                                "hashtags":  [
+                                                                 "#DeckAndDice",
+                                                                 "#ExplorerOfTheSeas",
+                                                                 "#SeaDaysSharedTurns",
+                                                                 "#GreekIsles"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Cozy CafÃ© at Sea â Deck \u0026 Dice Vibe",
+                                             "pinDescription":  "Tactile linens, teak rail lines, and horizon-led calm aboard Explorer of the Seas. A pocket deck might appear, but the Aegean is always the main character.",
+                                             "visualConcept":  "Cream parchment textures layered with a soft wood grain backdrop; hero image is a panoramic window and ocean line, with a single folded linen corner and warm coral accent stroke."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Explorer of the Seas, Aegean light, and a cozy cafÃ©-at-sea pace",
+                                               "preheader":  "Sea days, shared turns. Your cabin, your tempoâcards optional.",
+                                               "bodyDirection":  "Lead with ship-first calm: sunrise coffee by a picture window, golden-hour deck stroll, dessert drifting in. Mention that a pocket deck or slim co-op board may surface between ports, never the main event.",
+                                               "visualDirection":  "Deep Aegean Navy header bar, cream parchment background, window-and-horizon hero image; a small accent of Sunset Coral under the hero slogan."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Wide horizon through a ship window with soft morning glow; subtle linen texture overlay and the line âSea days, shared turns.â in warm geometric sans.",
+                                                 "welcomeMessageDirection":  "Friendly, rules-light greeting: âWelcome aboard Explorer of the Seas. Find a window seat, say hi, share a favorite if youâd likeâor just enjoy the view.â No schedules, no pressure; emphasize ship-first calm."
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Deck \u0026 Dice â Cozy CafÃ© at Sea (Explorer of the Seas)",
+                                                "durationSeconds":  60,
+                                                "tool":  "runwayml",
+                                                "scriptOrNarration":  "Narration (warm, unhurried): âSea air in the morning. A window seat by the water. On Explorer of the Seas, days move at cafÃ© paceâsoft music, warm wood, and just enough cardboard to spark a smile. Maybe a pocket deck after coffee. Maybe a quiet co-op as the sun leans low. Dessert arrives, the horizon breathes, and the next turn is yoursâwhenever you feel like taking it.â On-screen text beats: Sea days, shared turns. Greek Isles light. Cards optional.",
+                                                "visualDirectionNotes":  "Cruise-first montage: picture windows, teak rails, relaxed posture, soft knit sleeves, two-person smiles. One brief shot of a slim deck and one of a compact boardânever cluttered, never staged. Destination whispers: whitewashed harbor distant, blue dusk.",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Panoramic lounge, open deck under string lights, cafÃ© nook with linen textures; Aegean water as constant backdrop.",
+                                                "musicMood":  "Mellow lo-fi with brushed percussion, Rhodes, and gentle sea ambience"
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "The Bluff Without Pieces",
+                                             "durationSeconds":  12,
+                                             "tool":  "composite",
+                                             "scriptOrNarration":  "No VO. Text on screen: âWhen the horizon is the third player.â Quick eye-contact beat; half-smile; they both look back to the water. Tag: âSea days, shared turns.â",
+                                             "visualDirectionNotes":  "Two guests seated side-by-side at a window, hands relaxed on armrests. No visible game items. Focus on posture and micro-expressions.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Large picture window with Aegean blues; soft morning light.",
+                                             "musicMood":  "Soft lo-fi loop, nearly whispered"
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "Sailaway Pace, Locked In",
+                                                        "durationSeconds":  20,
+                                                        "tool":  "composite",
+                                                        "scriptOrNarration":  "Narration (soft): âExplorer of the Seas is set. Bring your favorite pocket deckâor bring nothing at all. Weâll keep the horizon in view.â On-screen text: âBooking now. Sea days, shared turns.â",
+                                                        "visualDirectionNotes":  "Rail-side shot at golden hour, then a calm cafÃ© table with dessert plates arriving. No visible pins, dice, or piles. Numbers stay off-screen; mood forward.",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Aft-rail wake, then interior lounge with linen and wood.",
+                                                        "musicMood":  "Warm Rhodes chords with light brush taps"
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Sea Days Tee at the Rail",
+                                              "durationSeconds":  18,
+                                              "tool":  "composite",
+                                              "scriptOrNarration":  "No VO. On-screen copy: âSea Days, Shared Turns.â Final card: âShop the Deck \u0026 Dice tee.â",
+                                              "visualDirectionNotes":  "Close-up of the navy tee graphic against teak rail and ocean line; hands smooth fabric, then lift mug to frame the horizon. No tabletop props.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Open deck with string-light bokeh and calm seas at dusk.",
+                                              "musicMood":  "Lo-fi chime motif, soft sea noise"
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "T-10: Claim the Window Seat",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âFind your light.â No VO.",
+                                                      "visualDirectionNotes":  "Empty window table in soft morning glow; folded sweater on chair, steam from a cup. No game items.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Panoramic lounge, pale blues and cream parchment tones.",
+                                                      "musicMood":  "Airy lo-fi pad, minimal percussion"
+                                                  },
+                                                  {
+                                                      "title":  "T-8: Pocket Deck, Maybe",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âIf it fits the moment.â",
+                                                      "visualDirectionNotes":  "Hand tucks a slim deck into a tote as they head to the rail; emphasis on motion and ocean, not the deck.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Corridor to open deck; breeze and blue water beyond.",
+                                                      "musicMood":  "Soft Rhodes plucks, distant gulls"
+                                                  },
+                                                  {
+                                                      "title":  "T-6: Harbor Whisper",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âPorts first. Play drifts in later.â",
+                                                      "visualDirectionNotes":  "Slow pan across a Greek Isles harbor at blue hour, seen from the ship. No people, no objects.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Island silhouettes, warm window reflections.",
+                                                      "musicMood":  "Low, warm synth with gentle vinyl hiss"
+                                                  },
+                                                  {
+                                                      "title":  "T-4: Dessert, Then a Turn",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âOne plate, one pencil, no rush.â",
+                                                      "visualDirectionNotes":  "CafÃ© table: two dessert plates arrive; a minimalist card tray with a single card to the side. No piles.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Interior lounge with linen runner and wood grain; ocean blur through glass.",
+                                                      "musicMood":  "Brushed snare, cozy piano voicings"
+                                                  },
+                                                  {
+                                                      "title":  "T-2: String Lights, Soft Plans",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Text: âSee you by the rail.â",
+                                                      "visualDirectionNotes":  "Two guests clink mugs under string lights, share a small nod like a quiet in-joke. No visible game items.",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Open deck at dusk, warm coral accents in the sky.",
+                                                      "musicMood":  "Warm lo-fi groove, gentle tape flutter"
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T23:39:44.479Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}

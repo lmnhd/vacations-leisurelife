@@ -1,0 +1,184 @@
+[94625664ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[94629035ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[94632407ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[94635770ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[94639026ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[94646390ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=t07GdQKlzRiUWm67OsjgN' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[98583974ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Yl3cWrKEn4PZhZjXBMyRz' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[98587349ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Yl3cWrKEn4PZhZjXBMyRz' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[98590722ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=Yl3cWrKEn4PZhZjXBMyRz' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[100851386ms] [ERROR] ./lib/campaigns/aesthetic-engine.ts:638:8
+Parsing ecmascript source code failed
+  636 | - At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
+  637 | - At least 2 stills must be suitable for concept/editorial section imagery.
+> 638 | - use `usage` values only from: hero_primary, hero_alt, concept, email_header, social_square.
+      |        ^^^^^
+  639 | - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
+  640 | - If a niche cue appears, it must be subtle and secondary to travel emotion.
+  641 | - A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
+
+Expected a semicolon
+
+Import trace:
+  App Route:
+    ./lib/campaigns/aesthetic-engine.ts
+    ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100851387ms] [ERROR] ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts:3:1
+Export generateVisualPlanningFromBrief doesn't exist in target module
+  1 | import { NextRequest, NextResponse } from "next/server";
+  2 | import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+> 3 | import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | // Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
+  6 | export const maxDuration = 300;
+
+The export generateVisualPlanningFromBrief was not found in module [project]/lib/campaigns/aesthetic-engine.ts [app-route] (ecmascript).
+Did you mean to import generateProductionBibleFromBrief?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100851667ms] [ERROR] ./lib/campaigns/aesthetic-engine.ts:638:8
+Parsing ecmascript source code failed
+  636 | - At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
+  637 | - At least 2 stills must be suitable for concept/editorial section imagery.
+> 638 | - use `usage` values only from: hero_primary, hero_alt, concept, email_header, social_square.
+      |        ^^^^^
+  639 | - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
+  640 | - If a niche cue appears, it must be subtle and secondary to travel emotion.
+  641 | - A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
+
+Expected a semicolon
+
+Import trace:
+  App Route:
+    ./lib/campaigns/aesthetic-engine.ts
+    ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100851668ms] [ERROR] ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts:3:1
+Export generateVisualPlanningFromBrief doesn't exist in target module
+  1 | import { NextRequest, NextResponse } from "next/server";
+  2 | import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+> 3 | import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | // Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
+  6 | export const maxDuration = 300;
+
+The export generateVisualPlanningFromBrief was not found in module [project]/lib/campaigns/aesthetic-engine.ts [app-route] (ecmascript).
+Did you mean to import generateProductionBibleFromBrief?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100860391ms] [ERROR] ./lib/campaigns/aesthetic-engine.ts:638:8
+Parsing ecmascript source code failed
+  636 | - At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
+  637 | - At least 2 stills must be suitable for concept/editorial section imagery.
+> 638 | - use `usage` values only from: hero_primary, hero_alt, concept, email_header, social_square.
+      |        ^^^^^
+  639 | - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
+  640 | - If a niche cue appears, it must be subtle and secondary to travel emotion.
+  641 | - A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
+
+Expected a semicolon
+
+Import trace:
+  App Route:
+    ./lib/campaigns/aesthetic-engine.ts
+    ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100860392ms] [ERROR] ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts:3:1
+Export generateVisualPlanningFromBrief doesn't exist in target module
+  1 | import { NextRequest, NextResponse } from "next/server";
+  2 | import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+> 3 | import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | // Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
+  6 | export const maxDuration = 300;
+
+The export generateVisualPlanningFromBrief was not found in module [project]/lib/campaigns/aesthetic-engine.ts [app-route] (ecmascript).
+Did you mean to import generateProductionBibleFromBrief?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100868614ms] [ERROR] ./lib/campaigns/aesthetic-engine.ts:677:23
+Parsing ecmascript source code failed
+  675 | 
+  676 | ## LANDING STILL PROMPT RULES
+> 677 | - Each landing still `imagePrompt` must optimize for a single-frame marketing still rather than a sequence beat.
+      |                       ^^^^^^^^^^^
+  678 | - Favor negative space, clean horizon lines, simple subject grouping, and uncluttered edges.
+  679 | - Avoid action chains, dense supporting cast, or multiple competing points of interest.
+  680 | - The prompt should make the still usable for a homepage hero, alternate hero, or editorial section image without requiring motion.
+
+Expected a semicolon
+
+Import trace:
+  App Route:
+    ./lib/campaigns/aesthetic-engine.ts
+    ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100868615ms] [ERROR] ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts:3:1
+Export generateVisualPlanningFromBrief doesn't exist in target module
+  1 | import { NextRequest, NextResponse } from "next/server";
+  2 | import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+> 3 | import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | // Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
+  6 | export const maxDuration = 300;
+
+The export generateVisualPlanningFromBrief was not found in module [project]/lib/campaigns/aesthetic-engine.ts [app-route] (ecmascript).
+Did you mean to import generateProductionBibleFromBrief?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100892781ms] [ERROR] ./lib/campaigns/aesthetic-engine.ts:677:23
+Parsing ecmascript source code failed
+  675 | 
+  676 | ## LANDING STILL PROMPT RULES
+> 677 | - Each landing still `imagePrompt` must optimize for a single-frame marketing still rather than a sequence beat.
+      |                       ^^^^^^^^^^^
+  678 | - Favor negative space, clean horizon lines, simple subject grouping, and uncluttered edges.
+  679 | - Avoid action chains, dense supporting cast, or multiple competing points of interest.
+  680 | - The prompt should make the still usable for a homepage hero, alternate hero, or editorial section image without requiring motion.
+
+Expected a semicolon
+
+Import trace:
+  App Route:
+    ./lib/campaigns/aesthetic-engine.ts
+    ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[100892781ms] [ERROR] ./app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts:3:1
+Export generateVisualPlanningFromBrief doesn't exist in target module
+  1 | import { NextRequest, NextResponse } from "next/server";
+  2 | import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+> 3 | import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | // Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
+  6 | export const maxDuration = 300;
+
+The export generateVisualPlanningFromBrief was not found in module [project]/lib/campaigns/aesthetic-engine.ts [app-route] (ecmascript).
+Did you mean to import generateProductionBibleFromBrief?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[101582604ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[101585961ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[101589309ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[101592672ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[101596062ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[101603443ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=6WvhmSA6S8HVFH8r660QA' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[104242126ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=4yrAgPmbBV652XIwQIOhH' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[104245488ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=4yrAgPmbBV652XIwQIOhH' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[104248856ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=4yrAgPmbBV652XIwQIOhH' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[104252233ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=4yrAgPmbBV652XIwQIOhH' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[104255598ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=4yrAgPmbBV652XIwQIOhH' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[117496935ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=SkomKnesnCoj-VVjPh72k' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[117500295ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=SkomKnesnCoj-VVjPh72k' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[117503659ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=SkomKnesnCoj-VVjPh72k' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[117507021ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=SkomKnesnCoj-VVjPh72k' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[117510393ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=SkomKnesnCoj-VVjPh72k' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[120324712ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LuV0gXJQhURYMgMbXVAGF' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[120328087ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LuV0gXJQhURYMgMbXVAGF' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[120331451ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LuV0gXJQhURYMgMbXVAGF' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[120334810ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LuV0gXJQhURYMgMbXVAGF' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[120338188ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LuV0gXJQhURYMgMbXVAGF' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161844681ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161848044ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161851403ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161854769ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161858126ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161865489ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161872848ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161880218ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[161887618ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=LCMooZDojRLoxlrvmNoJj' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runMediaGeneration, isGenerating, GenerationOptions } from '@/lib/campaigns/media/media-orchestrator';
+import { resolveVideoModelPresetIdFromRequest } from '@/lib/campaigns/media/video-model-preference';
 import { AssetType, AssetTypeEnum } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/generate
 // Triggers the full media generation pipeline for a campaign.
-// Body (optional): { assetTypes?: AssetType[]; forceRegenerateAssetTypes?: AssetType[] }
+// Body (optional): { assetTypes?: AssetType[]; forceRegenerateAssetTypes?: AssetType[]; storyboardDeliverableIds?: string[] }
 // Returns: GenerationResult with job summary and manifest.
 // 409 if generation already in progress for this campaign.
 // ────────────────────────────────────────────────────────────────────────────
@@ -14,6 +15,9 @@ interface GenerateRequestBody {
     assetTypes?: AssetType[];
     forceRegenerateAssetTypes?: AssetType[];
     themeMusicSource?: 'replicate' | 'default';
+    sceneImageMode?: 'all' | 'missing_only';
+    storyboardDeliverableIds?: string[];
+    videoModelPresetId?: string;
 }
 
 export async function POST(
@@ -29,7 +33,9 @@ export async function POST(
         );
     }
 
-    let options: GenerationOptions = {};
+    let options: GenerationOptions = {
+        videoModelPresetId: await resolveVideoModelPresetIdFromRequest(request),
+    };
 
     try {
         const body = await request.json() as GenerateRequestBody;
@@ -55,6 +61,19 @@ export async function POST(
         if (body.themeMusicSource === 'replicate' || body.themeMusicSource === 'default') {
             options.themeMusicSource = body.themeMusicSource;
         }
+        if (body.sceneImageMode === 'all' || body.sceneImageMode === 'missing_only') {
+            options.sceneImageMode = body.sceneImageMode;
+        }
+        if (body.storyboardDeliverableIds && Array.isArray(body.storyboardDeliverableIds)) {
+            const validDeliverableIds = body.storyboardDeliverableIds
+                .filter((deliverableId): deliverableId is string => typeof deliverableId === 'string')
+                .map((deliverableId) => deliverableId.trim())
+                .filter(Boolean);
+            if (validDeliverableIds.length > 0) {
+                options.storyboardDeliverableIds = validDeliverableIds;
+            }
+        }
+        options.videoModelPresetId = await resolveVideoModelPresetIdFromRequest(request, body.videoModelPresetId);
     } catch {
         // No body or invalid JSON — run everything
     }

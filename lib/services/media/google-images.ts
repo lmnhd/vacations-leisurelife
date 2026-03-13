@@ -10,6 +10,8 @@
 
 import { getJson } from 'serpapi';
 
+const GOOGLE_IMAGE_SEARCH_TIMEOUT_MS = 2500;
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface GoogleImageResult {
@@ -42,14 +44,19 @@ export async function searchGoogleImages(
 
     try {
         // Use SerpApi's getJson to query the google_images engine
-        const response = await getJson({
-            engine: "google_images",
-            q: query,
-            api_key: apiKey,
-            // Requesting large images to ensure quality for the hero canvas
-            tbs: "isz:l",
-            safe: "active",
-        });
+        const response = await Promise.race([
+            getJson({
+                engine: "google_images",
+                q: query,
+                api_key: apiKey,
+                // Requesting large images to ensure quality for the hero canvas
+                tbs: "isz:l",
+                safe: "active",
+            }),
+            new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error(`SerpApi Image Search timed out after ${GOOGLE_IMAGE_SEARCH_TIMEOUT_MS}ms`)), GOOGLE_IMAGE_SEARCH_TIMEOUT_MS);
+            }),
+        ]);
 
         // The images_results array contains the parsed image data
         const rawResults = response.images_results || [];

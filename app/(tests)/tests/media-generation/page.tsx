@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { VoicePreferencePanel } from "@/components/voice-preference-panel";
 import type { CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
+import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
 import {
@@ -51,8 +53,29 @@ interface GenerateResult {
     jobSummary: JobSummary;
 }
 
+interface PreflightStoryboardPlan {
+    deliverableId: string;
+    assetType: string;
+    alreadyInManifest: boolean;
+    totalShots: number;
+    shotsWithMissingImage: number;
+    missingShotSceneIds: string[];
+    readyForStoryboardGeneration: boolean;
+    willFailVideoGeneration: boolean;
+}
+
+interface PreflightData {
+    slug: string;
+    sceneLibraryCount: number;
+    sceneImagesInManifest: number;
+    missingScenes: string[];
+    readyForStoryboardGeneration: boolean;
+    storyboards: PreflightStoryboardPlan[];
+}
+
 const CATEGORIES = [
-    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["ship_reference_image", "hero_image", "aesthetic_concept", "scene_image", "platform_crop"] },
+    { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
+    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
     { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
     { key: "video", label: "Video", icon: Film, color: "purple", types: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
@@ -61,7 +84,8 @@ const CATEGORIES = [
 ] as const;
 
 const COST_ESTIMATES: Record<string, string> = {
-    images: "~SerpAPI search + Nano-Banana × hero + concepts",
+    references: "~SerpAPI search + import only",
+    images: "~Nano-Banana × heroes + concepts + crops (uses approved refs)",
     scenes: "~Nano-Banana × 8–12 scene images (Production Bible)",
     video: "~RunwayML × shots per storyboard + ElevenLabs",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
@@ -74,8 +98,12 @@ const LS_SLUG_KEY = "mediaGen_slug";
 const getManifestStorageKey = (targetSlug: string) => `mediaGen_manifest_${targetSlug}`;
 
 export default function MediaGenerationTestPage() {
+    const { presetId, presets } = useVideoModelPreference();
     const [slug, setSlug] = useState("");
     const [themeMusicSource, setThemeMusicSource] = useState<'replicate' | 'default'>('default');
+    const [preflightEnabled, setPreflightEnabled] = useState(false);
+    const [preflightLoading, setPreflightLoading] = useState(false);
+    const [preflightData, setPreflightData] = useState<PreflightData | null>(null);
     const [pageState, setPageState] = useState<PageState>("idle");
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [result, setResult] = useState<GenerateResult | null>(null);
@@ -149,6 +177,7 @@ export default function MediaGenerationTestPage() {
         const trimmedSlug = slug.trim();
         if (!trimmedSlug) {
             setManifest(null);
+            setPreflightData(null);
             return;
         }
 
@@ -163,10 +192,39 @@ export default function MediaGenerationTestPage() {
         }
 
         setManifest(null);
+        setPreflightData(null);
     }, [slug]);
+
+    const handlePreflight = async () => {
+        if (!slug.trim()) return;
+
+        setPreflightLoading(true);
+        setPreflightData(null);
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/generate-plan`);
+            const data = await res.json() as PreflightData | { error?: string };
+            if (!res.ok) {
+                throw new Error((data as { error?: string }).error || `Preflight failed (${res.status})`);
+            }
+
+            setPreflightData(data as PreflightData);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setPreflightLoading(false);
+        }
+    };
 
     const handleGenerate = async (assetTypes?: string[]) => {
         if (!slug.trim()) return;
+
+        if (assetTypes?.includes('scene_image') && !hasProductionBible) {
+            setError('Scene image generation requires a saved Production Bible. Open /tests/production-bible, regenerate the Production Bible, then retry Scene Images.');
+            return;
+        }
+
         const categoryLabel = assetTypes ? CATEGORIES.find(c => c.types.some(t => assetTypes.includes(t)))?.key || "targeted" : "all";
         const costStr = COST_ESTIMATES[categoryLabel] || COST_ESTIMATES["all"];
 
@@ -223,6 +281,7 @@ export default function MediaGenerationTestPage() {
     const hasProductionBible = !!(brief?.productionBible);
     const sceneCount = brief?.productionBible?.sceneLibrary?.length ?? 0;
     const storyboardCount = brief?.productionBible?.storyboards?.length ?? 0;
+    const activeVideoPresetLabel = presets.find((entry) => entry.id === presetId)?.label ?? 'Loading video model...';
     const manifestImageCount = manifest
         ? manifest.images.shipReferences.length
             + manifest.images.hero.length
@@ -243,20 +302,35 @@ export default function MediaGenerationTestPage() {
                         <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
                             🎬 Media Generation — Phase 2
                         </h1>
-                        <a
-                            href="/tests/production-bible"
-                            className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 rounded-lg transition"
-                        >
-                            <BookOpen className="w-3.5 h-3.5" />
-                            Production Bible
-                            <ExternalLink className="w-3 h-3" />
-                        </a>
+                        <div className="flex gap-2 flex-wrap">
+                            <a
+                                href="/tests/video-model-lab"
+                                className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 rounded-lg transition"
+                            >
+                                <Film className="w-3.5 h-3.5" />
+                                Video Model Lab
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                            <a
+                                href="/tests/production-bible"
+                                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 rounded-lg transition"
+                            >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                Production Bible
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
                         Generate real-ship reference imagery, scene images, storyboard-driven video, audio, copy, and merch from an approved aesthetic brief.
                         Each category can be run independently. Requires an approved brief with Production Bible for the storyboard path.
                     </p>
+                    <p className="text-xs text-cyan-300/80 mt-2">
+                        Shared video model preference: <span className="text-cyan-200">{activeVideoPresetLabel}</span>
+                    </p>
                 </div>
+
+                <VoicePreferencePanel />
 
                 {/* Slug Input */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
@@ -393,17 +467,101 @@ export default function MediaGenerationTestPage() {
 
                 {/* Per-Category Generator Buttons */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Generate by Category</div>
+                    <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-widest">Generate by Category</div>
+                        <label className="flex items-center gap-2 text-[11px] text-slate-400 select-none">
+                            <input
+                                type="checkbox"
+                                checked={preflightEnabled}
+                                onChange={(event) => {
+                                    setPreflightEnabled(event.target.checked);
+                                    if (!event.target.checked) {
+                                        setPreflightData(null);
+                                    }
+                                }}
+                                disabled={isBusy}
+                                className="h-3.5 w-3.5 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-500/40"
+                            />
+                            Enable storyboard preflight
+                        </label>
+                    </div>
+
+                    {preflightEnabled && (
+                        <div className="mb-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-3">
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div>
+                                    <div className="text-[10px] uppercase tracking-widest text-cyan-400">Preflight</div>
+                                    <p className="mt-1 text-[11px] text-slate-400">
+                                        Validate storyboard scene coverage without calling Runway or spending credits.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => void handlePreflight()}
+                                    disabled={preflightLoading || isBusy || !slug.trim() || !hasProductionBible}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-40 disabled:pointer-events-none"
+                                    title={!hasProductionBible ? "No Production Bible on this brief" : "Run storyboard preflight"}
+                                >
+                                    {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                                    {preflightLoading ? "Running Preflight..." : "Run Preflight"}
+                                </button>
+                            </div>
+
+                            {preflightData && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 flex-wrap text-[11px]">
+                                        <span className={`px-2 py-1 rounded-full border ${preflightData.readyForStoryboardGeneration ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-300'}`}>
+                                            {preflightData.readyForStoryboardGeneration ? 'Ready for storyboard generation' : 'Storyboard generation blocked'}
+                                        </span>
+                                        <span className="text-slate-400">
+                                            {preflightData.sceneImagesInManifest}/{preflightData.sceneLibraryCount} scene images present
+                                        </span>
+                                        {preflightData.missingScenes.length > 0 && (
+                                            <span className="text-red-400">
+                                                Missing scenes: {preflightData.missingScenes.join(', ')}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2 md:grid-cols-2">
+                                        {preflightData.storyboards.map((storyboard) => (
+                                            <div key={storyboard.deliverableId} className="rounded-lg border border-white/10 bg-slate-950/40 p-3 text-xs space-y-2">
+                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                    <div className="font-medium text-slate-200">{storyboard.deliverableId}</div>
+                                                    <span className={`px-2 py-0.5 rounded-full border ${storyboard.readyForStoryboardGeneration ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
+                                                        {storyboard.readyForStoryboardGeneration ? 'ready' : 'missing scene images'}
+                                                    </span>
+                                                </div>
+                                                <div className="text-slate-500">
+                                                    {storyboard.totalShots} shots · {storyboard.assetType}{storyboard.alreadyInManifest ? ' · already in manifest' : ''}
+                                                </div>
+                                                {storyboard.shotsWithMissingImage > 0 ? (
+                                                    <div className="text-red-400">
+                                                        Missing shot scenes: {storyboard.missingShotSceneIds.join(', ')}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-emerald-400">All shot scene images resolved.</div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {CATEGORIES.map((cat) => {
                             const Icon = cat.icon;
                             const isActive = activeCategory === cat.key;
+                            const requiresProductionBible = cat.types.includes('scene_image');
+                            const isBlocked = requiresProductionBible && !hasProductionBible;
                             return (
                                 <button
                                     key={cat.key}
                                     id={`btn-gen-${cat.key}`}
                                     onClick={() => handleGenerate(cat.types as unknown as string[])}
-                                    disabled={isBusy || !slug.trim()}
+                                    disabled={isBusy || !slug.trim() || isBlocked}
+                                    title={isBlocked ? 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.' : ''}
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}
                                 >
                                     {isActive
@@ -412,6 +570,9 @@ export default function MediaGenerationTestPage() {
                                     }
                                     <span>{isActive ? "Generating..." : cat.label}</span>
                                     <span className="text-[9px] opacity-60">{COST_ESTIMATES[cat.key]}</span>
+                                    {isBlocked && (
+                                        <span className="text-[9px] opacity-80 text-amber-300">Production Bible required</span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -431,6 +592,7 @@ export default function MediaGenerationTestPage() {
                             <span className="text-[9px] opacity-60 text-center px-2">{COST_ESTIMATES["all"]}</span>
                         </button>
                     </div>
+
                 </div>
 
                 {/* Generation Result */}

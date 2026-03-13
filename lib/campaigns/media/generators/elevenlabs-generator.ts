@@ -1,5 +1,7 @@
 import { CampaignAestheticBrief } from '../../schema';
+import type { ElevenLabsVoiceRole } from '../elevenlabs-voices';
 import { ELEVENLABS_CONFIG } from '../media-pipeline-config';
+import { resolveElevenLabsVoiceForRole } from '../voice-preference';
 
 // ────────────────────────────────────────────────────────────────────────────
 // ElevenLabs Audio Generator
@@ -48,6 +50,9 @@ export interface GeneratedAudio {
     script: string;
     assetId: string;
     fileName: string;
+    voiceId: string;
+    voiceName: string | null;
+    voiceRole: ElevenLabsVoiceRole;
 }
 
 /**
@@ -58,12 +63,16 @@ export async function generateAmbientNarration(
     brief: CampaignAestheticBrief
 ): Promise<GeneratedAudio> {
     const script = brief.audio.ambientNarrationScript.slice(0, ELEVENLABS_CONFIG.narrationMaxChars);
-    const buffer = await generateSpeech(script, ELEVENLABS_CONFIG.narrationVoiceId);
+    const voice = await resolveElevenLabsVoiceForRole('narration');
+    const buffer = await generateSpeech(script, voice.voiceId);
     return {
         buffer,
         script,
         assetId: 'audio_ambient_narration',
         fileName: 'audio/ambient_narration.mp3',
+        voiceId: voice.voiceId,
+        voiceName: voice.voiceName,
+        voiceRole: voice.role,
     };
 }
 
@@ -75,11 +84,15 @@ export async function generateHypeClip(
     brief: CampaignAestheticBrief
 ): Promise<GeneratedAudio> {
     const script = brief.audio.hypeClipScript.slice(0, ELEVENLABS_CONFIG.hypeMaxChars);
-    const buffer = await generateSpeech(script, ELEVENLABS_CONFIG.hypeVoiceId);
+    const voice = await resolveElevenLabsVoiceForRole('hype');
+    const buffer = await generateSpeech(script, voice.voiceId);
     return {
         buffer,
         script,
         assetId: 'audio_hype_clip',
         fileName: 'audio/hype_clip.mp3',
+        voiceId: voice.voiceId,
+        voiceName: voice.voiceName,
+        voiceRole: voice.role,
     };
 }

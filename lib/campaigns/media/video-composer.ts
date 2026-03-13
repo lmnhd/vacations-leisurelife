@@ -130,6 +130,42 @@ function getScaleCropFilter(outputFormat: ProductionComposeOptions['outputFormat
     }
 }
 
+function isRecoverableMusicInputFailure(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    const message = error.message.toLowerCase();
+    return message.includes('error opening input file')
+        || message.includes('error opening input files')
+        || message.includes('failed to read frame size')
+        || message.includes('invalid argument');
+}
+
+async function runNarrationOnlyCompose(
+    concatListPath: string,
+    narrationPath: string,
+    outputPath: string,
+    scaleCrop: string,
+): Promise<void> {
+    await runFfmpeg([
+        '-y',
+        '-f', 'concat', '-safe', '0', '-i', concatListPath,
+        '-i', narrationPath,
+        '-filter_complex', `[0:v]${scaleCrop}[v]`,
+        '-map', '[v]',
+        '-map', '1:a',
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-movflags', '+faststart',
+        '-shortest',
+        outputPath,
+    ]);
+}
+
 export async function composeProductionVideo(
     sourceVideoBuffers: readonly Buffer[],
     narrationAudioBuffer: Buffer,
@@ -168,46 +204,39 @@ export async function composeProductionVideo(
 
             // 3 inputs: concat video, narration, music
             // Music ducked via sidechaincompress keyed on narration
-            await runFfmpeg([
-                '-y',
-                '-f', 'concat', '-safe', '0', '-i', concatListPath,
-                '-i', narrationPath,
-                '-i', musicPath,
-                '-filter_complex', [
-                    `[0:v]${scaleCrop}[v]`,
-                    `[2:a]volume=${opts.musicVolume}[music_low]`,
-                    `[1:a]volume=${opts.narrationVolume}[narr]`,
-                    `[music_low][narr]amix=inputs=2:duration=shortest:dropout_transition=2[aout]`,
-                ].join(';'),
-                '-map', '[v]',
-                '-map', '[aout]',
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac',
-                '-b:a', '192k',
-                '-movflags', '+faststart',
-                '-shortest',
-                outputPath,
-            ]);
+            try {
+                await runFfmpeg([
+                    '-y',
+                    '-f', 'concat', '-safe', '0', '-i', concatListPath,
+                    '-i', narrationPath,
+                    '-i', musicPath,
+                    '-filter_complex', [
+                        `[0:v]${scaleCrop}[v]`,
+                        `[2:a]volume=${opts.musicVolume}[music_low]`,
+                        `[1:a]volume=${opts.narrationVolume}[narr]`,
+                        `[music_low][narr]amix=inputs=2:duration=shortest:dropout_transition=2[aout]`,
+                    ].join(';'),
+                    '-map', '[v]',
+                    '-map', '[aout]',
+                    '-c:v', 'libx264',
+                    '-preset', 'medium',
+                    '-pix_fmt', 'yuv420p',
+                    '-c:a', 'aac',
+                    '-b:a', '192k',
+                    '-movflags', '+faststart',
+                    '-shortest',
+                    outputPath,
+                ]);
+            } catch (error) {
+                if (!isRecoverableMusicInputFailure(error)) {
+                    throw error;
+                }
+
+                console.warn('[video-composer] Background music input failed validation. Retrying narrated compose without music.', error);
+                await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop);
+            }
         } else {
-            // 2 inputs: concat video + narration only
-            await runFfmpeg([
-                '-y',
-                '-f', 'concat', '-safe', '0', '-i', concatListPath,
-                '-i', narrationPath,
-                '-filter_complex', `[0:v]${scaleCrop}[v]`,
-                '-map', '[v]',
-                '-map', '1:a',
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac',
-                '-b:a', '192k',
-                '-movflags', '+faststart',
-                '-shortest',
-                outputPath,
-            ]);
+            await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop);
         }
 
         return await readFile(outputPath);

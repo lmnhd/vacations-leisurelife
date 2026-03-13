@@ -1,5 +1,6 @@
 import { RUNWAYML_CONFIG } from '@/lib/campaigns/media/media-pipeline-config';
-import { BaseVideoProvider } from './base-provider';
+import { getVideoModelPreset } from '@/lib/campaigns/media/video-models';
+import { BaseVideoProvider, VideoGenerationOptions } from './base-provider';
 
 class RunwayCreateResponse {
     public id = '';
@@ -9,6 +10,32 @@ class RunwayStatusResponse {
     public status = '';
     public output?: string[];
     public error?: string;
+}
+
+function formatRunwayApiError(status: number, errorText: string): string {
+    const normalizedText = errorText.toLowerCase();
+
+    if (
+        status === 429 && (
+            normalizedText.includes('daily')
+            || normalizedText.includes('generation limit')
+            || normalizedText.includes('task limit')
+            || normalizedText.includes('quota')
+        )
+    ) {
+        return [
+            `RunwayML daily generation limit reached.`,
+            `This is a provider-side usage-tier cap, separate from credit balance.`,
+            `Runway enforces a rolling 24-hour maximum generation count per organization.`,
+            `Raw response: ${errorText}`,
+        ].join(' ');
+    }
+
+    if (status === 429) {
+        return `RunwayML rate/usage limit reached: ${errorText}`;
+    }
+
+    return `RunwayML create error ${status}: ${errorText}`;
 }
 
 export class RunwayVideoProvider extends BaseVideoProvider {
@@ -27,7 +54,9 @@ export class RunwayVideoProvider extends BaseVideoProvider {
         sourceImageUrl: string,
         motionPrompt: string,
         durationSeconds: number,
+        options?: VideoGenerationOptions,
     ): Promise<{ videoUrl: string; durationSeconds: number; taskId?: string }> {
+        const preset = getVideoModelPreset(options?.presetId);
         const response = await fetch(`${RUNWAYML_CONFIG.apiBase}/image_to_video`, {
             method: 'POST',
             headers: {
@@ -36,7 +65,7 @@ export class RunwayVideoProvider extends BaseVideoProvider {
                 'X-Runway-Version': RUNWAYML_CONFIG.apiVersion,
             },
             body: JSON.stringify({
-                model: RUNWAYML_CONFIG.model,
+                model: preset.runwayModel ?? RUNWAYML_CONFIG.model,
                 promptImage: sourceImageUrl,
                 promptText: motionPrompt.slice(0, RUNWAYML_CONFIG.motionPromptMaxChars),
                 duration: durationSeconds,
@@ -46,7 +75,7 @@ export class RunwayVideoProvider extends BaseVideoProvider {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`RunwayML create error ${response.status}: ${errorText}`);
+            throw new Error(formatRunwayApiError(response.status, errorText));
         }
 
         const createData = Object.assign(new RunwayCreateResponse(), await response.json() as object);

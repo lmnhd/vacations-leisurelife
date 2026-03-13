@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkMediaCredits, estimateCampaignCost } from '@/lib/campaigns/media/credit-check-service';
+import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { calculateElevenLabsCreditsRequired, checkMediaCredits, estimateCampaignCost } from '@/lib/campaigns/media/credit-check-service';
+import { ELEVENLABS_CONFIG } from '@/lib/campaigns/media/media-pipeline-config';
+import { resolveVideoModelPresetIdFromRequest } from '@/lib/campaigns/media/video-model-preference';
 
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/groups/campaign/[slug]/media/credit-check
@@ -10,6 +13,7 @@ import { checkMediaCredits, estimateCampaignCost } from '@/lib/campaigns/media/c
 // Query params:
 //   sceneCount  — number of scenes in the Production Bible (default: 10)
 //   estimateOnly — if "true", skips live balance queries (faster, no API calls)
+//   storyboardDeliverableIds — optional comma-separated storyboard deliverable ids to scope video estimates
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function GET(
@@ -21,10 +25,30 @@ export async function GET(
 
     const sceneCount = parseInt(searchParams.get('sceneCount') ?? '10', 10);
     const estimateOnly = searchParams.get('estimateOnly') === 'true';
+    const videoModelPresetId = await resolveVideoModelPresetIdFromRequest(request, searchParams.get('videoModelPresetId'));
+    const storyboardDeliverableIds = (searchParams.get('storyboardDeliverableIds') ?? '')
+        .split(',')
+        .map((deliverableId) => deliverableId.trim())
+        .filter(Boolean);
+
+    const brief = await getAestheticBrief(slug);
+    const storyboardNarrationScripts = brief?.productionBible?.storyboards
+        ?.filter((storyboard) => storyboardDeliverableIds.length === 0 || storyboardDeliverableIds.includes(storyboard.deliverableId))
+        .map((storyboard) => storyboard.narrationScript) ?? [];
+    const scopedElevenLabsCredits = calculateElevenLabsCreditsRequired({
+        storyboardNarrationScripts,
+        ambientNarrationScript: storyboardDeliverableIds.length === 0 ? brief?.audio.ambientNarrationScript?.slice(0, ELEVENLABS_CONFIG.narrationMaxChars) : undefined,
+        hypeClipScript: undefined,
+    });
 
     try {
         if (estimateOnly) {
-            const estimate = estimateCampaignCost(sceneCount);
+            const estimate = estimateCampaignCost(
+                sceneCount,
+                storyboardDeliverableIds.length > 0 ? storyboardDeliverableIds : undefined,
+                scopedElevenLabsCredits,
+                videoModelPresetId,
+            );
             return NextResponse.json({
                 slug,
                 estimateOnly: true,
@@ -36,7 +60,12 @@ export async function GET(
             });
         }
 
-        const result = await checkMediaCredits(sceneCount);
+        const result = await checkMediaCredits(
+            sceneCount,
+            storyboardDeliverableIds.length > 0 ? storyboardDeliverableIds : undefined,
+            scopedElevenLabsCredits,
+            videoModelPresetId,
+        );
 
         return NextResponse.json({
             slug,

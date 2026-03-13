@@ -1,0 +1,372 @@
+﻿{
+    "slug":  "salt-and-meadow-2026",
+    "themeName":  "Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey",
+    "visual":  {
+                   "aestheticLabel":  "Salt \u0026 Meadow: A Cottagecore SlowâSea Journey",
+                   "colorPalette":  {
+                                        "primary":  "#AFCBB6",
+                                        "secondary":  "#E9E1D6",
+                                        "accent":  "#7E8F7A",
+                                        "background":  "#F4F5F2",
+                                        "textOnDark":  "#F6F4EE",
+                                        "textOnLight":  "#2E2B27"
+                                    },
+                   "typographyDirection":  {
+                                               "headlineStyle":  "Use Leisure Life Interactiveâs brand headline type as first choice; if a project fallback is required, select a high-contrast humanist serif with soft terminals for an organic, bookish feel.",
+                                               "bodyStyle":  "Use Leisure Life Interactiveâs brand sans for clarity; if a fallback is required, choose a modern grotesk with gentle curves for calm legibility.",
+                                               "suggestedFonts":  [
+                                                                      "Canela (headline fallback)",
+                                                                      "Portrait (headline fallback)",
+                                                                      "Garamond Premier Display (headline fallback, light weights)",
+                                                                      "Inter (body fallback)",
+                                                                      "Neue Haas Grotesk (body fallback)"
+                                                                  ]
+                                           },
+                   "imageryMood":  "Pastoral-at-sea calm: real grass and teak against an open horizon, linen hints, soft hair movement in coastal wind, a quiet cup by the rail. The ship and ocean read first; cottagecore lives in texture, posture, and one natural cue.",
+                   "lightingStyle":  "North Atlantic softnessâcool, silvery daylight with moments of warm low sun; gentle overcast that flatters linen and wood; twilight hush with subtle glow. Eclipse-week mood may be a serene mid-day dim without spectacle.",
+                   "compositionNotes":  "Hero-safe frames that prioritize ship lines, horizon, and the Lawn Clubâs living texture. Compose with generous negative space, low object density, and one believable cue (a sprig, a throw edge, a straw brim). Keep guests relaxed and small in frame, 1â3 people max, candid stances, eyes to sea. Avoid staged tables or signage intruding into foreground.",
+                   "avoidList":  [
+                                     "Crowded craft tables or lines of people doing the same activity",
+                                     "Whiteboards, chalkboards, flip charts, or printed agendas",
+                                     "Industrial tools, glue guns, cutting mats, or workbenches",
+                                     "Branded lanyards, table tents, or wayfinding signage",
+                                     "Activist placards or certification backdrops",
+                                     "Oversized floral arches or photo-booth sets",
+                                     "Overfilled picnic spreads that read as catering",
+                                     "Group formations that feel like a class or demo"
+                                 ],
+                   "referenceMoodboard":  [
+                                              "Solstice-class Lawn Club textureâreal grass, teak, canvas",
+                                              "Oat linen throws catching soft wind",
+                                              "Seafoam, moss, and mist palette against charcoal railings",
+                                              "Pressed wildflower detailsâtiny, quiet, pocket-sized",
+                                              "Straw hat rim, cuffed sleeve, enamel mug at dawn",
+                                              "Twilight on deckâdim folk notes, sky first",
+                                              "North Atlantic lightâsilver mornings, warm last light"
+                                          ],
+                   "plausibilityFramework":  {
+                                                 "governingPrinciple":  "Cottagecore shows up as small, guest-led natural texturesâwhat someone wears, sips, or tucks into a pocketâlightly echoed by ship-friendly styling; never equipment, schedules, or staff-led setups.",
+                                                 "cruiseNativeMoments":  [
+                                                                             "Sunrise tea on the Lawn Club with a throw and horizon air",
+                                                                             "Unhurried promenade walk with a rail-side pause",
+                                                                             "Window-seat daydreaming with coffee and sea drift",
+                                                                             "Golden-hour sailaway on open deck",
+                                                                             "Quiet stargazing with blankets and low conversation",
+                                                                             "Aft-deck lounge time with a soft breeze and a book"
+                                                                         ],
+                                                 "nicheEnhancedMoments":  [
+                                                                              "A linen shirt and straw brim at the rail; seafoam scarf catching wind",
+                                                                              "Herb sprig resting on a saucer beside oat-toned tea",
+                                                                              "Slim notebook and pencil open at a window, one pressed petal marking a page",
+                                                                              "A postcard briefly opened on a cafÃ© table with a tiny pocket press nearby (book-sized, no setup)",
+                                                                              "A petite woven basket for a photoâbread, berries, then enjoyed casually",
+                                                                              "Low-volume acoustic folk in an outdoor nook; guests simply settling in"
+                                                                          ],
+                                                 "implausibleLiteralizations":  [
+                                                                                    "Sustainability panels with badges or certificates",
+                                                                                    "Foraging or homesteading âintensivesâ requiring tools or outcomes",
+                                                                                    "Long communal craft stations with supplies and instructions",
+                                                                                    "Chalkboards, whiteboards, or posted agendas",
+                                                                                    "Chore rosters, sign-up tables, or hosted hours",
+                                                                                    "Floral arches, photo booths, or branded backdrops on deck"
+                                                                                ],
+                                                 "allowedProps":  [
+                                                                      "Linen throws and shawls",
+                                                                      "Small herb sprigs and a few dried blooms",
+                                                                      "Slim notebooks, pencils, and simple postcards",
+                                                                      "Book-sized pocket flower press (closed)",
+                                                                      "Straw hats, woven headbands, soft scarves",
+                                                                      "Petite woven basket used briefly for a photo"
+                                                                  ],
+                                                 "discouragedProps":  [
+                                                                          "Sewing machines, glue guns, cutting mats, or sharp shears",
+                                                                          "Lighting rigs, tripods, ring lights, or microphones",
+                                                                          "Large format flower presses or drying racks",
+                                                                          "Whiteboards, lecterns, clipboards, or signage systems",
+                                                                          "Bulk supply carts, labeled bins, or trade-show displays"
+                                                                      ]
+                                             }
+               },
+    "messaging":  {
+                      "heroSlogan":  "Salt air. Meadow heart.",
+                      "subSlogan":  "A cottagecore drift at seaâlinen layers, herbâkissed tea, open horizon.",
+                      "ctaVariants":  {
+                                          "waitlist":  "Join the Meadow List",
+                                          "bookNow":  "Book Your Cabin",
+                                          "merch":  "Shop Salt \u0026 Meadow Tees",
+                                          "share":  "Send a SoftâSea Invite"
+                                      },
+                      "elevatorPitch":  "Salt \u0026 Meadow is a gentle, cottagecore take on a North Atlantic sailingâopen grass underfoot, soft linens, and a horizon that slows your breathing. Think quiet tea by the rail, a penciled line in a pocket notebook, a single dried bloom tucked into a postcard. The ship does the moving; you do the savoring. On an Iceland arc that includes an eclipse weekâs rare light, the vibe stays simple and guest-ledâtiny natural cues, lowâpressure evenings, and oceanâfirst calm.",
+                      "toneKeywords":  [
+                                           "botanical",
+                                           "linen",
+                                           "seaâsoft",
+                                           "North Atlantic hush",
+                                           "pastoral",
+                                           "welcoming",
+                                           "grounded",
+                                           "minimal",
+                                           "horizonâfirst"
+                                       ],
+                      "voicePersona":  "Warm coastal naturalist with modern-minimal restraintâobservational, kind, and unhurried; never salesy or programmatic."
+                  },
+    "merch":  {
+                  "conceptStatement":  "Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.",
+                  "coreItem":  {
+                                   "productType":  "T-Shirt",
+                                   "designDescription":  "Salt \u0026 Meadow wordmark in a gentle serif with a single line-art meadow sprig crossing a small wave underline; micro caption: âpastoral at sea.â centered below.",
+                                   "colorway":  "Oat heather tee with moss-ink print (Pantone-adjacent to #7E8F7A).",
+                                   "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Pastoral at sea.. Concept direction: Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.. Design direction: Salt \u0026 Meadow wordmark in a gentle serif with a single line-art meadow sprig crossing a small wave underline; micro caption: âpastoral at sea.â centered below.. Print style: Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel.. Colorway: Oat heather tee with moss-ink print (Pantone-adjacent to #7E8F7A).. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                   "printfulProductId":  "Bella+Canvas 3001"
+                               },
+                  "practicalItem":  {
+                                        "productType":  "T-Shirt",
+                                        "designDescription":  "Rail-Side Botanistâsmall chest print with a thin horizon line and a tiny pressed-flower icon at the pocket position; sleeve reads âsea air, soft threads.â in small caps.",
+                                        "colorway":  "Mist blue tee with charcoal ink (#2E2B27).",
+                                        "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Pastoral at sea.. Concept direction: Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.. Design direction: Rail-Side Botanistâsmall chest print with a thin horizon line and a tiny pressed-flower icon at the pocket position; sleeve reads âsea air, soft threads.â in small caps.. Print style: Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel.. Colorway: Mist blue tee with charcoal ink (#2E2B27).. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                        "printfulProductId":  "Bella+Canvas 3501"
+                                    },
+                  "nicheSpecificItems":  [
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Lawn \u0026 Linen Clubâstacked typography with a subtle grass blade motif under the word âLawnâ; tiny wave mark beneath âLinen.â",
+                                                 "colorway":  "Natural tee with dried-herb ink.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Pastoral at sea.. Concept direction: Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.. Design direction: Lawn \u0026 Linen Clubâstacked typography with a subtle grass blade motif under the word âLawnâ; tiny wave mark beneath âLinen.â. Print style: Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel.. Colorway: Natural tee with dried-herb ink.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Gildan 64000"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Quiet Hour, Open Skyâthin ring graphic (eclipse nod) intersected by a meadow stem; small caption: ânorth atlantic hush.â",
+                                                 "colorway":  "Silver tee with moss ink.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Pastoral at sea.. Concept direction: Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.. Design direction: Quiet Hour, Open Skyâthin ring graphic (eclipse nod) intersected by a meadow stem; small caption: ânorth atlantic hush.â. Print style: Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel.. Colorway: Silver tee with moss ink.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Bella+Canvas 6400"
+                                             },
+                                             {
+                                                 "productType":  "T-Shirt",
+                                                 "designDescription":  "Sea Air \u0026 Soft Threadsâgentle serif with a stitched ampersand; tiny sprig above the final word.",
+                                                 "colorway":  "Soft cream tee with sage ink.",
+                                                 "dallePrompt":  "Create a print-ready t-shirt graphic concept for the cruise theme \"Salt \u0026 Meadow: A Cottagecore Slow-Sea Journey\". Cute slogan shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Pastoral at sea.. Concept direction: Soft-humor, slogan-led tees that pair nautical calm with botanical charm. Single-ink or two-ink graphics sized for front-of-shirt printing; relaxed typographic rhythm, no busy scenes.. Design direction: Sea Air \u0026 Soft Threadsâgentle serif with a stitched ampersand; tiny sprig above the final word.. Print style: Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel.. Colorway: Soft cream tee with sage ink.. Output a feasible apparel graphic for a real printable t-shirt front design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+                                                 "printfulProductId":  "Next Level 3600"
+                                             }
+                                         ],
+                  "logoConceptDescription":  "Organic serif wordmark âSalt \u0026 Meadowâ with a soft ligature in the ampersand and a sprig dot accent; proportions friendly to chest print and favicon use.",
+                  "tagline":  "Pastoral at sea.",
+                  "printStyle":  "Single-ink or two-ink max, halftone-free vector lines for a hand-printed feel."
+              },
+    "audio":  {
+                  "ambientNarrationScript":  "Sea air on real grass. A cup warming your hands. Linen at your shoulders. Out here the days slow into soft pagesâone penciled line, one small bloom, one easy laugh by the rail. Acoustic notes drift through the Lawn as the horizon does the work. No hurry. Just salt, meadow, and the gentle company of the North Atlantic sky.",
+                  "hypeClipScript":  "Salt air. Meadow heart. Real grass underfoot, linen in the breeze, a horizon that unknots the day. Drift easyâtea at dawn, twilit calm, a sky worth looking up for. A cottagecore slowâsea journey, shipâfirst and quietly yours.",
+                  "voiceProfile":  "Warm, calm alto; coastal hush; neutral accent; intimate mic; unhurried pacing at ~115 wpm.",
+                  "musicMood":  "Acoustic folk with nylon guitar and soft fiddle, brushed percussion, subtle harmonium; field-recorded sea air lightly mixed; no drops, no spotlight vocalsâcalm, companionable, and horizon-forward."
+              },
+    "socialConcepts":  {
+                           "tiktokOrganic":  {
+                                                 "hook":  "What if cottagecore had an ocean?",
+                                                 "narrative":  {
+                                                                   "title":  "Salt \u0026 Meadow Drift on Real Grass",
+                                                                   "durationSeconds":  18,
+                                                                   "tool":  "composite",
+                                                                   "scriptOrNarration":  "Salt air. Meadow heart. Real grass underfoot, linen in a soft breeze, and a horizon that slows everything down. A quiet sip. A small smile. The ship does the moving; you do the savoring.",
+                                                                   "visualDirectionNotes":  "Open on horizon and Lawn Club grass, not faces. Two guests sideâbyâside on a throw, one straw brim catching wind; cut to hands around an enamel mug with a tiny herb sprig on the saucer; end on silhouettes leaning at the rail at twilight. Keep the ship lines and ocean as hero; cottagecore appears in texture and posture, not props.",
+                                                                   "avatarRequired":  false,
+                                                                   "backgroundDescription":  "North Atlantic lightâsilver morning into warm last light on the Lawn Club. Gentle sea hush audible. No staged tables; minimal objects.",
+                                                                   "musicMood":  "Nylon guitar, soft fiddle, brushed percussion; ocean air lightly mixed."
+                                                               },
+                                                 "caption":  "Salt \u0026 Meadow is a slowâsea mood: linen layers, herbâkissed tea, and a horizon worth staring at. Pastoral at sea.",
+                                                 "hashtags":  [
+                                                                  "#SaltAndMeadow",
+                                                                  "#CottagecoreAtSea",
+                                                                  "#SlowSea",
+                                                                  "#HorizonFirst",
+                                                                  "#LawnClub",
+                                                                  "#NorthAtlanticHush",
+                                                                  "#PastoralAtSea"
+                                                              ],
+                                                 "callToAction":  "Join the Meadow List"
+                                             },
+                           "instagramReels":  {
+                                                  "visualConcept":  "Goldenâhour rail lean: two guests in linen and light knits share a quiet glance while grass and sea fill the frame. No objects centeredâposture and breeze tell the story.",
+                                                  "audioTrackType":  "Acoustic instrumental (nylon guitar + soft fiddle, no vocals)",
+                                                  "caption":  "A cottagecore drift at seaâlinen, low sun, open water. Salt air. Meadow heart.",
+                                                  "hashtags":  [
+                                                                   "#SaltAndMeadow",
+                                                                   "#SeaSoft",
+                                                                   "#LinenDays",
+                                                                   "#DeckCalm",
+                                                                   "#PastoralAtSea"
+                                                               ]
+                                              },
+                           "instagramFeed":  {
+                                                 "carouselSlides":  [
+                                                                        {
+                                                                            "slideNumber":  1,
+                                                                            "headline":  "Salt air. Meadow heart.",
+                                                                            "bodyText":  "Real grass underfoot, horizon first. Let the day exhale.",
+                                                                            "visualDescription":  "Wide, uncluttered Lawn Club frameâgrass, teak, and sea lines. No people in foreground."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  2,
+                                                                            "headline":  "Linen, breeze, easy posture.",
+                                                                            "bodyText":  "Wardrobe is the cueâstraw brim, soft scarf, sleeves rolled just so.",
+                                                                            "visualDescription":  "Two guests seated at the edge of grass, backs to camera, breeze catching a light scarf."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  3,
+                                                                            "headline":  "Herbâkissed pause.",
+                                                                            "bodyText":  "A warm cup, one small sprig. Tiny ritual, big calm.",
+                                                                            "visualDescription":  "Close crop of an enamel mug and saucer with a thyme sprig; ocean bokeh beyond."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  4,
+                                                                            "headline":  "Railâside hush.",
+                                                                            "bodyText":  "Sideâbyâside, eyes to sea. The ship does the moving.",
+                                                                            "visualDescription":  "Shoulderâlevel frame of two silhouettes at the rail at twilight; sky gradient leads."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  5,
+                                                                            "headline":  "North Atlantic light.",
+                                                                            "bodyText":  "Silver mornings, warm last lightâan eclipseâweek dim without spectacle.",
+                                                                            "visualDescription":  "Soft midâday dim over water and deck canvas; no celestial show, just serene tone."
+                                                                        },
+                                                                        {
+                                                                            "slideNumber":  6,
+                                                                            "headline":  "Pastoral at sea.",
+                                                                            "bodyText":  "Share the mood with someone you like drifting next to.",
+                                                                            "visualDescription":  "Hands resting on a linen throw, pinkies nearly touching; horizon centered."
+                                                                        }
+                                                                    ],
+                                                 "singlePostConcept":  "Windowâseat daydreamâa slim notebook with a pressed petal as a page mark beside a calm sea view; focus on light and reflection, not the object.",
+                                                 "caption":  "A cottagecore slowâsea journey: open horizon, soft textures, easy company. Pastoral at sea."
+                                             },
+                           "facebookAd":  {
+                                              "headline":  "Salt \u0026 Meadow: A Cottagecore SlowâSea Journey",
+                                              "primaryText":  "Real grass, linen breeze, and a horizon that unknots the day. Drift easyâtea at dawn, twilit calm, ocean first.",
+                                              "description":  "Pastoral at sea.",
+                                              "cta":  "Book Your Cabin",
+                                              "visualDescription":  "Hero image of Lawn Club grass meeting open water; a linen throw edge lifts in the breeze with two guests small in frame."
+                                          },
+                           "youtubeShort":  {
+                                                "title":  "Salt \u0026 Meadow | Pastoral at Sea",
+                                                "visualConcept":  "Beatâmatched cuts: silver morning over the Lawn; linen sleeve brushing grass; herbâkissed cup; two guests lean into twilight at the rail. Ship lines and horizon remain hero.",
+                                                "description":  "Salt air. Meadow heart. A cottagecore drift on real grass with North Atlantic hush. Pastoral at sea.",
+                                                "hashtags":  [
+                                                                 "#SaltAndMeadow",
+                                                                 "#CottagecoreAtSea",
+                                                                 "#HorizonFirst",
+                                                                 "#NorthAtlantic"
+                                                             ]
+                                            },
+                           "pinterest":  {
+                                             "pinTitle":  "Salt \u0026 Meadow Palette: Pastoral at Sea",
+                                             "pinDescription":  "A cottagecore slowâsea moodâoat linens, seafoam greens, teak, and North Atlantic light. Real grass underfoot, horizon first.",
+                                             "visualConcept":  "Flatâlay of folded linen, a tiny pressed sprig, enamel cup rim, and a sliver of deck teakâcomposed near a window with ocean blur."
+                                         },
+                           "emailHeader":  {
+                                               "subjectLine":  "Salt air. Meadow heart.",
+                                               "preheader":  "A cottagecore drift at seaâlinen layers, herbâkissed tea, horizon first.",
+                                               "bodyDirection":  "Keep copy minimal and atmospheric: oneâsentence beats with gentle line breaks. Invite a calm scroll, not a sell.",
+                                               "visualDirection":  "Fullâbleed hero of Lawn Club to horizon; inset detail of straw brim/linen edge. Palette in soft seafoam and oat."
+                                           },
+                           "discordBanner":  {
+                                                 "serverBannerDescription":  "Wide horizon over Lawn Club grass with a linen throw corner and soft breeze; text overlay minimal: âSalt \u0026 Meadowâ and âpastoral at sea.â",
+                                                 "welcomeMessageDirection":  "Warm, unhurried greeting that emphasizes calm companionship and oceanâfirst vibes; invite gentle sharing of window views, songs, and pageâturn pausesâno schedules, no pressure."
+                                             }
+                       },
+    "videoConcepts":  {
+                          "heroExplainer":  {
+                                                "title":  "Salt \u0026 Meadow â A Cottagecore SlowâSea Journey",
+                                                "durationSeconds":  60,
+                                                "tool":  "composite",
+                                                "scriptOrNarration":  "Sea air on real grass. A cup warming your hands. Linen at your shoulders. Out here the days slow into soft pagesâone penciled line, one small bloom, one easy laugh by the rail. Acoustic notes drift as the horizon does the work. No hurry. Just salt, meadow, and the gentle company of the North Atlantic sky.",
+                                                "visualDirectionNotes":  "Open with empty Lawn Club and horizon (architecture cue). Introduce two guests in linen by posture and sideâprofile, not frontâlit hero shots (posture/wardrobe cues). Cut to herb sprig on saucer (object cue), then windowâseat daydream with soft reflections (architectural cue). Brief nod to eclipseâweek dim as a serene tone shift, no spectacle (atmosphere cue). End with paired silhouettes at the rail and the line: âPastoral at sea.â",
+                                                "avatarRequired":  false,
+                                                "backgroundDescription":  "Shot list lives entirely on open deck, Lawn Club, and window nooks. North Atlantic light: cool day, warm last light, twilight hush. Low object density; horizon drives composition.",
+                                                "musicMood":  "Nylon guitar, gentle fiddle, brushed percussion, sea air foley; intimate, steady tempo."
+                                            },
+                          "tiktokSeed":  {
+                                             "title":  "Horizon Test: Breathe Out",
+                                             "durationSeconds":  12,
+                                             "tool":  "composite",
+                                             "scriptOrNarration":  "Inhale city. Exhale sea. Salt air. Meadow heart.",
+                                             "visualDirectionNotes":  "Hard cut from close crop of linen sleeve lifting in breeze to a wide horizon with grass underfoot. Two guests step into frame and settleâno dialogue, just a shared glance (posture cue). No tabletop or overt props.",
+                                             "avatarRequired":  false,
+                                             "backgroundDescription":  "Goldenâhour Lawn Club with soft wind; ship lines and ocean dominate frame.",
+                                             "musicMood":  "Singleâguitar motif with sea hush; no vocals."
+                                         },
+                          "thresholdAnnouncement":  {
+                                                        "title":  "Meadow List Is Open",
+                                                        "durationSeconds":  20,
+                                                        "tool":  "composite",
+                                                        "scriptOrNarration":  "A quiet note for calm seekers: our Meadow List is open. When youâre ready, weâll keep a spot in the hush. Pastoral at sea.",
+                                                        "visualDirectionNotes":  "Start on a postcard corner at a window (object cue, minimal), lift to ocean and deck canvas (architectural cue). Cut to two hands resting near each other on a throw (posture cue). Overlay soft text: âMeadow List is open.â",
+                                                        "avatarRequired":  false,
+                                                        "backgroundDescription":  "Window nook and Lawn Club frames with North Atlantic light; minimal text overlays in brand serif/sans pairing.",
+                                                        "musicMood":  "Harmonium pad with gentle guitar; warm, unhurried."
+                                                    },
+                          "merchReveal":  {
+                                              "title":  "Salt \u0026 Meadow Tees â Soft Threads, Sea Air",
+                                              "durationSeconds":  15,
+                                              "tool":  "composite",
+                                              "scriptOrNarration":  "Soft threads for soft days. Salt \u0026 Meadow, printed in moss ink. Pastoral at sea.",
+                                              "visualDirectionNotes":  "Clothâonâgrass reveal: fold of oat heather tee unfurls on Lawn Club with breeze. Detail shots: stitched ampersand, tiny sprig icon, sleeve line. End with tee draped on a teak rail; ocean leads. No model necessary; if included, keep faces offâcamera and ship first.",
+                                              "avatarRequired":  false,
+                                              "backgroundDescription":  "Natural light on deck, no studio setup. Keep palette to oat, moss, and seafoam; avoid retail staging.",
+                                              "musicMood":  "Light fingerâpicked guitar; calm, friendly."
+                                          },
+                          "countdownSeries":  [
+                                                  {
+                                                      "title":  "Tâ5: Window Seat Weather",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Silver morning, slow thoughts. Window, water, you.",
+                                                      "visualDirectionNotes":  "Condensation bead on glass; soft reflection of sea. No objects foregrounded (architectural/atmosphere cue).",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Interior window nook with ocean view; minimal motion.",
+                                                      "musicMood":  "Soft piano notes + sea hush."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ4: Grass Underfoot",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Real lawn, open sky. Let your shoulders drop.",
+                                                      "visualDirectionNotes":  "Shoes slip off to touch grass; camera tilts up to horizon (architecture + posture cues).",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Lawn Club midâday with light breeze; wide negative space.",
+                                                      "musicMood":  "Nylon guitar oneâshot motif."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ3: A Small Sprig",
+                                                      "durationSeconds":  9,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Herbâkissed tea. Tiny ritual, big calm.",
+                                                      "visualDirectionNotes":  "Close on saucer with thyme sprig; soft hand enters, cup lifts; cut to sea (object cue, brief).",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Deck rail table edge with ocean blur; no signage or setups.",
+                                                      "musicMood":  "Harmonium + brush whisper."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ2: Linen in the Breeze",
+                                                      "durationSeconds":  8,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "One layer, lighter breath.",
+                                                      "visualDirectionNotes":  "Linen scarf catches wind; two guests share a small smile without facing camera (wardrobe + conversational cue).",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Golden hour on open deck; horizon centered.",
+                                                      "musicMood":  "Gentle fiddle swell."
+                                                  },
+                                                  {
+                                                      "title":  "Tâ1: Twilight Lean",
+                                                      "durationSeconds":  10,
+                                                      "tool":  "composite",
+                                                      "scriptOrNarration":  "Meet me at the rail when the sky turns soft.",
+                                                      "visualDirectionNotes":  "Sideâbyâside silhouettes at the rail, sky gradient leading out (posture + atmosphere cues).",
+                                                      "avatarRequired":  false,
+                                                      "backgroundDescription":  "Twilight hush, minimal crowding; ship lines crisp against sky.",
+                                                      "musicMood":  "Low, warm guitar cadence to close."
+                                                  }
+                                              ]
+                      },
+    "generatedAt":  "2026-03-10T23:26:15.921Z",
+    "generatedBy":  "agent",
+    "humanReviewStatus":  "pending"
+}
