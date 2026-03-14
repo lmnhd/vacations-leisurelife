@@ -24,30 +24,31 @@ import {
     normalizeHumanRepresentationGuidance,
 } from './schema';
 
-function buildTShirtMerchPrompt(themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
+function buildMerchDallePrompt(productType: string, themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
     return [
-        `Create a print-ready t-shirt graphic concept for the cruise theme "${themeName}"`,
-        `Cute slogan shirt concept with cruise humor or theme-specific charm`,
+        `Create a print-ready ${productType} graphic concept for the cruise theme "${themeName}"`,
+        `Cute ${productType} concept with cruise humor or theme-specific charm`,
         `Primary slogan/tagline: ${tagline}`,
         `Concept direction: ${conceptStatement}`,
         `Design direction: ${designDescription}`,
         `Print style: ${printStyle}`,
         `Colorway: ${colorway}`,
-        'Output a feasible apparel graphic for a real printable t-shirt front design',
+        `Output a feasible apparel graphic for a real printable ${productType} design`,
         'Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling',
         'Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept',
     ].join('. ');
 }
 
-function normalizeMerchItem(themeName: string, conceptStatement: string, tagline: string, printStyle: string, item: z.infer<typeof Pass1Schema>['merch']['coreItem']): z.infer<typeof Pass1Schema>['merch']['coreItem'] {
+function normalizeMerchItem(themeName: string, conceptStatement: string, tagline: string, printStyle: string, item: z.infer<typeof Pass1Schema>['merch']['coreItem'], forceShirt: boolean = false): z.infer<typeof Pass1Schema>['merch']['coreItem'] {
+    const productType = forceShirt ? 'T-Shirt' : (item.productType.trim() || 'T-Shirt');
     const normalizedColorway = item.colorway.trim() || 'soft pastel cruise colors';
     const normalizedDesignDescription = item.designDescription.trim() || `${tagline} cute cruise slogan graphic`;
     return {
         ...item,
-        productType: 'T-Shirt',
+        productType,
         designDescription: normalizedDesignDescription,
         colorway: normalizedColorway,
-        dallePrompt: buildTShirtMerchPrompt(themeName, conceptStatement, tagline, printStyle, normalizedDesignDescription, normalizedColorway),
+        dallePrompt: buildMerchDallePrompt(productType, themeName, conceptStatement, tagline, printStyle, normalizedDesignDescription, normalizedColorway),
     };
 }
 
@@ -60,9 +61,9 @@ function normalizeMerchBrief(themeName: string, merch: z.infer<typeof Pass1Schem
         conceptStatement: normalizedConceptStatement,
         tagline: normalizedTagline,
         printStyle: normalizedPrintStyle,
-        coreItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.coreItem),
-        practicalItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.practicalItem),
-        nicheSpecificItems: merch.nicheSpecificItems.map((item) => normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, item)),
+        coreItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.coreItem, true),
+        practicalItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.practicalItem, false),
+        nicheSpecificItems: merch.nicheSpecificItems.map((item) => normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, item, false)),
     };
 }
 
@@ -114,7 +115,7 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     redTeamReview: true,
 });
 
-function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
+function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords: string[] = []): string[] {
     const failures: string[] = [];
     const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
     const cliches = ["paradise", "perfect vacation", "dream getaway", "sail away", "unforgettable", "memories"];
@@ -132,6 +133,24 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
 
     if (heroWords > 8) failures.push(`Hero slogan too long (${heroWords} words, max 8)`);
     if (subWords > 14) failures.push(`Sub slogan too long (${subWords} words, max 14)`);
+
+    // Check 3: Decisiveness — reject purely ambient adjective-noun slogans with no hook
+    const ambientOnlyWords = new Set(['soft', 'gentle', 'calm', 'quiet', 'open', 'easy', 'warm', 'slow', 'still', 'light', 'deep']);
+    const genericNouns = new Set(['greens', 'seas', 'waters', 'days', 'time', 'skies', 'air', 'light', 'winds', 'waves', 'horizons']);
+    const heroTokens = heroSlogan.toLowerCase().replace(/[^a-z\s]/g, '').split(' ').filter(w => w.length > 0);
+    const meaningfulTokens = heroTokens.filter(w => !ambientOnlyWords.has(w) && !genericNouns.has(w) && w.length > 2);
+    if (meaningfulTokens.length === 0 && heroTokens.length > 0) {
+        failures.push('Hero slogan is too ambient — needs a verb, contrast, or identity anchor beyond soft adjectives');
+    }
+
+    // Check 4: Niche anchor — at least one keyword or synonym should appear in combined slogans
+    if (nicheKeywords.length > 0) {
+        const lowerKeywords = nicheKeywords.map(k => k.toLowerCase());
+        const hasNicheAnchor = lowerKeywords.some(keyword => lowerSlogans.includes(keyword));
+        if (!hasNicheAnchor) {
+            failures.push(`Slogan does not anchor to niche identity — expected at least one of: ${lowerKeywords.slice(0, 5).join(', ')}`);
+        }
+    }
 
     return failures;
 }
@@ -305,7 +324,10 @@ NON-OBJECT DIVERSITY RULES:
 - Do not let any single cue family dominate the moodboard, carousel, and video concepts all at once.
 
 SPECIFIC QUALITY BAR:
-- Hero slogan and sub-slogan should feel memorable, concise, and natural.
+- Hero slogan must be decisive and identity-anchoring — it should make the target audience feel named and pulled.
+- It must contain a verb, contrast, or identity marker beyond soft adjectives.
+- A slogan like "Soft greens, open seas" is too ambient. "Your people, your window seat, your ocean" is closer to the bar.
+- The slogan must be ownable by this exact campaign and not interchangeable with generic cruise marketing.
 - Elevator pitch should sound like a desirable vacation, not a programming overview.
 - communityExpression must stay coherent with the campaign context and should explicitly protect both optionality and togetherness.
 - Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
@@ -495,7 +517,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
             merch: normalizeMerchBrief(campaign.name, object.merch),
         };
 
-        const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan);
+        const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan, campaign.targetingKeywords);
         if (sloganFailures.length < 2) {
             console.log(`[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`);
             pass1Result = { object: normalizedObject };
@@ -680,6 +702,28 @@ Those events may shape sky color, light quality, timing, destination mood, and e
 They must not automatically create ceremonies, viewing rituals, dedicated gear, repeated event-specific hero beats, or implied onboard programming unless that is truly part of the product.
 The viewer should feel "this voyage happens during something special," not "this is secretly an event-program cruise," unless the campaign intentionally says so.
 
+## NICHE RETENTION RULE (CRITICAL)
+Every scene and still in this campaign must carry at least one specific, visible connection to the campaign's niche identity.
+Generic premium-cruise imagery that could belong to any sailing is not acceptable — even if it is beautiful and vacation-first.
+The niche does not need to dominate the frame, but it must be present and identifiable.
+For this campaign, niche presence means: ${communityExpression.belongingSignals.join('; ')}.
+If a scene cannot include at least one of those signals naturally, replace that scene with one that can.
+A scene that reads as "any luxury cruise" rather than "this specific community's cruise" has failed.
+
+## SOCIAL WARMTH FLOOR
+- At least 6 of the 10 scenes must show TWO OR MORE people in relaxed proximity — not just silhouettes or tiny figures.
+- "Togetherness" means visible social connection: shared glance, side-by-side seating, over-shoulder glimpse, exchanged smile, or quiet adjacency with eye contact potential.
+- Lone silhouettes against a horizon are allowed but capped at 2 of 10 scenes maximum.
+- If a scene uses "silhouette" or "lone figure," the next scene must pivot to paired or small-group warmth.
+- At least 3 of the 6 landing stills must also show paired or small-cluster togetherness.
+
+## SIGNAL VARIETY RULE
+- The full set of scenes and stills must use at least 4 different signal families from:
+  wardrobe cue, conversational cue, object cue, architectural/environmental cue, posture/gesture cue, destination-atmosphere cue.
+- No single cue (e.g., "leaf pin", "phone photo", "window seat") may appear in more than 3 of the 16 total specs (10 scenes + 6 stills).
+- If the same cue appeared in the previous spec, the next spec must use a different signal family.
+- Prefer at least 2 specs that communicate the niche purely through interpersonal chemistry, timing, or ship-space choice — no visible object at all.
+
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
 NO scene should evoke: obligation, seriousness, focus, concentration, rigor, professionalism, or productivity.
@@ -719,7 +763,8 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - If one scene uses a card, die, token, notebook, pin, or similar object cue, the next scene should pivot away from that family and let people, ship space, or destination atmosphere carry the scene.
 - Favor easy social recognition, seat choice, timing, clothing texture, rail-side pauses, and window-side intimacy over repeated prop beats.
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
-- For VIDEO scene-library use, do NOT make humans the focal subject of the frame. The ship, sea, sky, light, and architecture should dominate; if people appear, they should usually be backgrounded, side-profiled, silhouetted, or over-the-shoulder accents rather than the hero subject.
+- For VIDEO scene-library use, humans should not be the ONLY subject — ship, sea, and architecture should share or lead the frame.
+- However, backgrounded pairs or small clusters of relaxed guests ARE allowed and encouraged. The goal is "people enjoying a ship," not "empty ship."
 - Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, phones, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
 - Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
