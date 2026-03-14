@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getAssetsByType } from './media-store';
 import { getAestheticBrief } from '../campaign-store';
+import { assertAestheticBriefReadyForMedia } from '../aesthetic-red-team';
 import { AssetRecord, CampaignAestheticBrief } from '../schema';
 
 export const SHARED_THEME_MUSIC_LIBRARY_SLUG = 'shared-theme-music';
@@ -108,9 +109,7 @@ export async function selectDefaultThemeMusicTrackForCampaign(slug: string): Pro
         throw new Error(`No aesthetic brief found for ${slug}`);
     }
 
-    if (brief.humanReviewStatus !== 'approved') {
-        throw new Error(`Brief not approved (status: ${brief.humanReviewStatus}). Approve it first.`);
-    }
+    assertAestheticBriefReadyForMedia(brief, slug);
 
     return selectDefaultThemeMusicTrack(brief);
 }

@@ -21,6 +21,7 @@ import {
     LandingStillBibleSchema,
     LandingStillBible,
     normalizeVisualPlausibilityFramework,
+    normalizeHumanRepresentationGuidance,
 } from './schema';
 
 function buildTShirtMerchPrompt(themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
@@ -75,6 +76,7 @@ const Pass1Schema = CampaignAestheticBriefSchema.omit({
     generatedBy: true,
     humanReviewStatus: true,
     revisionNotes: true,
+    redTeamReview: true,
     slug: true,
     themeName: true
 });
@@ -109,6 +111,7 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     generatedBy: true,
     humanReviewStatus: true,
     revisionNotes: true,
+    redTeamReview: true,
 });
 
 function checkSloganQuality(heroSlogan: string, subSlogan: string): string[] {
@@ -242,6 +245,10 @@ function buildRefinementContext(campaign: Campaign): string {
         `Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}`,
         `Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}`,
         `Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}`,
+        `Community Fit Rationale: ${sanitizePromptText(campaign.communityFitRationale)}`,
+        `Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}`,
+        `Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}`,
+        `Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}`,
     ].join('\n');
 }
 
@@ -259,6 +266,7 @@ Preserve what is already strong. Make the smallest set of changes needed to impr
 REFINEMENT OBJECTIVES:
 - Keep the campaign cruise-first, ship-first, and horizon-first.
 - Keep the niche as a soft social flavor layer, not an onboard event architecture.
+- Keep the new community layer intact: the trip should feel socially alive, but every group beat should remain optional, ambient, and easy to step into or out of.
 - Preserve the exact provided ship identity when one exists. Do not rename the ship, substitute a sister ship, or swap classes.
 - Remove residual organized-program language such as hosted hours, sessions, activations, library cart energy, sign-up energy, or managed social mechanics.
 - Replace those with ambient, human, low-pressure, real-cruise phrasing.
@@ -268,6 +276,7 @@ REFINEMENT OBJECTIVES:
 - Do not invent excursions, exact ports, or shore claims that are unsupported by the route context.
 - Keep hero and social concepts photogenic, restrained, and realistic.
 - Remove anything that makes the campaign feel like a convention, meetup operations plan, or themed program schedule.
+- Remove anything that makes the campaign feel lonely, socially vacant, or like a premium solo retreat with decorative group language.
 - Do not let a real itinerary event, holiday, or seasonal phenomenon overpower the campaign unless it is explicitly the core product.
 - If an event is referenced, keep it proportional and backdrop-oriented: atmosphere, light, timing, destination mood, or emotional cadence rather than ceremony, viewing ritual, special gear, or onboard programming.
 - Remove repeated named-event phrasing if it starts to sound like the campaign is secretly an event-specific cruise.
@@ -298,6 +307,7 @@ NON-OBJECT DIVERSITY RULES:
 SPECIFIC QUALITY BAR:
 - Hero slogan and sub-slogan should feel memorable, concise, and natural.
 - Elevator pitch should sound like a desirable vacation, not a programming overview.
+- communityExpression must stay coherent with the campaign context and should explicitly protect both optionality and togetherness.
 - Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
 - Social and video concepts should feel varied and platform-native without repeating the same token, die, pouch, tray, or leaflet beat over and over.
 - Merch should stay cute and printable, but not dominate the campaign identity or repeat the same icon family across every item.
@@ -326,6 +336,7 @@ OUTPUT RULES:
         visual: {
             ...object.visual,
             plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
+            humanRepresentation: normalizeHumanRepresentationGuidance(object.visual.humanRepresentation),
         },
         merch: refinedMerch,
         generatedAt: new Date().toISOString(),
@@ -372,6 +383,10 @@ Niche Expression Mode: ${sanitizePromptText(campaign.nicheExpressionMode)}
 Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}
 Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}
 Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}
+Community Fit Rationale: ${sanitizePromptText(campaign.communityFitRationale)}
+Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}
+Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}
+Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}
 
 Visual Priority Rules:
 - For visual identity fields, prioritize durable cruise/travel truths that would still feel correct even if no niche activity is happening in frame.
@@ -384,6 +399,7 @@ Visual Priority Rules:
 - Niche cues should usually be subtle: wardrobe hints, one prop, one gesture, one environmental clue.
 - The brief must explicitly distinguish what is cruise-native, what is niche-enhanced but believable, and what would feel like staged promo fiction.
 - If ship context is provided, preserve the exact ship name and class context. Never substitute a different ship.
+- The brief must define why the group feels real and welcoming even when guests engage lightly.
 `;
 
     const merchGuidelines = `
@@ -413,9 +429,25 @@ CRITICAL VISUAL RULES:
 - visual.plausibilityFramework.implausibleLiteralizations should name specific staged, props-heavy, or operationally awkward scenes to avoid.
 - visual.plausibilityFramework.allowedProps should be lightweight, plausible, guest-friendly objects.
 - visual.plausibilityFramework.discouragedProps should include equipment or setups that make the cruise feel like a lab, classroom, or trade-show demo.
+- visual.humanRepresentation is mandatory and must define who appears in the campaign, how diverse the cast should feel across the image set, and how to avoid stereotype-driven casting.
+- visual.humanRepresentation.castingGoal should describe the overall human mix the campaign should depict across stills and scenes.
+- visual.humanRepresentation.ageRangeGuidance should align the apparent guest ages with the theme while still allowing range and realism.
+- visual.humanRepresentation.diversityIntent should call for visible ethnic and skin-tone diversity across the set where plausible to the campaign, without tokenism.
+- visual.humanRepresentation.pairingGuidance should vary who appears together across the set instead of repeating one default demographic pairing.
+- visual.humanRepresentation.stylingGuidance should connect the theme to believable clothing and grooming without caricature.
+- visual.humanRepresentation.antiStereotypeRules should explicitly ban token casting, costume logic, and reductive cultural shortcuts.
 
 CRITICAL MESSAGING AND SOCIAL RULES:
 - The niche must remain a social flavor layer, not a scheduled program architecture.
+- communityExpression is mandatory and must make the group feel emotionally real without turning the trip into managed programming.
+- communityExpression.corePromise should explain what social reward the guest gets from being around their people on this sailing.
+- communityExpression.participationStyle must explicitly describe low-pressure, drop-in/drop-out participation.
+- communityExpression.socialGravity must explain why strangers in this niche naturally start talking, clustering, or recognizing one another at sea.
+- communityExpression.optionalGatherings should name lightweight gatherings or rhythms, not scheduled curriculum.
+- communityExpression.belongingSignals should focus on recognizable cues, shared taste, easy social openings, and visual identity rather than event operations.
+- communityExpression.solitudeAntiPatterns should guard against lonely, exclusive, emotionally hollow, or premium-solo-retreat drift.
+- communityExpression.visualTogethernessNotes should explain how imagery can show togetherness without crowds, choreography, or busy event scenes.
+- communityExpression.copyFramingRule should explicitly protect opt-in phrasing for introverts and casual participants.
 - Avoid nouns and phrases that imply formal operations or recurring structured programming: classes, sessions, workshops, rotations, sign-up tables, hosted hours, activations, stations, open library, or teaching blocks.
 - Avoid exclusivity or lifestyle-marketing language that turns the trip into a luxury-membership fantasy; keep it welcoming, specific, and human instead of rarefied.
 - If the campaign source fields contain organized wording, convert it into vacation-native language instead of mirroring it. Never copy source phrases like salon, hosted talk, book swap station, listening room, spotlight, or teach-and-play unless they dissolve into incidental background context.
@@ -458,6 +490,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
             visual: {
                 ...object.visual,
                 plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
+                humanRepresentation: normalizeHumanRepresentationGuidance(object.visual.humanRepresentation),
             },
             merch: normalizeMerchBrief(campaign.name, object.merch),
         };
@@ -490,6 +523,7 @@ PASS 2 GUARDRAILS:
 - Do not default to phrases like learn-to-play sessions, hosted hours, open library, programming blocks, workshops, or scheduled activities unless the wording is softened into optional ambient behavior.
 - Avoid exclusivity-coded phrasing such as quiet-luxe, elevated salon, collector-grade, or other copy that makes the campaign feel socially gated or culturally precious.
 - Preserve the exact provided ship name. Do not swap to another ship, even within the same cruise line.
+- Read and honor communityExpression. The concepts must make the group feel real, optional, welcoming, and socially magnetic.
 - Vary niche signals across concepts; do not repeat the same die, token, tuckbox, or prop in every asset.
 - Some concepts should communicate the niche through two-person chemistry, shared glances, side-by-side lounging, or subtle wardrobe details instead of tabletop objects.
 - At least half of the concepts in the total set should not rely on a visible tabletop object as the primary signal.
@@ -567,6 +601,7 @@ export async function generateVisualPlanningFromBrief(
     const coreAesthetic = {
         visual: brief.visual,
         messaging: brief.messaging,
+        communityExpression: brief.communityExpression,
         audio: brief.audio,
         merch: brief.merch,
     } as z.infer<typeof Pass1Schema>;
@@ -585,8 +620,9 @@ async function generateVisualPlanningBundle(
     coreAesthetic: z.infer<typeof Pass1Schema>,
     platformConcepts: z.infer<typeof Pass2Schema>
 ): Promise<VisualPlanningBundle> {
-    const { visual, messaging, audio } = coreAesthetic;
+    const { visual, messaging, communityExpression, audio } = coreAesthetic;
     const plausibility = visual.plausibilityFramework;
+    const casting = visual.humanRepresentation;
     const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
     const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
 
@@ -612,6 +648,32 @@ Depict the niche as a believable modulation of ordinary cruise life, not as a st
 If a prop, setup, or behavior feels like it requires a lab, classroom, field station, training room, or formal workshop environment, do not use it.
 Prefer lightweight cues, outward-looking behavior, guided noticing, conversation, observation, and emotional reaction over equipment-heavy literalizations.
 
+## AMBIENT COMMUNITY RULE
+This campaign must feel like a real group cruise, not a solo luxury escape and not a managed program.
+The group should feel emotionally present through easy togetherness, optional gatherings, visual recognition, and low-pressure human chemistry.
+Use the campaign community intent below as hard guidance:
+- Core promise: ${communityExpression.corePromise}
+- Participation style: ${communityExpression.participationStyle}
+- Social gravity: ${communityExpression.socialGravity}
+- Optional gatherings: ${communityExpression.optionalGatherings.join('; ')}
+- Belonging signals: ${communityExpression.belongingSignals.join('; ')}
+- Solitude anti-patterns: ${communityExpression.solitudeAntiPatterns.join('; ')}
+- Visual togetherness notes: ${communityExpression.visualTogethernessNotes}
+- Copy framing rule: ${communityExpression.copyFramingRule}
+
+## HUMAN REPRESENTATION RULE
+People shown in this campaign must feel deliberately and naturally varied.
+Use these casting instructions as hard guidance across the still set and scene library:
+- Casting goal: ${casting.castingGoal}
+- Age range guidance: ${casting.ageRangeGuidance}
+- Diversity intent: ${casting.diversityIntent}
+- Pairing guidance: ${casting.pairingGuidance}
+- Styling guidance: ${casting.stylingGuidance}
+- Anti-stereotype rules: ${casting.antiStereotypeRules.join('; ')}
+Do not default to one repeated age band, one repeated ethnic presentation, or one default couple type across the set.
+When people appear, vary visible backgrounds across the campaign while keeping every subject theme-appropriate, cruise-plausible, and natural.
+Never use caricature, exoticizing cues, costume shorthand, or token-background casting.
+
 ## EVENT FRAMING RULE
 If highlight events mention holidays, seasonal phenomena, festivals, or itinerary-timed natural moments, treat them as atmospheric backdrop unless the campaign is explicitly sold as that event experience.
 Those events may shape sky color, light quality, timing, destination mood, and emotional cadence.
@@ -633,6 +695,8 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Prioritize headline-safe composition, clean focal hierarchy, and breathing room for copy.
 - Keep activity density low. One dominant emotional beat only.
 - Prefer 1-3 people max. No dense crowds. No multi-action scenes.
+- At least half of the stills should communicate paired or small-cluster togetherness rather than pure solitude.
+- Across the still set, vary ages, skin tones, facial features, and pairings in a natural way that fits the campaign's intended audience.
 - At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
 - At least 2 stills must be suitable for concept/editorial section imagery.
 - use usage values only from: hero_primary, hero_alt, concept, email_header, social_square.
@@ -650,6 +714,8 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Body language: laughing, arms outstretched, leaning over railings in wonder, toasting, hugging, pointing excitedly. NEVER: hunched over work, writing on clipboards, staring at screens, standing in formal rows.
 - Rotate cue families across the scene library: interpersonal chemistry, posture, wardrobe detail, architectural framing, harbor atmosphere, and only occasional lightweight object cues.
 - At least half of the scene library should communicate the niche without requiring a visible niche object as the center of the frame.
+- At least half of the scene library should show ambient togetherness, shared attention, or easy companionship rather than isolated solo presence.
+- Across the scene library, vary who appears in frame so the campaign does not imply one narrow default guest identity.
 - If one scene uses a card, die, token, notebook, pin, or similar object cue, the next scene should pivot away from that family and let people, ship space, or destination atmosphere carry the scene.
 - Favor easy social recognition, seat choice, timing, clothing texture, rail-side pauses, and window-side intimacy over repeated prop beats.
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
@@ -714,9 +780,23 @@ Imagery Mood: ${visual.imageryMood}
 Lighting: ${visual.lightingStyle}
 Composition: ${visual.compositionNotes}
 Color Palette: Primary ${visual.colorPalette.primary}, Secondary ${visual.colorPalette.secondary}, Accent ${visual.colorPalette.accent}
+Casting Goal: ${casting.castingGoal}
+Age Range Guidance: ${casting.ageRangeGuidance}
+Diversity Intent: ${casting.diversityIntent}
+Pairing Guidance: ${casting.pairingGuidance}
+Styling Guidance: ${casting.stylingGuidance}
+Anti-Stereotype Rules: ${casting.antiStereotypeRules.join('; ')}
 Tone: ${messaging.toneKeywords.join(', ')}
 Hero Slogan: ${messaging.heroSlogan}
 Elevator Pitch: ${messaging.elevatorPitch}
+Community Core Promise: ${communityExpression.corePromise}
+Participation Style: ${communityExpression.participationStyle}
+Social Gravity: ${communityExpression.socialGravity}
+Optional Gatherings: ${communityExpression.optionalGatherings.join('; ')}
+Belonging Signals: ${communityExpression.belongingSignals.join('; ')}
+Solitude Anti-Patterns: ${communityExpression.solitudeAntiPatterns.join('; ')}
+Visual Togetherness Notes: ${communityExpression.visualTogethernessNotes}
+Copy Framing Rule: ${communityExpression.copyFramingRule}
 Music Mood: ${audio.musicMood}
 
 REMINDER: The above describes the campaign THEME. Your job is to turn that theme into VACATION DAYDREAM imagery — artsy, warm, joyful, never formal or serious.

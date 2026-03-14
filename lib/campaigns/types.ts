@@ -1,3 +1,5 @@
+import type { DiscoveryIterationState, RedTeamReview } from './schema';
+
 export interface Campaign {
     /**
      * DynamoDB Partition Key: `CAMPAIGN#${campaignId}`
@@ -142,6 +144,18 @@ export interface Campaign {
     aestheticBriefStatus?: 'pending' | 'approved' | 'revised';
 
     /**
+     * Discovery-stage red-team review persisted on the raw blueprint so
+     * re-spin can learn from Phase A output before aesthetics exists.
+     */
+    discoveryRedTeamReview?: RedTeamReview;
+
+    /**
+     * Tracks iterative review/revision history so the discovery loop can detect
+     * stagnation, branch instead of ping-ponging, and retire weak blueprints.
+     */
+    discoveryIteration?: DiscoveryIterationState;
+
+    /**
      * ISO timestamp of when the aesthetic brief was generated.
      */
     aestheticGeneratedAt?: string;
@@ -203,6 +217,29 @@ export interface Campaign {
      * Signals, environments, props, or programming cues that should be avoided.
      */
     discouragedThemeSignals?: string[];
+
+    /**
+     * Why the group version of this trip matters socially, not just aesthetically.
+     */
+    communityFitRationale?: string;
+
+    /**
+     * Low-pressure gatherings or rituals that make the group feel real without
+     * turning the trip into a programmed event schedule.
+     */
+    optionalGatheringMoments?: string[];
+
+    /**
+     * How participation should be framed so the trip remains welcoming,
+     * drop-in/drop-out, and non-mandatory.
+     */
+    optionalityStyle?: string;
+
+    /**
+     * Signals that would make the campaign feel too lonely, exclusive, or
+     * socially hollow even if it remains aesthetically attractive.
+     */
+    solitudeRisks?: string[];
 
     createdAt: string;
     updatedAt: string;

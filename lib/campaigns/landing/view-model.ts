@@ -376,8 +376,11 @@ function buildExperienceBullets(campaign: Campaign, brief: CampaignAestheticBrie
     const source = campaign.cruiseNativeMoments?.length
         ? campaign.cruiseNativeMoments
         : brief?.visual.plausibilityFramework.cruiseNativeMoments ?? [];
+    const gatherings = campaign.optionalGatheringMoments?.length
+        ? campaign.optionalGatheringMoments
+        : brief?.communityExpression.optionalGatherings ?? [];
 
-    const bullets = source.slice(0, 3);
+    const bullets = [...source, ...gatherings].filter((value, index, array) => array.indexOf(value) === index).slice(0, 3);
     if (bullets.length > 0) {
         return bullets;
     }
@@ -392,7 +395,10 @@ function buildExperienceBullets(campaign: Campaign, brief: CampaignAestheticBrie
 function buildWhatToExpect(campaign: Campaign, brief: CampaignAestheticBrief | null): string[] {
     const enhancedMoments = brief?.visual.plausibilityFramework.nicheEnhancedMoments ?? [];
     const cruiseMoments = brief?.visual.plausibilityFramework.cruiseNativeMoments ?? campaign.cruiseNativeMoments ?? [];
-    const combined = [...enhancedMoments, ...cruiseMoments].filter((value, index, array) => array.indexOf(value) === index);
+    const communityMoments = campaign.optionalGatheringMoments?.length
+        ? campaign.optionalGatheringMoments
+        : brief?.communityExpression.optionalGatherings ?? [];
+    const combined = [...communityMoments, ...enhancedMoments, ...cruiseMoments].filter((value, index, array) => array.indexOf(value) === index);
 
     if (combined.length > 0) {
         return combined.slice(0, 4);
@@ -450,6 +456,7 @@ function buildWhatItIs(campaign: Campaign, brief: CampaignAestheticBrief | null)
     return {
         title: `What ${campaign.name} Is`,
         body: brief?.messaging.elevatorPitch
+            ?? campaign.communityFitRationale
             ?? `${campaign.name} is a themed group sailing built around the feel of the trip, the ship, and the people who want to travel that way together.`,
     };
 }

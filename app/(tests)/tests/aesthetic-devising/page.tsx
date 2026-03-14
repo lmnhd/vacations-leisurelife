@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
 
-type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible";
+type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming";
 
 const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
 
@@ -155,9 +155,40 @@ export default function AestheticDevisingTestPage() {
         }
     };
 
+    const handleRedTeam = async () => {
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
+        setBriefState("red_teaming");
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/red-team`, {
+                method: "POST",
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = typeof data.error === "string" ? data.error : "Red-team review failed";
+                const errorDetails = typeof data.details === "string" ? data.details : "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
+            setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
     const statusBadgeColor = (status: string) => {
         if (status === "approved") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
         if (status === "revised") return "text-yellow-400 border-yellow-500/30 bg-yellow-500/10";
+        return "text-slate-400 border-white/10 bg-white/5";
+    };
+
+    const redTeamBadgeColor = (verdict?: string) => {
+        if (verdict === "pass") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+        if (verdict === "warn") return "text-amber-300 border-amber-500/30 bg-amber-500/10";
+        if (verdict === "block") return "text-red-300 border-red-500/30 bg-red-500/10";
         return "text-slate-400 border-white/10 bg-white/5";
     };
 
@@ -283,12 +314,27 @@ export default function AestheticDevisingTestPage() {
                                 </button>
                             )}
 
+                            {hasLoadedBriefForCurrentSlug && result && (
+                                <button
+                                    id="btn-red-team"
+                                    onClick={handleRedTeam}
+                                    disabled={isBusy}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {briefState === "red_teaming"
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <AlertTriangle className="h-4 w-4" />
+                                    }
+                                    {briefState === "red_teaming" ? "Red-Teaming..." : result.redTeamReview ? "Re-run Red Team" : "Run Red Team"}
+                                </button>
+                            )}
+
                             {/* Approve */}
                             {hasLoadedBriefForCurrentSlug && result && result.humanReviewStatus !== "approved" && (
                                 <button
                                     id="btn-approve"
                                     onClick={handleApprove}
-                                    disabled={isBusy}
+                                    disabled={isBusy || result.redTeamReview?.verdict !== "pass"}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                                 >
                                     {briefState === "approving"
@@ -325,9 +371,14 @@ export default function AestheticDevisingTestPage() {
                         <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
                             <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
                                 <span className="text-xs text-slate-400 uppercase tracking-widest">Identity Summary</span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadgeColor(result.humanReviewStatus)}`}>
-                                    {result.humanReviewStatus}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadgeColor(result.humanReviewStatus)}`}>
+                                        {result.humanReviewStatus}
+                                    </span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${redTeamBadgeColor(result.redTeamReview?.verdict)}`}>
+                                        red-team {result.redTeamReview?.verdict ?? 'pending'}
+                                    </span>
+                                </div>
                             </div>
                             <div className="p-4 space-y-4">
                                 {/* Color swatches */}
@@ -365,10 +416,124 @@ export default function AestheticDevisingTestPage() {
                                     <p className="text-xs text-slate-300">{result.messaging?.voicePersona}</p>
                                 </div>
 
+                                {/* Human Representation */}
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Casting Goal</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.visual?.humanRepresentation?.castingGoal}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Age Range Guidance</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.visual?.humanRepresentation?.ageRangeGuidance}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Diversity Intent</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.visual?.humanRepresentation?.diversityIntent}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Pairing Guidance</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.visual?.humanRepresentation?.pairingGuidance}</p>
+                                    </div>
+                                </div>
+
+                                {result.visual?.humanRepresentation?.antiStereotypeRules?.length > 0 && (
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Anti-Stereotype Rules</div>
+                                        <ul className="space-y-1">
+                                            {result.visual.humanRepresentation.antiStereotypeRules.map((item, idx) => (
+                                                <li key={idx} className="text-xs text-slate-300 leading-relaxed">• {item}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Community Expression */}
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Community Core Promise</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.communityExpression?.corePromise}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Participation Style</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.communityExpression?.participationStyle}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Social Gravity</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.communityExpression?.socialGravity}</p>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Copy Framing Rule</div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">{result.communityExpression?.copyFramingRule}</p>
+                                    </div>
+                                </div>
+
+                                {result.communityExpression?.optionalGatherings?.length > 0 && (
+                                    <div>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Optional Gatherings</div>
+                                        <ul className="space-y-1">
+                                            {result.communityExpression.optionalGatherings.map((item, idx) => (
+                                                <li key={idx} className="text-xs text-slate-300 leading-relaxed">• {item}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {result.redTeamReview && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Red-Team Summary</div>
+                                                <p className="text-xs text-slate-300 leading-relaxed">{result.redTeamReview.summary}</p>
+                                            </div>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${redTeamBadgeColor(result.redTeamReview.verdict)}`}>
+                                                {result.redTeamReview.verdict}
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Approval Recommendation</div>
+                                            <p className="text-xs text-slate-300 leading-relaxed">{result.redTeamReview.approvalRecommendation}</p>
+                                        </div>
+
+                                        {result.redTeamReview.requiredFixes.length > 0 && (
+                                            <div>
+                                                <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Required Fixes</div>
+                                                <ul className="space-y-1">
+                                                    {result.redTeamReview.requiredFixes.map((item, idx) => (
+                                                        <li key={idx} className="text-xs text-red-200 leading-relaxed">• {item}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {result.redTeamReview.issues.length > 0 && (
+                                            <div>
+                                                <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Issues</div>
+                                                <div className="space-y-2">
+                                                    {result.redTeamReview.issues.map((issue, idx) => (
+                                                        <div key={`${issue.title}-${idx}`} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${issue.severity === 'blocker' ? 'text-red-300 border-red-500/30 bg-red-500/10' : 'text-amber-300 border-amber-500/30 bg-amber-500/10'}`}>
+                                                                    {issue.severity}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-500 uppercase tracking-widest">{issue.category.replace(/_/g, ' ')}</span>
+                                                            </div>
+                                                            <div className="text-xs text-white">{issue.title}</div>
+                                                            <p className="text-xs text-slate-400 leading-relaxed">{issue.evidence}</p>
+                                                            <p className="text-xs text-cyan-200 leading-relaxed">{issue.recommendation}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Meta */}
                                 <div className="pt-2 border-t border-white/5 flex gap-6 text-[10px] text-slate-600">
                                     <span>Generated: {result.generatedAt ? new Date(result.generatedAt).toLocaleString() : "—"}</span>
                                     <span>By: {result.generatedBy}</span>
+                                    <span>Red Team: {result.redTeamReview?.evaluatedAt ? new Date(result.redTeamReview.evaluatedAt).toLocaleString() : "—"}</span>
                                 </div>
                             </div>
                         </div>

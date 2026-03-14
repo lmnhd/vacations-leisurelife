@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runGroupDiscoveryPipeline } from './core-logic';
 import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 /**
  * In-process lock: prevents concurrent discovery runs from the OpenClaw scheduler
@@ -12,6 +12,7 @@ let isRunning = false;
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
+    const respin = searchParams.get('respin') === 'true';
 
     // ?load=true — return existing campaigns without running Phase A
     if (searchParams.get('load') === 'true') {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     console.log('[API] Starting GET /api/groups/discovery');
 
     try {
-        const result = await runGroupDiscoveryPipeline();
+        const result = await runGroupDiscoveryPipeline({ respin });
         const { campaigns, skippedCount, sonarResearch } = result;
 
         const completedAt = new Date().toISOString();
@@ -51,9 +52,10 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `Discovery pipeline completed at ${completedAt}. ${campaigns.length} blueprint(s) generated (${skippedCount} skipped — already existed). Fetch individual campaigns using the URLs in 'campaigns'. Results are also viewable at /tests/groups/discovery.`,
+            message: `${respin ? 'Discovery re-spin' : 'Discovery pipeline'} completed at ${completedAt}. ${campaigns.length} blueprint(s) generated (${skippedCount} skipped — already existed). Fetch individual campaigns using the URLs in 'campaigns'. Results are also viewable at /tests/groups/discovery.`,
             count: campaigns.length,
             skippedCount,
+            respin,
             campaigns: campaignRefs,
             sonarResearch,
         });

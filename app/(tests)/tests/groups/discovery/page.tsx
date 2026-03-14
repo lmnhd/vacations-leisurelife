@@ -21,6 +21,34 @@ interface PhaseBCampaignRef {
     cbagenttoolsBookingLink?: string;
 }
 
+interface BulkRedTeamSummary {
+    total: number;
+    passed: number;
+    warned: number;
+    blocked: number;
+    failed: number;
+}
+
+interface BulkRedTeamResult {
+    slug: string;
+    name: string;
+    outcome: 'passed' | 'warned' | 'blocked' | 'failed';
+    message: string;
+}
+
+interface BulkRevisionSummary {
+    total: number;
+    revised: number;
+    failed: number;
+}
+
+interface BulkRevisionResult {
+    slug: string;
+    outcome: 'revised' | 'failed';
+    message: string;
+    campaign?: Campaign;
+}
+
 function mergePhaseBStatusIntoBlueprints(
     existingBlueprints: Campaign[],
     phaseBCampaigns: PhaseBCampaignRef[]
@@ -116,6 +144,11 @@ function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
         || campaign.implausibleLiteralizations?.length
         || campaign.allowedThemeSignals?.length
         || campaign.discouragedThemeSignals?.length
+        || campaign.communityFitRationale
+        || campaign.optionalGatheringMoments?.length
+        || campaign.optionalityStyle
+        || campaign.solitudeRisks?.length
+        || campaign.discoveryRedTeamReview
     );
     if (!hasRationale) return null;
 
@@ -129,96 +162,233 @@ function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
                 {open ? <ChevronUp className="w-3 h-3 text-cyan-400" /> : <ChevronDown className="w-3 h-3 text-cyan-500" />}
             </button>
             {open && (
-                <div className="px-3 pt-2 pb-3 space-y-3 bg-cyan-950/10">
-                    {campaign.audienceSignals && campaign.audienceSignals.length > 0 && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Data Signals</div>
-                            <ul className="space-y-1">
-                                {campaign.audienceSignals.map((signal, idx) => (
-                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
-                                        <span className="text-cyan-500 mt-0.5">▸</span>
-                                        <span>{signal}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                <div className="px-3 pt-2 pb-3 bg-cyan-950/10">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.9fr)]">
+                        <div className="space-y-3">
+                            {campaign.audienceSignals && campaign.audienceSignals.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Data Signals</div>
+                                    <ul className="space-y-1">
+                                        {campaign.audienceSignals.map((signal, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-cyan-500 mt-0.5">▸</span>
+                                                <span>{signal}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.researchRationale && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Why This Niche</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.researchRationale}</p>
+                                </div>
+                            )}
+                            {campaign.successLogic && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Success Logic</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.successLogic}</p>
+                                </div>
+                            )}
+                            {campaign.vacationFitRationale && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Vacation Fit</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.vacationFitRationale}</p>
+                                </div>
+                            )}
+                            {campaign.nicheExpressionMode && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Niche Expression Mode</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.nicheExpressionMode}</p>
+                                </div>
+                            )}
+                            {campaign.communityFitRationale && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-fuchsia-500 mb-1">Community Fit</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.communityFitRationale}</p>
+                                </div>
+                            )}
+                            {campaign.optionalityStyle && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-fuchsia-500 mb-1">Optionality Style</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.optionalityStyle}</p>
+                                </div>
+                            )}
+                            {campaign.cruiseNativeMoments && campaign.cruiseNativeMoments.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Cruise-Native Moments</div>
+                                    <ul className="space-y-1">
+                                        {campaign.cruiseNativeMoments.map((moment, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-cyan-500 mt-0.5">▸</span>
+                                                <span>{moment}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.optionalGatheringMoments && campaign.optionalGatheringMoments.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-fuchsia-500 mb-1.5">Optional Gathering Moments</div>
+                                    <ul className="space-y-1">
+                                        {campaign.optionalGatheringMoments.map((moment, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-fuchsia-400 mt-0.5">▸</span>
+                                                <span>{moment}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.allowedThemeSignals && campaign.allowedThemeSignals.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-emerald-500 mb-1.5">Allowed Theme Signals</div>
+                                    <ul className="space-y-1">
+                                        {campaign.allowedThemeSignals.map((signal, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-emerald-400 mt-0.5">▸</span>
+                                                <span>{signal}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.solitudeRisks && campaign.solitudeRisks.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1.5">Solitude Risks</div>
+                                    <ul className="space-y-1">
+                                        {campaign.solitudeRisks.map((risk, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-amber-400 mt-0.5">▸</span>
+                                                <span>{risk}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.discouragedThemeSignals && campaign.discouragedThemeSignals.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1.5">Discouraged Theme Signals</div>
+                                    <ul className="space-y-1">
+                                        {campaign.discouragedThemeSignals.map((signal, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-amber-400 mt-0.5">▸</span>
+                                                <span>{signal}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {campaign.implausibleLiteralizations && campaign.implausibleLiteralizations.length > 0 && (
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-red-500 mb-1.5">Implausible Literalizations</div>
+                                    <ul className="space-y-1">
+                                        {campaign.implausibleLiteralizations.map((signal, idx) => (
+                                            <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                <span className="text-red-400 mt-0.5">▸</span>
+                                                <span>{signal}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
-                    )}
-                    {campaign.researchRationale && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Why This Niche</div>
-                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.researchRationale}</p>
-                        </div>
-                    )}
-                    {campaign.successLogic && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Success Logic</div>
-                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.successLogic}</p>
-                        </div>
-                    )}
-                    {campaign.vacationFitRationale && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Vacation Fit</div>
-                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.vacationFitRationale}</p>
-                        </div>
-                    )}
-                    {campaign.nicheExpressionMode && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1">Niche Expression Mode</div>
-                            <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.nicheExpressionMode}</p>
-                        </div>
-                    )}
-                    {campaign.cruiseNativeMoments && campaign.cruiseNativeMoments.length > 0 && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-cyan-600 mb-1.5">Cruise-Native Moments</div>
-                            <ul className="space-y-1">
-                                {campaign.cruiseNativeMoments.map((moment, idx) => (
-                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
-                                        <span className="text-cyan-500 mt-0.5">▸</span>
-                                        <span>{moment}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {campaign.allowedThemeSignals && campaign.allowedThemeSignals.length > 0 && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-emerald-500 mb-1.5">Allowed Theme Signals</div>
-                            <ul className="space-y-1">
-                                {campaign.allowedThemeSignals.map((signal, idx) => (
-                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
-                                        <span className="text-emerald-400 mt-0.5">▸</span>
-                                        <span>{signal}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {campaign.discouragedThemeSignals && campaign.discouragedThemeSignals.length > 0 && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1.5">Discouraged Theme Signals</div>
-                            <ul className="space-y-1">
-                                {campaign.discouragedThemeSignals.map((signal, idx) => (
-                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
-                                        <span className="text-amber-400 mt-0.5">▸</span>
-                                        <span>{signal}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {campaign.implausibleLiteralizations && campaign.implausibleLiteralizations.length > 0 && (
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest text-red-500 mb-1.5">Implausible Literalizations</div>
-                            <ul className="space-y-1">
-                                {campaign.implausibleLiteralizations.map((signal, idx) => (
-                                    <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
-                                        <span className="text-red-400 mt-0.5">▸</span>
-                                        <span>{signal}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                        {campaign.discoveryRedTeamReview && (
+                            <div className="space-y-3 border border-amber-500/15 rounded-lg bg-amber-950/10 p-3 h-fit">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-widest text-amber-400 mb-1">Red-Team Suggestions</div>
+                                        <p className="text-[10px] text-slate-400 font-sans leading-relaxed">Stored discovery review for this blueprint.</p>
+                                    </div>
+                                    <span className={`text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border ${
+                                        campaign.discoveryRedTeamReview.verdict === 'pass'
+                                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                            : campaign.discoveryRedTeamReview.verdict === 'warn'
+                                                ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                                                : 'bg-red-500/15 border-red-500/30 text-red-400'
+                                    }`}>
+                                        {campaign.discoveryRedTeamReview.verdict}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1">Recommendation</div>
+                                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">{campaign.discoveryRedTeamReview.approvalRecommendation}</p>
+                                </div>
+                                {campaign.discoveryRedTeamReview.requiredFixes.length > 0 && (
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-widest text-red-400 mb-1.5">Required Fixes</div>
+                                        <ul className="space-y-1">
+                                            {campaign.discoveryRedTeamReview.requiredFixes.map((item, idx) => (
+                                                <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                    <span className="text-red-400 mt-0.5">▸</span>
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {campaign.discoveryRedTeamReview.optionalImprovements.length > 0 && (
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-widest text-cyan-400 mb-1.5">Optional Improvements</div>
+                                        <ul className="space-y-1">
+                                            {campaign.discoveryRedTeamReview.optionalImprovements.map((item, idx) => (
+                                                <li key={idx} className="text-[10px] text-slate-300 font-sans flex gap-2">
+                                                    <span className="text-cyan-400 mt-0.5">▸</span>
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {campaign.discoveryRedTeamReview.issues.length > 0 && (
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-widest text-amber-500 mb-1.5">Key Issues</div>
+                                        <div className="space-y-2">
+                                            {campaign.discoveryRedTeamReview.issues.slice(0, 4).map((issue, idx) => (
+                                                <div key={idx} className="rounded border border-white/5 bg-slate-900/40 p-2">
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <span className="text-[10px] text-slate-200 font-sans">{issue.title}</span>
+                                                        <span className={`text-[9px] uppercase tracking-widest ${issue.severity === 'blocker' ? 'text-red-400' : 'text-amber-300'}`}>
+                                                            {issue.severity}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-sans leading-relaxed">{issue.recommendation}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {campaign.discoveryIteration && (
+                                    <div className="pt-2 border-t border-white/5 space-y-2">
+                                        <div className="text-[9px] uppercase tracking-widest text-slate-400">Iteration Status</div>
+                                        <div className="text-[10px] text-slate-300 font-sans leading-relaxed">
+                                            Next action: <span className="uppercase tracking-widest text-cyan-300">{campaign.discoveryIteration.recommendedNextAction}</span>
+                                        </div>
+                                        {campaign.discoveryIteration.recommendedNextAction === 'operator_cleanup' && (
+                                            <div className="text-[10px] text-sky-300 font-sans leading-relaxed">
+                                                This blueprint looks discovery-valid, but the remaining issues read like operator or venue-spec cleanup rather than concept failure.
+                                            </div>
+                                        )}
+                                        {campaign.discoveryIteration.stagnant && (
+                                            <div className="text-[10px] text-amber-300 font-sans leading-relaxed">
+                                                Stagnation detected: {campaign.discoveryIteration.stagnationReason ?? 'This blueprint is repeating the same failure pattern.'}
+                                            </div>
+                                        )}
+                                        {campaign.discoveryIteration.retiredAt && (
+                                            <div className="text-[10px] text-red-300 font-sans leading-relaxed">
+                                                Retired: {campaign.discoveryIteration.retirementReason ?? 'Repeated non-improvement after multiple revisions.'}
+                                            </div>
+                                        )}
+                                        {campaign.discoveryIteration.history.length > 0 && (
+                                            <div className="text-[10px] text-slate-400 font-sans leading-relaxed">
+                                                Reviews: {campaign.discoveryIteration.reviewCount} · Revisions: {campaign.discoveryIteration.revisionCount}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -254,6 +424,15 @@ export default function DiscoveryTestPage() {
     const [phaseAError, setPhaseAError] = useState<string | null>(null);
     const [skippedCount, setSkippedCount] = useState(0);
     const [sonarResearch, setSonarResearch] = useState<SonarResearch | null>(null);
+    const [bulkRedTeamLoading, setBulkRedTeamLoading] = useState(false);
+    const [bulkRedTeamError, setBulkRedTeamError] = useState<string | null>(null);
+    const [bulkRedTeamSummary, setBulkRedTeamSummary] = useState<BulkRedTeamSummary | null>(null);
+    const [bulkRedTeamResults, setBulkRedTeamResults] = useState<BulkRedTeamResult[]>([]);
+    const [selectedBlueprintSlugs, setSelectedBlueprintSlugs] = useState<string[]>([]);
+    const [bulkRevisionLoading, setBulkRevisionLoading] = useState(false);
+    const [reviewLoadingSlug, setReviewLoadingSlug] = useState<string | null>(null);
+    const [revisionLoadingSlug, setRevisionLoadingSlug] = useState<string | null>(null);
+    const [revisionMessage, setRevisionMessage] = useState<string | null>(null);
 
     // Phase B state
     const [phaseBLoading, setPhaseBLoading] = useState(false);
@@ -286,6 +465,7 @@ export default function DiscoveryTestPage() {
                 );
                 const loaded = fetched.filter((b): b is Campaign => b !== null);
                 if (loaded.length > 0) setBlueprints(loaded);
+                setSelectedBlueprintSlugs([]);
             } catch {
                 // Silent — auto-load is best-effort
             }
@@ -301,9 +481,9 @@ export default function DiscoveryTestPage() {
 
     // ─── Phase A ─────────────────────────────────────────────────────────────
 
-    const handleGenerate = async () => {
+    const handleGenerate = async (respin: boolean = false) => {
         const confirmed = window.confirm(
-            'This will make 2× Sonar Deep Research calls + 1× GPT-5 structured generation call.\n\n' +
+            `This will make 2× Sonar Deep Research calls + 1× GPT-5 structured generation call${respin ? ', bypass cache, and feed prior campaign/red-team feedback into the new run' : ''}.\n\n` +
             'Continue?'
         );
         if (!confirmed) return;
@@ -314,7 +494,7 @@ export default function DiscoveryTestPage() {
         setSkippedCount(0);
 
         try {
-            const discoveryRes = await fetch('/api/groups/discovery');
+            const discoveryRes = await fetch(`/api/groups/discovery${respin ? '?respin=true' : ''}`);
             const discoveryData = await discoveryRes.json();
 
             if (!discoveryData.success || !discoveryData.campaigns) {
@@ -337,6 +517,7 @@ export default function DiscoveryTestPage() {
             );
 
             setBlueprints(fetched.filter((b): b is Campaign => b !== null));
+            setSelectedBlueprintSlugs([]);
         } catch (err) {
             setPhaseAError(err instanceof Error ? err.message : 'Network error');
         } finally {
@@ -349,6 +530,11 @@ export default function DiscoveryTestPage() {
         setPhaseAError(null);
         setSkippedCount(0);
         setSonarResearch(null);
+        setBulkRedTeamError(null);
+        setBulkRedTeamSummary(null);
+        setBulkRedTeamResults([]);
+        setSelectedBlueprintSlugs([]);
+        setRevisionMessage(null);
     };
 
     const handleClearAll = async () => {
@@ -359,6 +545,207 @@ export default function DiscoveryTestPage() {
         if (!confirmed) return;
         await fetch('/api/groups/discovery/clear', { method: 'DELETE' });
         handleClear();
+    };
+
+    const handleBulkRedTeam = async () => {
+        const confirmed = window.confirm(
+            'This will run the GPT-5 high discovery red-team validator across every loaded blueprint using raw Phase A research only.\n\n' +
+            'Saved verdicts will be written directly onto the blueprint and used by the discovery re-spin flow immediately, before aesthetics exists.\n\nContinue?'
+        );
+        if (!confirmed) return;
+
+        setBulkRedTeamLoading(true);
+        setBulkRedTeamError(null);
+        setBulkRedTeamSummary(null);
+        setBulkRedTeamResults([]);
+        setRevisionMessage(null);
+
+        try {
+            const response = await fetch('/api/groups/discovery/red-team/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slugs: blueprints.map((blueprint) => blueprint.id) }),
+            });
+            const data = await response.json() as {
+                success?: boolean;
+                error?: string;
+                summary?: BulkRedTeamSummary;
+                results?: Array<BulkRedTeamResult & { campaign?: Campaign }>;
+            };
+
+            if (!response.ok || !data.success || !data.summary || !data.results) {
+                throw new Error(data.error ?? 'Bulk red team failed');
+            }
+
+            setBulkRedTeamSummary(data.summary);
+            setBulkRedTeamResults(data.results);
+            const updatedCampaigns = new Map(
+                data.results
+                    .filter((result): result is BulkRedTeamResult & { campaign: Campaign } => !!result.campaign)
+                    .map((result) => [result.slug, result.campaign])
+            );
+            setBlueprints((current) => current.map((item) => updatedCampaigns.get(item.id) ?? item));
+        } catch (error: unknown) {
+            setBulkRedTeamError(error instanceof Error ? error.message : 'Bulk red team failed');
+        } finally {
+            setBulkRedTeamLoading(false);
+        }
+    };
+
+    const handleReviewBlueprint = async (slug: string) => {
+        const blueprint = blueprints.find((item) => item.id === slug);
+        if (!blueprint) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `This will run discovery review for \"${blueprint.name}\" only.\n\n` +
+            'The updated verdict will be written onto this card and used by future re-spin passes.\n\nContinue?'
+        );
+        if (!confirmed) return;
+
+        setReviewLoadingSlug(slug);
+        setPhaseAError(null);
+        setBulkRedTeamError(null);
+        setRevisionMessage(null);
+
+        try {
+            const response = await fetch(`/api/groups/discovery/red-team/${slug}`, {
+                method: 'POST',
+            });
+            const data = await response.json() as {
+                success?: boolean;
+                error?: string;
+                campaign?: Campaign;
+                review?: { approvalRecommendation?: string };
+            };
+
+            if (!response.ok || !data.success || !data.campaign) {
+                throw new Error(data.error ?? 'Discovery review failed');
+            }
+
+            setBlueprints((current) => current.map((item) => item.id === slug ? data.campaign as Campaign : item));
+            setBulkRedTeamSummary(null);
+            setBulkRedTeamResults([]);
+            const nextAction = data.campaign.discoveryIteration?.recommendedNextAction;
+            const retirementReason = data.campaign.discoveryIteration?.retirementReason;
+            setRevisionMessage(
+                retirementReason
+                    ? `${data.campaign.name} was retired from the active loop. ${retirementReason}`
+                    : nextAction === 'operator_cleanup'
+                        ? `${data.campaign.name} needs operator cleanup rather than another structural rewrite. Review the remaining ops/spec warnings, then re-check.`
+                    : data.review?.approvalRecommendation
+                        ? `${data.review.approvalRecommendation}${nextAction ? ` Next action: ${nextAction}.` : ''}`
+                        : `Reviewed ${data.campaign.name}.${nextAction ? ` Next action: ${nextAction}.` : ''}`
+            );
+        } catch (error: unknown) {
+            setPhaseAError(error instanceof Error ? error.message : 'Discovery review failed');
+        } finally {
+            setReviewLoadingSlug(null);
+        }
+    };
+
+    const handleReviseBlueprint = async (slug: string) => {
+        const blueprint = blueprints.find((item) => item.id === slug);
+        if (!blueprint) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `This will revise \"${blueprint.name}\" in place using its current discovery review.\n\n` +
+            'The stale review will be cleared after revision, and you should run Discovery Review again on the revised blueprint.\n\nContinue?'
+        );
+        if (!confirmed) return;
+
+        setRevisionLoadingSlug(slug);
+        setPhaseAError(null);
+        setBulkRedTeamError(null);
+        setRevisionMessage(null);
+
+        try {
+            const response = await fetch('/api/groups/discovery/revise', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug }),
+            });
+            const data = await response.json() as {
+                success?: boolean;
+                error?: string;
+                campaign?: Campaign;
+                message?: string;
+                revisionMode?: 'single' | 'branch3';
+                branchesConsidered?: number;
+            };
+
+            if (!response.ok || !data.success || !data.campaign) {
+                throw new Error(data.error ?? 'Discovery revision failed');
+            }
+
+            setBlueprints((current) => current.map((item) => item.id === slug ? data.campaign as Campaign : item));
+            setBulkRedTeamSummary(null);
+            setBulkRedTeamResults([]);
+            setSelectedBlueprintSlugs((current) => current.filter((item) => item !== slug));
+            setRevisionMessage(data.message ?? `Revised ${data.campaign.name}. Run Discovery Review again to evaluate the updated blueprint.`);
+        } catch (error: unknown) {
+            setPhaseAError(error instanceof Error ? error.message : 'Discovery revision failed');
+        } finally {
+            setRevisionLoadingSlug(null);
+        }
+    };
+
+    const toggleBlueprintSelection = (slug: string) => {
+        setSelectedBlueprintSlugs((current) => current.includes(slug)
+            ? current.filter((item) => item !== slug)
+            : [...current, slug]);
+    };
+
+    const handleReviseSelected = async () => {
+        if (selectedBlueprintSlugs.length === 0) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `This will revise ${selectedBlueprintSlugs.length} selected blueprint(s) in place using their current discovery reviews.\n\n` +
+            'Selected cards must already have a stored discovery review. Revised cards will have their stale reviews cleared and will need re-review.\n\nContinue?'
+        );
+        if (!confirmed) return;
+
+        setBulkRevisionLoading(true);
+        setPhaseAError(null);
+        setBulkRedTeamError(null);
+        setRevisionMessage(null);
+
+        try {
+            const response = await fetch('/api/groups/discovery/revise/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slugs: selectedBlueprintSlugs }),
+            });
+            const data = await response.json() as {
+                success?: boolean;
+                error?: string;
+                summary?: BulkRevisionSummary;
+                results?: BulkRevisionResult[];
+            };
+
+            if (!response.ok || !data.success || !data.summary || !data.results) {
+                throw new Error(data.error ?? 'Revise selected failed');
+            }
+
+            const revisedCampaigns = new Map(
+                data.results
+                    .filter((result): result is BulkRevisionResult & { campaign: Campaign } => result.outcome === 'revised' && !!result.campaign)
+                    .map((result) => [result.slug, result.campaign])
+            );
+
+            setBlueprints((current) => current.map((item) => revisedCampaigns.get(item.id) ?? item));
+            setSelectedBlueprintSlugs([]);
+            setRevisionMessage(`Revised ${data.summary.revised} selected blueprint(s)${data.summary.failed > 0 ? `, ${data.summary.failed} failed` : ''}. Re-review revised cards to validate them.`);
+        } catch (error: unknown) {
+            setPhaseAError(error instanceof Error ? error.message : 'Revise selected failed');
+        } finally {
+            setBulkRevisionLoading(false);
+        }
     };
 
     // ─── Phase B ─────────────────────────────────────────────────────────────
@@ -434,6 +821,8 @@ export default function DiscoveryTestPage() {
     };
 
     const hasPhaseAResults = blueprints.length > 0;
+    const revisableBlueprints = blueprints.filter((bp) => !!bp.discoveryRedTeamReview);
+    const selectedRevisableCount = selectedBlueprintSlugs.filter((slug) => revisableBlueprints.some((bp) => bp.id === slug)).length;
 
     return (
         <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
@@ -460,12 +849,39 @@ export default function DiscoveryTestPage() {
                                 🗑 Clear All
                             </button>
                             {hasPhaseAResults && (
+                                <button
+                                    onClick={() => void handleBulkRedTeam()}
+                                    disabled={phaseALoading || bulkRedTeamLoading}
+                                    className="text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {bulkRedTeamLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Reviewing All…</> : <><GitBranch className="w-3 h-3" /> Review All</>}
+                                </button>
+                            )}
+                            {revisableBlueprints.length > 0 && (
+                                <button
+                                    onClick={() => void handleReviseSelected()}
+                                    disabled={bulkRevisionLoading || selectedRevisableCount === 0}
+                                    className="text-xs px-3 py-1.5 rounded border border-cyan-500/30 text-cyan-300 hover:text-cyan-200 hover:border-cyan-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {bulkRevisionLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Revising Selected…</> : `Revise Selected${selectedRevisableCount > 0 ? ` (${selectedRevisableCount})` : ''}`}
+                                </button>
+                            )}
+                            {hasPhaseAResults && (
                                 <button onClick={handleClear} className="text-xs px-3 py-1.5 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all flex items-center gap-1.5">
                                     <RotateCcw className="w-3 h-3" /> Reset
                                 </button>
                             )}
+                            {blueprints.length > 0 && (
+                                <button
+                                    onClick={() => void handleGenerate(true)}
+                                    disabled={phaseALoading}
+                                    className="text-xs px-3 py-1.5 rounded border border-fuchsia-500/30 text-fuchsia-400 hover:text-fuchsia-300 hover:border-fuchsia-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    <RotateCcw className="w-3 h-3" /> Re-Spin
+                                </button>
+                            )}
                             <button
-                                onClick={handleGenerate}
+                                onClick={() => void handleGenerate(false)}
                                 disabled={phaseALoading || hasPhaseAResults}
                                 className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                             >
@@ -483,6 +899,55 @@ export default function DiscoveryTestPage() {
                         {phaseAError && (
                             <div className="px-3 py-2 mb-3 text-xs text-red-400 border rounded bg-red-500/10 border-red-500/20">{phaseAError}</div>
                         )}
+                        {bulkRedTeamError && (
+                            <div className="px-3 py-2 mb-3 text-xs text-red-400 border rounded bg-red-500/10 border-red-500/20">{bulkRedTeamError}</div>
+                        )}
+                        {bulkRedTeamSummary && (
+                            <div className="px-3 py-2 mb-3 text-xs border rounded bg-amber-500/10 border-amber-500/20 text-amber-200 space-y-1">
+                                <div>
+                                    Discovery review complete: {bulkRedTeamSummary.passed} passed, {bulkRedTeamSummary.warned} warned, {bulkRedTeamSummary.blocked} blocked, {bulkRedTeamSummary.failed} failed.
+                                </div>
+                                <div className="text-[10px] text-amber-300/80">
+                                    Discovery re-spin now reads these persisted blueprint verdicts and recommendations when generating the next set of blueprints.
+                                </div>
+                            </div>
+                        )}
+                        {revisionMessage && (
+                            <div className="px-3 py-2 mb-3 text-xs border rounded bg-cyan-500/10 border-cyan-500/20 text-cyan-200">
+                                {revisionMessage}
+                            </div>
+                        )}
+                        {bulkRedTeamResults.length > 0 && (
+                            <div className="mb-3 overflow-hidden border rounded-lg border-amber-500/20 bg-amber-950/10">
+                                <div className="px-3 py-2 border-b border-amber-500/10 text-[10px] uppercase tracking-widest text-amber-400">
+                                    Discovery Review Results
+                                </div>
+                                <div className="divide-y divide-amber-500/10">
+                                    {bulkRedTeamResults.map((result) => (
+                                        <div key={result.slug} className="px-3 py-2 text-[10px] font-sans flex items-start justify-between gap-3">
+                                            <div>
+                                                <div className="text-slate-200">{result.name}</div>
+                                                <div className="text-slate-500">{result.slug}</div>
+                                            </div>
+                                            <div className="max-w-[55%] text-right">
+                                                <div className={`uppercase tracking-widest ${
+                                                    result.outcome === 'passed'
+                                                        ? 'text-emerald-400'
+                                                        : result.outcome === 'warned'
+                                                            ? 'text-amber-300'
+                                                            : result.outcome === 'blocked' || result.outcome === 'failed'
+                                                                ? 'text-red-400'
+                                                                : 'text-slate-500'
+                                                }`}>
+                                                    {result.outcome}
+                                                </div>
+                                                <div className="text-slate-400 leading-relaxed">{result.message}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {hasPhaseAResults ? (
                             <div className="space-y-3">
@@ -490,15 +955,59 @@ export default function DiscoveryTestPage() {
                                     const isMatched = bp.pricingStatus === 'CB_MATCHED';
                                     const isUnmatched = bp.pricingStatus === 'UNMATCHED';
                                     const displayedShip = bp.matchedShipName ?? bp.shipTarget ?? 'TBD';
+                                    const isRetired = !!bp.discoveryIteration?.retiredAt;
+                                    const isStagnant = !!bp.discoveryIteration?.stagnant;
+                                    const needsOperatorCleanup = bp.discoveryIteration?.recommendedNextAction === 'operator_cleanup';
+                                    const isRevisable = !!bp.discoveryRedTeamReview;
                                     return (
                                         <div key={bp.id || i} className={`border rounded-lg p-4 bg-slate-800/40 ${isMatched ? 'border-emerald-500/30' : isUnmatched ? 'border-red-500/20' : 'border-white/10'}`}>
                                             {/* Header row */}
                                             <div className="flex items-start justify-between gap-2 mb-2">
-                                                <div>
-                                                    <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
-                                                    <span className="text-[10px] text-slate-600 ml-2">{bp.id}</span>
+                                                <div className="flex items-start gap-2">
+                                                    {isRevisable && (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedBlueprintSlugs.includes(bp.id)}
+                                                            onChange={() => toggleBlueprintSelection(bp.id)}
+                                                            disabled={bulkRevisionLoading || revisionLoadingSlug === bp.id || reviewLoadingSlug === bp.id}
+                                                            className="mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-slate-900 text-cyan-400"
+                                                            aria-label={`Select ${bp.name} for batch revision`}
+                                                        />
+                                                    )}
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
+                                                        <span className="text-[10px] text-slate-600 ml-2">{bp.id}</span>
+                                                    </div>
                                                 </div>
-                                                <PricingBadge status={(bp.pricingStatus ?? 'AI_ESTIMATE') as PricingStatus} />
+                                                <div className="flex items-center gap-2">
+                                                    {isStagnant && !isRetired && (
+                                                        <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-amber-500/15 border-amber-500/30 text-amber-300">
+                                                            stagnant
+                                                        </span>
+                                                    )}
+                                                    {needsOperatorCleanup && !isRetired && (
+                                                        <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-sky-500/15 border-sky-500/30 text-sky-300">
+                                                            operator cleanup
+                                                        </span>
+                                                    )}
+                                                    {isRetired && (
+                                                        <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-red-500/15 border-red-500/30 text-red-400">
+                                                            retired
+                                                        </span>
+                                                    )}
+                                                    {bp.discoveryRedTeamReview && (
+                                                        <span className={`text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border ${
+                                                            bp.discoveryRedTeamReview.verdict === 'pass'
+                                                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                                                : bp.discoveryRedTeamReview.verdict === 'warn'
+                                                                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                                                                    : 'bg-red-500/15 border-red-500/30 text-red-400'
+                                                        }`}>
+                                                            review {bp.discoveryRedTeamReview.verdict}
+                                                        </span>
+                                                    )}
+                                                    <PricingBadge status={(bp.pricingStatus ?? 'AI_ESTIMATE') as PricingStatus} />
+                                                </div>
                                             </div>
 
                                             {/* Aesthetic + dates */}
@@ -545,6 +1054,26 @@ export default function DiscoveryTestPage() {
                                 >
                                     View JSON
                                 </a>
+                                <button
+                                    onClick={() => void handleReviewBlueprint(bp.id)}
+                                    disabled={reviewLoadingSlug === bp.id || revisionLoadingSlug === bp.id || bulkRevisionLoading}
+                                    className="text-[10px] px-2 py-1 rounded border border-amber-500/20 text-amber-300 hover:text-amber-200 hover:border-amber-400/40 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {reviewLoadingSlug === bp.id
+                                        ? 'Reviewing…'
+                                        : bp.discoveryRedTeamReview
+                                            ? 'Re-Review'
+                                            : 'Review'}
+                                </button>
+                                {isRevisable && (
+                                    <button
+                                        onClick={() => void handleReviseBlueprint(bp.id)}
+                                        disabled={revisionLoadingSlug === bp.id || reviewLoadingSlug === bp.id || bulkRevisionLoading}
+                                        className="text-[10px] px-2 py-1 rounded border border-cyan-500/20 text-cyan-400 hover:text-cyan-300 hover:border-cyan-400/40 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                    >
+                                        {revisionLoadingSlug === bp.id ? 'Revising…' : 'Revise'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setBlueprints(prev => prev.filter(b => b.id !== bp.id))}
                                     className="text-[10px] px-2 py-1 rounded border border-red-500/20 text-red-400 hover:text-red-300 hover:border-red-400/40 transition-all"

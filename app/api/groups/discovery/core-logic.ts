@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { Campaign } from '@/lib/campaigns/types';
-import { saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
+import { getAestheticBrief, saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
+import { DiscoveryBlueprintBatchSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
@@ -22,7 +23,7 @@ type ResearchCache = {
     aestheticData?: string;
 };
 
-const DISCOVERY_PROMPT_VERSION = '2026-03-09-cottagecore-grounding';
+const DISCOVERY_PROMPT_VERSION = '2026-03-13-ambient-community-v1';
 
 type CbDealsCache = {
     generatedAtIso: string;
@@ -154,52 +155,6 @@ async function callPerplexity(prompt: string, attempt: number = 1): Promise<stri
     }
 }
 
-
-const ThemeBlueprintSchema = z.object({
-    blueprints: z.array(z.object({
-        id: z.string().describe("A url-friendly slug for the campaign, e.g. 'retro-gaming-2026'"),
-        name: z.string().describe("Display name for the Theme/Campaign"),
-        description: z.string().describe("Short promotional description"),
-        aesthetic: z.string().describe("The aesthetic or vibe of the campaign"),
-        targetDates: z.string().describe("Planned departure dates, e.g. 'November 2026'"),
-        targetDestination: z.string().describe("Primary route or destination region, e.g. 'Greek Isles' or 'Western Caribbean'"),
-        shipTarget: z.string().describe("Target cruise line or ship class"),
-        highlightEvents: z.array(z.string()).describe("List of suggested activities or meetups (3-5 items)"),
-        targetingKeywords: z.array(z.string()).describe("List of targeting keywords for ads (3-5 items)"),
-        minCabinsRequired: z.number().describe("Default to 8"),
-        startingPrice: z.number().describe("Estimated starting price (use 1000 if unknown)"),
-        priceSource: z.string().describe("Source of the price, e.g. 'AI Estimate'"),
-        // ─── Research Intelligence (required) ───────────────────────
-        researchRationale: z.string().describe(
-            "Why this niche was selected: reference the specific community data, platform signals, or trend observations from the research that identified this theme as viable. Be specific — name subreddits, hashtag metrics, Discord server sizes, etc."
-        ),
-        successLogic: z.string().describe(
-            "The commercial and psychological reasoning this niche+cruise pairing will convert: explain audience spending willingness, the IRL meetup pull factor, what market gap this fills, and why a relaxed cruise vacation is uniquely suited to this community."
-        ),
-        audienceSignals: z.array(z.string()).min(2).max(4).describe(
-            "2-4 concrete, specific data signals from the research that validate this niche. Each should be a single-sentence fact, e.g. 'r/solotravel recorded 15k+ upvotes on an IRL meetup thread in Jan 2026', or 'TikTok #darkacademia has 3.2B views with >60% Gen-Z engagement'."
-        ),
-        vacationFitRationale: z.string().describe(
-            "Explain why this theme feels like a great cruise vacation rather than a retreat, workshop, residency, lab, or conference."
-        ),
-        cruiseNativeMoments: z.array(z.string()).min(3).max(5).describe(
-            "3-5 believable cruise-native moments that make this theme feel enjoyable on a ship, such as deck conversations, listening sessions, scenic hobby practice, sunset mixers, or relaxed themed rituals."
-        ),
-        nicheExpressionMode: z.string().describe(
-            "Describe how the niche should show up lightly and pleasantly during the cruise, as a social flavor layer rather than the operational center of the trip."
-        ),
-        implausibleLiteralizations: z.array(z.string()).min(3).max(5).describe(
-            "3-5 examples of how this theme should NOT be expressed because they would feel too industrial, clinical, workshop-like, academic, or operationally awkward on a cruise."
-        ),
-        allowedThemeSignals: z.array(z.string()).min(3).max(6).describe(
-            "Lightweight aesthetic or behavioral cues that are good to use when expressing the theme on a cruise, such as clothing, props, rituals, music, decor, or conversational energy."
-        ),
-        discouragedThemeSignals: z.array(z.string()).min(3).max(6).describe(
-            "Signals, props, environments, or programming cues that would make the theme feel too formal, technical, or unrealistic for a cruise vacation."
-        ),
-    })).length(5, "Must provide exactly 5 blueprints")
-});
-
 interface DiscoveryPipelineResult {
     campaigns: Campaign[];
     skippedCount: number;
@@ -209,20 +164,139 @@ interface DiscoveryPipelineResult {
     };
 }
 
-export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResult> {
-    const cache = readResearchCache();
+interface DiscoveryPipelineOptions {
+    respin?: boolean;
+}
+
+type PriorCampaignContext = {
+    campaign: Campaign;
+    brief: Awaited<ReturnType<typeof getAestheticBrief>>;
+    verdict: 'pass' | 'warn' | 'block' | null;
+    reviewSource: 'discovery-red-team' | 'aesthetic-red-team' | null;
+};
+
+function buildExistingThemesBlock(existingCampaigns: Campaign[]): string {
+    if (existingCampaigns.length === 0) {
+        return '';
+    }
+
+    return `\n\nIMPORTANT: The following theme niches have already been created and must NOT be suggested again — choose entirely different communities and aesthetics:\n${existingCampaigns.map(c => `- ${c.name} (${c.aesthetic ?? c.id})`).join('\n')}`;
+}
+
+function buildApprovedCandidatesBlock(priorCampaigns: PriorCampaignContext[]): string {
+    const approved = priorCampaigns.filter((item) => item.verdict === 'pass');
+    if (approved.length === 0) {
+        return '';
+    }
+
+    return `\n\nAPPROVED DISCOVERY CANDIDATES ALREADY IN PIPELINE:
+${approved.map(({ campaign }) => `- ${campaign.name} (${campaign.aesthetic ?? campaign.id})`).join('\n')}
+
+Treat these as viable candidates already preserved in the pipeline. Do not spend the re-spin trying to replace them. Generate additional options only when they are meaningfully distinct in community type, ship behavior, and social mechanism.`;
+}
+
+function buildCorrectiveThemesBlock(priorCampaigns: PriorCampaignContext[]): string {
+    const corrective = priorCampaigns.filter((item) => item.verdict !== 'pass');
+    if (corrective.length === 0) {
+        return '';
+    }
+
+    return `\n\nIMPORTANT: The following existing discovery candidates are still unresolved and should not be repeated in near-identical form during this re-spin:\n${corrective.map(({ campaign }) => {
+        const iterationNote = campaign.discoveryIteration?.retiredAt
+            ? 'RETIRED AFTER STAGNATION'
+            : campaign.discoveryIteration?.recommendedNextAction === 'operator_cleanup'
+                ? 'OPERATOR CLEANUP REQUIRED'
+            : campaign.discoveryIteration?.recommendedNextAction === 'branch'
+                ? 'STAGNANT - BRANCH REQUIRED'
+                : 'UNRESOLVED';
+        return `- ${campaign.name} (${campaign.aesthetic ?? campaign.id}) [${iterationNote}]`;
+    }).join('\n')}`;
+}
+
+async function loadPriorCampaignContext(existingCampaigns: Campaign[]): Promise<PriorCampaignContext[]> {
+    const priorBriefs = await Promise.all(existingCampaigns.map(async (campaign) => {
+        const brief = await getAestheticBrief(campaign.id).catch(() => null);
+        const discoveryReview = campaign.discoveryRedTeamReview;
+        const fallbackReview = brief?.redTeamReview;
+        return {
+            campaign,
+            brief,
+            verdict: discoveryReview?.verdict ?? fallbackReview?.verdict ?? null,
+            reviewSource: discoveryReview ? 'discovery-red-team' : fallbackReview ? 'aesthetic-red-team' : null,
+        } satisfies PriorCampaignContext;
+    }));
+
+    return priorBriefs;
+}
+
+async function buildDiscoveryRespinFeedback(priorCampaigns: PriorCampaignContext[]): Promise<string> {
+    if (priorCampaigns.length === 0) {
+        return '';
+    }
+
+    const lines = priorCampaigns
+        .filter(({ verdict }) => verdict !== 'pass')
+        .map(({ campaign, brief, verdict, reviewSource }) => {
+        const activeReview = campaign.discoveryRedTeamReview ?? brief?.redTeamReview;
+        const acceptability = verdict === 'pass'
+            ? 'ACCEPTABLE REFERENCE'
+            : verdict === 'warn' || verdict === 'block' || brief?.humanReviewStatus === 'revised'
+                ? 'NOT ACCEPTABLE'
+                : 'UNREVIEWED';
+        const topIssues = activeReview?.issues?.slice(0, 3).map((issue) => `${issue.category}: ${issue.title}`).join('; ');
+        const requiredFixes = activeReview?.requiredFixes?.slice(0, 2).join('; ');
+
+        return [
+            `- ${campaign.name} [${acceptability}]`,
+            `  Niche/Aesthetic: ${campaign.aesthetic ?? campaign.id}`,
+            `  Summary: ${campaign.description}`,
+            campaign.discoveryIteration?.retiredAt ? `  Iteration state: retired (${campaign.discoveryIteration.retirementReason ?? 'repeated non-improvement'})` : '',
+            campaign.discoveryIteration?.recommendedNextAction === 'operator_cleanup' ? '  Iteration state: operator cleanup required before another AI pass.' : '',
+            campaign.discoveryIteration?.stagnant ? `  Iteration state: stagnant (${campaign.discoveryIteration.stagnationReason ?? 'looping on the same failure pattern'})` : '',
+            campaign.discoveryIteration?.recommendedNextAction ? `  Recommended next action: ${campaign.discoveryIteration.recommendedNextAction}` : '',
+            campaign.communityFitRationale ? `  Community logic: ${campaign.communityFitRationale}` : '',
+            campaign.solitudeRisks?.length ? `  Known solitude risks: ${campaign.solitudeRisks.join('; ')}` : '',
+            reviewSource ? `  Review source: ${reviewSource}` : '',
+            verdict ? `  Red-team verdict: ${verdict}` : '',
+            topIssues ? `  Red-team issues: ${topIssues}` : '',
+            requiredFixes ? `  Required fixes: ${requiredFixes}` : '',
+        ].filter(Boolean).join('\n');
+    }).join('\n');
+
+    if (!lines) {
+        return '';
+    }
+
+    return `\n\nRE-SPIN FEEDBACK FROM PRIOR DISCOVERY / AESTHETIC RUNS:
+You are not starting from zero. Use the prior campaigns below as negative/positive guidance and dig deeper instead of reproducing adjacent findings.
+
+Rules:
+- Do not return slight variations of the same quiet, lounge-based, introspective adult cruise theme.
+- Avoid repeating the same social mechanism, prop family, or emotional register across new findings.
+- Treat NOT ACCEPTABLE campaigns as warning cases whose weaknesses must be actively avoided.
+- If a prior result was ACCEPTABLE, you still must not duplicate it; use it only to understand what worked structurally.
+- Push for new community clusters, more differentiated visual worlds, and more varied cruise-native behavior patterns.
+
+Prior results:
+${lines}`;
+}
+
+export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOptions = {}): Promise<DiscoveryPipelineResult> {
+    const { respin = false } = options;
+    const cache = respin ? { date: new Date().toISOString().slice(0, 10), promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
 
     // Pre-load existing campaigns to build the deduplication exclusion list
     const existingCampaigns = await scanAllCampaigns();
-    const existingThemesBlock = existingCampaigns.length > 0
-        ? `\n\nIMPORTANT: The following theme niches have already been created and must NOT be suggested again — choose entirely different communities and aesthetics:\n${existingCampaigns.map(c => `- ${c.name} (${c.aesthetic ?? c.id})`).join('\n')}`
-        : '';
+    const priorCampaignContext = respin ? await loadPriorCampaignContext(existingCampaigns) : [];
+    const existingThemesBlock = respin ? buildCorrectiveThemesBlock(priorCampaignContext) : buildExistingThemesBlock(existingCampaigns);
+    const approvedCandidatesBlock = respin ? buildApprovedCandidatesBlock(priorCampaignContext) : '';
+    const respinFeedbackBlock = respin ? await buildDiscoveryRespinFeedback(priorCampaignContext) : '';
 
-    console.log(`[runGroupDiscoveryPipeline] ${existingCampaigns.length} existing campaign(s) found — injecting exclusion list into prompts.`);
+    console.log(`[runGroupDiscoveryPipeline] ${existingCampaigns.length} existing campaign(s) found — injecting exclusion list${respin ? ' and re-spin feedback' : ''} into prompts.`);
 
     // ── Step 1: Psychographic Discovery ──────────────────────────────────────
     let psychographicData: string;
-    if (cache.psychographicData) {
+    if (!respin && cache.psychographicData) {
         console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Resuming from cache (psychographicData)');
         psychographicData = cache.psychographicData;
     } else {
@@ -259,8 +333,10 @@ export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResu
     2. Why it would feel natural in a relaxed shipboard vacation environment
     3. What the cruise-native appeal is: conversation, discovery, music, scenic participation, hobby bonding, dressing the part, or themed social rituals
     4. What would make the niche feel too formal, technical, or retreat-like if interpreted too literally
+    5. Why strangers in this niche would naturally enjoy finding one another at sea without needing a formal program schedule
+    6. What low-pressure, drop-in/drop-out group rhythms would make the group feel real without becoming mandatory programming
 
-    Do not optimize for the most intense or industrial niche. Optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, and ownable aesthetic.${existingThemesBlock}
+    Do not optimize for the most intense or industrial niche. Optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, ambient community potential, and ownable aesthetic.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
         psychographicData = await callPerplexity(psychographicPrompt);
         cache.psychographicData = psychographicData;
@@ -270,7 +346,7 @@ export async function runGroupDiscoveryPipeline(): Promise<DiscoveryPipelineResu
 
     // ── Step 2: Aesthetic Gap Follow-up ──────────────────────────────────────
     let aestheticData: string;
-    if (cache.aestheticData) {
+    if (!respin && cache.aestheticData) {
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
         aestheticData = cache.aestheticData;
     } else {
@@ -320,11 +396,13 @@ ${psychographicData}
     - discouraged literalizations
     - best-fit ship environments
     - why the concept still feels like a great vacation even if the guest only lightly participates in the niche
+    - why the group version feels emotionally necessary rather than decorative
+    - what optional gatherings would make the trip feel socially alive without making it feel scheduled
 
     ANTI-DRIFT RULE:
     - do not let pastoral, cottagecore, bookish, or slow-living themes collapse into generic luxury hotel language
     - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
-    - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${cbInventoryContext}
+    - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
         aestheticData = await callPerplexity(aestheticPrompt);
         cache.aestheticData = aestheticData;
@@ -334,7 +412,7 @@ ${psychographicData}
 
     console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
     const { object } = await callGlobalGenerateObject({
-        schema: ThemeBlueprintSchema,
+        schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
         prompt: `
 You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Perplexity Sonar Deep Research regarding niche subcultures and ship infrastructure:
@@ -353,6 +431,10 @@ CRITICAL REQUIREMENTS for each blueprint:
 6. nicheExpressionMode: Explain how the niche acts as a social flavor layer rather than the operational center of the trip.
 7. implausibleLiteralizations: Name 3-5 ways this theme should not be interpreted because they would feel too workshop-like, industrial, clinical, or unrealistic on a ship.
 8. allowedThemeSignals and discouragedThemeSignals must clearly separate lightweight, vacation-friendly cues from overly formal or technical cues.
+9. communityFitRationale: Prove that the group version matters socially; explain why people in this niche would naturally enjoy finding one another on a ship.
+10. optionalGatheringMoments: Name 3-5 low-pressure, drop-in/drop-out gatherings or rhythms that make the group feel real without turning it into a program schedule.
+11. optionalityStyle: Explain how participation should be framed so the trip remains welcoming to introverts, casual participants, and guests who do not want a packed schedule.
+12. solitudeRisks: Name 3-5 ways the campaign could drift into loneliness, exclusivity theater, or socially hollow quiet-luxury framing if handled poorly.
 
 NON-NEGOTIABLE REALISM BOUNDARY:
 ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
@@ -370,48 +452,23 @@ Prefer blueprints where the guest fantasy is:
 - dressing into a shared vibe
 - listening, exploring, tasting, observing, reading, collecting, photographing, or playing together
 - enjoying the ship and destination first, with the niche amplifying the mood
+- joining when it feels right and stepping away without feeling they are missing the point of the trip
 
 WORDING GUARDRAILS:
 - avoid generic luxury-signaling descriptors unless luxury is itself the niche
 - for pastoral, cottagecore, or slow-living concepts, prefer language like unhurried, handmade, garden, tea, deck reading, market strolls, pressed flowers, natural textures, and shared quiet rituals
 - avoid aesthetic labels that flatten the niche into upscale sameness, especially phrases like quiet luxury, elevated escape, or low-key luxe
+- avoid making the group feel either over-programmed or emotionally empty; the sweet spot is ambient community, optional gatherings, and easy social recognition
 
-Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}
+RE-SPIN RULE:
+- if prior outputs exist, actively differentiate from them in community type, emotional register, onboard behavior pattern, prop logic, and visual world instead of returning near neighbors
+
+Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim(),
     });
 
     console.log('[runGroupDiscoveryPipeline] Step 4: Saving Blueprints to DynamoDB (with idempotency check)');
-    const campaigns: Campaign[] = object.blueprints.map(bp => {
-        const now = new Date().toISOString();
-        return {
-            PK: `CAMPAIGN#${bp.id}`,
-            SK: `METADATA`,
-            id: bp.id,
-            name: bp.name,
-            description: bp.description,
-            aesthetic: bp.aesthetic,
-            targetDates: bp.targetDates,
-            targetDestination: bp.targetDestination,
-            shipTarget: bp.shipTarget,
-            highlightEvents: bp.highlightEvents,
-            targetingKeywords: bp.targetingKeywords,
-            minCabinsRequired: bp.minCabinsRequired,
-            startingPrice: bp.startingPrice,
-            priceSource: bp.priceSource,
-            researchRationale: bp.researchRationale,
-            successLogic: bp.successLogic,
-            audienceSignals: bp.audienceSignals,
-            vacationFitRationale: bp.vacationFitRationale,
-            cruiseNativeMoments: bp.cruiseNativeMoments,
-            nicheExpressionMode: bp.nicheExpressionMode,
-            implausibleLiteralizations: bp.implausibleLiteralizations,
-            allowedThemeSignals: bp.allowedThemeSignals,
-            discouragedThemeSignals: bp.discouragedThemeSignals,
-            status: 'DRAFT',
-            createdAt: now,
-            updatedAt: now
-        } as Campaign;
-    });
+    const campaigns: Campaign[] = object.blueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
 
     let skippedCount = 0;
     for (const campaign of campaigns) {

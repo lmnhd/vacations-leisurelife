@@ -106,6 +106,42 @@ export const VisualPlausibilityFrameworkSchema = z.object({
 });
 export type VisualPlausibilityFramework = z.infer<typeof VisualPlausibilityFrameworkSchema>;
 
+export const HumanRepresentationGuidanceSchema = z.object({
+    castingGoal: z.string(),
+    ageRangeGuidance: z.string(),
+    diversityIntent: z.string(),
+    pairingGuidance: z.string(),
+    stylingGuidance: z.string(),
+    antiStereotypeRules: z.array(z.string()),
+});
+export type HumanRepresentationGuidance = z.infer<typeof HumanRepresentationGuidanceSchema>;
+
+export const DEFAULT_HUMAN_REPRESENTATION_GUIDANCE = {
+    castingGoal: 'Depict a believable, theme-appropriate mix of guests with varied visible backgrounds, skin tones, facial features, and ages where appropriate to the campaign.',
+    ageRangeGuidance: 'Match the likely audience for the theme without making every subject the same age. Use variety unless the campaign clearly targets a narrower life stage.',
+    diversityIntent: 'Favor visible diversity across the image set, including different ethnic presentations and skin tones, without reducing anyone to a trope or costume.',
+    pairingGuidance: 'Across the full set, vary who appears together so the campaign does not default to one repeated demographic pairing.',
+    stylingGuidance: 'Let styling reflect the campaign theme through clothing texture, grooming, and accessories while keeping people natural, modern, and cruise-plausible.',
+    antiStereotypeRules: [
+        'Do not stereotype ethnicity, religion, age, or culture through exaggerated clothing, props, or gestures.',
+        'Do not make one background the default while others appear only as token exceptions.',
+        'Do not use caricature, costume logic, or generic stock-photo diversity signaling.',
+    ],
+} satisfies HumanRepresentationGuidance;
+
+export function normalizeHumanRepresentationGuidance(
+    input?: Partial<HumanRepresentationGuidance> | null,
+): HumanRepresentationGuidance {
+    return {
+        castingGoal: input?.castingGoal?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.castingGoal,
+        ageRangeGuidance: input?.ageRangeGuidance?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.ageRangeGuidance,
+        diversityIntent: input?.diversityIntent?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.diversityIntent,
+        pairingGuidance: input?.pairingGuidance?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.pairingGuidance,
+        stylingGuidance: input?.stylingGuidance?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.stylingGuidance,
+        antiStereotypeRules: input?.antiStereotypeRules?.length ? input.antiStereotypeRules : DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.antiStereotypeRules,
+    };
+}
+
 export function normalizeVisualPlausibilityFramework(
     input?: Partial<VisualPlausibilityFramework> | null,
 ): VisualPlausibilityFramework {
@@ -202,6 +238,158 @@ export const LandingStillBibleSchema = z.object({
 });
 export type LandingStillBible = z.infer<typeof LandingStillBibleSchema>;
 
+export const CommunityExpressionSchema = z.object({
+    corePromise: z.string(),
+    participationStyle: z.string(),
+    socialGravity: z.string(),
+    optionalGatherings: z.array(z.string()),
+    belongingSignals: z.array(z.string()),
+    solitudeAntiPatterns: z.array(z.string()),
+    visualTogethernessNotes: z.string(),
+    copyFramingRule: z.string(),
+});
+export type CommunityExpression = z.infer<typeof CommunityExpressionSchema>;
+
+export const RedTeamVerdictEnum = z.enum(['pass', 'warn', 'block']);
+export type RedTeamVerdict = z.infer<typeof RedTeamVerdictEnum>;
+
+export const RedTeamIssueSeverityEnum = z.enum(['warning', 'blocker']);
+export type RedTeamIssueSeverity = z.infer<typeof RedTeamIssueSeverityEnum>;
+
+export const RedTeamIssueCategoryEnum = z.enum([
+    'community_drift',
+    'optionality_failure',
+    'workshop_regression',
+    'solitude_drift',
+    'cruise_implausibility',
+    'diversity_gap',
+    'stereotype_risk',
+    'motion_safety',
+    'production_feasibility',
+    'copy_alignment',
+    'other',
+]);
+export type RedTeamIssueCategory = z.infer<typeof RedTeamIssueCategoryEnum>;
+
+export const RedTeamIssueSchema = z.object({
+    category: RedTeamIssueCategoryEnum,
+    severity: RedTeamIssueSeverityEnum,
+    title: z.string(),
+    evidence: z.string(),
+    recommendation: z.string(),
+});
+export type RedTeamIssue = z.infer<typeof RedTeamIssueSchema>;
+
+export const RedTeamAssessmentSchema = z.object({
+    verdict: RedTeamVerdictEnum,
+    summary: z.string(),
+    approvalRecommendation: z.string(),
+    strengths: z.array(z.string()),
+    issues: z.array(RedTeamIssueSchema),
+    requiredFixes: z.array(z.string()),
+    optionalImprovements: z.array(z.string()),
+});
+export type RedTeamAssessment = z.infer<typeof RedTeamAssessmentSchema>;
+
+export const RedTeamReviewSchema = RedTeamAssessmentSchema.extend({
+    evaluatedAt: z.string(),
+    model: z.string(),
+    promptVersion: z.string(),
+});
+export type RedTeamReview = z.infer<typeof RedTeamReviewSchema>;
+
+export const DiscoveryIterationRecommendedActionEnum = z.enum(['review', 'continue', 'branch', 'operator_cleanup', 'retire', 'hold']);
+export type DiscoveryIterationRecommendedAction = z.infer<typeof DiscoveryIterationRecommendedActionEnum>;
+
+export const DiscoveryRevisionModeEnum = z.enum(['single', 'branch3']);
+export type DiscoveryRevisionMode = z.infer<typeof DiscoveryRevisionModeEnum>;
+
+export const DiscoveryRevisionClosurePlanSchema = z.object({
+    targetedIssues: z.array(z.string()),
+    changesMade: z.array(z.string()),
+    successHypothesis: z.string(),
+});
+export type DiscoveryRevisionClosurePlan = z.infer<typeof DiscoveryRevisionClosurePlanSchema>;
+
+export const DiscoveryIterationImprovementSchema = z.object({
+    resolvedIssueCategories: z.array(z.string()),
+    persistingIssueCategories: z.array(z.string()),
+    repeatedIssueSignature: z.boolean(),
+    fingerprintSimilarity: z.number(),
+});
+export type DiscoveryIterationImprovement = z.infer<typeof DiscoveryIterationImprovementSchema>;
+
+export const DiscoveryIterationEventSchema = z.object({
+    eventType: z.enum(['review', 'revision']),
+    createdAt: z.string(),
+    fingerprint: z.string(),
+    verdict: RedTeamVerdictEnum.optional(),
+    approvalRecommendation: z.string().optional(),
+    issueCategories: z.array(z.string()),
+    requiredFixes: z.array(z.string()),
+    targetedIssues: z.array(z.string()),
+    changesMade: z.array(z.string()),
+    successHypothesis: z.string().optional(),
+    revisionMode: DiscoveryRevisionModeEnum.optional(),
+    branchesConsidered: z.number().optional(),
+    selectionRationale: z.string().optional(),
+    improvement: DiscoveryIterationImprovementSchema.optional(),
+});
+export type DiscoveryIterationEvent = z.infer<typeof DiscoveryIterationEventSchema>;
+
+export const DiscoveryIterationStateSchema = z.object({
+    history: z.array(DiscoveryIterationEventSchema),
+    reviewCount: z.number(),
+    revisionCount: z.number(),
+    consecutiveNonPassReviews: z.number(),
+    stagnant: z.boolean(),
+    stagnationReason: z.string().optional(),
+    recommendedNextAction: DiscoveryIterationRecommendedActionEnum,
+    currentFingerprint: z.string().optional(),
+    currentIssueSignature: z.string().optional(),
+    retiredAt: z.string().optional(),
+    retirementReason: z.string().optional(),
+});
+export type DiscoveryIterationState = z.infer<typeof DiscoveryIterationStateSchema>;
+
+export const DEFAULT_COMMUNITY_EXPRESSION = {
+    corePromise: 'A real vacation where the right people naturally find one another without pressure or a packed schedule.',
+    participationStyle: 'Drop-in, drop-out, optional, and welcoming to both social guests and quieter guests who want breathing room.',
+    socialGravity: 'Shared taste creates easy conversation starters, recognizable cues, and low-pressure moments of connection across the ship.',
+    optionalGatherings: [
+        'An easy pre-dinner meetup that guests can join or skip without feeling behind',
+        'Shared table energy that forms naturally around meals, windows, and sailaway moments',
+        'Casual after-dinner drift where recommendations, stories, or favorite finds get passed from one guest to another',
+    ],
+    belongingSignals: [
+        'Recognizable shared taste',
+        'Easy conversation openings',
+        'Subtle visual identity and social recognition',
+    ],
+    solitudeAntiPatterns: [
+        'Lonely solo-retreat framing with decorative group language',
+        'Exclusivity theater that makes the group feel gated or precious',
+        'Empty scenes or copy that remove the emotional reason for the group to exist',
+    ],
+    visualTogethernessNotes: 'Show togetherness through pairs or small clusters, shared attention, and easy companionship rather than crowds or choreography.',
+    copyFramingRule: 'Frame all social moments as optional, low-pressure, and warmly available. Guests should feel welcome whether they join often, occasionally, or barely at all.',
+} satisfies CommunityExpression;
+
+export function normalizeCommunityExpression(
+    input?: Partial<CommunityExpression> | null,
+): CommunityExpression {
+    return {
+        corePromise: input?.corePromise?.trim() || DEFAULT_COMMUNITY_EXPRESSION.corePromise,
+        participationStyle: input?.participationStyle?.trim() || DEFAULT_COMMUNITY_EXPRESSION.participationStyle,
+        socialGravity: input?.socialGravity?.trim() || DEFAULT_COMMUNITY_EXPRESSION.socialGravity,
+        optionalGatherings: input?.optionalGatherings?.length ? input.optionalGatherings : DEFAULT_COMMUNITY_EXPRESSION.optionalGatherings,
+        belongingSignals: input?.belongingSignals?.length ? input.belongingSignals : DEFAULT_COMMUNITY_EXPRESSION.belongingSignals,
+        solitudeAntiPatterns: input?.solitudeAntiPatterns?.length ? input.solitudeAntiPatterns : DEFAULT_COMMUNITY_EXPRESSION.solitudeAntiPatterns,
+        visualTogethernessNotes: input?.visualTogethernessNotes?.trim() || DEFAULT_COMMUNITY_EXPRESSION.visualTogethernessNotes,
+        copyFramingRule: input?.copyFramingRule?.trim() || DEFAULT_COMMUNITY_EXPRESSION.copyFramingRule,
+    };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 1A + 1B Combined: Campaign Aesthetic Brief
 // ────────────────────────────────────────────────────────────────────────────
@@ -231,6 +419,7 @@ export const CampaignAestheticBriefSchema = z.object({
         avoidList: z.array(z.string()),
         referenceMoodboard: z.array(z.string()),
         plausibilityFramework: VisualPlausibilityFrameworkSchema,
+        humanRepresentation: HumanRepresentationGuidanceSchema,
     }),
 
     messaging: z.object({
@@ -246,6 +435,8 @@ export const CampaignAestheticBriefSchema = z.object({
         toneKeywords: z.array(z.string()),
         voicePersona: z.string(),
     }),
+
+    communityExpression: CommunityExpressionSchema,
 
     socialConcepts: z.object({
         tiktokOrganic: TikTokConceptSetSchema,
@@ -289,6 +480,7 @@ export const CampaignAestheticBriefSchema = z.object({
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
     humanReviewStatus: z.enum(['pending', 'approved', 'revised']),
+    redTeamReview: RedTeamReviewSchema.optional(),
     revisionNotes: z.string().optional(),
 });
 

@@ -31,6 +31,7 @@ export async function generatePlatformCopy(
 
   const systemPrompt = `You are the copywriter for Leisure Life Interactive, a boutique cruise campaign studio.
 You write platform-native copy that is sharp, niche-specific, and avoids generic cruise marketing language.
+You must preserve ambient community: the trip should feel socially magnetic, optional, welcoming, and low-pressure, never like a workshop schedule or a lonely luxury retreat.
 Return ONLY valid JSON matching the exact schema specified. No markdown, no explanation.`;
 
   const userPrompt = `Generate all platform copy for this campaign. Return JSON matching this schema exactly:
@@ -71,13 +72,20 @@ Campaign Context:
 - Elevator Pitch: ${brief.messaging.elevatorPitch}
 - Tone Keywords: ${brief.messaging.toneKeywords.join(', ')}
 - Voice Persona: ${brief.messaging.voicePersona}
+- Community Core Promise: ${brief.communityExpression.corePromise}
+- Participation Style: ${brief.communityExpression.participationStyle}
+- Social Gravity: ${brief.communityExpression.socialGravity}
+- Optional Gatherings: ${brief.communityExpression.optionalGatherings.join(', ')}
+- Belonging Signals: ${brief.communityExpression.belongingSignals.join(', ')}
+- Solitude Anti-Patterns: ${brief.communityExpression.solitudeAntiPatterns.join(', ')}
+- Copy Framing Rule: ${brief.communityExpression.copyFramingRule}
 - CTA Variants: Waitlist: "${brief.messaging.ctaVariants.waitlist}", Book: "${brief.messaging.ctaVariants.bookNow}"
 - Aesthetic: ${brief.visual.aestheticLabel}
 - TikTok Hook (reference): ${brief.socialConcepts.tiktokOrganic.hook}
 - Instagram Feed Caption (reference): ${brief.socialConcepts.instagramFeed.caption}
 - Facebook Ad Headline (reference): ${brief.socialConcepts.facebookAd.headline}
 
-Generate copy that is niche-native, avoids generic cruise tropes, and matches the ${brief.visual.aestheticLabel} aesthetic.`;
+Generate copy that is niche-native, avoids generic cruise tropes, matches the ${brief.visual.aestheticLabel} aesthetic, frames group energy as drop-in/drop-out and welcoming, and avoids both workshop language and emotionally empty solo-retreat language.`;
 
   const { content } = await callLLM(model, userPrompt, {
     systemPrompt,

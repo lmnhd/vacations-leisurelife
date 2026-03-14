@@ -2,7 +2,7 @@ import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } fro
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import { Campaign } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
-import { CampaignAestheticBrief, CampaignAestheticBriefSchema, normalizeVisualPlausibilityFramework } from './schema';
+import { CampaignAestheticBrief, CampaignAestheticBriefSchema, normalizeCommunityExpression, normalizeHumanRepresentationGuidance, normalizeVisualPlausibilityFramework } from './schema';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
@@ -12,7 +12,9 @@ function normalizeStoredAestheticBriefShape(brief: CampaignAestheticBrief): Camp
         visual: {
             ...brief.visual,
             plausibilityFramework: normalizeVisualPlausibilityFramework(brief.visual?.plausibilityFramework),
+            humanRepresentation: normalizeHumanRepresentationGuidance(brief.visual?.humanRepresentation),
         },
+        communityExpression: normalizeCommunityExpression(brief.communityExpression),
     };
 }
 

@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 let phaseBRunning = false;
 

@@ -255,18 +255,18 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                 </TabsContent>
 
                                 <TabsContent value="expect" className="grid gap-6">
-                                    <div className="grid gap-6 md:grid-cols-[1.05fr_0.95fr]">
-                                        <div className="grid gap-4">
+                                    <div className="grid gap-8 xl:grid-cols-[1.08fr_0.92fr]">
+                                        <div className="grid gap-5">
                                             <div>
                                                 <h2 className="text-xl font-semibold text-slate-950">What Guests Can Expect</h2>
                                             </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
+                                            <div className="grid gap-4">
                                                 {landing.story.whatToExpect.map((item, idx) => (
-                                                    <div key={item} className="relative overflow-hidden border border-slate-200 bg-slate-50 p-4 pr-24 text-sm leading-7 text-slate-700">
-                                                        <span className="relative z-10 block">{item}</span>
+                                                    <div key={item} className="grid gap-4 border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700 md:grid-cols-[minmax(0,1fr)_88px] md:items-end">
+                                                        <span className="block max-w-2xl">{item}</span>
                                                         {getGalleryImage(4 + idx) && (
                                                             <div
-                                                                className="pointer-events-none absolute bottom-3 right-3 h-20 w-16 rotate-[6deg] rounded-sm border-[4px] border-white shadow-lg"
+                                                                className="pointer-events-none h-20 w-16 justify-self-start rounded-sm border-[4px] border-white shadow-lg md:justify-self-end"
                                                                 style={{ backgroundImage: `url(${getGalleryImage(4 + idx)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                                             />
                                                         )}
@@ -275,12 +275,12 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-4">
+                                        <div className="grid gap-5">
                                             <div>
                                                 <h2 className="text-xl font-semibold text-slate-950">Before You Commit</h2>
                                             </div>
                                             {getGalleryImage(7) && (
-                                                <div className="relative h-36 overflow-hidden border border-slate-200 bg-slate-100">
+                                                <div className="relative h-40 overflow-hidden border border-slate-200 bg-slate-100">
                                                     <div
                                                         className="absolute inset-0 bg-cover bg-center"
                                                         style={{ backgroundImage: `url(${getGalleryImage(7)?.url})` }}

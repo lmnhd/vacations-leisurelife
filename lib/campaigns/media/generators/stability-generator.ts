@@ -126,6 +126,7 @@ async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs: num
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
     const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
+    const casting = brief.visual.humanRepresentation;
     const docDirection = brief.landingStillBible?.globalDirectionNotes
         ?? brief.productionBible?.globalDirectionNotes
         ?? compositionNotes;
@@ -157,7 +158,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
         'Prefer a prop-free composition unless one tiny cue genuinely improves realism',
     ];
 
-    const landingStillSpecs = selectLandingStillSourceSpecs(brief, new Set(['hero_primary', 'hero_alt', 'concept']));
+    const landingStillSpecs = selectHeroLandingStillSpecs(brief);
     if (landingStillSpecs.length > 0) {
         return landingStillSpecs.map((still, index) => {
             const cueStrategy = cueStrategies[index % cueStrategies.length];
@@ -186,6 +187,12 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
                 `People count: 1-3 max, no crowds, no dense group scenes`,
+                `Casting goal: ${casting.castingGoal}`,
+                `Age guidance: ${casting.ageRangeGuidance}`,
+                `Diversity guidance: ${casting.diversityIntent}`,
+                `Pairing guidance: ${casting.pairingGuidance}`,
+                `Styling guidance: ${casting.stylingGuidance}`,
+                `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
                 `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
                 landscapeGuardrails.reality,
@@ -259,6 +266,12 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
             `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
             `People count: 1-3 max, no crowds, no dense group scenes; at least some prompts should feel softly social rather than isolated`,
+            `Casting goal: ${casting.castingGoal}`,
+            `Age guidance: ${casting.ageRangeGuidance}`,
+            `Diversity guidance: ${casting.diversityIntent}`,
+            `Pairing guidance: ${casting.pairingGuidance}`,
+            `Styling guidance: ${casting.stylingGuidance}`,
+            `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
             `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
             `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
             landscapeGuardrails.reality,
@@ -280,7 +293,69 @@ function selectLandingStillSourceSpecs(
     const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck']);
     const matchingUsages = stills.filter((still) => allowedUsages.has(still.usage));
     const preferredStills = matchingUsages.filter((still) => preferredCategories.has(still.referenceCategory));
-    return (preferredStills.length > 0 ? preferredStills : matchingUsages).slice(0, 5);
+    return dedupeAndDiversifyStillSpecs(preferredStills.length > 0 ? preferredStills : matchingUsages, 5);
+}
+
+function dedupeAndDiversifyStillSpecs(
+    stills: readonly LandingStillSpec[],
+    maxCount: number,
+): LandingStillSpec[] {
+    const unique = stills.filter((still, index, array) =>
+        array.findIndex((candidate) => candidate.stillId === still.stillId) === index,
+    );
+
+    const byUsage = new Map<LandingStillSpec['usage'], LandingStillSpec[]>();
+    for (const still of unique) {
+        const existing = byUsage.get(still.usage) ?? [];
+        existing.push(still);
+        byUsage.set(still.usage, existing);
+    }
+
+    const usageOrder: LandingStillSpec['usage'][] = ['hero_primary', 'hero_alt', 'concept', 'email_header', 'social_square'];
+    const picked: LandingStillSpec[] = [];
+    const usedCategories = new Set<string>();
+
+    for (let pass = 0; picked.length < maxCount && pass < unique.length; pass += 1) {
+        for (const usage of usageOrder) {
+            const candidates = byUsage.get(usage) ?? [];
+            const nextCandidate = candidates.find((candidate) =>
+                !picked.some((pickedStill) => pickedStill.stillId === candidate.stillId)
+                && !usedCategories.has(candidate.referenceCategory),
+            ) ?? candidates.find((candidate) => !picked.some((pickedStill) => pickedStill.stillId === candidate.stillId));
+
+            if (!nextCandidate) {
+                continue;
+            }
+
+            picked.push(nextCandidate);
+            usedCategories.add(nextCandidate.referenceCategory);
+            if (picked.length >= maxCount) {
+                break;
+            }
+        }
+    }
+
+    return picked;
+}
+
+function selectHeroLandingStillSpecs(brief: CampaignAestheticBrief): LandingStillSpec[] {
+    return selectLandingStillSourceSpecs(brief, new Set(['hero_primary', 'hero_alt', 'concept']));
+}
+
+function selectConceptLandingStillSpecs(brief: CampaignAestheticBrief): LandingStillSpec[] {
+    const stills = brief.landingStillBible?.stillLibrary ?? [];
+    if (stills.length === 0) {
+        return [];
+    }
+
+    const conceptFirst = stills.filter((still) => still.usage === 'concept');
+    const conceptFriendly = conceptFirst.length > 0
+        ? conceptFirst
+        : stills.filter((still) => still.usage === 'hero_alt' || still.usage === 'social_square' || still.usage === 'email_header');
+    const editorialCategories = new Set(['interior', 'destination_view', 'observation_lounge', 'pool_deck', 'exterior']);
+    const categoryWeighted = conceptFriendly.filter((still) => editorialCategories.has(still.referenceCategory));
+
+    return dedupeAndDiversifyStillSpecs(categoryWeighted.length > 0 ? categoryWeighted : conceptFriendly, 4);
 }
 
 function selectHeroSourceScenes(brief: CampaignAestheticBrief): SceneSpec[] {
@@ -292,6 +367,45 @@ function selectHeroSourceScenes(brief: CampaignAestheticBrief): SceneSpec[] {
     const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck']);
     const preferredScenes = scenes.filter((scene) => preferredCategories.has(scene.referenceCategory));
     return (preferredScenes.length > 0 ? preferredScenes : scenes).slice(0, 5);
+}
+
+function selectConceptSourceScenes(brief: CampaignAestheticBrief): SceneSpec[] {
+    const scenes = brief.productionBible?.sceneLibrary ?? [];
+    if (scenes.length === 0) {
+        return [];
+    }
+
+    const conceptCategories = ['destination_view', 'interior', 'pool_deck', 'exterior', 'atrium'];
+    const preferred = conceptCategories.flatMap((category) =>
+        scenes.filter((scene) => scene.referenceCategory === category),
+    );
+    const source = preferred.length > 0 ? preferred : scenes;
+
+    const picked: SceneSpec[] = [];
+    const usedCategories = new Set<string>();
+    for (const scene of source) {
+        if (picked.length >= 4) {
+            break;
+        }
+        if (usedCategories.has(scene.referenceCategory) && picked.length + 1 < Math.min(4, source.length)) {
+            continue;
+        }
+        picked.push(scene);
+        usedCategories.add(scene.referenceCategory);
+    }
+
+    if (picked.length < 4) {
+        for (const scene of source) {
+            if (picked.length >= 4) {
+                break;
+            }
+            if (!picked.some((pickedScene) => pickedScene.sceneId === scene.sceneId)) {
+                picked.push(scene);
+            }
+        }
+    }
+
+    return picked;
 }
 
 function buildTravelFirstHeroDirection(brief: CampaignAestheticBrief, shipName: string): string {
@@ -362,8 +476,55 @@ function getHeroShotVariant(index: number): {
     return variants[index % variants.length];
 }
 
+function getConceptShotVariant(index: number): {
+    label: string;
+    framing: string;
+    compositionBias: string;
+    subjectStrategy: string;
+    environmentPriority: string;
+    paletteBias: string;
+} {
+    const variants = [
+        {
+            label: 'editorial environment frame',
+            framing: 'wide composition with architecture and horizon carrying the image before any one person does',
+            compositionBias: 'prioritize place, atmosphere, and ship geometry over a single hero pose',
+            subjectStrategy: 'people are secondary and natural, appearing as part of the scene rather than the whole point of it',
+            environmentPriority: 'let sea, skyline, window light, or deck lines dominate the composition',
+            paletteBias: 'lean into the broad mood of the palette through ambient light and material tones',
+        },
+        {
+            label: 'social chemistry frame',
+            framing: 'two-person or small-cluster composition with visible relational spacing and relaxed interaction',
+            compositionBias: 'make the image about companionship, timing, and emotional ease rather than about a hero silhouette',
+            subjectStrategy: 'use a pair or trio with distinct posture and believable conversation energy',
+            environmentPriority: 'keep ship context readable but not poster-like',
+            paletteBias: 'let wardrobe accents and reflected light carry the palette more than the background',
+        },
+        {
+            label: 'detail-led travel texture',
+            framing: 'cropped or mid-range composition led by tactile details, surfaces, and one restrained human cue',
+            compositionBias: 'favor texture, objects-in-context, and material atmosphere without becoming product photography',
+            subjectStrategy: 'show partial figures, hands-at-rest, or seated posture rather than a full posed subject',
+            environmentPriority: 'use ship materials, tabletops, windows, textiles, and light falloff as the emotional carrier',
+            paletteBias: 'push accent colors and tonal contrast more strongly than in the other concept slots',
+        },
+        {
+            label: 'destination mood postcard',
+            framing: 'travel-poster-like square frame with destination atmosphere or sea relation strongly present',
+            compositionBias: 'make the concept feel collectible and moodboard-worthy rather than headline-safe',
+            subjectStrategy: 'subjects can be small in frame or absent if the place itself is doing the work',
+            environmentPriority: 'destination air, harbor light, railings, or open sea should clearly differentiate this from the other concepts',
+            paletteBias: 'use the palette through sky, water, and environmental color harmony',
+        },
+    ] as const;
+
+    return variants[index % variants.length];
+}
+
 function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     const { aestheticLabel, imageryMood, colorPalette, lightingStyle } = brief.visual;
+    const casting = brief.visual.humanRepresentation;
     const landscapeGuardrails = buildShipLandscapeGuardrails();
     const travelFirstDirection = buildTravelFirstHeroDirection(brief, brief.themeName);
     const plausibility = brief.visual.plausibilityFramework;
@@ -375,9 +536,12 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
         'harbor haze, rail light, and destination atmosphere rather than a visible game object',
     ];
 
-    const conceptSourceStills = selectLandingStillSourceSpecs(brief, new Set(['concept', 'hero_alt', 'hero_primary']));
+    const conceptSourceStills = selectConceptLandingStillSpecs(brief);
     if (conceptSourceStills.length > 0) {
-        return conceptSourceStills.slice(0, 4).map((still, index) => [
+        return conceptSourceStills.slice(0, 4).map((still, index) => {
+            const conceptVariant = getConceptShotVariant(index);
+
+            return [
             `${aestheticLabel} atmospheric concept frame derived from approved Landing Still Bible`,
             `Primary image blueprint: ${still.imagePrompt}`,
             `Still usage: ${still.usage}`,
@@ -385,37 +549,62 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Still location: ${still.location}`,
             `Still mood: ${still.mood}`,
             `Reference category: ${still.referenceCategory}`,
+            `Concept role: ${conceptVariant.label}`,
+            `Framing bias: ${conceptVariant.framing}`,
+            `Composition bias: ${conceptVariant.compositionBias}`,
+            `Subject strategy: ${conceptVariant.subjectStrategy}`,
+            `Environment priority: ${conceptVariant.environmentPriority}`,
+            `Palette bias: ${conceptVariant.paletteBias}`,
             `Direction: ${travelFirstDirection}`,
             `Believable niche cue: ${nicheMoments[index % Math.max(nicheMoments.length, 1)] ?? 'subtle social or styling cue only'}`,
             `Signal priority: ${conceptSignalRotation[index % conceptSignalRotation.length]}`,
+            `Casting goal: ${casting.castingGoal}`,
+            `Diversity guidance: ${casting.diversityIntent}`,
+            `Age guidance: ${casting.ageRangeGuidance}`,
+            `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
             `Palette treatment: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
             `Lighting: ${still.lighting || lightingStyle}`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
             landscapeGuardrails.reality,
-            `Style: Photorealistic, grounded travel editorial, authentic and restrained`,
+            `Style: Photorealistic, grounded travel editorial, authentic and restrained; do not make this read like another landing hero`,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
-        ].join('. '));
+        ].join('. ');
+        });
     }
 
-    const conceptSourceScenes = selectHeroSourceScenes(brief);
+    const conceptSourceScenes = selectConceptSourceScenes(brief);
     if (conceptSourceScenes.length > 0) {
-        return conceptSourceScenes.slice(0, 4).map((scene, index) => [
+        return conceptSourceScenes.slice(0, 4).map((scene, index) => {
+            const conceptVariant = getConceptShotVariant(index);
+
+            return [
             `${aestheticLabel} atmospheric concept frame derived from approved Production Bible scene`,
             `Primary image blueprint: ${scene.imagePrompt}`,
             `Scene action: ${scene.subjectAction}`,
             `Scene location: ${scene.location}`,
             `Scene mood: ${scene.mood}`,
             `Reference category: ${scene.referenceCategory}`,
+            `Concept role: ${conceptVariant.label}`,
+            `Framing bias: ${conceptVariant.framing}`,
+            `Composition bias: ${conceptVariant.compositionBias}`,
+            `Subject strategy: ${conceptVariant.subjectStrategy}`,
+            `Environment priority: ${conceptVariant.environmentPriority}`,
+            `Palette bias: ${conceptVariant.paletteBias}`,
             `Direction: ${travelFirstDirection}`,
             `Believable niche cue: ${nicheMoments[index % Math.max(nicheMoments.length, 1)] ?? 'subtle social or styling cue only'}`,
             `Signal priority: ${conceptSignalRotation[index % conceptSignalRotation.length]}`,
+            `Casting goal: ${casting.castingGoal}`,
+            `Diversity guidance: ${casting.diversityIntent}`,
+            `Age guidance: ${casting.ageRangeGuidance}`,
+            `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
             `Palette treatment: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
             `Lighting: ${lightingStyle}`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
             landscapeGuardrails.reality,
-            `Style: Photorealistic, grounded travel editorial, authentic and restrained`,
+            `Style: Photorealistic, grounded travel editorial, authentic and restrained; do not make this read like another landing hero`,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
-        ].join('. '));
+        ].join('. ');
+        });
     }
 
     const concepts = [
@@ -425,19 +614,31 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
         `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; calm travel editorial`,
     ];
 
-    return concepts.map((concept, index) =>
-        [
+    return concepts.map((concept, index) => {
+        const conceptVariant = getConceptShotVariant(index);
+
+        return [
             concept,
+            `Concept role: ${conceptVariant.label}`,
+            `Framing bias: ${conceptVariant.framing}`,
+            `Composition bias: ${conceptVariant.compositionBias}`,
+            `Subject strategy: ${conceptVariant.subjectStrategy}`,
+            `Environment priority: ${conceptVariant.environmentPriority}`,
+            `Palette bias: ${conceptVariant.paletteBias}`,
             `Direction: ${travelFirstDirection}`,
             `Believable niche cue: ${nicheMoments[index % Math.max(nicheMoments.length, 1)] ?? 'subtle social or styling cue only'}`,
             `Signal priority: ${conceptSignalRotation[index % conceptSignalRotation.length]}`,
+            `Casting goal: ${casting.castingGoal}`,
+            `Diversity guidance: ${casting.diversityIntent}`,
+            `Age guidance: ${casting.ageRangeGuidance}`,
+            `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
             `Object rule: do not require cards, dice, tokens, scorepads, or pins as the main read of the image`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
             landscapeGuardrails.reality,
-            `Style: Photorealistic, grounded travel editorial, authentic and restrained`,
+            `Style: Photorealistic, grounded travel editorial, authentic and restrained; each concept should look materially different from the hero set and from the other concepts`,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
-        ].join('. ')
-    );
+        ].join('. ');
+    });
 }
 
 function buildReferenceGroundedHeroPrompt(

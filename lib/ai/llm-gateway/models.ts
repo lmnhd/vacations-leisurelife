@@ -152,7 +152,7 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_INSTANT]: {
     provider:      'openai',
-    apiId:         process.env.OPENAI_INSTANT_MODEL?.trim() || process.env.OPENAI_FALLBACK_MODEL?.trim() || 'gpt-5-mini',
+    apiId:         process.env.OPENAI_INSTANT_MODEL?.trim() || process.env.OPENAI_FALLBACK_MODEL?.trim() || 'gpt-5.4-instant',
     maxTokens:     4_096,
     defaultTemp:   0.5,
     contextWindow: 128_000,

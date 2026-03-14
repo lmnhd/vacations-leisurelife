@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red-team';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import { NANO_BANANA_CONFIG, getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
@@ -28,10 +29,12 @@ export async function POST(
     if (!brief) {
         return NextResponse.json({ error: `No aesthetic brief found for ${slug}` }, { status: 404 });
     }
-    if (brief.humanReviewStatus !== 'approved') {
-        return NextResponse.json({
-            error: `Brief not approved (status: ${brief.humanReviewStatus}). Approve it first.`
-        }, { status: 400 });
+
+    try {
+        assertAestheticBriefReadyForMedia(brief, slug);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Brief failed release gate.';
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 
     const { merch } = brief;

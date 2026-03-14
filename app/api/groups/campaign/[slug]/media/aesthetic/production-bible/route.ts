@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
 import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
 
-// Production Bible generation can take 2-4 minutes — raise the timeout ceiling.
-export const maxDuration = 300;
+// Keep hobby-plan deployments valid; production access is blocked by middleware unless explicitly enabled.
+export const maxDuration = 60;
 
 export async function POST(
     _req: NextRequest,
@@ -33,6 +33,8 @@ export async function POST(
             ...brief,
             landingStillBible: visualPlanning.landingStillBible,
             productionBible: visualPlanning.productionBible,
+            humanReviewStatus: 'pending' as const,
+            redTeamReview: undefined,
         };
         await saveAestheticBrief(updatedBrief);
 

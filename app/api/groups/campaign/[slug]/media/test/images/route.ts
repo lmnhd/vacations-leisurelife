@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red-team';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
 import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
@@ -49,10 +50,12 @@ export async function POST(
     if (!campaign) {
         return NextResponse.json({ error: `No campaign blueprint found for ${slug}` }, { status: 404 });
     }
-    if (brief.humanReviewStatus !== 'approved') {
-        return NextResponse.json({
-            error: `Brief not approved (status: ${brief.humanReviewStatus}). Approve it first.`
-        }, { status: 400 });
+
+    try {
+        assertAestheticBriefReadyForMedia(brief, slug);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Brief failed release gate.';
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 
     try {

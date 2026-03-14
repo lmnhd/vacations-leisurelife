@@ -1,5 +1,6 @@
 import { getAestheticBrief } from '../campaign-store';
 import { getCampaignBlueprint } from '../campaign-store';
+import { assertAestheticBriefReadyForMedia } from '../aesthetic-red-team';
 import {
     AssetRecord,
     AssetType,
@@ -300,9 +301,7 @@ export async function runMediaGeneration(
         if (!brief) {
             throw new Error(`No approved aesthetic brief found for campaign: ${slug}`);
         }
-        if (brief.humanReviewStatus !== 'approved') {
-            throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus})`);
-        }
+        assertAestheticBriefReadyForMedia(brief, slug);
 
         // 2. Update campaign status
         await updateCampaignMediaStatus(slug, 'generating');

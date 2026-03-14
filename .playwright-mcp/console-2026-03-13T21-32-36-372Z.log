@@ -1,0 +1,158 @@
+[ 4471408ms] [ERROR] %c%s%c Failed to get aesthetic brief for salt-and-meadow-2026: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "communityExpression"
+    ],
+    "message": "Required"
+  }
+]
+    at getAestheticBrief (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?173:2642:171)
+    at Function.all (<anonymous>:1:21)
+    at getCampaignLandingBySlug (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?174:3784:48)
+    at CampaignLandingPreviewPage (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?175:3819:20)
+    at resolveErrorDev (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1894:106)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1447:28)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1561:50)
+    at Object.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1385:17)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1615:50)
+    at Array.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at resolveConsoleEntry (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2020:96)
+    at processFullStringRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2421:17)
+    at processFullBinaryRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2361:9)
+    at processBinaryChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2470:221)
+    at progress (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2640:13) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 4471444ms] [ERROR] %c%s%c Failed to get aesthetic brief for salt-and-meadow-2026: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "communityExpression"
+    ],
+    "message": "Required"
+  }
+]
+    at getAestheticBrief (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?173:2642:171)
+    at Function.all (<anonymous>:1:21)
+    at getCampaignLandingBySlug (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?174:3784:48)
+    at CampaignLandingPreviewPage (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?175:3819:20)
+    at resolveErrorDev (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1894:106)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1447:28)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1561:50)
+    at Object.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1385:17)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1615:50)
+    at Array.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at resolveConsoleEntry (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2020:96)
+    at processFullStringRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2421:17)
+    at processFullBinaryRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2361:9)
+    at processBinaryChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2470:221)
+    at progress (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2640:13) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 4471594ms] ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "communityExpression"
+    ],
+    "message": "Required"
+  }
+]
+    at getAestheticBrief (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?173:2642:171)
+    at Function.all (<anonymous>:1:21)
+    at getCampaignLandingBySlug (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?174:3784:48)
+    at CampaignLandingPreviewPage (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?175:3819:20)
+    at resolveErrorDev (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1894:148)
+    at processFullStringRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2402:29)
+    at processFullBinaryRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2361:9)
+    at processBinaryChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2470:221)
+    at progress (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2640:13)
+[ 4518635ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[ 4519892ms] [ERROR] %c%s%c Failed to get aesthetic brief for salt-and-meadow-2026: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "communityExpression"
+    ],
+    "message": "Required"
+  }
+]
+    at getAestheticBrief (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?8:2642:171)
+    at Function.all (<anonymous>:1:21)
+    at getCampaignLandingBySlug (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?9:3784:48)
+    at CampaignLandingPreviewPage (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?10:3819:20)
+    at resolveErrorDev (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1894:106)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1447:28)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1561:50)
+    at Object.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at getOutlinedModel (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1385:17)
+    at parseModelString (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1615:50)
+    at Array.<anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2486:55)
+    at JSON.parse (<anonymous>)
+    at initializeModelChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1064:30)
+    at resolveConsoleEntry (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2020:96)
+    at processFullStringRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2421:17)
+    at processFullBinaryRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2361:9)
+    at processBinaryChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2470:221)
+    at progress (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2640:13) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 4520138ms] ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "communityExpression"
+    ],
+    "message": "Required"
+  }
+]
+    at getAestheticBrief (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?8:2642:171)
+    at Function.all (<anonymous>:1:21)
+    at getCampaignLandingBySlug (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?9:3784:48)
+    at CampaignLandingPreviewPage (about://React/Server/C:%5CUsers%5Ccclem%5CDropbox%5CSource%5CProjects-24%5CLeisure_Life_Interactive%5C.next%5Cdev%5Cserver%5Cchunks%5Cssr%5C%5Broot-of-the-server%5D__7202e074._.js?10:3819:20)
+    at resolveErrorDev (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:1894:148)
+    at processFullStringRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2402:29)
+    at processFullBinaryRow (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2361:9)
+    at processBinaryChunk (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2470:221)
+    at progress (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js:2640:13)
+[ 5556960ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[ 6609311ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[ 9300889ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[ 9300892ms] [ERROR] Failed to fetch RSC payload for http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026. Falling back to browser navigation. TypeError: network error @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[ 9300915ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[10938198ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[11616765ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[11620139ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[11623491ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[11626851ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[11630205ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[11637584ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=NgIhQ-N7z9RRLKdTn1NkP' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[16528582ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[18135448ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/tests/campaign-landing/salt-and-meadow-2026?_rsc=b6eld:0
+[87979057ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[87982426ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[87985801ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[87989166ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[87992537ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[87999917ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[88007287ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[88014658ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[88022044ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[88029449ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=XR9nP4ICzxqlEx1kRb0V5' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878

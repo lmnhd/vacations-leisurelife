@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+import { assertAestheticBriefPassedRedTeam } from '@/lib/campaigns/aesthetic-red-team';
 
 export async function POST(
     req: NextRequest,
@@ -11,6 +12,13 @@ export async function POST(
         const brief = await getAestheticBrief(slug);
         if (!brief) {
             return NextResponse.json({ error: "Brief not found" }, { status: 404 });
+        }
+
+        try {
+            assertAestheticBriefPassedRedTeam(brief, slug);
+        } catch (gateError) {
+            const message = gateError instanceof Error ? gateError.message : 'Red-team gate failed';
+            return NextResponse.json({ error: 'Red-team gate failed', details: message }, { status: 409 });
         }
 
         const approvedBrief = {
