@@ -327,10 +327,11 @@ SPECIFIC QUALITY BAR:
 - Hero slogan must be 6 words or fewer — a true hook, not a headline-plus-descriptor.
 - Hero slogan must be decisive and identity-anchoring — it should make the target audience feel named and pulled.
 - It must contain a verb, contrast, or identity marker beyond soft adjectives.
-- A slogan like "Soft greens, open seas" is too ambient. "Notice the green between the blue" is the bar.
+- A slogan like "Soft greens, open seas" is too ambient. "Sail first, spot the green." is the benchmark.
 - The slogan must be ownable by this exact campaign and not interchangeable with generic cruise marketing.
 - Sub-slogan must sell fast. It should read like a one-breath conversion line, not a literary description written for review.
 - If the sub-slogan sounds more like a magazine deck than a social-media caption, tighten it.
+- ALL SUPPORT COPY (elevator pitch, social captions, ad lines, email subjects) must match the hero line's level of sharpness and ownability. If a phrase could appear in any cruise marketing (e.g., "Botanical vibes, ocean-first"), it is not sharp enough. Rework it until it names or implies this specific audience.
 - Elevator pitch should sound like a desirable vacation, not a programming overview.
 - communityExpression must stay coherent with the campaign context and should explicitly protect both optionality and togetherness.
 - Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
@@ -698,6 +699,7 @@ Use these casting instructions as hard guidance across the still set and scene l
 Do not default to one repeated age band, one repeated ethnic presentation, or one default couple type across the set.
 When people appear, vary visible backgrounds across the campaign while keeping every subject theme-appropriate, cruise-plausible, and natural.
 Never use caricature, exoticizing cues, costume shorthand, or token-background casting.
+ALL-AGES EMBEDDING: At least 2 of the 16 specs must show multi-generational or family-adjacent groupings (e.g., parent-teen pair, grandparent pointing something out to a child, a mixed-age table laughing together). These moments must feel organic and story-native — not added as proof of demographic coverage. The niche cue should still be present in the frame.
 
 ## EVENT FRAMING RULE
 If highlight events mention holidays, seasonal phenomena, festivals, or itinerary-timed natural moments, treat them as atmospheric backdrop unless the campaign is explicitly sold as that event experience.
@@ -721,19 +723,29 @@ A scene that reads as "any luxury cruise" rather than "this specific community's
 - At least 3 of the 6 landing stills must also show paired or small-cluster togetherness.
 
 ## SIGNAL VARIETY RULE
-- The full set of scenes and stills must use at least 4 different signal families from:
-  wardrobe cue, conversational cue, object cue, architectural/environmental cue, posture/gesture cue, destination-atmosphere cue.
-- No single cue (e.g., "leaf pin", "phone photo", "window seat") may appear in more than 3 of the 16 total specs (10 scenes + 6 stills).
+- The full set of scenes and stills must use at least 5 different signal families from:
+  wardrobe cue, conversational cue, object cue, architectural/environmental cue, posture/gesture cue, destination-atmosphere cue, behavioral cue, spatial-choice cue.
+- No single cue (e.g., "leaf pin", "phone photo", "window seat") may appear in more than 2 of the 16 total specs (10 scenes + 6 stills).
 - If the same cue appeared in the previous spec, the next spec must use a different signal family.
-- Prefer at least 2 specs that communicate the niche purely through interpersonal chemistry, timing, or ship-space choice — no visible object at all.
-- ANTI-MONOCULTURE: Do not let the accessory-cue cluster (cuff, collar, pin, lanyard, icon tee, small noticing moment) carry more than 4 of 16 specs combined.
-- Expand into under-used cue families: shared laughter over a specific moment, plant-print fabric catching light, someone arranging a cabin windowsill cutting, the color green recurring in wardrobe across a group, a tote bag with botanical print, a phone screen briefly showing a plant photo to a friend, pointing at real dockside greenery during a port stop.
+- At least 3 specs must communicate the niche purely through interpersonal chemistry, timing, spatial choice, or body language — no visible object or accessory at all.
+- ANTI-MONOCULTURE: The accessory-recognition cluster (pin, print, lanyard, phone-photo, icon tee) may carry at most 3 of 16 specs total. These are valid cues but they cannot be the campaign's default vocabulary.
+- BEHAVIORAL RECOGNITION CUES (use these to replace accessory dependence): someone leaning in to inspect real shipboard greenery, two guests comparing phone screens of their home plants, a guest adjusting a small potted cutting on their cabin balcony shelf, someone photographing a real onboard planting, guests gravitating toward the same window-side seat near living plants, a couple choosing the table closest to real ferns in the dining room.
+- SPATIAL RECOGNITION CUES: guests choosing seats near existing ship greenery, a small cluster naturally forming around an atrium planter, choosing the cabin balcony to tend a travel cutting, gravitating toward the promenade deck's tree-lined section.
 
 ## SCENE SPECIFICITY FLOOR
-- Scenes set in spa, lounge, or generic calm-premium interiors must still carry a visible niche signal that distinguishes them from any other cruise campaign.
-- If a spa scene cannot plausibly include a niche cue, replace it with a different ship location that can.
+- At least 7 of 10 scenes must be set primarily ONBOARD the ship (deck, cabin, dining room, atrium, pool area, library, corridor, elevator lobby, promenade, sports deck). Onboard means the dominant architecture in the frame is recognizably ship infrastructure.
+- A maximum of 2 scenes may use shoreline, harbor, tender, or port-adjacent settings. These must still be anchored by visible ship context (gangway, tender with ship behind, dockside with hull in frame) rather than reading as generic tropical travel.
+- Scenes dominated by palms, beach, resort pool, or shoreline architecture without visible ship context are banned. If the setting reads as "any Caribbean resort" rather than "this ship in this port," it has failed.
+- Spa, lounge, or generic calm-premium interiors must carry a visible niche signal that distinguishes them from any other cruise campaign. If a spa scene cannot plausibly include a niche cue, replace it with a different ship location.
 - Generic tranquility scenes — warm teak, soft light, plush seating, glass of wine — are not allowed unless the niche is woven into the frame through wardrobe, conversation topic, carried object, or environmental detail.
-- At least 2 of 10 scenes should use ship-native locations that are under-represented: buffet terrace, embarkation atrium, tender boat, gangway with port backdrop, jogging track, library nook, elevator lobby with ocean view.
+- At least 2 of 10 scenes should use ship-native locations that are under-represented: buffet terrace, embarkation atrium, tender boat with ship behind, gangway with port backdrop, jogging track, library nook, elevator lobby with ocean view.
+
+## REALISM ENVELOPE RULE
+- Every scene and still must pass the realism test: "Could a real guest on this ship actually look like this, in this spot, doing this thing?"
+- Reject scenes that feel more like fashion editorial, perfume advertising, or art-directed metaphor than believable cruise moments.
+- Specifically avoid: dramatic scarf-blowing hero poses, dew-tracing or petal-touching macro moments, fog-shrouded contemplative silhouettes, cinematic rain scenes, and any composition where the styling overwhelms the vacation context.
+- If a scene reads as "this would win a photography award" but not as "this is what this cruise actually feels like," dial it back toward warmth, spontaneity, and genuine social ease.
+- The campaign's realism bar is VACATION SNAPSHOT, not TRAVEL EDITORIAL. The best images should feel like the luckiest candid from a guest's phone, not a styled magazine shoot.
 
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
