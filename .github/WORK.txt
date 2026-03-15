@@ -1,50 +1,20 @@
-This is materially better than the last version. The discovery foundation is holding, the aesthetic brief is more ownable, and the Production Bible now mostly behaves like the same campaign instead of a generic cruise moodboard. The remaining weaknesses are no longer “is this the right concept?” weaknesses. They are now “is this benchmark-grade yet?” weaknesses: some copy is still too long or over-explanatory, the bible still overuses a narrow cue family, and a few scenes drift toward stylish mood rather than high-confidence campaign specificity.
+The production bible reintroduces non-native greenery in ways that cut against the brief’s own realism guardrails. The library scene uses “a planter edge softly present” and frames a “small trio” as the community beat, the buffet scene is literally “the table tucked by greenery,” the atrium scene adds “hanging greenery,” and the pool scene adds “palm planters.” Those are exactly the kinds of cues that make the concept feel staged or resort-generic instead of ship-native and subtly encoded. See WORK.txt:588, WORK.txt:590, WORK.txt:623, WORK.txt:660, WORK.txt:672.
 
-2. What Works
+The scene library drifts away from the tight one-or-two-person social grammar that makes this concept distinctive. The brief says one or two people max and “mostly solos and pairs,” but the bible expands into a “small trio,” “a small group smiling and pointing,” and “friends sink into a shaded cabana.” That weakens the low-pressure recognition system and starts to read like general vacation marketing with a soft-green veneer. See WORK.txt:102, WORK.txt:543, WORK.txt:590, WORK.txt:650, WORK.txt:674.
 
-The brief now feels clearly downstream of the discovery blueprint rather than a softened generic travel variant.
-The top-line identity is stronger. “Notice the green between the blue” is a much better campaign anchor than the previous version’s softer mood line.
-The community layer is strong and well-defined: ambient, optional, socially legible, and not workshop-coded.
-The human-representation guidance is specific, useful, and operationally relevant.
-The Production Bible is much better aligned with the brief than before. It now carries the same campaign logic instead of abandoning it.
-The visual system has more signal variety: cuff, collar, pin, micro-graphic tee, icon lanyard, pattern noticing.
-The campaign still reads as cruise-first, not hobby-program-first.
-3. Problems
+The image-prompt language is still too uniformly “luxury travel editorial” and stylized, which flattens differentiation. The repeated “dreamy travel editorial, aspirational, warm cinematic color grade, f/1.8 bokeh” phrasing shows up across the stills and scenes, and it pushes the output toward a generic premium-travel finish instead of a more ownable Jewel-of-the-Seas-specific visual system. Representative examples are at WORK.txt:474, WORK.txt:539, WORK.txt:566, WORK.txt:662.
 
-The hero slogan is too long for a true hero slogan. It reads more like a headline plus descriptor in one line than a sharp campaign hook.
-The sub-slogan is better in concept than execution. “Phone-cam garden eyes…” is vivid, but slightly writerly and less immediate than it should be for conversion use.
-The campaign still relies heavily on one interaction pattern: small smile, quick hello, tiny noticing moment, drift away. That is coherent, but it risks flattening the campaign if reused across landing, ads, stills, and motion.
-The bible still repeats a tight cue family too often: cuff, collar, pin, icon lanyard, small shared noticing. Better than before, but still close to monoculture.
-Some scenes are still more “pleasant premium cruise atmosphere” than “houseplant people specifically.” The spa and lounge scenes are the softest examples.
-“No phones in video shots” conflicts with other campaign logic that uses one-photo sharing as part of the social mechanism. That inconsistency weakens downstream clarity.
-The still and motion systems are closer now, but not fully benchmark-level in breadth. They feel like one campaign, but not yet like a campaign with deep reserves.
-4. Brief Assessment
+A few moments still lean too poetic or synthetic rather than plausibly observed. “Leaf-shaped shadow dances across their arms,” “leaf-shadow drifts over a linen shoulder,” and “leaflike reflection skimming the glass” are elegant, but in aggregate they risk feeling generated instead of captured. One or two of these cues work; this many starts to read like visual motif enforcement rather than vacation reality. See WORK.txt:471, WORK.txt:536, WORK.txt:635.
 
-The CampaignAestheticBrief is now solidly viable. Theme fidelity is much better preserved, and the community logic survives translation into messaging and social concepts. The vacation-first posture is also intact. This version feels more confident, more specific, and less decorative than the previous one.
+The countdown/CTA layer is improved but still slightly generic in its closing move. “Sunset like this is three cabins away” is fine, but it sells scarcity on a generic beautiful-cruise image rather than on the campaign’s distinct social promise. That means the conversion layer is not fully cashing in the niche advantage the rest of the brief establishes. See WORK.txt:906, WORK.txt:936.
 
-The remaining brief weakness is sharpness, not direction. The copy still sometimes explains the campaign instead of landing it. The best parts are the tone system, communityExpression, and plausibility framework. The weakest parts are hero-line compactness and the tendency to lean on the same gentle-observer social grammar too often.
+Overall, this is strong. The discovery/blueprint is not the problem. The core identity is coherent, the slogan is good, the opt-in social rules are disciplined, and the main cue family is stable. The remaining failure is still in the aesthetic/bible translation layer: it keeps relaxing into premium-cruise editorial language, greenery-adjacent staging, and broader group vacation scenes when this concept wins by being quieter, tighter, and more encoded.
 
-5. Production Bible Assessment
+Grade: A-
+Recommendation: revise_then_continue
 
-This is the biggest improvement. Unlike the previous version, the Production Bible mostly belongs to the same campaign. The scene set is more usable, more niche-retentive, and more operationally grounded.
+If you want the next pass to land at A/A+, I’d focus on three edits only:
 
-It is still not A-level benchmark output yet. The scene library is stronger, but a few entries still drift toward cruise-luxury mood rather than precise botanical-social identity. The signal rotation is better but still somewhat repetitive. The no-phone rule also over-corrects against one of the campaign’s own believable social beats. So the bible is now good enough to iterate forward, but not yet strong enough to lock as the benchmark specimen.
-
-6. A+ Readiness
-
-This is not benchmark-ready yet, but it is now clearly in the aesthetic/bible refinement phase rather than the discovery rescue phase.
-
-What keeps it below benchmark level:
-
-hero and subhead are not yet crisp enough
-the campaign interaction grammar is still a bit too narrow
-the scene library needs 2 to 4 more differentiated ship-native social/environment beats
-a few bible rules and scene choices still feel slightly over-managed or internally inconsistent
-7. Required Revisions
-
-Shorten the hero slogan into a true hook. Keep “Notice the green between the blue” as the likely strongest anchor.
-Tighten the sub-slogan so it sells faster and sounds less written-for-review.
-Expand the scene vocabulary with a few new cue families that are still ship-native but not just cuff/pin/collar/quick smile.
-Replace or rewrite the weakest generic-luxury scenes, especially the spa/lounge-adjacent ones, so they feel more specifically leaf-social rather than just calm-premium.
-Resolve the phone inconsistency: either keep one-photo sharing as a valid motion-safe beat or remove it more globally from the campaign logic.
-Push one more layer of distinction into landing stills and video so each channel feels related but not compositionally repetitive.
+Remove all explicit planter/greenery infrastructure from the bible unless it is unquestionably ship-native and background-only.
+Force every hero scene back to solos or pairs, with one small family duo allowed but no trios/cabana-friend-group/tender-group beats.
+Replace the generic editorial prompt suffix with a more ship-specific realism spec tied to Jewel spaces, lensing, and observational travel photography rather than “aspirational cinematic bokeh” boilerplate.

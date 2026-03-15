@@ -744,8 +744,10 @@ A scene that reads as "any luxury cruise" rather than "this specific community's
 - Every scene and still must pass the realism test: "Could a real guest on this ship actually look like this, in this spot, doing this thing?"
 - Reject scenes that feel more like fashion editorial, perfume advertising, or art-directed metaphor than believable cruise moments.
 - Specifically avoid: dramatic scarf-blowing hero poses, dew-tracing or petal-touching macro moments, fog-shrouded contemplative silhouettes, cinematic rain scenes, and any composition where the styling overwhelms the vacation context.
+- Specifically avoid: leaf-shaped shadow dances, leaf-shadow drifts over fabric, leaflike reflections skimming glass. One poetic shadow cue may appear across the entire set. More than one reads as generated motif enforcement, not captured reality.
 - If a scene reads as "this would win a photography award" but not as "this is what this cruise actually feels like," dial it back toward warmth, spontaneity, and genuine social ease.
 - The campaign's realism bar is VACATION SNAPSHOT, not TRAVEL EDITORIAL. The best images should feel like the luckiest candid from a guest's phone, not a styled magazine shoot.
+- GREENERY STAGING RULE: Do not add planters, hanging greenery, potted plants, or tropical foliage to scenes as atmospheric props unless that greenery authentically exists in the specified ship location. Non-native greenery staging is the most common way this campaign drifts into resort-generic or set-dressed territory. If a scene needs a botanical cue, it must come from guest wardrobe, carried object, phone screen, or genuinely ship-resident planting — not a convenient nearby planter.
 
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
@@ -782,6 +784,10 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Rotate cue families across the scene library: interpersonal chemistry, posture, wardrobe detail, architectural framing, harbor atmosphere, and only occasional lightweight object cues.
 - At least half of the scene library should communicate the niche without requiring a visible niche object as the center of the frame.
 - At least half of the scene library should show ambient togetherness, shared attention, or easy companionship rather than isolated solo presence.
+- SOLO/PAIR GRAMMAR: The default social unit for this campaign is ONE or TWO people. Solos and pairs are the campaign's natural scale. Trios and larger groups are the exception, not the rule.
+- Allow a maximum of 2 scenes across the entire set (scenes + stills combined) to show 3 or more people together. All other specs must use solo or pair framing.
+- Specifically ban from scene descriptions: "a small group," "small trio," "a cluster of friends," "cabana-friend-group," "groups smiling and pointing." These read as general vacation marketing, not this campaign's low-pressure recognition system.
+- One family-adjacent moment (parent-teen pair, mixed-age pair) is allowed and may count as one of the pair slots. It should feel incidental and organic, not like a demographic inclusion marker.
 - Across the scene library, vary who appears in frame so the campaign does not imply one narrow default guest identity.
 - If one scene uses a card, die, token, notebook, pin, or similar object cue, the next scene should pivot away from that family and let people, ship space, or destination atmosphere carry the scene.
 - Favor easy social recognition, seat choice, timing, clothing texture, rail-side pauses, and window-side intimacy over repeated prop beats.
@@ -807,9 +813,11 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Prefer non-object signals first: eye contact, movement, spacing, clothing detail, architecture, harbor color, sea air, timing, and emotional cadence.
 - If an object cue is used, it must be incidental and must not be repeated as the signature beat of consecutive scenes.
 - For scene-library prompts intended for storyboard video, avoid foreground hands, close handheld objects, mugs, cups, glasses, and face-dominant portrait framing.
-- Style suffix to include in every prompt: "dreamy travel editorial, aspirational, warm cinematic color grade, f/1.8 bokeh, golden hour warmth"
-- BANNED WORDS in imagePrompt: "participant", "conduct", "deploy", "adjust", "conference", "training", "corporate", "business", "focus", "analyze", "study", "examine", "monitor", "record", "clipboard", "whiteboard", "presentation", "organized", "structured".
-- REQUIRED ENERGY: every imagePrompt must feel like a daydream — something you'd see and immediately want to book the trip.
+- Style suffix to include in every prompt: "observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing"
+- Ship-specific visual language: polished teak promenade rails, curved ship-hull portholes with sea light, Windjammer Café open-air terrace, Centrum atrium glass elevators, pool deck sun loungers with ocean beyond. Reference these to anchor images in ship reality rather than generic cruise or resort visual language.
+- AVOID in style suffix and prompts: "aspirational," "cinematic bokeh," "f/1.8," "golden hour warmth" as defaults. These push output toward generic premium-travel finish. Use natural mid-day ship light, overcast sea light, or late-afternoon deck light instead.
+- BANNED WORDS in imagePrompt: "participant", "conduct", "deploy", "adjust", "conference", "training", "corporate", "business", "focus", "analyze", "study", "examine", "monitor", "record", "clipboard", "whiteboard", "presentation", "organized", "structured", "planter", "hanging greenery", "tropical foliage", "resort pool", "palm-lined".
+- REQUIRED ENERGY: every imagePrompt must feel like a real moment you would be glad to have captured, not a shot someone planned and lit.
 
 ## LANDING STILL PROMPT RULES
 - Each landing still imagePrompt must optimize for a single-frame marketing still rather than a sequence beat.
