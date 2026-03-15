@@ -131,8 +131,8 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords
     const heroWords = heroSlogan.split(" ").filter(w => w.trim().length > 0).length;
     const subWords = subSlogan.split(" ").filter(w => w.trim().length > 0).length;
 
-    if (heroWords > 8) failures.push(`Hero slogan too long (${heroWords} words, max 8)`);
-    if (subWords > 14) failures.push(`Sub slogan too long (${subWords} words, max 14)`);
+    if (heroWords > 6) failures.push(`Hero slogan too long (${heroWords} words, max 6)`);
+    if (subWords > 12) failures.push(`Sub slogan too long (${subWords} words, max 12)`);
 
     // Check 3: Decisiveness — reject purely ambient adjective-noun slogans with no hook
     const ambientOnlyWords = new Set(['soft', 'gentle', 'calm', 'quiet', 'open', 'easy', 'warm', 'slow', 'still', 'light', 'deep']);
@@ -324,10 +324,13 @@ NON-OBJECT DIVERSITY RULES:
 - Do not let any single cue family dominate the moodboard, carousel, and video concepts all at once.
 
 SPECIFIC QUALITY BAR:
+- Hero slogan must be 6 words or fewer — a true hook, not a headline-plus-descriptor.
 - Hero slogan must be decisive and identity-anchoring — it should make the target audience feel named and pulled.
 - It must contain a verb, contrast, or identity marker beyond soft adjectives.
-- A slogan like "Soft greens, open seas" is too ambient. "Your people, your window seat, your ocean" is closer to the bar.
+- A slogan like "Soft greens, open seas" is too ambient. "Notice the green between the blue" is the bar.
 - The slogan must be ownable by this exact campaign and not interchangeable with generic cruise marketing.
+- Sub-slogan must sell fast. It should read like a one-breath conversion line, not a literary description written for review.
+- If the sub-slogan sounds more like a magazine deck than a social-media caption, tighten it.
 - Elevator pitch should sound like a desirable vacation, not a programming overview.
 - communityExpression must stay coherent with the campaign context and should explicitly protect both optionality and togetherness.
 - Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
@@ -723,6 +726,14 @@ A scene that reads as "any luxury cruise" rather than "this specific community's
 - No single cue (e.g., "leaf pin", "phone photo", "window seat") may appear in more than 3 of the 16 total specs (10 scenes + 6 stills).
 - If the same cue appeared in the previous spec, the next spec must use a different signal family.
 - Prefer at least 2 specs that communicate the niche purely through interpersonal chemistry, timing, or ship-space choice — no visible object at all.
+- ANTI-MONOCULTURE: Do not let the accessory-cue cluster (cuff, collar, pin, lanyard, icon tee, small noticing moment) carry more than 4 of 16 specs combined.
+- Expand into under-used cue families: shared laughter over a specific moment, plant-print fabric catching light, someone arranging a cabin windowsill cutting, the color green recurring in wardrobe across a group, a tote bag with botanical print, a phone screen briefly showing a plant photo to a friend, pointing at real dockside greenery during a port stop.
+
+## SCENE SPECIFICITY FLOOR
+- Scenes set in spa, lounge, or generic calm-premium interiors must still carry a visible niche signal that distinguishes them from any other cruise campaign.
+- If a spa scene cannot plausibly include a niche cue, replace it with a different ship location that can.
+- Generic tranquility scenes — warm teak, soft light, plush seating, glass of wine — are not allowed unless the niche is woven into the frame through wardrobe, conversation topic, carried object, or environmental detail.
+- At least 2 of 10 scenes should use ship-native locations that are under-represented: buffet terrace, embarkation atrium, tender boat, gangway with port backdrop, jogging track, library nook, elevator lobby with ocean view.
 
 ## EMOTIONAL TARGETS
 Every scene must evoke ONE of these feelings: wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom.
@@ -765,7 +776,8 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
 - For VIDEO scene-library use, humans should not be the ONLY subject — ship, sea, and architecture should share or lead the frame.
 - However, backgrounded pairs or small clusters of relaxed guests ARE allowed and encouraged. The goal is "people enjoying a ship," not "empty ship."
-- Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, phones, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
+- Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
+- PHONE EXCEPTION: A phone held at mid-distance showing a plant photo to a friend is an allowed still-image cue. For video-oriented scenes, the phone should be static and backgrounded, not animated.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
 - Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
 - Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join('; ') || 'guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues'}.
@@ -793,6 +805,8 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Avoid action chains, dense supporting cast, or multiple competing points of interest.
 - The prompt should make the still usable for a homepage hero, alternate hero, or editorial section image without requiring motion.
 - Avoid spectacle dependency. The image should still work if the viewer sees it for one second.
+- CHANNEL DISTINCTION: Landing stills should feel compositionally different from scene-library shots. Stills favor tight framing, clean negative space, and intimate subject scale. Scenes favor wider establishing framing, environmental depth, and architectural context.
+- At least 2 of 6 landing stills should use a framing approach that would NOT work as a scene-library cut — for example, tight crop on hands sharing a phone screen, macro detail of a botanical cuff, or a direct-to-camera smile with ocean bokeh.
 
 ## STORYBOARD RULES
 - Each storyboard must follow an emotional arc: intrigue/hook → building desire → peak euphoria → "this could be you" CTA.

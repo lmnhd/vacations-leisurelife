@@ -1,53 +1,50 @@
+This is materially better than the last version. The discovery foundation is holding, the aesthetic brief is more ownable, and the Production Bible now mostly behaves like the same campaign instead of a generic cruise moodboard. The remaining weaknesses are no longer “is this the right concept?” weaknesses. They are now “is this benchmark-grade yet?” weaknesses: some copy is still too long or over-explanatory, the bible still overuses a narrow cue family, and a few scenes drift toward stylish mood rather than high-confidence campaign specificity.
 
-Created outline
+2. What Works
 
-Searched web for "Mureka AI music API documentation platform.mureka.ai developer REST API"
+The brief now feels clearly downstream of the discovery blueprint rather than a softened generic travel variant.
+The top-line identity is stronger. “Notice the green between the blue” is a much better campaign anchor than the previous version’s softer mood line.
+The community layer is strong and well-defined: ambient, optional, socially legible, and not workshop-coded.
+The human-representation guidance is specific, useful, and operationally relevant.
+The Production Bible is much better aligned with the brief than before. It now carries the same campaign logic instead of abandoning it.
+The visual system has more signal variety: cuff, collar, pin, micro-graphic tee, icon lanyard, pattern noticing.
+The campaign still reads as cruise-first, not hobby-program-first.
+3. Problems
 
-Created outline
+The hero slogan is too long for a true hero slogan. It reads more like a headline plus descriptor in one line than a sharp campaign hook.
+The sub-slogan is better in concept than execution. “Phone-cam garden eyes…” is vivid, but slightly writerly and less immediate than it should be for conversion use.
+The campaign still relies heavily on one interaction pattern: small smile, quick hello, tiny noticing moment, drift away. That is coherent, but it risks flattening the campaign if reused across landing, ads, stills, and motion.
+The bible still repeats a tight cue family too often: cuff, collar, pin, icon lanyard, small shared noticing. Better than before, but still close to monoculture.
+Some scenes are still more “pleasant premium cruise atmosphere” than “houseplant people specifically.” The spa and lounge scenes are the softest examples.
+“No phones in video shots” conflicts with other campaign logic that uses one-photo sharing as part of the social mechanism. That inconsistency weakens downstream clarity.
+The still and motion systems are closer now, but not fully benchmark-level in breadth. They feel like one campaign, but not yet like a campaign with deep reserves.
+4. Brief Assessment
 
-Searched web for "site:mureka.ai API instrumental generation endpoint bearer token example"
+The CampaignAestheticBrief is now solidly viable. Theme fidelity is much better preserved, and the community logic survives translation into messaging and social concepts. The vacation-first posture is also intact. This version feels more confident, more specific, and less decorative than the previous one.
 
-Yes, that's the one! Mureka (platform.mureka.ai) — not Mubert. Good catch. They have:
+The remaining brief weakness is sharpness, not direction. The copy still sometimes explains the campaign instead of landing it. The best parts are the tone system, communityExpression, and plausibility framework. The weakest parts are hero-line compactness and the tendency to lean on the same gentle-observer social grammar too often.
 
-Live public API with Bearer token auth
-Instrumental generation (no vocals) — perfect for campaign background music
-Models: Mureka O1 (latest, highest quality) and V7.5
-Same async poll pattern as HeyGen/RunwayML (submit → poll → download)
-This is a direct drop-in for Suno. Want me to:
+5. Production Bible Assessment
 
-Replace 
+This is the biggest improvement. Unlike the previous version, the Production Bible mostly belongs to the same campaign. The scene set is more usable, more niche-retentive, and more operationally grounded.
 
-suno-generator.ts
- with a real mureka-generator.ts wired to platform.mureka.ai
-Update SUNO_CONFIG → MUREKA_CONFIG in 
+It is still not A-level benchmark output yet. The scene library is stronger, but a few entries still drift toward cruise-luxury mood rather than precise botanical-social identity. The signal rotation is better but still somewhat repetitive. The no-phone rule also over-corrects against one of the campaign’s own believable social beats. So the bible is now good enough to iterate forward, but not yet strong enough to lock as the benchmark specimen.
 
-media-pipeline-config.ts
-Add 'mureka' to GeneratorServiceEnum in schema
-Update the test page card and audio test route to use it
-Add MUREKA_API_KEY to the env check
-You'll need an API key from platform.mureka.ai — do you have one already, or do you want me to wire it up first and you grab the key after?
+6. A+ Readiness
 
-I got the key, but I did not add a payment card! This thing is expensive!!
+This is not benchmark-ready yet, but it is now clearly in the aesthetic/bible refinement phase rather than the discovery rescue phase.
 
+What keeps it below benchmark level:
 
-Searched web for "Mureka AI music API pricing credits free tier cost per generation platform.mureka.ai"
+hero and subhead are not yet crisp enough
+the campaign interaction grammar is still a bit too narrow
+the scene library needs 2 to 4 more differentiated ship-native social/environment beats
+a few bible rules and scene choices still feel slightly over-managed or internally inconsistent
+7. Required Revisions
 
-Yeah — the official platform.mureka.ai API starts at $1,000/month for B2B. That's enterprise pricing, not for us.
-
-Here's the real picture for this use case:
-
-Option	Cost	Status
-Mureka official API	$1,000/mo minimum	❌ Way too expensive
-Mureka consumer ($10/mo)	~$0.025/track	✅ Cheap — but no API access, just web UI
-Mubert API	~$0.10–$0.30/track, pay-as-you-go	✅ Real API, perfect for ambient loops
-Replicate (MusicGen)	~$0.01/track (Meta's open model)	✅ Cheapest, you already have Replicate-style billing
-My actual recommendation: Mubert (api.mubert.com). It's purpose-built for exactly what you need — royalty-free ambient instrumental loops for landing pages. Pay-as-you-go, clean REST API, no $1K minimums.
-
-That said — this is a low-priority feature. Theme music is nice-to-have: the campaign works 100% without it. The test card already returns a 501 Not Implemented gracefully.
-
-My suggestion: Leave it as-is for now and come back when you're ready to wire up Mubert. The generator slot is clean and waiting — just a key swap in the config.
-
-Want to move on to something more impactful, or shall I implement Mubert now?
-
-here is Mubert.com!
-{"method":"","error":{"code":102,"desc":"Wrong request"},"api_ver":"api_1.2.0"}
+Shorten the hero slogan into a true hook. Keep “Notice the green between the blue” as the likely strongest anchor.
+Tighten the sub-slogan so it sells faster and sounds less written-for-review.
+Expand the scene vocabulary with a few new cue families that are still ship-native but not just cuff/pin/collar/quick smile.
+Replace or rewrite the weakest generic-luxury scenes, especially the spa/lounge-adjacent ones, so they feel more specifically leaf-social rather than just calm-premium.
+Resolve the phone inconsistency: either keep one-photo sharing as a valid motion-safe beat or remove it more globally from the campaign logic.
+Push one more layer of distinction into landing stills and video so each channel feels related but not compositionally repetitive.
