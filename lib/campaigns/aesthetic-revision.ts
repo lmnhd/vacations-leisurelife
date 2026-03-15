@@ -2,23 +2,32 @@ import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '@/lib/campaigns/campaign-store';
-import { CampaignAestheticBriefSchema } from '@/lib/campaigns/schema';
+import { CampaignAestheticBriefSchema, ProductionBibleSchema, LandingStillBibleSchema } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Schemas
 // ────────────────────────────────────────────────────────────────────────────
 
+// OpenAI strict-mode requires every property to appear in `required`.
+// Zod .optional() removes fields from `required`, causing a 400.
+// Override optional brief fields as .nullable() so the model can return null
+// instead of omitting the key. We strip nulls before persisting.
 const AestheticRevisionBriefSchema = CampaignAestheticBriefSchema.omit({
     redTeamReview: true,
     humanReviewStatus: true,
     revisionNotes: true,
+    productionBible: true,
+    landingStillBible: true,
+}).extend({
+    productionBible: ProductionBibleSchema.nullable(),
+    landingStillBible: LandingStillBibleSchema.nullable(),
 });
 
 const AestheticRevisionCandidateSchema = z.object({
     brief: AestheticRevisionBriefSchema,
     revisionSummary: z.string(),
     addressedFixes: z.array(z.string()),
-    unresolvedRisks: z.array(z.string()).optional(),
+    unresolvedRisks: z.array(z.string()).nullable(),
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -109,6 +118,9 @@ Revision rules:
 
     const revisedBrief = CampaignAestheticBriefSchema.parse({
         ...object.brief,
+        // Strip nulls — the model returns null for missing bibles; persisted schema uses undefined
+        productionBible: object.brief.productionBible ?? undefined,
+        landingStillBible: object.brief.landingStillBible ?? undefined,
         slug: brief.slug,
         generatedAt: brief.generatedAt,
         generatedBy: brief.generatedBy,
