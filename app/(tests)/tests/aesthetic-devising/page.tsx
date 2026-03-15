@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
 
-type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming";
+type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising";
 
 const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
 
@@ -179,6 +179,31 @@ export default function AestheticDevisingTestPage() {
         }
     };
 
+    // ── REVISE ────────────────────────────────────────────────────────────────
+    const handleRevise = async () => {
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
+        setBriefState("revising");
+        setError("");
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/revise`, {
+                method: "POST",
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = typeof data.error === "string" ? data.error : "Revision failed";
+                const errorDetails = typeof data.details === "string" ? data.details : "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
+            setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
     const statusBadgeColor = (status: string) => {
         if (status === "approved") return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
         if (status === "revised") return "text-yellow-400 border-yellow-500/30 bg-yellow-500/10";
@@ -326,6 +351,22 @@ export default function AestheticDevisingTestPage() {
                                         : <AlertTriangle className="h-4 w-4" />
                                     }
                                     {briefState === "red_teaming" ? "Red-Teaming..." : result.redTeamReview ? "Re-run Red Team" : "Run Red Team"}
+                                </button>
+                            )}
+
+                            {/* Revise — only shown when review exists and verdict is not pass */}
+                            {hasLoadedBriefForCurrentSlug && result && result.redTeamReview && result.redTeamReview.verdict !== "pass" && (
+                                <button
+                                    id="btn-revise"
+                                    onClick={handleRevise}
+                                    disabled={isBusy}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-orange-500/20 border border-orange-500/40 text-orange-300 hover:bg-orange-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {briefState === "revising"
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <Wand2 className="h-4 w-4" />
+                                    }
+                                    {briefState === "revising" ? "Revising..." : "Revise"}
                                 </button>
                             )}
 
