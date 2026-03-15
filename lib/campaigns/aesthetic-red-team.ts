@@ -1,4 +1,6 @@
 import { ModelName, callLLM } from '@/lib/ai/llm-gateway';
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
 import type { Campaign } from './types';
 import {
     CampaignAestheticBrief,
@@ -11,18 +13,6 @@ import {
 
 export const AESTHETIC_RED_TEAM_PROMPT_VERSION = '2026-03-13-red-team-v1';
 const AESTHETIC_RED_TEAM_MODEL = ModelName.GPT_5_HIGH;
-
-function extractJsonObject(content: string): string {
-    const cleaned = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-
-    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-        throw new Error('Red-team response did not contain a valid JSON object.');
-    }
-
-    return cleaned.slice(firstBrace, lastBrace + 1);
-}
 
 function buildDeterministicIssues(brief: CampaignAestheticBrief): RedTeamIssue[] {
     const issues: RedTeamIssue[] = [];
@@ -161,14 +151,18 @@ ${JSON.stringify({
 Aesthetic brief:
 ${JSON.stringify(brief, null, 2)}`;
 
-    const { content } = await callLLM(AESTHETIC_RED_TEAM_MODEL, prompt, {
-        systemPrompt,
-        maxTokens: 4000,
+    const model = openai('gpt-5');
+    
+    const { object } = await generateObject({
+        model,
+        schema: RedTeamAssessmentSchema,
+        system: systemPrompt,
+        prompt,
         temperature: 0.2,
+        maxTokens: 4000,
     });
 
-    const parsed = RedTeamAssessmentSchema.parse(JSON.parse(extractJsonObject(content)) as unknown);
-    return normalizeAssessment(brief, parsed);
+    return normalizeAssessment(brief, object);
 }
 
 export function getRedTeamGateFailureReason(brief: CampaignAestheticBrief, slug: string): string | null {

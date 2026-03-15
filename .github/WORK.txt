@@ -1,20 +1,262 @@
-The production bible reintroduces non-native greenery in ways that cut against the brief’s own realism guardrails. The library scene uses “a planter edge softly present” and frames a “small trio” as the community beat, the buffet scene is literally “the table tucked by greenery,” the atrium scene adds “hanging greenery,” and the pool scene adds “palm planters.” Those are exactly the kinds of cues that make the concept feel staged or resort-generic instead of ship-native and subtly encoded. See WORK.txt:588, WORK.txt:590, WORK.txt:623, WORK.txt:660, WORK.txt:672.
+# Aesthetic Revision Loop — Agent Implementation Plan
 
-The scene library drifts away from the tight one-or-two-person social grammar that makes this concept distinctive. The brief says one or two people max and “mostly solos and pairs,” but the bible expands into a “small trio,” “a small group smiling and pointing,” and “friends sink into a shaded cabana.” That weakens the low-pressure recognition system and starts to read like general vacation marketing with a soft-green veneer. See WORK.txt:102, WORK.txt:543, WORK.txt:590, WORK.txt:650, WORK.txt:674.
+## Purpose
 
-The image-prompt language is still too uniformly “luxury travel editorial” and stylized, which flattens differentiation. The repeated “dreamy travel editorial, aspirational, warm cinematic color grade, f/1.8 bokeh” phrasing shows up across the stills and scenes, and it pushes the output toward a generic premium-travel finish instead of a more ownable Jewel-of-the-Seas-specific visual system. Representative examples are at WORK.txt:474, WORK.txt:539, WORK.txt:566, WORK.txt:662.
+Implement the missing post-red-team revision step for Phase 1 aesthetics.
 
-A few moments still lean too poetic or synthetic rather than plausibly observed. “Leaf-shaped shadow dances across their arms,” “leaf-shadow drifts over a linen shoulder,” and “leaflike reflection skimming the glass” are elegant, but in aggregate they risk feeling generated instead of captured. One or two of these cues work; this many starts to read like visual motif enforcement rather than vacation reality. See WORK.txt:471, WORK.txt:536, WORK.txt:635.
+Current state:
+- Aesthetic generation exists.
+- Aesthetic red team exists.
+- Approval is hard-gated on red-team `pass`.
+- A non-pass review sets `humanReviewStatus` to `revised`.
+- There is currently no first-class aesthetic revision path that consumes `redTeamReview.requiredFixes` and updates the brief in place.
 
-The countdown/CTA layer is improved but still slightly generic in its closing move. “Sunset like this is three cabins away” is fine, but it sells scarcity on a generic beautiful-cruise image rather than on the campaign’s distinct social promise. That means the conversion layer is not fully cashing in the niche advantage the rest of the brief establishes. See WORK.txt:906, WORK.txt:936.
+Required outcome:
+- Add an explicit `Revise` step between `Re-run Red Team` and `Approve`.
+- This step must revise the existing aesthetic brief to address the stored red-team findings.
+- After revision, the old red-team review must no longer be treated as current approval evidence.
+- Operator flow must become:
+	1. Generate / Re-gen Bible
+	2. Run Red Team
+	3. If verdict is `block` or `warn`, run `Revise`
+	4. Re-run Red Team
+	5. Approve only after `pass`
 
-Overall, this is strong. The discovery/blueprint is not the problem. The core identity is coherent, the slogan is good, the opt-in social rules are disciplined, and the main cue family is stable. The remaining failure is still in the aesthetic/bible translation layer: it keeps relaxing into premium-cruise editorial language, greenery-adjacent staging, and broader group vacation scenes when this concept wins by being quieter, tighter, and more encoded.
+## Architectural Rule
 
-Grade: A-
-Recommendation: revise_then_continue
+Red team diagnoses.
+Revision fixes.
+Approval gates.
 
-If you want the next pass to land at A/A+, I’d focus on three edits only:
+Do not collapse these roles together.
 
-Remove all explicit planter/greenery infrastructure from the bible unless it is unquestionably ship-native and background-only.
-Force every hero scene back to solos or pairs, with one small family duo allowed but no trios/cabana-friend-group/tender-group beats.
-Replace the generic editorial prompt suffix with a more ship-specific realism spec tied to Jewel spaces, lensing, and observational travel photography rather than “aspirational cinematic bokeh” boilerplate.
+## Existing Patterns To Mirror
+
+Use discovery-stage revision as the template.
+
+Reference implementation:
+- `lib/campaigns/discovery-revision.ts`
+- `lib/campaigns/discovery-iteration.ts`
+
+Relevant aesthetic files:
+- `lib/campaigns/aesthetic-red-team.ts`
+- `app/api/groups/campaign/[slug]/media/aesthetic/red-team/route.ts`
+- `app/api/groups/campaign/[slug]/media/aesthetic/approve/route.ts`
+- `app/(tests)/tests/aesthetic-devising/page.tsx`
+- `lib/campaigns/schema.ts`
+
+## Feature Name
+
+Use `aesthetic-revision` terminology, not `revisement`.
+
+Preferred names:
+- `reviseAestheticBrief`
+- `AestheticRevisionResult`
+- `app/api/groups/campaign/[slug]/media/aesthetic/revise/route.ts`
+
+## Core Behavior
+
+When a brief has `redTeamReview` with verdict `warn` or `block`, the operator can invoke a revision pass.
+
+That revision pass must:
+- Load the current campaign blueprint.
+- Load the current aesthetic brief.
+- Read the current `redTeamReview`.
+- Rewrite the brief in place so it directly addresses `requiredFixes` and major `issues`.
+- Preserve strengths unless a flagged issue requires replacement.
+- Keep the same campaign slug and same overall niche unless the review proves the current execution is impossible.
+- Produce a concise closure note explaining what was changed.
+- Clear stale red-team approval state so the revised brief must be reviewed again.
+
+## Required Post-Revision State
+
+After successful revision, save a revised brief with:
+- `humanReviewStatus: 'revised'`
+- `redTeamReview: undefined`
+- `revisionNotes: <new summary of what was changed to address the last review>`
+
+Do not preserve the old red-team review as if it still applies to the new brief.
+
+## Scope Of Revision
+
+The revision system must be allowed to update all aesthetic-brief sections needed to close findings, including:
+- `visual`
+- `messaging`
+- `communityExpression`
+- `socialConcepts`
+- `videoConcepts`
+- `merch`
+- `audio`
+- `productionBible`
+- `landingStillBible`
+
+The revision system must not change:
+- `slug`
+- core campaign identity without justification
+- generated timestamps except where the current storage pattern already refreshes them
+
+## Revision Contract
+
+Create a revision result structure similar to discovery revision.
+
+Suggested shape:
+
+```ts
+interface AestheticRevisionResult {
+	brief: CampaignAestheticBrief;
+	message: string;
+	revisionSummary: string;
+	addressedFixes: string[];
+}
+```
+
+Suggested generation schema:
+
+```ts
+const AestheticRevisionCandidateSchema = z.object({
+	brief: <full aesthetic brief schema excluding redTeamReview>,
+	revisionSummary: z.string(),
+	addressedFixes: z.array(z.string()),
+	unresolvedRisks: z.array(z.string()).optional(),
+});
+```
+
+Important:
+- Do not use the full persisted schema if it forces stale `redTeamReview` back into the model output.
+- Use a revision schema derived from `CampaignAestheticBriefSchema.omit({ redTeamReview: true })` and handle status / notes in code.
+
+## Required Backend Work
+
+### 1. New revision module
+
+Create:
+- `lib/campaigns/aesthetic-revision.ts`
+
+Responsibilities:
+- validate that a brief and review exist
+- refuse revision if there is no stored review to revise from
+- build a revision prompt that uses:
+	- campaign metadata
+	- current brief
+	- current red-team review
+- generate a revised brief
+- set post-revision state
+- save through existing campaign-store helpers
+- return structured revision result
+
+### 2. New API route
+
+Create:
+- `app/api/groups/campaign/[slug]/media/aesthetic/revise/route.ts`
+
+Behavior:
+- POST only
+- load brief
+- call `reviseAestheticBrief(slug)`
+- return `{ success, brief, message, revisionSummary, addressedFixes }`
+- respond with 404 if campaign or brief missing
+- respond with 409 if there is no red-team review to revise from
+
+### 3. UI button in test lab
+
+Update:
+- `app/(tests)/tests/aesthetic-devising/page.tsx`
+
+Add action button:
+- label: `Revise`
+- visible when a brief is loaded and `redTeamReview` exists with verdict not equal to `pass`
+- disabled while busy
+
+Expected operator UX:
+- `Run Red Team` produces `block` or `warn`
+- `Revise` becomes the obvious next step
+- after revision, badge remains `revised` and red-team badge returns to pending / cleared
+- operator then clicks `Re-run Red Team`
+
+### 4. Optional dashboard parity
+
+If the dashboard aesthetic page exposes review controls, add the same revise action there or leave a clear TODO if test-lab-only for now.
+
+## Revision Prompt Rules
+
+The reviser must be instructed to:
+- preserve the campaign's best existing signals
+- treat `requiredFixes` as mandatory, not advisory
+- directly close each blocker
+- resolve ship-plausibility issues concretely
+- remove or reframe compliance-risk copy
+- strip non-viable production instructions from motion and shot planning
+- preserve optionality and anti-workshop logic
+- improve with the minimum changes needed to clear review
+
+The reviser must not:
+- invent new gimmicks unrelated to the review
+- widen the concept into a generic luxury cruise campaign
+- retain disallowed mechanics just because they were already present
+- treat the old red-team review as still valid after changes
+
+## Concrete Fix Mapping For Current Houseplant Example
+
+The revision system should be able to handle cases like the current `houseplant-botanical-caribbean-2026` block.
+
+For that brief, expected revision behavior includes:
+- replace tender-return scenes with pier / gangway / dockside return alternatives verified against likely itinerary reality
+- relocate any bow / windscreen / flag framing to guest-accessible forward-facing spaces
+- remove crane / dolly / steadicam / overhead rig assumptions, or label them as AI-only if intentionally synthetic
+- remove guest-facing lanyard visuals from marketing assets
+- replace fixed scarcity counts with compliant dynamic or non-quantified phrasing
+- add explicit micro-venue ops rules such as max visible count, linger cap, dispersal behavior, and threshold avoidance
+
+This mapping should be achieved by the reviser from the stored review, not hardcoded specifically to this campaign.
+
+## Data Handling Rules
+
+On save after revision:
+- keep the latest revised content
+- set `humanReviewStatus` to `revised`
+- clear `redTeamReview`
+- update `revisionNotes`
+
+Do not automatically approve.
+Do not automatically generate media.
+Do not automatically rerun red team inside the same route.
+
+Keep revision and re-review as two explicit operator steps.
+
+## Acceptance Criteria
+
+The feature is complete only if all conditions below are true:
+
+1. A blocked or warned aesthetic brief can be revised through a first-class route.
+2. The revised brief is saved successfully without stale `redTeamReview` attached.
+3. The UI exposes a visible `Revise` action when red team is not `pass`.
+4. The operator can re-run red team on the revised brief immediately afterward.
+5. Approval remains impossible until a fresh red-team `pass` exists.
+6. Revision notes clearly summarize what changed.
+7. No existing approval gate is weakened.
+
+## Non-Goals
+
+Do not implement any of the following as part of this task unless required by the code path:
+- a new media-generation workflow
+- automatic legal verification
+- itinerary verification service integrations
+- autonomous approval
+- branching aesthetic revision strategies unless truly needed
+
+Keep V1 simple: single in-place revision pass.
+
+## Suggested Implementation Order
+
+1. Add `lib/campaigns/aesthetic-revision.ts`
+2. Add revision schema derived from existing aesthetic schema
+3. Add API route for `/media/aesthetic/revise`
+4. Add `Revise` button and client handler in the aesthetic test page
+5. Save revised brief with cleared review and populated `revisionNotes`
+6. Re-run type checks on touched files
+7. Manually verify the operator flow: red-team block -> revise -> red-team rerun -> approve unlocks on pass
+
+## Definition Of Done
+
+The operator no longer has to manually reinterpret a red-team block.
+The system itself provides a dedicated revision step that converts stored review findings into an updated aesthetic brief, then hands the result back to red team for a fresh pass/fail decision.
