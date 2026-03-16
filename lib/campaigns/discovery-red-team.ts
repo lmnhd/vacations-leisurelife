@@ -8,9 +8,36 @@ import {
     RedTeamReview,
     RedTeamReviewSchema,
 } from './schema';
+import { buildShipCopyAlignmentReview } from './ship-copy-alignment';
 
-export const DISCOVERY_RED_TEAM_PROMPT_VERSION = '2026-03-13-discovery-red-team-v1';
+export const DISCOVERY_RED_TEAM_PROMPT_VERSION = '2026-03-15-discovery-red-team-v2';
 const DISCOVERY_RED_TEAM_MODEL = ModelName.GPT_5_HIGH;
+
+const DISCOVERY_BLUEPRINT_FIELDS = [
+    'name',
+    'description',
+    'aesthetic',
+    'targetDates',
+    'targetDestination',
+    'shipTarget',
+    'highlightEvents',
+    'targetingKeywords',
+    'researchRationale',
+    'successLogic',
+    'audienceSignals',
+    'vacationFitRationale',
+    'cruiseNativeMoments',
+    'nicheExpressionMode',
+    'implausibleLiteralizations',
+    'allowedThemeSignals',
+    'discouragedThemeSignals',
+    'communityFitRationale',
+    'optionalGatheringMoments',
+    'optionalityStyle',
+    'solitudeRisks',
+];
+
+const NON_BLUEPRINT_OPERATOR_REQUEST_PATTERN = /(matchedshipname|matchedsaildate|activitiesapproval|activities approval|written approval|attach|attachment|citation|screenshot|pdf|playbook|host roster|hostroster|coverage schedule|alias map|signed[- ]off|backup venue\/time|link assets|storage\/printing protocol|upload .*teach|rights[- ]safe teach|asset|artifacts?|sharedlibrary|hostcoverage|codeofconduct|spacemanagementpolicy|beveragepolicy|windcheckprotocol|activity confirmation|approval[s]? with backup|audience artifact|confirmation placeholder|nightly coverage|coverage grid)/i;
 
 function buildDeterministicIssues(campaign: Campaign): RedTeamIssue[] {
     const issues: RedTeamIssue[] = [];
@@ -74,26 +101,80 @@ function mergeIssues(primary: RedTeamIssue[], secondary: RedTeamIssue[]): RedTea
     return merged;
 }
 
+function isNonBlueprintOperatorIssue(issue: RedTeamIssue): boolean {
+    const combinedText = `${issue.title} ${issue.evidence} ${issue.recommendation}`;
+    return NON_BLUEPRINT_OPERATOR_REQUEST_PATTERN.test(combinedText);
+}
+
+function isNonBlueprintOperatorFix(value: string): boolean {
+    return NON_BLUEPRINT_OPERATOR_REQUEST_PATTERN.test(value);
+}
+
+function splitOperatorFollowUps(assessment: RedTeamAssessment): {
+    structuralIssues: RedTeamIssue[];
+    operatorFollowUps: string[];
+    structuralRequiredFixes: string[];
+} {
+    const operatorFollowUps = new Set<string>();
+
+    const structuralIssues = assessment.issues.filter((issue) => {
+        if (!isNonBlueprintOperatorIssue(issue)) {
+            return true;
+        }
+
+        operatorFollowUps.add(issue.recommendation);
+        return false;
+    });
+
+    const structuralRequiredFixes = assessment.requiredFixes.filter((fix) => {
+        if (!isNonBlueprintOperatorFix(fix)) {
+            return true;
+        }
+
+        operatorFollowUps.add(fix);
+        return false;
+    });
+
+    return {
+        structuralIssues,
+        operatorFollowUps: Array.from(operatorFollowUps),
+        structuralRequiredFixes,
+    };
+}
+
 function normalizeAssessment(campaign: Campaign, assessment: RedTeamAssessment): RedTeamReview {
     const deterministicIssues = buildDeterministicIssues(campaign);
-    const issues = mergeIssues(deterministicIssues, assessment.issues);
-    const forcedBlock = deterministicIssues.some((issue) => issue.severity === 'blocker');
+    const shipCopyAlignment = buildShipCopyAlignmentReview(campaign);
+    const { structuralIssues, operatorFollowUps, structuralRequiredFixes } = splitOperatorFollowUps(assessment);
+    const issues = mergeIssues(mergeIssues(deterministicIssues, shipCopyAlignment.issues), structuralIssues);
+    const forcedBlock = issues.some((issue) => issue.severity === 'blocker');
     const requiredFixes = Array.from(new Set([
-        ...deterministicIssues
+        ...issues
             .filter((issue) => issue.severity === 'blocker')
             .map((issue) => issue.recommendation),
-        ...assessment.requiredFixes,
-    ]));
+        ...shipCopyAlignment.requiredFixes,
+        ...structuralRequiredFixes,
+    ])).filter((fix) => !isNonBlueprintOperatorFix(fix));
     const demotedToWarn = !forcedBlock && assessment.verdict === 'pass' && requiredFixes.length > 0;
+    const approvalRecommendation = demotedToWarn
+        ? `Discovery review downgraded to warn because required fixes remain before Phase 2: ${requiredFixes.slice(0, 3).join('; ')}`
+        : assessment.approvalRecommendation;
+
+    const operatorFollowUpSuffix = operatorFollowUps.length > 0
+        ? ` Operator follow-ups outside the discovery blueprint contract: ${operatorFollowUps.slice(0, 4).join('; ')}.`
+        : '';
 
     return RedTeamReviewSchema.parse({
         ...assessment,
         verdict: forcedBlock ? 'block' : demotedToWarn ? 'warn' : assessment.verdict,
         issues,
         requiredFixes,
-        approvalRecommendation: demotedToWarn
-            ? `Discovery review downgraded to warn because required fixes remain before Phase 2: ${requiredFixes.slice(0, 3).join('; ')}`
-            : assessment.approvalRecommendation,
+        approvalRecommendation: `${approvalRecommendation}${operatorFollowUpSuffix}`.trim(),
+        optionalImprovements: Array.from(new Set([
+            ...assessment.optionalImprovements,
+            ...shipCopyAlignment.optionalImprovements,
+            ...operatorFollowUps,
+        ])),
         evaluatedAt: new Date().toISOString(),
         model: DISCOVERY_RED_TEAM_MODEL,
         promptVersion: DISCOVERY_RED_TEAM_PROMPT_VERSION,
@@ -110,9 +191,16 @@ Audit for:
 - workshop, retreat, residency, conference, or event-program drift
 - lonely premium-solo-retreat drift
 - cruise implausibility or ship-incompatible activities
+- matched-ship or ship-class copy conflicts after Phase B inventory matching
 - stale overlap with previous quiet-luxury/lounge/introspective themes
 - stereotype risk or shallow community framing
 - missing reasoning that would make downstream aesthetics too speculative
+
+Contract boundary:
+- Judge only what can be changed inside the current discovery blueprint fields.
+- Valid blueprint fields are: ${DISCOVERY_BLUEPRINT_FIELDS.join(', ')}.
+- Do not require external artifacts, screenshots, PDFs, written approvals, Activities sign-off, alias maps, host rosters, attached playbooks, or explicit matchedShipName/matchedSailDate fields as discovery-stage required fixes.
+- If those operator follow-ups would still help later, mention them as optional improvements, not blockers.
 
 Be strict. If the blueprint is not a strong candidate for Phase 2, say so. Return only valid JSON with no markdown.`;
 
@@ -144,6 +232,8 @@ Scoring rules:
 - If any pre-Phase-2 requirement still must be satisfied before aesthetics begins, that is a required fix and the verdict must be "warn", not "pass".
 - For a true "pass", keep "requiredFixes" empty and put all remaining polish into "optionalImprovements".
 - Weak social necessity, generic luxury substitution, workshop drift, or cruise implausibility should usually block.
+- If inventory metadata names a matched ship, treat that ship as authoritative reality; stale references to a different line, class, venue, or layout must not pass.
+- Never require fields or deliverables outside the discovery blueprint contract as required fixes.
 
 Blueprint:
 ${JSON.stringify(campaign, null, 2)}`;

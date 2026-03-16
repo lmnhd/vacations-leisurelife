@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCampaignBlueprint, deleteCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 
 export async function GET(
     _req: NextRequest,
@@ -27,6 +28,7 @@ export async function GET(
     return NextResponse.json({
         success: true,
         campaign: {
+            ...getLaunchWindowAssessment({ matchedSailDate: campaign.matchedSailDate, targetDates: campaign.targetDates }),
             id: campaign.id,
             name: campaign.name,
             description: campaign.description,
@@ -35,6 +37,8 @@ export async function GET(
             targetDates: campaign.targetDates,
             targetDestination: campaign.targetDestination ?? null,
             shipTarget: campaign.shipTarget ?? null,
+            matchedShipName: campaign.matchedShipName ?? null,
+            matchedSailDate: campaign.matchedSailDate ?? null,
             highlightEvents: campaign.highlightEvents ?? [],
             targetingKeywords: campaign.targetingKeywords ?? [],
             startingPrice: campaign.startingPrice ?? null,

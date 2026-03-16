@@ -78,14 +78,24 @@ function normalizeAssessment(brief: CampaignAestheticBrief, assessment: RedTeamA
     });
 }
 
+export interface RedTeamOptions {
+    /** When provided, switches to re-review mode: validate these fixes first, only surface net-new blockers. */
+    priorRequiredFixes?: string[];
+}
+
 export async function runAestheticRedTeamReview(
     campaign: Campaign,
     brief: CampaignAestheticBrief,
+    options?: RedTeamOptions,
 ): Promise<RedTeamReview> {
+    const isReReview = options?.priorRequiredFixes && options.priorRequiredFixes.length > 0;
+
     const systemPrompt = `You are the final pre-launch red-team reviewer for Leisure Life Interactive shadow-group campaigns.
 Your job is to stop campaigns that drift away from the intended product.
 
-Audit for:
+SCOPE: Evaluate ONLY the aesthetic brief below. Campaign metadata is provided for context only — do NOT flag issues that live in campaign metadata fields (e.g. campaign description). You can only flag issues that exist within the aesthetic brief itself.
+
+Audit the brief for:
 - loss of ambient community or common-interest energy
 - workshop, retreat, residency, or event-program takeover
 - lonely premium-solo-retreat drift
@@ -95,7 +105,14 @@ Audit for:
 - human-motion violations in video planning
 - copy or visual systems that conflict with the group promise
 - missing planning detail that prevents confident launch
-
+${isReReview ? `
+RE-REVIEW MODE — This brief was revised to address prior required fixes.
+Your primary task is to validate whether those fixes were closed.
+Only raise NEW issues if they are true blockers or were introduced by the revision itself.
+Do NOT reopen the entire brief for minor polish drift or rephrase old warnings that were already addressed.
+Prior required fixes to validate:
+${options!.priorRequiredFixes!.map((f, i) => `${i + 1}. ${f}`).join('\n')}
+` : ''}
 Be strict. If the campaign is not ready, say so. Return only valid JSON with no markdown.`;
 
     const prompt = `Review this campaign as the final pre-launch red team. Use the exact JSON schema below.
@@ -111,7 +128,7 @@ Required JSON shape:
       "category": "community_drift" | "optionality_failure" | "workshop_regression" | "solitude_drift" | "cruise_implausibility" | "diversity_gap" | "stereotype_risk" | "motion_safety" | "production_feasibility" | "copy_alignment" | "other",
       "severity": "warning" | "blocker",
       "title": "short issue title",
-      "evidence": "concrete evidence from the brief or campaign",
+      "evidence": "concrete evidence from the brief",
       "recommendation": "specific fix"
     }
   ],
@@ -125,30 +142,17 @@ Scoring rules:
 - Use "pass" only if you would personally clear it for approval now.
 - Missing production planning, human-motion violations, lonely drift, workshop drift, or representation problems should usually block.
 
-Campaign metadata:
+Campaign metadata (context only — do not flag issues here):
 ${JSON.stringify({
         id: campaign.id,
         name: campaign.name,
-        description: campaign.description,
         targetDates: campaign.targetDates,
         targetDestination: campaign.targetDestination,
         shipTarget: campaign.shipTarget,
-        researchRationale: campaign.researchRationale,
-        successLogic: campaign.successLogic,
         audienceSignals: campaign.audienceSignals,
-        vacationFitRationale: campaign.vacationFitRationale,
-        cruiseNativeMoments: campaign.cruiseNativeMoments,
-        nicheExpressionMode: campaign.nicheExpressionMode,
-        implausibleLiteralizations: campaign.implausibleLiteralizations,
-        allowedThemeSignals: campaign.allowedThemeSignals,
-        discouragedThemeSignals: campaign.discouragedThemeSignals,
-        communityFitRationale: campaign.communityFitRationale,
-        optionalGatheringMoments: campaign.optionalGatheringMoments,
-        optionalityStyle: campaign.optionalityStyle,
-        solitudeRisks: campaign.solitudeRisks,
     }, null, 2)}
 
-Aesthetic brief:
+Aesthetic brief (evaluate this):
 ${JSON.stringify(brief, null, 2)}`;
 
     const model = openai('gpt-5');
@@ -159,7 +163,6 @@ ${JSON.stringify(brief, null, 2)}`;
         system: systemPrompt,
         prompt,
         temperature: 0.2,
-        maxTokens: 4000,
     });
 
     return normalizeAssessment(brief, object);

@@ -5,6 +5,12 @@ import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '@/l
 import { CampaignAestheticBriefSchema, ProductionBibleSchema, LandingStillBibleSchema } from '@/lib/campaigns/schema';
 
 // ────────────────────────────────────────────────────────────────────────────
+// Constants
+// ────────────────────────────────────────────────────────────────────────────
+
+const MAX_NON_IMPROVING_CYCLES = 2;
+
+// ────────────────────────────────────────────────────────────────────────────
 // Schemas
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -16,6 +22,7 @@ const AestheticRevisionBriefSchema = CampaignAestheticBriefSchema.omit({
     redTeamReview: true,
     humanReviewStatus: true,
     revisionNotes: true,
+    revisionCycleCount: true,
     productionBible: true,
     landingStillBible: true,
 }).extend({
@@ -39,13 +46,25 @@ export interface AestheticRevisionResult {
     message: string;
     revisionSummary: string;
     addressedFixes: string[];
+    /** The requiredFixes from the red-team review that was addressed. Pass to red-team re-review. */
+    priorRequiredFixes: string[];
+    revisionCycleCount: number;
+}
+
+export interface AestheticDeadlockResult {
+    deadlock: true;
+    message: string;
+    revisionCycleCount: number;
+    survivingFixes: string[];
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Core function
 // ────────────────────────────────────────────────────────────────────────────
 
-export async function reviseAestheticBrief(slug: string): Promise<AestheticRevisionResult> {
+export async function reviseAestheticBrief(
+    slug: string,
+): Promise<AestheticRevisionResult | AestheticDeadlockResult> {
     const [campaign, brief] = await Promise.all([
         getCampaignBlueprint(slug),
         getAestheticBrief(slug),
@@ -63,6 +82,17 @@ export async function reviseAestheticBrief(slug: string): Promise<AestheticRevis
     }
 
     const review = brief.redTeamReview;
+    const currentCycle = (brief.revisionCycleCount ?? 0) + 1;
+
+    // ── Deadlock detection ──────────────────────────────────────────────────
+    if (currentCycle > MAX_NON_IMPROVING_CYCLES) {
+        return {
+            deadlock: true,
+            message: `Revision deadlock after ${currentCycle - 1} cycles. The same class of issues survived multiple revisions. Operator intervention required.`,
+            revisionCycleCount: currentCycle - 1,
+            survivingFixes: review.requiredFixes,
+        };
+    }
 
     const systemPrompt = `You are revising a Leisure Life Interactive shadow-group campaign aesthetic brief.
 Your sole job is to address the stored red-team findings and produce a clean, improved version of the brief.
@@ -80,33 +110,29 @@ Revision rules:
 - Do not retain disallowed mechanics simply because they were present before.
 - Produce a concise revisionSummary explaining exactly what changed and why.
 - List each required fix you addressed in addressedFixes.
-- List any risks you could not fully resolve in unresolvedRisks.`;
+- List any risks you could not fully resolve in unresolvedRisks.
+
+MANDATORY SWEEPS — Before returning, verify every one of these:
+1. TIME STRINGS: No precise times (HH:MM format like 08:30 or 17:30) in any field. Replace with colloquial anchors ("around breakfast," "before dinner") or broad non-colon windows. Numeric ranges with colons are banned everywhere.
+2. QUEUE/DEVICE: No device handling in active queues anywhere in the brief. Recognition near lines must be verbal-only under 5 seconds. Phone sharing must specify "once seated" or "at adjacent seating."
+3. VENUE NAMING: All venue labels must be generic (e.g., "café window seats," "buffet window," "atrium") unless the brief explicitly documents written approval for a branded name.
+4. AVATAR/TOOL: avatarRequired must be false on ALL video concepts. Tool must not be "heygen" unless explicitly permitted. Convert any avatar-required spots to VO over scenery.
+5. RAIL SAFETY: Every rail scene must specify "forearms resting lightly, torso upright, hands inside rail line" in subjectAction or subjectMotion.
+6. MERCH DISCLAIMER: If merch CTAs exist, at least one placement includes "Optional—no identifiers needed" or equivalent.
+7. PRIVACY: Social captions, copy framing rules, and email body directions must include a privacy line ("share your own photos; avoid filming others") where filming or photos are mentioned.
+8. FILMING PERMISSIONS: Production notes must include a hard gate blocking onboard capture without written ship/operator approval, with a fallback to synthetic/stock-only assets.`;
 
     const prompt = {
-        campaignMetadata: {
-            id: campaign.id,
+        campaignContext: {
             name: campaign.name,
-            description: campaign.description,
             targetDates: campaign.targetDates,
             targetDestination: campaign.targetDestination,
             shipTarget: campaign.shipTarget,
-            researchRationale: campaign.researchRationale,
-            successLogic: campaign.successLogic,
             audienceSignals: campaign.audienceSignals,
-            vacationFitRationale: campaign.vacationFitRationale,
-            cruiseNativeMoments: campaign.cruiseNativeMoments,
-            nicheExpressionMode: campaign.nicheExpressionMode,
-            implausibleLiteralizations: campaign.implausibleLiteralizations,
-            allowedThemeSignals: campaign.allowedThemeSignals,
-            discouragedThemeSignals: campaign.discouragedThemeSignals,
-            communityFitRationale: campaign.communityFitRationale,
-            optionalGatheringMoments: campaign.optionalGatheringMoments,
-            optionalityStyle: campaign.optionalityStyle,
-            solitudeRisks: campaign.solitudeRisks,
         },
         currentBrief: brief,
         redTeamReviewToAddress: review,
-        instructions: 'Rewrite the brief so it addresses all requiredFixes and major issues. Keep slug unchanged.',
+        instructions: 'Rewrite the brief so it addresses all requiredFixes and major issues. Run every mandatory sweep before returning. Keep slug unchanged.',
     };
 
     const { object } = await callGlobalGenerateObject({
@@ -125,6 +151,7 @@ Revision rules:
         generatedAt: brief.generatedAt,
         generatedBy: brief.generatedBy,
         humanReviewStatus: 'revised' as const,
+        revisionCycleCount: currentCycle,
         redTeamReview: undefined,
         revisionNotes: object.revisionSummary,
     });
@@ -136,5 +163,7 @@ Revision rules:
         message: 'Aesthetic brief revised successfully. Re-run red team to score the updated brief before approving.',
         revisionSummary: object.revisionSummary,
         addressedFixes: object.addressedFixes,
+        priorRequiredFixes: review.requiredFixes,
+        revisionCycleCount: currentCycle,
     };
 }

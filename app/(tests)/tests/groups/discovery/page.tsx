@@ -3,12 +3,18 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Loader2, RotateCcw, GitBranch, MapPin, ChevronDown, ChevronUp, FlaskConical } from "lucide-react";
 import { Campaign } from '@/lib/campaigns/types';
+import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type PricingStatus = 'AI_ESTIMATE' | 'CB_MATCHED' | 'UNMATCHED';
 
 interface PhaseBCampaignRef {
+    sailingDateText: string | null;
+    daysUntilSail: number | null;
+    meetsMinimumLeadTime: boolean | null;
+    isTightLeadTime: boolean | null;
+    minimumLeadDays: number;
     slug: string;
     name: string;
     pricingStatus: PricingStatus;
@@ -20,6 +26,8 @@ interface PhaseBCampaignRef {
     cbPriceAdvantage?: number;
     cbagenttoolsBookingLink?: string;
 }
+
+type PhaseBRunMode = 'all' | 'selected';
 
 interface BulkRedTeamSummary {
     total: number;
@@ -780,10 +788,18 @@ export default function DiscoveryTestPage() {
         }, 5000);
     }, [clearPhaseBPollingInterval, pollPhaseBStatus]);
 
-    const handleRunPhaseB = async () => {
+    const selectedPhaseBSlugs = selectedBlueprintSlugs.filter((slug) => blueprints.some((bp) => bp.id === slug));
+
+    const handleRunPhaseB = async (mode: PhaseBRunMode) => {
+        const isSelectedRun = mode === 'selected';
+        if (isSelectedRun && selectedPhaseBSlugs.length === 0) {
+            return;
+        }
+
         const confirmed = window.confirm(
-            'Phase B will open a Playwright browser, log into CB Agent Tools,\n' +
+            `Phase B will open a Playwright browser, log into CB Agent Tools,\n` +
             'scrape live group inventory, and match campaigns.\n\n' +
+            `${isSelectedRun ? `Target scope: ${selectedPhaseBSlugs.length} selected campaign(s).\n\n` : 'Target scope: all campaigns needing inventory verification.\n\n'}` +
             'Ensure CB_EMAIL and CB_PASSWORD are set in .env.local.\n\nContinue?'
         );
         if (!confirmed) return;
@@ -795,7 +811,11 @@ export default function DiscoveryTestPage() {
         try {
             clearPhaseBPollingInterval();
 
-            const response = await fetch('/api/groups/discovery/phase-b', { method: 'POST' });
+            const response = await fetch('/api/groups/discovery/phase-b', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(isSelectedRun ? { slugs: selectedPhaseBSlugs } : {}),
+            });
             const data = await response.json() as { success?: boolean; error?: string };
 
             if (!response.ok || !data.success) {
@@ -955,6 +975,7 @@ export default function DiscoveryTestPage() {
                                     const isMatched = bp.pricingStatus === 'CB_MATCHED';
                                     const isUnmatched = bp.pricingStatus === 'UNMATCHED';
                                     const displayedShip = bp.matchedShipName ?? bp.shipTarget ?? 'TBD';
+                                    const launchWindow = getLaunchWindowAssessment({ matchedSailDate: bp.matchedSailDate, targetDates: bp.targetDates });
                                     const isRetired = !!bp.discoveryIteration?.retiredAt;
                                     const isStagnant = !!bp.discoveryIteration?.stagnant;
                                     const needsOperatorCleanup = bp.discoveryIteration?.recommendedNextAction === 'operator_cleanup';
@@ -964,16 +985,14 @@ export default function DiscoveryTestPage() {
                                             {/* Header row */}
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <div className="flex items-start gap-2">
-                                                    {isRevisable && (
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedBlueprintSlugs.includes(bp.id)}
-                                                            onChange={() => toggleBlueprintSelection(bp.id)}
-                                                            disabled={bulkRevisionLoading || revisionLoadingSlug === bp.id || reviewLoadingSlug === bp.id}
-                                                            className="mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-slate-900 text-cyan-400"
-                                                            aria-label={`Select ${bp.name} for batch revision`}
-                                                        />
-                                                    )}
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedBlueprintSlugs.includes(bp.id)}
+                                                        onChange={() => toggleBlueprintSelection(bp.id)}
+                                                        disabled={bulkRevisionLoading || revisionLoadingSlug === bp.id || reviewLoadingSlug === bp.id}
+                                                        className="mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-slate-900 text-cyan-400"
+                                                        aria-label={`Select ${bp.name} for batch actions`}
+                                                    />
                                                     <div>
                                                         <span className="text-sm font-semibold text-slate-200">{bp.name}</span>
                                                         <span className="text-[10px] text-slate-600 ml-2">{bp.id}</span>
@@ -1012,6 +1031,16 @@ export default function DiscoveryTestPage() {
 
                                             {/* Aesthetic + dates */}
                                             <div className="text-[10px] text-slate-500 mb-2 font-sans">{bp.aesthetic} · {bp.targetDates}</div>
+                                            {launchWindow.meetsMinimumLeadTime === false && (
+                                                <div className="mb-2 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] text-red-300">
+                                                    Launch window failed: {launchWindow.daysUntilSail} days until sail. Minimum required lead time is {launchWindow.minimumLeadDays} days.
+                                                </div>
+                                            )}
+                                            {launchWindow.isTightLeadTime && (
+                                                <div className="mb-2 rounded border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300">
+                                                    Tight launch window: {launchWindow.daysUntilSail} days until sail. This sailing is viable, but it is inside the operator warning band.
+                                                </div>
+                                            )}
                                             <div className="text-[10px] text-slate-400 font-sans mb-2 line-clamp-2">{bp.description}</div>
 
                                             {/* Ship + pricing */}
@@ -1115,16 +1144,28 @@ export default function DiscoveryTestPage() {
                                 <GitBranch className="inline w-3 h-3 mr-1" /> Load Status
                             </button>
                             <button
-                                onClick={handleRunPhaseB}
+                                onClick={() => void handleRunPhaseB('selected')}
+                                disabled={phaseBLoading || selectedPhaseBSlugs.length === 0}
+                                className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/25 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                                {phaseBRunning ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching…</> : `Match Selected${selectedPhaseBSlugs.length > 0 ? ` (${selectedPhaseBSlugs.length})` : ''}`}
+                            </button>
+                            <button
+                                onClick={() => void handleRunPhaseB('all')}
                                 disabled={phaseBLoading}
                                 className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-violet-500/20 border border-violet-500/40 text-violet-400 hover:bg-violet-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                             >
-                                {phaseBRunning ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching…</> : 'Run Matching'}
+                                {phaseBRunning ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching…</> : 'Match All'}
                             </button>
                         </div>
                     </div>
 
                     <div className="p-4">
+                        {hasPhaseAResults && (
+                            <div className="px-3 py-2 mb-3 text-xs border rounded bg-sky-500/10 border-sky-500/20 text-sky-200">
+                                Use the blueprint checkboxes above to target a selected-only Phase B run. "Match All" remains available when you want to refresh the whole inventory view.
+                            </div>
+                        )}
                         {phaseBError && (
                             <div className="px-3 py-2 mb-3 text-xs text-red-400 border rounded bg-red-500/10 border-red-500/20">{phaseBError}</div>
                         )}
@@ -1143,6 +1184,16 @@ export default function DiscoveryTestPage() {
                                         <div>
                                             <span className="text-xs text-slate-300">{c.name}</span>
                                             <span className="text-[10px] text-slate-600 ml-2">{c.slug}</span>
+                                            {c.meetsMinimumLeadTime === false && (
+                                                <div className="text-[10px] text-red-300 mt-1">
+                                                    Too close to launch normally: {c.daysUntilSail} days until sail.
+                                                </div>
+                                            )}
+                                            {c.isTightLeadTime && (
+                                                <div className="text-[10px] text-amber-300 mt-1">
+                                                    Tight launch window: {c.daysUntilSail} days until sail.
+                                                </div>
+                                            )}
                                         </div>
                                         <PricingBadge status={c.pricingStatus} />
                                     </div>
@@ -1150,7 +1201,7 @@ export default function DiscoveryTestPage() {
                             </div>
                         ) : !phaseBRunning && (
                             <div className="py-8 text-xs text-center text-slate-600">
-                                Click "Load Status" to check existing campaigns, or "Run Matching" to start Phase B.
+                                Click "Load Status" to check existing campaigns, "Match Selected" to target checked cards, or "Match All" to start a full Phase B run.
                             </div>
                         )}
                     </div>

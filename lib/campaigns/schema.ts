@@ -316,6 +316,7 @@ export const DiscoveryIterationImprovementSchema = z.object({
     persistingIssueCategories: z.array(z.string()),
     repeatedIssueSignature: z.boolean(),
     fingerprintSimilarity: z.number(),
+    meaningfulImprovement: z.boolean().optional(),
 });
 export type DiscoveryIterationImprovement = z.infer<typeof DiscoveryIterationImprovementSchema>;
 
@@ -329,6 +330,9 @@ export const DiscoveryIterationEventSchema = z.object({
     requiredFixes: z.array(z.string()),
     targetedIssues: z.array(z.string()),
     changesMade: z.array(z.string()),
+    issueCount: z.number().optional(),
+    blockerCount: z.number().optional(),
+    warningCount: z.number().optional(),
     successHypothesis: z.string().optional(),
     revisionMode: DiscoveryRevisionModeEnum.optional(),
     branchesConsidered: z.number().optional(),
@@ -480,6 +484,7 @@ export const CampaignAestheticBriefSchema = z.object({
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
     humanReviewStatus: z.enum(['pending', 'approved', 'revised']),
+    revisionCycleCount: z.number().default(0),
     redTeamReview: RedTeamReviewSchema.optional(),
     revisionNotes: z.string().optional(),
 });

@@ -3,8 +3,10 @@ import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { getCampaignBlueprint, saveCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { DiscoveryBlueprintSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
+import { runDiscoveryRedTeamReview } from '@/lib/campaigns/discovery-red-team';
+import { assertLaunchWindowCompliance, buildLaunchWindowPromptGuidance } from './launch-window';
 import { DiscoveryRevisionClosurePlanSchema, type DiscoveryRevisionMode } from './schema';
-import { applyDiscoveryRevisionIteration, getDiscoveryRevisionMode } from './discovery-iteration';
+import { applyDiscoveryReviewIteration, applyDiscoveryRevisionIteration, getDiscoveryRevisionMode } from './discovery-iteration';
 import type { Campaign } from './types';
 
 const DiscoveryRevisionCandidateSchema = z.object({
@@ -26,6 +28,14 @@ export interface DiscoveryRevisionResult {
     message: string;
 }
 
+export interface PreparedDiscoveryRevisionResult {
+    campaign: Campaign;
+    revisionMode: DiscoveryRevisionMode;
+    branchesConsidered: number;
+    selectionRationale?: string;
+    message: string;
+}
+
 function buildSiblingContext(campaigns: Campaign[], currentSlug: string): string {
     const siblings = campaigns.filter((campaign) => campaign.id !== currentSlug);
     if (siblings.length === 0) {
@@ -38,24 +48,42 @@ function buildSiblingContext(campaigns: Campaign[], currentSlug: string): string
     }).join('\n')}`;
 }
 
-export async function reviseDiscoveryBlueprint(slug: string): Promise<DiscoveryRevisionResult> {
-    const campaign = await getCampaignBlueprint(slug);
-    if (!campaign) {
-        throw new Error('Campaign not found');
+async function refreshRetiredCampaignIfRecoverable(campaign: Campaign): Promise<Campaign> {
+    const isRetired = !!campaign.discoveryIteration?.retiredAt
+        || campaign.discoveryIteration?.recommendedNextAction === 'retire';
+
+    if (!isRetired) {
+        return campaign;
     }
 
-    const review = campaign.discoveryRedTeamReview;
+    const refreshedReview = await runDiscoveryRedTeamReview(campaign);
+
+    return {
+        ...applyDiscoveryReviewIteration(campaign, refreshedReview),
+        discoveryRedTeamReview: refreshedReview,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+export async function prepareDiscoveryRevision(
+    campaign: Campaign,
+    availableCampaigns?: Campaign[],
+): Promise<PreparedDiscoveryRevisionResult> {
+    const now = new Date();
+    const revisionCandidate = await refreshRetiredCampaignIfRecoverable(campaign);
+    const review = revisionCandidate.discoveryRedTeamReview;
     if (!review) {
         throw new Error('This blueprint does not have a discovery review to revise from.');
     }
 
-    const revisionMode = getDiscoveryRevisionMode(campaign);
+    const revisionMode = getDiscoveryRevisionMode(revisionCandidate);
     if (revisionMode === 'retire') {
-        throw new Error(campaign.discoveryIteration?.retirementReason ?? 'This blueprint has been retired after repeated non-improvement.');
+        throw new Error(revisionCandidate.discoveryIteration?.retirementReason ?? 'This blueprint has been retired after repeated non-improvement.');
     }
 
-    const allCampaigns = await scanAllCampaigns();
-    const siblingContext = buildSiblingContext(allCampaigns, slug);
+    const allCampaigns = availableCampaigns ?? await scanAllCampaigns();
+    const siblingContext = buildSiblingContext(allCampaigns, revisionCandidate.id);
+    const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
 
     const system = `You are revising a single discovery-stage cruise campaign blueprint for Leisure Life Interactive.
 Preserve the core niche if it is salvageable, but rewrite the blueprint so it meaningfully responds to the stored discovery review.
@@ -65,27 +93,33 @@ Requirements:
 - Improve operational plausibility and social logic.
 - Make participation ambient and optional.
 - Keep the revised blueprint meaningfully distinct from the other existing candidates.
+- Keep targetDates inside the minimum launch window rule; do not preserve an ineligible sailing just because it was in the original draft.
 - Every revision must include an issue-closure ledger stating which issues you targeted, what changed, and why the result should clear review.
 - If branch mode is requested, produce three materially different correction strategies and identify the strongest one.`;
 
     const prompt = `Revise this discovery blueprint in place using its stored review.
 
 Rules:
-- Keep the existing campaign slug exactly as-is: ${campaign.id}
+- Keep the existing campaign slug exactly as-is: ${revisionCandidate.id}
 - You may change the name, description, ship target, destination, copy, social mechanics, and cruise moments if needed.
+- targetDates must remain parseable as an exact sail date or plain month-year string.
 - Directly address the required fixes and recommendation from the review instead of paraphrasing them.
 - If the review passed, preserve the blueprint's strengths while tightening weak spots, optional improvements, or areas that still feel generic.
 - If the original concept depended on implausible logistics, replace those mechanics with ship-compatible alternatives while preserving the community identity where possible.
+- If matchedShipName is present, treat it as the authoritative ship reality for venue/layout compatibility; remove or rewrite stale line-specific references that do not exist on that ship.
 - Do not produce a near-duplicate of the other pipeline candidates.
 
+Launch-window guidance:
+${launchWindowPromptGuidance}
+
 Current blueprint:
-${JSON.stringify(campaign, null, 2)}
+${JSON.stringify(revisionCandidate, null, 2)}
 
 Discovery review to satisfy:
 ${JSON.stringify(review, null, 2)}
 
 Current iteration state:
-${JSON.stringify(campaign.discoveryIteration ?? null, null, 2)}${siblingContext}`;
+${JSON.stringify(revisionCandidate.discoveryIteration ?? null, null, 2)}${siblingContext}`;
 
     let selectedCandidate: z.infer<typeof DiscoveryRevisionCandidateSchema>;
     let effectiveRevisionMode: DiscoveryRevisionMode = 'single';
@@ -121,21 +155,21 @@ Branch mode instructions:
         selectedCandidate = object;
     }
 
+    assertLaunchWindowCompliance([
+        {
+            id: selectedCandidate.blueprint.id,
+            name: selectedCandidate.blueprint.name,
+            targetDates: selectedCandidate.blueprint.targetDates,
+        },
+    ], now);
+
     const revisedCampaign = mapDiscoveryBlueprintToCampaign(
         {
             ...selectedCandidate.blueprint,
-            id: campaign.id,
+            id: revisionCandidate.id,
         },
         {
-            ...campaign,
-            pricingStatus: undefined,
-            cbagenttoolsGroupId: undefined,
-            cbagenttoolsBookingLink: undefined,
-            cbPriceAdvantage: undefined,
-            matchedShipName: undefined,
-            matchedSailDate: undefined,
-            matchedDeparturePort: undefined,
-            matchedNights: undefined,
+            ...revisionCandidate,
             aestheticBriefStatus: undefined,
             aestheticGeneratedAt: undefined,
             discoveryRedTeamReview: undefined,
@@ -146,28 +180,13 @@ Branch mode instructions:
         {
             ...revisedCampaign,
             discoveryRedTeamReview: undefined,
-            discoveryIteration: campaign.discoveryIteration,
+            discoveryIteration: revisionCandidate.discoveryIteration,
         },
         selectedCandidate.closurePlan,
         effectiveRevisionMode,
         branchesConsidered,
         selectionRationale,
     );
-
-    await saveCampaignBlueprint({
-        ...revisedCampaignWithIteration,
-        pricingStatus: undefined,
-        cbagenttoolsGroupId: undefined,
-        cbagenttoolsBookingLink: undefined,
-        cbPriceAdvantage: undefined,
-        matchedShipName: undefined,
-        matchedSailDate: undefined,
-        matchedDeparturePort: undefined,
-        matchedNights: undefined,
-        aestheticBriefStatus: undefined,
-        aestheticGeneratedAt: undefined,
-        discoveryRedTeamReview: undefined,
-    });
 
     return {
         campaign: revisedCampaignWithIteration,
@@ -178,4 +197,22 @@ Branch mode instructions:
             ? `Generated ${branchesConsidered} revision branches and selected the strongest candidate. Re-review the updated blueprint to confirm improvement.`
             : 'Revised the blueprint in place. Re-review the updated blueprint to confirm improvement.',
     };
+}
+
+export async function reviseDiscoveryBlueprint(slug: string): Promise<DiscoveryRevisionResult> {
+    const campaign = await getCampaignBlueprint(slug);
+    if (!campaign) {
+        throw new Error('Campaign not found');
+    }
+
+    const prepared = await prepareDiscoveryRevision(campaign);
+
+    await saveCampaignBlueprint({
+        ...prepared.campaign,
+        aestheticBriefStatus: undefined,
+        aestheticGeneratedAt: undefined,
+        discoveryRedTeamReview: undefined,
+    });
+
+    return prepared;
 }

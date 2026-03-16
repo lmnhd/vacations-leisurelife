@@ -10,6 +10,7 @@
  * Usage:
  *   npx tsx scripts/run-phase-b.ts                           # all unmatched campaigns
  *   npx tsx scripts/run-phase-b.ts --slug retro-gaming-2026  # single campaign
+ *   npx tsx scripts/run-phase-b.ts --slug retro-gaming-2026 --slug houseplant-botanical-caribbean-2026
  */
 
 import 'dotenv/config';
@@ -25,8 +26,15 @@ import {
 // ─── CLI argument parsing ────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const slugIndex = args.indexOf('--slug');
-const targetSlug = slugIndex !== -1 ? args[slugIndex + 1] : null;
+const targetSlugs = args.reduce<string[]>((collected, value, index) => {
+    if (value === '--slug') {
+        const slug = args[index + 1];
+        if (slug) {
+            collected.push(slug);
+        }
+    }
+    return collected;
+}, []);
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
@@ -46,14 +54,17 @@ async function runPhaseB(): Promise<void> {
     // 2. Get campaigns to process
     let campaigns = await scanUnmatchedCampaigns();
 
-    if (targetSlug) {
-        const single = await getCampaignBlueprint(targetSlug);
-        campaigns = single ? [single] : [];
-        if (campaigns.length === 0) {
-            console.error(`[run-phase-b] Campaign "${targetSlug}" not found.`);
+    if (targetSlugs.length > 0) {
+        const requestedCampaigns = await Promise.all(targetSlugs.map((slug) => getCampaignBlueprint(slug)));
+        const missingSlugs = targetSlugs.filter((slug, index) => !requestedCampaigns[index]);
+
+        if (missingSlugs.length > 0) {
+            console.error(`[run-phase-b] Campaign(s) not found: ${missingSlugs.join(', ')}`);
             process.exitCode = 1;
             return;
         }
+
+        campaigns = requestedCampaigns.filter((campaign) => campaign !== null);
     }
 
     console.log(`[run-phase-b] Processing ${campaigns.length} campaign(s)...\n`);

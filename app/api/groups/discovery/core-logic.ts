@@ -4,6 +4,12 @@ import { ModelName } from '@/lib/ai/llm-gateway';
 import { Campaign } from '@/lib/campaigns/types';
 import { getAestheticBrief, saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { DiscoveryBlueprintBatchSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
+import {
+    assertLaunchWindowCompliance,
+    buildLaunchWindowPromptGuidance,
+    getLaunchWindowAssessment,
+    getLaunchWindowPolicy,
+} from '@/lib/campaigns/launch-window';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
@@ -23,7 +29,7 @@ type ResearchCache = {
     aestheticData?: string;
 };
 
-const DISCOVERY_PROMPT_VERSION = '2026-03-13-ambient-community-v1';
+const DISCOVERY_PROMPT_VERSION = '2026-03-15-launch-window-v2';
 
 type CbDealsCache = {
     generatedAtIso: string;
@@ -60,21 +66,41 @@ function writeResearchCache(cache: ResearchCache): void {
  * Reads the CB deals cache and builds a concise ship inventory string for AI prompts.
  * Returns empty string if cache file doesn't exist — graceful degradation.
  */
-function buildCbInventoryContext(): string {
+function buildCbInventoryContext(now: Date = new Date()): string {
     if (!existsSync(CB_DEALS_CACHE_FILE)) return '';
     try {
         const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
         const cache = JSON.parse(raw) as CbDealsCache;
+        const policy = getLaunchWindowPolicy(now);
+        const seenShipDates = new Set<string>();
+        let omittedTooCloseCount = 0;
+
         const ships = cache.priceAdvantages
-            .filter(g => g.shipName && g.vendor)
-            .map(g => `- ${g.shipName} (${g.vendor})${g.sailDate ? ': ' + g.sailDate : ''}`)
-            // Deduplicate by ship name
-            .filter((line, idx, arr) => arr.findIndex(l => l.startsWith(line.split('(')[0])) === idx)
-            .slice(0, 20); // cap to keep prompt size sane
+            .filter((group) => group.shipName && group.vendor && group.sailDate)
+            .filter((group) => {
+                const assessment = getLaunchWindowAssessment({ matchedSailDate: group.sailDate }, now);
+                if (assessment.meetsMinimumLeadTime === false) {
+                    omittedTooCloseCount += 1;
+                    return false;
+                }
 
-        if (ships.length === 0) return '';
+                const dedupeKey = `${group.shipName.toLowerCase()}::${group.sailDate.toLowerCase()}`;
+                if (seenShipDates.has(dedupeKey)) {
+                    return false;
+                }
 
-        return `\n\nAVAILABLE CB GROUP INVENTORY (real bookable ship blocks — your blueprints MUST target one of these ships):\n${ships.join('\n')}`;
+                seenShipDates.add(dedupeKey);
+                return true;
+            })
+            .sort((left, right) => left.sailDate.localeCompare(right.sailDate))
+            .slice(0, 30)
+            .map((group) => `- ${group.shipName} (${group.vendor}): ${group.sailDate}`);
+
+        if (ships.length === 0) {
+            return `\n\nAVAILABLE CB GROUP INVENTORY: no sailings in the current cache clear the ${policy.minimumLeadDays}-day minimum lead time. Do not invent closer dates.`;
+        }
+
+        return `\n\nAVAILABLE CB GROUP INVENTORY (real bookable ship blocks — your blueprints MUST target one of these exact ship/date pairs):\n${ships.join('\n')}\n\nOmitted from the prompt as too close to launch: ${omittedTooCloseCount} sailing(s) inside ${policy.minimumLeadDays} days. Do not use omitted sailings or invent earlier dates.`;
     } catch {
         return '';
     }
@@ -283,6 +309,7 @@ ${lines}`;
 
 export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOptions = {}): Promise<DiscoveryPipelineResult> {
     const { respin = false } = options;
+    const now = new Date();
     const cache = respin ? { date: new Date().toISOString().slice(0, 10), promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
 
     // Pre-load existing campaigns to build the deduplication exclusion list
@@ -350,7 +377,8 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
         aestheticData = cache.aestheticData;
     } else {
-        const cbInventoryContext = buildCbInventoryContext();
+        const cbInventoryContext = buildCbInventoryContext(now);
+        const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
         if (cbInventoryContext) {
             console.log('[runGroupDiscoveryPipeline] Step 2: CB inventory context loaded from cb-deals-cache.json');
         } else {
@@ -402,7 +430,7 @@ ${psychographicData}
     ANTI-DRIFT RULE:
     - do not let pastoral, cottagecore, bookish, or slow-living themes collapse into generic luxury hotel language
     - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
-    - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
+    - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${launchWindowPromptGuidance}${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
         aestheticData = await callPerplexity(aestheticPrompt);
         cache.aestheticData = aestheticData;
@@ -411,6 +439,7 @@ ${psychographicData}
     }
 
     console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
+    const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
     const { object } = await callGlobalGenerateObject({
         schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
@@ -463,9 +492,23 @@ WORDING GUARDRAILS:
 RE-SPIN RULE:
 - if prior outputs exist, actively differentiate from them in community type, emotional register, onboard behavior pattern, prop logic, and visual world instead of returning near neighbors
 
+DATE OUTPUT RULES:
+${launchWindowPromptGuidance}
+- targetDates must be copied as a real, parseable sailing date when the research references eligible CB inventory.
+- Never choose a sailing that is merely thematic; it must remain compatible with the launch-window rule.
+
 Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim(),
     });
+
+    assertLaunchWindowCompliance(
+        object.blueprints.map((blueprint) => ({
+            id: blueprint.id,
+            name: blueprint.name,
+            targetDates: blueprint.targetDates,
+        })),
+        now,
+    );
 
     console.log('[runGroupDiscoveryPipeline] Step 4: Saving Blueprints to DynamoDB (with idempotency check)');
     const campaigns: Campaign[] = object.blueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));

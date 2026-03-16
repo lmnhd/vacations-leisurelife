@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
+import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 
 export const maxDuration = 60;
 
@@ -19,9 +20,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(request.url);
     const shouldRun = searchParams.get('run') === 'true';
     const slug = searchParams.get('slug') ?? undefined;
+    const slugs = searchParams.getAll('slug');
 
     if (shouldRun) {
-        return triggerPhaseB(slug);
+        return triggerPhaseB(slugs.length > 0 ? slugs : slug ? [slug] : undefined);
     }
 
     // Status-only response
@@ -36,6 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             unmatchedCount,
             matchedCount,
             campaigns: sortedCampaigns.map(c => ({
+                ...getLaunchWindowAssessment({ matchedSailDate: c.matchedSailDate, targetDates: c.targetDates }),
                 slug: c.id,
                 name: c.name,
                 pricingStatus: c.pricingStatus ?? 'AI_ESTIMATE',
@@ -56,18 +59,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * POST /api/groups/discovery/phase-b
- * Body: { slug?: string }
+ * Body: { slug?: string, slugs?: string[] }
  * Same as GET ?run=true but accepts body payload for slug targeting.
  * Preferred when calling from the test UI (allows body).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    const body = await request.json().catch(() => ({})) as { slug?: string };
-    return triggerPhaseB(body.slug);
+    const body = await request.json().catch(() => ({})) as { slug?: string; slugs?: string[] };
+    const requestedSlugs = Array.isArray(body.slugs)
+        ? body.slugs.filter((slug): slug is string => typeof slug === 'string' && slug.trim().length > 0)
+        : [];
+
+    if (requestedSlugs.length > 0) {
+        return triggerPhaseB(requestedSlugs);
+    }
+
+    return triggerPhaseB(body.slug ? [body.slug] : undefined);
 }
 
 // ─── Shared trigger logic ────────────────────────────────────────────────────
 
-function triggerPhaseB(slug?: string): NextResponse {
+function triggerPhaseB(slugs?: string[]): NextResponse {
     if (phaseBRunning) {
         return NextResponse.json(
             { success: false, error: 'Phase B is already running. Try again after the current run completes.' },
@@ -77,10 +88,14 @@ function triggerPhaseB(slug?: string): NextResponse {
 
     const scriptPath = path.join(process.cwd(), 'scripts', 'run-phase-b.ts');
     const args = ['tsx', scriptPath];
-    if (slug) args.push('--slug', slug);
+    for (const slug of slugs ?? []) {
+        args.push('--slug', slug);
+    }
 
     phaseBRunning = true;
-    console.log(`[phase-b route] Spawning run-phase-b.ts${slug ? ` for slug: ${slug}` : ' for all campaigns'}...`);
+    console.log(
+        `[phase-b route] Spawning run-phase-b.ts${slugs && slugs.length > 0 ? ` for slugs: ${slugs.join(', ')}` : ' for all campaigns'}...`
+    );
 
     const child = spawn('npx', args, {
         cwd: process.cwd(),
@@ -104,6 +119,6 @@ function triggerPhaseB(slug?: string): NextResponse {
     return NextResponse.json({
         success: true,
         message: `Phase B running in background. Poll GET /api/groups/discovery/phase-b for status.`,
-        slug: slug ?? 'all',
+        slugs: slugs ?? ['all'],
     });
 }

@@ -6,7 +6,7 @@ export const DiscoveryBlueprintSchema = z.object({
     name: z.string().describe('Display name for the Theme/Campaign'),
     description: z.string().describe('Short promotional description'),
     aesthetic: z.string().describe('The aesthetic or vibe of the campaign'),
-    targetDates: z.string().describe("Planned departure dates, e.g. 'November 2026'"),
+    targetDates: z.string().describe("Planned departure date in a parseable format, preferably an exact sail date copied from viable inventory; acceptable examples: '2026-11-07' or 'November 2026'"),
     targetDestination: z.string().describe("Primary route or destination region, e.g. 'Greek Isles' or 'Western Caribbean'"),
     shipTarget: z.string().describe('Target cruise line or ship class'),
     highlightEvents: z.array(z.string()).describe('List of suggested activities or meetups (3-5 items)'),

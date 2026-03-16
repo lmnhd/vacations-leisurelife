@@ -3,8 +3,26 @@
 import { useState } from "react";
 import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
+import { MINIMUM_CAMPAIGN_LEAD_DAYS } from "@/lib/campaigns/launch-window";
 
 type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising";
+
+type CampaignPricingStatus = "AI_ESTIMATE" | "CB_MATCHED" | "UNMATCHED" | null;
+
+interface AestheticCampaignMeta {
+    sailingDateText: string | null;
+    daysUntilSail: number | null;
+    meetsMinimumLeadTime: boolean | null;
+    isTightLeadTime: boolean | null;
+    minimumLeadDays: number;
+    id: string;
+    name: string;
+    targetDates: string;
+    pricingStatus: CampaignPricingStatus;
+    shipTarget: string | null;
+    matchedShipName: string | null;
+    matchedSailDate: string | null;
+}
 
 const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
 
@@ -25,13 +43,40 @@ export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
     const [briefState, setBriefState] = useState<BriefState>("idle");
     const [result, setResult] = useState<CampaignAestheticBrief | null>(null);
+    const [campaignMeta, setCampaignMeta] = useState<AestheticCampaignMeta | null>(null);
     const [loadedSlug, setLoadedSlug] = useState("");
     const [error, setError] = useState("");
     const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+    const [priorRequiredFixes, setPriorRequiredFixes] = useState<string[]>([]);
 
     const isBusy = briefState !== "idle";
     const normalizedSlug = slug.trim();
     const hasLoadedBriefForCurrentSlug = Boolean(result) && loadedSlug === normalizedSlug;
+    const shouldWarnBeforeGenerating = campaignMeta !== null && campaignMeta.pricingStatus !== "CB_MATCHED";
+    const shouldWarnLaunchWindow = campaignMeta !== null && campaignMeta.meetsMinimumLeadTime === false;
+
+    const loadCampaignMeta = async (campaignSlug: string): Promise<AestheticCampaignMeta | null> => {
+        const res = await fetch(`/api/groups/campaign/${campaignSlug}`);
+        const data = await readJsonResponse(res);
+
+        if (res.status === 404) {
+            setCampaignMeta(null);
+            return null;
+        }
+
+        if (!res.ok) {
+            const errorMessage = typeof data.error === "string" ? data.error : "Failed to load campaign metadata";
+            throw new Error(errorMessage);
+        }
+
+        const campaign = data.campaign as AestheticCampaignMeta | undefined;
+        if (!campaign) {
+            throw new Error("Campaign metadata response was missing campaign details");
+        }
+
+        setCampaignMeta(campaign);
+        return campaign;
+    };
 
     // ── LOAD ─────────────────────────────────────────────────────────────────
     const handleLoad = async () => {
@@ -39,8 +84,10 @@ export default function AestheticDevisingTestPage() {
         setBriefState("loading");
         setError("");
         setConfirmOverwrite(false);
+        setPriorRequiredFixes([]);
 
         try {
+            await loadCampaignMeta(normalizedSlug);
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`);
             if (res.status === 404) {
                 setResult(null);
@@ -72,8 +119,35 @@ export default function AestheticDevisingTestPage() {
         setBriefState("generating");
         setError("");
         setConfirmOverwrite(false);
+        setPriorRequiredFixes([]);
 
         try {
+            const latestCampaignMeta = await loadCampaignMeta(normalizedSlug);
+
+            if (latestCampaignMeta && latestCampaignMeta.meetsMinimumLeadTime === false) {
+                const proceedWithShortLeadTime = window.confirm(
+                    `This sailing is only ${latestCampaignMeta.daysUntilSail} days away. Minimum required lead time is ${MINIMUM_CAMPAIGN_LEAD_DAYS} days.\n\n` +
+                    'You can still prototype the brief, but normal launch approval will be blocked. Proceed anyway?'
+                );
+
+                if (!proceedWithShortLeadTime) {
+                    return;
+                }
+            }
+
+            if (latestCampaignMeta && latestCampaignMeta.pricingStatus !== "CB_MATCHED") {
+                const proceedWithoutMatch = window.confirm(
+                    `Inventory match has not passed for ${latestCampaignMeta.name}.\n\n` +
+                    `Current pricing status: ${latestCampaignMeta.pricingStatus ?? 'unknown'}. ` +
+                    `Generating aesthetics before Phase B can lock the brief to a ship context that later changes.\n\n` +
+                    'Proceed anyway?'
+                );
+
+                if (!proceedWithoutMatch) {
+                    return;
+                }
+            }
+
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`, {
                 method: "POST",
             });
@@ -163,6 +237,8 @@ export default function AestheticDevisingTestPage() {
         try {
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/red-team`, {
                 method: "POST",
+                headers: priorRequiredFixes.length > 0 ? { 'Content-Type': 'application/json' } : undefined,
+                body: priorRequiredFixes.length > 0 ? JSON.stringify({ priorRequiredFixes }) : undefined,
             });
             const data = await readJsonResponse(res);
             if (!res.ok) {
@@ -172,6 +248,7 @@ export default function AestheticDevisingTestPage() {
             }
             setResult(data.brief as CampaignAestheticBrief);
             setLoadedSlug(normalizedSlug);
+            setPriorRequiredFixes([]);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -190,11 +267,26 @@ export default function AestheticDevisingTestPage() {
                 method: "POST",
             });
             const data = await readJsonResponse(res);
+
+            // Deadlock — show operator message
+            if (res.status === 409 && data.deadlock) {
+                const deadlockMsg = typeof data.message === "string" ? data.message : "Revision deadlock detected.";
+                const fixes = Array.isArray(data.survivingFixes) ? (data.survivingFixes as string[]).join("; ") : "";
+                setError(`${deadlockMsg} Surviving fixes: ${fixes}`);
+                return;
+            }
+
             if (!res.ok) {
                 const errorMessage = typeof data.error === "string" ? data.error : "Revision failed";
                 const errorDetails = typeof data.details === "string" ? data.details : "";
                 throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
             }
+
+            // Capture priorRequiredFixes for re-review handoff
+            if (Array.isArray(data.priorRequiredFixes)) {
+                setPriorRequiredFixes(data.priorRequiredFixes as string[]);
+            }
+
             setResult(data.brief as CampaignAestheticBrief);
             setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
@@ -239,7 +331,11 @@ export default function AestheticDevisingTestPage() {
                             type="text"
                             placeholder="e.g. cat-lovers-cruise-2026"
                             value={slug}
-                            onChange={(e) => { setSlug(e.target.value); setConfirmOverwrite(false); }}
+                            onChange={(e) => {
+                                setSlug(e.target.value);
+                                setConfirmOverwrite(false);
+                                setCampaignMeta(null);
+                            }}
                             onKeyDown={(e) => e.key === "Enter" && handleLoad()}
                             disabled={isBusy}
                             className="flex-1 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
@@ -273,12 +369,37 @@ export default function AestheticDevisingTestPage() {
                             Loaded brief is for <span className="font-semibold">{loadedSlug}</span>. Load or generate the current slug before approving, deleting, or generating a bible.
                         </div>
                     )}
+                    {!error && campaignMeta && shouldWarnBeforeGenerating && (
+                        <div className="rounded-lg px-3 py-2 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                            Inventory match warning: this campaign is currently <span className="font-semibold">{campaignMeta.pricingStatus ?? 'unknown'}</span>.
+                            {campaignMeta.matchedShipName
+                                ? ` Current matched ship: ${campaignMeta.matchedShipName}${campaignMeta.matchedSailDate ? ` on ${campaignMeta.matchedSailDate}` : ''}.`
+                                : campaignMeta.shipTarget
+                                    ? ` Ship target is still ${campaignMeta.shipTarget}, but no confirmed CB match is stored yet.`
+                                    : ' No confirmed CB ship match is stored yet.'}
+                            {' '}Run Inventory Match before generating aesthetics unless you are intentionally prototyping ahead of Phase B.
+                        </div>
+                    )}
+                    {!error && campaignMeta && shouldWarnLaunchWindow && (
+                        <div className="rounded-lg px-3 py-2 text-xs bg-red-500/10 border border-red-500/20 text-red-300">
+                            Launch window warning: this sailing is only <span className="font-semibold">{campaignMeta.daysUntilSail}</span> days away.
+                            Minimum required lead time is {campaignMeta.minimumLeadDays} days, so approval for normal launch will be blocked until the campaign is moved to a later sailing.
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Bar — only shown when slug is entered */}
                 {normalizedSlug && (
                     <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
                         <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Actions</div>
+                        
+                        {/* Re-review mode indicator */}
+                        {priorRequiredFixes.length > 0 && (
+                            <div className="mb-3 rounded-lg px-3 py-2 text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300">
+                                <span className="font-semibold">Re-review mode active:</span> Next red-team will validate {priorRequiredFixes.length} prior fix{priorRequiredFixes.length > 1 ? 'es' : ''}
+                            </div>
+                        )}
+                        
                         <div className="flex flex-wrap gap-2 items-center">
 
                             {/* Generate / Overwrite */}
@@ -375,7 +496,7 @@ export default function AestheticDevisingTestPage() {
                                 <button
                                     id="btn-approve"
                                     onClick={handleApprove}
-                                    disabled={isBusy || result.redTeamReview?.verdict !== "pass"}
+                                    disabled={isBusy || result.redTeamReview?.verdict !== "pass" || campaignMeta?.meetsMinimumLeadTime === false}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                                 >
                                     {briefState === "approving"
@@ -413,6 +534,11 @@ export default function AestheticDevisingTestPage() {
                             <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
                                 <span className="text-xs text-slate-400 uppercase tracking-widest">Identity Summary</span>
                                 <div className="flex items-center gap-2">
+                                    {result.revisionCycleCount ? (
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${result.revisionCycleCount >= 2 ? 'text-red-300 border-red-500/30 bg-red-500/10' : 'text-blue-300 border-blue-500/30 bg-blue-500/10'}`}>
+                                            revision #{result.revisionCycleCount}
+                                        </span>
+                                    ) : null}
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadgeColor(result.humanReviewStatus)}`}>
                                         {result.humanReviewStatus}
                                     </span>

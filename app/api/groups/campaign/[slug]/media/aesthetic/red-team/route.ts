@@ -3,7 +3,7 @@ import { getAestheticBrief, getCampaignBlueprint, saveAestheticBrief } from '@/l
 import { runAestheticRedTeamReview } from '@/lib/campaigns/aesthetic-red-team';
 
 export async function POST(
-    _req: NextRequest,
+    req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
 ) {
     try {
@@ -20,7 +20,18 @@ export async function POST(
             return NextResponse.json({ error: 'Brief not found' }, { status: 404 });
         }
 
-        const review = await runAestheticRedTeamReview(campaign, brief);
+        // Parse optional re-review context from body
+        let priorRequiredFixes: string[] | undefined;
+        try {
+            const body = await req.json() as Record<string, unknown>;
+            if (Array.isArray(body.priorRequiredFixes)) {
+                priorRequiredFixes = body.priorRequiredFixes as string[];
+            }
+        } catch {
+            // No body or invalid JSON — proceed without re-review mode
+        }
+
+        const review = await runAestheticRedTeamReview(campaign, brief, { priorRequiredFixes });
         const updatedBrief = {
             ...brief,
             redTeamReview: review,

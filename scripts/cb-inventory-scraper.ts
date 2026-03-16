@@ -23,6 +23,7 @@ export type CbGroupInventoryItem = {
     groupId: string;
     shipName: string;
     vendor: string;
+    itinerary: string;
     sailDate: string;
     startingPrice: string;      // Raw string from CB, e.g. "$899"
     startingPriceNumber: number; // Parsed numeric value
@@ -131,11 +132,12 @@ export async function scrapeGroupInventory(): Promise<CbGroupInventoryItem[]> {
                     groupId,
                     shipName: cellTexts[1] ?? '',
                     vendor: cellTexts[2] ?? '',
-                    sailDate: cellTexts[3] ?? '',
-                    startingPrice: cellTexts[4] ?? '',
-                    priceAdvantage: cellTexts[5] ?? '',
-                    departurePort: cellTexts[6] ?? '',
-                    nights: cellTexts[7] ?? '',
+                    itinerary: cellTexts[3] ?? '',
+                    departurePort: cellTexts[4] ?? '',
+                    nights: cellTexts[5] ?? '',
+                    sailDate: cellTexts[6] ?? '',
+                    startingPrice: cellTexts[7] ?? '',
+                    priceAdvantage: cellTexts[8] ?? '',
                     sourceUrl,
                 });
             });

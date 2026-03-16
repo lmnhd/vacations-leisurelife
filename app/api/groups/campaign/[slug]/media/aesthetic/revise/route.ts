@@ -29,6 +29,19 @@ export async function POST(
 
         const result = await reviseAestheticBrief(slug);
 
+        // Deadlock — return 409 so the UI can show operator escalation
+        if ('deadlock' in result) {
+            return NextResponse.json(
+                {
+                    deadlock: true,
+                    message: result.message,
+                    revisionCycleCount: result.revisionCycleCount,
+                    survivingFixes: result.survivingFixes,
+                },
+                { status: 409 },
+            );
+        }
+
         return NextResponse.json(
             {
                 success: true,
@@ -36,6 +49,8 @@ export async function POST(
                 message: result.message,
                 revisionSummary: result.revisionSummary,
                 addressedFixes: result.addressedFixes,
+                priorRequiredFixes: result.priorRequiredFixes,
+                revisionCycleCount: result.revisionCycleCount,
             },
             { status: 200 },
         );

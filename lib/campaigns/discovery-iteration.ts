@@ -118,6 +118,18 @@ function getLastReviewEvent(history: DiscoveryIterationEvent[]): DiscoveryIterat
     return [...history].reverse().find((event) => event.eventType === 'review');
 }
 
+function getVerdictRank(verdict?: RedTeamReview['verdict']): number {
+    if (verdict === 'pass') {
+        return 2;
+    }
+
+    if (verdict === 'warn') {
+        return 1;
+    }
+
+    return 0;
+}
+
 function countRevisionEventsSinceLastPass(history: DiscoveryIterationEvent[]): number {
     let revisionCount = 0;
     for (let index = history.length - 1; index >= 0; index -= 1) {
@@ -143,20 +155,37 @@ export function applyDiscoveryReviewIteration(campaign: Campaign, review: RedTea
     const issueCategories = buildIssueCategories(review);
     const issueSignature = buildDiscoveryIssueSignature(review);
     const lastReview = getLastReviewEvent(state.history);
+    const issueCount = review.issues.length;
+    const blockerCount = review.issues.filter((issue) => issue.severity === 'blocker').length;
+    const warningCount = review.issues.filter((issue) => issue.severity === 'warning').length;
 
     const previousIssueCategories = lastReview?.issueCategories ?? [];
     const persistingIssueCategories = uniqueSorted(issueCategories.filter((category) => previousIssueCategories.includes(category)));
     const resolvedIssueCategories = uniqueSorted(previousIssueCategories.filter((category) => !issueCategories.includes(category)));
     const fingerprintSimilarity = lastReview ? jaccardSimilarity(lastReview.fingerprint, fingerprint) : 0;
     const repeatedIssueSignature = !!lastReview && (lastReview.issueCategories.join('|') === issueCategories.join('|'));
-    const consecutiveNonPassReviews = review.verdict === 'pass' ? 0 : state.consecutiveNonPassReviews + 1;
+    const previousIssueCount = lastReview?.issueCount ?? previousIssueCategories.length;
+    const previousBlockerCount = lastReview?.blockerCount ?? 0;
+    const previousWarningCount = lastReview?.warningCount ?? previousIssueCategories.length;
     const revisionsSinceLastPass = countRevisionEventsSinceLastPass(state.history);
     const operatorCleanupOnly = isOperatorCleanupReview(review);
 
-    const stagnant = review.verdict !== 'pass' && !!lastReview && (
+    const meaningfulImprovement = review.verdict === 'pass'
+        || (!!lastReview && (
+            getVerdictRank(review.verdict) > getVerdictRank(lastReview.verdict)
+            || blockerCount < previousBlockerCount
+            || issueCount < previousIssueCount
+            || warningCount < previousWarningCount
+            || resolvedIssueCategories.length > 0
+        ));
+
+    const consecutiveNonPassReviews = review.verdict === 'pass' || meaningfulImprovement
+        ? 0
+        : state.consecutiveNonPassReviews + 1;
+
+    const stagnant = review.verdict !== 'pass' && !!lastReview && !meaningfulImprovement && (
         repeatedIssueSignature
         || fingerprintSimilarity >= FINGERPRINT_SIMILARITY_THRESHOLD
-        || persistingIssueCategories.length >= Math.max(2, Math.min(issueCategories.length, previousIssueCategories.length))
     );
 
     const stagnationReason = stagnant
@@ -171,13 +200,13 @@ export function applyDiscoveryReviewIteration(campaign: Campaign, review: RedTea
         ? 'hold'
         : operatorCleanupOnly
             ? 'operator_cleanup'
-        : stagnant || consecutiveNonPassReviews >= 2
+        : stagnant
             ? 'branch'
             : 'continue';
 
     let retiredAt: string | undefined;
     let retirementReason: string | undefined;
-    if (!retiredAt && !operatorCleanupOnly && review.verdict !== 'pass' && revisionsSinceLastPass >= 2 && (stagnant || consecutiveNonPassReviews >= 3)) {
+    if (!retiredAt && !operatorCleanupOnly && review.verdict !== 'pass' && revisionsSinceLastPass >= 3 && stagnant && consecutiveNonPassReviews >= 2) {
         retiredAt = now;
         retirementReason = 'Retired after repeated non-improving review cycles.';
         recommendedNextAction = 'retire';
@@ -198,11 +227,15 @@ export function applyDiscoveryReviewIteration(campaign: Campaign, review: RedTea
         requiredFixes: review.requiredFixes,
         targetedIssues: [],
         changesMade: [],
+        issueCount,
+        blockerCount,
+        warningCount,
         improvement: {
             resolvedIssueCategories,
             persistingIssueCategories,
             repeatedIssueSignature,
             fingerprintSimilarity,
+            meaningfulImprovement,
         },
     };
 
@@ -270,7 +303,7 @@ export function applyDiscoveryRevisionIteration(
 export function getDiscoveryRevisionMode(campaign: Campaign): 'single' | 'branch' | 'retire' {
     const state = normalizeDiscoveryIterationState(campaign.discoveryIteration);
     if (state.retiredAt || state.recommendedNextAction === 'retire') {
-        return 'branch';
+        return 'retire';
     }
     if (state.recommendedNextAction === 'branch' || state.stagnant) {
         return 'branch';

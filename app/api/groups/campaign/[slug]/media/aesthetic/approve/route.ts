@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+import { getAestheticBrief, getCampaignBlueprint, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
 import { assertAestheticBriefPassedRedTeam } from '@/lib/campaigns/aesthetic-red-team';
+import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '@/lib/campaigns/launch-window';
 
 export async function POST(
     req: NextRequest,
@@ -9,9 +10,24 @@ export async function POST(
     try {
         const { slug } = await params;
 
-        const brief = await getAestheticBrief(slug);
-        if (!brief) {
+        const [brief, campaign] = await Promise.all([getAestheticBrief(slug), getCampaignBlueprint(slug)]);
+        if (!brief || !campaign) {
             return NextResponse.json({ error: "Brief not found" }, { status: 404 });
+        }
+
+        const launchWindow = getLaunchWindowAssessment({
+            matchedSailDate: campaign.matchedSailDate,
+            targetDates: campaign.targetDates,
+        });
+
+        if (launchWindow.meetsMinimumLeadTime === false) {
+            return NextResponse.json(
+                {
+                    error: 'Launch window too short for approval',
+                    details: `This sailing is ${launchWindow.daysUntilSail} days away. Minimum required lead time is ${MINIMUM_CAMPAIGN_LEAD_DAYS} days.`,
+                },
+                { status: 409 },
+            );
         }
 
         try {
