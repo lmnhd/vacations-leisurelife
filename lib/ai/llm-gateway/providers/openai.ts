@@ -46,15 +46,26 @@ export async function callOpenAI(
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const messages: { role: 'system' | 'user'; content: string }[] = [];
+  const messages: any[] = [];
   if (options.systemPrompt) {
     messages.push({ role: 'system', content: options.systemPrompt });
   }
-  messages.push({ role: 'user', content: prompt });
+
+  if (options.images && options.images.length > 0) {
+    const userContent: any[] = options.images.map((img) => ({
+      type: 'image_url',
+      image_url: { url: `data:${img.mimeType};base64,${img.base64}`, detail: 'low' },
+    }));
+    userContent.push({ type: 'text', text: prompt });
+    messages.push({ role: 'user', content: userContent });
+  } else {
+    messages.push({ role: 'user', content: prompt });
+  }
 
   const request = {
     model:       apiId,
     messages,
+    ...(options.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
     ...tokenParam(apiId, maxTokens),
     ...tempParam(apiId, options.temperature),
   };

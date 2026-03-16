@@ -55,6 +55,10 @@ export interface LLMCallOptions {
   maxTokens?: number;
   /** Structured JSON schema for structured output (provider-dependent) */
   responseSchema?: Record<string, unknown>;
+  /** Optional base64 images to include in the user prompt */
+  images?: Array<{ base64: string; mimeType: string }>;
+  /** Force the provider into strict JSON object output mode, if supported */
+  jsonMode?: boolean;
   /** Custom abort signal for timeouts / cancellation */
   signal?: AbortSignal;
 }

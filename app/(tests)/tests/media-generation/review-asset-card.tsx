@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from 'react';
+import { KeyboardEvent, useEffect, useState } from 'react';
 import { getElevenLabsVoiceRoleLabel, parseElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import type { AssetApprovalState, AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
@@ -325,7 +325,6 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     onRefresh: () => Promise<void>;
 }) {
     const initialCuration = normalizeAssetCuration(asset);
-    const effectiveApprovalState = normalizeAssetCuration(asset).approvalState;
     const [notes, setNotes] = useState(asset.reviewNotes ?? '');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -354,6 +353,21 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const canRegen = isRegenerableType(asset.assetType);
     const allowsSharedVoiceRerender = AUDIO_ARTIFACT_TYPES.has(asset.assetType);
     const isBusy = saving || deleting || regenerating || savingCuration;
+    const effectiveApprovalState = approvalState;
+
+    useEffect(() => {
+        const nextCuration = normalizeAssetCuration(asset);
+        setNotes(asset.reviewNotes ?? '');
+        setEditablePrompt(asset.promptUsed);
+        setApprovalState(nextCuration.approvalState);
+        setGlobalPriority(String(nextCuration.globalPriority));
+        setApprovedContexts(nextCuration.approvedContexts);
+        setBlockedContexts(nextCuration.blockedContexts);
+        setSuitabilityTags(nextCuration.suitabilityTags);
+        setAntiTags(nextCuration.antiTags);
+        setCuratorNotes(nextCuration.curatorNotes ?? '');
+        setDownstreamLocked(nextCuration.downstreamLocked);
+    }, [asset]);
 
     const addTag = (kind: 'suitability' | 'anti', rawValue: string) => {
         const nextTag = normalizeTagValue(rawValue);

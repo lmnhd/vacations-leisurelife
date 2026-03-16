@@ -354,11 +354,8 @@ export async function runMediaGeneration(
                         ...(existingManifest?.images.shipReferences ?? []),
                         ...shipReferenceRecords,
                     ];
-                    const candidates = await discoverShipReferenceCandidatesWithExclusions(campaign, 2, {
-                        imageUrls: existingReferenceRecords.map((record) => record.url),
-                        contextUrls: existingReferenceRecords
-                            .map((record) => record.sourcePageUrl)
-                            .filter((value): value is string => !!value),
+                    const candidates = await discoverShipReferenceCandidatesWithExclusions(campaign, 6, {
+                        imageUrls: existingReferenceRecords.map((record) => record.sourceImageUrl ?? record.url),
                     });
                     if (candidates.length === 0) {
                         throw new Error(`No usable ship reference images found for ${slug}`);
@@ -794,7 +791,7 @@ export async function runMediaGeneration(
         }
 
         const mergedImages = {
-            shipReferences: shipReferenceRecords.length > 0 ? shipReferenceRecords : (existingManifest?.images.shipReferences ?? []),
+            shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
             hero: heroRecords.length > 0 ? heroRecords : (existingManifest?.images.hero ?? []),
             sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
             aestheticConcepts: conceptRecords.length > 0 ? conceptRecords : (existingManifest?.images.aestheticConcepts ?? []),

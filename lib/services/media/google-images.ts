@@ -35,7 +35,8 @@ export interface GoogleImageSearchResponse {
 export async function searchGoogleImages(
     query: string,
     // We fetch a batch since some links might 404, we want options
-    count: number = 20
+    count: number = 20,
+    sizeSize: 'l' | 'm' | 'any' = 'l'
 ): Promise<GoogleImageSearchResponse> {
     const apiKey = process.env.SERPAPI_KEY;
 
@@ -53,8 +54,8 @@ export async function searchGoogleImages(
                 engine: 'google_images',
                 q: query,
                 api_key: apiKey,
-                // Requesting large images to ensure quality for the hero canvas
-                tbs: 'isz:l',
+                // Requesting size based on param
+                ...(sizeSize !== 'any' ? { tbs: `isz:${sizeSize}` } : {}),
                 safe: 'active',
             }),
             timeoutPromise,

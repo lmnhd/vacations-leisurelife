@@ -614,6 +614,7 @@ export const AssetRecordSchema = z.object({
     url: z.string(),
     generator: GeneratorServiceEnum,
     promptUsed: z.string(),
+    sourceImageUrl: z.string().optional(),
     sourcePageUrl: z.string().optional(),
     sourceThumbnailUrl: z.string().optional(),
     sourceQuery: z.string().optional(),

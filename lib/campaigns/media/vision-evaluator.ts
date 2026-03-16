@@ -1,5 +1,4 @@
-import OpenAI from 'openai';
-import { getModelConfig, ModelName } from '@/lib/ai/llm-gateway';
+import { getModelConfig, ModelName, callLLM } from '@/lib/ai/llm-gateway';
 import { ShipReferenceCandidate } from '../schema';
 
 // ── Controlled vocabulary (Phase 4: IMAGE_REFERENCE_USING_VISION.md) ─────────
@@ -21,7 +20,7 @@ const VALID_CATEGORY_FIT_VALUES = new Set(['strong', 'weak', 'wrong_category']);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VISION_MODEL = ModelName.GPT_5_HIGH;
+const VISION_MODEL = ModelName.CLAUDE_4_SONNET;
 const VISION_MIN_AI_SCORE = 30;
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -29,6 +28,72 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 const EVALUATION_SYSTEM_PROMPT = `You are a cruise ship photography quality evaluator. Assess whether an image is appropriate for a specific ship reference category in marketing materials.
 Respond ONLY with a valid JSON object matching the exact schema requested. No prose, no markdown, no explanation outside the JSON.`;
+
+function getHostFromUrl(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        return 'invalid-url';
+    }
+}
+
+function extractAssistantTextContent(content: unknown): string {
+    if (content === null || content === undefined) {
+        return '';
+    }
+    if (typeof content === 'string') {
+        return content.trim();
+    }
+
+    if (!Array.isArray(content)) {
+        return typeof content === 'object' ? JSON.stringify(content) : String(content);
+    }
+
+    const textParts: string[] = [];
+    for (const part of content) {
+        if (!part || typeof part !== 'object') {
+            continue;
+        }
+
+        const typedPart = part as Record<string, unknown>;
+        if (typedPart['type'] === 'text' && typeof typedPart['text'] === 'string') {
+            textParts.push(typedPart['text']);
+            continue;
+        }
+
+        if (typedPart['type'] === 'refusal' && typeof typedPart['refusal'] === 'string') {
+            textParts.push(typedPart['refusal']);
+        }
+    }
+
+    return textParts.join('\n').trim();
+}
+
+function tryExtractJsonObject(rawText: string): Record<string, unknown> {
+    const trimmed = rawText.trim();
+    if (!trimmed) {
+        throw new Error('Empty model response content');
+    }
+
+    // Try stripping markdown fences first
+    let cleanedText = trimmed;
+    if (cleanedText.startsWith('```json')) cleanedText = cleanedText.slice(7);
+    else if (cleanedText.startsWith('```')) cleanedText = cleanedText.slice(3);
+    if (cleanedText.endsWith('```')) cleanedText = cleanedText.slice(0, -3);
+    cleanedText = cleanedText.trim();
+
+    try {
+        return JSON.parse(cleanedText) as Record<string, unknown>;
+    } catch {
+        const firstBrace = cleanedText.indexOf('{');
+        const lastBrace = cleanedText.lastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+            const candidate = cleanedText.slice(firstBrace, lastBrace + 1);
+            return JSON.parse(candidate) as Record<string, unknown>;
+        }
+        throw new Error(`Model did not return parseable JSON. Raw preview: ${trimmed.slice(0, 280)}`);
+    }
+}
 
 function buildEvaluationPrompt(shipName: string, category: string): string {
     return JSON.stringify({
@@ -131,36 +196,27 @@ function parseVisionApiResponse(raw: Record<string, unknown>): {
 // Throws on infrastructure failure (network, non-image, API error).
 // Returns null when the image was successfully evaluated but failed visual criteria.
 async function evaluateSingleCandidate(
-    client: OpenAI,
-    apiId: string,
     candidate: ShipReferenceCandidate,
     shipName: string,
 ): Promise<ShipReferenceCandidate | null> {
     // Infrastructure failures propagate as thrown errors (allSettled will capture as 'rejected')
     const imageData = await fetchImageAsBase64(candidate.imageUrl);
 
-    const dataUrl = `data:${imageData.mimeType};base64,${imageData.base64}`;
     const promptText = buildEvaluationPrompt(shipName, candidate.category);
 
-    const response = await client.chat.completions.create({
-        model: apiId,
-        messages: [
-            { role: 'system', content: EVALUATION_SYSTEM_PROMPT },
-            {
-                role: 'user',
-                content: [
-                    { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
-                    { type: 'text', text: promptText },
-                ],
-            },
-        ],
-        max_tokens: 400,
-        temperature: 0,
-        response_format: { type: 'json_object' },
+    const response = await callLLM(VISION_MODEL, promptText, {
+        systemPrompt: EVALUATION_SYSTEM_PROMPT,
+        images: [{ base64: imageData.base64, mimeType: imageData.mimeType }],
+        jsonMode: true,
+        maxTokens: 2000,
     });
 
-    const rawContent = response.choices[0]?.message?.content ?? '{}';
-    const raw = JSON.parse(rawContent) as Record<string, unknown>;
+    const rawContent = response.content;
+    if (!rawContent) {
+        throw new Error(`Empty model response content. Provider raw: ${JSON.stringify(response.raw)}`);
+    }
+
+    const raw = tryExtractJsonObject(rawContent);
     const { aiScore, aiReasoning, shipMatch, categoryFit, detectedTags, antiTags } =
         parseVisionApiResponse(raw);
 
@@ -204,30 +260,35 @@ export async function applyVisionEvaluationToCategory(
 
     const category = candidates[0]?.category ?? 'unknown';
 
-    let client: OpenAI;
-    let apiId: string;
-    try {
-        const config = getModelConfig(VISION_MODEL);
-        const { default: OpenAIClass } = await import('openai');
-        client = new OpenAIClass({ apiKey: process.env.OPENAI_API_KEY });
-        apiId = config.apiId ?? 'gpt-5';
-    } catch (initError) {
-        console.warn('[VisionEvaluator] Failed to initialize — returning heuristic candidates', {
-            category,
-            error: initError instanceof Error ? initError.message : String(initError),
-        });
-        return candidates;
-    }
-
     const settledResults = await Promise.allSettled(
         candidates.map((candidate) =>
-            evaluateSingleCandidate(client, apiId, candidate, shipName)
+            evaluateSingleCandidate(candidate, shipName)
         )
     );
 
     // Count fulfilled (evaluated by AI) vs rejected (infra failure)
     let evaluatedCount = 0;
     const survivors: ShipReferenceCandidate[] = [];
+    settledResults.forEach((result, index) => {
+        const candidate = candidates[index];
+        if (!candidate) {
+            return;
+        }
+
+        if (result.status === 'rejected') {
+            const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+            console.warn('[VisionEvaluator] Candidate infrastructure failure', {
+                category,
+                title: candidate.title,
+                imageUrl: candidate.imageUrl,
+                imageHost: getHostFromUrl(candidate.imageUrl),
+                contextUrl: candidate.contextUrl,
+                contextHost: getHostFromUrl(candidate.contextUrl),
+                reason,
+            });
+        }
+    });
+
     for (const result of settledResults) {
         if (result.status === 'fulfilled') {
             evaluatedCount++;
@@ -242,6 +303,7 @@ export async function applyVisionEvaluationToCategory(
         console.warn('[VisionEvaluator] All candidates failed infrastructure (fetch/API) — heuristic fallback', {
             category,
             attempted: candidates.length,
+            candidateHosts: Array.from(new Set(candidates.map((candidate) => getHostFromUrl(candidate.imageUrl)))),
         });
         return candidates;
     }

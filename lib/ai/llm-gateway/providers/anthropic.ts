@@ -16,11 +16,26 @@ export async function callAnthropic(
   const Anthropic = (await import('@anthropic-ai/sdk')).default;
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  const userContent: any[] = [];
+  if (options.images && options.images.length > 0) {
+    for (const img of options.images) {
+      userContent.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: img.mimeType === 'image/jpg' ? 'image/jpeg' : img.mimeType,
+          data: img.base64
+        }
+      });
+    }
+  }
+  userContent.push({ type: 'text', text: prompt });
+
   const response = await client.messages.create({
     model:       apiId,
     max_tokens:  maxTokens,
     system:      options.systemPrompt,
-    messages:    [{ role: 'user', content: prompt }],
+    messages:    [{ role: 'user', content: userContent }],
     temperature: options.temperature,
   });
 

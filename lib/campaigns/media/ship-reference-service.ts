@@ -49,6 +49,10 @@ const CRUISE_LINE_QUERY_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string
     { pattern: /princess cruises?/i, label: 'Princess Cruises' },
 ];
 
+const SHIP_REFERENCE_SEARCH_RESULTS_PER_QUERY = Number(
+    process.env.SHIP_REFERENCE_SEARCH_RESULTS_PER_QUERY ?? '48'
+);
+
 function tokenizeHeroSimilarityText(value: string): string[] {
     return normalizeText(value)
         .split(/\s+/)
@@ -190,11 +194,17 @@ function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: st
 
     return [
         { category: 'exterior', query: `${sharedPrefix} cruise ship exterior professional photo` },
+        { category: 'exterior', query: `${sharedPrefix} ship sailing open ocean` },
         { category: 'pool_deck', query: `${sharedPrefix} pool deck cruise ship photo` },
+        { category: 'pool_deck', query: `${sharedPrefix} lido deck swimming pool` },
         { category: 'dining', query: `${sharedPrefix} dining room cruise ship photo` },
+        { category: 'dining', query: `${sharedPrefix} specialty restaurant interior` },
         { category: 'stateroom', query: `${sharedPrefix} stateroom cabin cruise ship photo` },
+        { category: 'stateroom', query: `${sharedPrefix} suite with balcony interior` },
         { category: 'atrium', query: `${sharedPrefix} atrium interior cruise ship photo` },
+        { category: 'atrium', query: `${sharedPrefix} central promenade hall` },
         { category: 'destination_view', query: `${sharedPrefix} deck ocean view cruise ship photo` },
+        { category: 'destination_view', query: `${sharedPrefix} cruise balcony ocean sunset` },
     ];
 }
 
@@ -267,7 +277,18 @@ function shouldHardRejectReferenceCandidate(
         return true;
     }
 
-    return classifyReferenceMatchLevel(campaign, title, contextUrl) === 'generic_cruise';
+    return false;
+}
+
+function shouldRejectKnownBadImageUrl(imageUrl: string): boolean {
+    const normalizedUrl = imageUrl.toLowerCase();
+
+    // Google Images can surface Instagram crawler endpoints that return HTML, not image bytes.
+    if (normalizedUrl.includes('lookaside.instagram.com/seo/google_widget/crawler/')) {
+        return true;
+    }
+
+    return false;
 }
 
 function computeFinalRankScore(candidate: ShipReferenceCandidate): number {
@@ -322,7 +343,7 @@ export async function discoverShipReferenceCandidatesWithExclusions(
     const settledResponses = await Promise.allSettled(
         queryConfigs.map(async (queryConfig) => ({
             queryConfig,
-            response: await searchGoogleImages(queryConfig.query, 6),
+            response: await searchGoogleImages(queryConfig.query, SHIP_REFERENCE_SEARCH_RESULTS_PER_QUERY, 'any'),
         }))
     );
 
@@ -338,6 +359,10 @@ export async function discoverShipReferenceCandidatesWithExclusions(
         const { queryConfig, response } = settledResponse.value;
         for (const result of response.results) {
             if (excludedImageUrls.has(result.imageUrl) || excludedContextUrls.has(result.contextUrl)) {
+                continue;
+            }
+
+            if (shouldRejectKnownBadImageUrl(result.imageUrl)) {
                 continue;
             }
 
@@ -423,9 +448,12 @@ export async function discoverShipReferenceCandidatesWithExclusions(
     const sameClassCandidates = rankedCandidates.filter(
         (candidate) => classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl) === 'same_class'
     );
+    const genericCruiseCandidates = rankedCandidates.filter(
+        (candidate) => classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl) === 'generic_cruise'
+    );
     const candidatePasses = exactShipCandidates.length > 0
-        ? [exactShipCandidates, sameClassCandidates]
-        : [sameClassCandidates];
+        ? [exactShipCandidates, sameClassCandidates, genericCruiseCandidates]
+        : [sameClassCandidates, genericCruiseCandidates];
 
     for (const candidatePass of candidatePasses) {
         for (const candidate of candidatePass) {
@@ -467,6 +495,7 @@ function buildExternalReferenceAssetRecord(
         url: candidate.imageUrl,
         generator: 'serpapi',
         promptUsed: candidate.title,
+        sourceImageUrl: candidate.imageUrl,
         sourcePageUrl: candidate.contextUrl,
         sourceThumbnailUrl: candidate.thumbnailUrl,
         sourceQuery: candidate.query,
@@ -506,6 +535,7 @@ async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCand
         url,
         generator: 'serpapi',
         promptUsed: candidate.title,
+        sourceImageUrl: candidate.imageUrl,
         sourcePageUrl: candidate.contextUrl,
         sourceThumbnailUrl: candidate.thumbnailUrl,
         sourceQuery: candidate.query,
@@ -565,7 +595,7 @@ export function assetRecordToShipReferenceCandidate(record: AssetRecord): ShipRe
 
     return {
         title: record.promptUsed || record.assetId,
-        imageUrl: record.url,
+        imageUrl: record.sourceImageUrl || record.url,
         thumbnailUrl: record.sourceThumbnailUrl || record.url,
         contextUrl: record.sourcePageUrl || record.url,
         width: record.dimensions?.width ?? 0,
