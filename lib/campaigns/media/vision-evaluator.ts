@@ -51,27 +51,29 @@ function buildEvaluationPrompt(shipName: string, category: string): string {
 
 async function fetchImageAsBase64(
     url: string,
-): Promise<{ base64: string; mimeType: string } | null> {
+): Promise<{ base64: string; mimeType: string }> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    let response: Response;
     try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-        const response = await fetch(url, { signal: controller.signal });
+        response = await fetch(url, { signal: controller.signal });
+    } catch (err) {
         clearTimeout(timeout);
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const rawMime = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
-        if (!rawMime.startsWith('image/')) {
-            return null;
-        }
-
-        const buffer = Buffer.from(await response.arrayBuffer());
-        return { base64: buffer.toString('base64'), mimeType: rawMime };
-    } catch {
-        return null;
+        throw new Error(`[VisionEvaluator] Network error fetching image: ${url} — ${String(err)}`);
     }
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+        throw new Error(`[VisionEvaluator] Image fetch returned ${response.status}: ${url}`);
+    }
+
+    const rawMime = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+    if (!rawMime.startsWith('image/')) {
+        throw new Error(`[VisionEvaluator] Non-image content-type "${rawMime}" for: ${url}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return { base64: buffer.toString('base64'), mimeType: rawMime };
 }
 
 // ── Response parsing ──────────────────────────────────────────────────────────
@@ -106,31 +108,36 @@ function parseVisionApiResponse(raw: Record<string, unknown>): {
           )
         : [];
 
-    const antiTags = Array.isArray(raw['antiTags'])
+    const explicitAntiTags = Array.isArray(raw['antiTags'])
         ? (raw['antiTags'] as unknown[]).filter(
               (t): t is string => typeof t === 'string' && VISION_ANTI_TAG_SET.has(t)
           )
         : [];
+
+    // Merge disqualifiers into antiTags so negative governance is never silently lost
+    const disqualifierTags = Array.isArray(raw['disqualifiers'])
+        ? (raw['disqualifiers'] as unknown[]).filter(
+              (t): t is string => typeof t === 'string' && VISION_ANTI_TAG_SET.has(t)
+          )
+        : [];
+
+    const antiTags = Array.from(new Set([...explicitAntiTags, ...disqualifierTags]));
 
     return { aiScore, aiReasoning, shipMatch, categoryFit, detectedTags, antiTags };
 }
 
 // ── Per-candidate evaluation ──────────────────────────────────────────────────
 
+// Throws on infrastructure failure (network, non-image, API error).
+// Returns null when the image was successfully evaluated but failed visual criteria.
 async function evaluateSingleCandidate(
     client: OpenAI,
     apiId: string,
     candidate: ShipReferenceCandidate,
     shipName: string,
 ): Promise<ShipReferenceCandidate | null> {
+    // Infrastructure failures propagate as thrown errors (allSettled will capture as 'rejected')
     const imageData = await fetchImageAsBase64(candidate.imageUrl);
-    if (!imageData) {
-        console.warn('[VisionEvaluator] Image fetch failed — discarding candidate', {
-            url: candidate.imageUrl,
-            category: candidate.category,
-        });
-        return null;
-    }
 
     const dataUrl = `data:${imageData.mimeType};base64,${imageData.base64}`;
     const promptText = buildEvaluationPrompt(shipName, candidate.category);
@@ -182,11 +189,10 @@ async function evaluateSingleCandidate(
 /**
  * Runs per-category vision evaluation on a batch of text-pre-filtered candidates.
  *
- * Returns only candidates that pass visual screening (correct category, correct ship, aiScore >= 30),
- * augmented with AI fields (aiScore, aiReasoning, detectedTags, antiTags).
- *
- * If vision evaluation fails entirely for the batch, returns the original unaugmented candidates
- * so heuristic ranking can proceed (Phase 7 fallback).
+ * Fallback semantics (Phase 7):
+ * - ALL promises rejected (infra failures: network, API down) → return original batch for heuristic ranking.
+ * - ANY promise fulfilled but zero survivors (visual rejection: wrong category / ship) → return [] to drop the category.
+ * - Some survivors → return survivors augmented with AI fields.
  */
 export async function applyVisionEvaluationToCategory(
     candidates: ShipReferenceCandidate[],
@@ -219,24 +225,39 @@ export async function applyVisionEvaluationToCategory(
         )
     );
 
+    // Count fulfilled (evaluated by AI) vs rejected (infra failure)
+    let evaluatedCount = 0;
     const survivors: ShipReferenceCandidate[] = [];
     for (const result of settledResults) {
-        if (result.status === 'fulfilled' && result.value !== null) {
-            survivors.push(result.value);
+        if (result.status === 'fulfilled') {
+            evaluatedCount++;
+            if (result.value !== null) {
+                survivors.push(result.value);
+            }
         }
     }
 
-    if (survivors.length === 0) {
-        console.warn(
-            '[VisionEvaluator] All candidates disqualified for category — falling back to heuristic',
-            { category, evaluated: candidates.length }
-        );
+    // All infra failures — vision service unavailable: preserve heuristic candidates
+    if (evaluatedCount === 0) {
+        console.warn('[VisionEvaluator] All candidates failed infrastructure (fetch/API) — heuristic fallback', {
+            category,
+            attempted: candidates.length,
+        });
         return candidates;
+    }
+
+    // Vision evaluated but every image was visually rejected — drop the category entirely
+    if (survivors.length === 0) {
+        console.warn('[VisionEvaluator] All evaluated candidates visually rejected — dropping category', {
+            category,
+            evaluated: evaluatedCount,
+        });
+        return [];
     }
 
     console.log('[VisionEvaluator] Category evaluation complete', {
         category,
-        evaluated: candidates.length,
+        evaluated: evaluatedCount,
         survivors: survivors.length,
     });
 

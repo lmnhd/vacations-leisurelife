@@ -521,6 +521,7 @@ async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCand
         reviewStatus,
         version: 1,
         active: true,
+        ...(buildCurationFromCandidateAI(candidate) ? { curation: buildCurationFromCandidateAI(candidate) } : {}),
     };
 
     await saveAssetRecord(slug, record);
@@ -535,12 +536,23 @@ export async function importShipReferenceAssets(slug: string, campaign: Campaign
         return Math.max(maxIndex, parsedIndex);
     }, 0);
 
-    const records = candidates.map((candidate, index) => {
-        const assetId = `img_ship_reference_${String(nextIndex + index + 1).padStart(3, '0')}`;
-        return buildExternalReferenceAssetRecord(campaign, candidate, assetId, 'needs_review');
-    });
+    const importResults = await Promise.allSettled(
+        candidates.map((candidate, index) => {
+            const assetId = `img_ship_reference_${String(nextIndex + index + 1).padStart(3, '0')}`;
+            return importCandidateAsAsset(slug, candidate, 'ship_reference_image', assetId, 'needs_review');
+        })
+    );
 
-    await Promise.all(records.map((record) => saveAssetRecord(slug, record)));
+    const records: AssetRecord[] = [];
+    for (const result of importResults) {
+        if (result.status === 'fulfilled') {
+            records.push(result.value);
+        } else {
+            console.warn('[ShipReferenceService] Failed to import candidate — skipping', {
+                error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            });
+        }
+    }
     return records;
 }
 
