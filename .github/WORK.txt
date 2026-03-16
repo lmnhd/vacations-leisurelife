@@ -1,69 +1,22 @@
-AI Vision-Based Reference Selection Refactor
-Goal Description
-Enhance the existing 
-ship-reference-service.ts
- to utilize an AI Vision-capable model (via our llm-gateway) to evaluate and select the optimal ship reference images obtained from Google SerpAPI. This replaces an over-reliance on exact text/keyword matching heuristics, ensuring the chosen image truly represents the ship, context, and aesthetic quality needed. Furthermore, we will align this with the new 
-IMAGE_GOVERNANCE_SELECTION_SYSTEM.md
- by using the AI to initialize intelligent curation tags directly on the asset records.
+Done. Here's what was implemented:
 
-Proposed Changes
-1. 
-lib/campaigns/schema.ts
-Update types to capture the AI Vision analysis.
+Files Changed
+NEW — @/c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\campaigns\media\vision-evaluator.ts
 
-[MODIFY] 
-ShipReferenceCandidate
-: Add optional fields for aiScore, aiReasoning, detectedTags, and antiTags.
-[MODIFY] 
-AssetRecord
- (if necessary): Ensure the generated suitabilityTags and antiTags can be cleanly persisted from the AI's deductions.
-2. lib/campaigns/media/vision-evaluator.ts
-[NEW] Create a standalone module to handle the Vision LLM calls.
-Logic:
-Will receive a batch of candidate image URLs, the campaign.shipTarget, and the intended category (exterior, pool_deck, dining, etc.).
-Prompt instructions will ask the Vision model to assess:
-Is this actually a cruise ship (and likely the referenced class/ship)?
-Does it visually match the requested category?
-Are there disqualifying attributes (e.g., CGI, render, generic hotel, blurry, text overlay)?
-Returns structured JSON containing a score (1-100), reasoning, and inferred tags.
-3. 
-lib/campaigns/media/ship-reference-service.ts
-[MODIFY] 
-discoverShipReferenceCandidatesWithExclusions
-:
-Fetch candidates from searchGoogleImages as normal.
-Run the existing text-based filters (
-classifyReferenceMatchLevel
-, 
-shouldHardRejectReferenceCandidate
-) as a cheap pre-filter to weed out obvious junk.
-Take the remaining N candidates and pass them to the new vision-evaluator.
-Re-score and sort candidates heavily weighting the AI Vision score over the rudimentary text overlap score.
-[MODIFY] 
-buildExternalReferenceAssetRecord
- & 
-importCandidateAsAsset
-:
-Pass the AI's detectedTags into the record's target tags (suitabilityTags etc. depending on how curation is stored currently).
-Add the AI's reasoning to curatorNotes or a similar metadata field so the system operator has context for why the AI allowed the image.
-4. 
-lib/ai/llm-gateway/models.ts
- & 
-lib/ai/llm-gateway/index.ts
-[MODIFY] (If Needed) Ensure that an appropriate vision-capable model (like GPT_5_HIGH / gpt-4o) is mapped for a vision_evaluation task.
-User Review Required
-IMPORTANT
+applyVisionEvaluationToCategory(candidates, shipName) — per-category OpenAI vision call using ModelName.GPT_5_HIGH (gpt-5)
+Fetches each image server-side as base64 before evaluation (Phase 2)
+Controlled suitability tag vocabulary (18 tags) + anti-tag vocabulary (13 tags) — no freeform strings pass through
+Disqualifies: categoryFit === 'wrong_category', shipMatch === 'wrong_ship', aiScore < 30
+Graceful fallback: fetch failure → drop that candidate; all candidates disqualified → return original batch for heuristic ranking; OpenAI init failure → return original batch (Phase 7)
+MODIFIED — @/c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\campaigns\media\ship-reference-service.ts
 
-Which specific LLM model should we route the vision requests to? (e.g., GPT_5_HIGH or CLAUDE_4_OPUS)
-Do you want to evaluate candidate images individually, or batch them in a single prompt for relative ranking (to save time/costs)?
-Should this apply to all reference categories (exterior, pool deck, dining, stateroom), or specifically just the Hero exterior references?
-Verification Plan
-Automated / Integration
-None strictly required beyond standard compilation.
-Manual Verification
-Navigate to the /tests/media-generation route.
-Enter a slug for a cruise campaign (e.g., representing "Royal Caribbean Icon of the Seas").
-Enable preflight and click GENERATE BY CATEGORY -> References.
-Verify the server logs to ensure the AI Vision evaluator is invoked.
-Inspect the generated manifest in the UI and confirm the top downloaded reference images are accurate and visually optimal.
-Validate the populated asset curation tags (suitabilityTags, antiTags).
+After text pre-filter builds candidateMap, groups by category and runs all 6 categories in parallel via Promise.allSettled
+Vision survivors replace the heuristic-only candidates in the map
+computeFinalRankScore() blends selectionScore + aiScore*2 / 2 for final ranking
+buildCurationFromCandidateAI() maps AI output → AssetRecord.curation (globalPriority, suitabilityTags, antiTags, curatorNotes, approvalState: pending_review) on every imported reference asset
+Commit: 0ac1434
+
+Verification (per plan success criteria)
+A stateroom image with correct ship metadata but categoryFit === 'wrong_category' is now disqualified before import
+Existing exclusion-based iteration remains intact (Phase 6 integration is automatic — vision runs on whatever text-filtered candidates remain after exclusions are applied)
+curation fields are populated on every vision-augmented import, ready for /tests/media-generation review controls
