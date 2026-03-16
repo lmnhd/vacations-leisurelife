@@ -1,5 +1,6 @@
 import { Campaign } from '../types';
-import { AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../schema';
+import { AssetCuration, AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../schema';
+import { applyVisionEvaluationToCategory } from './vision-evaluator';
 import { searchGoogleImages } from '@/lib/services/media/google-images';
 import { saveAssetRecord } from './media-store';
 import { getAssetsByType } from './media-store';
@@ -269,6 +270,32 @@ function shouldHardRejectReferenceCandidate(
     return classifyReferenceMatchLevel(campaign, title, contextUrl) === 'generic_cruise';
 }
 
+function computeFinalRankScore(candidate: ShipReferenceCandidate): number {
+    if (candidate.aiScore === undefined) {
+        return candidate.selectionScore;
+    }
+    // Blend heuristic and AI score (aiScore *2 normalises 0-100 to a comparable range)
+    return (candidate.selectionScore + candidate.aiScore * 2) / 2;
+}
+
+function buildCurationFromCandidateAI(candidate: ShipReferenceCandidate): AssetCuration | undefined {
+    if (candidate.aiScore === undefined) {
+        return undefined;
+    }
+    return {
+        approvalState: 'pending_review',
+        globalPriority: Math.min(100, Math.max(0, Math.round(candidate.aiScore))),
+        contextPriorities: {},
+        approvedContexts: [],
+        blockedContexts: [],
+        suitabilityTags: candidate.detectedTags ?? [],
+        antiTags: candidate.antiTags ?? [],
+        downstreamLocked: false,
+        curatorNotes: candidate.aiReasoning ? `[AI] ${candidate.aiReasoning}` : undefined,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
 function buildReferenceMatchTag(matchLevel: ReferenceMatchLevel): string {
     if (matchLevel === 'exact_ship') return 'match:exact_ship';
     if (matchLevel === 'same_class') return 'match:same_class';
@@ -351,8 +378,42 @@ export async function discoverShipReferenceCandidatesWithExclusions(
         }
     }
 
+    // ── Per-category vision evaluation (Phase 3 / Phase 8) ────────────────────
+    const shipNameForVision = getResolvedShipName(campaign);
+    const categoryCandidateGroups = new Map<string, ShipReferenceCandidate[]>();
+    for (const candidate of candidateMap.values()) {
+        const batch = categoryCandidateGroups.get(candidate.category) ?? [];
+        batch.push(candidate);
+        categoryCandidateGroups.set(candidate.category, batch);
+    }
+
+    const visionSettled = await Promise.allSettled(
+        Array.from(categoryCandidateGroups.entries()).map(async ([category, batch]) => ({
+            category,
+            batch,
+            survivors: await applyVisionEvaluationToCategory(batch, shipNameForVision),
+        }))
+    );
+
+    for (const settled of visionSettled) {
+        if (settled.status !== 'fulfilled') {
+            console.warn('[ShipReferenceService] Vision evaluation rejected for a category — heuristic ranking preserved', {
+                campaignId: campaign.id,
+                error: settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
+            });
+            continue;
+        }
+        const { batch, survivors } = settled.value;
+        for (const candidate of batch) {
+            candidateMap.delete(candidate.imageUrl);
+        }
+        for (const augmented of survivors) {
+            candidateMap.set(augmented.imageUrl, augmented);
+        }
+    }
+
     const rankedCandidates = Array.from(candidateMap.values())
-        .sort((leftCandidate, rightCandidate) => rightCandidate.selectionScore - leftCandidate.selectionScore);
+        .sort((leftCandidate, rightCandidate) => computeFinalRankScore(rightCandidate) - computeFinalRankScore(leftCandidate));
 
     const limitedCandidates: ShipReferenceCandidate[] = [];
     const categoryCounts = new Map<string, number>();
@@ -421,6 +482,7 @@ function buildExternalReferenceAssetRecord(
         reviewStatus,
         version: 1,
         active: true,
+        ...(buildCurationFromCandidateAI(candidate) ? { curation: buildCurationFromCandidateAI(candidate) } : {}),
     };
 }
 
