@@ -36,6 +36,67 @@ export interface PreparedDiscoveryRevisionResult {
     message: string;
 }
 
+function buildBannedStructuresContext(campaign: Campaign): string {
+    const history = campaign.discoveryIteration?.history ?? [];
+    const currentReview = campaign.discoveryRedTeamReview;
+
+    const collectedFixes: string[] = [];
+
+    for (const event of history) {
+        if (event.eventType === 'review' && event.requiredFixes.length > 0) {
+            collectedFixes.push(...event.requiredFixes);
+        }
+    }
+
+    if (currentReview?.requiredFixes?.length) {
+        collectedFixes.push(...currentReview.requiredFixes);
+    }
+
+    if (collectedFixes.length === 0) {
+        return '';
+    }
+
+    const uniqueFixes = Array.from(new Set(collectedFixes.map((fix) => fix.trim()).filter(Boolean)));
+
+    return `\n\nBANNED PATTERNS — required fixes that have failed to be resolved across prior iterations.\nNo branch candidate may reproduce any of the following structures, framing, or venue references:\n${uniqueFixes.map((fix) => `  BANNED: ${fix}`).join('\n')}`;
+}
+
+const VISION_CLASS_SHIPS = new Set(['rhapsody of the seas', 'vision of the seas', 'grandeur of the seas', 'enchantment of the seas']);
+const RADIANCE_CLASS_SHIPS = new Set(['brilliance of the seas', 'radiance of the seas', 'jewel of the seas', 'serenade of the seas']);
+
+function normalizeShipName(value: string): string {
+    return value.toLowerCase().replace(/[^a-z\s]/g, '').trim();
+}
+
+function buildShipAuthorityContext(campaign: Campaign): string {
+    const matchedShip = campaign.matchedShipName;
+    if (!matchedShip?.trim()) {
+        return '';
+    }
+
+    const shipKey = normalizeShipName(matchedShip);
+    const lines: string[] = [
+        `\n\nSHIP AUTHORITY — MANDATORY CONSTRAINTS FOR ALL BRANCH CANDIDATES:`,
+        `Authoritative ship: ${matchedShip}`,
+        `Rule: Every candidate must set shipTarget to "${matchedShip}".`,
+        `Rule: All venue, deck, and layout references must be real spaces that exist on ${matchedShip}.`,
+        `Rule: Remove all references to any other cruise line, ship class, or ship not matching ${matchedShip}.`,
+    ];
+
+    if (VISION_CLASS_SHIPS.has(shipKey)) {
+        lines.push(`Ship class: Royal Caribbean Vision-class`);
+        lines.push(`BANNED on Vision-class (these venues do not exist): Virgin Voyages branding, Sip venue, Dock House, Scarlet Lady, Valiant Lady, adults-only framing, Central Park, Boardwalk, Royal Promenade, zip line, Trellis Bar, Aqua Theater, Oasis jogging track`);
+        lines.push(`AVAILABLE on Vision-class: Schooner Bar, Centrum atrium, Boleros lounge, Viking Crown Lounge, Windjammer Café, pool deck, outdoor promenade decks, Solarium, Romeo and Juliet dining`);
+    } else if (RADIANCE_CLASS_SHIPS.has(shipKey)) {
+        lines.push(`Ship class: Royal Caribbean Radiance-class`);
+        lines.push(`BANNED on Radiance-class (these venues do not exist): Virgin Voyages branding, Sip venue, Dock House, adults-only framing, Central Park, Boardwalk, Royal Promenade, zip line, Trellis Bar, Aqua Theater, wraparound jogging track, Oasis-class deck layout`);
+        lines.push(`AVAILABLE on Radiance-class: Deck 5 Promenade walkway (pedestrian walkway — NOT a jogging track), Centrum atrium, Colony Club, Schooner Bar, pool deck, Windjammer, outdoor promenades, Solarium, Chops Grille`);
+        lines.push(`IMPORTANT for Radiance-class: The Deck 5 area is a walkway for pedestrian traffic, not a dedicated jogging/running track. Any gathering format must keep the lane clear and cannot depend on 'bays' carved out of an athletic track.`);
+    }
+
+    return lines.join('\n');
+}
+
 function buildSiblingContext(campaigns: Campaign[], currentSlug: string): string {
     const siblings = campaigns.filter((campaign) => campaign.id !== currentSlug);
     if (siblings.length === 0) {
@@ -126,12 +187,33 @@ ${JSON.stringify(revisionCandidate.discoveryIteration ?? null, null, 2)}${siblin
     let branchesConsidered = 1;
     let selectionRationale: string | undefined;
 
-    if (revisionMode === 'branch') {
-        const branchPrompt = `${prompt}
+    const bannedStructures = buildBannedStructuresContext(revisionCandidate);
+    const shipAuthority = buildShipAuthorityContext(revisionCandidate);
 
-Branch mode instructions:
-- Produce exactly 3 materially different revision candidates.
-- Each candidate must solve the review through a different social mechanism or vacation framing, not cosmetic rewording.
+    if (revisionMode === 'branch') {
+        const branchPrompt = `${prompt}${bannedStructures}${shipAuthority}
+
+BRANCH FORMAT MANDATE:
+Produce exactly 3 candidates. Each candidate MUST use a completely different primary delivery format as defined below.
+No two candidates may share the same format. The format governs the entire social mechanic — not just venue names.
+
+Candidate 0 format — AMBIENT-DRIFT:
+The theme is expressed entirely through distributed artifacts, signals, or cues that guests discover passively as they move through the ship.
+There are no scheduled gatherings, no host-announced moments, and no named meeting points.
+The community forms through chance encounters and recognizable shared signals, not coordination.
+
+Candidate 1 format — TIME-WINDOWED-CLUSTER:
+The theme is expressed through 1-2 brief, optional, time-bounded windows (15-25 minutes each) with a clearly communicated time and a plausible real space on the matched ship.
+Guests may join late or leave early with zero social cost. The host manages the window but does not own it.
+
+Candidate 2 format — SHIP-ACTIVITY-LAYER:
+The theme is expressed entirely by layering onto activities, meals, or spaces that already exist in the ship's standard programming.
+No new rooms, no new schedules, no new host-held logistics are required. Guests experience the theme as a flavor modulation of what they would already be doing.
+
+Requirements for all 3 candidates:
+- Begin each candidate's successHypothesis with the format label in brackets, e.g. [AMBIENT-DRIFT], [TIME-WINDOWED-CLUSTER], or [SHIP-ACTIVITY-LAYER].
+- No candidate may reference any BANNED PATTERN listed above.
+- Every candidate must satisfy all SHIP AUTHORITY rules above.
 - Set preferredCandidateIndex to the candidate most likely to clear the next review while staying distinct from sibling campaigns.`;
 
         const { object } = await callGlobalGenerateObject({
