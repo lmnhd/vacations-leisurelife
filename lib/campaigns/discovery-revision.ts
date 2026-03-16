@@ -36,6 +36,21 @@ export interface PreparedDiscoveryRevisionResult {
     message: string;
 }
 
+function pinMatchedShipFields<T extends z.infer<typeof DiscoveryBlueprintSchema>>(
+    blueprint: T,
+    campaign: Campaign,
+): T {
+    const matchedShipName = campaign.matchedShipName?.trim();
+    if (!matchedShipName) {
+        return blueprint;
+    }
+
+    return {
+        ...blueprint,
+        shipTarget: matchedShipName,
+    };
+}
+
 function buildBannedStructuresContext(campaign: Campaign): string {
     const history = campaign.discoveryIteration?.history ?? [];
     const currentReview = campaign.discoveryRedTeamReview;
@@ -237,17 +252,19 @@ Requirements for all 3 candidates:
         selectedCandidate = object;
     }
 
+    const normalizedBlueprint = pinMatchedShipFields(selectedCandidate.blueprint, revisionCandidate);
+
     assertLaunchWindowCompliance([
         {
-            id: selectedCandidate.blueprint.id,
-            name: selectedCandidate.blueprint.name,
-            targetDates: selectedCandidate.blueprint.targetDates,
+            id: normalizedBlueprint.id,
+            name: normalizedBlueprint.name,
+            targetDates: normalizedBlueprint.targetDates,
         },
     ], now);
 
     const revisedCampaign = mapDiscoveryBlueprintToCampaign(
         {
-            ...selectedCandidate.blueprint,
+            ...normalizedBlueprint,
             id: revisionCandidate.id,
         },
         {

@@ -68,6 +68,7 @@ export function mapDiscoveryBlueprintToCampaign(
     const now = new Date().toISOString();
 
     return {
+        ...existingCampaign,
         PK: existingCampaign?.PK ?? `CAMPAIGN#${blueprint.id}`,
         SK: existingCampaign?.SK ?? 'METADATA',
         id: existingCampaign?.id ?? blueprint.id,

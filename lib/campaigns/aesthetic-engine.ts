@@ -368,6 +368,7 @@ OUTPUT RULES:
         generatedAt: new Date().toISOString(),
         generatedBy: 'agent',
         humanReviewStatus: 'pending',
+        revisionCycleCount: draftBrief.revisionCycleCount,
     };
 
     return refinedBrief;
@@ -581,7 +582,8 @@ PASS 2 GUARDRAILS:
         videoConcepts: platformConcepts.videoConcepts,
         generatedAt: new Date().toISOString(),
         generatedBy: 'agent',
-        humanReviewStatus: 'pending' // pending by default
+        humanReviewStatus: 'pending',
+        revisionCycleCount: 0,
     };
 
     console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);

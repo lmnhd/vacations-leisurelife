@@ -484,7 +484,7 @@ export const CampaignAestheticBriefSchema = z.object({
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
     humanReviewStatus: z.enum(['pending', 'approved', 'revised']),
-    revisionCycleCount: z.number().default(0),
+    revisionCycleCount: z.number(),
     redTeamReview: RedTeamReviewSchema.optional(),
     revisionNotes: z.string().optional(),
 });
