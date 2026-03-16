@@ -41,7 +41,7 @@ CAMPAIGN CONFIG OBJECT (Phase D → GROUP_CAMPAIGN_STRATEGY §6.4)
         │
         ▼
 ┌────────────────────────────────────────────────────────────────┐
-│  PHASE 1: AESTHETIC DEVISING                                   │
+│  PHASE 1: Aesthetic Design                                   │
 │  AI generates the full campaign identity brief:                │
 │  • Visual style, color palette, typography direction           │
 │  • Slogan set (hero, sub, CTA variants)                       │

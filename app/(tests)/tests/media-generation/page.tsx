@@ -389,7 +389,7 @@ export default function MediaGenerationTestPage() {
                         <div>
                             <div className="text-[10px] text-slate-500 uppercase tracking-widest">Source Of Truth</div>
                             <p className="text-xs text-slate-400 mt-1">
-                                Discovery owns factual campaign constraints. Aesthetic Devising owns creative direction. The manifest owns the currently active generated outputs.
+                                Discovery owns factual campaign constraints. Aesthetic Design owns creative direction. The manifest owns the currently active generated outputs.
                             </p>
                         </div>
                         <div className="text-[10px] text-slate-500">
@@ -417,7 +417,7 @@ export default function MediaGenerationTestPage() {
 
                         <div className={`rounded-xl border p-3 ${creativeReady ? 'border-teal-500/30 bg-teal-500/5' : 'border-white/10 bg-slate-950/40'}`}>
                             <div className="flex items-center justify-between gap-2">
-                                <div className="text-[10px] uppercase tracking-widest text-teal-400">Aesthetic Devising</div>
+                                <div className="text-[10px] uppercase tracking-widest text-teal-400">Aesthetic Design</div>
                                 <div className={`text-[9px] px-2 py-0.5 rounded-full border ${creativeReady ? 'border-teal-500/30 text-teal-300 bg-teal-500/10' : 'border-white/10 text-slate-500'}`}>
                                     {creativeReady ? 'creative' : 'missing'}
                                 </div>

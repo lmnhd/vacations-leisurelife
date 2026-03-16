@@ -32,6 +32,7 @@ import { buildElevenLabsVoiceTags } from './elevenlabs-voices';
 import {
     assetRecordToShipReferenceCandidate,
     discoverShipReferenceCandidates,
+    discoverShipReferenceCandidatesWithExclusions,
     importHeroAssetsFromReferences,
     importShipReferenceAssets,
 } from './ship-reference-service';
@@ -349,7 +350,16 @@ export async function runMediaGeneration(
         if (shouldRunAsset('ship_reference_image', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'ship_reference_image', 'serpapi', 'real ship reference discovery', async () => {
-                    const candidates = await discoverShipReferenceCandidates(campaign, 2);
+                    const existingReferenceRecords = [
+                        ...(existingManifest?.images.shipReferences ?? []),
+                        ...shipReferenceRecords,
+                    ];
+                    const candidates = await discoverShipReferenceCandidatesWithExclusions(campaign, 2, {
+                        imageUrls: existingReferenceRecords.map((record) => record.url),
+                        contextUrls: existingReferenceRecords
+                            .map((record) => record.sourcePageUrl)
+                            .filter((value): value is string => !!value),
+                    });
                     if (candidates.length === 0) {
                         throw new Error(`No usable ship reference images found for ${slug}`);
                     }

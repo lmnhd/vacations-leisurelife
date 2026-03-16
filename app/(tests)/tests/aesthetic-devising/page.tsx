@@ -316,7 +316,7 @@ export default function AestheticDevisingTestPage() {
                 {/* Header */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
                     <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
-                        🎨 Aesthetic Devising — Phase 1
+                        🎨 Aesthetic Design — Phase 1
                     </h1>
                     <p className="text-xs text-slate-500 mt-1">
                         Load an existing brief, generate a new one, approve, or delete. Run against a campaign slug.

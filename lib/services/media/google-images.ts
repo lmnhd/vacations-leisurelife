@@ -10,7 +10,8 @@
 
 import { getJson } from 'serpapi';
 
-const GOOGLE_IMAGE_SEARCH_TIMEOUT_MS = 2500;
+const GOOGLE_IMAGE_SEARCH_TIMEOUT_MS = Number(process.env.SERPAPI_IMAGE_SEARCH_TIMEOUT_MS ?? '8000');
+const GOOGLE_IMAGE_SEARCH_MAX_ATTEMPTS = 2;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,46 +43,59 @@ export async function searchGoogleImages(
         throw new Error('Missing SERPAPI_KEY environment variable');
     }
 
-    try {
-        // Use SerpApi's getJson to query the google_images engine
-        const response = await Promise.race([
+    const executeSearch = async (): Promise<any> => {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error(`SerpApi Image Search timed out after ${GOOGLE_IMAGE_SEARCH_TIMEOUT_MS}ms`)), GOOGLE_IMAGE_SEARCH_TIMEOUT_MS);
+        });
+
+        return Promise.race([
             getJson({
-                engine: "google_images",
+                engine: 'google_images',
                 q: query,
                 api_key: apiKey,
                 // Requesting large images to ensure quality for the hero canvas
-                tbs: "isz:l",
-                safe: "active",
+                tbs: 'isz:l',
+                safe: 'active',
             }),
-            new Promise<never>((_, reject) => {
-                setTimeout(() => reject(new Error(`SerpApi Image Search timed out after ${GOOGLE_IMAGE_SEARCH_TIMEOUT_MS}ms`)), GOOGLE_IMAGE_SEARCH_TIMEOUT_MS);
-            }),
+            timeoutPromise,
         ]);
+    };
 
-        // The images_results array contains the parsed image data
-        const rawResults = response.images_results || [];
+    let lastError: Error | null = null;
 
-        const results: GoogleImageResult[] = rawResults
-            // take up to requested count
-            .slice(0, count)
-            // map safely, filtering items lacking critical URLs
-            .map((item: any) => ({
-                title: item.title || query,
-                imageUrl: item.original || '',
-                thumbnailUrl: item.thumbnail || '',
-                contextUrl: item.link || '',
-                width: typeof item.original_width === 'number' ? item.original_width : 1920,
-                height: typeof item.original_height === 'number' ? item.original_height : 1080,
-            }))
-            .filter((res: GoogleImageResult) => res.imageUrl.length > 0);
+    for (let attempt = 1; attempt <= GOOGLE_IMAGE_SEARCH_MAX_ATTEMPTS; attempt += 1) {
+        try {
+            const response = await executeSearch();
 
-        return {
-            results,
-            query,
-            totalResults: results.length,
-        };
-    } catch (error: any) {
-        throw new Error(`SerpApi Image Search failed: ${error.message || String(error)}`);
+            // The images_results array contains the parsed image data
+            const rawResults = response.images_results || [];
+
+            const results: GoogleImageResult[] = rawResults
+                .slice(0, count)
+                .map((item: any) => ({
+                    title: item.title || query,
+                    imageUrl: item.original || '',
+                    thumbnailUrl: item.thumbnail || '',
+                    contextUrl: item.link || '',
+                    width: typeof item.original_width === 'number' ? item.original_width : 1920,
+                    height: typeof item.original_height === 'number' ? item.original_height : 1080,
+                }))
+                .filter((res: GoogleImageResult) => res.imageUrl.length > 0);
+
+            return {
+                results,
+                query,
+                totalResults: results.length,
+            };
+        } catch (error: any) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            const isTimeout = lastError.message.includes('timed out');
+            if (!isTimeout || attempt === GOOGLE_IMAGE_SEARCH_MAX_ATTEMPTS) {
+                break;
+            }
+        }
     }
+
+    throw new Error(`SerpApi Image Search failed: ${lastError?.message || 'Unknown error'}`);
 }
 

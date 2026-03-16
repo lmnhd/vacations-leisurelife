@@ -1,158 +1,69 @@
+AI Vision-Based Reference Selection Refactor
+Goal Description
+Enhance the existing 
+ship-reference-service.ts
+ to utilize an AI Vision-capable model (via our llm-gateway) to evaluate and select the optimal ship reference images obtained from Google SerpAPI. This replaces an over-reliance on exact text/keyword matching heuristics, ensuring the chosen image truly represents the ship, context, and aesthetic quality needed. Furthermore, we will align this with the new 
+IMAGE_GOVERNANCE_SELECTION_SYSTEM.md
+ by using the AI to initialize intelligent curation tags directly on the asset records.
 
-Film & Zine Afloat: Two Tiny Windowsfilm-and-zine-afloat-2026
-review pass
-✅ CB Matched
-soft dawn grain, matte mini‑prints, postage‑style micro‑stamps, enamel pins, pocket notebooks · 2026-11-02
-Tight launch window: 185 days until sail. This sailing is viable, but it is inside the operator warning band.
-Two brief, optional moments on Rhapsody of the Seas: a tiny seated mini‑print/zine swap at Café Latte‑tudes and a short Deck 5 exterior promenade stroll for opt‑in window‑light pairs. Leave one before you take one (hosts seed starters). Phones/Instax/disposables/point‑and‑shoots all welcome. Consent is printed and simple: opt‑in portraits only, ask first, no candid strangers, no photographing crew on duty, step away if declined. Minors: no photographing unless a legal guardian is present and explicitly opts in, and remains nearby. PG‑13 in public; hosts may decline items not suitable for mixed‑age spaces. Entirely drop‑in and come‑and‑go.
-Rhapsody of The Seas
-From $530/pp · CB_GROUP_INVENTORY
-126% price advantage
-Booking link: https://bookings.cbagenttools.com/swift/cruise/package/50804?siid=1049337
-View JSON
-Re-Review
-Revise
-Remove
+Proposed Changes
+1. 
+lib/campaigns/schema.ts
+Update types to capture the AI Vision analysis.
 
-Research Intelligence
-Data Signals
-▸
-r/analog: ~1M members (2024‑10)
-▸
-TikTok #35mm/#filmphotography: 1B+ views (2024‑10)
-▸
-Instagram #filmphotography: 20M+ posts (2024‑10)
-▸
-Printed Matter fairs: ~30k attendees
-Why This Niche
-Analog communities skew toward small, tactile keepsakes and are proven to travel for them: IG #filmphotography 20M+ posts, TikTok #35mm/#filmphotography 1B+ views, r/analog ~1M members, and major zine fairs draw ~30k attendees.
+[MODIFY] 
+ShipReferenceCandidate
+: Add optional fields for aiScore, aiReasoning, detectedTags, and antiTags.
+[MODIFY] 
+AssetRecord
+ (if necessary): Ensure the generated suitabilityTags and antiTags can be cleanly persisted from the AI's deductions.
+2. lib/campaigns/media/vision-evaluator.ts
+[NEW] Create a standalone module to handle the Vision LLM calls.
+Logic:
+Will receive a batch of candidate image URLs, the campaign.shipTarget, and the intended category (exterior, pool_deck, dining, etc.).
+Prompt instructions will ask the Vision model to assess:
+Is this actually a cruise ship (and likely the referenced class/ship)?
+Does it visually match the requested category?
+Are there disqualifying attributes (e.g., CGI, render, generic hotel, blurry, text overlay)?
+Returns structured JSON containing a score (1-100), reasoning, and inferred tags.
+3. 
+lib/campaigns/media/ship-reference-service.ts
+[MODIFY] 
+discoverShipReferenceCandidatesWithExclusions
+:
+Fetch candidates from searchGoogleImages as normal.
+Run the existing text-based filters (
+classifyReferenceMatchLevel
+, 
+shouldHardRejectReferenceCandidate
+) as a cheap pre-filter to weed out obvious junk.
+Take the remaining N candidates and pass them to the new vision-evaluator.
+Re-score and sort candidates heavily weighting the AI Vision score over the rudimentary text overlap score.
+[MODIFY] 
+buildExternalReferenceAssetRecord
+ & 
+importCandidateAsAsset
+:
+Pass the AI's detectedTags into the record's target tags (suitabilityTags etc. depending on how curation is stored currently).
+Add the AI's reasoning to curatorNotes or a similar metadata field so the system operator has context for why the AI allowed the image.
+4. 
+lib/ai/llm-gateway/models.ts
+ & 
+lib/ai/llm-gateway/index.ts
+[MODIFY] (If Needed) Ensure that an appropriate vision-capable model (like GPT_5_HIGH / gpt-4o) is mapped for a vision_evaluation task.
+User Review Required
+IMPORTANT
 
-Success Logic
-Two short, clearly located windows let enthusiasts find each other without turning the day into programming. Seated indoor swaps plus a moving outdoor pairs stroll respect traffic flow, mixed‑age norms, and venue operations. Reciprocity (leave‑one/take‑one) keeps the exchange fair while hosts seed for first‑timers.
-
-Vacation Fit
-Two tiny drop‑ins fit naturally into a sea day—grab a coffee, trade a mini print, take a breezy lap—then go right back to your vacation.
-
-Niche Expression Mode
-Tiny, seated swaps and a short moving pairs stroll—pleasant social accents guests can join for minutes and then move on.
-
-Community Fit
-Brief, bounded windows are enough for film/zine folks to recognize each other and swap a keepsake while staying squarely in vacation mode.
-
-Optionality Style
-Entirely optional and come‑and‑go. Join mid‑window, trade once, or just say hi and drift away—no RSVP, no list, no pressure.
-
-Cruise-Native Moments
-▸
-A six‑seat Coffee Pocket‑Swap at Café Latte‑tudes completes a wave; everyone drifts back to their day.
-▸
-A pause in a starboard rail shade pocket on Deck 5 for a 60‑second opt‑in portrait, then the stroll continues.
-▸
-A quiet fallback corner at Schooner Bar handles a one‑for‑one swap round without moving furniture.
-Optional Gathering Moments
-▸
-Coffee Pocket‑Swap at Café Latte‑tudes (hosted waves; if only non‑adjacent two‑tops are open, rotate between them; fallback Schooner/Boleros off‑peak).
-▸
-Window‑Light Pairs on Deck 5 exterior promenade, starboard rail shade pockets (midship): moving flow; no lines; no stamping.
-▸
-One host runs both moments sequentially; no parallel asks.
-Allowed Theme Signals
-▸
-Anti‑elitism: phones/Instax/disposables/point‑and‑shoots get equal billing; no gear shaming; simple prompts welcome.
-▸
-Consent (printed): opt‑in portraits only; ask before photographing people; no candid strangers; no photographing crew on duty; disengage if declined.
-▸
-Minors standard (printed): no photographing minors unless a legal guardian is present and explicitly opts in; guardian remains present/nearby; PG‑13 in public; hosts may decline unsuitable items.
-▸
-Flow and egress: single‑file/keep right on the exterior promenade; maintain a 10–15 ft buffer from Centrum stairs/elevators/doorways; yield to crew/guests; indoor trades stay seated at your own table; no queueing.
-▸
-Ink safety (indoor Coffee Pocket‑Swap only): closed, water‑based quick‑dry pads; cap between uses; silicone mat; keep away from linens; host may pause stamping if motion/crowding increases. No stamping outdoors.
-Solitude Risks
-▸
-If Latte‑tudes seating is scarce and the micro‑fallback isn’t used promptly, guests may miss the swap.
-▸
-Outdoor pairs could slow the lane if participants linger; movement reminders must be clear.
-▸
-If participants bring nothing to trade, reciprocity may feel uneven—starter tips help.
-Discouraged Theme Signals
-▸
-Lines or clusters at Centrum thresholds, doorways, or in narrow walkways
-▸
-Tripods, light stands, or flash indoors/after dusk
-▸
-Moving or consolidating venue furniture
-▸
-Adhesives or stamping on ship property or linens
-▸
-Unattended zine/print piles or leaving items on public tables
-▸
-Any adult content displayed in public; minors photographed without guardian‑present, explicit opt‑in
-Implausible Literalizations
-▸
-Darkroom builds or film processing
-▸
-Projectors/shows or public exhibitions
-▸
-Sales booths or paid critiques
-▸
-Unattended folios or table displays
-▸
-Rearranging lounge furniture
-Red-Team Suggestions
-Stored discovery review for this blueprint.
-
-pass
-Recommendation
-Proceed to Phase 2 aesthetics. Keep the minor copy-polish and venue-confirmation items below as non-blocking edits during brief drafting. Operator follow-ups outside the discovery blueprint contract: Standardize to the line’s canonical casing (“Rhapsody of the Seas”) everywhere during Phase 2 copy polish.; Keep targetDates as the single authoritative reference in discovery; in downstream ops, align or clear any mismatched auxiliary date metadata before go-live..
-
-Optional Improvements
-▸
-Standardize ship-name casing to “Rhapsody of the Seas” across all references (including metadata) to prevent copy drift.
-▸
-Confirm Boleros exists on Rhapsody; if not, swap the fallback to a verified quiet lounge (e.g., Schooner Bar or Viking Crown) everywhere it appears.
-▸
-Add a brief “no posing direction or critiques” note to Window‑Light Pairs to further anchor non-workshop intent.
-▸
-Maintain targetDates as the sole authoritative date in discovery; later, align or remove any mismatched auxiliary metadata dates before publish.
-▸
-Consider adding a one-line accessibility note (host can bring swap items to your seat on request) to widen participation without operational burden.
-▸
-Standardize to the line’s canonical casing (“Rhapsody of the Seas”) everywhere during Phase 2 copy polish.
-▸
-Keep targetDates as the single authoritative reference in discovery; in downstream ops, align or clear any mismatched auxiliary date metadata before go-live.
-Key Issues
-Fallback venue reference may be class-variable
-warning
-Verify Boleros’ availability on Rhapsody’s current layout; if uncertain, prefer a confirmed lounge (e.g., Schooner Bar or Viking Crown/other quiet nook) in all fallback mentions.
-Portraits moment could benefit from a no-critique/no-directing note
-warning
-Add a simple line (e.g., “no posing direction or critiques; keep it light and moving”) to keep the moment clearly non-instructional.
-Iteration Status
-Next action: hold
-Reviews: 5 · Revisions: 3
-
-I’m verifying the remaining warnings against the current blueprint so I can give a strict yes/no on whether this is a real discovery pass or just another soft false positive.
-
-Yes. This looks like a true discovery pass.
-
-Why I’d call it a real pass:
-
-The concept is now ship-aligned and still matched. It explicitly centers Rhapsody and uses plausible onboard moments at WORK.txt:7 and WORK.txt:8.
-The previous blocking issues are actually resolved:
-minors rule is now internally consistent at WORK.txt:65
-precise movement and egress guardrails are present at WORK.txt:67
-the pairs moment is no longer vague; it is anchored to one concrete Deck 5 exterior promenade location at WORK.txt:55
-the review itself now says proceed to Phase 2 at WORK.txt:106
-The iteration state also supports that read: it is no longer asking for branch or cleanup, it is on hold after pass at WORK.txt:131
-What remains is not discovery failure:
-
-The launch window note at WORK.txt:6 is an operator warning, not a concept blocker.
-The Boleros fallback question at WORK.txt:112 and WORK.txt:126 is operational copy verification.
-The “no critique / no directing” suggestion at WORK.txt:127 is polish, not structural risk.
-The casing inconsistency between “Rhapsody of the Seas” and “Rhapsody of The Seas” at WORK.txt:7 and WORK.txt:8 is also polish.
-So the strict answer is: yes, true pass for discovery. I would move this to Phase 2.
-
-The only sensible next steps are:
-
-Advance this one to Phase 2 aesthetics.
-During Phase 2 copy polish, replace Boleros if you cannot verify it quickly, and standardize ship-name casing everywhere.
+Which specific LLM model should we route the vision requests to? (e.g., GPT_5_HIGH or CLAUDE_4_OPUS)
+Do you want to evaluate candidate images individually, or batch them in a single prompt for relative ranking (to save time/costs)?
+Should this apply to all reference categories (exterior, pool deck, dining, stateroom), or specifically just the Hero exterior references?
+Verification Plan
+Automated / Integration
+None strictly required beyond standard compilation.
+Manual Verification
+Navigate to the /tests/media-generation route.
+Enter a slug for a cruise campaign (e.g., representing "Royal Caribbean Icon of the Seas").
+Enable preflight and click GENERATE BY CATEGORY -> References.
+Verify the server logs to ensure the AI Vision evaluator is invoked.
+Inspect the generated manifest in the UI and confirm the top downloaded reference images are accurate and visually optimal.
+Validate the populated asset curation tags (suitabilityTags, antiTags).

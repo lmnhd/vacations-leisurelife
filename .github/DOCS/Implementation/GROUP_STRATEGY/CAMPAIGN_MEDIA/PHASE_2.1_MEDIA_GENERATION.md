@@ -85,7 +85,7 @@ The resulting failure pattern is consistent:
 
 - Discovery selects niches based on trend heat, spend willingness, and infrastructure compatibility.
 - The blueprint model formalizes those niches into campaign concepts without enough vacation realism boundaries.
-- Aesthetic devising and media generation inherit those assumptions.
+- Aesthetic Design and media generation inherit those assumptions.
 - Hero, concept, and thumbnail imagery drift toward staged workshops, labs, retreats, formal instruction, or industrial/corporate-looking environments.
 
 This creates a recurring mismatch between:
@@ -470,7 +470,7 @@ Primary files:
 
 Changes:
 
-- Completed: Use the new blueprint realism fields as source material during aesthetic devising
+- Completed: Use the new blueprint realism fields as source material during Aesthetic Design
 - Completed: Propagate those boundaries into hero / concept prompt construction
 - Completed: Add explicit plausibility framing to downstream media prompt building
 - Completed: Feed matched route context into aesthetic generation
@@ -607,7 +607,7 @@ Recommended order:
 1. Completed: Update discovery prompts and schema
 2. Completed: Update strategy documentation
 3. Completed: Add blueprint realism fields to campaign metadata and UI
-4. Completed: Thread realism fields into aesthetic devising
+4. Completed: Thread realism fields into Aesthetic Design
 5. Completed: Add final refinement pass for aesthetic polishing
 6. Remaining: Re-test hero and concept generation on a fresh post-redesign campaign
 

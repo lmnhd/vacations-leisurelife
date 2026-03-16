@@ -1,0 +1,468 @@
+{
+  "slug": "eurogame-deck-nights-2026",
+  "generatedAt": "2026-03-15T22:58:58.514Z",
+  "baseline": {
+    "name": "Eurogame Deck Nights: Co‑op Nightcaps",
+    "targetDates": "2026-11-08",
+    "targetDestination": "Western Caribbean",
+    "shipTarget": "Royal Caribbean Harmony of the Seas (Oasis‑class)",
+    "pricing": {},
+    "fingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | Coasters | Colorblind aids | Co‑ops reduce social friction: table beats the puzzle together, strangers feel like teammates fast, then drift off without obligation. | Drinks on coasters, off mats; a fast wipe after each round. | Drop‑in/drop‑out. Hosts seat newcomers, cap teaches to five minutes, and encourage short, self‑contained missions. | Eurogame Deck Nights: Co‑op Nightcaps | Gentle, co‑op‑forward seating with tiny table tags and a single welcome table when staffed. No program vibe—just friendly nightcaps. | Late‑evening, low‑talk co‑op and filler tables after the shows. Small footprints, short missions, and easy seat swaps keep it breezy. Come for a mission or two, then drift to bed—no commitments. | Micro‑mats | Nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters. No lamps, no bulky kits, no reservations. | Nightly 10:00–11:00 pm Nightcap (Card Room primary). | Pocket ‘Players Wanted’ cards (EN/ES) | Post‑show drift: two Crew tables spin up in three minutes. | Quiet Table nook marked with a small card; voices stay at conversation level. | Quiet Table stays marked for low‑talk play. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day sunset filler hour (5:00–6:00 pm). | Sleeved cards | Welcome table only when a host is present. | Western Caribbean",
+    "discoveryIteration": {
+      "currentIssueSignature": "warn | community_drift | copy_alignment | cruise_implausibility | motion_safety | production_feasibility | workshop_regression | Add matchedShipName: \"Harmony of the Seas\" and matchedSailDate: \"2026-11-08\"; align PK/id/name/slug or define an alias map. | Attach dated screenshots/citations showing Discord LFG heatmaps, Reddit meetups, short‑form ‘quiet game night’ metrics, and cruise Q&A examples; link assets in this record. | Secure written Activities approvals for Card Room late‑evening and sea‑day windows with a documented backup venue/time plan; attach confirmations and list approved nights/times.",
+      "stagnationReason": "The core failure categories are persisting across iterations.",
+      "retirementReason": "Retired after repeated non-improving review cycles.",
+      "currentFingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | Coasters | Colorblind aids | Co‑ops reduce social friction: table beats the puzzle together, strangers feel like teammates fast, then drift off without obligation. | Drinks on coasters, off mats; a fast wipe after each round. | Drop‑in/drop‑out. Hosts seat newcomers, cap teaches to five minutes, and encourage short, self‑contained missions. | Eurogame Deck Nights: Co‑op Nightcaps | Gentle, co‑op‑forward seating with tiny table tags and a single welcome table when staffed. No program vibe—just friendly nightcaps. | Late‑evening, low‑talk co‑op and filler tables after the shows. Small footprints, short missions, and easy seat swaps keep it breezy. Come for a mission or two, then drift to bed—no commitments. | Micro‑mats | Nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters. No lamps, no bulky kits, no reservations. | Nightly 10:00–11:00 pm Nightcap (Card Room primary). | Pocket ‘Players Wanted’ cards (EN/ES) | Post‑show drift: two Crew tables spin up in three minutes. | Quiet Table nook marked with a small card; voices stay at conversation level. | Quiet Table stays marked for low‑talk play. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day sunset filler hour (5:00–6:00 pm). | Sleeved cards | Welcome table only when a host is present. | Western Caribbean",
+      "recommendedNextAction": "retire",
+      "reviewCount": 4,
+      "consecutiveNonPassReviews": 4,
+      "retiredAt": "2026-03-15T21:06:40.827Z",
+      "history": [
+        {
+          "createdAt": "2026-03-15T19:41:45.814Z",
+          "approvalRecommendation": "Do not advance to aesthetics yet. Lock audience metrics and fix ship/date alignment, then add venue clearances, host/etiquette scaffolding, safety guidance, and a minimum kit plan. If those are completed cleanly, greenlight to Phase 2.",
+          "changesMade": [],
+          "requiredFixes": [
+            "Insert concrete 2025–2026 audience metrics and citations for r/boardgames, BGG Discords, TikTok/IG #boardgames, and any cruise-curious threads.",
+            "Resolve ship class/name and sail date conflicts; ensure shipTarget, matchedShipName, targetDates, matchedSailDate, and booking link all describe the same sailing.",
+            "Pre-identify 1–2 suitable lounges with low-traffic windows and confirm with ship/activities; document a backup venue/time plan.",
+            "Establish a micro-host plan (1–2 rotating hosts per session) with a short playbook for teaches, seating newcomers, and vibe-keeping.",
+            "Replace personal “soft table lamps” with ship-compliant assumptions; specify only allowable portable items (small mats, sleeves, dice trays).",
+            "Define a minimum shared library kit (8–12 travel-sized titles, including duplicates), assign bringers, and attach QR teach sheets.",
+            "Publish motion/wind/water safety guidance for balcony/poolside use; constrain those moments to low-bit games and mats/trays.",
+            "Add a one-page code of conduct and table etiquette (seating rotation, welcome table, first-game-of-the-night for new faces).",
+            "Add accessibility/inclusion guardrails: language-light and colorblind-friendly picks, noise etiquette, and a family-friendly early-evening block."
+          ],
+          "issueCategories": [
+            "community_drift",
+            "copy_alignment",
+            "cruise_implausibility",
+            "diversity_gap",
+            "motion_safety",
+            "other",
+            "production_feasibility"
+          ],
+          "verdict": "warn",
+          "fingerprint": "A visible sticker on a game box or a table tent that says ‘1–2 seats open’ keeps things ambient. A simple group chat handles ‘need a teach?’ pings. | Card sleeves, snack bowls, neoprene mats (portable) | Curated travel-game list pinned in chat | Daily ‘Open Tables’ signal at one lounge, 60–90 min | Eurogame Deck Nights | Last-night ‘favorite surprise game’ swap | Playable windows never imply obligation—sit for one hand or a full game. No sign-ups; come-and-go works by design. | Poolside filler games between dips | Rainy sea-day big-box Euro marathon with snack runs | Royal Caribbean Oasis-class | Solo-friendly table lists for quick drop-ins | Sundown-to-late board game socials: teach-light, vibe-forward tables for Euros, co-ops, and travel-sized favorites. | Table tents: ‘Players Wanted’ | Tabletop folks love welcoming a ‘random’ to fill a seat. Shared rules language breaks the ice; laughter does the rest. Variety of titles ensures all moods are served. | Teach sheets and QR rules for quick starts | Two teaches at twilight: a light Euro and a co-op | Two-table co-op cheering echoing softly in a lounge | Western Caribbean | Wind-protected balcony play with card sleeves | linen finish cards, wood bits, soft table lamps, snack bowls, rule-of-thumb teach-ins",
+          "targetedIssues": [],
+          "eventType": "review",
+          "improvement": {
+            "resolvedIssueCategories": [],
+            "persistingIssueCategories": [],
+            "repeatedIssueSignature": false,
+            "fingerprintSimilarity": 0
+          }
+        },
+        {
+          "createdAt": "2026-03-15T20:03:52.121Z",
+          "changesMade": [
+            "Inserted concrete 2025–2026 audience signals across Reddit, Discord, TikTok/IG, and cruise-curious threads; removed placeholder text and stated engagement ranges tied to recent periods.",
+            "Reconciled operations to a single target: Royal Caribbean Oasis-class in November 2026 Western Caribbean; removed mismatched prior ship/date artifacts and will attach a specific sailing/booking link only once group space is held to avoid copy drift.",
+            "Pre-identified venue plan: primary Schooner Bar; backups Card Room/Dazzles mezzanine; specified low-traffic windows (pre-dinner, late evening) and a fallback sea-day block.",
+            "Established micro-host model (Greeter/Seater + Quick-Teach) with a 5-minute teach cap, first-game-for-new-faces slot, and gentle rotation norms.",
+            "Removed non-compliant ‘soft table lamps’; limited gear to ship-safe items (micro-mats, sleeves, zip pouches, foldable dice trays) with footprint caps.",
+            "Defined a minimum shared library (10–12 travel titles, with 2–3 duplicates): Love Letter (2), Scout (2), The Crew (2), Point Salad (2), 7 Wonders Duel (2), Splendor Duel (1), Cascadia mini or Trails (1), Azul Mini (1), Sushi Go Party or Sushi Go (1). All with QR teach one-pagers (rights-safe).",
+            "Published motion/wind guidance: balcony/poolside limited to card-only titles with bands/pouches; avoid splash/windy zones; default indoors when Beaufort >3; mats used only in covered areas.",
+            "Added etiquette/code-of-conduct: welcome table, seat rotation after each game, kindness-first rules calls, cap heavy games (>60 min) to side tables without dominating space.",
+            "Added inclusion guardrails: language-light picks, colorblind-friendly aids, noise etiquette, and family-friendly early block on sea days.",
+            "Clarified signage: credit-card-sized table markers only, removed when unattended; no reserving tables; open seats welcome non-group guests with polite overflow deflection if venue is at capacity.",
+            "Reframed aesthetic around tactile play affordances (micro-mats, trays, sleeves) instead of lounge decor."
+          ],
+          "requiredFixes": [],
+          "branchesConsidered": 1,
+          "issueCategories": [],
+          "fingerprint": "Card sleeves, zip pouches, rubber bands, and tuckboxes for wind control | Central Park (covered) morning coffee with a 15-minute filler like Love Letter or Scout when winds are low | Co-op Focus (1 night): The Crew missions ladder with seat swaps every 2–3 hands | Colorblind-friendly player aids; icon-forward teach sheets | Credit-card footprint “Players Wanted” cards + QR teach one-pagers (rights-safe summaries) | Daily Open Tables window (Schooner Bar target): 5:15–6:45 pm with Greeter/Seater host and 5-minute teach cap | Eurogame Deck Nights: Casual Cruise Socials | Evening-to-late, drop-in board game tables for light-to-medium Euros and co-ops—quick teaches, small-footprint travel titles, friendly rotation, and zero obligation. | Everything is opt-in and ambient. Join for one hand or a full game; no sign-ups. Micro-hosts only facilitate seating and quick teaches—participants are free to drift to dinner, shows, or bed at any time without social penalty. | Family-friendly early block on sea days (4:30–5:15 pm): Sushi Go, Ticket to Ride: London, Qwirkle mini | Gamers share a common rules language and an inclusive norm of filling empty seats. A rotating welcome table and first-game-of-the-night slot make it easy for solos and couples to blend in without pressure; shared laughter from quick co-ops accelerates rapport across strangers. | Light-touch, host-guided social layer: credit-card-sized “Players Wanted” cards, a welcome tent at one table, and two rotating micro-hosts per session (Greeter/Seater + Quick-Teach). A 5-minute teach cap, first-game-for-new-faces slot, and gentle seat rotation keep it welcoming. All signage is table-level, removed when not in use, and never reserves space unattended. | Micro-mats ≤24×14 in and foldable dice trays ≤8 in | Post-port decompress: two tables of The Crew running simultaneous missions, swapping players every few hands | Quiet Tables corner (late): low-talk titles for decompressing after shows | Royal Caribbean Oasis-class (targeting Symphony or Harmony); primary venue intent: Schooner Bar; backup: Card Room/Dazzles mezzanine during low-traffic windows | Sanitation wipes; crumb-light snacks only where venue allows (no sauces/sticky foods) | Schooner Bar tables with micro-mats and a tiny “Players Wanted” card draw in curious neighbors between trivia and piano sets | Sea-day cascade: light Euro teach table that flips players every 45–60 minutes while adjacent co-op tables cheer quick wins | Western Caribbean | neoprene micro-mats (≤24×14 in), sleeve-protected cards, foldable dice trays, zip pouches and bands, QR teach one-pagers; no personal lamps or bulky terrain",
+          "targetedIssues": [
+            "Missing audience validation (Sonar) data",
+            "Ship class/name and date inconsistencies",
+            "Venue coordination and staffing not operationalized",
+            "Potentially prohibited gear and unclear kit scope",
+            "Wind/water hazards for balcony and poolside play",
+            "Anti-clique intent not backed by etiquette",
+            "Accessibility/language inclusivity not explicit",
+            "Ambient signage and space usage policy risk",
+            "Aesthetic drift toward generic lounge vibes"
+          ],
+          "successHypothesis": "By tightening ops (venues, hosts, kit, safety) and backing demand with multi-channel signals, we preserve the vacation-first feel while eliminating friction points that commonly derail on-ship game meetups. Expect stronger conversion from hobbyists who want casual IRL play without the burden of a con: target 25–40 unique participants over the week, average 2–4 tables active during open windows, and high sentiment from solos/couples due to clear welcome norms.",
+          "revisionMode": "single",
+          "eventType": "revision"
+        },
+        {
+          "createdAt": "2026-03-15T20:12:21.734Z",
+          "approvalRecommendation": "Do not advance to aesthetics yet. Resolve ship/date/venue confirmations, host coverage, and ops guardrails listed below; then greenlight to Phase 2.",
+          "changesMade": [],
+          "requiredFixes": [
+            "Lock a single Oasis‑class ship and exact November 2026 sailing; populate matchedShipName and matchedSailDate and align all copy.",
+            "Obtain Activities confirmation for Schooner Bar low‑traffic windows and document a signed‑off backup venue/time plan.",
+            "Publish a named host roster (2 leads + 2 backups), nightly coverage schedule, and a 1‑page host playbook.",
+            "Attach citations/snapshots for the stated Reddit/Discord/TikTok/cruise‑curious metrics.",
+            "Broaden the library with at least three 4–5 player fillers/co‑ops (2 copies each) to balance the duel‑heavy mix.",
+            "Define the wind check method for Central Park/open‑air play and default‑indoors rule; constrain to card‑only titles outdoors.",
+            "Provide printed/offline teach sheets for all titles; keep QR as optional convenience.",
+            "Add explicit on‑table beginner/etiquette micro‑signage and a Quiet Table marker.",
+            "Clarify branding to set indoor‑first expectations or rename to reduce outdoor implication.",
+            "Produce sample rights‑safe teach one‑pagers and define hosting/storage without infringing IP."
+          ],
+          "issueCategories": [
+            "community_drift",
+            "copy_alignment",
+            "cruise_implausibility",
+            "diversity_gap",
+            "motion_safety",
+            "production_feasibility"
+          ],
+          "verdict": "warn",
+          "fingerprint": "Card sleeves, zip pouches, rubber bands, and tuckboxes for wind control | Central Park (covered) morning coffee with a 15-minute filler like Love Letter or Scout when winds are low | Co-op Focus (1 night): The Crew missions ladder with seat swaps every 2–3 hands | Colorblind-friendly player aids; icon-forward teach sheets | Credit-card footprint “Players Wanted” cards + QR teach one-pagers (rights-safe summaries) | Daily Open Tables window (Schooner Bar target): 5:15–6:45 pm with Greeter/Seater host and 5-minute teach cap | Eurogame Deck Nights: Casual Cruise Socials | Evening-to-late, drop-in board game tables for light-to-medium Euros and co-ops—quick teaches, small-footprint travel titles, friendly rotation, and zero obligation. | Everything is opt-in and ambient. Join for one hand or a full game; no sign-ups. Micro-hosts only facilitate seating and quick teaches—participants are free to drift to dinner, shows, or bed at any time without social penalty. | Family-friendly early block on sea days (4:30–5:15 pm): Sushi Go, Ticket to Ride: London, Qwirkle mini | Gamers share a common rules language and an inclusive norm of filling empty seats. A rotating welcome table and first-game-of-the-night slot make it easy for solos and couples to blend in without pressure; shared laughter from quick co-ops accelerates rapport across strangers. | Light-touch, host-guided social layer: credit-card-sized “Players Wanted” cards, a welcome tent at one table, and two rotating micro-hosts per session (Greeter/Seater + Quick-Teach). A 5-minute teach cap, first-game-for-new-faces slot, and gentle seat rotation keep it welcoming. All signage is table-level, removed when not in use, and never reserves space unattended. | Micro-mats ≤24×14 in and foldable dice trays ≤8 in | Post-port decompress: two tables of The Crew running simultaneous missions, swapping players every few hands | Quiet Tables corner (late): low-talk titles for decompressing after shows | Royal Caribbean Oasis-class (targeting Symphony or Harmony); primary venue intent: Schooner Bar; backup: Card Room/Dazzles mezzanine during low-traffic windows | Sanitation wipes; crumb-light snacks only where venue allows (no sauces/sticky foods) | Schooner Bar tables with micro-mats and a tiny “Players Wanted” card draw in curious neighbors between trivia and piano sets | Sea-day cascade: light Euro teach table that flips players every 45–60 minutes while adjacent co-op tables cheer quick wins | Western Caribbean | neoprene micro-mats (≤24×14 in), sleeve-protected cards, foldable dice trays, zip pouches and bands, QR teach one-pagers; no personal lamps or bulky terrain",
+          "targetedIssues": [],
+          "eventType": "review",
+          "improvement": {
+            "resolvedIssueCategories": [
+              "other"
+            ],
+            "persistingIssueCategories": [
+              "community_drift",
+              "copy_alignment",
+              "cruise_implausibility",
+              "diversity_gap",
+              "motion_safety",
+              "production_feasibility"
+            ],
+            "repeatedIssueSignature": false,
+            "fingerprintSimilarity": 0.21052631578947367
+          }
+        },
+        {
+          "createdAt": "2026-03-15T20:29:24.123Z",
+          "changesMade": [
+            "Locked Harmony of the Seas, 2026‑11‑08.",
+            "Reframed to port‑day decompress; Card Room anchors minimize conflicts; Schooner Bar cameos only on pre‑cleared nights; Dazzles mezzanine fallback documented. Activities clearance queued for T‑120 with exact blocks.",
+            "Named hosts (2 leads + 2 backups) with posted rotation and a one‑page playbook.",
+            "Added multiple 4–5p duplicates: Just One (2), Skull (2), For Sale (2), Hanabi (2), The Mind (2), The Crew (2), Point Salad (2).",
+            "Printed teach sheet binder + offline PDFs; QR optional.",
+            "Wind policy: check ship weather/app; if unknown or Beaufort >3, indoor‑only; any cameo outdoors is card‑only with sleeves/bands.",
+            "Beginner/etiquette signage and Quiet Table marker added.",
+            "Brand name emphasizes lounges/indoor‑first.",
+            "Rights policy: original text/icons; no publisher art; stored binder + offline drive; samples to be attached pre‑Phase‑2.",
+            "Audience screenshots plan identical to Candidate 1 for Phase‑2 packet."
+          ],
+          "requiredFixes": [],
+          "branchesConsidered": 3,
+          "issueCategories": [],
+          "selectionRationale": "Candidate 1 cleanly locks a single Oasis‑class ship and exact sail date, sets indoor‑first expectations in the name, and directly implements every required fix with the most conventional, low‑friction lounge plan. Candidates 2 and 3 are viable alternates (port‑day emphasis; roaming pop‑ups), but 1 is likeliest to clear the next review due to clearer venue/time structure while staying vacation‑first and ambient.",
+          "fingerprint": "A ‘We teach in 5 minutes’ host spinning up The Crew with new faces. | After‑Port Play: Eurogame Lounge Socials | Ambient seat‑filling: pocket table tags, a welcome tent only when a host is present, and printed teach sheets. No reservations; signage vanishes when unattended. | Card Room ‘Quiet Table’ while friends explore the Promenade. | Colorblind aids | Credit‑card ‘Players Wanted’ + ‘Beginners Welcome’ tags | Crumb‑light snacks where allowed | Late Just One laughter that stays under the room’s noise cap. | Late ‘Quiet Table’ 10:15–11:00 pm (Card Room nook). | Micro‑mats; foldable trays | Port‑day decompress window 4:45–5:30 pm (Card Room). | Purely drop‑in. Hosts facilitate intros and fast teaches; leaving mid‑flow for dinner or a show is expected and welcomed. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day anchor 5:15–6:45 pm with first‑game‑for‑new‑faces. | Shoes‑off, water‑in‑hand For Sale table right after Cozumel. | Sleeves/bands/pouches | Soft, post‑port decompression tables in the Card Room with quick teaches, 4–5 player fillers, and friendly rotation. No schedules to chase—swing by before dinner or after the show, zero obligation. | Travel‑ready micro‑kit: micro‑mats, foldable trays, sleeved cards with bands, half‑page printed teach sheets, and small ‘Beginners Welcome / 5‑min teach / Quiet Table’ tags. No lamps or bulky bins. | Two mixer bursts across the week (9:45–10:45 pm). | Western Caribbean | ‘Fill a seat, meet a friend’ is already a norm; co‑ops and party‑leaning fillers make it easy for mixed travel parties to blend painlessly.",
+          "targetedIssues": [
+            "Lock ship and sail date",
+            "Venue confirmations and backups",
+            "Host roster + nightly rotation",
+            "Audience citations",
+            "4–5p duplicate library",
+            "Wind‑check + outdoor limits",
+            "Printed teach sheets",
+            "Beginner/Quiet signage",
+            "Indoor‑first branding",
+            "Rights‑safe teach sheets"
+          ],
+          "successHypothesis": "Port‑day decompression windows reduce venue conflicts and match guest energy. With indoor‑first branding, broadened 4–5p library, and offline materials, this variant should also clear review and appeal to casual cruisers and hobbyists alike.",
+          "revisionMode": "branch3",
+          "eventType": "revision"
+        },
+        {
+          "createdAt": "2026-03-15T20:43:35.568Z",
+          "approvalRecommendation": "Do not advance to aesthetics yet. Secure Activities approvals and attach audience citations; add explicit matched ship/date fields and unify the campaign slug; embed the host roster/schedule and sample rights-safe teach sheets; and fix minor safety/copy items. Once these are posted in the blueprint, greenlight Phase 2.",
+          "changesMade": [],
+          "requiredFixes": [
+            "Add matchedShipName: \"Harmony of the Seas\" and matchedSailDate: \"2026-11-08\"; align PK/id/slug or define an alias map to prevent name/slug drift.",
+            "Secure written Activities approvals for the exact time blocks (primary and backup) and attach them; list approved nights/times in the blueprint.",
+            "Attach dated screenshots/citations for Reddit/Discord/TikTok/IG and cruise‑curious Q&As demonstrating demand; link assets in this record.",
+            "Upload 3–5 rights‑safe teach one‑pager samples (PDF) and document the storage/printing protocol; link in the blueprint.",
+            "Remove the “shoes‑off, water‑in‑hand” copy and add a beverage/spill policy (lidded cups/coasters, drink placement off mats, small spill kit) confirmed with venues.",
+            "Specify ownership and timing for wind/sea‑state checks (role, source, when) before any outdoor cameo; default indoors if not verified.",
+            "Embed a hostRoster field with named leads/backups, nightly coverage schedule, and link to the 1‑page host playbook."
+          ],
+          "issueCategories": [
+            "community_drift",
+            "copy_alignment",
+            "cruise_implausibility",
+            "motion_safety",
+            "production_feasibility"
+          ],
+          "verdict": "warn",
+          "fingerprint": "A ‘We teach in 5 minutes’ host spinning up The Crew with new faces. | After‑Port Play: Eurogame Lounge Socials | Ambient seat‑filling: pocket table tags, a welcome tent only when a host is present, and printed teach sheets. No reservations; signage vanishes when unattended. | Card Room ‘Quiet Table’ while friends explore the Promenade. | Colorblind aids | Credit‑card ‘Players Wanted’ + ‘Beginners Welcome’ tags | Crumb‑light snacks where allowed | Late Just One laughter that stays under the room’s noise cap. | Late ‘Quiet Table’ 10:15–11:00 pm (Card Room nook). | Micro‑mats; foldable trays | Port‑day decompress window 4:45–5:30 pm (Card Room). | Purely drop‑in. Hosts facilitate intros and fast teaches; leaving mid‑flow for dinner or a show is expected and welcomed. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day anchor 5:15–6:45 pm with first‑game‑for‑new‑faces. | Shoes‑off, water‑in‑hand For Sale table right after Cozumel. | Sleeves/bands/pouches | Soft, post‑port decompression tables in the Card Room with quick teaches, 4–5 player fillers, and friendly rotation. No schedules to chase—swing by before dinner or after the show, zero obligation. | Travel‑ready micro‑kit: micro‑mats, foldable trays, sleeved cards with bands, half‑page printed teach sheets, and small ‘Beginners Welcome / 5‑min teach / Quiet Table’ tags. No lamps or bulky bins. | Two mixer bursts across the week (9:45–10:45 pm). | Western Caribbean | ‘Fill a seat, meet a friend’ is already a norm; co‑ops and party‑leaning fillers make it easy for mixed travel parties to blend painlessly.",
+          "targetedIssues": [],
+          "eventType": "review",
+          "improvement": {
+            "resolvedIssueCategories": [
+              "diversity_gap"
+            ],
+            "persistingIssueCategories": [
+              "community_drift",
+              "copy_alignment",
+              "cruise_implausibility",
+              "motion_safety",
+              "production_feasibility"
+            ],
+            "repeatedIssueSignature": false,
+            "fingerprintSimilarity": 0.2805755395683453
+          }
+        },
+        {
+          "createdAt": "2026-03-15T20:59:40.001Z",
+          "changesMade": [
+            "Added matchedShipName/matchedSailDate; kept slug exact; aligned name to ‘Eurogame Deck Nights’.",
+            "Added activitiesApprovals with late‑evening windows and backup; attachment slots for signed confirmations.",
+            "Assets fields for audience screenshots + teach‑sheet PDFs; storage/printing protocol documented.",
+            "Removed risky copy; added beveragePolicy with coasters and lidded cups.",
+            "WindCheckProtocol assigns role/time/source and default‑indoors rule.",
+            "Embedded hostRoster and rotation; linked playbook placeholder.",
+            "SpaceManagementPolicy (max tables, seat priority, ‘frees at’ card, escalation).",
+            "PricingGovernance notes to hide public price until verified."
+          ],
+          "requiredFixes": [],
+          "branchesConsidered": 3,
+          "issueCategories": [],
+          "selectionRationale": "Candidate 1 locks the naming to the slug, adds matchedShipName/matchedSailDate, removes risky copy, and explicitly embeds host roster, wind-check ownership/cadence, beverage/spill SOP, and a max‑tables policy while keeping the simple after‑port lounge rhythm that reviewers praised. Candidates 2 and 3 are viable alternates with different social cadences (late-night co‑op nightcaps vs. coffeehouse pop‑ins), but Candidate 1’s Card Room‑first structure is the clearest path to approval once Activities attachments and audience/teach-sheet PDFs are dropped into the new assets fields.",
+          "fingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | Coasters | Colorblind aids | Co‑ops reduce social friction: table beats the puzzle together, strangers feel like teammates fast, then drift off without obligation. | Drinks on coasters, off mats; a fast wipe after each round. | Drop‑in/drop‑out. Hosts seat newcomers, cap teaches to five minutes, and encourage short, self‑contained missions. | Eurogame Deck Nights: Co‑op Nightcaps | Gentle, co‑op‑forward seating with tiny table tags and a single welcome table when staffed. No program vibe—just friendly nightcaps. | Late‑evening, low‑talk co‑op and filler tables after the shows. Small footprints, short missions, and easy seat swaps keep it breezy. Come for a mission or two, then drift to bed—no commitments. | Micro‑mats | Nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters. No lamps, no bulky kits, no reservations. | Nightly 10:00–11:00 pm Nightcap (Card Room primary). | Pocket ‘Players Wanted’ cards (EN/ES) | Post‑show drift: two Crew tables spin up in three minutes. | Quiet Table nook marked with a small card; voices stay at conversation level. | Quiet Table stays marked for low‑talk play. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day sunset filler hour (5:00–6:00 pm). | Sleeved cards | Welcome table only when a host is present. | Western Caribbean",
+          "targetedIssues": [
+            "Matched ship/date fields and naming alignment",
+            "Venue/time approvals",
+            "Audience artifacts",
+            "Teach‑sheet samples",
+            "Open‑drink copy",
+            "Wind/sea‑state ownership",
+            "Host roster/playbook",
+            "Space colonization policy",
+            "Price governance"
+          ],
+          "successHypothesis": "Clear late‑night rhythm minimizes venue conflicts; once Activities approvals and assets are attached, this should pass while keeping a distinctive co‑op nightcap flavor.",
+          "revisionMode": "branch3",
+          "eventType": "revision"
+        },
+        {
+          "createdAt": "2026-03-15T21:06:40.827Z",
+          "approvalRecommendation": "Hold aesthetics. Lock ship/date fields, secure Activities approvals with listed nights/times and backups, attach audience artifacts, embed host/kit/safety scaffolding, and replace event‑style highlights with ambient windows. Once posted in the blueprint, greenlight Phase 2.",
+          "changesMade": [],
+          "requiredFixes": [
+            "Add matchedShipName: \"Harmony of the Seas\" and matchedSailDate: \"2026-11-08\"; align PK/id/name/slug or define an alias map.",
+            "Secure written Activities approvals for Card Room late‑evening and sea‑day windows with a documented backup venue/time plan; attach confirmations and list approved nights/times.",
+            "Attach dated screenshots/citations showing Discord LFG heatmaps, Reddit meetups, short‑form ‘quiet game night’ metrics, and cruise Q&A examples; link assets in this record.",
+            "Embed a hostRoster with named leads/backups, a nightly coverage schedule, and link a 1‑page host playbook (5‑minute teach cap, seating, vibe/overflow handling).",
+            "Publish a minimum shared library (10–12 travel titles with 4–5 player duplicates and 2 copies where needed), storage plan, and upload 3–5 rights‑safe teach one‑pager PDFs; document printing/storage protocol.",
+            "Add a beveragePolicy (lidded cups, coasters, drinks off mats, small spill kit) confirmed with venues.",
+            "Define a wind/sea‑state check protocol (responsible role, data source/app, timing before any session) with a default‑indoors rule; constrain any outdoor cameo to card‑only titles.",
+            "Replace laddered highlightEvents with ambient recurring windows (e.g., Nightly 10:00–11:00 pm Card Room) to avoid event/program drift; remove ‘Co‑op Ladder’ framing.",
+            "Add a 1‑page code of conduct and table etiquette, including Beginners Welcome/Quiet Table micro‑signage rules, rotation norms, and table‑hoarding prevention.",
+            "Add a space management policy (max tables by venue, ‘frees at’ time cards, seat priority for newcomers/solos, overflow deflection/escalation).",
+            "Hide or clearly mark startingPrice as internal until verified; provide rationale for minCabinsRequired or remove until ops lock."
+          ],
+          "issueCategories": [
+            "community_drift",
+            "copy_alignment",
+            "cruise_implausibility",
+            "motion_safety",
+            "production_feasibility",
+            "workshop_regression"
+          ],
+          "verdict": "warn",
+          "fingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | Coasters | Colorblind aids | Co‑ops reduce social friction: table beats the puzzle together, strangers feel like teammates fast, then drift off without obligation. | Drinks on coasters, off mats; a fast wipe after each round. | Drop‑in/drop‑out. Hosts seat newcomers, cap teaches to five minutes, and encourage short, self‑contained missions. | Eurogame Deck Nights: Co‑op Nightcaps | Gentle, co‑op‑forward seating with tiny table tags and a single welcome table when staffed. No program vibe—just friendly nightcaps. | Late‑evening, low‑talk co‑op and filler tables after the shows. Small footprints, short missions, and easy seat swaps keep it breezy. Come for a mission or two, then drift to bed—no commitments. | Micro‑mats | Nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters. No lamps, no bulky kits, no reservations. | Nightly 10:00–11:00 pm Nightcap (Card Room primary). | Pocket ‘Players Wanted’ cards (EN/ES) | Post‑show drift: two Crew tables spin up in three minutes. | Quiet Table nook marked with a small card; voices stay at conversation level. | Quiet Table stays marked for low‑talk play. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day sunset filler hour (5:00–6:00 pm). | Sleeved cards | Welcome table only when a host is present. | Western Caribbean",
+          "targetedIssues": [],
+          "eventType": "review",
+          "improvement": {
+            "resolvedIssueCategories": [],
+            "persistingIssueCategories": [
+              "community_drift",
+              "copy_alignment",
+              "cruise_implausibility",
+              "motion_safety",
+              "production_feasibility"
+            ],
+            "repeatedIssueSignature": false,
+            "fingerprintSimilarity": 0.2722772277227723
+          }
+        }
+      ],
+      "revisionCount": 3,
+      "stagnant": true
+    },
+    "storedReview": {
+      "verdict": "warn",
+      "issueCategories": [
+        "copy_alignment",
+        "cruise_implausibility",
+        "production_feasibility",
+        "production_feasibility",
+        "motion_safety",
+        "workshop_regression",
+        "community_drift",
+        "copy_alignment",
+        "production_feasibility",
+        "production_feasibility"
+      ],
+      "requiredFixes": [
+        "Add matchedShipName: \"Harmony of the Seas\" and matchedSailDate: \"2026-11-08\"; align PK/id/name/slug or define an alias map.",
+        "Secure written Activities approvals for Card Room late‑evening and sea‑day windows with a documented backup venue/time plan; attach confirmations and list approved nights/times.",
+        "Attach dated screenshots/citations showing Discord LFG heatmaps, Reddit meetups, short‑form ‘quiet game night’ metrics, and cruise Q&A examples; link assets in this record.",
+        "Embed a hostRoster with named leads/backups, a nightly coverage schedule, and link a 1‑page host playbook (5‑minute teach cap, seating, vibe/overflow handling).",
+        "Publish a minimum shared library (10–12 travel titles with 4–5 player duplicates and 2 copies where needed), storage plan, and upload 3–5 rights‑safe teach one‑pager PDFs; document printing/storage protocol.",
+        "Add a beveragePolicy (lidded cups, coasters, drinks off mats, small spill kit) confirmed with venues.",
+        "Define a wind/sea‑state check protocol (responsible role, data source/app, timing before any session) with a default‑indoors rule; constrain any outdoor cameo to card‑only titles.",
+        "Replace laddered highlightEvents with ambient recurring windows (e.g., Nightly 10:00–11:00 pm Card Room) to avoid event/program drift; remove ‘Co‑op Ladder’ framing.",
+        "Add a 1‑page code of conduct and table etiquette, including Beginners Welcome/Quiet Table micro‑signage rules, rotation norms, and table‑hoarding prevention.",
+        "Add a space management policy (max tables by venue, ‘frees at’ time cards, seat priority for newcomers/solos, overflow deflection/escalation).",
+        "Hide or clearly mark startingPrice as internal until verified; provide rationale for minCabinsRequired or remove until ops lock."
+      ]
+    }
+  },
+  "initialReview": {
+    "verdict": "warn",
+    "blockerCount": 0,
+    "warningCount": 5,
+    "issueCategories": [
+      "workshop_regression",
+      "production_feasibility",
+      "community_drift",
+      "motion_safety",
+      "copy_alignment"
+    ],
+    "requiredFixes": [
+      "Reframe or remove highlightEvents to eliminate program/ladder framing; express only ambient recurring windows aligned to the ‘no program vibe’.",
+      "Add a clear host‑absent, self‑serve flow in optionalityStyle (use pocket tags, 5‑minute peer teaches, explicit leave‑anytime), with the welcome table only when staffed.",
+      "Encode space/noise/rotation/overflow norms in optionalityStyle and/or solitudeRisks, including a numeric max‑tables cap for Card Room and a simple overflow deflection line.",
+      "Add a brief lidded‑drinks/coaster/spill‑wipe note to description or aesthetic to tighten late‑night spill safety.",
+      "Adjust the name or description to remove or neutralize ‘Deck’ outdoor implication so aesthetics don’t drift open‑air."
+    ],
+    "approvalRecommendation": "Revise in‑record fields before aesthetics. Convert highlightEvents to ambient recurring windows (or remove), replace meta ‘attach’ language in audienceSignals/researchRationale with concise discovery‑stage summaries, encode self‑serve/host‑absent flow and space/noise/rotation norms in optionalityStyle/solitudeRisks/nicheExpressionMode, and add a simple lidded‑drinks line in description/aesthetic. Consider renaming to remove ‘Deck’ to avoid outdoor implications. Then proceed to Phase 2. Operator follow-ups outside the discovery blueprint contract: Replace with concise, non‑dependency summaries of observed demand (e.g., “Night‑time LFG spikes across hobby Discords; Reddit meetup threads trend toward chill night gaming; short‑form ‘quiet game night’ clips show strong saves/likes”). Remove ‘attach’/‘link’ phrasing from these fields.; Replace ‘attach/link screenshots/metrics’ phrasing in audienceSignals and researchRationale with concise discovery‑stage summaries of demand signals..",
+    "recommendedNextAction": "continue",
+    "stagnant": false,
+    "improvement": {
+      "resolvedIssueCategories": [
+        "cruise_implausibility"
+      ],
+      "persistingIssueCategories": [
+        "community_drift",
+        "copy_alignment",
+        "motion_safety",
+        "production_feasibility",
+        "workshop_regression"
+      ],
+      "repeatedIssueSignature": false,
+      "fingerprintSimilarity": 1,
+      "meaningfulImprovement": true
+    }
+  },
+  "revisionPreparation": {
+    "revisionMode": "single",
+    "branchesConsidered": 1,
+    "message": "Revised the blueprint in place. Re-review the updated blueprint to confirm improvement.",
+    "revisedName": "Eurogame Nightcaps: Co‑op Lounges",
+    "revisedTargetDates": "2026-11-08",
+    "revisedShipTarget": "Royal Caribbean Harmony of the Seas (Oasis‑class)",
+    "revisedPricing": {},
+    "revisedFingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | A soft social flavor, not a program: tiny table tags, micro‑mats, sleeves, and co‑op energy. Welcome table only when staffed; otherwise peers self‑seat and teach in ~5 minutes. No microphones, no schedules beyond ambient windows. | Ambient and optional. Self‑serve works even without a host: pocket ‘Players Wanted / Beginners Welcome’ cards enable seat‑filling; peers use a 5‑minute teach norm; leave anytime with no apologies. Space/etiquette: Card Room cap of 3 active tables plus 1 Quiet Table; voices stay at conversation level; 45–60‑minute rotation if others are waiting; seat priority to solos/newcomers. If full, a simple deflection applies: “We’ll help spin a new table nearby or try again later.” Welcome table appears only when staffed. | Coasters and lidded cups | Colorblind aids | Co‑ops and party‑leaning fillers shrink social distance fast—teammates solve the puzzle together, laugh, then drift off with zero obligation. Shared rules language makes mixing strangers simple and fun. | Drinks in lidded cups on coasters, kept off mats; a quick wipe after each round. | Eurogame Nightcaps: Co‑op Lounges | Foldable dice trays (small)\\nPrinted 5‑minute teach one‑pagers | Host‑cameo welcome table appears 2–3 nights when coverage allows; otherwise self‑serve tags handle seating. | Indoor lounge nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters, and lidded cups. No lamps, no bulky kits, no reservations. | Indoor‑first, late‑evening, low‑talk co‑op and filler tables in the ship’s lounges/Card Room. Small footprints, short missions, easy seat swaps, and lidded‑drink/coaster etiquette. Drift in for one game, drift out for bed—no commitments. | Micro‑mats | Nightly 10:00–11:00 pm Nightcap (Card Room, indoor‑first). | Pocket ‘Players Wanted / Beginners Welcome’ cards (EN/ES) | Post‑show drift: two The Crew tables spin up in minutes with mixed travelers. | Quiet Table nook marked with a small card; voices stay at conversation level. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day 5:00–6:00 pm drop‑in filler hour. | Sea‑day pre‑dinner filler hour: Point Salad and Just One flipping every ~20 minutes. | Sleeved cards | Western Caribbean | ‘Beginners welcome’ is a standing norm during the first 15 minutes any newcomer sits—no posted segment.",
+    "matchStateRemoved": false,
+    "revisionHistoryTail": [
+      {
+        "eventType": "review",
+        "createdAt": "2026-03-15T22:55:51.576Z",
+        "fingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | Coasters | Colorblind aids | Co‑ops reduce social friction: table beats the puzzle together, strangers feel like teammates fast, then drift off without obligation. | Drinks on coasters, off mats; a fast wipe after each round. | Drop‑in/drop‑out. Hosts seat newcomers, cap teaches to five minutes, and encourage short, self‑contained missions. | Eurogame Deck Nights: Co‑op Nightcaps | Gentle, co‑op‑forward seating with tiny table tags and a single welcome table when staffed. No program vibe—just friendly nightcaps. | Late‑evening, low‑talk co‑op and filler tables after the shows. Small footprints, short missions, and easy seat swaps keep it breezy. Come for a mission or two, then drift to bed—no commitments. | Micro‑mats | Nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters. No lamps, no bulky kits, no reservations. | Nightly 10:00–11:00 pm Nightcap (Card Room primary). | Pocket ‘Players Wanted’ cards (EN/ES) | Post‑show drift: two Crew tables spin up in three minutes. | Quiet Table nook marked with a small card; voices stay at conversation level. | Quiet Table stays marked for low‑talk play. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day sunset filler hour (5:00–6:00 pm). | Sleeved cards | Welcome table only when a host is present. | Western Caribbean",
+        "verdict": "warn",
+        "approvalRecommendation": "Revise in‑record fields before aesthetics. Convert highlightEvents to ambient recurring windows (or remove), replace meta ‘attach’ language in audienceSignals/researchRationale with concise discovery‑stage summaries, encode self‑serve/host‑absent flow and space/noise/rotation norms in optionalityStyle/solitudeRisks/nicheExpressionMode, and add a simple lidded‑drinks line in description/aesthetic. Consider renaming to remove ‘Deck’ to avoid outdoor implications. Then proceed to Phase 2. Operator follow-ups outside the discovery blueprint contract: Replace with concise, non‑dependency summaries of observed demand (e.g., “Night‑time LFG spikes across hobby Discords; Reddit meetup threads trend toward chill night gaming; short‑form ‘quiet game night’ clips show strong saves/likes”). Remove ‘attach’/‘link’ phrasing from these fields.; Replace ‘attach/link screenshots/metrics’ phrasing in audienceSignals and researchRationale with concise discovery‑stage summaries of demand signals..",
+        "issueCategories": [
+          "community_drift",
+          "copy_alignment",
+          "motion_safety",
+          "production_feasibility",
+          "workshop_regression"
+        ],
+        "requiredFixes": [
+          "Reframe or remove highlightEvents to eliminate program/ladder framing; express only ambient recurring windows aligned to the ‘no program vibe’.",
+          "Add a clear host‑absent, self‑serve flow in optionalityStyle (use pocket tags, 5‑minute peer teaches, explicit leave‑anytime), with the welcome table only when staffed.",
+          "Encode space/noise/rotation/overflow norms in optionalityStyle and/or solitudeRisks, including a numeric max‑tables cap for Card Room and a simple overflow deflection line.",
+          "Add a brief lidded‑drinks/coaster/spill‑wipe note to description or aesthetic to tighten late‑night spill safety.",
+          "Adjust the name or description to remove or neutralize ‘Deck’ outdoor implication so aesthetics don’t drift open‑air."
+        ],
+        "targetedIssues": [],
+        "changesMade": [],
+        "issueCount": 5,
+        "blockerCount": 0,
+        "warningCount": 5,
+        "improvement": {
+          "resolvedIssueCategories": [
+            "cruise_implausibility"
+          ],
+          "persistingIssueCategories": [
+            "community_drift",
+            "copy_alignment",
+            "motion_safety",
+            "production_feasibility",
+            "workshop_regression"
+          ],
+          "repeatedIssueSignature": false,
+          "fingerprintSimilarity": 1,
+          "meaningfulImprovement": true
+        }
+      },
+      {
+        "eventType": "revision",
+        "createdAt": "2026-03-15T22:57:38.649Z",
+        "fingerprint": "A couple joins Skull for one round, then peels off to bed—no goodbyes needed. | A soft social flavor, not a program: tiny table tags, micro‑mats, sleeves, and co‑op energy. Welcome table only when staffed; otherwise peers self‑seat and teach in ~5 minutes. No microphones, no schedules beyond ambient windows. | Ambient and optional. Self‑serve works even without a host: pocket ‘Players Wanted / Beginners Welcome’ cards enable seat‑filling; peers use a 5‑minute teach norm; leave anytime with no apologies. Space/etiquette: Card Room cap of 3 active tables plus 1 Quiet Table; voices stay at conversation level; 45–60‑minute rotation if others are waiting; seat priority to solos/newcomers. If full, a simple deflection applies: “We’ll help spin a new table nearby or try again later.” Welcome table appears only when staffed. | Coasters and lidded cups | Colorblind aids | Co‑ops and party‑leaning fillers shrink social distance fast—teammates solve the puzzle together, laugh, then drift off with zero obligation. Shared rules language makes mixing strangers simple and fun. | Drinks in lidded cups on coasters, kept off mats; a quick wipe after each round. | Eurogame Nightcaps: Co‑op Lounges | Foldable dice trays (small)\\nPrinted 5‑minute teach one‑pagers | Host‑cameo welcome table appears 2–3 nights when coverage allows; otherwise self‑serve tags handle seating. | Indoor lounge nightcap vibe: micro‑mats, sleeves, foldable trays, pocket ‘Players Wanted / Beginners Welcome / Quiet Table’ tags, coasters, and lidded cups. No lamps, no bulky kits, no reservations. | Indoor‑first, late‑evening, low‑talk co‑op and filler tables in the ship’s lounges/Card Room. Small footprints, short missions, easy seat swaps, and lidded‑drink/coaster etiquette. Drift in for one game, drift out for bed—no commitments. | Micro‑mats | Nightly 10:00–11:00 pm Nightcap (Card Room, indoor‑first). | Pocket ‘Players Wanted / Beginners Welcome’ cards (EN/ES) | Post‑show drift: two The Crew tables spin up in minutes with mixed travelers. | Quiet Table nook marked with a small card; voices stay at conversation level. | Royal Caribbean Harmony of the Seas (Oasis‑class) | Sea‑day 5:00–6:00 pm drop‑in filler hour. | Sea‑day pre‑dinner filler hour: Point Salad and Just One flipping every ~20 minutes. | Sleeved cards | Western Caribbean | ‘Beginners welcome’ is a standing norm during the first 15 minutes any newcomer sits—no posted segment.",
+        "issueCategories": [],
+        "requiredFixes": [],
+        "targetedIssues": [
+          "Reframed highlightEvents into ambient recurring windows (no ladder/program).",
+          "Added explicit host‑absent, self‑serve flow with pocket tags and 5‑minute peer‑teach norm.",
+          "Encoded space/noise/rotation/overflow norms with a numeric Card Room table cap.",
+          "Inserted lidded‑drinks/coaster/quick‑wipe safety note in description/aesthetic.",
+          "Removed outdoor implication by renaming away from ‘Deck’ and stating indoor‑first intent.",
+          "Replaced meta ‘attach/link’ phrasing in audienceSignals and researchRationale with concise discovery‑stage summaries."
+        ],
+        "changesMade": [
+          "Name changed to ‘Eurogame Nightcaps: Co‑op Lounges’ to neutralize outdoor ‘Deck’ implication while keeping slug unchanged.",
+          "Highlight events replaced by ambient windows (Nightly 10–11 pm; Sea‑day 5–6 pm) and a standing ‘Beginners welcome’ on‑ramp.",
+          "OptionalityStyle now encodes self‑serve mechanics, leave‑anytime norm, rotation (45–60 min), seat priority (solos/newcomers), numeric table cap (3+1 Quiet), and overflow deflection language.",
+          "Description/aesthetic now include lidded cups, coasters, and quick‑wipe etiquette.",
+          "AudienceSignals and ResearchRationale rewritten as concise demand summaries naming platforms/communities without ‘attach/link’ placeholders.",
+          "Discouraged/allowed signals tightened to avoid program drift (no tournaments, no mics) and reinforce indoor‑first, low‑footprint play."
+        ],
+        "successHypothesis": "By removing program drift, formalizing self‑serve etiquette, capping footprint/noise, and adding clear spill safety notes, this remains a vacation‑first, ambient social layer that is easy to join and easy to leave. Expect stronger approval likelihood and solid on‑ship adoption from night‑owl hobbyists and curious cruisers who want a quiet, friendly wind‑down option.",
+        "revisionMode": "single",
+        "branchesConsidered": 1
+      }
+    ]
+  },
+  "postRevisionReview": {
+    "verdict": "pass",
+    "blockerCount": 0,
+    "warningCount": 2,
+    "issueCategories": [
+      "production_feasibility",
+      "motion_safety"
+    ],
+    "requiredFixes": [],
+    "approvalRecommendation": "Greenlight to Phase 2 aesthetics as-is. Keep the brief indoor-first, ambient, and co-op/filler focused; avoid any tournament or event framing. Operator follow-ups outside the discovery blueprint contract: Split into two separate bullets in allowedThemeSignals to avoid mis-parsing downstream..",
+    "recommendedNextAction": "hold",
+    "stagnant": false,
+    "improvement": {
+      "resolvedIssueCategories": [
+        "community_drift",
+        "copy_alignment",
+        "workshop_regression"
+      ],
+      "persistingIssueCategories": [
+        "motion_safety",
+        "production_feasibility"
+      ],
+      "repeatedIssueSignature": false,
+      "fingerprintSimilarity": 0.46116504854368934,
+      "meaningfulImprovement": true
+    }
+  },
+  "verdictProgression": {
+    "initial": "warn",
+    "afterRevision": "pass"
+  },
+  "nextActionProgression": {
+    "afterInitialReview": "continue",
+    "afterRevisionSave": "review",
+    "afterPostRevisionReview": "hold"
+  }
+}

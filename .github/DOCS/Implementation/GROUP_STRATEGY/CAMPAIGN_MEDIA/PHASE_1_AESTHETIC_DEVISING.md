@@ -1,4 +1,4 @@
-# Phase 1: Aesthetic Devising
+# Phase 1: Aesthetic Design
 ### Campaign Identity Engine
 
 **Input:** `CampaignConfig` (Phase D object from `GROUP_CAMPAIGN_STRATEGY §6.4`)  

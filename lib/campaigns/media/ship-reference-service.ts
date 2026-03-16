@@ -2,6 +2,7 @@ import { Campaign } from '../types';
 import { AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../schema';
 import { searchGoogleImages } from '@/lib/services/media/google-images';
 import { saveAssetRecord } from './media-store';
+import { getAssetsByType } from './media-store';
 import { storeAsset } from './storage-client';
 import {
     createImageFingerprint,
@@ -36,6 +37,15 @@ const LANDSCAPE_MISMATCH_TERMS = [
 const MARITIME_SIGNAL_TERMS = [
     'cruise', 'ship', 'deck', 'stateroom', 'cabin', 'atrium', 'pool', 'ocean', 'sea',
     'voyage', 'port', 'promenade', 'balcony', 'lido', 'bow', 'stern', 'bridge',
+];
+
+const CRUISE_LINE_QUERY_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
+    { pattern: /royal caribbean(?: international)?/i, label: 'Royal Caribbean' },
+    { pattern: /virgin voyages/i, label: 'Virgin Voyages' },
+    { pattern: /celebrity cruises?/i, label: 'Celebrity Cruises' },
+    { pattern: /norwegian cruise line|\bncl\b/i, label: 'Norwegian Cruise Line' },
+    { pattern: /carnival cruise line|\bcarnival\b/i, label: 'Carnival Cruise Line' },
+    { pattern: /princess cruises?/i, label: 'Princess Cruises' },
 ];
 
 function tokenizeHeroSimilarityText(value: string): string[] {
@@ -160,18 +170,22 @@ function getResolvedShipName(campaign: Campaign): string {
     throw new Error(`Campaign ${campaign.id} does not have a ship target for reference discovery`);
 }
 
-function getCruiseLineTokens(campaign: Campaign): string[] {
+function getCruiseLineQueryFragment(campaign: Campaign): string {
     const source = [campaign.shipTarget, campaign.matchedShipName].filter(Boolean).join(' ');
-    return normalizeText(source)
-        .split(/\s+/)
-        .filter((token) => token.length > 2)
-        .filter((token) => !['ship', 'cruise', 'line', 'class'].includes(token));
+
+    for (const { pattern, label } of CRUISE_LINE_QUERY_PATTERNS) {
+        if (pattern.test(source)) {
+            return label;
+        }
+    }
+
+    return '';
 }
 
 function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: string; query: string }> {
     const shipName = getResolvedShipName(campaign);
-    const cruiseLineFragment = getCruiseLineTokens(campaign).join(' ');
-    const sharedPrefix = `${shipName} ${cruiseLineFragment}`.trim();
+    const cruiseLineFragment = getCruiseLineQueryFragment(campaign);
+    const sharedPrefix = [shipName, cruiseLineFragment].filter(Boolean).join(' ').trim();
 
     return [
         { category: 'exterior', query: `${sharedPrefix} cruise ship exterior professional photo` },
@@ -185,7 +199,9 @@ function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: st
 
 function scoreReferenceCandidate(campaign: Campaign, category: string, query: string, title: string, contextUrl: string, width: number, height: number): number {
     const shipName = normalizeText(getResolvedShipName(campaign));
-    const cruiseTokens = getCruiseLineTokens(campaign);
+    const cruiseTokens = normalizeText(getCruiseLineQueryFragment(campaign))
+        .split(/\s+/)
+        .filter((token) => token.length > 2);
     const metadataHaystack = `${normalizeText(title)} ${normalizeText(contextUrl)}`;
     const queryHaystack = normalizeText(query);
     const matchLevel = classifyReferenceMatchLevel(campaign, title, contextUrl);
@@ -260,8 +276,21 @@ function buildReferenceMatchTag(matchLevel: ReferenceMatchLevel): string {
 }
 
 export async function discoverShipReferenceCandidates(campaign: Campaign, maxPerCategory: number = 2): Promise<ShipReferenceCandidate[]> {
+    return discoverShipReferenceCandidatesWithExclusions(campaign, maxPerCategory, {});
+}
+
+export async function discoverShipReferenceCandidatesWithExclusions(
+    campaign: Campaign,
+    maxPerCategory: number = 2,
+    exclusions?: {
+        imageUrls?: readonly string[];
+        contextUrls?: readonly string[];
+    },
+): Promise<ShipReferenceCandidate[]> {
     const queryConfigs = buildReferenceQueries(campaign);
     const candidateMap = new Map<string, ShipReferenceCandidate>();
+    const excludedImageUrls = new Set((exclusions?.imageUrls ?? []).filter(Boolean));
+    const excludedContextUrls = new Set((exclusions?.contextUrls ?? []).filter(Boolean));
 
     const settledResponses = await Promise.allSettled(
         queryConfigs.map(async (queryConfig) => ({
@@ -281,6 +310,10 @@ export async function discoverShipReferenceCandidates(campaign: Campaign, maxPer
 
         const { queryConfig, response } = settledResponse.value;
         for (const result of response.results) {
+            if (excludedImageUrls.has(result.imageUrl) || excludedContextUrls.has(result.contextUrl)) {
+                continue;
+            }
+
             if (shouldHardRejectReferenceCandidate(campaign, result.title, result.contextUrl)) {
                 continue;
             }
@@ -433,8 +466,15 @@ async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCand
 }
 
 export async function importShipReferenceAssets(slug: string, campaign: Campaign, candidates: ReadonlyArray<ShipReferenceCandidate>): Promise<AssetRecord[]> {
+    const existingRecords = await getAssetsByType(slug, 'ship_reference_image');
+    const nextIndex = existingRecords.reduce((maxIndex, record) => {
+        const match = record.assetId.match(/^img_ship_reference_(\d+)$/);
+        const parsedIndex = match ? Number(match[1]) : 0;
+        return Math.max(maxIndex, parsedIndex);
+    }, 0);
+
     const records = candidates.map((candidate, index) => {
-        const assetId = `img_ship_reference_${String(index + 1).padStart(3, '0')}`;
+        const assetId = `img_ship_reference_${String(nextIndex + index + 1).padStart(3, '0')}`;
         return buildExternalReferenceAssetRecord(campaign, candidate, assetId, 'needs_review');
     });
 

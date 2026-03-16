@@ -643,6 +643,10 @@ export const ShipReferenceCandidateSchema = z.object({
     category: z.string(),
     query: z.string(),
     selectionScore: z.number(),
+    aiScore: z.number().optional(),
+    aiReasoning: z.string().optional(),
+    detectedTags: z.array(z.string()).optional(),
+    antiTags: z.array(z.string()).optional(),
 });
 export type ShipReferenceCandidate = z.infer<typeof ShipReferenceCandidateSchema>;
 

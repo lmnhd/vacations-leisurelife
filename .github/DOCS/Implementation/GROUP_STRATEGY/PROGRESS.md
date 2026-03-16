@@ -14,7 +14,7 @@
 
 Full 2-phase discovery pipeline is operational and battle-tested. Phase A generates AI blueprints via Sonar Deep Research using **inventory-first** ship selection (CB group blocks from `cb-deals-cache.json` injected into Step 2 prompt). Phase B matches each campaign to live CB group inventory, populates pricing, and writes booking links to DynamoDB. **7/10 campaigns are CB_MATCHED** and ready to feed into Phase 2.
 
-> **Campaign ID (slug)** — e.g., `analog-film-and-darkroom-odyssey-2026` — is the key passed into all downstream phases (aesthetic devising, media generation, ad campaigns).
+> **Campaign ID (slug)** — e.g., `analog-film-and-darkroom-odyssey-2026` — is the key passed into all downstream phases (Aesthetic Design, media generation, ad campaigns).
 
 ### What Was Built
 
@@ -99,7 +99,7 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 
 *Corresponds to Strategy §6.3 "Vibe Asset Generation." This is a multi-step sub-pipeline with its own phased docs in [`CAMPAIGN_MEDIA/`](./CAMPAIGN_MEDIA/README.md).*
 
-### 2A. Aesthetic Devising (Phase C.1) — ✅ COMPLETE
+### 2A. Aesthetic Design (Phase C.1) — ✅ COMPLETE
 
 **The Campaign Identity Engine** — generates a locked `CampaignAestheticBrief` before any image/video/audio assets are created.
 
