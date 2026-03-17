@@ -2,6 +2,9 @@ import type {
     CampaignAestheticBrief,
     ProductionBuildLintIssue,
     ProductionBuildLintReport,
+    AestheticModificationRequest,
+    AestheticModificationResult,
+    AestheticIssueCode,
 } from '@/lib/campaigns/schema';
 
 export async function readJsonResponse<T extends Record<string, unknown>>(response: Response): Promise<T> {
@@ -40,7 +43,7 @@ export async function approveAestheticBrief(slug: string): Promise<{
     const response = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/approve`, {
         method: 'POST',
     });
-    const data = await readJsonResponse<ApproveAestheticBriefResponse>(response);
+    const data = await readJsonResponse(response) as ApproveAestheticBriefResponse;
     return { response, data };
 }
 
@@ -51,6 +54,46 @@ export async function regenerateProductionBible(slug: string): Promise<{
     const response = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/production-bible`, {
         method: 'POST',
     });
-    const data = await readJsonResponse<RegenerateProductionBibleResponse>(response);
+    const data = await readJsonResponse(response) as RegenerateProductionBibleResponse;
+    return { response, data };
+}
+
+export interface AestheticModifyResponse {
+    success?: boolean;
+    mode?: string;
+    brief?: CampaignAestheticBrief;
+    appliedIssueCodes?: AestheticIssueCode[];
+    appliedOperations?: AestheticModificationResult['appliedOperations'];
+    touchedPaths?: string[];
+    invalidation?: AestheticModificationResult['invalidation'];
+    followUpActions?: string[];
+    historyEntry?: AestheticModificationResult['historyEntry'];
+    error?: string;
+    details?: unknown;
+}
+
+export async function previewAestheticModification(
+    slug: string,
+    request: Omit<AestheticModificationRequest, 'mode'>,
+): Promise<{ response: Response; data: AestheticModifyResponse }> {
+    const response = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/modify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...request, mode: 'preview' }),
+    });
+    const data = await readJsonResponse(response) as AestheticModifyResponse;
+    return { response, data };
+}
+
+export async function applyAestheticModification(
+    slug: string,
+    request: Omit<AestheticModificationRequest, 'mode'>,
+): Promise<{ response: Response; data: AestheticModifyResponse }> {
+    const response = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/modify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...request, mode: 'apply' }),
+    });
+    const data = await readJsonResponse(response) as AestheticModifyResponse;
     return { response, data };
 }

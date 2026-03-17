@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reviseAestheticBrief } from '@/lib/campaigns/aesthetic-revision';
 import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { suggestDeterministicIssueCodes } from '@/lib/campaigns/aesthetic-modification';
 
 export async function POST(
     _req: NextRequest,
@@ -31,12 +32,18 @@ export async function POST(
 
         // Deadlock — return 409 so the UI can show operator escalation
         if ('deadlock' in result) {
+            const review = brief.redTeamReview;
+            const issues = review?.issues?.map(i => i.title) ?? [];
+            const requiredFixes = (review?.requiredFixes ?? []).join(' ');
+            const suggestedDeterministicFixes = suggestDeterministicIssueCodes(issues, requiredFixes);
             return NextResponse.json(
                 {
                     deadlock: true,
                     message: result.message,
                     revisionCycleCount: result.revisionCycleCount,
                     survivingFixes: result.survivingFixes,
+                    suggestedDeterministicFixes,
+                    canUseDeterministicModify: suggestedDeterministicFixes.length > 0,
                 },
                 { status: 409 },
             );

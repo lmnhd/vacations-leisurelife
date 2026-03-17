@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
-import { CampaignAestheticBrief } from "@/lib/campaigns/schema";
+import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle, Zap, Eye } from "lucide-react";
+import { CampaignAestheticBrief, AestheticIssueCode } from "@/lib/campaigns/schema";
 import { MINIMUM_CAMPAIGN_LEAD_DAYS } from "@/lib/campaigns/launch-window";
-import { approveAestheticBrief, regenerateProductionBible, readJsonResponse } from "@/lib/campaigns/aesthetic-workflow-client";
+import { approveAestheticBrief, regenerateProductionBible, readJsonResponse, previewAestheticModification, applyAestheticModification, AestheticModifyResponse } from "@/lib/campaigns/aesthetic-workflow-client";
 
-type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising";
+type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising" | "modifying";
 
 type CampaignPricingStatus = "AI_ESTIMATE" | "CB_MATCHED" | "UNMATCHED" | null;
 
@@ -36,6 +36,9 @@ export default function AestheticDevisingTestPage() {
     const [error, setError] = useState("");
     const [confirmOverwrite, setConfirmOverwrite] = useState(false);
     const [priorRequiredFixes, setPriorRequiredFixes] = useState<string[]>([]);
+    const [suggestedDeterministicFixes, setSuggestedDeterministicFixes] = useState<AestheticIssueCode[]>([]);
+    const [selectedIssueCodes, setSelectedIssueCodes] = useState<AestheticIssueCode[]>([]);
+    const [modifyPreview, setModifyPreview] = useState<AestheticModifyResponse | null>(null);
 
     const isBusy = briefState !== "idle";
     const normalizedSlug = slug.trim();
@@ -250,11 +253,15 @@ export default function AestheticDevisingTestPage() {
             });
             const data = await readJsonResponse(res);
 
-            // Deadlock — show operator message
+            // Deadlock — show operator message + surface deterministic fix suggestions
             if (res.status === 409 && data.deadlock) {
                 const deadlockMsg = typeof data.message === "string" ? data.message : "Revision deadlock detected.";
                 const fixes = Array.isArray(data.survivingFixes) ? (data.survivingFixes as string[]).join("; ") : "";
                 setError(`${deadlockMsg} Surviving fixes: ${fixes}`);
+                if (Array.isArray(data.suggestedDeterministicFixes) && (data.suggestedDeterministicFixes as AestheticIssueCode[]).length > 0) {
+                    setSuggestedDeterministicFixes(data.suggestedDeterministicFixes as AestheticIssueCode[]);
+                    setSelectedIssueCodes(data.suggestedDeterministicFixes as AestheticIssueCode[]);
+                }
                 return;
             }
 
@@ -273,6 +280,52 @@ export default function AestheticDevisingTestPage() {
             setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
+    const handlePreviewFix = async () => {
+        if (!normalizedSlug || selectedIssueCodes.length === 0) return;
+        setBriefState("modifying");
+        setError("");
+        try {
+            const { response: res, data } = await previewAestheticModification(normalizedSlug, {
+                source: 'issue_codes',
+                actor: { type: 'human', id: 'ui-operator', label: 'UI Operator' },
+                issueCodes: selectedIssueCodes,
+                reason: 'Operator-initiated deterministic fix from deadlock panel',
+            });
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            setModifyPreview(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
+    const handleApplyFix = async () => {
+        if (!normalizedSlug || selectedIssueCodes.length === 0) return;
+        setBriefState("modifying");
+        setError("");
+        setModifyPreview(null);
+        try {
+            const { response: res, data } = await applyAestheticModification(normalizedSlug, {
+                source: 'issue_codes',
+                actor: { type: 'human', id: 'ui-operator', label: 'UI Operator' },
+                issueCodes: selectedIssueCodes,
+                reason: 'Operator-initiated deterministic fix from deadlock panel',
+            });
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            if (data.brief) {
+                setResult(data.brief as CampaignAestheticBrief);
+                setLoadedSlug(normalizedSlug);
+            }
+            setSuggestedDeterministicFixes([]);
+            setSelectedIssueCodes([]);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setBriefState("idle");
         }
@@ -339,6 +392,85 @@ export default function AestheticDevisingTestPage() {
                     {error && (
                         <div className="rounded-lg px-3 py-2 text-xs bg-red-500/10 border border-red-500/20 text-red-400">
                             {error}
+                        </div>
+                    )}
+
+                    {/* Deterministic Fix Panel — surfaces after revision deadlock */}
+                    {suggestedDeterministicFixes.length > 0 && (
+                        <div className="border border-amber-700/50 rounded-xl bg-amber-950/20 p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                                <span className="text-xs font-semibold text-amber-300 uppercase tracking-wide">Deterministic Fix Available</span>
+                            </div>
+                            <p className="text-xs text-amber-200/70">
+                                These structural issues can be fixed without re-running the LLM. Select the fixes to apply, preview, then apply.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {suggestedDeterministicFixes.map(code => (
+                                    <button
+                                        key={code}
+                                        onClick={() => setSelectedIssueCodes(prev =>
+                                            prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+                                        )}
+                                        className={`text-xs px-2.5 py-1 rounded border transition-all ${
+                                            selectedIssueCodes.includes(code)
+                                                ? 'bg-amber-600/30 border-amber-500 text-amber-200'
+                                                : 'bg-zinc-800/60 border-zinc-600 text-zinc-400'
+                                        }`}
+                                    >
+                                        {code}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    onClick={() => void handlePreviewFix()}
+                                    disabled={isBusy || selectedIssueCodes.length === 0}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-zinc-700/60 border border-zinc-600 text-zinc-200 hover:bg-zinc-600/60 disabled:opacity-40"
+                                >
+                                    {briefState === "modifying" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                                    Preview Fix
+                                </button>
+                                <button
+                                    onClick={() => void handleApplyFix()}
+                                    disabled={isBusy || selectedIssueCodes.length === 0}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium bg-amber-700/50 border border-amber-600 text-amber-200 hover:bg-amber-600/50 disabled:opacity-40"
+                                >
+                                    {briefState === "modifying" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                                    Apply Fix
+                                </button>
+                                <button
+                                    onClick={() => { setSuggestedDeterministicFixes([]); setSelectedIssueCodes([]); setModifyPreview(null); }}
+                                    className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                            {modifyPreview && (
+                                <div className="bg-zinc-900/60 border border-zinc-700 rounded p-3 space-y-2">
+                                    <div className="text-[10px] text-zinc-400 uppercase tracking-widest">Preview Result</div>
+                                    <div className="space-y-1">
+                                        {modifyPreview.appliedOperations?.map((op, i) => (
+                                            <div key={i} className={`flex items-start gap-2 text-xs ${op.status === 'applied' ? 'text-green-300' : 'text-zinc-500'}`}>
+                                                <span className={`shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full ${op.status === 'applied' ? 'bg-green-400' : 'bg-zinc-600'}`} />
+                                                <span>{op.summary}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {modifyPreview.touchedPaths && modifyPreview.touchedPaths.length > 0 && (
+                                        <div className="text-[10px] text-zinc-500">
+                                            Touched paths: {modifyPreview.touchedPaths.join(', ')}
+                                        </div>
+                                    )}
+                                    {modifyPreview.followUpActions && modifyPreview.followUpActions.length > 0 && (
+                                        <div className="space-y-0.5">
+                                            {modifyPreview.followUpActions.map((a, i) => (
+                                                <div key={i} className="text-[10px] text-amber-400">→ {a}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                     {!error && !hasLoadedBriefForCurrentSlug && normalizedSlug && briefState === "idle" && (

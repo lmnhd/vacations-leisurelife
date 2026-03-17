@@ -117,7 +117,7 @@ export function buildDistributionSchedule(
     addIfPresent(drafts, countdownIds[0] ? {
         platform: 'email',
         assetId: countdownIds[0],
-        copyVariant: 'countdown_day_3',
+        copyVariant: 'window_day_3',
         scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_3',
     } : null);
@@ -125,7 +125,7 @@ export function buildDistributionSchedule(
     addIfPresent(drafts, countdownIds[1] ? {
         platform: 'sms',
         assetId: countdownIds[1],
-        copyVariant: 'countdown_day_7',
+        copyVariant: 'window_day_7',
         scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_7',
         notes: ['SMS adapter should resolve recipients from waitlist and manifest state.'],
@@ -134,7 +134,7 @@ export function buildDistributionSchedule(
     addIfPresent(drafts, countdownIds[2] ? {
         platform: 'instagram_story',
         assetId: countdownIds[2],
-        copyVariant: 'countdown_day_14',
+        copyVariant: 'window_day_14',
         scheduledAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_14',
     } : null);

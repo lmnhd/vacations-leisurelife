@@ -395,6 +395,123 @@ export function normalizeCommunityExpression(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Deterministic Aesthetic Modification — Schema Layer
+// ────────────────────────────────────────────────────────────────────────────
+
+export const AestheticModifyModeEnum = z.enum(['preview', 'apply']);
+export type AestheticModifyMode = z.infer<typeof AestheticModifyModeEnum>;
+
+export const AestheticModificationSourceEnum = z.enum(['issue_codes', 'operations', 'mixed']);
+export type AestheticModificationSource = z.infer<typeof AestheticModificationSourceEnum>;
+
+export const AestheticIssueCodeEnum = z.enum([
+    'countdown_series_hard_scarcity',
+    'exact_time_strings',
+    'queue_device_handling',
+    'non_generic_venue_naming',
+    'avatar_required_video',
+    'disallowed_video_tool',
+    'rail_safety_missing',
+    'merch_identifier_pressure',
+    'privacy_line_missing',
+    'filming_permissions_missing',
+    'compliance_risk_scarcity_copy',
+]);
+export type AestheticIssueCode = z.infer<typeof AestheticIssueCodeEnum>;
+
+export const AestheticOperationKindEnum = z.enum([
+    'replace_countdown_series',
+    'replace_phrase_patterns',
+    'set_boolean',
+    'set_enum',
+    'append_sentence_if_missing',
+    'prepend_sentence_if_missing',
+    'replace_named_venues_with_generic',
+    'normalize_time_strings',
+    'inject_privacy_line',
+    'inject_filming_permission_gate',
+    'inject_rail_safety_language',
+]);
+export type AestheticOperationKind = z.infer<typeof AestheticOperationKindEnum>;
+
+export const AestheticModificationOperationSchema = z.object({
+    kind: AestheticOperationKindEnum,
+    targetPath: z.string(),
+    params: z.record(z.string(), z.union([z.string(), z.boolean(), z.number(), z.array(z.string())])).optional(),
+});
+export type AestheticModificationOperation = z.infer<typeof AestheticModificationOperationSchema>;
+
+export const AestheticModificationActorSchema = z.object({
+    type: z.enum(['human', 'agent']),
+    id: z.string(),
+    label: z.string(),
+});
+export type AestheticModificationActor = z.infer<typeof AestheticModificationActorSchema>;
+
+export const AestheticModificationOptionsSchema = z.object({
+    rerunRedTeam: z.boolean().optional(),
+    regenerateProductionBible: z.enum(['if_needed', 'always', 'never']).optional(),
+    regenerateLandingStillBible: z.enum(['if_needed', 'always', 'never']).optional(),
+    clearApproval: z.boolean().optional(),
+    strict: z.boolean().optional(),
+});
+export type AestheticModificationOptions = z.infer<typeof AestheticModificationOptionsSchema>;
+
+export const AestheticModificationRequestSchema = z.object({
+    mode: AestheticModifyModeEnum,
+    source: AestheticModificationSourceEnum,
+    actor: AestheticModificationActorSchema,
+    issueCodes: z.array(AestheticIssueCodeEnum).optional(),
+    operations: z.array(AestheticModificationOperationSchema).optional(),
+    options: AestheticModificationOptionsSchema.optional(),
+    reason: z.string().optional(),
+});
+export type AestheticModificationRequest = z.infer<typeof AestheticModificationRequestSchema>;
+
+export const AestheticAppliedOperationSchema = z.object({
+    kind: AestheticOperationKindEnum,
+    targetPath: z.string(),
+    status: z.enum(['applied', 'skipped', 'no_op']),
+    summary: z.string(),
+});
+export type AestheticAppliedOperation = z.infer<typeof AestheticAppliedOperationSchema>;
+
+export const AestheticInvalidationSchema = z.object({
+    humanReviewStatus: z.enum(['revised', 'pending', 'unchanged']),
+    clearedRedTeamReview: z.boolean(),
+    clearedProductionBible: z.boolean(),
+    clearedLandingStillBible: z.boolean(),
+    clearedProductionBuildLint: z.boolean(),
+});
+export type AestheticInvalidation = z.infer<typeof AestheticInvalidationSchema>;
+
+export const AestheticModificationHistoryEntrySchema = z.object({
+    modifiedAt: z.string(),
+    mode: AestheticModifyModeEnum,
+    actor: AestheticModificationActorSchema,
+    appliedIssueCodes: z.array(AestheticIssueCodeEnum),
+    appliedOperations: z.array(AestheticAppliedOperationSchema),
+    touchedPaths: z.array(z.string()),
+    invalidation: AestheticInvalidationSchema,
+    reason: z.string().optional(),
+    revisionNotesSummary: z.string(),
+});
+export type AestheticModificationHistoryEntry = z.infer<typeof AestheticModificationHistoryEntrySchema>;
+
+export const AestheticModificationResultSchema = z.object({
+    success: z.boolean(),
+    mode: AestheticModifyModeEnum,
+    brief: z.unknown(),
+    appliedIssueCodes: z.array(AestheticIssueCodeEnum),
+    appliedOperations: z.array(AestheticAppliedOperationSchema),
+    touchedPaths: z.array(z.string()),
+    invalidation: AestheticInvalidationSchema,
+    followUpActions: z.array(z.string()),
+    historyEntry: AestheticModificationHistoryEntrySchema,
+});
+export type AestheticModificationResult = z.infer<typeof AestheticModificationResultSchema>;
+
+// ────────────────────────────────────────────────────────────────────────────
 // Production Build Lint — Spend Gate Types
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -559,6 +676,8 @@ export const CampaignAestheticBriefSchema = z.object({
     productionBuildLint: ProductionBuildLintReportSchema.optional(),
     productionBuildStatus: z.enum(['pending', 'pass', 'warn', 'fail']).optional(),
     productionBuildEvaluatedAt: z.string().optional(),
+
+    modificationHistory: z.array(AestheticModificationHistoryEntrySchema).optional(),
 
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),

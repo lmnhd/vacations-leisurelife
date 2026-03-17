@@ -123,19 +123,19 @@ export async function generateCountdownVideos(
     const { lightingStyle, colorPalette } = brief.visual;
     const results: GeneratedVideo[] = [];
 
-    const countdownLabels = ['3cabins', '2cabins', '1cabin'];
+    const countdownLabels = ['window_1', 'window_2', 'window_3'];
     const countdownMotions = [
-        `Slow zoom in, ${lightingStyle}, gentle atmospheric motion, urgency building, ${colorPalette.primary} tones`,
-        `Slow push forward, ${lightingStyle}, subtle wave motion, tension rising, ${colorPalette.accent} accents`,
-        `Dramatic slow zoom, ${lightingStyle}, final moment intensity, ${colorPalette.primary} dominant`,
+        `Slow zoom in, ${lightingStyle}, gentle atmospheric motion, open and aspirational, ${colorPalette.primary} tones`,
+        `Slow push forward, ${lightingStyle}, subtle wave motion, exploratory and calm, ${colorPalette.accent} accents`,
+        `Wide establishing shot, ${lightingStyle}, destination-forward motion, ${colorPalette.primary} dominant`,
     ];
 
     const generatedClips = await generatePromptedClips(heroImageUrl, countdownMotions, 'video/countdown', 'vid_countdown', RUNWAYML_CONFIG.clipDurationSeconds, presetId);
     for (let i = 0; i < generatedClips.length; i++) {
         results.push({
             ...generatedClips[i],
-            assetId: `vid_countdown_${countdownLabels[i]}`,
-            fileName: `video/countdown_${countdownLabels[i]}.mp4`,
+            assetId: `vid_window_${countdownLabels[i]}`,
+            fileName: `video/window_${countdownLabels[i]}.mp4`,
         });
     }
 
