@@ -198,18 +198,23 @@ export function MediaReviewPanel(
         setBulkError('');
 
         try {
-            const settled = await Promise.allSettled(
-                pendingApprovalEntries.map(entry =>
-                    fetch(`/api/groups/campaign/${slug}/media/curation`, {
+            const settled: PromiseSettledResult<void>[] = [];
+            for (const entry of pendingApprovalEntries) {
+                try {
+                    const response = await fetch(`/api/groups/campaign/${slug}/media/curation`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             assetId: entry.asset.assetId,
                             approvalState: 'human_approved',
                         }),
-                    })
-                )
-            );
+                    });
+                    if (!response.ok) throw new Error('API Error');
+                    settled.push({ status: 'fulfilled', value: undefined });
+                } catch (err) {
+                    settled.push({ status: 'rejected', reason: err });
+                }
+            }
 
             const failures = settled.filter((item): item is PromiseRejectedResult => item.status === 'rejected');
             if (failures.length > 0) {
