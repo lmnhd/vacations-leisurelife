@@ -290,7 +290,7 @@ function selectLandingStillSourceSpecs(
         return [];
     }
 
-    const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck']);
+    const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck', 'offboard_excursion']);
     const matchingUsages = stills.filter((still) => allowedUsages.has(still.usage));
     const preferredStills = matchingUsages.filter((still) => preferredCategories.has(still.referenceCategory));
     return dedupeAndDiversifyStillSpecs(preferredStills.length > 0 ? preferredStills : matchingUsages, 5);
@@ -352,7 +352,7 @@ function selectConceptLandingStillSpecs(brief: CampaignAestheticBrief): LandingS
     const conceptFriendly = conceptFirst.length > 0
         ? conceptFirst
         : stills.filter((still) => still.usage === 'hero_alt' || still.usage === 'social_square' || still.usage === 'email_header');
-    const editorialCategories = new Set(['interior', 'destination_view', 'observation_lounge', 'pool_deck', 'exterior']);
+    const editorialCategories = new Set(['interior', 'destination_view', 'observation_lounge', 'pool_deck', 'exterior', 'offboard_excursion']);
     const categoryWeighted = conceptFriendly.filter((still) => editorialCategories.has(still.referenceCategory));
 
     return dedupeAndDiversifyStillSpecs(categoryWeighted.length > 0 ? categoryWeighted : conceptFriendly, 4);
@@ -364,7 +364,7 @@ function selectHeroSourceScenes(brief: CampaignAestheticBrief): SceneSpec[] {
         return [];
     }
 
-    const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck']);
+    const preferredCategories = new Set(['exterior', 'destination_view', 'pool_deck', 'offboard_excursion']);
     const preferredScenes = scenes.filter((scene) => preferredCategories.has(scene.referenceCategory));
     return (preferredScenes.length > 0 ? preferredScenes : scenes).slice(0, 5);
 }
@@ -375,7 +375,7 @@ function selectConceptSourceScenes(brief: CampaignAestheticBrief): SceneSpec[] {
         return [];
     }
 
-    const conceptCategories = ['destination_view', 'interior', 'pool_deck', 'exterior', 'atrium'];
+    const conceptCategories = ['destination_view', 'interior', 'pool_deck', 'exterior', 'atrium', 'offboard_excursion'];
     const preferred = conceptCategories.flatMap((category) =>
         scenes.filter((scene) => scene.referenceCategory === category),
     );

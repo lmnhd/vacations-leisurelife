@@ -191,8 +191,8 @@ function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: st
     const shipName = getResolvedShipName(campaign);
     const cruiseLineFragment = getCruiseLineQueryFragment(campaign);
     const sharedPrefix = [shipName, cruiseLineFragment].filter(Boolean).join(' ').trim();
-
-    return [
+    
+    const queries: Array<{ category: string; query: string }> = [
         { category: 'exterior', query: `${sharedPrefix} cruise ship exterior professional photo` },
         { category: 'exterior', query: `${sharedPrefix} ship sailing open ocean` },
         { category: 'pool_deck', query: `${sharedPrefix} pool deck cruise ship photo` },
@@ -206,6 +206,17 @@ function buildReferenceQueries(campaign: Campaign): ReadonlyArray<{ category: st
         { category: 'destination_view', query: `${sharedPrefix} deck ocean view cruise ship photo` },
         { category: 'destination_view', query: `${sharedPrefix} cruise balcony ocean sunset` },
     ];
+
+    if (campaign.targetDestination) {
+        const dest = campaign.targetDestination;
+        queries.push(
+            { category: 'offboard_excursion', query: `${dest} cruise excursion beautiful travel photo` },
+            { category: 'offboard_excursion', query: `${dest} famous landmark travel photography` },
+            { category: 'offboard_excursion', query: `${dest} sunny tourist destination scenery` }
+        );
+    }
+
+    return queries;
 }
 
 function scoreReferenceCandidate(campaign: Campaign, category: string, query: string, title: string, contextUrl: string, width: number, height: number): number {
@@ -218,21 +229,29 @@ function scoreReferenceCandidate(campaign: Campaign, category: string, query: st
     const matchLevel = classifyReferenceMatchLevel(campaign, title, contextUrl);
     let score = 0;
 
-    if (matchLevel === 'exact_ship') {
-        score += 140;
-    } else if (matchLevel === 'same_class') {
-        score += 25;
+    if (category === 'offboard_excursion') {
+        // Excursions don't need to match the ship name
+        score += 100; // Base baseline score
+        if (campaign.targetDestination && metadataHaystack.includes(normalizeText(campaign.targetDestination))) {
+            score += 150; // Huge boost if destination actually matches
+        }
     } else {
-        score -= 120;
-    }
+        if (matchLevel === 'exact_ship') {
+            score += 140;
+        } else if (matchLevel === 'same_class') {
+            score += 25;
+        } else {
+            score -= 120;
+        }
 
-    if (metadataHaystack.includes(shipName)) {
-        score += 80;
-    }
+        if (metadataHaystack.includes(shipName)) {
+            score += 80;
+        }
 
-    for (const token of cruiseTokens) {
-        if (metadataHaystack.includes(token)) {
-            score += 12;
+        for (const token of cruiseTokens) {
+            if (metadataHaystack.includes(token)) {
+                score += 12;
+            }
         }
     }
 

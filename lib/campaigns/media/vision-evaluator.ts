@@ -96,17 +96,20 @@ function tryExtractJsonObject(rawText: string): Record<string, unknown> {
 }
 
 function buildEvaluationPrompt(shipName: string, category: string): string {
+    const isOffboard = category === 'offboard_excursion';
     return JSON.stringify({
         task: 'evaluate_ship_reference_image',
-        ship_name: shipName,
+        ship_name: isOffboard ? 'N/A' : shipName,
         expected_category: category,
         field_instructions: {
             aiScore: 'Integer 0-100. 85+ excellent match. 50-84 usable. Below 50 discard.',
             aiReasoning: 'One sentence explaining why this image does or does not fit.',
-            shipMatch: 'One of: exact_ship | same_class | generic_cruise | wrong_ship',
+            shipMatch: isOffboard 
+                ? "Always output 'generic_cruise' since this is an offboard destination photo." 
+                : 'One of: exact_ship | same_class | generic_cruise | wrong_ship',
             categoryFit: 'One of: strong | weak | wrong_category',
             disqualifiers: 'Array of applicable strings from: wrong-category, wrong-ship, generic-cruise, cgi-or-render, blurry, text-overlay, busy, crowded, interior-heavy, hotel-like, non-public-space, workshop-like, literal-activity',
-            detectedTags: 'Array of applicable strings from: ship-identity, ocean-forward, travel-first, headline-safe, wide, clean, minimal, quiet, cinematic, contextual, guest-accessible, public-space, interior, exterior, promenade, atrium, dining, stateroom',
+            detectedTags: 'Array of applicable strings from: ship-identity, ocean-forward, travel-first, headline-safe, wide, clean, minimal, quiet, cinematic, contextual, guest-accessible, public-space, interior, exterior, promenade, atrium, dining, stateroom, destination, excursion, beach, city',
             antiTags: 'Array of applicable strings from the disqualifier vocabulary above',
         },
     });
@@ -220,7 +223,11 @@ async function evaluateSingleCandidate(
     const { aiScore, aiReasoning, shipMatch, categoryFit, detectedTags, antiTags } =
         parseVisionApiResponse(raw);
 
-    if (categoryFit === 'wrong_category' || shipMatch === 'wrong_ship' || aiScore < VISION_MIN_AI_SCORE) {
+    const isFailedShipMatch = candidate.category === 'offboard_excursion' 
+        ? false // Excursions can't fail ship match
+        : shipMatch === 'wrong_ship';
+
+    if (categoryFit === 'wrong_category' || isFailedShipMatch || aiScore < VISION_MIN_AI_SCORE) {
         console.log('[VisionEvaluator] Candidate disqualified by vision', {
             url: candidate.imageUrl,
             category: candidate.category,

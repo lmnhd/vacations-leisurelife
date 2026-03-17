@@ -598,6 +598,7 @@ PASS 2 GUARDRAILS:
 const SHIP_REFERENCE_CATEGORIES = [
     'exterior', 'pool_deck', 'dining', 'stateroom', 'atrium',
     'nightclub', 'spa', 'destination_port', 'theater', 'sports_deck',
+    'offboard_excursion'
 ] as const;
 
 const VIDEO_DELIVERABLES = VIDEO_DELIVERABLE_SPECS;
@@ -799,6 +800,7 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
 - PHONE EXCEPTION: A phone held at mid-distance showing a plant photo to a friend is an allowed still-image cue. For video-oriented scenes, the phone should be static and backgrounded, not animated.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
+- DESTINATION OFFBOARD RULE: If the user provided a specific Destination below, YOU MUST include at least one still image and one storyboard scene using 'offboard_excursion' that captures the essence of that specific location (e.g. tourist exploring a ruin, beautiful recognizable beach, local culture, mountain, port city skyline). Do not use 'offboard_excursion' for generic ocean waves - it MUST be land or local culture focused.
 - Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
 - Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join('; ') || 'guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues'}.
 - Implausible literalizations to ban: ${plausibility.implausibleLiteralizations.join('; ') || 'microscope lab on open deck; classroom workshop staging; equipment-heavy field station setups; conference-style demos'}.
