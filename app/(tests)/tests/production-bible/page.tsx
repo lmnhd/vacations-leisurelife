@@ -858,8 +858,8 @@ export default function ProductionBibleTestPage() {
                         <button
                             className="bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-700 text-cyan-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={() => void handleGenerateSceneImages()}
-                            disabled={isBusy || !bible}
-                            title={!bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved."}
+                            disabled={isBusy || !bible || lintIsBlocking}
+                            title={lintIsBlocking ? 'Production build failed lint gate — fix the build before generating scene images' : !bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved."}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
                             Generate Scene Images

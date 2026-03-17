@@ -59,7 +59,7 @@ export async function POST(
         return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts'];
+    const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts', 'scene_images'];
     if (PAID_GENERATORS.includes(generator)) {
         const lintVerdict = brief.productionBuildStatus;
         if (lintVerdict === 'fail') {

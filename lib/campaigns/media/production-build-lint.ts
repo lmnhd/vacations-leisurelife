@@ -338,16 +338,17 @@ export function lintProductionBuild(input: ProductionBuildLintInput): Production
     const editorialRoleCount = diagnostics.filter(d => d.shotRole === 'editorial').length;
     const intimateRoleCount = diagnostics.filter(d => d.shotRole === 'intimate').length;
 
-    if (heroRoleCount < 2 || editorialRoleCount < 1) {
+    if (heroRoleCount < 2 || editorialRoleCount < 2 || intimateRoleCount < 1) {
         const missing: string[] = [];
         if (heroRoleCount < 2) missing.push(`hero-capable stills (have ${heroRoleCount}, need 2)`);
-        if (editorialRoleCount < 1) missing.push(`editorial stills (have ${editorialRoleCount}, need 1)`);
+        if (editorialRoleCount < 2) missing.push(`editorial/concept stills (have ${editorialRoleCount}, need 2)`);
+        if (intimateRoleCount < 1) missing.push(`intimate/tight stills (have ${intimateRoleCount}, need 1)`);
         blockingIssues.push({
             code: 'missing_role_coverage',
             severity: 'blocker',
             message: `Still set missing required roles: ${missing.join('; ')}.`,
             affectedStillIds: stills.map(s => s.stillId),
-            details: 'Set must cover: 2+ hero_primary/hero_alt, 1+ concept/editorial, 1+ intimate/supporting.',
+            details: 'Set must cover: 2+ hero_primary/hero_alt, 2+ concept/editorial, 1+ intimate/tight.',
         });
     }
 

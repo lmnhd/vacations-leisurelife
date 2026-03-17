@@ -315,7 +315,7 @@ export async function runMediaGeneration(
         assertAestheticBriefReadyForMedia(brief, slug);
 
         // ── Production build lint gate ────────────────────────────────────
-        const spendGatedTypes: AssetType[] = ['hero_image', 'aesthetic_concept'];
+        const spendGatedTypes: AssetType[] = ['hero_image', 'aesthetic_concept', 'scene_image'];
         const requestingSpendGatedTypes = spendGatedTypes.some(t => shouldRunAsset(t, resolvedOptions.assetTypes));
 
         if (requestingSpendGatedTypes) {
