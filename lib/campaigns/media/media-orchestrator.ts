@@ -76,7 +76,7 @@ type GeneratorCategory = 'images' | 'video' | 'audio' | 'merch' | 'copy';
 
 function getApprovedReferenceCandidates(records: readonly AssetRecord[]): ShipReferenceCandidate[] {
     return records
-        .filter((record) => record.assetType === 'ship_reference_image' && record.reviewStatus === 'human_approved')
+        .filter((record) => record.assetType === 'ship_reference_image' && (record.curation?.approvalState === 'human_approved' || record.reviewStatus === 'human_approved'))
         .map((record) => assetRecordToShipReferenceCandidate(record))
         .filter((candidate): candidate is ShipReferenceCandidate => candidate !== null);
 }

@@ -164,7 +164,10 @@ function selectPreferredAsset(manifest: CampaignMediaManifest | null): AssetReco
         ...manifest.images.shipReferences,
     ];
 
-    const approved = candidates.find((asset) => asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved');
+    const approved = candidates.find((asset) => 
+        (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
+        (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
+    );
     return approved ?? candidates[0] ?? null;
 }
 
