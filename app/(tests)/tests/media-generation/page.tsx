@@ -132,10 +132,11 @@ export default function MediaGenerationTestPage() {
         setPageState("loading");
         setError("");
         try {
+            const cacheBuster = `?t=${Date.now()}`;
             const [manifestRes, briefRes, campaignRes] = await Promise.all([
-                fetch(`/api/groups/campaign/${targetSlug}/media/manifest`),
-                fetch(`/api/groups/campaign/${targetSlug}/media/aesthetic`),
-                fetch(`/api/groups/campaign/${targetSlug}`),
+                fetch(`/api/groups/campaign/${targetSlug}/media/manifest${cacheBuster}`, { cache: 'no-store' }),
+                fetch(`/api/groups/campaign/${targetSlug}/media/aesthetic${cacheBuster}`, { cache: 'no-store' }),
+                fetch(`/api/groups/campaign/${targetSlug}${cacheBuster}`, { cache: 'no-store' }),
             ]);
             if (manifestRes.status === 404) {
                 setManifest(null);

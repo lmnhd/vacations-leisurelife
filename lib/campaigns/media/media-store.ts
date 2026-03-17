@@ -110,6 +110,7 @@ export async function getActiveAssetRecord(slug: string, assetId: string): Promi
     const result = await chatDynamoDocumentClient.send(new GetCommand({
         TableName: TABLE_NAME,
         Key: { PK: `CAMPAIGN#${slug}`, SK: `MEDIA#ASSET#${assetId}` },
+        ConsistentRead: true,
     }));
     if (!result.Item) return null;
     return result.Item as AssetRecord;
@@ -455,6 +456,7 @@ export async function getMediaManifest(slug: string): Promise<CampaignMediaManif
     const result = await chatDynamoDocumentClient.send(new GetCommand({
         TableName: TABLE_NAME,
         Key: { PK: `CAMPAIGN#${slug}`, SK: 'MEDIA#MANIFEST' },
+        ConsistentRead: true,
     }));
     if (!result.Item) return null;
     return JSON.parse(result.Item.manifestJson as string) as CampaignMediaManifest;

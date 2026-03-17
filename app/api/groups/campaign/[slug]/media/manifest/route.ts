@@ -7,6 +7,8 @@ import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 // 404 if no manifest has been generated.
 // ────────────────────────────────────────────────────────────────────────────
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ slug: string }> }
