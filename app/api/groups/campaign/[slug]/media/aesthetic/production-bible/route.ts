@@ -37,6 +37,10 @@ export async function POST(
             nicheKeywords: campaign.targetingKeywords ?? [],
         });
 
+        const nextHumanReviewStatus = brief.humanReviewStatus === 'approved' || brief.humanReviewStatus === 'revised'
+            ? 'revised' as const
+            : 'pending' as const;
+
         const updatedBrief = {
             ...brief,
             landingStillBible: visualPlanning.landingStillBible,
@@ -44,7 +48,7 @@ export async function POST(
             productionBuildLint: lintReport,
             productionBuildStatus: lintReport.verdict,
             productionBuildEvaluatedAt: lintReport.evaluatedAt,
-            humanReviewStatus: 'pending' as const,
+            humanReviewStatus: nextHumanReviewStatus,
             redTeamReview: undefined,
         };
 
@@ -58,6 +62,7 @@ export async function POST(
                     blockingIssues: lintReport.blockingIssues,
                     warnings: lintReport.warnings,
                     scoreSummary: lintReport.scoreSummary,
+                    approvalReset: nextHumanReviewStatus === 'revised',
                     brief: updatedBrief,
                 },
                 { status: 422 }
@@ -65,7 +70,12 @@ export async function POST(
         }
 
         return NextResponse.json(
-            { brief: updatedBrief, lintVerdict: lintReport.verdict, lintReport },
+            {
+                brief: updatedBrief,
+                lintVerdict: lintReport.verdict,
+                lintReport,
+                approvalReset: nextHumanReviewStatus === 'revised',
+            },
             { status: 200 }
         );
     } catch (error: unknown) {

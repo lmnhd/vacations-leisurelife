@@ -6,6 +6,7 @@ import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest } from "@
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
+import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
 import {
     Loader2, Wand2, Image, Film, Music, Type, Shirt,
     Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink
@@ -226,6 +227,21 @@ export default function MediaGenerationTestPage() {
         }
     };
 
+    // ── Quick Approve Brief (for test efficiency) ─────────────────────────
+    const handleApproveBrief = async () => {
+        setPageState("generating");
+        setError("");
+        try {
+            const { response: res, data } = await approveAestheticBrief(slug);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            await handleLoadManifestRef(slug);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setPageState("idle");
+        }
+    };
+
     const handleGenerate = async (assetTypes?: readonly AssetType[]) => {
         if (!slug.trim()) return;
 
@@ -302,16 +318,16 @@ export default function MediaGenerationTestPage() {
     const outputsReady = manifest !== null;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
+        <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
             <div className="max-w-5xl mx-auto space-y-4">
 
                 {/* Header */}
-                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                        <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h1 className="text-lg font-semibold tracking-wide text-cyan-400">
                             🎬 Media Generation — Phase 2
                         </h1>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex flex-wrap gap-2">
                             <a
                                 href="/tests/video-model-lab"
                                 className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 rounded-lg transition"
@@ -330,11 +346,11 @@ export default function MediaGenerationTestPage() {
                             </a>
                         </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="mt-1 text-xs text-slate-500">
                         Generate real-ship reference imagery, scene images, storyboard-driven video, audio, copy, and merch from an approved aesthetic brief.
                         Each category can be run independently. Requires an approved brief with Production Bible for the storyboard path.
                     </p>
-                    <p className="text-xs text-cyan-300/80 mt-2">
+                    <p className="mt-2 text-xs text-cyan-300/80">
                         Shared video model preference: <span className="text-cyan-200">{activeVideoPresetLabel}</span>
                     </p>
                 </div>
@@ -342,7 +358,7 @@ export default function MediaGenerationTestPage() {
                 <VoicePreferencePanel />
 
                 {/* Slug Input */}
-                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
+                <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
                     <div className="text-[10px] text-slate-500 uppercase tracking-widest">Campaign</div>
                     <CampaignSelector
                         value={slug}
@@ -353,11 +369,11 @@ export default function MediaGenerationTestPage() {
                         id="btn-load-manifest"
                         onClick={handleLoadManifest}
                         disabled={isBusy || !slug.trim()}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700/50 border border-white/10 text-slate-300 hover:bg-slate-700 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all border rounded-lg bg-slate-700/50 border-white/10 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none"
                     >
                         {pageState === "loading"
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <Download className="h-4 w-4" />
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Download className="w-4 h-4" />
                         }
                         {pageState === "loading" ? "Loading..." : "Load Manifest"}
                     </button>
@@ -368,7 +384,7 @@ export default function MediaGenerationTestPage() {
                             value={themeMusicSource}
                             onChange={(event) => setThemeMusicSource(event.target.value === 'replicate' ? 'replicate' : 'default')}
                             disabled={isBusy}
-                            className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
+                            className="w-full px-3 py-2 text-sm border rounded-lg bg-slate-800 border-white/10 text-slate-200 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
                         >
                             <option value="default">Default Library</option>
                             <option value="replicate">Replicate MusicGen</option>
@@ -379,17 +395,17 @@ export default function MediaGenerationTestPage() {
                     </div>
 
                     {error && (
-                        <div className="rounded-lg px-3 py-2 text-xs bg-red-500/10 border border-red-500/20 text-red-400">
+                        <div className="px-3 py-2 text-xs text-red-400 border rounded-lg bg-red-500/10 border-red-500/20">
                             {error}
                         </div>
                     )}
                 </div>
 
-                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50 space-y-3">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="text-[10px] text-slate-500 uppercase tracking-widest">Source Of Truth</div>
-                            <p className="text-xs text-slate-400 mt-1">
+                            <p className="mt-1 text-xs text-slate-400">
                                 Discovery owns factual campaign constraints. Aesthetic Design owns creative direction. The manifest owns the currently active generated outputs.
                             </p>
                         </div>
@@ -475,8 +491,8 @@ export default function MediaGenerationTestPage() {
                 </div>
 
                 {/* Per-Category Generator Buttons */}
-                <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
-                    <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                         <div className="text-[10px] text-slate-500 uppercase tracking-widest">Generate by Category</div>
                         <label className="flex items-center gap-2 text-[11px] text-slate-400 select-none">
                             <input
@@ -496,8 +512,8 @@ export default function MediaGenerationTestPage() {
                     </div>
 
                     {preflightEnabled && (
-                        <div className="mb-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-3">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="p-3 mb-4 space-y-3 border rounded-xl border-cyan-500/20 bg-cyan-500/5">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] uppercase tracking-widest text-cyan-400">Preflight</div>
                                     <p className="mt-1 text-[11px] text-slate-400">
@@ -507,10 +523,10 @@ export default function MediaGenerationTestPage() {
                                 <button
                                     onClick={() => void handlePreflight()}
                                     disabled={preflightLoading || isBusy || !slug.trim() || !hasProductionBible}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-40 disabled:pointer-events-none"
+                                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium transition border rounded-lg bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/15 disabled:opacity-40 disabled:pointer-events-none"
                                     title={!hasProductionBible ? "No Production Bible on this brief" : "Run storyboard preflight"}
                                 >
-                                    {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                                    {preflightLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                                     {preflightLoading ? "Running Preflight..." : "Run Preflight"}
                                 </button>
                             </div>
@@ -533,8 +549,8 @@ export default function MediaGenerationTestPage() {
 
                                     <div className="grid gap-2 md:grid-cols-2">
                                         {preflightData.storyboards.map((storyboard) => (
-                                            <div key={storyboard.deliverableId} className="rounded-lg border border-white/10 bg-slate-950/40 p-3 text-xs space-y-2">
-                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                            <div key={storyboard.deliverableId} className="p-3 space-y-2 text-xs border rounded-lg border-white/10 bg-slate-950/40">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="font-medium text-slate-200">{storyboard.deliverableId}</div>
                                                     <span className={`px-2 py-0.5 rounded-full border ${storyboard.readyForStoryboardGeneration ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
                                                         {storyboard.readyForStoryboardGeneration ? 'ready' : 'missing scene images'}
@@ -558,7 +574,7 @@ export default function MediaGenerationTestPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                         {CATEGORIES.map((cat) => {
                             const Icon = cat.icon;
                             const isActive = activeCategory === cat.key;
@@ -574,8 +590,8 @@ export default function MediaGenerationTestPage() {
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}
                                 >
                                     {isActive
-                                        ? <Loader2 className="h-6 w-6 animate-spin" />
-                                        : <Icon className="h-6 w-6" />
+                                        ? <Loader2 className="w-6 h-6 animate-spin" />
+                                        : <Icon className="w-6 h-6" />
                                     }
                                     <span>{isActive ? "Generating..." : cat.label}</span>
                                     <span className="text-[9px] opacity-60">{COST_ESTIMATES[cat.key]}</span>
@@ -591,24 +607,42 @@ export default function MediaGenerationTestPage() {
                             id="btn-gen-all"
                             onClick={() => handleGenerate()}
                             disabled={isBusy || !slug.trim()}
-                            className="flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 border border-white/20 text-white hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none col-span-2 md:col-span-3"
+                            className="flex flex-col items-center col-span-2 gap-2 px-4 py-4 text-sm font-medium text-white transition-all border rounded-xl bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 border-white/20 hover:brightness-125 disabled:opacity-40 disabled:pointer-events-none md:col-span-3"
                         >
                             {activeCategory === "all"
-                                ? <Loader2 className="h-6 w-6 animate-spin" />
-                                : <Zap className="h-6 w-6" />
+                                ? <Loader2 className="w-6 h-6 animate-spin" />
+                                : <Zap className="w-6 h-6" />
                             }
                             <span>{activeCategory === "all" ? "Generating All..." : "⚡ Generate All Media"}</span>
                             <span className="text-[9px] opacity-60 text-center px-2">{COST_ESTIMATES["all"]}</span>
                         </button>
+                        {brief?.humanReviewStatus !== 'approved' && (
+                            <button
+                                onClick={handleApproveBrief}
+                                disabled={isBusy || !slug.trim()}
+                                className="flex flex-col items-center col-span-2 gap-2 px-4 py-4 text-sm font-medium transition-all border rounded-xl bg-amber-500/20 border-amber-500/40 text-amber-400 hover:brightness-125 disabled:opacity-40 disabled:pointer-events-none md:col-span-3"
+                            >
+                                {pageState === "generating"
+                                    ? <Loader2 className="w-6 h-6 animate-spin" />
+                                    : <Zap className="w-6 h-6" />
+                                }
+                                <span>{brief?.humanReviewStatus === 'revised' ? '⚡ Re-Approve Brief' : '⚡ Quick Approve Brief'}</span>
+                                <span className="text-[9px] opacity-60 text-center px-2">
+                                    {brief?.humanReviewStatus === 'revised'
+                                        ? 'Production Bible changed; re-approve before media generation.'
+                                        : 'Bypasses aesthetic review lock'}
+                                </span>
+                            </button>
+                        )}
                     </div>
 
                 </div>
 
                 {/* Generation Result */}
                 {result && (
-                    <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
-                        <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
-                            <span className="text-xs text-slate-400 uppercase tracking-widest">Generation Result</span>
+                    <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                            <span className="text-xs tracking-widest uppercase text-slate-400">Generation Result</span>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full border ${result.completionStatus === "complete"
                                     ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
                                     : "text-amber-400 border-amber-500/30 bg-amber-500/10"
@@ -654,9 +688,9 @@ export default function MediaGenerationTestPage() {
                 )}
 
                 {manifest?.copy && (
-                    <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
-                        <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
-                            <span className="text-xs text-slate-400 uppercase tracking-widest">Copy Results</span>
+                    <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                            <span className="text-xs tracking-widest uppercase text-slate-400">Copy Results</span>
                             <div className="flex items-center gap-3 text-[10px] text-slate-500">
                                 <span>{manifest.copy.carouselSlides.length} slides</span>
                                 <span>{manifest.copy.adVariants.length} ad variants</span>
@@ -665,20 +699,20 @@ export default function MediaGenerationTestPage() {
                         </div>
 
                         <div className="grid gap-4 p-4 md:grid-cols-2">
-                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                            <div className="p-3 space-y-2 border rounded-lg border-white/10 bg-slate-950/40">
                                 <div className="text-[10px] uppercase tracking-widest text-slate-500">Carousel Slides</div>
                                 {manifest.copy.carouselSlides.map((slide, index) => (
-                                    <div key={`carousel-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 px-3 py-2 text-xs text-slate-200">
+                                    <div key={`carousel-${index}`} className="px-3 py-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200">
                                         <span className="mr-2 text-slate-500">{index + 1}.</span>
                                         {slide}
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                            <div className="p-3 space-y-2 border rounded-lg border-white/10 bg-slate-950/40">
                                 <div className="text-[10px] uppercase tracking-widest text-slate-500">Email Subject Lines</div>
                                 {manifest.copy.emailSubjectLines.map((subjectLine, index) => (
-                                    <div key={`subject-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 space-y-2">
+                                    <div key={`subject-${index}`} className="px-3 py-2 space-y-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200">
                                         <div className="text-[10px] uppercase tracking-widest text-slate-500">{subjectLine.stage}</div>
                                         <div className="space-y-1">
                                             {subjectLine.variants.map((variant, variantIndex) => (
@@ -692,11 +726,11 @@ export default function MediaGenerationTestPage() {
                                 ))}
                             </div>
 
-                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3 md:col-span-2">
+                            <div className="p-3 space-y-2 border rounded-lg border-white/10 bg-slate-950/40 md:col-span-2">
                                 <div className="text-[10px] uppercase tracking-widest text-slate-500">Ad Variants</div>
                                 <div className="grid gap-3 md:grid-cols-2">
                                     {manifest.copy.adVariants.map((adVariant, index) => (
-                                        <div key={`ad-${index}`} className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                        <div key={`ad-${index}`} className="p-3 space-y-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200">
                                             <div className="text-[10px] uppercase tracking-widest text-slate-500">Variant {index + 1}</div>
                                             <div><span className="text-slate-500">Headline:</span> {adVariant.headline}</div>
                                             <div><span className="text-slate-500">Primary Text:</span> {adVariant.primaryText}</div>
@@ -708,32 +742,32 @@ export default function MediaGenerationTestPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/40 p-3 md:col-span-2">
+                            <div className="p-3 space-y-2 border rounded-lg border-white/10 bg-slate-950/40 md:col-span-2">
                                 <div className="text-[10px] uppercase tracking-widest text-slate-500">Captions</div>
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                    <div className="p-3 space-y-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200">
                                         <div className="text-[10px] uppercase tracking-widest text-slate-500">TikTok</div>
                                         <div className="space-y-2">
                                             {manifest.copy.captions.tiktok.map((captionSet, index) => (
-                                                <div key={`tiktok-${index}`} className="rounded-md border border-white/5 bg-slate-950/40 px-3 py-2">
+                                                <div key={`tiktok-${index}`} className="px-3 py-2 border rounded-md border-white/5 bg-slate-950/40">
                                                     <div>{captionSet.caption}</div>
                                                     <div className="mt-2 text-[10px] text-slate-500">{captionSet.hashtags.join(' ')}</div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2">
+                                    <div className="p-3 space-y-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200">
                                         <div className="text-[10px] uppercase tracking-widest text-slate-500">Pinterest</div>
                                         <div className="space-y-2">
                                             {manifest.copy.captions.pinterest.map((pinSet, index) => (
-                                                <div key={`pinterest-${index}`} className="rounded-md border border-white/5 bg-slate-950/40 px-3 py-2">
+                                                <div key={`pinterest-${index}`} className="px-3 py-2 border rounded-md border-white/5 bg-slate-950/40">
                                                     <div><span className="text-slate-500">Title:</span> {pinSet.title}</div>
                                                     <div><span className="text-slate-500">Description:</span> {pinSet.description}</div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="rounded-md border border-white/5 bg-slate-900/60 p-3 text-xs text-slate-200 space-y-2 md:col-span-2">
+                                    <div className="p-3 space-y-2 text-xs border rounded-md border-white/5 bg-slate-900/60 text-slate-200 md:col-span-2">
                                         <div className="text-[10px] uppercase tracking-widest text-slate-500">Discord</div>
                                         <div>{manifest.copy.captions.discord}</div>
                                     </div>
@@ -745,9 +779,9 @@ export default function MediaGenerationTestPage() {
 
                 {/* Manifest Viewer */}
                 {manifest && (
-                    <div className="border border-white/10 rounded-xl bg-slate-900/50 overflow-hidden">
-                        <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
-                            <span className="text-xs text-slate-400 uppercase tracking-widest">Media Manifest</span>
+                    <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                            <span className="text-xs tracking-widest uppercase text-slate-400">Media Manifest</span>
                             <div className="flex items-center gap-3 text-[10px] text-slate-500">
                                 <span>{manifest.totalAssets} assets</span>
                                 <span>{manifest.completionStatus}</span>
@@ -756,38 +790,38 @@ export default function MediaGenerationTestPage() {
                         </div>
 
                         {/* Asset count summary */}
-                        <div className="p-4 grid grid-cols-3 md:grid-cols-6 gap-3">
-                            <div className="text-center p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
+                        <div className="grid grid-cols-3 gap-3 p-4 md:grid-cols-6">
+                            <div className="p-3 text-center border rounded-lg bg-cyan-500/5 border-cyan-500/10">
                                 <div className="text-lg font-bold text-cyan-400">
                                     {manifest.images.shipReferences.length + manifest.images.hero.length + manifest.images.aestheticConcepts.length}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Hero + Refs</div>
                             </div>
-                            <div className="text-center p-3 rounded-lg bg-teal-500/5 border border-teal-500/10">
+                            <div className="p-3 text-center border rounded-lg bg-teal-500/5 border-teal-500/10">
                                 <div className="text-lg font-bold text-teal-400">
                                     {manifest.images.sceneImages?.length ?? 0}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Scene Images</div>
                             </div>
-                            <div className="text-center p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                            <div className="p-3 text-center border rounded-lg bg-purple-500/5 border-purple-500/10">
                                 <div className="text-lg font-bold text-purple-400">
                                     {[manifest.videos.tiktokSeed, manifest.videos.heroExplainer, manifest.videos.thresholdAnnouncement].filter(Boolean).length + manifest.videos.countdown.length + manifest.videos.broll.length}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Videos</div>
                             </div>
-                            <div className="text-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                            <div className="p-3 text-center border rounded-lg bg-emerald-500/5 border-emerald-500/10">
                                 <div className="text-lg font-bold text-emerald-400">
                                     {[manifest.audio.ambientNarration, manifest.audio.hypeClip, manifest.audio.themeMusic].filter(Boolean).length}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Audio</div>
                             </div>
-                            <div className="text-center p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                            <div className="p-3 text-center border rounded-lg bg-amber-500/5 border-amber-500/10">
                                 <div className="text-lg font-bold text-amber-400">
                                     {manifest.copy ? "✓" : "—"}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Copy</div>
                             </div>
-                            <div className="text-center p-3 rounded-lg bg-pink-500/5 border border-pink-500/10">
+                            <div className="p-3 text-center border rounded-lg bg-pink-500/5 border-pink-500/10">
                                 <div className="text-lg font-bold text-pink-400">{manifest.merch.designs.length}</div>
                                 <div className="text-[9px] text-slate-500">Merch</div>
                             </div>
@@ -796,7 +830,7 @@ export default function MediaGenerationTestPage() {
                         {/* Full JSON */}
                         <div className="border-t border-white/5">
                             <div className="px-4 py-2 border-b border-white/5">
-                                <span className="text-xs text-slate-400 uppercase tracking-widest">Full Manifest JSON</span>
+                                <span className="text-xs tracking-widest uppercase text-slate-400">Full Manifest JSON</span>
                             </div>
                             <div className="p-4 max-h-[500px] overflow-y-auto">
                                 <pre className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap break-words">

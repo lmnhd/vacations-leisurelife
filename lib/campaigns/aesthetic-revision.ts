@@ -25,6 +25,9 @@ const AestheticRevisionBriefSchema = CampaignAestheticBriefSchema.omit({
     revisionCycleCount: true,
     productionBible: true,
     landingStillBible: true,
+    productionBuildLint: true,
+    productionBuildStatus: true,
+    productionBuildEvaluatedAt: true,
 }).extend({
     productionBible: ProductionBibleSchema.nullable(),
     landingStillBible: LandingStillBibleSchema.nullable(),

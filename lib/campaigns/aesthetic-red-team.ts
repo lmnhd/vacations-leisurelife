@@ -190,7 +190,10 @@ export function assertAestheticBriefPassedRedTeam(brief: CampaignAestheticBrief,
 
 export function assertAestheticBriefReadyForMedia(brief: CampaignAestheticBrief, slug: string): void {
     if (brief.humanReviewStatus !== 'approved') {
-        throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus}).`);
+        const nextStep = brief.humanReviewStatus === 'revised'
+            ? ' Re-approve the brief after regenerating the Production Bible.'
+            : '';
+        throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus}).${nextStep}`);
     }
 
     assertAestheticBriefPassedRedTeam(brief, slug);

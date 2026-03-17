@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
+import { approveAestheticBrief, regenerateProductionBible } from "@/lib/campaigns/aesthetic-workflow-client";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Production Bible Test Page
@@ -229,6 +230,23 @@ export default function ProductionBibleTestPage() {
         if (slug.trim()) loadData(slug.trim());
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // ── Quick Approve Brief (for test efficiency) ─────────────────────────
+    const handleApproveBrief = async () => {
+        setPageState("generating");
+        setError("");
+        setGenerateLog(["Approving brief for testing..."]);
+        try {
+            const { response: res, data } = await approveAestheticBrief(slug);
+            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            setGenerateLog(prev => [...prev, `Brief approved successfully.`]);
+            await loadData(slug);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setPageState("idle");
+        }
+    };
+
     // ── Generate scene images via the REAL pipeline ───────────────────────
     const handleGenerateSceneImages = async () => {
         setPageState("generating");
@@ -411,16 +429,7 @@ export default function ProductionBibleTestPage() {
         setError("");
         setGenerateLog(["Regenerating Production Bible scene specs with updated creative direction..."]);
         try {
-            const res = await fetch(`/api/groups/campaign/${slug}/media/aesthetic/production-bible`, {
-                method: "POST",
-            });
-            const data = await readJsonResponse<{
-                brief?: CampaignAestheticBrief;
-                error?: string;
-                details?: string;
-                lintVerdict?: string;
-                blockingIssues?: ProductionBuildLintIssue[];
-            }>(res);
+            const { response: res, data } = await regenerateProductionBible(slug);
 
             // 422 = build generated but failed lint gate — still reload so lint state is visible
             if (res.status === 422) {
@@ -428,6 +437,9 @@ export default function ProductionBibleTestPage() {
                 setGenerateLog(prev => [
                     ...prev,
                     `Build generated but FAILED lint gate (${blockCount} blocking issues).`,
+                    data.brief?.humanReviewStatus === 'revised'
+                        ? 'Previous approval was invalidated. Re-approve the brief after reviewing lint output.'
+                        : 'Brief now requires approval before media generation.',
                     ...(data.blockingIssues ?? []).map((issue) => `BLOCKER: ${issue.message}`),
                 ]);
                 await loadData(slug.trim());
@@ -443,6 +455,9 @@ export default function ProductionBibleTestPage() {
             setGenerateLog(prev => [
                 ...prev,
                 `Done — ${sceneCount} scenes generated. Lint verdict: ${data.lintVerdict ?? 'unknown'}.`,
+                data.brief?.humanReviewStatus === 'revised'
+                    ? 'Production Bible changed. Previous approval was cleared and the brief must be re-approved.'
+                    : 'Brief remains unapproved until you approve it for media generation.',
             ]);
             await loadData(slug.trim());
         } catch (err) {
@@ -852,6 +867,19 @@ export default function ProductionBibleTestPage() {
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                             Regenerate Production Bible
                         </button>
+                        {brief?.humanReviewStatus !== 'approved' && (
+                            <button
+                                className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
+                                onClick={handleApproveBrief}
+                                disabled={isBusy || !slug.trim()}
+                                title={brief?.humanReviewStatus === 'revised'
+                                    ? 'Production Bible changed; re-approve so media generation can proceed'
+                                    : 'Quickly override pending state so media generation can proceed'}
+                            >
+                                {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                {brief?.humanReviewStatus === 'revised' ? 'Quick Re-Approve Brief' : 'Quick Approve Brief'}
+                            </button>
+                        )}
                     </div>
                     <div className="text-xs text-zinc-500 font-medium uppercase tracking-wide pt-1">Step 2 — Generate Assets</div>
                     <div className="flex gap-2 flex-wrap">

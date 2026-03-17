@@ -1,365 +1,555 @@
-# Production Build Spend Gate Implementation Brief
-
-## Problem Statement
-
-The current media pipeline is catching weak campaign specificity too late.
-
-Observed failure mode:
-- The production build creation layer allows a Landing Still Bible and Production Bible to be generated even when the hero set is too compositionally repetitive.
-- The media generation layer then spends image credits producing full hero/concept assets.
-- Human review is forced to catch defects that should have been treated as build-time failures.
-
-Recent example:
-- `film-and-zine-afloat-2026` produced credible cruise lifestyle imagery, but several heroes drifted toward generic cruise marketing instead of clearly expressing the campaign identity.
-- That should have been rejected or forced into revision before image generation, not after six renders were created.
-
-Core conclusion:
-- Weak campaign distinctiveness is a production-build defect.
-- It must be blocked at the production build creation layer, with a final hard stop at the generation layer as a safety net.
+# Deterministic Aesthetic Fixer Implementation Plan
 
 ## Goal
 
-Add a real pre-generation spend gate so the system refuses to generate hero and concept images when the production build is structurally weak.
+Implement a deterministic modification layer for aesthetic briefs so recurring structural issues do not depend on freeform LLM revision.
 
-The gate must answer:
-- Are the six landing stills sufficiently distinct from one another?
-- Is the niche identity present across the set, instead of being nearly invisible in most slots?
-- Are we overusing the same safe fallback composition patterns?
-- Are we about to spend money on a prompt pack that is highly likely to collapse into generic cruise lifestyle output?
+This layer must:
+- fix `countdownSeries` issues deterministically
+- support any other known aesthetic issue class through the same contract
+- expose a single canonical modification endpoint usable by both UI operators and agents
+- preserve auditability, previewability, and schema safety
+- invalidate approvals/planning only when touched fields actually require it
 
-## Architectural Rule
+## Core Decision
 
-Responsibility split:
-- `aesthetic-engine` / production build creation: generate the build and lint it.
-- production-bible route: refuse to save an invalid build as ready.
-- production-bible UI: show lint failures clearly and prevent the operator from assuming the build is safe.
-- media generation layer: re-check the lint result and block generation if the build is still invalid.
+Do not add a second "revision-like" workflow.
 
-Human review should remain for taste and ranking, not for catching obvious prompt-pack defects.
+Add one canonical domain endpoint:
 
-## Files To Change
+`POST /api/groups/campaign/[slug]/media/aesthetic/modify`
 
-Primary files already in the path:
-- `lib/campaigns/aesthetic-engine.ts`
-- `app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts`
+This endpoint will support both:
+- high-level deterministic fixes by issue code
+- low-level explicit operations against known brief paths
+
+That keeps the final system agent-first while still giving the UI the same primitives.
+
+## Why The Current Revision Loop Is Not Enough
+
+Current `reviseAestheticBrief` in `lib/campaigns/aesthetic-revision.ts` is a whole-brief rewrite driven by `requiredFixes` text. That is appropriate for fuzzy narrative problems, but it is the wrong tool for structural edits such as:
+- replacing countdown naming patterns
+- forcing generic venue names
+- clearing `avatarRequired`
+- banning `heygen`
+- injecting privacy lines
+- normalizing rail-safety language
+- removing exact `HH:MM` time strings
+
+Those are deterministic transformations on known fields and should be implemented as typed fixers, not re-generated prose.
+
+## Architecture
+
+Add a three-layer deterministic system.
+
+### 1. Request/response contract layer
+
+Centralize all request/response schemas in `lib/campaigns/schema.ts` so there is no type scattering.
+
+Add:
+- `AestheticModifyModeEnum = 'preview' | 'apply'`
+- `AestheticModificationSourceEnum = 'issue_codes' | 'operations' | 'mixed'`
+- `AestheticIssueCodeEnum`
+- `AestheticModificationOperationSchema`
+- `AestheticModificationRequestSchema`
+- `AestheticModificationResultSchema`
+- `AestheticModificationHistoryEntrySchema`
+
+### 2. Deterministic fixer service layer
+
+Add a new orchestrator:
+
+`lib/campaigns/aesthetic-modification.ts`
+
+Responsibilities:
+- load the brief
+- validate the request
+- derive operations from issue codes when needed
+- run deterministic fixers in a stable order
+- collect touched paths and audit records
+- compute invalidation effects
+- persist only in `apply` mode
+- return preview/apply result in a shared shape
+
+### 3. Fixer registry layer
+
+Add:
+
+`lib/campaigns/aesthetic-fixers/registry.ts`
+
+This registry maps `AestheticIssueCode` to deterministic handlers.
+
+Each handler should expose the same shape:
+
+`(brief, context) => { brief, applied, touchedPaths, summary, followUps }`
+
+The registry must support both:
+- `issueCode -> one or more operations`
+- `operation.kind -> exact mutation`
+
+## Canonical Endpoint Contract
+
+Implement in:
+
+`app/api/groups/campaign/[slug]/media/aesthetic/modify/route.ts`
+
+### Request shape
+
+```json
+{
+  "mode": "preview" | "apply",
+  "source": "issue_codes" | "operations" | "mixed",
+  "actor": {
+	 "type": "human" | "agent",
+	 "id": "string",
+	 "label": "string"
+  },
+  "issueCodes": ["countdown_series_hard_scarcity"],
+  "operations": [
+	 {
+		"kind": "replace_countdown_series",
+		"targetPath": "videoConcepts.countdownSeries",
+		"params": {
+		  "strategy": "open_window_triplet"
+		}
+	 }
+  ],
+  "options": {
+	 "rerunRedTeam": true,
+	 "regenerateProductionBible": "if_needed",
+	 "regenerateLandingStillBible": "if_needed",
+	 "clearApproval": true,
+	 "strict": true
+  },
+  "reason": "Deadlock fix after repeated countdown scarcity failures"
+}
+```
+
+### Response shape
+
+```json
+{
+  "success": true,
+  "mode": "preview" | "apply",
+  "brief": {},
+  "appliedFixes": ["countdown_series_hard_scarcity"],
+  "appliedOperations": [
+	 {
+		"kind": "replace_countdown_series",
+		"targetPath": "videoConcepts.countdownSeries",
+		"status": "applied",
+		"summary": "Replaced hard countdown clips with evergreen open-window variants."
+	 }
+  ],
+  "touchedPaths": [
+	 "videoConcepts.countdownSeries",
+	 "revisionNotes",
+	 "humanReviewStatus"
+  ],
+  "invalidation": {
+	 "humanReviewStatus": "revised",
+	 "clearedRedTeamReview": true,
+	 "clearedProductionBible": false,
+	 "clearedLandingStillBible": false,
+	 "clearedProductionBuildLint": true
+  },
+  "followUpActions": [
+	 "Run red team again.",
+	 "Re-approve the aesthetic brief before media generation."
+  ],
+  "historyEntry": {}
+}
+```
+
+### Endpoint behavior rules
+
+- `preview` must never persist.
+- `apply` must persist via `saveAestheticBrief`.
+- Agents and UI use the same route. No separate human-only endpoint.
+- Raw JSON Patch should not be accepted. Only domain-safe operations against approved paths.
+- The route must reject unknown issue codes and unknown operation kinds.
+- The route must return `409` when the requested operation conflicts with current brief state.
+- The route must return `422` when the requested mutation would violate the brief schema.
+
+## File-by-File Implementation Map
+
+### 1. `lib/campaigns/schema.ts`
+
+Add centralized schemas for:
+- `AestheticIssueCodeEnum`
+- `AestheticModificationOperationSchema`
+- `AestheticModificationRequestSchema`
+- `AestheticModificationResultSchema`
+- `AestheticModificationHistoryEntrySchema`
+
+Also extend `CampaignAestheticBriefSchema` with an optional:
+
+- `modificationHistory: AestheticModificationHistoryEntry[]`
+
+Keep this history short and append-only. It is operator/audit metadata, not AI-facing schema input. Any AI-facing schemas must explicitly omit it just like `productionBuildLint*`.
+
+### 2. `lib/campaigns/aesthetic-modification.ts`
+
+Create the main service with functions like:
+- `previewAestheticModification(slug, request)`
+- `applyAestheticModification(slug, request)`
+- `runAestheticModification(slug, request)`
+- `deriveOperationsFromIssueCodes(brief, review, issueCodes)`
+- `computeAestheticInvalidation(touchedPaths, priorBrief)`
+- `appendModificationHistory(brief, historyEntry)`
+
+This file is the only place that:
+- translates issue codes into concrete mutations
+- computes post-edit invalidation behavior
+- writes `revisionNotes` / `humanReviewStatus`
+
+### 3. `lib/campaigns/aesthetic-fixers/registry.ts`
+
+Add a registry object keyed by `AestheticIssueCode`.
+
+Initial issue codes should include:
+- `countdown_series_hard_scarcity`
+- `exact_time_strings`
+- `queue_device_handling`
+- `non_generic_venue_naming`
+- `avatar_required_video`
+- `disallowed_video_tool`
+- `rail_safety_missing`
+- `merch_identifier_pressure`
+- `privacy_line_missing`
+- `filming_permissions_missing`
+- `compliance_risk_scarcity_copy`
+
+Each issue code must resolve to deterministic operations over known fields only.
+
+### 4. `lib/campaigns/aesthetic-fixers/countdown-series.ts`
+
+Create the countdown-specific fixer here.
+
+This fixer must be self-contained and deterministic.
+
+### 5. `app/api/groups/campaign/[slug]/media/aesthetic/modify/route.ts`
+
+Implement the endpoint using the new request schema and service.
+
+### 6. `lib/campaigns/aesthetic-workflow-client.ts`
+
+Add shared client helpers:
+- `previewAestheticModification(slug, request)`
+- `applyAestheticModification(slug, request)`
+
+This preserves the same shared-client pattern already used for approve/regenerate.
+
+### 7. UI surfaces
+
+Update at least one operator page first:
+- `app/(tests)/tests/aesthetic-devising/page.tsx`
+
+Add:
+- a preview panel for deterministic fixes suggested by issue code
+- an apply action
+- surfaced invalidation/follow-up state
+
+Optional second UI surface after the endpoint is working:
 - `app/(tests)/tests/production-bible/page.tsx`
-- `lib/campaigns/media/media-orchestrator.ts`
-- `app/api/groups/campaign/[slug]/media/generate/route.ts`
-- `app/api/groups/campaign/[slug]/media/test/images/route.ts`
-
-Likely new shared module:
-- `lib/campaigns/media/production-build-lint.ts`
-
-Schema updates likely needed:
-- `lib/campaigns/schema.ts`
-
-Optional diagnostic surface if useful:
-- `app/api/groups/campaign/[slug]/media/generate-plan/route.ts`
-
-## Required Implementation
-
-### 1. Create a shared production-build lint module
-
-Add a new shared evaluator in `lib/campaigns/media/production-build-lint.ts`.
-
-This module should accept the generated:
-- `landingStillBible`
-- `productionBible`
-- optionally campaign metadata such as theme name, ship name, target destination, and matched ship info
-
-It should return a typed report, not freeform text only.
-
-Required output shape:
-- overall verdict: `pass | warn | fail`
-- blocking issues array
-- warning issues array
-- score summary object
-- repeated-pattern diagnostics
-- per-still diagnostics
-- per-scene diagnostics if needed
-
-Do not use `any`.
-
-Suggested types:
-- `ProductionBuildLintReport`
-- `ProductionBuildLintIssue`
-- `ProductionBuildLintSeverity`
-- `ProductionBuildPatternSummary`
-- `ProductionBuildStillDiagnostic`
-
-## 2. Enforce hard lint rules on the landing still set
-
-The build must fail when the hero/still pack is structurally generic.
-
-Minimum required lint rules:
-
-### A. Slot differentiation rule
-- Compare all 6 landing stills.
-- Fail if 3 or more stills share essentially the same composition family.
-- Example repeated families to detect:
-	- two people at rail laughing
-	- quiet single-subject by round window
-	- generic seated dining intimacy
-	- distant deck couple with sea background
-- This does not need ML. Start with robust heuristic checks against fields like:
-	- `heroShotType`
-	- `approvedStillAction`
-	- `approvedStillLocation`
-	- `approvedStillMood`
-	- `imagePrompt`
-- Normalize tokens and detect repeated pattern clusters.
-
-### B. Niche signal floor
-- Fail if more than 3 of the 6 stills rely on pure cruise emotion with no discernible campaign-specific cue.
-- A cue can be:
-	- analog / film / zine behavior
-	- subtle artifact language like mini-print, point-and-shoot, postcard-size zine, notebook, cuff stitch
-	- a framing concept clearly linked to the campaign concept such as “Two Tiny Windows”
-- Do not require props in every image.
-- But the set must prove the campaign identity exists.
-
-### C. Generic fallback overuse rule
-- Fail if the set over-concentrates on generic safe outputs such as:
-	- rail-side laughter
-	- generic couple-at-sea
-	- generic contemplative window pose
-	- generic upscale dining with weak niche signal
-- This should be implemented as a repeated-template detector, not as subjective prose alone.
 
-### D. Distinct role coverage rule
-- The 6 stills must cover distinct jobs.
-- Require at least:
-	- 2 true hero-capable stills
-	- 2 editorial/concept stills
-	- 1 tighter or more intimate still that would not collapse into the same landing-hero read
-	- 1 still where campaign identity is legible on second glance
-- Fail if all six read like alternate versions of the same homepage hero.
+## CountdownSeries: Exact Deterministic Fix Design
 
-### E. Travel-first but not niche-erased rule
-- Warn when the niche cue is subtle but present.
-- Fail when the niche cue is absent across too much of the set.
-- The correct balance is cruise-first, not cruise-only.
+### Problem to solve
 
-## 3. Store lint results on the brief
+The current countdown problem is not just that `videoConcepts.countdownSeries` contains bad copy.
 
-Extend the brief schema so a production build carries lint state.
+The issue is semantic drift across multiple layers:
+- the brief may contain `T-5`, `T-3`, `3 cabins left`, `1 cabin left`, or similar hard scarcity framing
+- `lib/campaigns/media/video-deliverable-specs.ts` hardcodes `Countdown - 3 Cabins Left`
+- `lib/campaigns/media/generators/runway-generator.ts` hardcodes countdown labels and urgency-heavy motion prompts
+- `lib/campaigns/distribution-planner.ts` assumes `countdown_day_3`, `countdown_day_7`, `countdown_day_14`
 
-Add a dedicated field, for example:
-- `productionBuildLint?: ProductionBuildLintReport`
+Fixing only the brief is insufficient because downstream code can re-inject the same semantics.
 
-Optional helpful metadata:
-- `productionBuildStatus?: 'pending' | 'pass' | 'warn' | 'fail'`
-- `productionBuildEvaluatedAt?: string`
+### Countdown fixer strategy
 
-This lets downstream routes and UIs read a normalized state instead of recomputing everything ad hoc.
+Implement `replace_countdown_series` with one deterministic strategy in v1:
 
-## 4. Run lint inside the production build creation route
+`open_window_triplet`
 
-In `app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts`:
-- generate visual planning
-- immediately run the new build lint
-- attach lint report to the brief before saving
+This strategy must:
+- preserve the array shape expected by downstream video planning
+- preserve three short-form video concepts
+- remove numeric diminishing-count framing
+- remove `T-` naming
+- remove exact scarcity claims not backed by live inventory
+- keep the concepts useful as conversion nudges
 
-Required route behavior:
-- If lint verdict is `fail`, return `409` or `422`
-- Include the structured lint report in the response
-- Do not mark the build as normally ready
-- Do not silently save a failed build as if it were acceptable
+### Countdown fixer algorithm
 
-Acceptable fallback behavior:
-- saving the failed build for diagnosis is fine if needed
-- but it must be explicitly marked failed and unusable for generation
+1. Read `brief.videoConcepts.countdownSeries`.
+2. Ignore the current titles/body if they match banned countdown patterns.
+3. Replace the entire array with a deterministic three-item template set.
+4. Preserve only safe reusable context from the brief:
+	- `themeName`
+	- `visual.colorPalette`
+	- generic audience framing
+	- destination/ship context when generic and compliant
+5. Force these invariants on all three items:
+	- `avatarRequired = false`
+	- no `heygen`
+	- no `T-<number>` or `<number> cabins left`
+	- no exact remaining inventory claims
+	- no exact times
+	- privacy-safe copy if filming/photos are referenced
 
-Do not allow the route to behave like “generated successfully” when the build is invalid.
+### Countdown replacement template
 
-## 5. Surface lint failures in the production-bible test page
+Replace with three evergreen concepts such as:
+- `Open Sailing Window`
+- `Check Cabin Options`
+- `Plan Your Route`
 
-In `app/(tests)/tests/production-bible/page.tsx`:
-- display overall lint verdict prominently
-- show blocking issues and warnings separately
-- show repeated-pattern findings in plain English
-- make it obvious which stills are too similar and why
+The exact titles can differ, but they must be generated from a deterministic template set stored in code, not via LLM.
 
-Operator UX requirements:
-- red failure banner when verdict is `fail`
-- amber warning banner when verdict is `warn`
-- list repeated hero families or weak cue patterns
-- disable or strongly warn before proceeding to image generation if lint is failing
+For each replacement concept, deterministically set:
+- title
+- hook
+- voiceover summary
+- CTA direction
+- tool guidance
+- motion notes
+- compliance-safe scarcity language
 
-This page should become the operator’s pre-spend diagnostic view.
+### Countdown downstream cleanup
 
-## 6. Add a final hard stop in media generation
+Implement this in the same workstream, not later.
 
-In `lib/campaigns/media/media-orchestrator.ts`:
-- before starting hero image generation or aesthetic concept generation, read the lint state from the brief
-- if lint verdict is `fail`, throw a hard error and stop
+Change downstream semantic assumptions so the fixer does not fight other code.
 
-This is a safety net.
+Required follow-on edits:
 
-The primary gate is the production build route.
-The media orchestrator must still guard against stale or bypassed flows.
+1. `lib/campaigns/media/video-deliverable-specs.ts`
+	- replace hardcoded title `Countdown - 3 Cabins Left`
+	- rename to neutral language such as `Planning Window Video 1`
+	- keep the deliverable ID stable if changing IDs would be too disruptive in v1
 
-Error message should be explicit:
-- build invalid
-- do not spend on media generation
-- review repeated pattern issues and niche signal failures first
+2. `lib/campaigns/media/generators/runway-generator.ts`
+	- replace urgency-heavy countdown motions with neutral conversion/window motions
+	- keep three generated clips but remove hardcoded `3cabins`, `2cabins`, `1cabin` naming
+	- use neutral labels like `window_1`, `window_2`, `window_3` or keep old asset IDs temporarily but neutralize semantics everywhere else
 
-## 7. Block the public generation route too
+3. `lib/campaigns/distribution-planner.ts`
+	- replace `countdown_day_*` copy variants with neutral variants such as `window_day_3`, `window_day_7`, `window_day_14`
+	- if variant renames are too disruptive in v1, add a mapping layer but do not keep hard-scarcity copy content
 
-In `app/api/groups/campaign/[slug]/media/generate/route.ts`:
-- preserve current behavior for valid builds
-- if orchestrator throws a production-build lint failure, return a clear non-200 error
-- do not hide it behind a generic 500 if it can be classified cleanly
+### Countdown acceptance criteria
 
-Prefer a user-facing response that tells the operator the build failed pre-generation quality checks.
+After applying the fixer:
+- the stored brief contains no `T-` naming in `videoConcepts.countdownSeries`
+- the stored brief contains no exact diminishing inventory copy in those concepts
+- downstream deliverable specs and generator prompts no longer reintroduce countdown scarcity semantics
+- rerunning red team does not reproduce the same countdown complaint unless a different layer reintroduced it
 
-## 8. Block the image test route from bypassing the spend gate
+## Generalized Deterministic Aesthetic Fixers
 
-In `app/api/groups/campaign/[slug]/media/test/images/route.ts`:
-- before running `real_ship_hero` or `stability_concepts`, enforce the same lint gate
-- `ship_reference_search` may remain allowed
-- `sharp_crops` can remain allowed if a source image already exists
+The system must not be countdown-only. Implement fixers for any aesthetic issue that is a known structural rule over known fields.
 
-Rationale:
-- test routes should not become a loophole that still burns image credits on bad build packs
+### Initial deterministic issue families
 
-## 9. Add a cheap probe stage after build pass and before full spend
+1. `exact_time_strings`
+	- scan all string leaves
+	- replace `HH:MM` patterns with broad phrases using deterministic mapping rules
 
-After the main lint exists, add a staged-spend mode.
+2. `queue_device_handling`
+	- scan queue/line-related copy
+	- replace active device use with verbal-only or seated-sharing phrasing
 
-Desired behavior:
-- generate 1 low-cost probe hero per still slot or 1 probe for a subset of key slots
-- store them as probe assets or mark them distinctly
-- require passable probe review before running the full hero set
+3. `non_generic_venue_naming`
+	- replace branded venue references with generic labels from a static lookup table
 
-This can be phase 2 if needed, but the document should push toward it.
+4. `avatar_required_video`
+	- force `avatarRequired = false` across all video concepts
 
-If time is limited, implement phase 1 first:
-- structural lint + hard generation block
+5. `disallowed_video_tool`
+	- replace banned tool values such as `heygen` with approved defaults or remove the field when optional
 
-## 10. Add a preflight API for build quality diagnostics
+6. `rail_safety_missing`
+	- inject the exact safe rail language into relevant `subjectAction` or `subjectMotion` fields when the scene references rails/deck edges
 
-Optional but recommended:
-- extend or parallel the existing `media/generate-plan` diagnostic route so it also returns production-build lint state
-- this makes it easy to inspect “would this build be blocked?” before any spend happens
+7. `merch_identifier_pressure`
+	- inject `Optional - no identifiers needed` style disclaimer into merch CTA placements
 
-## Heuristics To Implement First
+8. `privacy_line_missing`
+	- inject privacy-safe filming/photo guidance into captions, copy rules, or email directions when those sections mention photos or filming
 
-Do not over-engineer the first version.
-Use deterministic heuristics first.
+9. `filming_permissions_missing`
+	- inject the written-approval gate plus synthetic fallback into production notes
 
-Start by extracting normalized tokens from each landing still:
-- location family
-- action family
-- mood family
-- shot role
-- cue family
-- whether cue is explicit, subtle, or absent
-- whether image is hero-scale, editorial-scale, or intimate-scale
+10. `compliance_risk_scarcity_copy`
+	- replace scarcity-risk phrases with neutral availability-check phrasing from a fixed replacement table
 
-Then compute:
-- repeated location clusters
-- repeated action clusters
-- repeated shot-role clusters
-- number of stills with no campaign cue
-- number of stills dominated by generic fallback templates
+### What stays non-deterministic
 
-First version should be explainable and predictable.
+Do not force deterministic fixers onto broad creative failures such as:
+- weak community vibe
+- generic luxury drift
+- poor thematic cohesion
+- stereotype risk requiring recasting/reframing across many scenes
+- whole-campaign voice problems
 
-## Concrete Failure Conditions
+Those still belong to LLM revision or manual operator editing.
 
-The build should fail if any of these are true:
-- 3 or more landing stills collapse into the same composition family
-- 4 or more landing stills have no legible niche cue
-- 4 or more landing stills resolve to generic cruise-lifestyle templates
-- the set lacks role coverage across hero, editorial, and intimate/supporting stills
-- the set cannot point to at least 2 stills where the campaign identity is plausibly legible without reading copy
+### Deterministic eligibility rule
 
-The build should warn if any of these are true:
-- exactly 3 stills have weak niche signal but not total absence
-- there is mild repetition without full collapse
-- one cue family is slightly overused but not dominant
+An issue is deterministic only when all three are true:
+- it maps to a known issue code
+- it targets known brief paths or string patterns
+- the mutation can be validated entirely by schema plus rule checks
 
-## Suggested Data Model Changes
+If any condition fails, the route must reject `issueCodes` mode for that issue and tell the caller to use manual operations or LLM revision.
 
-Update schema definitions in `lib/campaigns/schema.ts` to support:
-- lint verdict enum
-- lint issue severity enum
-- typed issue records with fields like:
-	- `code`
-	- `severity`
-	- `message`
-	- `affectedStillIds`
-	- `details`
+## Operation Model
 
-Potential issue codes:
-- `repeated_composition_family`
-- `weak_niche_signal`
-- `generic_fallback_overuse`
-- `missing_role_coverage`
-- `hero_set_too_homogeneous`
-- `identity_legibility_too_low`
+Support these operation kinds in v1:
+- `replace_countdown_series`
+- `replace_phrase_patterns`
+- `set_boolean`
+- `set_enum`
+- `append_sentence_if_missing`
+- `prepend_sentence_if_missing`
+- `replace_named_venues_with_generic`
+- `normalize_time_strings`
+- `inject_privacy_line`
+- `inject_filming_permission_gate`
+- `inject_rail_safety_language`
 
-## UI Expectations
+Important: all operations must target allowed domain paths only. Do not accept arbitrary object traversal from clients.
 
-Production-bible page should show:
-- overall verdict badge
-- counts of blocking issues and warnings
-- a “Why this would waste spend” summary
-- per-still breakdown of cue strength and repetition family
+## Invalidation Rules
 
-Helpful UI copy:
-- “This build is too homogeneous to justify hero-image spend.”
-- “Campaign identity is too weak across the landing still pack.”
-- “Revise the production build before generating hero imagery.”
+After any successful `apply`, compute invalidation from `touchedPaths`.
+
+### Always
+
+- set `humanReviewStatus = 'revised'` unless the brief was still draft/pending and has never been approved
+- clear `redTeamReview`
+- increment `revisionCycleCount` only for LLM revision, not for deterministic modifications
+- write a `revisionNotes` summary describing the deterministic changes
+- append a `modificationHistory` entry
+
+### Conditionally clear planning artifacts
+
+If touched paths include visual planning inputs such as:
+- `videoConcepts.*`
+- `visual.*`
+- `scene prompts`
+- `production-related prompt text`
+
+Then clear or invalidate:
+- `productionBuildLint`
+- `productionBuildStatus`
+- `productionBuildEvaluatedAt`
+
+Do not automatically delete `productionBible` unless the touched paths directly invalidate its authored content. In v1, prefer preserving it but flagging regeneration as required in the response when touched paths affect video/scene planning.
+
+## Integration With Red Team And Deadlock Handling
+
+Do not automatically run the LLM reviser when the deadlock is clearly deterministic.
+
+Add a helper in the modification service:
+
+`suggestDeterministicIssueCodes(brief, review)`
+
+Behavior:
+- inspect `review.issues` and `review.requiredFixes`
+- match stable text patterns and categories to `AestheticIssueCode`
+- return ranked deterministic suggestions
+
+Then update `app/api/groups/campaign/[slug]/media/aesthetic/revise/route.ts` so that deadlock responses can include:
+- `suggestedDeterministicFixes`
+- `canUseDeterministicModify: true | false`
+
+Do not have the revise route auto-apply fixes in v1. It should recommend, not mutate.
+
+## Human + Agent UX
+
+### Agent usage
+
+Preferred agent flow:
+- fetch current brief and red-team review
+- call `modify` with `mode: 'preview'` and `issueCodes`
+- inspect `touchedPaths`, invalidation, and follow-up actions
+- call `modify` again with `mode: 'apply'` if acceptable
+- rerun red team
+- re-approve if clean
+
+### Human UI usage
+
+The UI should expose the same workflow:
+- show deterministic suggestions derived from the current review
+- allow preview before apply
+- show exact fields to be touched
+- show whether approval/planning will be invalidated
+- allow applying a single suggestion or a batch
+
+This keeps the endpoint agent-first while remaining operator-safe.
+
+## Testing Plan
+
+Add tests for:
+
+1. request schema validation
+2. preview mode does not persist
+3. apply mode persists and appends history
+4. invalid issue codes are rejected
+5. unknown operation paths are rejected
+6. countdown fixer replaces banned countdown patterns
+7. countdown fixer does not change array size unexpectedly
+8. countdown fixer forces `avatarRequired = false`
+9. countdown fixer does not emit banned tool values
+10. downstream specs/generator/distribution no longer reintroduce countdown semantics
+11. privacy injection is idempotent
+12. rail safety injection is idempotent
+13. venue genericization is idempotent
+14. time normalization removes `HH:MM` strings everywhere it is meant to touch
+
+Suggested locations:
+- `lib/campaigns/__tests__/aesthetic-modification.test.ts`
+- `lib/campaigns/__tests__/aesthetic-fixers.countdown-series.test.ts`
+- targeted tests for downstream video/distribution semantics if needed
 
 ## Acceptance Criteria
 
-The work is complete when all of the following are true:
+This work is complete when all of the following are true.
 
-1. A structurally weak build can be generated for inspection but is marked failed and cannot proceed to media spend.
-2. The production-bible route returns structured lint failures for weak hero/still packs.
-3. The production-bible test page shows those failures clearly.
-4. `media/generate` refuses to generate `hero_image` and `aesthetic_concept` assets for failed builds.
-5. `media/test/images` also refuses to bypass the gate for paid image generation.
-6. The failure response explains the reason in operator language, not only raw stack text.
-7. Lint logic is implemented in one shared module, not duplicated across routes.
+1. There is one canonical `POST /media/aesthetic/modify` endpoint for both human and agent callers.
+2. The endpoint supports both `preview` and `apply`.
+3. The endpoint supports both high-level issue codes and explicit domain operations.
+4. `countdownSeries` can be fixed deterministically without using the LLM reviser.
+5. Other known structural aesthetic issues can be fixed through the same endpoint.
+6. The response always tells the caller exactly what changed, what was invalidated, and what to do next.
+7. Changes are audit-logged on the brief.
+8. AI-facing schemas explicitly omit new audit/modification metadata.
+9. Downstream countdown semantics in video specs, generator prompts, and distribution planning no longer reintroduce the rejected language.
+10. Red-team reruns after a deterministic fix do not fail on the same countdown issue unless a different layer is still wrong.
 
-## Non-Goals
+## Implementation Order
 
-Do not solve this by:
-- making the image model smarter
-- pushing more responsibility onto human review
-- adding vague prompt prose without enforceable rules
-- relying on expensive image probing as the first line of defense
+Build in this order.
 
-The first fix is pipeline governance.
+1. Add centralized schemas in `lib/campaigns/schema.ts`.
+2. Build `lib/campaigns/aesthetic-modification.ts` and the fixer registry.
+3. Implement `countdownSeries` fixer first.
+4. Add the `modify` API route.
+5. Add preview/apply client helpers.
+6. Update one UI surface to use preview/apply.
+7. Clean downstream countdown semantics in video specs, runway generator, and distribution planner.
+8. Add deterministic fixers for the remaining structural issue families.
+9. Add deadlock suggestions to the revise route.
+10. Add tests and verify idempotence.
 
-## Recommended Order Of Work
+## Explicit Non-Goals For V1
 
-1. Add typed lint schema and shared evaluator module.
-2. Run lint inside production-bible creation route.
-3. Surface verdict/issues in production-bible UI.
-4. Add orchestrator hard-stop.
-5. Add image test route hard-stop.
-6. Optionally add preflight diagnostic endpoint and probe stage.
+- No freeform arbitrary brief editor in this task.
+- No raw JSON Patch support.
+- No attempt to deterministically solve broad creative or thematic quality failures.
+- No silent auto-apply on deadlock.
 
-## Verification Plan
-
-Use at least one known weak case and one known strong case.
-
-Weak case expectation:
-- a campaign like `film-and-zine-afloat-2026` in its current weak-build state should produce a lint report with repetition and niche-signal failures, and should not be allowed to run hero/concept generation.
-
-Strong case expectation:
-- a campaign with a clearly differentiated still pack should pass lint and continue normally.
-
-Required validation:
-- unit tests for lint heuristics if feasible
-- route-level validation for failed build response shape
-- manual verification in `/tests/production-bible`
-- manual verification that `/media/generate` and `/media/test/images` block failed builds
-
-## Final Principle
-
-If the system can already predict “these six prompts will probably collapse into generic cruise lifestyle,” that prediction belongs before spend, not after rendering.
+The first goal is a safe, typed, deterministic repair layer for recurring structural aesthetic issues.
