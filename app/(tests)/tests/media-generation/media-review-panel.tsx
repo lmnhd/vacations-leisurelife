@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2 } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -156,6 +156,7 @@ export function MediaReviewPanel(
 ) {
     const [activeTab, setActiveTab] = useState('references');
     const [bulkRemoving, setBulkRemoving] = useState(false);
+    const [bulkApproving, setBulkApproving] = useState(false);
     const [bulkError, setBulkError] = useState('');
 
     const tabEntryMap = useMemo(() => {
@@ -177,9 +178,50 @@ export function MediaReviewPanel(
     const ActiveIcon = activeTabDef.icon;
     const removableEntries = activeEntries.filter((entry) => getDeleteEndpoint(slug, entry.asset.assetType) !== null);
     const removableUnapprovedEntries = removableEntries.filter((entry) => !isHumanApproved(entry.asset));
+    
+    const pendingApprovalEntries = activeEntries.filter((entry) => {
+        const s = normalizeAssetCuration(entry.asset).approvalState;
+        return s !== 'human_approved' && s !== 'rejected' && s !== 'revision_required';
+    });
 
     const handleRefresh = async () => {
         await onManifestRefresh(slug);
+    };
+
+    const handleBulkApprove = async () => {
+        if (pendingApprovalEntries.length === 0 || bulkApproving) return;
+
+        const confirmed = window.confirm(`Approve ${pendingApprovalEntries.length} pending assets in "${activeTabDef.label}"?`);
+        if (!confirmed) return;
+
+        setBulkApproving(true);
+        setBulkError('');
+
+        try {
+            const settled = await Promise.allSettled(
+                pendingApprovalEntries.map(entry =>
+                    fetch(`/api/groups/campaign/${slug}/media/curation`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            assetId: entry.asset.assetId,
+                            approvalState: 'human_approved',
+                        }),
+                    })
+                )
+            );
+
+            const failures = settled.filter((item): item is PromiseRejectedResult => item.status === 'rejected');
+            if (failures.length > 0) {
+                setBulkError(`Approved ${settled.length - failures.length}/${settled.length}. Some failed.`);
+            }
+
+            await handleRefresh();
+        } catch (error: unknown) {
+            setBulkError(error instanceof Error ? error.message : 'Bulk approve failed');
+        } finally {
+            setBulkApproving(false);
+        }
     };
 
     const handleBulkRemove = async (
@@ -327,6 +369,16 @@ export function MediaReviewPanel(
                             {activeEntries.length} assets in {activeTabDef.label}
                         </div>
                         <div className="flex items-center gap-2">
+                            {pendingApprovalEntries.length > 0 && (
+                                <button
+                                    onClick={() => void handleBulkApprove()}
+                                    disabled={bulkApproving}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] text-emerald-200 hover:bg-emerald-500/20 transition disabled:opacity-40"
+                                >
+                                    {bulkApproving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
+                                    {bulkApproving ? 'Approving…' : 'Approve All Pending'}
+                                </button>
+                            )}
                             {removableUnapprovedEntries.length > 0 && (
                                 <button
                                     onClick={() => void handleRemoveNotApprovedInTab()}
@@ -373,3 +425,4 @@ export function MediaReviewPanel(
         </div>
     );
 }
+
