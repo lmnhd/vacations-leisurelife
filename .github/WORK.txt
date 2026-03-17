@@ -1,22 +1,365 @@
-Done. Here's what was implemented:
+# Production Build Spend Gate Implementation Brief
 
-Files Changed
-NEW — @/c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\campaigns\media\vision-evaluator.ts
+## Problem Statement
 
-applyVisionEvaluationToCategory(candidates, shipName) — per-category OpenAI vision call using ModelName.GPT_5_HIGH (gpt-5)
-Fetches each image server-side as base64 before evaluation (Phase 2)
-Controlled suitability tag vocabulary (18 tags) + anti-tag vocabulary (13 tags) — no freeform strings pass through
-Disqualifies: categoryFit === 'wrong_category', shipMatch === 'wrong_ship', aiScore < 30
-Graceful fallback: fetch failure → drop that candidate; all candidates disqualified → return original batch for heuristic ranking; OpenAI init failure → return original batch (Phase 7)
-MODIFIED — @/c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\lib\campaigns\media\ship-reference-service.ts
+The current media pipeline is catching weak campaign specificity too late.
 
-After text pre-filter builds candidateMap, groups by category and runs all 6 categories in parallel via Promise.allSettled
-Vision survivors replace the heuristic-only candidates in the map
-computeFinalRankScore() blends selectionScore + aiScore*2 / 2 for final ranking
-buildCurationFromCandidateAI() maps AI output → AssetRecord.curation (globalPriority, suitabilityTags, antiTags, curatorNotes, approvalState: pending_review) on every imported reference asset
-Commit: 0ac1434
+Observed failure mode:
+- The production build creation layer allows a Landing Still Bible and Production Bible to be generated even when the hero set is too compositionally repetitive.
+- The media generation layer then spends image credits producing full hero/concept assets.
+- Human review is forced to catch defects that should have been treated as build-time failures.
 
-Verification (per plan success criteria)
-A stateroom image with correct ship metadata but categoryFit === 'wrong_category' is now disqualified before import
-Existing exclusion-based iteration remains intact (Phase 6 integration is automatic — vision runs on whatever text-filtered candidates remain after exclusions are applied)
-curation fields are populated on every vision-augmented import, ready for /tests/media-generation review controls
+Recent example:
+- `film-and-zine-afloat-2026` produced credible cruise lifestyle imagery, but several heroes drifted toward generic cruise marketing instead of clearly expressing the campaign identity.
+- That should have been rejected or forced into revision before image generation, not after six renders were created.
+
+Core conclusion:
+- Weak campaign distinctiveness is a production-build defect.
+- It must be blocked at the production build creation layer, with a final hard stop at the generation layer as a safety net.
+
+## Goal
+
+Add a real pre-generation spend gate so the system refuses to generate hero and concept images when the production build is structurally weak.
+
+The gate must answer:
+- Are the six landing stills sufficiently distinct from one another?
+- Is the niche identity present across the set, instead of being nearly invisible in most slots?
+- Are we overusing the same safe fallback composition patterns?
+- Are we about to spend money on a prompt pack that is highly likely to collapse into generic cruise lifestyle output?
+
+## Architectural Rule
+
+Responsibility split:
+- `aesthetic-engine` / production build creation: generate the build and lint it.
+- production-bible route: refuse to save an invalid build as ready.
+- production-bible UI: show lint failures clearly and prevent the operator from assuming the build is safe.
+- media generation layer: re-check the lint result and block generation if the build is still invalid.
+
+Human review should remain for taste and ranking, not for catching obvious prompt-pack defects.
+
+## Files To Change
+
+Primary files already in the path:
+- `lib/campaigns/aesthetic-engine.ts`
+- `app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts`
+- `app/(tests)/tests/production-bible/page.tsx`
+- `lib/campaigns/media/media-orchestrator.ts`
+- `app/api/groups/campaign/[slug]/media/generate/route.ts`
+- `app/api/groups/campaign/[slug]/media/test/images/route.ts`
+
+Likely new shared module:
+- `lib/campaigns/media/production-build-lint.ts`
+
+Schema updates likely needed:
+- `lib/campaigns/schema.ts`
+
+Optional diagnostic surface if useful:
+- `app/api/groups/campaign/[slug]/media/generate-plan/route.ts`
+
+## Required Implementation
+
+### 1. Create a shared production-build lint module
+
+Add a new shared evaluator in `lib/campaigns/media/production-build-lint.ts`.
+
+This module should accept the generated:
+- `landingStillBible`
+- `productionBible`
+- optionally campaign metadata such as theme name, ship name, target destination, and matched ship info
+
+It should return a typed report, not freeform text only.
+
+Required output shape:
+- overall verdict: `pass | warn | fail`
+- blocking issues array
+- warning issues array
+- score summary object
+- repeated-pattern diagnostics
+- per-still diagnostics
+- per-scene diagnostics if needed
+
+Do not use `any`.
+
+Suggested types:
+- `ProductionBuildLintReport`
+- `ProductionBuildLintIssue`
+- `ProductionBuildLintSeverity`
+- `ProductionBuildPatternSummary`
+- `ProductionBuildStillDiagnostic`
+
+## 2. Enforce hard lint rules on the landing still set
+
+The build must fail when the hero/still pack is structurally generic.
+
+Minimum required lint rules:
+
+### A. Slot differentiation rule
+- Compare all 6 landing stills.
+- Fail if 3 or more stills share essentially the same composition family.
+- Example repeated families to detect:
+	- two people at rail laughing
+	- quiet single-subject by round window
+	- generic seated dining intimacy
+	- distant deck couple with sea background
+- This does not need ML. Start with robust heuristic checks against fields like:
+	- `heroShotType`
+	- `approvedStillAction`
+	- `approvedStillLocation`
+	- `approvedStillMood`
+	- `imagePrompt`
+- Normalize tokens and detect repeated pattern clusters.
+
+### B. Niche signal floor
+- Fail if more than 3 of the 6 stills rely on pure cruise emotion with no discernible campaign-specific cue.
+- A cue can be:
+	- analog / film / zine behavior
+	- subtle artifact language like mini-print, point-and-shoot, postcard-size zine, notebook, cuff stitch
+	- a framing concept clearly linked to the campaign concept such as “Two Tiny Windows”
+- Do not require props in every image.
+- But the set must prove the campaign identity exists.
+
+### C. Generic fallback overuse rule
+- Fail if the set over-concentrates on generic safe outputs such as:
+	- rail-side laughter
+	- generic couple-at-sea
+	- generic contemplative window pose
+	- generic upscale dining with weak niche signal
+- This should be implemented as a repeated-template detector, not as subjective prose alone.
+
+### D. Distinct role coverage rule
+- The 6 stills must cover distinct jobs.
+- Require at least:
+	- 2 true hero-capable stills
+	- 2 editorial/concept stills
+	- 1 tighter or more intimate still that would not collapse into the same landing-hero read
+	- 1 still where campaign identity is legible on second glance
+- Fail if all six read like alternate versions of the same homepage hero.
+
+### E. Travel-first but not niche-erased rule
+- Warn when the niche cue is subtle but present.
+- Fail when the niche cue is absent across too much of the set.
+- The correct balance is cruise-first, not cruise-only.
+
+## 3. Store lint results on the brief
+
+Extend the brief schema so a production build carries lint state.
+
+Add a dedicated field, for example:
+- `productionBuildLint?: ProductionBuildLintReport`
+
+Optional helpful metadata:
+- `productionBuildStatus?: 'pending' | 'pass' | 'warn' | 'fail'`
+- `productionBuildEvaluatedAt?: string`
+
+This lets downstream routes and UIs read a normalized state instead of recomputing everything ad hoc.
+
+## 4. Run lint inside the production build creation route
+
+In `app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts`:
+- generate visual planning
+- immediately run the new build lint
+- attach lint report to the brief before saving
+
+Required route behavior:
+- If lint verdict is `fail`, return `409` or `422`
+- Include the structured lint report in the response
+- Do not mark the build as normally ready
+- Do not silently save a failed build as if it were acceptable
+
+Acceptable fallback behavior:
+- saving the failed build for diagnosis is fine if needed
+- but it must be explicitly marked failed and unusable for generation
+
+Do not allow the route to behave like “generated successfully” when the build is invalid.
+
+## 5. Surface lint failures in the production-bible test page
+
+In `app/(tests)/tests/production-bible/page.tsx`:
+- display overall lint verdict prominently
+- show blocking issues and warnings separately
+- show repeated-pattern findings in plain English
+- make it obvious which stills are too similar and why
+
+Operator UX requirements:
+- red failure banner when verdict is `fail`
+- amber warning banner when verdict is `warn`
+- list repeated hero families or weak cue patterns
+- disable or strongly warn before proceeding to image generation if lint is failing
+
+This page should become the operator’s pre-spend diagnostic view.
+
+## 6. Add a final hard stop in media generation
+
+In `lib/campaigns/media/media-orchestrator.ts`:
+- before starting hero image generation or aesthetic concept generation, read the lint state from the brief
+- if lint verdict is `fail`, throw a hard error and stop
+
+This is a safety net.
+
+The primary gate is the production build route.
+The media orchestrator must still guard against stale or bypassed flows.
+
+Error message should be explicit:
+- build invalid
+- do not spend on media generation
+- review repeated pattern issues and niche signal failures first
+
+## 7. Block the public generation route too
+
+In `app/api/groups/campaign/[slug]/media/generate/route.ts`:
+- preserve current behavior for valid builds
+- if orchestrator throws a production-build lint failure, return a clear non-200 error
+- do not hide it behind a generic 500 if it can be classified cleanly
+
+Prefer a user-facing response that tells the operator the build failed pre-generation quality checks.
+
+## 8. Block the image test route from bypassing the spend gate
+
+In `app/api/groups/campaign/[slug]/media/test/images/route.ts`:
+- before running `real_ship_hero` or `stability_concepts`, enforce the same lint gate
+- `ship_reference_search` may remain allowed
+- `sharp_crops` can remain allowed if a source image already exists
+
+Rationale:
+- test routes should not become a loophole that still burns image credits on bad build packs
+
+## 9. Add a cheap probe stage after build pass and before full spend
+
+After the main lint exists, add a staged-spend mode.
+
+Desired behavior:
+- generate 1 low-cost probe hero per still slot or 1 probe for a subset of key slots
+- store them as probe assets or mark them distinctly
+- require passable probe review before running the full hero set
+
+This can be phase 2 if needed, but the document should push toward it.
+
+If time is limited, implement phase 1 first:
+- structural lint + hard generation block
+
+## 10. Add a preflight API for build quality diagnostics
+
+Optional but recommended:
+- extend or parallel the existing `media/generate-plan` diagnostic route so it also returns production-build lint state
+- this makes it easy to inspect “would this build be blocked?” before any spend happens
+
+## Heuristics To Implement First
+
+Do not over-engineer the first version.
+Use deterministic heuristics first.
+
+Start by extracting normalized tokens from each landing still:
+- location family
+- action family
+- mood family
+- shot role
+- cue family
+- whether cue is explicit, subtle, or absent
+- whether image is hero-scale, editorial-scale, or intimate-scale
+
+Then compute:
+- repeated location clusters
+- repeated action clusters
+- repeated shot-role clusters
+- number of stills with no campaign cue
+- number of stills dominated by generic fallback templates
+
+First version should be explainable and predictable.
+
+## Concrete Failure Conditions
+
+The build should fail if any of these are true:
+- 3 or more landing stills collapse into the same composition family
+- 4 or more landing stills have no legible niche cue
+- 4 or more landing stills resolve to generic cruise-lifestyle templates
+- the set lacks role coverage across hero, editorial, and intimate/supporting stills
+- the set cannot point to at least 2 stills where the campaign identity is plausibly legible without reading copy
+
+The build should warn if any of these are true:
+- exactly 3 stills have weak niche signal but not total absence
+- there is mild repetition without full collapse
+- one cue family is slightly overused but not dominant
+
+## Suggested Data Model Changes
+
+Update schema definitions in `lib/campaigns/schema.ts` to support:
+- lint verdict enum
+- lint issue severity enum
+- typed issue records with fields like:
+	- `code`
+	- `severity`
+	- `message`
+	- `affectedStillIds`
+	- `details`
+
+Potential issue codes:
+- `repeated_composition_family`
+- `weak_niche_signal`
+- `generic_fallback_overuse`
+- `missing_role_coverage`
+- `hero_set_too_homogeneous`
+- `identity_legibility_too_low`
+
+## UI Expectations
+
+Production-bible page should show:
+- overall verdict badge
+- counts of blocking issues and warnings
+- a “Why this would waste spend” summary
+- per-still breakdown of cue strength and repetition family
+
+Helpful UI copy:
+- “This build is too homogeneous to justify hero-image spend.”
+- “Campaign identity is too weak across the landing still pack.”
+- “Revise the production build before generating hero imagery.”
+
+## Acceptance Criteria
+
+The work is complete when all of the following are true:
+
+1. A structurally weak build can be generated for inspection but is marked failed and cannot proceed to media spend.
+2. The production-bible route returns structured lint failures for weak hero/still packs.
+3. The production-bible test page shows those failures clearly.
+4. `media/generate` refuses to generate `hero_image` and `aesthetic_concept` assets for failed builds.
+5. `media/test/images` also refuses to bypass the gate for paid image generation.
+6. The failure response explains the reason in operator language, not only raw stack text.
+7. Lint logic is implemented in one shared module, not duplicated across routes.
+
+## Non-Goals
+
+Do not solve this by:
+- making the image model smarter
+- pushing more responsibility onto human review
+- adding vague prompt prose without enforceable rules
+- relying on expensive image probing as the first line of defense
+
+The first fix is pipeline governance.
+
+## Recommended Order Of Work
+
+1. Add typed lint schema and shared evaluator module.
+2. Run lint inside production-bible creation route.
+3. Surface verdict/issues in production-bible UI.
+4. Add orchestrator hard-stop.
+5. Add image test route hard-stop.
+6. Optionally add preflight diagnostic endpoint and probe stage.
+
+## Verification Plan
+
+Use at least one known weak case and one known strong case.
+
+Weak case expectation:
+- a campaign like `film-and-zine-afloat-2026` in its current weak-build state should produce a lint report with repetition and niche-signal failures, and should not be allowed to run hero/concept generation.
+
+Strong case expectation:
+- a campaign with a clearly differentiated still pack should pass lint and continue normally.
+
+Required validation:
+- unit tests for lint heuristics if feasible
+- route-level validation for failed build response shape
+- manual verification in `/tests/production-bible`
+- manual verification that `/media/generate` and `/media/test/images` block failed builds
+
+## Final Principle
+
+If the system can already predict “these six prompts will probably collapse into generic cruise lifestyle,” that prediction belongs before spend, not after rendering.
