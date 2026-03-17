@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runMediaGeneration, isGenerating, GenerationOptions } from '@/lib/campaigns/media/media-orchestrator';
+import { runMediaGeneration, isGenerating, GenerationOptions, ProductionBuildLintError } from '@/lib/campaigns/media/media-orchestrator';
 import { resolveVideoModelPresetIdFromRequest } from '@/lib/campaigns/media/video-model-preference';
 import { AssetType, AssetTypeEnum } from '@/lib/campaigns/schema';
 
@@ -89,6 +89,12 @@ export async function POST(
             jobSummary: result.jobSummary,
         });
     } catch (err) {
+        if (err instanceof ProductionBuildLintError) {
+            return NextResponse.json(
+                { error: err.message, code: err.code },
+                { status: 422 }
+            );
+        }
         const message = err instanceof Error ? err.message : String(err);
         return NextResponse.json({ error: message }, { status: 500 });
     }

@@ -42,6 +42,16 @@ import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
 
+export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
+
+export class ProductionBuildLintError extends Error {
+    readonly code = PRODUCTION_BUILD_LINT_FAILURE_CODE;
+    constructor(message: string) {
+        super(message);
+        this.name = 'ProductionBuildLintError';
+    }
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Media Generation Orchestrator
 // Coordinates all generators, uploads results to R2, writes DynamoDB records.
@@ -303,6 +313,28 @@ export async function runMediaGeneration(
             throw new Error(`No approved aesthetic brief found for campaign: ${slug}`);
         }
         assertAestheticBriefReadyForMedia(brief, slug);
+
+        // ── Production build lint gate ────────────────────────────────────
+        const spendGatedTypes: AssetType[] = ['hero_image', 'aesthetic_concept'];
+        const requestingSpendGatedTypes = spendGatedTypes.some(t => shouldRunAsset(t, resolvedOptions.assetTypes));
+
+        if (requestingSpendGatedTypes) {
+            const existingLintVerdict = brief.productionBuildStatus;
+
+            if (existingLintVerdict === 'fail') {
+                throw new ProductionBuildLintError(
+                    `Production build for ${slug} has failed pre-spend quality checks and cannot proceed to image generation. ` +
+                    `Review repeated pattern issues and niche signal failures in the production bible, then regenerate the build.`
+                );
+            }
+
+            if (!brief.landingStillBible || !brief.productionBuildStatus) {
+                throw new ProductionBuildLintError(
+                    `Production build for ${slug} has not been evaluated. ` +
+                    `Generate the production bible first to run pre-spend lint before generating hero or concept images.`
+                );
+            }
+        }
 
         // 2. Update campaign status
         await updateCampaignMediaStatus(slug, 'generating');

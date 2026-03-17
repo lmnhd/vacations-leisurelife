@@ -395,6 +395,81 @@ export function normalizeCommunityExpression(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Production Build Lint — Spend Gate Types
+// ────────────────────────────────────────────────────────────────────────────
+
+export const ProductionBuildLintVerdictEnum = z.enum(['pass', 'warn', 'fail']);
+export type ProductionBuildLintVerdict = z.infer<typeof ProductionBuildLintVerdictEnum>;
+
+export const ProductionBuildLintSeverityEnum = z.enum(['warning', 'blocker']);
+export type ProductionBuildLintSeverity = z.infer<typeof ProductionBuildLintSeverityEnum>;
+
+export const ProductionBuildLintIssueCodeEnum = z.enum([
+    'repeated_composition_family',
+    'weak_niche_signal',
+    'generic_fallback_overuse',
+    'missing_role_coverage',
+    'hero_set_too_homogeneous',
+    'identity_legibility_too_low',
+]);
+export type ProductionBuildLintIssueCode = z.infer<typeof ProductionBuildLintIssueCodeEnum>;
+
+export const ProductionBuildLintIssueSchema = z.object({
+    code: ProductionBuildLintIssueCodeEnum,
+    severity: ProductionBuildLintSeverityEnum,
+    message: z.string(),
+    affectedStillIds: z.array(z.string()),
+    details: z.string().optional(),
+});
+export type ProductionBuildLintIssue = z.infer<typeof ProductionBuildLintIssueSchema>;
+
+export const ProductionBuildPatternSummarySchema = z.object({
+    locationClusters: z.record(z.string(), z.array(z.string())),
+    actionClusters: z.record(z.string(), z.array(z.string())),
+    moodClusters: z.record(z.string(), z.array(z.string())),
+    genericFallbackStillIds: z.array(z.string()),
+    noCueStillIds: z.array(z.string()),
+    subtleCueStillIds: z.array(z.string()),
+    explicitCueStillIds: z.array(z.string()),
+});
+export type ProductionBuildPatternSummary = z.infer<typeof ProductionBuildPatternSummarySchema>;
+
+export const ProductionBuildStillDiagnosticSchema = z.object({
+    stillId: z.string(),
+    usage: z.string(),
+    locationFamily: z.string(),
+    actionFamily: z.string(),
+    moodFamily: z.string(),
+    shotRole: z.enum(['hero', 'editorial', 'intimate', 'supporting']),
+    cueStrength: z.enum(['explicit', 'subtle', 'absent']),
+    isGenericFallback: z.boolean(),
+    compositionFamily: z.string(),
+    flags: z.array(z.string()),
+});
+export type ProductionBuildStillDiagnostic = z.infer<typeof ProductionBuildStillDiagnosticSchema>;
+
+export const ProductionBuildLintReportSchema = z.object({
+    verdict: ProductionBuildLintVerdictEnum,
+    blockingIssues: z.array(ProductionBuildLintIssueSchema),
+    warnings: z.array(ProductionBuildLintIssueSchema),
+    scoreSummary: z.object({
+        totalStills: z.number(),
+        noCueCount: z.number(),
+        subtleCueCount: z.number(),
+        explicitCueCount: z.number(),
+        genericFallbackCount: z.number(),
+        heroRoleCount: z.number(),
+        editorialRoleCount: z.number(),
+        intimateRoleCount: z.number(),
+        maxCompositionFamilySize: z.number(),
+    }),
+    patternSummary: ProductionBuildPatternSummarySchema,
+    stillDiagnostics: z.array(ProductionBuildStillDiagnosticSchema),
+    evaluatedAt: z.string(),
+});
+export type ProductionBuildLintReport = z.infer<typeof ProductionBuildLintReportSchema>;
+
+// ────────────────────────────────────────────────────────────────────────────
 // Phase 1A + 1B Combined: Campaign Aesthetic Brief
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -480,6 +555,10 @@ export const CampaignAestheticBriefSchema = z.object({
 
     productionBible: ProductionBibleSchema.optional(),
     landingStillBible: LandingStillBibleSchema.optional(),
+
+    productionBuildLint: ProductionBuildLintReportSchema.optional(),
+    productionBuildStatus: z.enum(['pending', 'pass', 'warn', 'fail']).optional(),
+    productionBuildEvaluatedAt: z.string().optional(),
 
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),

@@ -11,12 +11,16 @@ import type {
     ShotSpec,
     AssetRecord,
     AssetType,
+    ProductionBuildLintReport,
+    ProductionBuildLintIssue,
+    ProductionBuildStillDiagnostic,
 } from "@/lib/campaigns/schema";
 import { ReviseRegenerateModal } from "./ReviseRegenerateModal";
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
-    AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert, Trash2
+    AlertTriangle, CheckCircle2, Zap, Wand2, DollarSign, ShieldCheck, ShieldAlert, Trash2,
+    XCircle, Info
 } from "lucide-react";
 import { CampaignSelector } from "../media-generation/campaign-selector";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
@@ -138,6 +142,9 @@ export default function ProductionBibleTestPage() {
 
     const isBusy = pageState !== "idle";
     const bible: ProductionBible | undefined = brief?.productionBible ?? undefined;
+    const lintReport: ProductionBuildLintReport | undefined = brief?.productionBuildLint ?? undefined;
+    const lintVerdict = brief?.productionBuildStatus ?? null;
+    const lintIsBlocking = lintVerdict === 'fail';
     const activeVideoPresetLabel = presets.find((entry) => entry.id === presetId)?.label ?? 'Loading video model...';
     const hasThemeMusic = Boolean(manifest?.audio.themeMusic);
 
@@ -411,13 +418,32 @@ export default function ProductionBibleTestPage() {
                 brief?: CampaignAestheticBrief;
                 error?: string;
                 details?: string;
+                lintVerdict?: string;
+                blockingIssues?: ProductionBuildLintIssue[];
             }>(res);
+
+            // 422 = build generated but failed lint gate — still reload so lint state is visible
+            if (res.status === 422) {
+                const blockCount = data.blockingIssues?.length ?? 0;
+                setGenerateLog(prev => [
+                    ...prev,
+                    `Build generated but FAILED lint gate (${blockCount} blocking issues).`,
+                    ...(data.blockingIssues ?? []).map((issue) => `BLOCKER: ${issue.message}`),
+                ]);
+                await loadData(slug.trim());
+                return;
+            }
+
             if (!res.ok) {
                 const errorMessage = (data.error as string | undefined) ?? `HTTP ${res.status}`;
                 const errorDetails = (data.details as string | undefined) ?? "";
                 throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
             }
-            setGenerateLog(prev => [...prev, `Done — ${data.brief?.productionBible?.sceneLibrary?.length ?? 0} new scenes generated`]);
+            const sceneCount = data.brief?.productionBible?.sceneLibrary?.length ?? 0;
+            setGenerateLog(prev => [
+                ...prev,
+                `Done — ${sceneCount} scenes generated. Lint verdict: ${data.lintVerdict ?? 'unknown'}.`,
+            ]);
             await loadData(slug.trim());
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -539,6 +565,15 @@ export default function ProductionBibleTestPage() {
                                     ) : (
                                         <span className="text-red-400">Not generated</span>
                                     )}
+                                    {lintVerdict && (
+                                        <span className={`ml-2 font-medium ${
+                                            lintVerdict === 'fail' ? 'text-red-400'
+                                            : lintVerdict === 'warn' ? 'text-amber-400'
+                                            : 'text-green-400'
+                                        }`}>
+                                            • Build Lint: {lintVerdict.toUpperCase()}
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -549,6 +584,142 @@ export default function ProductionBibleTestPage() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ── Production Build Quality Gate ── */}
+                {lintReport && (
+                    <div className={`border rounded p-4 space-y-3 ${
+                        lintVerdict === 'fail'
+                            ? 'bg-red-950/40 border-red-800'
+                            : lintVerdict === 'warn'
+                                ? 'bg-amber-950/30 border-amber-800'
+                                : 'bg-green-950/30 border-green-800'
+                    }`}>
+                        {/* Verdict banner */}
+                        <div className="flex items-center gap-3">
+                            {lintVerdict === 'fail' && <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
+                            {lintVerdict === 'warn' && <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />}
+                            {lintVerdict === 'pass' && <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />}
+                            <div>
+                                <div className={`font-semibold text-sm ${
+                                    lintVerdict === 'fail' ? 'text-red-300'
+                                    : lintVerdict === 'warn' ? 'text-amber-300'
+                                    : 'text-green-300'
+                                }`}>
+                                    {lintVerdict === 'fail' && 'Production Build Failed — Image Generation Blocked'}
+                                    {lintVerdict === 'warn' && 'Production Build Passed With Warnings'}
+                                    {lintVerdict === 'pass' && 'Production Build Passed — Ready for Image Generation'}
+                                </div>
+                                <div className="text-xs text-zinc-400 mt-0.5">
+                                    {lintReport.blockingIssues.length > 0 && (
+                                        <span className="text-red-400 mr-3">{lintReport.blockingIssues.length} blocking issue{lintReport.blockingIssues.length !== 1 ? 's' : ''}</span>
+                                    )}
+                                    {lintReport.warnings.length > 0 && (
+                                        <span className="text-amber-400 mr-3">{lintReport.warnings.length} warning{lintReport.warnings.length !== 1 ? 's' : ''}</span>
+                                    )}
+                                    <span className="text-zinc-500">
+                                        {lintReport.scoreSummary.totalStills} stills evaluated
+                                        {' • '}{lintReport.scoreSummary.explicitCueCount} explicit cue
+                                        {' • '}{lintReport.scoreSummary.subtleCueCount} subtle
+                                        {' • '}{lintReport.scoreSummary.noCueCount} absent
+                                        {' • '}{lintReport.scoreSummary.genericFallbackCount} generic fallback
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Why this would waste spend */}
+                        {lintVerdict === 'fail' && (
+                            <div className="bg-red-950/60 border border-red-800/60 rounded px-3 py-2 text-xs text-red-300">
+                                <span className="font-medium">This build is too homogeneous to justify hero-image spend.</span>
+                                {' '}Revise the production build before generating hero imagery.
+                            </div>
+                        )}
+
+                        {/* Blocking issues */}
+                        {lintReport.blockingIssues.length > 0 && (
+                            <div className="space-y-1.5">
+                                <div className="text-xs font-semibold text-red-400 uppercase tracking-wide">Blocking Issues</div>
+                                {lintReport.blockingIssues.map((issue: ProductionBuildLintIssue, idx: number) => (
+                                    <div key={idx} className="bg-red-950/50 border border-red-800/50 rounded px-3 py-2">
+                                        <div className="text-xs font-medium text-red-300">{issue.message}</div>
+                                        {issue.details && <div className="text-xs text-red-400/80 mt-0.5">{issue.details}</div>}
+                                        {issue.affectedStillIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                {issue.affectedStillIds.map(id => (
+                                                    <span key={id} className="bg-red-900/40 border border-red-700 text-red-300 text-[11px] px-1.5 py-0.5 rounded-full font-mono">{id}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Warnings */}
+                        {lintReport.warnings.length > 0 && (
+                            <div className="space-y-1.5">
+                                <div className="text-xs font-semibold text-amber-400 uppercase tracking-wide">Warnings</div>
+                                {lintReport.warnings.map((issue: ProductionBuildLintIssue, idx: number) => (
+                                    <div key={idx} className="bg-amber-950/40 border border-amber-800/50 rounded px-3 py-2">
+                                        <div className="text-xs font-medium text-amber-300">{issue.message}</div>
+                                        {issue.affectedStillIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {issue.affectedStillIds.map(id => (
+                                                    <span key={id} className="bg-amber-900/40 border border-amber-700 text-amber-300 text-[11px] px-1.5 py-0.5 rounded-full font-mono">{id}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Per-still diagnostics */}
+                        {lintReport.stillDiagnostics.length > 0 && (
+                            <details className="group">
+                                <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5 list-none [&::-webkit-details-marker]:hidden">
+                                    <ChevronRight className="w-3.5 h-3.5 group-open:rotate-90 transition-transform" />
+                                    Per-still breakdown
+                                </summary>
+                                <div className="mt-2 space-y-1.5">
+                                    {lintReport.stillDiagnostics.map((d: ProductionBuildStillDiagnostic) => (
+                                        <div key={d.stillId} className={`flex items-start gap-3 rounded px-2.5 py-2 text-xs ${
+                                            d.flags.includes('no_niche_cue') || d.isGenericFallback
+                                                ? 'bg-red-950/30 border border-red-900/50'
+                                                : d.flags.includes('weak_niche_cue')
+                                                    ? 'bg-amber-950/20 border border-amber-900/40'
+                                                    : 'bg-zinc-800/50 border border-zinc-700/50'
+                                        }`}>
+                                            <div className="shrink-0 mt-0.5">
+                                                {d.cueStrength === 'explicit' && <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />}
+                                                {d.cueStrength === 'subtle' && <Info className="w-3.5 h-3.5 text-amber-400" />}
+                                                {d.cueStrength === 'absent' && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0 space-y-0.5">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-mono font-medium text-zinc-200">{d.stillId}</span>
+                                                    <span className="text-zinc-500">{d.usage}</span>
+                                                    <span className="bg-zinc-700 px-1.5 py-0.5 rounded text-zinc-400">{d.shotRole}</span>
+                                                    <span className={`px-1.5 py-0.5 rounded ${
+                                                        d.cueStrength === 'explicit' ? 'bg-green-900/50 text-green-400'
+                                                        : d.cueStrength === 'subtle' ? 'bg-amber-900/40 text-amber-400'
+                                                        : 'bg-red-900/40 text-red-400'
+                                                    }`}>cue: {d.cueStrength}</span>
+                                                    {d.isGenericFallback && (
+                                                        <span className="bg-orange-900/40 text-orange-400 border border-orange-800/50 px-1.5 py-0.5 rounded">generic template</span>
+                                                    )}
+                                                </div>
+                                                <div className="text-zinc-500">
+                                                    {d.locationFamily} · {d.actionFamily} · {d.moodFamily} · family: <span className="font-mono">{d.compositionFamily}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </details>
+                        )}
                     </div>
                 )}
 
@@ -676,7 +847,7 @@ export default function ProductionBibleTestPage() {
                             className="bg-rose-900/50 hover:bg-rose-800/50 border border-rose-700 text-rose-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={handleRegenerateBible}
                             disabled={isBusy || !slug.trim()}
-                            title="Rewrites all scene specs using updated creative direction — do this before generating images"
+                            title="Rewrites all scene specs and re-runs lint gate — do this before generating images"
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                             Regenerate Production Bible
@@ -688,7 +859,7 @@ export default function ProductionBibleTestPage() {
                             className="bg-cyan-900/50 hover:bg-cyan-800/50 border border-cyan-700 text-cyan-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={() => void handleGenerateSceneImages()}
                             disabled={isBusy || !bible}
-                            title={!bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved unless you explicitly force regeneration via the API."}
+                            title={!bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved."}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
                             Generate Scene Images
@@ -713,7 +884,8 @@ export default function ProductionBibleTestPage() {
                         <button
                             className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={handleGenerateAll}
-                            disabled={isBusy}
+                            disabled={isBusy || lintIsBlocking}
+                            title={lintIsBlocking ? 'Production build has failed lint gate — fix the build before running the full pipeline' : 'Run full media generation pipeline'}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                             Full Pipeline

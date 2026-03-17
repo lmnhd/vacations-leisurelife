@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red-team';
+import { PRODUCTION_BUILD_LINT_FAILURE_CODE } from '@/lib/campaigns/media/media-orchestrator';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
 import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
@@ -56,6 +57,29 @@ export async function POST(
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Brief failed release gate.';
         return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts'];
+    if (PAID_GENERATORS.includes(generator)) {
+        const lintVerdict = brief.productionBuildStatus;
+        if (lintVerdict === 'fail') {
+            return NextResponse.json(
+                {
+                    error: 'Production build for this campaign has failed pre-spend quality checks. Test image generation is blocked to prevent wasting image credits. Regenerate and fix the production build first.',
+                    code: PRODUCTION_BUILD_LINT_FAILURE_CODE,
+                },
+                { status: 422 }
+            );
+        }
+        if (!brief.landingStillBible || !brief.productionBuildStatus) {
+            return NextResponse.json(
+                {
+                    error: 'Production build has not been evaluated for this campaign. Generate the production bible first before running paid image generators.',
+                    code: PRODUCTION_BUILD_LINT_FAILURE_CODE,
+                },
+                { status: 422 }
+            );
+        }
     }
 
     try {

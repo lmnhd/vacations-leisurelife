@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
 import { generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+import { lintProductionBuild } from "@/lib/campaigns/media/production-build-lint";
 
 // Keep hobby-plan deployments valid; production access is blocked by middleware unless explicitly enabled.
 export const maxDuration = 60;
@@ -29,16 +30,44 @@ export async function POST(
 
         const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
 
+        const lintReport = lintProductionBuild({
+            landingStillBible: visualPlanning.landingStillBible,
+            productionBible: visualPlanning.productionBible,
+            themeName: campaign.name,
+            nicheKeywords: campaign.targetingKeywords ?? [],
+        });
+
         const updatedBrief = {
             ...brief,
             landingStillBible: visualPlanning.landingStillBible,
             productionBible: visualPlanning.productionBible,
+            productionBuildLint: lintReport,
+            productionBuildStatus: lintReport.verdict,
+            productionBuildEvaluatedAt: lintReport.evaluatedAt,
             humanReviewStatus: 'pending' as const,
             redTeamReview: undefined,
         };
+
         await saveAestheticBrief(updatedBrief);
 
-        return NextResponse.json({ brief: updatedBrief }, { status: 200 });
+        if (lintReport.verdict === 'fail') {
+            return NextResponse.json(
+                {
+                    error: "Production build failed pre-spend quality checks — do not proceed to image generation.",
+                    lintVerdict: lintReport.verdict,
+                    blockingIssues: lintReport.blockingIssues,
+                    warnings: lintReport.warnings,
+                    scoreSummary: lintReport.scoreSummary,
+                    brief: updatedBrief,
+                },
+                { status: 422 }
+            );
+        }
+
+        return NextResponse.json(
+            { brief: updatedBrief, lintVerdict: lintReport.verdict, lintReport },
+            { status: 200 }
+        );
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error("[Production Bible Generation Error]:", error);
