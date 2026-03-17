@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
-import { runAestheticModification } from '@/lib/campaigns/aesthetic-modification';
+import { runAestheticModification, FixerPathError, AllNoOpError } from '@/lib/campaigns/aesthetic-modification';
 import { AestheticModificationRequestSchema, AestheticIssueCodeEnum, AestheticOperationKindEnum } from '@/lib/campaigns/schema';
+import { isAllowedTargetPath } from '@/lib/campaigns/aesthetic-fixers/registry';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/aesthetic/modify
@@ -45,12 +46,18 @@ export async function POST(
             }
         }
 
-        // Validate operation kinds are known
+        // Validate explicit operations: kind must be known, targetPath must be whitelisted
         for (const op of request.operations ?? []) {
             if (!AestheticOperationKindEnum.options.includes(op.kind)) {
                 return NextResponse.json(
                     { error: `Unknown operation kind: "${op.kind}". See validOperationKinds for supported values.`, validOperationKinds: AestheticOperationKindEnum.options },
                     { status: 400 },
+                );
+            }
+            if (op.kind !== 'replace_countdown_series' && !isAllowedTargetPath(op.targetPath)) {
+                return NextResponse.json(
+                    { error: `Operation target path "${op.targetPath}" is not a valid brief field. Only explicitly whitelisted schema paths are allowed.` },
+                    { status: 422 },
                 );
             }
         }
@@ -93,6 +100,12 @@ export async function POST(
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error('[Aesthetic Modify Error]:', error);
 
+        if (error instanceof FixerPathError) {
+            return NextResponse.json({ error: error.message }, { status: 422 });
+        }
+        if (error instanceof AllNoOpError) {
+            return NextResponse.json({ error: error.message, hint: 'The brief already satisfies the requested constraints. No changes needed.' }, { status: 409 });
+        }
         if (message.includes('No aesthetic brief')) {
             return NextResponse.json({ error: message }, { status: 404 });
         }

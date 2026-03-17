@@ -17,7 +17,17 @@ import {
     runOperation,
     ISSUE_CODE_OPERATIONS,
     suggestDeterministicIssueCodes,
+    FixerPathError,
 } from './aesthetic-fixers/registry';
+
+export { FixerPathError };
+
+export class AllNoOpError extends Error {
+    constructor() {
+        super('All operations were no-ops — nothing in the brief matched the requested fixes.');
+        this.name = 'AllNoOpError';
+    }
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Paths that affect visual planning (trigger lint/bible invalidation)
@@ -130,12 +140,19 @@ export async function runAestheticModification(
     const allFollowUps: string[] = [];
     const appliedIssueCodes: AestheticIssueCode[] = [];
 
+    // FixerPathError propagates immediately — caller maps to 422
     for (const op of resolvedOperations) {
         const result = runOperation(currentBrief, op);
         currentBrief = result.brief;
         allTouchedPaths.push(...result.touchedPaths);
         allAppliedOps.push(...result.appliedOperations);
         allFollowUps.push(...result.followUps);
+    }
+
+    // Reject if nothing actually changed — prevents misleading success: true no-op responses
+    const anyApplied = allAppliedOps.some(o => o.status === 'applied');
+    if (!anyApplied) {
+        throw new AllNoOpError();
     }
 
     // Collect applied issue codes from request
