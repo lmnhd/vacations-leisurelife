@@ -3,6 +3,7 @@ import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { CampaignAestheticBriefSchema, ProductionBibleSchema, LandingStillBibleSchema } from '@/lib/campaigns/schema';
+import { runAestheticRedTeamReview } from '@/lib/campaigns/aesthetic-red-team';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -50,9 +51,11 @@ export interface AestheticRevisionResult {
     message: string;
     revisionSummary: string;
     addressedFixes: string[];
-    /** The requiredFixes from the red-team review that was addressed. Pass to red-team re-review. */
+    /** The requiredFixes from the red-team review that was addressed. */
     priorRequiredFixes: string[];
     revisionCycleCount: number;
+    /** Fresh red-team verdict from auto-chained re-review after revision. */
+    autoReviewVerdict: 'pass' | 'warn' | 'block';
 }
 
 export interface AestheticDeadlockResult {
@@ -148,9 +151,11 @@ MANDATORY SWEEPS — Before returning, verify every one of these:
 
     const revisedBrief = CampaignAestheticBriefSchema.parse({
         ...object.brief,
-        // Strip nulls — the model returns null for missing bibles; persisted schema uses undefined
-        productionBible: object.brief.productionBible ?? undefined,
-        landingStillBible: object.brief.landingStillBible ?? undefined,
+        // Preserve operator-generated bibles — the revision LLM cannot produce these,
+        // so carry forward the originals. They will be regenerated after approval if the
+        // revision materially changed scenes/storyboards.
+        productionBible: brief.productionBible ?? undefined,
+        landingStillBible: brief.landingStillBible ?? undefined,
         slug: brief.slug,
         generatedAt: brief.generatedAt,
         generatedBy: brief.generatedBy,
@@ -162,12 +167,27 @@ MANDATORY SWEEPS — Before returning, verify every one of these:
 
     await saveAestheticBrief(revisedBrief);
 
+    // ── Auto-chain red team re-review ────────────────────────────────────────
+    const freshReview = await runAestheticRedTeamReview(campaign, revisedBrief, {
+        priorRequiredFixes: review.requiredFixes,
+    });
+
+    const briefWithReview = {
+        ...revisedBrief,
+        redTeamReview: freshReview,
+        humanReviewStatus: freshReview.verdict === 'pass' ? revisedBrief.humanReviewStatus : 'revised' as const,
+    };
+    await saveAestheticBrief(briefWithReview);
+
     return {
-        brief: revisedBrief,
-        message: 'Aesthetic brief revised successfully. Re-run red team to score the updated brief before approving.',
+        brief: briefWithReview,
+        message: freshReview.verdict === 'pass'
+            ? 'Aesthetic brief revised and passed red team. Ready for approval.'
+            : `Aesthetic brief revised. Auto re-review verdict: ${freshReview.verdict}.`,
         revisionSummary: object.revisionSummary,
         addressedFixes: object.addressedFixes,
         priorRequiredFixes: review.requiredFixes,
         revisionCycleCount: currentCycle,
+        autoReviewVerdict: freshReview.verdict,
     };
 }

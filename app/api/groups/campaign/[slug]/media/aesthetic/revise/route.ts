@@ -58,6 +58,7 @@ export async function POST(
                 addressedFixes: result.addressedFixes,
                 priorRequiredFixes: result.priorRequiredFixes,
                 revisionCycleCount: result.revisionCycleCount,
+                autoReviewVerdict: result.autoReviewVerdict,
             },
             { status: 200 },
         );

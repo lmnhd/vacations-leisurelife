@@ -297,10 +297,9 @@ export default function AestheticDevisingTestPage() {
                 throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
             }
 
-            // Capture priorRequiredFixes for re-review handoff
-            if (Array.isArray(data.priorRequiredFixes)) {
-                setPriorRequiredFixes(data.priorRequiredFixes as string[]);
-            }
+            // Red team re-review is now auto-chained — no manual re-run needed.
+            // Clear priorRequiredFixes since the revision already consumed them.
+            setPriorRequiredFixes([]);
 
             setResult(data.brief as CampaignAestheticBrief);
             setLoadedSlug(normalizedSlug);

@@ -20,10 +20,10 @@ function buildDeterministicIssues(brief: CampaignAestheticBrief): RedTeamIssue[]
     if (!brief.productionBible) {
         issues.push({
             category: 'production_feasibility',
-            severity: 'blocker',
+            severity: 'warning',
             title: 'Production bible missing',
             evidence: 'The brief has no productionBible, so scene feasibility and motion safety cannot be fully audited before launch.',
-            recommendation: 'Generate the production bible, then rerun red team before approval.',
+            recommendation: 'Generate the production bible before final approval. This does not block the revision cycle.',
         });
     }
 
