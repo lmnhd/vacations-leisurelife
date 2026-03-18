@@ -77,6 +77,8 @@ const Pass1Schema = CampaignAestheticBriefSchema.omit({
     productionBuildStatus: true,
     productionBuildEvaluatedAt: true,
     modificationHistory: true,
+    issueLedger: true,
+    activeRemediationPlan: true,
     generatedAt: true,
     generatedBy: true,
     humanReviewStatus: true,
@@ -116,6 +118,8 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     productionBuildStatus: true,
     productionBuildEvaluatedAt: true,
     modificationHistory: true,
+    issueLedger: true,
+    activeRemediationPlan: true,
     generatedAt: true,
     generatedBy: true,
     humanReviewStatus: true,
@@ -581,7 +585,8 @@ PASS 2 GUARDRAILS:
         prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`
     });
 
-    // Assemble final brief (Production Bible generated separately via /media/aesthetic/production-bible)
+    // Assemble the core brief. The default generate route now immediately follows
+    // with visual-planning generation so saved briefs include production artifacts.
     const draftBrief: CampaignAestheticBrief = {
         slug: campaign.id,
         themeName: campaign.name,
@@ -618,8 +623,8 @@ const VisualPlanningBundleSchema = z.object({
 
 type VisualPlanningBundle = z.infer<typeof VisualPlanningBundleSchema>;
 
-// Public entry point — called from the dedicated /media/aesthetic/production-bible route.
-// Takes the already-saved brief so the route doesn't need the internal Pass types.
+// Public entry point for explicit production-bible refreshes.
+// The default /media/aesthetic generate route also calls visual planning automatically.
 export async function generateProductionBibleFromBrief(
     campaign: Campaign,
     brief: CampaignAestheticBrief
@@ -648,14 +653,57 @@ export async function generateVisualPlanningFromBrief(
         videoConcepts: brief.videoConcepts,
     } as z.infer<typeof Pass2Schema>;
 
-    return generateVisualPlanningBundle(model, campaign, coreAesthetic, platformConcepts);
+    const remediationContext = buildVisualPlanningRemediationContext(brief);
+
+    return generateVisualPlanningBundle(model, campaign, coreAesthetic, platformConcepts, remediationContext);
+}
+
+function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): string {
+    const openIssues = (brief.issueLedger ?? []).filter(issue =>
+        (issue.status === 'open' || issue.status === 'failed')
+        && ['brief', 'production_bible', 'landing_still_bible', 'cross_artifact'].includes(issue.owningArtifact),
+    );
+
+    const dedupedIssues = Array.from(new Map(
+        openIssues.map(issue => [`${issue.title}::${issue.summary}`, issue]),
+    ).values());
+
+    const lines: string[] = [];
+
+    if (brief.redTeamReview?.requiredFixes?.length) {
+        lines.push('Prior required fixes that remain binding until explicitly closed:');
+        brief.redTeamReview.requiredFixes.forEach((fix, index) => {
+            lines.push(`${index + 1}. ${fix}`);
+        });
+    }
+
+    if (dedupedIssues.length) {
+        lines.push('Open issue-ledger constraints to close in this generation pass:');
+        dedupedIssues.forEach((issue, index) => {
+            const targetPaths = issue.targetPaths.length > 0 ? ` | Target paths: ${issue.targetPaths.join(', ')}` : '';
+            const evidence = issue.evidence[0] ? ` | Evidence: ${issue.evidence[0]}` : '';
+            lines.push(`${index + 1}. [${issue.severity}] ${issue.title} -> ${issue.summary}${targetPaths}${evidence}`);
+        });
+    }
+
+    if (lines.length === 0) {
+        return 'No unresolved remediation constraints were provided for visual-planning generation.';
+    }
+
+    return [
+        'UNRESOLVED REMEDIATION CONSTRAINTS:',
+        'Treat every blocker below as a hard failure condition for the new production bible and landing still bible.',
+        'Do not reproduce blocked camera moves, blocked venue assumptions, blocked upholstery/stamping logic, empty-scene conflicts, or previously rejected planning language simply because similar text appears elsewhere in the brief.',
+        ...lines,
+    ].join('\n');
 }
 
 async function generateVisualPlanningBundle(
     model: ReturnType<typeof openai>,
     campaign: Campaign,
     coreAesthetic: z.infer<typeof Pass1Schema>,
-    platformConcepts: z.infer<typeof Pass2Schema>
+    platformConcepts: z.infer<typeof Pass2Schema>,
+    remediationContext: string,
 ): Promise<VisualPlanningBundle> {
     const { visual, messaging, communityExpression, audio } = coreAesthetic;
     const plausibility = visual.plausibilityFramework;
@@ -769,6 +817,9 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 2. A SCENE LIBRARY of 10 distinct scenes for motion/storyboard generation.
 3. STORYBOARDS for each video deliverable — ordered shot sequences that build desire.
 
+## LEGACY FIX CARRY-FORWARD RULE
+You are not generating from a blank slate. The unresolved remediation constraints provided in the prompt are binding. If prior review blocked a pattern, location assumption, motion grammar, or production-planning contradiction, you must explicitly remove or replace it in this new output. Do not silently preserve prior failures.
+
 ## LANDING STILL BIBLE RULES
 - These are NOT storyboard shots. They are conversion-oriented still-image blueprints.
 - Every still must read instantly as a desirable cruise vacation image even with no motion and no sequence context.
@@ -826,7 +877,7 @@ NO scene should evoke: obligation, seriousness, focus, concentration, rigor, pro
 - If an object cue is used, it must be incidental and must not be repeated as the signature beat of consecutive scenes.
 - For scene-library prompts intended for storyboard video, avoid foreground hands, close handheld objects, mugs, cups, glasses, and face-dominant portrait framing.
 - Style suffix to include in every prompt: "observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing"
-- Ship-specific visual language: polished teak promenade rails, curved ship-hull portholes with sea light, Windjammer Café open-air terrace, Centrum atrium glass elevators, pool deck sun loungers with ocean beyond. Reference these to anchor images in ship reality rather than generic cruise or resort visual language.
+- Ship-specific visual language: polished teak promenade rails, curved ship-hull portholes with sea light, Windjammer Café window-side seating, Centrum atrium glass elevators, pool deck sun loungers with ocean beyond. Reference these to anchor images in ship reality rather than generic cruise or resort visual language.
 - AVOID in style suffix and prompts: "aspirational," "cinematic bokeh," "f/1.8," "golden hour warmth" as defaults. These push output toward generic premium-travel finish. Use natural mid-day ship light, overcast sea light, or late-afternoon deck light instead.
 - BANNED WORDS in imagePrompt: "participant", "conduct", "deploy", "adjust", "conference", "training", "corporate", "business", "focus", "analyze", "study", "examine", "monitor", "record", "clipboard", "whiteboard", "presentation", "organized", "structured", "planter", "hanging greenery", "tropical foliage", "resort pool", "palm-lined".
 - REQUIRED ENERGY: every imagePrompt must feel like a real moment you would be glad to have captured, not a shot someone planned and lit.
@@ -889,6 +940,8 @@ Solitude Anti-Patterns: ${communityExpression.solitudeAntiPatterns.join('; ')}
 Visual Togetherness Notes: ${communityExpression.visualTogethernessNotes}
 Copy Framing Rule: ${communityExpression.copyFramingRule}
 Music Mood: ${audio.musicMood}
+
+${remediationContext}
 
 REMINDER: The above describes the campaign THEME. Your job is to turn that theme into VACATION DAYDREAM imagery — artsy, warm, joyful, never formal or serious.
 Plausibility Governing Principle: ${plausibility.governingPrinciple}

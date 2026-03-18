@@ -27,7 +27,7 @@ interface AestheticCampaignMeta {
     matchedSailDate: string | null;
 }
 
-const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief to create one.";
+const EMPTY_BRIEF_MESSAGE = "No brief exists for this slug yet. Use Generate Brief + Build to create one.";
 
 export default function AestheticDevisingTestPage() {
     const [slug, setSlug] = useState("");
@@ -174,7 +174,7 @@ export default function AestheticDevisingTestPage() {
         }
     };
 
-    // ── GENERATE ─────────────────────────────────────────────────────────────
+    // ── GENERATE BRIEF + VISUAL BUILD ───────────────────────────────────────
     const handleGenerate = async () => {
         if (!normalizedSlug) return;
 
@@ -253,7 +253,7 @@ export default function AestheticDevisingTestPage() {
         }
     };
 
-    // ── GENERATE PRODUCTION BIBLE ─────────────────────────────────────────────
+    // ── REFRESH PRODUCTION BIBLE / VISUAL BUILD ─────────────────────────────
     const handleGenerateBible = async () => {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("generating_bible");
@@ -656,13 +656,13 @@ export default function AestheticDevisingTestPage() {
                                 </button>
                             )}
 
-                            {/* Production Bible */}
+                            {/* Production Bible refresh */}
                             {hasLoadedBriefForCurrentSlug && result && (
                                 <button
                                     id="btn-generate-bible"
                                     onClick={handleGenerateBible}
                                     disabled={isBusy}
-                                    title={result.productionBible ? "Regenerate Production Bible" : "Generate Production Bible (Pass 3 — slow, ~2-4 min)"}
+                                                    title={result.productionBible ? "Refresh Production Bible from the current brief" : "Generate Production Bible from the current brief"}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                                 >
                                     {briefState === "generating_bible"
@@ -670,10 +670,10 @@ export default function AestheticDevisingTestPage() {
                                         : <Wand2 className="h-4 w-4" />
                                     }
                                     {briefState === "generating_bible"
-                                        ? "Generating Bible..."
+                                                        ? "Refreshing Build..."
                                         : result.productionBible
-                                            ? "Re-gen Bible"
-                                            : "Generate Bible"
+                                                            ? "Refresh Build"
+                                                            : "Generate Build"
                                     }
                                 </button>
                             )}

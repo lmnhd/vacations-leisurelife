@@ -1,0 +1,121 @@
+[
+    {
+        "severity":  "blocker",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Windjammer ‚??open‚??air terrace‚?ù likely not compatible with target ship",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "deterministic",
+        "issueCode":  "privacy_line_missing",
+        "title":  "Theater‚??lobby beat risks filming near active queues",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Branded venue names appear in public‚??facing beats",
+        "targetPaths":  [
+                            "messaging.heroSlogan",
+                            "messaging.subSlogan",
+                            "messaging.elevatorPitch"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Conflict with ‚??No empty/unpopulated scenes‚?ù rule",
+        "targetPaths":  [
+                            "messaging.heroSlogan",
+                            "messaging.subSlogan",
+                            "messaging.elevatorPitch"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Off‚??ship capture lacks explicit local permission guidance",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Production avoidDirectives don‚??t mirror visual bans",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Landing stills over‚??index on rail‚??pair compositions",
+        "targetPaths":  [
+                            "messaging.elevatorPitch",
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Diversity intent not anchored to hero still selections",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "privacy_line_missing",
+        "title":  "Deterministic: privacy line missing",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "cabin_type_plausibility",
+        "title":  "Deterministic: cabin type plausibility",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "production_safety_ops_missing",
+        "title":  "Deterministic: production safety ops missing",
+        "targetPaths":  [
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Brief avoidList terms absent from productionBible avoidDirectives",
+        "targetPaths":  [
+                            "productionBible.avoidDirectives"
+                        ]
+    }
+]

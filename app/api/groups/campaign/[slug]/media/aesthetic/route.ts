@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCampaignBlueprint, saveAestheticBrief, getAestheticBrief, deleteAestheticBrief } from "@/lib/campaigns/campaign-store";
-import { generateAestheticBrief } from "@/lib/campaigns/aesthetic-engine";
+import { generateAestheticBrief, generateVisualPlanningFromBrief } from "@/lib/campaigns/aesthetic-engine";
+import { lintProductionBuild } from "@/lib/campaigns/media/production-build-lint";
 
 export async function GET(
     req: NextRequest,
@@ -32,15 +33,37 @@ export async function POST(
             return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
         }
 
-        // Call the two-pass engine
         const brief = await generateAestheticBrief(campaign);
+        const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
+        const lintReport = lintProductionBuild({
+            landingStillBible: visualPlanning.landingStillBible,
+            productionBible: visualPlanning.productionBible,
+            themeName: campaign.name,
+            nicheKeywords: campaign.targetingKeywords ?? [],
+        });
 
-        // Persist to DynamoDB via our storage util
-        await saveAestheticBrief(brief);
+        const completedBrief = {
+            ...brief,
+            landingStillBible: visualPlanning.landingStillBible,
+            productionBible: visualPlanning.productionBible,
+            productionBuildLint: lintReport,
+            productionBuildStatus: lintReport.verdict,
+            productionBuildEvaluatedAt: lintReport.evaluatedAt,
+            redTeamReview: undefined,
+        };
+
+        await saveAestheticBrief(completedBrief);
 
         console.log(`[aesthetic-route] POST completed for ${slug}`);
 
-        return NextResponse.json(brief, { status: 200 });
+        return NextResponse.json(
+            {
+                ...completedBrief,
+                lintVerdict: lintReport.verdict,
+                lintReport,
+            },
+            { status: 200 },
+        );
 
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";

@@ -1,0 +1,1 @@
+{"ok":false,"message":"The remote server returned an error: (500) Internal Server Error.","details":"{\"error\":\"Failed to generate production bible\",\"details\":\"Failed after 3 attempts. Last error: Cannot connect to API: Headers Timeout Error\"}"}

@@ -15,6 +15,7 @@ import {
     isAllowedTargetPath,
     ISSUE_CODE_OPERATIONS,
     ALLOWED_OPERATION_PATHS,
+    suggestDeterministicIssueCodes,
 } from '../aesthetic-fixers/registry';
 import { FixerPathError, AllNoOpError } from '../aesthetic-modification';
 
@@ -318,6 +319,40 @@ test('no-ops when no branded names present', () => {
     assert.equal(result.appliedOperations[0].status, 'no_op');
 });
 
+test('normalizes ship-incompatible venue phrasing inside productionBible.sceneLibrary', () => {
+    const brief = makeBrief({
+        productionBible: {
+            storyboards: [],
+            globalDirectionNotes: 'Keep ship spaces believable.',
+            avoidDirectives: [],
+            sceneLibrary: [
+                {
+                    sceneId: 'S10',
+                    location: 'Windjammer Cafe open-air terrace/window side',
+                    timeOfDay: 'late afternoon',
+                    lighting: 'soft natural light',
+                    cameraAngle: 'eye-level',
+                    subjectAction: 'Two guests chat over coffee.',
+                    environmentDetails: 'Ocean visible beyond the seating area.',
+                    mood: 'easy and relaxed',
+                    imagePrompt: 'Late lunch glow at the Windjammer Cafe open-air terrace/window side.',
+                    referenceCategory: 'ship_interior',
+                },
+            ],
+        },
+    });
+
+    const result = runOperation(brief, {
+        kind: 'replace_named_venues_with_generic',
+        targetPath: 'productionBible.sceneLibrary',
+    });
+
+    assert.equal(result.applied, true);
+    const scene = result.brief.productionBible!.sceneLibrary[0];
+    assert.equal(scene.location, 'Windjammer Café window-side seating');
+    assert.ok(scene.imagePrompt.includes('Windjammer Café window-side seating'));
+});
+
 // ── Time normalization ────────────────────────────────────────────────────────
 
 console.log('\nTime Normalization\n');
@@ -438,6 +473,11 @@ test('queue_device_handling maps to replace_phrase_patterns ops with non-empty p
         const patterns = op.params?.['patterns'] as string[] | undefined;
         assert.ok(Array.isArray(patterns) && patterns.length > 0, `queue_device_handling op at ${op.targetPath} has empty patterns`);
     }
+});
+
+test('safe rail references do not trigger rail_safety_missing detection', () => {
+    const suggested = suggestDeterministicIssueCodes([], 'Deck 5 starboard rail shade pockets, moving flow, no lines, keep right.');
+    assert.ok(!suggested.includes('rail_safety_missing'));
 });
 
 // ── Downstream semantics ──────────────────────────────────────────────────────

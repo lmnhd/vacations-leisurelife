@@ -1,0 +1,49 @@
+[
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "non_generic_venue_naming",
+        "title":  "Windjammer ‚??open‚??air terrace‚?ù likely incompatible with target ship",
+        "targetPaths":  [
+                            "videoConcepts.heroExplainer.scriptOrNarration",
+                            "videoConcepts.tiktokSeed.scriptOrNarration",
+                            "videoConcepts.thresholdAnnouncement.scriptOrNarration",
+                            "videoConcepts.merchReveal.scriptOrNarration",
+                            "videoConcepts.heroExplainer.visualDirectionNotes",
+                            "videoConcepts.tiktokSeed.visualDirectionNotes",
+                            "videoConcepts.thresholdAnnouncement.visualDirectionNotes",
+                            "videoConcepts.merchReveal.visualDirectionNotes",
+                            "visual.compositionNotes",
+                            "messaging.elevatorPitch",
+                            "productionBible.sceneLibrary",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "privacy_line_missing",
+        "title":  "Deterministic: privacy line missing",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "cabin_type_plausibility",
+        "title":  "Deterministic: cabin type plausibility",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "production_safety_ops_missing",
+        "title":  "Deterministic: production safety ops missing",
+        "targetPaths":  [
+                            "productionBible.globalDirectionNotes"
+                        ]
+    }
+]

@@ -215,6 +215,10 @@ function runNormalizeTimeStrings(brief: CampaignAestheticBrief, op: AestheticMod
 }
 
 const BRANDED_VENUE_MAP: Record<string, string> = {
+    'windjammer café open-air terrace/window side': 'Windjammer Café window-side seating',
+    'windjammer cafe open-air terrace/window side': 'Windjammer Café window-side seating',
+    'windjammer café open-air terrace': 'Windjammer Café window-side seating',
+    'windjammer cafe open-air terrace': 'Windjammer Café window-side seating',
     'starbucks': 'a coffee bar',
     'mcdonalds': 'a quick-service venue',
     "mcdonald's": 'a quick-service venue',
@@ -227,24 +231,61 @@ const BRANDED_VENUE_MAP: Record<string, string> = {
     'celebrity cruises': 'the ship',
 };
 
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildVenuePattern(term: string): RegExp {
+    const escaped = escapeRegExp(term);
+    return /^[\w']+$/i.test(term)
+        ? new RegExp(`\\b${escaped}\\b`, 'gi')
+        : new RegExp(escaped, 'gi');
+}
+
+function replaceNamedVenuesInValue(value: unknown): { value: unknown; changed: boolean } {
+    if (typeof value === 'string') {
+        let result = value;
+        let changed = false;
+        for (const [brand, generic] of Object.entries(BRANDED_VENUE_MAP)) {
+            const re = buildVenuePattern(brand);
+            const next = result.replace(re, generic);
+            if (next !== result) changed = true;
+            result = next;
+        }
+        return { value: result, changed };
+    }
+
+    if (Array.isArray(value)) {
+        let changed = false;
+        const next = value.map((item) => {
+            const replaced = replaceNamedVenuesInValue(item);
+            if (replaced.changed) changed = true;
+            return replaced.value;
+        });
+        return { value: next, changed };
+    }
+
+    if (value && typeof value === 'object') {
+        let changed = false;
+        const nextEntries = Object.entries(value as Record<string, unknown>).map(([key, child]) => {
+            const replaced = replaceNamedVenuesInValue(child);
+            if (replaced.changed) changed = true;
+            return [key, replaced.value] as const;
+        });
+        return { value: Object.fromEntries(nextEntries), changed };
+    }
+
+    return { value, changed: false };
+}
+
 function runReplaceNamedVenues(brief: CampaignAestheticBrief, op: AestheticModificationOperation): FixerResult {
     assertAllowedPath(op.targetPath);
     const current = getNestedValue(brief as unknown as Record<string, unknown>, op.targetPath);
-    if (typeof current !== 'string') {
-        return noOpResult(brief, op.kind, op.targetPath, 'replace_named_venues_with_generic requires a string field.');
-    }
-    let result = current;
-    let changed = false;
-    for (const [brand, generic] of Object.entries(BRANDED_VENUE_MAP)) {
-        const re = new RegExp(`\\b${brand}\\b`, 'gi');
-        const next = result.replace(re, generic);
-        if (next !== result) changed = true;
-        result = next;
-    }
-    if (!changed) {
+    const replaced = replaceNamedVenuesInValue(current);
+    if (!replaced.changed) {
         return noOpResult(brief, op.kind, op.targetPath, 'No branded venue names found — idempotent no-op.');
     }
-    const updated = setNestedValue(brief as unknown as Record<string, unknown>, op.targetPath, result) as unknown as CampaignAestheticBrief;
+    const updated = setNestedValue(brief as unknown as Record<string, unknown>, op.targetPath, replaced.value) as unknown as CampaignAestheticBrief;
     return appliedResult(updated, op.kind, op.targetPath, `Replaced branded venue names in ${op.targetPath}.`, [op.targetPath]);
 }
 
@@ -353,7 +394,7 @@ export const ISSUE_CODE_OPERATIONS: Record<AestheticIssueCode, AestheticModifica
             .map(p => ({ kind: 'replace_phrase_patterns' as const, targetPath: p, params: { patterns: QUEUE_PATTERNS, replacements: QUEUE_REPLACEMENTS } })),
     ],
     non_generic_venue_naming: [
-        ...[ ...VIDEO_SCRIPT_PATHS, ...VIDEO_VISUAL_PATHS, 'visual.compositionNotes', 'messaging.elevatorPitch' ]
+        ...[ ...VIDEO_SCRIPT_PATHS, ...VIDEO_VISUAL_PATHS, 'visual.compositionNotes', 'messaging.elevatorPitch', 'productionBible.sceneLibrary', 'productionBible.globalDirectionNotes' ]
             .map(p => ({ kind: 'replace_named_venues_with_generic' as const, targetPath: p })),
     ],
     avatar_required_video: [
@@ -431,14 +472,14 @@ const ISSUE_DETECTION_PATTERNS: Array<{ issueCode: AestheticIssueCode; patterns:
     { issueCode: 'countdown_series_hard_scarcity', patterns: [/countdown/i, /T-\d+/i, /cabin(s)?\s*(left|remain)/i, /scarcity/i] },
     { issueCode: 'exact_time_strings',             patterns: [/\d{1,2}:\d{2}/] },
     { issueCode: 'queue_device_handling',          patterns: [/check.*?(app|phone|device)/i, /launch.*(app|website)/i] },
-    { issueCode: 'non_generic_venue_naming',       patterns: Object.keys(BRANDED_VENUE_MAP).map(b => new RegExp(`\\b${b}\\b`, 'i')) },
+    { issueCode: 'non_generic_venue_naming',       patterns: [...Object.keys(BRANDED_VENUE_MAP).map(buildVenuePattern), /windjammer\s+caf[eé][^,.]{0,60}(open.?air terrace|window.?side)/i] },
     { issueCode: 'avatar_required_video',          patterns: [/avatar\s+required/i, /heygen.*required/i] },
     { issueCode: 'disallowed_video_tool',          patterns: [/\bheygen\b/i] },
-    { issueCode: 'rail_safety_missing',            patterns: [/\brail(ing)?\b/i, /\bdeck\s+edge\b/i] },
+    { issueCode: 'rail_safety_missing',            patterns: [/\blean(ing)?\s+over\s+(the\s+)?rail(ing)?\b/i, /\brail-side\b/i, /\bdeck\s+edge\b/i, /\bover\s+the\s+railing\b/i] },
     { issueCode: 'privacy_line_missing',           patterns: [/\bphotos?\b/i, /\bfilming\b/i, /\brecord(ing)?\b/i] },
     { issueCode: 'compliance_risk_scarcity_copy',  patterns: [/\bonly\s+\d+\b/i, /\blimited\s+spots?\b/i, /\bselling\s+out\b/i] },
     { issueCode: 'camera_move_feasibility',         patterns: [/\bcrane\b/i, /\bdolly\b/i, /\btrack(ing)?\s+shot\b/i, /\bslider\b/i, /\bcable\s+cam\b/i] },
-    { issueCode: 'cabin_type_plausibility',         patterns: [/interior.*window/i, /window.*interior/i, /interior\s+stateroom.*ocean/i, /oceanview.*contradiction/i] },
+    { issueCode: 'cabin_type_plausibility',         patterns: [/interior\s+stateroom[^.]{0,80}(window|ocean|sea\s+view)/i, /(window|ocean|sea\s+view)[^.]{0,80}interior\s+stateroom/i, /inside\s+cabin[^.]{0,80}(window|ocean|sea\s+view)/i, /oceanview.*contradiction/i] },
     { issueCode: 'gangway_exchange_prohibited',     patterns: [/\bgangway\b/i, /exchange.*gangway/i, /gangway.*exchange/i, /handoff.*gangway/i] },
     { issueCode: 'storyboard_duration_alignment',   patterns: [/duration\s+mismatch/i, /totalDurationSeconds\s+mismatch/i, /storyboard\s+total/i, /\d+s\s+(vs|versus|but)\s+\d+/i] },
     { issueCode: 'production_safety_ops_missing',   patterns: [/spotter/i, /keep.?right/i, /off.?peak/i, /two.?person\s+crew/i, /crew\s+max/i, /stand.?down/i, /passenger\s+flow/i] },

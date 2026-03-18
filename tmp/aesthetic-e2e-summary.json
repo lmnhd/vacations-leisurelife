@@ -1,0 +1,33 @@
+{
+    "validate":  {
+                     "ok":  true,
+                     "verdict":  "warn",
+                     "totalIssues":  11,
+                     "blockerCount":  5,
+                     "warningCount":  6,
+                     "regenerationSteps":  [
+                                               "productionBible"
+                                           ],
+                     "message":  "Validation found 5 blocker(s) and 6 warning(s). Run remediate to fix."
+                 },
+    "remediate":  {
+                      "ok":  true,
+                      "hasRemainingBlockers":  true,
+                      "remainingOpenIssues":  19,
+                      "executedDeterministicFixes":  0,
+                      "executedLlmPatches":  0,
+                      "regenerationRuns":  0,
+                      "message":  "Remediation complete. 19 blocker(s) remain â?? check summary."
+                  },
+    "redTeam":  {
+                    "ok":  true,
+                    "verdict":  "block",
+                    "requiredFixCount":  8,
+                    "humanReviewStatus":  "revised"
+                },
+    "approve":  {
+                    "ok":  false,
+                    "message":  "The remote server returned an error: (409) Conflict.",
+                    "details":  null
+                }
+}

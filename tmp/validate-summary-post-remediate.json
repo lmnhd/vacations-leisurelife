@@ -1,0 +1,1 @@
+{"ok":true,"verdict":"block","totalIssues":18,"blockerCount":10,"warningCount":8,"deterministicCount":11,"llmPatchCount":5,"regenerationSteps":1,"message":"Validation found 10 blocker(s) and 8 warning(s). Run remediate to fix."}

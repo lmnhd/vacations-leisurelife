@@ -1,0 +1,13 @@
+[
+    "rail_safety_missing",
+    "privacy_line_missing",
+    "countdown_series_hard_scarcity",
+    "exact_time_strings",
+    "queue_device_handling",
+    "non_generic_venue_naming",
+    "camera_move_feasibility",
+    "cabin_type_plausibility",
+    "gangway_exchange_prohibited",
+    "storyboard_duration_alignment",
+    "production_safety_ops_missing"
+]

@@ -65,6 +65,81 @@ function targetPathsForIssueCode(code: AestheticIssueCode): string[] {
     return Array.from(new Set(ops.map(op => op.targetPath)));
 }
 
+function getScopedBriefText(brief: CampaignAestheticBrief, paths: string[]): string {
+    const getPathText = (path: string): string => {
+        const value = path.split('.').reduce<unknown>((current, key) => {
+            if (current && typeof current === 'object') {
+                return (current as Record<string, unknown>)[key];
+            }
+            return undefined;
+        }, brief as unknown as Record<string, unknown>);
+
+        return typeof value === 'undefined' ? '' : JSON.stringify(value);
+    };
+
+    return paths
+        .map(getPathText)
+        .filter(Boolean)
+        .join(' ');
+}
+
+const CATEGORY_FALLBACK_TARGET_PATHS: Record<RedTeamIssueCategory, string[]> = {
+    community_drift: ['messaging.elevatorPitch', 'visual.compositionNotes'],
+    optionality_failure: ['messaging.elevatorPitch', 'visual.compositionNotes'],
+    workshop_regression: ['messaging.elevatorPitch', 'visual.compositionNotes', 'audio.ambientNarrationScript'],
+    solitude_drift: ['visual.compositionNotes', 'audio.ambientNarrationScript'],
+    cruise_implausibility: ['productionBible.sceneLibrary', 'productionBible.storyboards', 'productionBible.globalDirectionNotes'],
+    diversity_gap: ['visual.compositionNotes'],
+    stereotype_risk: ['visual.compositionNotes', 'audio.ambientNarrationScript'],
+    motion_safety: ['productionBible.storyboards', 'productionBible.sceneLibrary', 'productionBible.globalDirectionNotes'],
+    production_feasibility: ['productionBible.sceneLibrary', 'productionBible.storyboards', 'productionBible.globalDirectionNotes'],
+    copy_alignment: ['messaging.heroSlogan', 'messaging.subSlogan', 'messaging.elevatorPitch'],
+    other: ['messaging.elevatorPitch', 'visual.compositionNotes'],
+};
+
+function fallbackTargetPathsForIssue(issue: RedTeamIssue, owningArtifact: OwningArtifact): string[] {
+    if (owningArtifact === 'production_build_lint') {
+        return ['landingStillBible.stillLibrary'];
+    }
+    if (owningArtifact === 'landing_still_bible') {
+        return ['landingStillBible.stillLibrary'];
+    }
+
+    return CATEGORY_FALLBACK_TARGET_PATHS[issue.category] ?? CATEGORY_FALLBACK_TARGET_PATHS.other;
+}
+
+const PRIVACY_SENTENCE = "Photos and videos taken during the event are subject to participant consent. Please respect others' privacy.";
+const RAIL_SAFETY_SENTENCE = 'Passengers must remain behind deck railings at all times and must not lean over or sit on railings.';
+const PRODUCTION_SAFETY_SENTENCE = 'Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.';
+
+function isDeterministicIssuePresent(code: AestheticIssueCode, brief: CampaignAestheticBrief): boolean {
+    const targetPaths = targetPathsForIssueCode(code);
+    if (targetPaths.length === 0) {
+        return false;
+    }
+
+    const scopedText = getScopedBriefText(brief, targetPaths);
+    if (!scopedText) {
+        return false;
+    }
+
+    switch (code) {
+        case 'privacy_line_missing': {
+            return /\bphotos?\b|\bvideos?\b|\bfilming\b|\brecord(ing)?\b/i.test(scopedText)
+                && !scopedText.includes(PRIVACY_SENTENCE);
+        }
+        case 'rail_safety_missing': {
+            return /\brail(ing)?\b|\bdeck\s+edge\b/i.test(scopedText)
+                && !scopedText.includes(RAIL_SAFETY_SENTENCE);
+        }
+        case 'production_safety_ops_missing': {
+            return !!brief.productionBible && !scopedText.includes(PRODUCTION_SAFETY_SENTENCE);
+        }
+        default:
+            return suggestDeterministicIssueCodes([], scopedText).includes(code);
+    }
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Closure checks from issue category
 // ────────────────────────────────────────────────────────────────────────────
@@ -109,14 +184,16 @@ function computeInvalidates(owningArtifact: OwningArtifact, severity: 'warning' 
 // Convert RedTeamIssue → AestheticIssueRecord
 // ────────────────────────────────────────────────────────────────────────────
 
-function redTeamIssueToRecord(issue: RedTeamIssue): AestheticIssueRecord {
+function redTeamIssueToRecord(issue: RedTeamIssue, brief: CampaignAestheticBrief): AestheticIssueRecord {
     const issueText = `${issue.title} ${issue.evidence} ${issue.recommendation}`;
     const suggestedCodes = suggestDeterministicIssueCodes([issue.title], issueText);
-    const matchedCode = suggestedCodes[0] ?? null;
+    const matchedCode = suggestedCodes.find((code) => isDeterministicIssuePresent(code, brief)) ?? null;
 
     const owningArtifact = inferOwningArtifact(issue);
     const remediationMode = inferRemediationMode(issue, matchedCode);
-    const targetPaths = matchedCode ? targetPathsForIssueCode(matchedCode) : [];
+    const targetPaths = matchedCode
+        ? targetPathsForIssueCode(matchedCode)
+        : fallbackTargetPathsForIssue(issue, owningArtifact);
     const closureChecks = closureChecksForCategory(issue.category);
 
     return {
@@ -199,11 +276,12 @@ export function deriveRemediationPlan(
 // ────────────────────────────────────────────────────────────────────────────
 
 function runDeterministicScan(brief: CampaignAestheticBrief): AestheticIssueRecord[] {
-    const issueText = JSON.stringify(brief);
-    const allRedTeamIssues = brief.redTeamReview?.issues?.map(i => i.title) ?? [];
-    const suggestedCodes = suggestDeterministicIssueCodes(allRedTeamIssues, issueText);
+    const deterministicCodes = (Object.keys(ISSUE_CODE_OPERATIONS) as AestheticIssueCode[])
+        .filter((code) => {
+            return isDeterministicIssuePresent(code, brief);
+        });
 
-    return suggestedCodes.map(code => {
+    return deterministicCodes.map(code => {
         const targetPaths = targetPathsForIssueCode(code);
         return {
             issueId: randomUUID(),
@@ -211,7 +289,7 @@ function runDeterministicScan(brief: CampaignAestheticBrief): AestheticIssueReco
             severity: 'blocker' as const,
             title: `Deterministic: ${code.replace(/_/g, ' ')}`,
             summary: `Structural rule violation detected by deterministic scanner for issue code: ${code}`,
-            evidence: [`Pattern match in brief content for ${code}`],
+            evidence: [`Pattern match in targeted paths: ${targetPaths.join(', ')}`],
             owningArtifact: targetPaths.some(p => p.startsWith('productionBible')) ? 'production_bible' as const : 'brief' as const,
             targetPaths,
             remediationMode: 'deterministic' as const,
@@ -284,7 +362,7 @@ export async function runValidationOrchestration(
 ): Promise<ValidationOrchestrationResult> {
     const redTeamReview = await runAestheticRedTeamReview(campaign, brief);
 
-    const redTeamIssueRecords = redTeamReview.issues.map(redTeamIssueToRecord);
+    const redTeamIssueRecords = redTeamReview.issues.map(issue => redTeamIssueToRecord(issue, brief));
     const deterministicRecords = runDeterministicScan(brief);
     const lintRecords = lintIssuesToRecords(brief);
     const consistencyRecords = runCrossArtifactConsistencyChecks(brief);

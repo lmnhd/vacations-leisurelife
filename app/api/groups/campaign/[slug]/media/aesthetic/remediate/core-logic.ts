@@ -7,8 +7,10 @@ import type {
     RemediationStepResult,
 } from '@/lib/campaigns/schema';
 import { runAestheticModification } from '@/lib/campaigns/aesthetic-modification';
+import { generateVisualPlanningFromBrief } from '@/lib/campaigns/aesthetic-engine';
 import { runAestheticPatch, buildPatchRequestsFromIssues } from '@/lib/campaigns/aesthetic-patch-engine';
-import { runClosureVerification } from '@/lib/campaigns/aesthetic-validation-orchestrator';
+import { lintProductionBuild } from '@/lib/campaigns/media/production-build-lint';
+import { runValidationOrchestration } from '@/lib/campaigns/aesthetic-validation-orchestrator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Apply deterministic fixes for issues marked 'deterministic'
@@ -157,27 +159,89 @@ function markIssuesApplied(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Run closure verification pass and update ledger
+// Execute scheduled regeneration steps
 // ────────────────────────────────────────────────────────────────────────────
 
-function runAndApplyClosureVerification(
+async function applyRegenerationSteps(
+    campaign: Awaited<ReturnType<typeof getCampaignBlueprint>>,
     brief: CampaignAestheticBrief,
-    appliedIssueIds: string[],
-): { brief: CampaignAestheticBrief; stepResults: RemediationStepResult[] } {
-    const verifiedLedger = runClosureVerification(brief, appliedIssueIds);
-    const stepResults: RemediationStepResult[] = verifiedLedger
-        .filter(i => appliedIssueIds.includes(i.issueId))
-        .map(i => ({
-            issueId: i.issueId,
-            mode: i.remediationMode,
-            outcome: i.status === 'verified' ? 'verified' as const : 'failed' as const,
-            detail: i.status === 'verified' ? 'Closure checks passed' : 'Closure checks did not pass — issue remains open',
-        }));
+    regenerationSteps: RegenerationStep[],
+): Promise<{ brief: CampaignAestheticBrief; stepResults: RemediationStepResult[] }> {
+    if (!campaign || regenerationSteps.length === 0) {
+        return { brief, stepResults: [] };
+    }
 
-    return {
-        brief: { ...brief, issueLedger: verifiedLedger },
-        stepResults,
-    };
+    const relevantIssues = (brief.issueLedger ?? []).filter(issue =>
+        issue.status === 'open'
+        && issue.remediationMode === 'regenerate'
+        && (
+            (regenerationSteps.includes('productionBible') && issue.owningArtifact === 'production_bible')
+            || (regenerationSteps.includes('landingStillBible') && issue.owningArtifact === 'landing_still_bible')
+            || (regenerationSteps.includes('productionBuildLint') && issue.owningArtifact === 'production_build_lint')
+            || (regenerationSteps.includes('productionBible') && issue.owningArtifact === 'cross_artifact')
+        ),
+    );
+
+    try {
+        const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
+        const lintReport = lintProductionBuild({
+            landingStillBible: visualPlanning.landingStillBible,
+            productionBible: visualPlanning.productionBible,
+            themeName: campaign.name,
+            nicheKeywords: campaign.targetingKeywords ?? [],
+        });
+
+        const nextHumanReviewStatus = brief.humanReviewStatus === 'approved' || brief.humanReviewStatus === 'revised'
+            ? 'revised' as const
+            : 'pending' as const;
+
+        const regeneratedBrief: CampaignAestheticBrief = {
+            ...brief,
+            landingStillBible: regenerationSteps.includes('landingStillBible') || regenerationSteps.includes('productionBible')
+                ? visualPlanning.landingStillBible
+                : brief.landingStillBible,
+            productionBible: regenerationSteps.includes('productionBible')
+                ? visualPlanning.productionBible
+                : brief.productionBible,
+            productionBuildLint: lintReport,
+            productionBuildStatus: lintReport.verdict,
+            productionBuildEvaluatedAt: lintReport.evaluatedAt,
+            humanReviewStatus: nextHumanReviewStatus,
+            redTeamReview: undefined,
+        };
+
+        const updatedLedger = markIssuesApplied(
+            regeneratedBrief.issueLedger ?? [],
+            relevantIssues.map(issue => issue.issueId),
+            'regenerate',
+            `Regenerated visual planning bundle for: ${regenerationSteps.join(', ')}`,
+        );
+
+        return {
+            brief: {
+                ...regeneratedBrief,
+                issueLedger: updatedLedger,
+                activeRemediationPlan: brief.activeRemediationPlan,
+            },
+            stepResults: relevantIssues.map(issue => ({
+                issueId: issue.issueId,
+                mode: 'regenerate' as const,
+                outcome: 'applied' as const,
+                detail: `Regenerated visual planning to address: ${issue.title}`,
+            })),
+        };
+    } catch (error: unknown) {
+        const detail = error instanceof Error ? error.message : 'Regeneration failed';
+        return {
+            brief,
+            stepResults: relevantIssues.map(issue => ({
+                issueId: issue.issueId,
+                mode: 'regenerate' as const,
+                outcome: 'failed' as const,
+                detail,
+            })),
+        };
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -252,13 +316,20 @@ export async function runRemediationCore(slug: string): Promise<RemediationCoreR
         allStepResults.push(...stepResults);
     }
 
-    // ── Phase C: Closure verification ─────────────────────────────────────────
-    const appliedIds = allStepResults.filter(s => s.outcome === 'applied').map(s => s.issueId);
-    if (appliedIds.length > 0) {
-        const { brief: afterVerification, stepResults } = runAndApplyClosureVerification(currentBrief, appliedIds);
-        currentBrief = afterVerification;
+    // ── Phase C: Scheduled regeneration ───────────────────────────────────────
+    if (plan.regenerationSteps.length > 0) {
+        const { brief: afterRegeneration, stepResults } = await applyRegenerationSteps(
+            campaign,
+            currentBrief,
+            plan.regenerationSteps,
+        );
+        currentBrief = afterRegeneration;
         allStepResults.push(...stepResults);
     }
+
+    // ── Phase D: Refresh validation against the updated artifacts ─────────────
+    const validation = await runValidationOrchestration(campaign, currentBrief);
+    currentBrief = validation.updatedBrief;
 
     // ── Manual escalations recorded as open ───────────────────────────────────
     for (const issueId of plan.manualEscalations) {
@@ -278,8 +349,8 @@ export async function runRemediationCore(slug: string): Promise<RemediationCoreR
         slug,
         allStepResults,
         finalLedger,
-        plan.regenerationSteps,
-        plan.manualEscalations,
+        currentBrief.activeRemediationPlan?.regenerationSteps ?? [],
+        currentBrief.activeRemediationPlan?.manualEscalations ?? [],
     );
 
     const hasRemainingBlockers = finalLedger.some(
