@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle, Zap, Eye } from "lucide-react";
+import { Loader2, Wand2, Download, Trash2, CheckCircle, AlertTriangle, Zap, Eye, ShieldCheck, Wrench } from "lucide-react";
 import { CampaignAestheticBrief, AestheticIssueCode } from "@/lib/campaigns/schema";
+import type { RemediationExecutionSummary } from "@/lib/campaigns/schema";
 import { MINIMUM_CAMPAIGN_LEAD_DAYS } from "@/lib/campaigns/launch-window";
 import { approveAestheticBrief, regenerateProductionBible, readJsonResponse, previewAestheticModification, applyAestheticModification, AestheticModifyResponse } from "@/lib/campaigns/aesthetic-workflow-client";
+import { IssueLedgerPanel } from "./issue-ledger-panel";
 
-type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising" | "modifying";
+type BriefState = "idle" | "loading" | "generating" | "deleting" | "approving" | "generating_bible" | "red_teaming" | "revising" | "modifying" | "validating" | "remediating";
 
 type CampaignPricingStatus = "AI_ESTIMATE" | "CB_MATCHED" | "UNMATCHED" | null;
 
@@ -39,6 +41,7 @@ export default function AestheticDevisingTestPage() {
     const [suggestedDeterministicFixes, setSuggestedDeterministicFixes] = useState<AestheticIssueCode[]>([]);
     const [selectedIssueCodes, setSelectedIssueCodes] = useState<AestheticIssueCode[]>([]);
     const [modifyPreview, setModifyPreview] = useState<AestheticModifyResponse | null>(null);
+    const [remediationSummary, setRemediationSummary] = useState<RemediationExecutionSummary | null>(null);
 
     const isBusy = briefState !== "idle";
     const normalizedSlug = slug.trim();
@@ -50,6 +53,60 @@ export default function AestheticDevisingTestPage() {
         setSuggestedDeterministicFixes([]);
         setSelectedIssueCodes([]);
         setModifyPreview(null);
+    };
+
+    // ── VALIDATE (V2 Orchestrated) ────────────────────────────────────────────
+    const handleValidate = async () => {
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
+        setBriefState("validating");
+        setError("");
+        resetDeterministicFixState();
+        setRemediationSummary(null);
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/validate`, {
+                method: "POST",
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = typeof data.error === "string" ? data.error : "Validation failed";
+                const errorDetails = typeof data.details === "string" ? data.details : "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
+            setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
+    };
+
+    // ── REMEDIATE (V2 Convergence) ────────────────────────────────────────────
+    const handleRemediate = async () => {
+        if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
+        setBriefState("remediating");
+        setError("");
+        resetDeterministicFixState();
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/remediate`, {
+                method: "POST",
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok) {
+                const errorMessage = typeof data.error === "string" ? data.error : "Remediation failed";
+                const errorDetails = typeof data.details === "string" ? data.details : "";
+                throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+            }
+            setResult(data.brief as CampaignAestheticBrief);
+            setLoadedSlug(normalizedSlug);
+            if (data.summary) setRemediationSummary(data.summary as RemediationExecutionSummary);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setBriefState("idle");
+        }
     };
 
     const loadExistingBrief = async (campaignSlug: string): Promise<CampaignAestheticBrief | null> => {
@@ -636,6 +693,38 @@ export default function AestheticDevisingTestPage() {
                                 </button>
                             )}
 
+                            {/* V2 Validate — orchestrated validation with issue ledger */}
+                            {hasLoadedBriefForCurrentSlug && result && (
+                                <button
+                                    id="btn-validate"
+                                    onClick={() => void handleValidate()}
+                                    disabled={isBusy}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-sky-500/20 border border-sky-500/40 text-sky-300 hover:bg-sky-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {briefState === "validating"
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <ShieldCheck className="h-4 w-4" />
+                                    }
+                                    {briefState === "validating" ? "Validating..." : "Validate (V2)"}
+                                </button>
+                            )}
+
+                            {/* V2 Remediate — convergence remediation */}
+                            {hasLoadedBriefForCurrentSlug && result && result.issueLedger && result.issueLedger.length > 0 && (
+                                <button
+                                    id="btn-remediate"
+                                    onClick={() => void handleRemediate()}
+                                    disabled={isBusy}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-500/20 border border-violet-500/40 text-violet-300 hover:bg-violet-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    {briefState === "remediating"
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <Wrench className="h-4 w-4" />
+                                    }
+                                    {briefState === "remediating" ? "Remediating..." : "Remediate (V2)"}
+                                </button>
+                            )}
+
                             {/* Revise — only shown when review exists and verdict is not pass */}
                             {hasLoadedBriefForCurrentSlug && result && result.redTeamReview && result.redTeamReview.verdict !== "pass" && (
                                 <button
@@ -685,6 +774,15 @@ export default function AestheticDevisingTestPage() {
                             )}
                         </div>
                     </div>
+                )}
+
+                {/* V2 Issue Ledger Panel */}
+                {result && result.issueLedger && result.issueLedger.length > 0 && (
+                    <IssueLedgerPanel
+                        issues={result.issueLedger}
+                        remediationPlan={result.activeRemediationPlan}
+                        remediationSummary={remediationSummary}
+                    />
                 )}
 
                 {/* Result */}

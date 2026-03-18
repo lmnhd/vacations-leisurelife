@@ -599,6 +599,115 @@ export const ProductionBuildLintReportSchema = z.object({
 export type ProductionBuildLintReport = z.infer<typeof ProductionBuildLintReportSchema>;
 
 // ────────────────────────────────────────────────────────────────────────────
+// V2 Issue Ledger — Convergence Pipeline Types
+// ────────────────────────────────────────────────────────────────────────────
+
+export const RemediationModeEnum = z.enum(['deterministic', 'llm_patch', 'regenerate', 'manual']);
+export type RemediationMode = z.infer<typeof RemediationModeEnum>;
+
+export const OwningArtifactEnum = z.enum([
+    'brief', 'production_bible', 'landing_still_bible', 'production_build_lint', 'cross_artifact',
+]);
+export type OwningArtifact = z.infer<typeof OwningArtifactEnum>;
+
+export const IssueStatusEnum = z.enum(['open', 'applied', 'verified', 'failed', 'waived']);
+export type IssueStatus = z.infer<typeof IssueStatusEnum>;
+
+export const AestheticIssueInvalidatesSchema = z.object({
+    redTeamReview: z.boolean(),
+    productionBible: z.boolean(),
+    landingStillBible: z.boolean(),
+    productionBuildLint: z.boolean(),
+});
+export type AestheticIssueInvalidates = z.infer<typeof AestheticIssueInvalidatesSchema>;
+
+export const IssueResolverSchema = z.object({
+    kind: RemediationModeEnum,
+    reference: z.string(),
+});
+export type IssueResolver = z.infer<typeof IssueResolverSchema>;
+
+export const AestheticIssueRecordSchema = z.object({
+    issueId: z.string(),
+    issueCode: z.union([AestheticIssueCodeEnum, z.literal('custom')]),
+    severity: RedTeamIssueSeverityEnum,
+    title: z.string(),
+    summary: z.string(),
+    evidence: z.array(z.string()),
+    owningArtifact: OwningArtifactEnum,
+    targetPaths: z.array(z.string()),
+    remediationMode: RemediationModeEnum,
+    closureChecks: z.array(z.string()),
+    invalidates: AestheticIssueInvalidatesSchema,
+    status: IssueStatusEnum,
+    resolver: IssueResolverSchema.optional(),
+    createdAt: z.string(),
+    resolvedAt: z.string().optional(),
+});
+export type AestheticIssueRecord = z.infer<typeof AestheticIssueRecordSchema>;
+
+export const RegenerationStepEnum = z.enum(['productionBible', 'landingStillBible', 'productionBuildLint']);
+export type RegenerationStep = z.infer<typeof RegenerationStepEnum>;
+
+export const AestheticRemediationPlanSchema = z.object({
+    createdAt: z.string(),
+    sourceReviewId: z.string(),
+    deterministicIssueIds: z.array(z.string()),
+    llmPatchIssueIds: z.array(z.string()),
+    regenerationSteps: z.array(RegenerationStepEnum),
+    manualEscalations: z.array(z.string()),
+});
+export type AestheticRemediationPlan = z.infer<typeof AestheticRemediationPlanSchema>;
+
+export const PatchArtifactEnum = z.enum(['brief', 'production_bible', 'landing_still_bible']);
+export type PatchArtifact = z.infer<typeof PatchArtifactEnum>;
+
+export const AestheticPatchRequestSchema = z.object({
+    issueIds: z.array(z.string()),
+    artifact: PatchArtifactEnum,
+    allowedPaths: z.array(z.string()),
+    closureChecks: z.array(z.string()),
+    instructions: z.array(z.string()),
+});
+export type AestheticPatchRequest = z.infer<typeof AestheticPatchRequestSchema>;
+
+export const ClosureOutcomeSchema = z.object({
+    check: z.string(),
+    passed: z.boolean(),
+    note: z.string(),
+});
+export type ClosureOutcome = z.infer<typeof ClosureOutcomeSchema>;
+
+export const AestheticPatchResultSchema = z.object({
+    success: z.boolean(),
+    issueIds: z.array(z.string()),
+    artifact: PatchArtifactEnum,
+    touchedPaths: z.array(z.string()),
+    closureOutcomes: z.array(ClosureOutcomeSchema),
+    patchSummary: z.string(),
+    failureReason: z.string().optional(),
+});
+export type AestheticPatchResult = z.infer<typeof AestheticPatchResultSchema>;
+
+export const RemediationStepResultSchema = z.object({
+    issueId: z.string(),
+    mode: RemediationModeEnum,
+    outcome: IssueStatusEnum,
+    detail: z.string(),
+});
+export type RemediationStepResult = z.infer<typeof RemediationStepResultSchema>;
+
+export const RemediationExecutionSummarySchema = z.object({
+    executedAt: z.string(),
+    slug: z.string(),
+    stepsExecuted: z.array(RemediationStepResultSchema),
+    remainingOpenIssues: z.array(z.string()),
+    regenerationScheduled: z.array(RegenerationStepEnum),
+    manualEscalations: z.array(z.string()),
+});
+export type RemediationExecutionSummary = z.infer<typeof RemediationExecutionSummarySchema>;
+
+// ────────────────────────────────────────────────────────────────────────────
 // Phase 1A + 1B Combined: Campaign Aesthetic Brief
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -690,6 +799,9 @@ export const CampaignAestheticBriefSchema = z.object({
     productionBuildEvaluatedAt: z.string().optional(),
 
     modificationHistory: z.array(AestheticModificationHistoryEntrySchema).optional(),
+
+    issueLedger: z.array(AestheticIssueRecordSchema).optional(),
+    activeRemediationPlan: AestheticRemediationPlanSchema.optional(),
 
     generatedAt: z.string(),
     generatedBy: z.enum(['agent', 'ui-session']),
