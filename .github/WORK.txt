@@ -1,402 +1,423 @@
-# Deterministic Aesthetic Fixer Implementation Plan
+# Film-And-Zine Recovery Plan
 
-## Goal
+## Objective
 
-Implement a deterministic modification layer for aesthetic briefs so recurring structural issues do not depend on freeform LLM revision.
+Unblock `film-and-zine-afloat-2026` by extending the deterministic modification system beyond brief-level copy hygiene into production-bible and storyboard feasibility corrections.
 
-This layer must:
-- fix `countdownSeries` issues deterministically
-- support any other known aesthetic issue class through the same contract
-- expose a single canonical modification endpoint usable by both UI operators and agents
-- preserve auditability, previewability, and schema safety
-- invalidate approvals/planning only when touched fields actually require it
+The current deterministic layer can fix countdown/scarcity-style issues, but it cannot yet resolve the blockers that are actually keeping this campaign in deadlock:
+- crane/dolly/track movement language in public passenger areas
+- impossible cabin labeling in storyboard scene SC8
+- prohibited gangway exchange scene in SC10
+- duration mismatches between `videoConcepts` and storyboard totals
+- missing explicit production safety ops in production-bible/storyboard notes
 
-## Core Decision
+This work should focus on getting this exact campaign unstuck first, while still using the same human + agent endpoint pattern already established.
 
-Do not add a second "revision-like" workflow.
+## Root Cause
 
-Add one canonical domain endpoint:
+The current `POST /api/groups/campaign/[slug]/media/aesthetic/modify` endpoint only mutates whitelisted fields on `CampaignAestheticBrief`.
+
+That is not enough for this campaign because the unresolved blockers now live across:
+- `brief.videoConcepts.*`
+- `brief.productionBible`
+- storyboard shot/movement notes inside `productionBible`
+- scene location and cabin-type details inside `productionBible`
+- production safety instructions inside `productionBible`
+
+The revision loop keeps deadlocking because it is trying to solve deterministic production-feasibility contradictions with freeform rewriting, while the deterministic layer cannot yet touch the necessary planning structures.
+
+## Required Outcome
+
+After this work:
+- the deterministic modify flow can patch the five blocker classes below
+- the aesthetic design page can surface and apply those fixes after deadlock
+- rerunning red team on `film-and-zine-afloat-2026` should no longer fail on the same five blockers
+- the production-bible regeneration flow should stop bouncing on the same contradictions
+
+## Scope
+
+Implement deterministic support for these five issue families:
+
+1. `camera_move_feasibility`
+2. `cabin_type_plausibility`
+3. `gangway_exchange_prohibited`
+4. `storyboard_duration_alignment`
+5. `production_safety_ops_missing`
+
+## Architectural Decision
+
+Do not create a second endpoint for production-bible fixes.
+
+Extend the existing canonical route:
 
 `POST /api/groups/campaign/[slug]/media/aesthetic/modify`
 
-This endpoint will support both:
-- high-level deterministic fixes by issue code
-- low-level explicit operations against known brief paths
+but broaden its domain model so it can safely mutate:
+- brief-level fields
+- `productionBible`
+- storyboard content nested inside `productionBible`
 
-That keeps the final system agent-first while still giving the UI the same primitives.
+That keeps one operator/agent contract instead of splitting into “brief modify” versus “production bible modify.”
 
-## Why The Current Revision Loop Is Not Enough
+## Contract Changes
 
-Current `reviseAestheticBrief` in `lib/campaigns/aesthetic-revision.ts` is a whole-brief rewrite driven by `requiredFixes` text. That is appropriate for fuzzy narrative problems, but it is the wrong tool for structural edits such as:
-- replacing countdown naming patterns
-- forcing generic venue names
-- clearing `avatarRequired`
-- banning `heygen`
-- injecting privacy lines
-- normalizing rail-safety language
-- removing exact `HH:MM` time strings
+### Schema additions
 
-Those are deterministic transformations on known fields and should be implemented as typed fixers, not re-generated prose.
+Update `lib/campaigns/schema.ts`.
 
-## Architecture
+Add new issue codes to `AestheticIssueCodeEnum`:
+- `camera_move_feasibility`
+- `cabin_type_plausibility`
+- `gangway_exchange_prohibited`
+- `storyboard_duration_alignment`
+- `production_safety_ops_missing`
 
-Add a three-layer deterministic system.
+Add new operation kinds to `AestheticOperationKindEnum`:
+- `normalize_camera_movements`
+- `replace_scene_location`
+- `normalize_cabin_type`
+- `remove_or_relocate_scene_beat`
+- `align_storyboard_durations`
+- `inject_production_safety_ops`
 
-### 1. Request/response contract layer
+Do not create a second request schema. Keep using `AestheticModificationRequestSchema` and `AestheticModificationResultSchema`.
 
-Centralize all request/response schemas in `lib/campaigns/schema.ts` so there is no type scattering.
+### Path model expansion
 
-Add:
-- `AestheticModifyModeEnum = 'preview' | 'apply'`
-- `AestheticModificationSourceEnum = 'issue_codes' | 'operations' | 'mixed'`
-- `AestheticIssueCodeEnum`
-- `AestheticModificationOperationSchema`
-- `AestheticModificationRequestSchema`
-- `AestheticModificationResultSchema`
-- `AestheticModificationHistoryEntrySchema`
+Expand the allowed target path model in `lib/campaigns/aesthetic-fixers/registry.ts` so it can safely address real production-bible leaf paths.
 
-### 2. Deterministic fixer service layer
+Do not allow arbitrary deep traversal.
 
-Add a new orchestrator:
+Only whitelist actual fields that exist in the production-bible/storyboard schema, for example:
+- `productionBible.storyboards`
+- `productionBible.storyboards.*.shots`
+- `productionBible.storyboards.*.movementNotes`
+- `productionBible.storyboards.*.location`
+- `productionBible.storyboards.*.totalDurationSeconds`
+- `productionBible.storyboards.*.productionNotes`
+- `productionBible.productionGuardrails`
+- `productionBible.safetyNotes`
 
-`lib/campaigns/aesthetic-modification.ts`
+The exact paths must reflect the real schema, not guessed names.
 
-Responsibilities:
-- load the brief
-- validate the request
-- derive operations from issue codes when needed
-- run deterministic fixers in a stable order
-- collect touched paths and audit records
-- compute invalidation effects
-- persist only in `apply` mode
-- return preview/apply result in a shared shape
+## Required Code Recon Before Editing
 
-### 3. Fixer registry layer
+Before implementation, inspect the actual production-bible schema and stored shape in:
+- `lib/campaigns/schema.ts`
+- `lib/campaigns/aesthetic-engine.ts`
+- `app/api/groups/campaign/[slug]/media/aesthetic/production-bible/route.ts`
+- any helper used to generate or persist storyboards
 
-Add:
+This step is mandatory because the fixers must target real schema paths, not inferred field names.
 
-`lib/campaigns/aesthetic-fixers/registry.ts`
+## Fixer 1: Camera Move Feasibility
 
-This registry maps `AestheticIssueCode` to deterministic handlers.
+### Issue to fix
 
-Each handler should expose the same shape:
+Red team blocker:
+- replace crane/dolly/track language with handheld/gimbal-safe movement
+- add a no-tracks/no-cranes/no-cables-in-walkways note
 
-`(brief, context) => { brief, applied, touchedPaths, summary, followUps }`
+### Deterministic behavior
 
-The registry must support both:
-- `issueCode -> one or more operations`
-- `operation.kind -> exact mutation`
+Create a deterministic fixer that scans production-bible/storyboard movement text and replaces infeasible movement language.
 
-## Canonical Endpoint Contract
+#### Replace banned movement phrases
 
-Implement in:
+Examples:
+- `crane drop from sky` -> `high-angle handheld settle`
+- `crane rise` -> `slow gimbal lift`
+- `low dolly along gangway` -> `slow handheld walk-and-settle from fixed safe edge`
+- `dolly forward along rail` -> `gentle gimbal drift from a fixed standing position`
+- `track left/right` -> `small lateral handheld shift`
+
+The replacements must:
+- remove all references to crane, dolly, track, rails, or cables as equipment instructions
+- keep the shot intent as close as possible
+- remain explicitly safe for public passenger areas
+
+#### Add production guardrail note
+
+Inject this exact operational rule into the production-bible safety/production note section and any storyboard-level ops notes where movement instructions appear:
+
+`No tracks, cranes, sliders, or floor cables in passenger walkways. Use handheld or compact gimbal only.`
+
+### Acceptance criteria
+
+- no storyboard or production-bible movement note contains `crane`, `dolly`, `track`, `slider`, or `cable` equipment instructions for public passenger capture
+- safety note is present once at the planning level and does not duplicate endlessly on re-apply
+- rerunning the fixer is idempotent
+
+## Fixer 2: Cabin Type Plausibility
+
+### Issue to fix
+
+Red team blocker:
+- SC8 says `Interior stateroom desk with ocean-view window`
+
+### Deterministic behavior
+
+Create a fixer that finds contradictory cabin descriptors and rewrites them to a valid cabin type.
+
+#### Rules
+
+- If text contains `interior` and `window` together, replace with a valid target cabin type.
+- Use one deterministic default for this campaign family:
+  - `Oceanview stateroom desk`
+  - or `Balcony stateroom desk`
+
+Pick one and use it consistently across:
+- storyboard scene title
+- location field
+- shot descriptions
+- any related still/video reference text in `videoConcepts` or visual notes if they mention the same scene
+
+Do not leave mixed cabin terminology after the fix.
+
+### Acceptance criteria
+
+- SC8 no longer contains impossible interior+window wording
+- all connected references use the same corrected cabin type
+- rerunning the fixer is idempotent
+
+## Fixer 3: Gangway Exchange Prohibited
+
+### Issue to fix
+
+Red team blocker:
+- remove item exchange on the gangway
+- relocate it to dockside away from the gangway throat or onboard after security
+
+### Deterministic behavior
+
+Create a fixer that locates the prohibited exchange scene and relocates it.
+
+#### Rules
+
+- If storyboard scene or beat text includes both exchange/trade language and `gangway`, the scene is invalid.
+- Replace the location and beat text with one of two deterministic compliant templates:
+  - `dockside away from the gangway approach, clear of primary ingress/egress flow`
+  - `onboard after security in a low-traffic atrium/promenade edge`
+
+Use one deterministic default for v1 so the system is stable.
+
+#### Required injected rule
+
+Add this note at storyboard or production-note level:
+
+`No exchanges, greetings, or handoffs on gangways or in primary embark/disembark flow paths.`
+
+### Acceptance criteria
+
+- SC10 no longer occurs on a gangway
+- exchange wording is relocated to a compliant area
+- no remaining gangway exchange language survives elsewhere in that planning set
+- rerunning the fixer is idempotent
+
+## Fixer 4: Storyboard Duration Alignment
+
+### Issue to fix
+
+Red team blocker:
+- `videoConcepts.tiktokSeed.durationSeconds = 15` but storyboard total = 35
+- `videoConcepts.thresholdAnnouncement.durationSeconds = 18` but storyboard total = 30
+
+### Deterministic behavior
+
+Create a fixer that makes storyboard duration totals conform to the authoritative `videoConcepts` durations.
+
+#### Rule of authority
+
+For v1, treat `videoConcepts.*.durationSeconds` as the source of truth.
+
+Do not rewrite the brief durations to match the storyboard. Rewrite the storyboard timing to match the brief.
+
+#### Required deterministic targets
+
+- `tiktok_seed` storyboard total must become `15`
+- `threshold_announcement` storyboard total must become `18`
+
+#### Shot rebalancing
+
+If the storyboard contains per-shot durations:
+- recalculate them proportionally or with a fixed deterministic pattern
+- ensure the new total equals the authoritative duration exactly
+
+For v1, a simple deterministic approach is acceptable:
+- divide available seconds across shot count as evenly as possible
+- distribute remainder from first shot downward
+
+### Acceptance criteria
+
+- storyboard totals for TikTok seed and Threshold Announcement match `videoConcepts`
+- per-shot durations sum exactly to the new total
+- rerunning the fixer does not keep drifting the numbers
+
+## Fixer 5: Production Safety Ops Missing
+
+### Issue to fix
+
+Red team warning/blocker:
+- add explicit safety ops to production bible and storyboards:
+  - two-person crew max
+  - one spotter
+  - off-peak capture
+  - maintain single-file keep-right flow
+  - immediate stand-down if flow is impeded
+
+### Deterministic behavior
+
+Inject this exact operations bundle into the correct planning notes section:
+
+`Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.`
+
+If there is both a global production note area and storyboard-specific ops notes, inject once globally and only add local notes where the scene is a walkway/promenade/gangway-adjacent environment.
+
+### Acceptance criteria
+
+- the operations bundle exists in the production bible
+- walkway-sensitive storyboard scenes contain the localized ops note where appropriate
+- rerunning the fixer does not create duplicates
+
+## Registry Changes
+
+Update `lib/campaigns/aesthetic-fixers/registry.ts`.
+
+### New issue code mappings
+
+Map the new issue codes to real operations over real production-bible/storyboard paths.
+
+For example:
+- `camera_move_feasibility` -> `normalize_camera_movements` over storyboard movement/note fields plus `inject_production_safety_ops`
+- `cabin_type_plausibility` -> `normalize_cabin_type` and any related `replace_scene_location`
+- `gangway_exchange_prohibited` -> `remove_or_relocate_scene_beat`
+- `storyboard_duration_alignment` -> `align_storyboard_durations`
+- `production_safety_ops_missing` -> `inject_production_safety_ops`
+
+### New deadlock suggestion patterns
+
+Extend `suggestDeterministicIssueCodes(...)` so the deadlock response can recommend the new fixes when red-team issues mention:
+- crane
+- dolly
+- track
+- cable
+- gangway
+- security flow
+- interior with window
+- oceanview contradiction
+- duration mismatch
+- totalDurationSeconds mismatch
+- spotter / keep right / off-peak / crew max
+
+## Service Changes
+
+Update `lib/campaigns/aesthetic-modification.ts`.
+
+### Invalidation behavior
+
+When these new production-bible/storyboard fixers touch planning fields:
+- always clear `redTeamReview`
+- set `humanReviewStatus = 'revised'` if previously approved/revised
+- clear production-build lint metadata
+
+Do not discard `productionBible` itself when the modify endpoint is editing it directly.
+
+The modify flow is now allowed to repair the existing production bible rather than only invalidating it.
+
+### Follow-up actions
+
+Return explicit next steps such as:
+- `Run red team again to verify the production-feasibility blockers are closed.`
+- `Re-approve the aesthetic brief before media generation.`
+- `Re-run production-build lint after the updated production bible is saved.`
+
+## Route Behavior
+
+Keep using:
 
 `app/api/groups/campaign/[slug]/media/aesthetic/modify/route.ts`
 
-### Request shape
-
-```json
-{
-  "mode": "preview" | "apply",
-  "source": "issue_codes" | "operations" | "mixed",
-  "actor": {
-	 "type": "human" | "agent",
-	 "id": "string",
-	 "label": "string"
-  },
-  "issueCodes": ["countdown_series_hard_scarcity"],
-  "operations": [
-	 {
-		"kind": "replace_countdown_series",
-		"targetPath": "videoConcepts.countdownSeries",
-		"params": {
-		  "strategy": "open_window_triplet"
-		}
-	 }
-  ],
-  "options": {
-	 "rerunRedTeam": true,
-	 "regenerateProductionBible": "if_needed",
-	 "regenerateLandingStillBible": "if_needed",
-	 "clearApproval": true,
-	 "strict": true
-  },
-  "reason": "Deadlock fix after repeated countdown scarcity failures"
-}
-```
-
-### Response shape
-
-```json
-{
-  "success": true,
-  "mode": "preview" | "apply",
-  "brief": {},
-  "appliedFixes": ["countdown_series_hard_scarcity"],
-  "appliedOperations": [
-	 {
-		"kind": "replace_countdown_series",
-		"targetPath": "videoConcepts.countdownSeries",
-		"status": "applied",
-		"summary": "Replaced hard countdown clips with evergreen open-window variants."
-	 }
-  ],
-  "touchedPaths": [
-	 "videoConcepts.countdownSeries",
-	 "revisionNotes",
-	 "humanReviewStatus"
-  ],
-  "invalidation": {
-	 "humanReviewStatus": "revised",
-	 "clearedRedTeamReview": true,
-	 "clearedProductionBible": false,
-	 "clearedLandingStillBible": false,
-	 "clearedProductionBuildLint": true
-  },
-  "followUpActions": [
-	 "Run red team again.",
-	 "Re-approve the aesthetic brief before media generation."
-  ],
-  "historyEntry": {}
-}
-```
-
-### Endpoint behavior rules
-
-- `preview` must never persist.
-- `apply` must persist via `saveAestheticBrief`.
-- Agents and UI use the same route. No separate human-only endpoint.
-- Raw JSON Patch should not be accepted. Only domain-safe operations against approved paths.
-- The route must reject unknown issue codes and unknown operation kinds.
-- The route must return `409` when the requested operation conflicts with current brief state.
-- The route must return `422` when the requested mutation would violate the brief schema.
-
-## File-by-File Implementation Map
-
-### 1. `lib/campaigns/schema.ts`
-
-Add centralized schemas for:
-- `AestheticIssueCodeEnum`
-- `AestheticModificationOperationSchema`
-- `AestheticModificationRequestSchema`
-- `AestheticModificationResultSchema`
-- `AestheticModificationHistoryEntrySchema`
-
-Also extend `CampaignAestheticBriefSchema` with an optional:
-
-- `modificationHistory: AestheticModificationHistoryEntry[]`
-
-Keep this history short and append-only. It is operator/audit metadata, not AI-facing schema input. Any AI-facing schemas must explicitly omit it just like `productionBuildLint*`.
-
-### 2. `lib/campaigns/aesthetic-modification.ts`
-
-Create the main service with functions like:
-- `previewAestheticModification(slug, request)`
-- `applyAestheticModification(slug, request)`
-- `runAestheticModification(slug, request)`
-- `deriveOperationsFromIssueCodes(brief, review, issueCodes)`
-- `computeAestheticInvalidation(touchedPaths, priorBrief)`
-- `appendModificationHistory(brief, historyEntry)`
+Requirements:
+- reject any explicit operation paths not present in the expanded whitelist
+- continue surfacing `FixerPathError` as `422`
+- continue surfacing all-no-op as `409`
+- include the actual applied operations in the response so operators can see what changed
 
-This file is the only place that:
-- translates issue codes into concrete mutations
-- computes post-edit invalidation behavior
-- writes `revisionNotes` / `humanReviewStatus`
+## UI Requirements
 
-### 3. `lib/campaigns/aesthetic-fixers/registry.ts`
+Update `app/(tests)/tests/aesthetic-devising/page.tsx`.
 
-Add a registry object keyed by `AestheticIssueCode`.
+### Needed behavior
 
-Initial issue codes should include:
-- `countdown_series_hard_scarcity`
-- `exact_time_strings`
-- `queue_device_handling`
-- `non_generic_venue_naming`
-- `avatar_required_video`
-- `disallowed_video_tool`
-- `rail_safety_missing`
-- `merch_identifier_pressure`
-- `privacy_line_missing`
-- `filming_permissions_missing`
-- `compliance_risk_scarcity_copy`
+When the revise route deadlocks and returns suggested deterministic fixes:
+- the amber deterministic panel should show the new issue codes too
+- preview should clearly show whether the fix touched:
+  - `videoConcepts`
+  - `productionBible`
+  - storyboard fields
+  - safety notes
+- apply should update the loaded brief in-place
 
-Each issue code must resolve to deterministic operations over known fields only.
+### Optional but strongly recommended
 
-### 4. `lib/campaigns/aesthetic-fixers/countdown-series.ts`
+Surface a short operator note when applied operations touched production-bible/storyboard content:
 
-Create the countdown-specific fixer here.
+`Production planning was repaired in place. Re-run red team before approving.`
 
-This fixer must be self-contained and deterministic.
+## Campaign-Specific Validation Target
 
-### 5. `app/api/groups/campaign/[slug]/media/aesthetic/modify/route.ts`
+Use `film-and-zine-afloat-2026` as the acceptance campaign.
 
-Implement the endpoint using the new request schema and service.
+This work is not done until that slug can pass through this sequence without deadlocking on the same issues:
 
-### 6. `lib/campaigns/aesthetic-workflow-client.ts`
+1. Load existing brief
+2. Revise deadlocks and suggests deterministic fixes
+3. Preview deterministic fixes
+4. Apply deterministic fixes
+5. Re-run red team
+6. Red team no longer reports the same five blockers
+7. Approve brief
+8. Continue toward production-bible/build/media flow
 
-Add shared client helpers:
-- `previewAestheticModification(slug, request)`
-- `applyAestheticModification(slug, request)`
+## Tests Required
 
-This preserves the same shared-client pattern already used for approve/regenerate.
+Add or extend tests in:
+- `lib/campaigns/__tests__/aesthetic-modification.test.ts`
+- new focused tests if needed for production-bible/storyboard fixers
 
-### 7. UI surfaces
+### Required test cases
 
-Update at least one operator page first:
-- `app/(tests)/tests/aesthetic-devising/page.tsx`
+1. `camera_move_feasibility` removes crane/dolly/track language.
+2. camera fixer injects no-tracks/no-cranes/no-cables note exactly once.
+3. `cabin_type_plausibility` resolves interior+window contradiction to the chosen valid cabin type.
+4. cabin-type fixer aligns all linked references consistently.
+5. `gangway_exchange_prohibited` relocates exchange scene away from gangway.
+6. gangway fixer injects no-exchanges-on-gangways note.
+7. `storyboard_duration_alignment` rewrites totals to 15 and 18 for the affected deliverables.
+8. duration fixer preserves exact sum across per-shot timings.
+9. `production_safety_ops_missing` injects the full ops bundle exactly once.
+10. all five new fixers are idempotent.
+11. deadlock suggestion logic recommends the new issue codes when given the current surviving fixes text.
+12. all new registry mappings target real whitelisted production-bible/storyboard paths.
 
-Add:
-- a preview panel for deterministic fixes suggested by issue code
-- an apply action
-- surfaced invalidation/follow-up state
+## Acceptance Criteria
 
-Optional second UI surface after the endpoint is working:
-- `app/(tests)/tests/production-bible/page.tsx`
+This task is complete only when all are true:
 
-## CountdownSeries: Exact Deterministic Fix Design
+1. The modify endpoint can deterministically patch production-bible/storyboard feasibility issues, not just top-level brief copy issues.
+2. The five new issue codes are implemented and wired into deadlock suggestions.
+3. The aesthetic page can preview and apply those fixes through the existing deterministic fix panel.
+4. Applying these fixes to `film-and-zine-afloat-2026` removes the current deadlock blockers from the next red-team pass.
+5. The fixers are idempotent.
+6. The route continues to fail safely on unsupported paths or useless no-op runs.
 
-### Problem to solve
+## Non-Goals
 
-The current countdown problem is not just that `videoConcepts.countdownSeries` contains bad copy.
+- Do not add a freeform manual editor in this task.
+- Do not rely on another LLM revision cycle to perform these five corrections.
+- Do not create a second modification endpoint just for production bible.
 
-The issue is semantic drift across multiple layers:
-- the brief may contain `T-5`, `T-3`, `3 cabins left`, `1 cabin left`, or similar hard scarcity framing
-- `lib/campaigns/media/video-deliverable-specs.ts` hardcodes `Countdown - 3 Cabins Left`
-- `lib/campaigns/media/generators/runway-generator.ts` hardcodes countdown labels and urgency-heavy motion prompts
-- `lib/campaigns/distribution-planner.ts` assumes `countdown_day_3`, `countdown_day_7`, `countdown_day_14`
-
-Fixing only the brief is insufficient because downstream code can re-inject the same semantics.
-
-### Countdown fixer strategy
-
-Implement `replace_countdown_series` with one deterministic strategy in v1:
-
-`open_window_triplet`
-
-This strategy must:
-- preserve the array shape expected by downstream video planning
-- preserve three short-form video concepts
-- remove numeric diminishing-count framing
-- remove `T-` naming
-- remove exact scarcity claims not backed by live inventory
-- keep the concepts useful as conversion nudges
-
-### Countdown fixer algorithm
-
-1. Read `brief.videoConcepts.countdownSeries`.
-2. Ignore the current titles/body if they match banned countdown patterns.
-3. Replace the entire array with a deterministic three-item template set.
-4. Preserve only safe reusable context from the brief:
-	- `themeName`
-	- `visual.colorPalette`
-	- generic audience framing
-	- destination/ship context when generic and compliant
-5. Force these invariants on all three items:
-	- `avatarRequired = false`
-	- no `heygen`
-	- no `T-<number>` or `<number> cabins left`
-	- no exact remaining inventory claims
-	- no exact times
-	- privacy-safe copy if filming/photos are referenced
-
-### Countdown replacement template
-
-Replace with three evergreen concepts such as:
-- `Open Sailing Window`
-- `Check Cabin Options`
-- `Plan Your Route`
-
-The exact titles can differ, but they must be generated from a deterministic template set stored in code, not via LLM.
-
-For each replacement concept, deterministically set:
-- title
-- hook
-- voiceover summary
-- CTA direction
-- tool guidance
-- motion notes
-- compliance-safe scarcity language
-
-### Countdown downstream cleanup
-
-Implement this in the same workstream, not later.
-
-Change downstream semantic assumptions so the fixer does not fight other code.
-
-Required follow-on edits:
-
-1. `lib/campaigns/media/video-deliverable-specs.ts`
-	- replace hardcoded title `Countdown - 3 Cabins Left`
-	- rename to neutral language such as `Planning Window Video 1`
-	- keep the deliverable ID stable if changing IDs would be too disruptive in v1
-
-2. `lib/campaigns/media/generators/runway-generator.ts`
-	- replace urgency-heavy countdown motions with neutral conversion/window motions
-	- keep three generated clips but remove hardcoded `3cabins`, `2cabins`, `1cabin` naming
-	- use neutral labels like `window_1`, `window_2`, `window_3` or keep old asset IDs temporarily but neutralize semantics everywhere else
-
-3. `lib/campaigns/distribution-planner.ts`
-	- replace `countdown_day_*` copy variants with neutral variants such as `window_day_3`, `window_day_7`, `window_day_14`
-	- if variant renames are too disruptive in v1, add a mapping layer but do not keep hard-scarcity copy content
-
-### Countdown acceptance criteria
-
-After applying the fixer:
-- the stored brief contains no `T-` naming in `videoConcepts.countdownSeries`
-- the stored brief contains no exact diminishing inventory copy in those concepts
-- downstream deliverable specs and generator prompts no longer reintroduce countdown scarcity semantics
-- rerunning red team does not reproduce the same countdown complaint unless a different layer reintroduced it
-
-## Generalized Deterministic Aesthetic Fixers
-
-The system must not be countdown-only. Implement fixers for any aesthetic issue that is a known structural rule over known fields.
-
-### Initial deterministic issue families
-
-1. `exact_time_strings`
-	- scan all string leaves
-	- replace `HH:MM` patterns with broad phrases using deterministic mapping rules
-
-2. `queue_device_handling`
-	- scan queue/line-related copy
-	- replace active device use with verbal-only or seated-sharing phrasing
-
-3. `non_generic_venue_naming`
-	- replace branded venue references with generic labels from a static lookup table
-
-4. `avatar_required_video`
-	- force `avatarRequired = false` across all video concepts
-
-5. `disallowed_video_tool`
-	- replace banned tool values such as `heygen` with approved defaults or remove the field when optional
-
-6. `rail_safety_missing`
-	- inject the exact safe rail language into relevant `subjectAction` or `subjectMotion` fields when the scene references rails/deck edges
-
-7. `merch_identifier_pressure`
-	- inject `Optional - no identifiers needed` style disclaimer into merch CTA placements
-
-8. `privacy_line_missing`
-	- inject privacy-safe filming/photo guidance into captions, copy rules, or email directions when those sections mention photos or filming
-
-9. `filming_permissions_missing`
-	- inject the written-approval gate plus synthetic fallback into production notes
-
-10. `compliance_risk_scarcity_copy`
-	- replace scarcity-risk phrases with neutral availability-check phrasing from a fixed replacement table
-
-### What stays non-deterministic
-
-Do not force deterministic fixers onto broad creative failures such as:
-- weak community vibe
-- generic luxury drift
-- poor thematic cohesion
-- stereotype risk requiring recasting/reframing across many scenes
-- whole-campaign voice problems
-
-Those still belong to LLM revision or manual operator editing.
-
-### Deterministic eligibility rule
+The objective is to make the existing deterministic system strong enough to repair the exact production-feasibility contradictions blocking this campaign.
 
 An issue is deterministic only when all three are true:
 - it maps to a known issue code
