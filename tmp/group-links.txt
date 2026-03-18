@@ -1,0 +1,62 @@
+[
+  {
+    "text": "Skip to main content",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#main-content"
+  },
+  {
+    "text": "Trips",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Modification Requests",
+    "href": "https://www.cbagenttools.com/groups/modification-requests/"
+  },
+  {
+    "text": "Payments",
+    "href": "https://www.cbagenttools.com/groups/modification-requests/?request_type=payment"
+  },
+  {
+    "text": "Booking Engine",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Commissions",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Groups",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "View All Groups",
+    "href": "https://www.cbagenttools.com/groups/view_groups/"
+  },
+  {
+    "text": "View Price Advantages",
+    "href": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+  },
+  {
+    "text": "View Campaigns",
+    "href": "https://www.cbagenttools.com/groups/view_campaigns/"
+  },
+  {
+    "text": "Clients",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Training / Resources",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Promotions",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "My Site",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  },
+  {
+    "text": "Account",
+    "href": "https://www.cbagenttools.com/training/home/?search=groups#"
+  }
+]

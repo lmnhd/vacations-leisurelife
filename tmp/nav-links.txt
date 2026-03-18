@@ -1,0 +1,282 @@
+[
+  {
+    "text": "Skip to main content",
+    "href": "https://www.cbagenttools.com/bookings/home/#main-content"
+  },
+  {
+    "text": "Trips",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Search All Trips",
+    "href": "https://www.cbagenttools.com/bookings/search_trip/?checkbox=on&start_date_departed=2025-11-18"
+  },
+  {
+    "text": "Quick Search",
+    "href": ""
+  },
+  {
+    "text": "Add Reservation",
+    "href": "https://www.cbagenttools.com/bookings/input_reservation/contact/"
+  },
+  {
+    "text": "Reports",
+    "href": "https://www.cbagenttools.com/bookings/reports_home/"
+  },
+  {
+    "text": "Modification Requests",
+    "href": "https://www.cbagenttools.com/groups/modification-requests/"
+  },
+  {
+    "text": "Payments",
+    "href": "https://www.cbagenttools.com/groups/modification-requests/?request_type=payment"
+  },
+  {
+    "text": "Booking Engine",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Cruise Engine",
+    "href": "https://www.cbagenttools.com/bookings/odysseus/booking/"
+  },
+  {
+    "text": "Cruise Engine Admin",
+    "href": "https://www.cbagenttools.com/bookings/odysseus/admin/"
+  },
+  {
+    "text": "Hotels",
+    "href": "https://www.expediataap.com/TAAP-Agent?key=48bb861d-2847-46f3-beaa-8fa4596f1503"
+  },
+  {
+    "text": "Commissions",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Commission Dashboard",
+    "href": "https://www.cbagenttools.com/accounting/commission_home/23379/"
+  },
+  {
+    "text": "Commission Status Report",
+    "href": "https://www.cbagenttools.com/accounting/agentcommissions/"
+  },
+  {
+    "text": "Pending Commissions",
+    "href": "https://www.cbagenttools.com/accounting/commissions/?searchType=pending&name=23379&fullname=Nathaniel%20Orange%20Jr."
+  },
+  {
+    "text": "Commission Payments",
+    "href": "https://www.cbagenttools.com/accounting/commissions/?name=23379&fullname=Nathaniel%20Orange%20Jr."
+  },
+  {
+    "text": "Groups",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "View All Groups",
+    "href": "https://www.cbagenttools.com/groups/view_groups/"
+  },
+  {
+    "text": "View Price Advantages",
+    "href": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+  },
+  {
+    "text": "View Campaigns",
+    "href": "https://www.cbagenttools.com/groups/view_campaigns/"
+  },
+  {
+    "text": "Clients",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Search/Edit Clients",
+    "href": "https://www.cbagenttools.com/bookings/search_people/"
+  },
+  {
+    "text": "Add Client",
+    "href": "https://www.cbagenttools.com/bookings/add_client/"
+  },
+  {
+    "text": "Upload my Clients",
+    "href": "https://www.cbagenttools.com/bookings/upload_my_clients/"
+  },
+  {
+    "text": "View ToDos",
+    "href": "https://www.cbagenttools.com/bookings/view_agent_todos/"
+  },
+  {
+    "text": "View ToDos Calendar",
+    "href": "https://www.cbagenttools.com/bookings/view_agent_todo_calendar/2026/3/"
+  },
+  {
+    "text": "Training / Resources",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Training / Resources Home",
+    "href": "https://www.cbagenttools.com/training/home/"
+  },
+  {
+    "text": "Event Calendar",
+    "href": "https://www.cbagenttools.com/training/event_calendar/"
+  },
+  {
+    "text": "Cruise Brothers Contact Info",
+    "href": "https://www.cbagenttools.com/training/view_agency_contact_info/"
+  },
+  {
+    "text": "CBAT University",
+    "href": "https://www.cbagenttools.com/training/university/"
+  },
+  {
+    "text": "Vendors",
+    "href": "https://www.cbagenttools.com/marketing/vendor_urls/"
+  },
+  {
+    "text": "Promotions",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Today's Promos",
+    "href": "https://www.cbagenttools.com/marketing/todaysview/"
+  },
+  {
+    "text": "Calendar",
+    "href": "https://www.cbagenttools.com/marketing/calendar/"
+  },
+  {
+    "text": "Search",
+    "href": "https://www.cbagenttools.com/marketing/home/"
+  },
+  {
+    "text": "LogoWear",
+    "href": "https://shop.spreadshirt.com/the-cruise-brothers/all"
+  },
+  {
+    "text": "My Site",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Get Started",
+    "href": "https://www.cbagenttools.com/icleads/manage_subdomain_intro/23379/"
+  },
+  {
+    "text": "Account",
+    "href": "https://www.cbagenttools.com/bookings/home/#"
+  },
+  {
+    "text": "Change Password",
+    "href": "https://www.cbagenttools.com/accounts/password_change/"
+  },
+  {
+    "text": "Edit My Profile",
+    "href": "https://www.cbagenttools.com/accounts/my-profile/"
+  },
+  {
+    "text": "View My Contract",
+    "href": "https://www.cbagenttools.com/icleads/user_sign_new_contract/"
+  },
+  {
+    "text": "Contact Preferences",
+    "href": "https://www.cbagenttools.com/icleads/user_unsubscribe/bVSZ1yZ4iiGlzP1ndGF9lXf9WyVJTwuKddThyTK4KJY/"
+  },
+  {
+    "text": "Enable Two-Factor Auth",
+    "href": "https://www.cbagenttools.com/accounts/enable_multi_auth/"
+  },
+  {
+    "text": "CLICK HERE FOR OUR TRAINING CALENDAR - CBAT ESSENTIALS NOW EVERY WEDS AT 5PM AND SAT AT 11AM - JUST CLICK IN TRAINING CALENDAR TO REGISTER",
+    "href": "https://www.cbagenttools.com/training/event_calendar/"
+  },
+  {
+    "text": "UK visa for US Citizens must be applied for 3 days prior to traveling to the UK or through the UK (transfer). CLICK HERE FOR MORE INFO",
+    "href": "https://www.gov.uk/government/news/uk-opens-pre-travel-requirement-to-non-europeans"
+  },
+  {
+    "text": "Have you booked a private group?\nCLICK HERE TO REGISTER YOUR PRIVATE GROUP",
+    "href": "https://anhywhereinc.formstack.com/forms/private_group_booking"
+  },
+  {
+    "text": "Don't miss a thing going on!\nSIGN UP HERE TO RECEIVE THE LATEST CRUISE BROTHERS INFORMATION",
+    "href": "https://mailchi.mp/21c4c9b3cc90/cbagentsubscriptions"
+  },
+  {
+    "text": "Facebook Page",
+    "href": "https://www.facebook.com/groups/4872128919509416"
+  },
+  {
+    "text": "https://www.facebook.com/groups/4872128919509416",
+    "href": "https://www.facebook.com/groups/4872128919509416"
+  },
+  {
+    "text": "No To Do's",
+    "href": "https://www.cbagenttools.com/bookings/view_agent_todos/"
+  },
+  {
+    "text": "Royal Caribbean MORE Onboard Credit Exclusive",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2741/"
+  },
+  {
+    "text": "Royal Caribbean SUITE Deals - SPA + VOOM from Cruise Brothers",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2740/"
+  },
+  {
+    "text": "Explora Journeys up to 30% off",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2718/"
+  },
+  {
+    "text": "Carnival Cruises - March Madness Savings",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2717/"
+  },
+  {
+    "text": "Viking Cruises CB Exclusive Onboard Credit",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2734/"
+  },
+  {
+    "text": "Holland America Save on Sunshine",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2722/"
+  },
+  {
+    "text": "Viking Cruises Spring Sale - Pick Your Extras",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2726/"
+  },
+  {
+    "text": "Royal Caribbean 30% Off - Alaska & Caribbean Bonus Dollars Off",
+    "href": "https://www.cbagenttools.com/marketing/promotion/2720/"
+  },
+  {
+    "text": "All Promotions",
+    "href": "https://www.cbagenttools.com/marketing/todaysview/"
+  },
+  {
+    "text": "Orientation - New agents should start here",
+    "href": "https://www.cbagenttools.com/training/home/?search=orientation"
+  },
+  {
+    "text": "Group Info - Find the group list and more...",
+    "href": "https://www.cbagenttools.com/groups/view_groups/"
+  },
+  {
+    "text": "Report a new sale here",
+    "href": "https://www.cbagenttools.com/bookings/input_reservation/contact/"
+  },
+  {
+    "text": "Edit My Profile - Update contact information",
+    "href": "https://www.cbagenttools.com/accounts/my-profile/"
+  },
+  {
+    "text": "Vendor Info - Information you need about our partners",
+    "href": "https://www.cbagenttools.com/marketing/vendor_urls/"
+  },
+  {
+    "text": "Commissions - See commissions and pay history",
+    "href": "https://www.cbagenttools.com/accounting/commission_home/23379/"
+  },
+  {
+    "text": "Facebook Page - Connect with cruisebrothers Agents",
+    "href": "https://facebook.com/groups/46597403359"
+  },
+  {
+    "text": "Weekly Webinars Channel",
+    "href": "https://www.gotostage.com/channel/cruisebrotherstrainingchannel"
+  }
+]

@@ -65,6 +65,17 @@ export interface AestheticDeadlockResult {
     survivingFixes: string[];
 }
 
+function isRetryableRevisionTimeoutError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    const message = error.message.toLowerCase();
+    return message.includes('headers timeout')
+        || message.includes('cannot connect to api')
+        || message.includes('maxretriesexceeded');
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Core function
 // ────────────────────────────────────────────────────────────────────────────
@@ -90,6 +101,53 @@ export async function reviseAestheticBrief(
 
     const review = brief.redTeamReview;
     const currentCycle = (brief.revisionCycleCount ?? 0) + 1;
+
+    const {
+        productionBible: _productionBible,
+        landingStillBible: _landingStillBible,
+        productionBuildLint,
+        productionBuildStatus,
+        productionBuildEvaluatedAt,
+        redTeamReview: _redTeamReview,
+        modificationHistory: _modificationHistory,
+        ...currentBriefForRevision
+    } = brief;
+
+    const compactReview = {
+        verdict: review.verdict,
+        summary: review.summary,
+        approvalRecommendation: review.approvalRecommendation,
+        requiredFixes: review.requiredFixes,
+        optionalImprovements: review.optionalImprovements,
+        issues: review.issues.map((issue) => ({
+            category: issue.category,
+            severity: issue.severity,
+            title: issue.title,
+            evidence: issue.evidence,
+            recommendation: issue.recommendation,
+        })),
+    };
+
+    const compactProductionBuildLint = productionBuildLint
+        ? {
+            verdict: productionBuildLint.verdict,
+            blockingIssues: productionBuildLint.blockingIssues.map((issue) => ({
+                code: issue.code,
+                severity: issue.severity,
+                message: issue.message,
+                affectedStillIds: issue.affectedStillIds,
+                details: issue.details,
+            })),
+            warnings: productionBuildLint.warnings.map((issue) => ({
+                code: issue.code,
+                severity: issue.severity,
+                message: issue.message,
+                affectedStillIds: issue.affectedStillIds,
+                details: issue.details,
+            })),
+            scoreSummary: productionBuildLint.scoreSummary,
+        }
+        : null;
 
     // ── Deadlock detection ──────────────────────────────────────────────────
     if (currentCycle > MAX_NON_IMPROVING_CYCLES) {
@@ -137,17 +195,43 @@ MANDATORY SWEEPS — Before returning, verify every one of these:
             shipTarget: campaign.shipTarget,
             audienceSignals: campaign.audienceSignals,
         },
-        currentBrief: brief,
-        redTeamReviewToAddress: review,
+        currentBrief: currentBriefForRevision,
+        redTeamReviewToAddress: compactReview,
+        productionBuildContext: {
+            status: productionBuildStatus ?? null,
+            evaluatedAt: productionBuildEvaluatedAt ?? null,
+            lint: compactProductionBuildLint,
+        },
+        preservedAssets: {
+            hasProductionBible: Boolean(brief.productionBible),
+            hasLandingStillBible: Boolean(brief.landingStillBible),
+            instruction: 'Do not rewrite or regenerate productionBible or landingStillBible. They are preserved outside this revision payload.',
+        },
         instructions: 'Rewrite the brief so it addresses all requiredFixes and major issues. Run every mandatory sweep before returning. Keep slug unchanged.',
     };
 
-    const { object } = await callGlobalGenerateObject({
-        system: systemPrompt,
-        prompt: JSON.stringify(prompt),
-        schema: AestheticRevisionCandidateSchema,
-        modelName: ModelName.GPT_5_HIGH,
-    });
+    let object: z.infer<typeof AestheticRevisionCandidateSchema>;
+    try {
+        const result = await callGlobalGenerateObject({
+            system: systemPrompt,
+            prompt: JSON.stringify(prompt),
+            schema: AestheticRevisionCandidateSchema,
+            modelName: ModelName.GPT_5_HIGH,
+        });
+        object = result.object;
+    } catch (error: unknown) {
+        if (!isRetryableRevisionTimeoutError(error)) {
+            throw error;
+        }
+
+        const result = await callGlobalGenerateObject({
+            system: systemPrompt,
+            prompt: JSON.stringify(prompt),
+            schema: AestheticRevisionCandidateSchema,
+            modelName: ModelName.GPT_5_MEDIUM,
+        });
+        object = result.object;
+    }
 
     const revisedBrief = CampaignAestheticBriefSchema.parse({
         ...object.brief,

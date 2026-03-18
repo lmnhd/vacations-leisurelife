@@ -1,0 +1,161 @@
+Skip to main content
+Trips
+Booking Engine
+Commissions
+Groups
+Clients
+Training / Resources
+Vendors
+Promotions
+My Site
+Account
+Group Inventory
+CB Group List Excel --- TLN Groups Excel
+The Top of the List
+Group ID	Ship	Vendor	Itinerary	Port	Nights	Sail Date	Price From	Price Advantage	Personal Link
+1941670	Grandeur of the Seas	Royal Caribbean …				Aug. 17, 2026	534.28	$579	Not Available
+443517	Jewel of the Seas	Royal Caribbean …				April 18, 2027	1191.51	$305	Not Available
+3545310	Celebrity Silhouette	Celebrity Cruises	7 Nights Iceland Total Solar Eclipse Cruise	REK	6	Aug. 8, 2026	2245.66	$7510	Copy Link
+3500763	Quantum of the Seas	Royal Caribbean …	23 Night Transpacific Cruise	BNE	22	April 11, 2027	1677.25	$1442	Copy Link
+441350	Jewel of the Seas	Royal Caribbean …				April 11, 2027	1203.48	$305	Not Available
+Search Group Inventory
+Date Begin:
+Date To:
+Description:
+Vendor:
+---------
+Carnival Cruise Lines
+Celebrity Cruises
+Cunard Line
+Holland America Line
+MSC Cruises
+Norwegian Cruise Line
+Princess Cruises
+Regent Seven Seas Cruises
+Royal Caribbean International
+Viking Cruises
+Price Advantage:
+My Groups:
+Group ID	
+Ship
+
+	
+Vendor
+	
+Itinerary
+	
+Port
+	
+Nights
+	
+Sail Date
+	
+Price From PP*
+	
+Price Advantage PP*
+	Personal Link
+1725533	Adventure of the Seas	Royal Caribbean …	8 Night Eastern Caribbean Cruise	XPC	7	April 17, 2026	$902	$1365	Copy Link
+7862868	Utopia of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	XPC	3	April 17, 2026		Promo Rate	Copy Link
+5710604	Wonder of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	MIA	3	April 17, 2026		Promo Rate	Copy Link
+1590496	Wonder of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	MIA	3	April 17, 2026		Promo Rate	Copy Link
+A2848058	Norwegian Getaway	Norwegian Cruise…	Bahamas - Short	MIA	3	April 17, 2026		Promo Rate	Copy Link
+11644167	Navigator of the Seas	Royal Caribbean …	7 Night Cabo, Vallarta & Mazatlan	LAX	7	April 17, 2026		Promo Rate	Copy Link
+TNQ8615	Majestic Princess	Princess Cruises		SOU	11	April 17, 2026		Promo Rate	Not Available
+2848058	Norwegian Getaway	Norwegian Cruise…	Bahamas - Short	MIA	3	April 17, 2026		Promo Rate	Copy Link
+9961331	Celebrity Reflection	Celebrity Cruises	3 Night Key West & Perfect Day Cruise	FLL	3	April 17, 2026		Promo Rate	Copy Link
+5534867	Utopia of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	XPC	3	April 17, 2026		Promo Rate	Copy Link
+919614	Wonder of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	MIA	3	April 17, 2026		Promo Rate	Copy Link
+6118294	Oasis of the Seas	Royal Caribbean …				April 18, 2026	$1155	$1305	Not Available
+5561923	Oasis of the Seas	Royal Caribbean …	8 Nights Southern Caribbean & Perfect Day	FLL	7	April 18, 2026	$1155	$1305	Copy Link
+2754782	Pride Of America	Norwegian Cruise…	Hawaii Hnl Inter Island	HNL	7	April 18, 2026		Promo Rate	Copy Link
+5134497	Icon of the Seas	Royal Caribbean …	7 Night Western Caribbean & Perfect Day	MIA	7	April 18, 2026		Promo Rate	Copy Link
+TNXB611	Caribbean Princess	Princess Cruises	Southern Caribbean With Martinique	FLL	10	April 18, 2026		Promo Rate	Copy Link
+4101395	Icon of the Seas	Royal Caribbean …	7 Night Western Caribbean & Perfect Day	MIA	7	April 18, 2026		Promo Rate	Copy Link
+674935	Jewel of the Seas	Royal Caribbean …	7 Night Southern Caribbean Cruise	SJU	7	April 18, 2026		Promo Rate	Copy Link
+1186111	Celebrity Apex	Celebrity Cruises	7 Night Key West, Bahamas & Grand Turk	XPC	7	April 18, 2026		Promo Rate	Copy Link
+A2754782	Pride Of America	Norwegian Cruise…	Hawaii Hnl Inter Island	HNL	7	April 18, 2026		Promo Rate	Copy Link
+A2847749	Norwegian Luna	Norwegian Cruise…	Eastern Caribbean - Miami	MIA	7	April 18, 2026		Promo Rate	Copy Link
+1234615	Celebrity Silhouette	Celebrity Cruises	8 Night Aruba, Curacao & Bonaire Cruise	FLL	8	April 18, 2026		Promo Rate	Copy Link
+4325682	Oasis of the Seas	Royal Caribbean …	8 Nights Southern Caribbean & Perfect Day	FLL	8	April 18, 2026		Promo Rate	Copy Link
+2847749	Norwegian Luna	Norwegian Cruise…	Eastern Caribbean - Miami	MIA	7	April 18, 2026		Promo Rate	Copy Link
+2550030	Celebrity Apex	Celebrity Cruises	7 Night Key West, Bahamas & Grand Turk	XPC	7	April 18, 2026		Promo Rate	Copy Link
+7206705	Rhapsody of The Seas	Royal Caribbean …	7 Night Western Caribbean Cruise	TPA	7	April 18, 2026		Promo Rate	Copy Link
+4981651	Explorer of the Seas	Royal Caribbean …	5 Night Western Caribbean Cruise	XPC	5	April 18, 2026		Promo Rate	Copy Link
+1665855	Freedom of the Seas	Royal Caribbean …	5 Night Caribbean Getaway Cruise	MIA	5	April 18, 2026		Promo Rate	Copy Link
+4776209	Vision of the Seas	Royal Caribbean …		BWI	12	April 18, 2026		Promo Rate	Not Available
+2306458	Celebrity Silhouette	Celebrity Cruises	8 Night Aruba, Curacao & Bonaire Cruise	FLL	8	April 18, 2026		Promo Rate	Copy Link
+TNH1618	Royal Princess	Princess Cruises	Mexican Riviera	LAX	7	April 18, 2026		Promo Rate	Copy Link
+7389796	Explorer of the Seas	Royal Caribbean …	5 Night Western Caribbean Cruise	XPC	5	April 18, 2026		Promo Rate	Copy Link
+2847686	Norwegian Aqua	Norwegian Cruise…	Bermuda - New York	NYC	7	April 18, 2026		Promo Rate	Copy Link
+3475739	Mariner of The Seas	Royal Caribbean …	5 Night Western Caribbean Cruise	GLS	5	April 18, 2026		Promo Rate	Copy Link
+5776618	Vision of the Seas	Royal Caribbean …		BWI	12	April 18, 2026		Promo Rate	Not Available
+563700	MSC World America	MSC Cruises	Caribbean And Antilles, 7 Nights	MIA	7	April 18, 2026		Promo Rate	Copy Link
+563699	MSC World America	MSC Cruises	Caribbean And Antilles, 7 Nights	MIA	7	April 18, 2026		Promo Rate	Copy Link
+2846319	Norwegian Dawn	Norwegian Cruise…	7 Nights Europe -	LIS	7	April 19, 2026		Promo Rate	Copy Link
+2845670	Norwegian Epic	Norwegian Cruise…	Repo - Transatlantic	SJU	14	April 19, 2026		Promo Rate	Copy Link
+2845601	Norwegian Escape	Norwegian Cruise…	Western Caribbean - New Orleans	MSY	7	April 19, 2026		Promo Rate	Copy Link
+2846766	Norwegian Prima	Norwegian Cruise…	Eastern Caribbean - Port Canaveral	XPC	7	April 19, 2026		Promo Rate	Copy Link
+2847058	Norwegian Sky	Norwegian Cruise…	Europe - Northern Capitals	LEH	7	April 19, 2026		Promo Rate	Copy Link
+A2847058	Norwegian Sky	Norwegian Cruise…	Europe - Northern Capitals	LEH	7	April 19, 2026		Promo Rate	Copy Link
+A2845601	Norwegian Escape	Norwegian Cruise…	Western Caribbean - New Orleans	MSY	7	April 19, 2026		Promo Rate	Copy Link
+1350358	Celebrity Beyond	Celebrity Cruises	7 Night Tortola, Antigua & Bahamas	MIA	7	April 19, 2026		Promo Rate	Copy Link
+2217548	Celebrity Eclipse	Celebrity Cruises	6 Night Grand Cayman, Bahamas & Mexico	FLL	6	April 19, 2026		Promo Rate	Copy Link
+6078576	Allure of the Seas	Royal Caribbean …	7 Night Western Caribbean Cruise	GLS	7	April 19, 2026		Promo Rate	Copy Link
+TPW8719	Majestic Princess	Princess Cruises		SOU	12	April 19, 2026		Promo Rate	Not Available
+2900119	Norwegian Breakaway	Norwegian Cruise…	Bermuda - Boston	BOS	7	April 19, 2026		Promo Rate	Copy Link
+2964834	Norwegian Escape	Norwegian Cruise…				April 19, 2026		Promo Rate	Not Available
+A2846766	Norwegian Prima	Norwegian Cruise…	Eastern Caribbean - Port Canaveral	XPC	7	April 19, 2026		Promo Rate	Copy Link
+QQ36P3	Carnival Horizon	Carnival Cruise …				April 19, 2026		Promo Rate	Not Available
+A2845670	Norwegian Epic	Norwegian Cruise…	Repo - Transatlantic	SJU	14	April 19, 2026		Promo Rate	Copy Link
+7993004	Star of the Seas	Royal Caribbean …	7 Night Eastern Caribbean & Perfect Day	XPC	7	April 19, 2026		Promo Rate	Copy Link
+6228957	Allure of the Seas	Royal Caribbean …	7 Night Western Caribbean Cruise	GLS	7	April 19, 2026		Promo Rate	Copy Link
+6423638	Symphony of the Seas	Royal Caribbean …	7 Nights Western Caribbean & Perfect Day	MIA	7	April 19, 2026		Promo Rate	Copy Link
+1086549	Celebrity Eclipse	Celebrity Cruises	6 Night Grand Cayman, Bahamas & Mexico	FLL	6	April 19, 2026		Promo Rate	Copy Link
+8203042	Star of the Seas	Royal Caribbean …	7 Night Eastern Caribbean & Perfect Day	XPC	7	April 19, 2026		Promo Rate	Copy Link
+8298730	Celebrity Xcel	Celebrity Cruises	7 Night Usvi & Puerto Plata Cruise	FLL	7	April 19, 2026		Promo Rate	Copy Link
+1704587	Celebrity Beyond	Celebrity Cruises	7 Night Tortola, Antigua & Bahamas	MIA	7	April 19, 2026		Promo Rate	Copy Link
+7888120	Celebrity Xcel	Celebrity Cruises	7 Night Usvi & Puerto Plata Cruise	FLL	7	April 19, 2026		Promo Rate	Copy Link
+HF71V8	Carnival Horizon	Carnival Cruise …	6-Day Western Caribbean	MIA	6	April 19, 2026		Promo Rate	Copy Link
+A2846319	Norwegian Dawn	Norwegian Cruise…	7 Nights Europe -	LIS	7	April 19, 2026		Promo Rate	Copy Link
+A2900119	Norwegian Breakaway	Norwegian Cruise…	Bermuda - Boston	BOS	7	April 19, 2026		Promo Rate	Copy Link
+6460417	Symphony of the Seas	Royal Caribbean …	7 Nights Western Caribbean & Perfect Day	MIA	7	April 19, 2026		Promo Rate	Copy Link
+2900044	Norwegian Bliss	Norwegian Cruise…	Repo - Pacific Coastal	LAX	5	April 19, 2026		Promo Rate	Copy Link
+9964640	Brilliance of the Seas	Royal Caribbean …	7 Night Eastern Caribbean Cruise	SJU	7	April 19, 2026		Promo Rate	Copy Link
+5800786	Celebrity Edge	Celebrity Cruises	18 Night Tahitian Treasures Cruise	SYD	17	April 20, 2026	$4367	Promo Rate	Copy Link
+1400760	Enchantment of the Seas	Royal Caribbean …	5 Night Western Caribbean Cruise	TPA	5	April 20, 2026		Promo Rate	Copy Link
+5539947	Utopia of the Seas	Royal Caribbean …	4 Night Bahamas & Perfect Day Cruise	XPC	4	April 20, 2026		Promo Rate	Copy Link
+5499982	Celebrity Infinity	Celebrity Cruises	11 Night Best Of Greece & Turkey Cruise	PIRA	11	April 20, 2026		Promo Rate	Copy Link
+4519005	Celebrity Millennium	Celebrity Cruises				April 20, 2026		Promo Rate	Not Available
+2848060	Norwegian Getaway	Norwegian Cruise…	Bahamas - Short	MIA	4	April 20, 2026		Promo Rate	Copy Link
+4687865	Radiance of the Seas	Royal Caribbean …	5 Night Fort Lauderdale To San Juan	FLL	5	April 20, 2026	$703	Promo Rate	Copy Link
+A2848060	Norwegian Getaway	Norwegian Cruise…	Bahamas - Short	MIA	4	April 20, 2026		Promo Rate	Copy Link
+1593318	Wonder of the Seas	Royal Caribbean …	4 Night Bahamas & Perfect Day Cruise	MIA	4	April 20, 2026		Promo Rate	Copy Link
+5412664	Celebrity Ascent	Celebrity Cruises	14 Night Spain & Bermuda Transatlantic	FLL	14	April 20, 2026		Promo Rate	Copy Link
+5704373	Wonder of the Seas	Royal Caribbean …	4 Night Bahamas & Perfect Day Cruise	MIA	4	April 20, 2026		Promo Rate	Copy Link
+5372954	Celebrity Ascent	Celebrity Cruises	14 Night Spain & Bermuda Transatlantic	FLL	14	April 20, 2026		Promo Rate	Copy Link
+7869296	Utopia of the Seas	Royal Caribbean …	4 Night Bahamas & Perfect Day Cruise	XPC	4	April 20, 2026		Promo Rate	Copy Link
+3594554	Quantum of the Seas	Royal Caribbean …	3 Night Ensenada Cruise	LAX	3	April 21, 2026		Promo Rate	Copy Link
+3518029	Celebrity Millennium	Celebrity Cruises	11 Night Best Of Japan Cruise	TYO	11	April 21, 2026		Promo Rate	Copy Link
+6166250	Quantum of the Seas	Royal Caribbean …	3 Night Ensenada Cruise	LAX	3	April 21, 2026		Promo Rate	Copy Link
+A2848104	Norwegian Jewel	Norwegian Cruise…	7 Nights Bermuda -	PHL	7	April 23, 2026		Promo Rate	Copy Link
+5966538	Independence of the Seas	Royal Caribbean …	5 Night Bermuda Cruise	EWR	5	April 23, 2026		Promo Rate	Copy Link
+3373352	Independence of the Seas	Royal Caribbean …	5 Night Bermuda Cruise	EWR	5	April 23, 2026		Promo Rate	Copy Link
+1672630	Freedom of the Seas	Royal Caribbean …	4 Night Caribbean Getwaway Cruise	MIA	4	April 23, 2026		Promo Rate	Copy Link
+9934573	Explorer of the Seas	Royal Caribbean …	14 Nights Spain & Portugal Transatlantic	XPC	14	April 23, 2026		Promo Rate	Copy Link
+2965338	Norwegian Jewel	Norwegian Cruise…	7 Nights Bermuda -	PHL	7	April 23, 2026		Promo Rate	Copy Link
+6062382	Mariner of The Seas	Royal Caribbean …	4 Night Western Caribbean Cruise	GLS	4	April 23, 2026		Promo Rate	Copy Link
+3481743	Mariner of The Seas	Royal Caribbean …	4 Night Western Caribbean Cruise	GLS	4	April 23, 2026		Promo Rate	Copy Link
+2848104	Norwegian Jewel	Norwegian Cruise…	7 Nights Bermuda -	PHL	7	April 23, 2026		Promo Rate	Copy Link
+9735344	Explorer of the Seas	Royal Caribbean …	14 Nights Spain & Portugal Transatlantic	XPC	14	April 23, 2026		Promo Rate	Copy Link
+9958772	Odyssey of the Seas	Royal Caribbean …	9 Night Greek Isles Cruise	CIV	9	April 24, 2026		Promo Rate	Copy Link
+211563	Odyssey of the Seas	Royal Caribbean …	9 Night Greek Isles Cruise	CIV	9	April 24, 2026		Promo Rate	Copy Link
+1171563	Navigator of the Seas	Royal Caribbean …	7 Night Cabo, Vallarta & Mazatlan	LAX	7	April 24, 2026		Promo Rate	Copy Link
+A2848062	Norwegian Getaway	Norwegian Cruise…	Bahamas - Short	MIA	3	April 24, 2026		Promo Rate	Copy Link
+56255	Odyssey of the Seas	Royal Caribbean …	9 Night Greek Isles Cruise	CIV	9	April 24, 2026		Promo Rate	Copy Link
+5293415	Utopia of the Seas	Royal Caribbean …	3 Night Bahamas & Perfect Day Cruise	XPC	3	April 24, 2026		Promo Rate	Copy Link
+3084912	Quantum of the Seas	Royal Caribbean …	3 Night Ensenada Cruise	LAX	3	April 24, 2026		Promo Rate	Copy Link
+Last
+
+On page 1 out of 78
+
+*PP means per person
