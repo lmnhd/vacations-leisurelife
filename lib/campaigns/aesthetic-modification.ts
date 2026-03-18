@@ -38,7 +38,19 @@ const VISUAL_PLANNING_PATHS = [
     'visual.',
     'copy.',
     'audio.',
+    'productionBible.',
 ];
+
+const PRODUCTION_BIBLE_PATHS = [
+    'productionBible.storyboards',
+    'productionBible.sceneLibrary',
+    'productionBible.globalDirectionNotes',
+    'productionBible.avoidDirectives',
+];
+
+function touchedProductionBible(touchedPaths: string[]): boolean {
+    return touchedPaths.some(p => PRODUCTION_BIBLE_PATHS.some(bp => p === bp || p.startsWith('productionBible.')));
+}
 
 function affectsVisualPlanning(touchedPaths: string[]): boolean {
     return touchedPaths.some(p =>
@@ -57,12 +69,14 @@ export function computeAestheticInvalidation(
     const hadApproval = priorBrief.humanReviewStatus === 'approved' || priorBrief.humanReviewStatus === 'revised';
     const clearVisualArtifacts = affectsVisualPlanning(touchedPaths);
 
+    const productionBibleRepaired = touchedProductionBible(touchedPaths);
     return {
         humanReviewStatus: hadApproval ? 'revised' : 'unchanged',
         clearedRedTeamReview: true,
         clearedProductionBible: false,
         clearedLandingStillBible: false,
         clearedProductionBuildLint: clearVisualArtifacts,
+        productionBibleRepairedInPlace: productionBibleRepaired,
     };
 }
 
@@ -82,8 +96,12 @@ function buildFollowUpActions(
     if (invalidation.humanReviewStatus === 'revised') {
         actions.push('Re-approve the aesthetic brief before proceeding to media generation.');
     }
-    if (invalidation.clearedProductionBuildLint) {
+    if (invalidation.clearedProductionBuildLint && !invalidation.productionBibleRepairedInPlace) {
         actions.push('Regenerate the Production Bible to re-evaluate build quality against the updated brief.');
+    }
+    if (invalidation.productionBibleRepairedInPlace) {
+        actions.push('Production planning was repaired in place. Re-run red team before approving.');
+        actions.push('Re-run production-build lint after the updated production bible is saved.');
     }
 
     for (const followUp of operationFollowUps) {

@@ -416,6 +416,11 @@ export const AestheticIssueCodeEnum = z.enum([
     'privacy_line_missing',
     'filming_permissions_missing',
     'compliance_risk_scarcity_copy',
+    'camera_move_feasibility',
+    'cabin_type_plausibility',
+    'gangway_exchange_prohibited',
+    'storyboard_duration_alignment',
+    'production_safety_ops_missing',
 ]);
 export type AestheticIssueCode = z.infer<typeof AestheticIssueCodeEnum>;
 
@@ -431,6 +436,12 @@ export const AestheticOperationKindEnum = z.enum([
     'inject_privacy_line',
     'inject_filming_permission_gate',
     'inject_rail_safety_language',
+    'normalize_camera_movements',
+    'replace_scene_location',
+    'normalize_cabin_type',
+    'remove_or_relocate_scene_beat',
+    'align_storyboard_durations',
+    'inject_production_safety_ops',
 ]);
 export type AestheticOperationKind = z.infer<typeof AestheticOperationKindEnum>;
 
@@ -482,6 +493,7 @@ export const AestheticInvalidationSchema = z.object({
     clearedProductionBible: z.boolean(),
     clearedLandingStillBible: z.boolean(),
     clearedProductionBuildLint: z.boolean(),
+    productionBibleRepairedInPlace: z.boolean().optional(),
 });
 export type AestheticInvalidation = z.infer<typeof AestheticInvalidationSchema>;
 

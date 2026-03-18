@@ -6,6 +6,13 @@
     AestheticOperationKind,
 } from '../schema';
 import { fixCountdownSeries } from './countdown-series';
+import {
+    fixCameraMoveFeasibility,
+    fixCabinTypePlausibility,
+    fixGangwayExchangeProhibited,
+    fixStoryboardDurationAlignment,
+    fixProductionSafetyOpsMissing,
+} from './production-bible';
 
 // ── Fixer Result ─────────────────────────────────────────────────────────────
 
@@ -74,6 +81,11 @@ export const ALLOWED_OPERATION_PATHS = new Set([
     'merch.tagline',
     // top-level
     'revisionNotes',
+    // productionBible
+    'productionBible.storyboards',
+    'productionBible.sceneLibrary',
+    'productionBible.globalDirectionNotes',
+    'productionBible.avoidDirectives',
 ]);
 
 export function isAllowedTargetPath(path: string): boolean {
@@ -278,10 +290,10 @@ function runInjectRailSafetyLanguage(brief: CampaignAestheticBrief, op: Aestheti
 
 // ── Result helpers ────────────────────────────────────────────────────────────
 
-function noOpResult(brief: CampaignAestheticBrief, kind: AestheticOperationKind, targetPath: string, summary: string): FixerResult {
+export function noOpResult(brief: CampaignAestheticBrief, kind: AestheticOperationKind, targetPath: string, summary: string): FixerResult {
     return { brief, applied: false, touchedPaths: [], appliedOperations: [{ kind, targetPath, status: 'no_op', summary }], followUps: [] };
 }
-function appliedResult(brief: CampaignAestheticBrief, kind: AestheticOperationKind, targetPath: string, summary: string, touchedPaths: string[]): FixerResult {
+export function appliedResult(brief: CampaignAestheticBrief, kind: AestheticOperationKind, targetPath: string, summary: string, touchedPaths: string[]): FixerResult {
     return { brief, applied: true, touchedPaths, appliedOperations: [{ kind, targetPath, status: 'applied', summary }], followUps: [] };
 }
 
@@ -372,6 +384,21 @@ export const ISSUE_CODE_OPERATIONS: Record<AestheticIssueCode, AestheticModifica
         ...[ ...VIDEO_SCRIPT_PATHS, ...VIDEO_VISUAL_PATHS, 'audio.hypeClipScript' ]
             .map(p => ({ kind: 'replace_phrase_patterns' as const, targetPath: p, params: { patterns: SCARCITY_PATTERNS, replacements: SCARCITY_REPLACEMENTS } })),
     ],
+    camera_move_feasibility: [
+        { kind: 'normalize_camera_movements' as const, targetPath: 'productionBible.storyboards' },
+    ],
+    cabin_type_plausibility: [
+        { kind: 'normalize_cabin_type' as const, targetPath: 'productionBible.sceneLibrary' },
+    ],
+    gangway_exchange_prohibited: [
+        { kind: 'remove_or_relocate_scene_beat' as const, targetPath: 'productionBible.storyboards' },
+    ],
+    storyboard_duration_alignment: [
+        { kind: 'align_storyboard_durations' as const, targetPath: 'productionBible.storyboards' },
+    ],
+    production_safety_ops_missing: [
+        { kind: 'inject_production_safety_ops' as const, targetPath: 'productionBible.globalDirectionNotes' },
+    ],
 };
 
 // ── Operation dispatcher ──────────────────────────────────────────────────────
@@ -389,6 +416,12 @@ export function runOperation(brief: CampaignAestheticBrief, op: AestheticModific
         case 'inject_privacy_line':         return runInjectPrivacyLine(brief, op);
         case 'inject_filming_permission_gate': return runInjectFilmingPermissionGate(brief, op);
         case 'inject_rail_safety_language': return runInjectRailSafetyLanguage(brief, op);
+        case 'normalize_camera_movements':   return fixCameraMoveFeasibility(brief);
+        case 'normalize_cabin_type':         return fixCabinTypePlausibility(brief);
+        case 'remove_or_relocate_scene_beat': return fixGangwayExchangeProhibited(brief);
+        case 'align_storyboard_durations':   return fixStoryboardDurationAlignment(brief);
+        case 'inject_production_safety_ops': return fixProductionSafetyOpsMissing(brief);
+        case 'replace_scene_location':       return noOpResult(brief, op.kind, op.targetPath, 'replace_scene_location requires explicit params — use issue code cabin_type_plausibility for automated fix.');
     }
 }
 
@@ -404,6 +437,11 @@ const ISSUE_DETECTION_PATTERNS: Array<{ issueCode: AestheticIssueCode; patterns:
     { issueCode: 'rail_safety_missing',            patterns: [/\brail(ing)?\b/i, /\bdeck\s+edge\b/i] },
     { issueCode: 'privacy_line_missing',           patterns: [/\bphotos?\b/i, /\bfilming\b/i, /\brecord(ing)?\b/i] },
     { issueCode: 'compliance_risk_scarcity_copy',  patterns: [/\bonly\s+\d+\b/i, /\blimited\s+spots?\b/i, /\bselling\s+out\b/i] },
+    { issueCode: 'camera_move_feasibility',         patterns: [/\bcrane\b/i, /\bdolly\b/i, /\btrack(ing)?\s+shot\b/i, /\bslider\b/i, /\bcable\s+cam\b/i] },
+    { issueCode: 'cabin_type_plausibility',         patterns: [/interior.*window/i, /window.*interior/i, /interior\s+stateroom.*ocean/i, /oceanview.*contradiction/i] },
+    { issueCode: 'gangway_exchange_prohibited',     patterns: [/\bgangway\b/i, /exchange.*gangway/i, /gangway.*exchange/i, /handoff.*gangway/i] },
+    { issueCode: 'storyboard_duration_alignment',   patterns: [/duration\s+mismatch/i, /totalDurationSeconds\s+mismatch/i, /storyboard\s+total/i, /\d+s\s+(vs|versus|but)\s+\d+/i] },
+    { issueCode: 'production_safety_ops_missing',   patterns: [/spotter/i, /keep.?right/i, /off.?peak/i, /two.?person\s+crew/i, /crew\s+max/i, /stand.?down/i, /passenger\s+flow/i] },
 ];
 
 export function suggestDeterministicIssueCodes(
