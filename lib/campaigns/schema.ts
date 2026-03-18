@@ -493,7 +493,7 @@ export const AestheticInvalidationSchema = z.object({
     clearedProductionBible: z.boolean(),
     clearedLandingStillBible: z.boolean(),
     clearedProductionBuildLint: z.boolean(),
-    productionBibleRepairedInPlace: z.boolean().optional(),
+    productionBibleRepairedInPlace: z.boolean().nullable(),
 });
 export type AestheticInvalidation = z.infer<typeof AestheticInvalidationSchema>;
 
