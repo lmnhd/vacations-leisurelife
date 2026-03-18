@@ -5,6 +5,7 @@ This file provides guidance to Claude when working with this project.
 ## Essential Files
 
 - **`.github/copilot-instructions.md`** - Complete project development rules and conventions (includes inherited workspace standards)
+- **`.github/DOCS/deterministic-fixers.md`** - Required policy for aesthetic deadlocks, red-team survivors, and reusable deterministic fixer growth
 - **`PDR.md`** - Project Design Record with architecture decisions
 - **`README.md`** - Project overview and setup guide
 - **Master Workspace Rules**: `C:\Users\cclem\Dropbox\Source\.github\copilot-instructions.md`
@@ -18,11 +19,12 @@ This file provides guidance to Claude when working with this project.
 ## Quick Start
 
 1. Read `.github/copilot-instructions.md` for project-specific rules and inherited workspace standards
-2. Review `PDR.md` for architectural decisions
-3. Follow git conventions: `git add . ; git commit -m "checkpoint: before [change]"`
-4. Maintain TypeScript strictness (no `any` types)
-5. Keep files under 500 lines
-6. Separate business logic from framework handlers
+2. If working on aesthetic deadlocks, red-team survivors, or production-bible/storyboard fixers, read `.github/DOCS/deterministic-fixers.md`
+3. Review `PDR.md` for architectural decisions
+4. Follow git conventions: `git add . ; git commit -m "checkpoint: before [change]"`
+5. Maintain TypeScript strictness (no `any` types)
+6. Keep files under 500 lines
+7. Separate business logic from framework handlers
 
 ## 🚫 ABSOLUTE PROHIBITIONS
 
@@ -51,6 +53,7 @@ This file provides guidance to Claude when working with this project.
 - **Keep** files under 500 lines (split if necessary)
 - **Take** AI-first approach when applicable
 - **Keep** LLM prompts separate from business logic
+- **When handling aesthetic deadlocks**, extend deterministic fixers by reusable issue class and reference `.github/DOCS/deterministic-fixers.md`
 
 ## Project Structure
 

@@ -46,6 +46,27 @@ export default function AestheticDevisingTestPage() {
     const shouldWarnBeforeGenerating = campaignMeta !== null && campaignMeta.pricingStatus !== "CB_MATCHED";
     const shouldWarnLaunchWindow = campaignMeta !== null && campaignMeta.meetsMinimumLeadTime === false;
 
+    const resetDeterministicFixState = () => {
+        setSuggestedDeterministicFixes([]);
+        setSelectedIssueCodes([]);
+        setModifyPreview(null);
+    };
+
+    const loadExistingBrief = async (campaignSlug: string): Promise<CampaignAestheticBrief | null> => {
+        const res = await fetch(`/api/groups/campaign/${campaignSlug}/media/aesthetic`);
+        if (res.status === 404) {
+            return null;
+        }
+
+        const data = await readJsonResponse(res);
+        if (!res.ok) {
+            const errorMessage = typeof data.error === "string" ? data.error : "Load failed";
+            throw new Error(errorMessage);
+        }
+
+        return data as CampaignAestheticBrief;
+    };
+
     const loadCampaignMeta = async (campaignSlug: string): Promise<AestheticCampaignMeta | null> => {
         const res = await fetch(`/api/groups/campaign/${campaignSlug}`);
         const data = await readJsonResponse(res);
@@ -76,19 +97,18 @@ export default function AestheticDevisingTestPage() {
         setError("");
         setConfirmOverwrite(false);
         setPriorRequiredFixes([]);
+        resetDeterministicFixState();
 
         try {
             await loadCampaignMeta(normalizedSlug);
-            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`);
-            if (res.status === 404) {
+            const brief = await loadExistingBrief(normalizedSlug);
+            if (!brief) {
                 setResult(null);
                 setLoadedSlug("");
                 setError("");
                 return;
             }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Load failed");
-            setResult(data as CampaignAestheticBrief);
+            setResult(brief);
             setLoadedSlug(normalizedSlug);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
@@ -111,6 +131,7 @@ export default function AestheticDevisingTestPage() {
         setError("");
         setConfirmOverwrite(false);
         setPriorRequiredFixes([]);
+        resetDeterministicFixState();
 
         try {
             const latestCampaignMeta = await loadCampaignMeta(normalizedSlug);
@@ -158,6 +179,7 @@ export default function AestheticDevisingTestPage() {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("deleting");
         setError("");
+        resetDeterministicFixState();
 
         try {
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic`, {
@@ -179,6 +201,7 @@ export default function AestheticDevisingTestPage() {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("generating_bible");
         setError("");
+        resetDeterministicFixState();
 
         try {
             const { response: res, data } = await regenerateProductionBible(normalizedSlug);
@@ -197,6 +220,7 @@ export default function AestheticDevisingTestPage() {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("approving");
         setError("");
+        resetDeterministicFixState();
 
         try {
             const { response: res, data } = await approveAestheticBrief(normalizedSlug);
@@ -218,6 +242,7 @@ export default function AestheticDevisingTestPage() {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("red_teaming");
         setError("");
+        resetDeterministicFixState();
 
         try {
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/red-team`, {
@@ -246,6 +271,7 @@ export default function AestheticDevisingTestPage() {
         if (!normalizedSlug || !hasLoadedBriefForCurrentSlug) return;
         setBriefState("revising");
         setError("");
+        setModifyPreview(null);
 
         try {
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/media/aesthetic/revise`, {
@@ -278,6 +304,7 @@ export default function AestheticDevisingTestPage() {
 
             setResult(data.brief as CampaignAestheticBrief);
             setLoadedSlug(normalizedSlug);
+            resetDeterministicFixState();
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
@@ -296,7 +323,18 @@ export default function AestheticDevisingTestPage() {
                 issueCodes: selectedIssueCodes,
                 reason: 'Operator-initiated deterministic fix from deadlock panel',
             });
-            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            if (!res.ok) {
+                if (res.status === 409) {
+                    resetDeterministicFixState();
+                    const brief = await loadExistingBrief(normalizedSlug);
+                    if (brief) {
+                        setResult(brief);
+                        setLoadedSlug(normalizedSlug);
+                    }
+                    throw new Error('Selected deterministic fixes no longer match the current brief. The stale fix panel was cleared. Re-run Red Team or Revise to fetch fresh issues.');
+                }
+                throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            }
             setModifyPreview(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -317,13 +355,23 @@ export default function AestheticDevisingTestPage() {
                 issueCodes: selectedIssueCodes,
                 reason: 'Operator-initiated deterministic fix from deadlock panel',
             });
-            if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            if (!res.ok) {
+                if (res.status === 409) {
+                    resetDeterministicFixState();
+                    const brief = await loadExistingBrief(normalizedSlug);
+                    if (brief) {
+                        setResult(brief);
+                        setLoadedSlug(normalizedSlug);
+                    }
+                    throw new Error('Selected deterministic fixes were already satisfied in the current brief. The stale fix panel was cleared. Re-run Red Team or Revise to generate fresh suggestions.');
+                }
+                throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
+            }
             if (data.brief) {
                 setResult(data.brief as CampaignAestheticBrief);
                 setLoadedSlug(normalizedSlug);
             }
-            setSuggestedDeterministicFixes([]);
-            setSelectedIssueCodes([]);
+            resetDeterministicFixState();
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -440,7 +488,7 @@ export default function AestheticDevisingTestPage() {
                                     Apply Fix
                                 </button>
                                 <button
-                                    onClick={() => { setSuggestedDeterministicFixes([]); setSelectedIssueCodes([]); setModifyPreview(null); }}
+                                    onClick={() => { resetDeterministicFixState(); }}
                                     className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1"
                                 >
                                     Dismiss

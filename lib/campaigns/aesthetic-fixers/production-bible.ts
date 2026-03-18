@@ -61,6 +61,15 @@ export function fixCameraMoveFeasibility(brief: CampaignAestheticBrief): FixerRe
     }
 
     let anyChange = false;
+    const updatedSceneLibrary: SceneSpec[] = brief.productionBible.sceneLibrary.map(scene => {
+        if (!hasBannedCameraMove(scene.cameraAngle)) return scene;
+        anyChange = true;
+        return {
+            ...scene,
+            cameraAngle: replaceBannedCameraMoves(scene.cameraAngle),
+        };
+    });
+
     const updatedStoryboards: Storyboard[] = brief.productionBible.storyboards.map(storyboard => {
         const updatedShots: ShotSpec[] = storyboard.shotSequence.map(shot => {
             if (!hasBannedCameraMove(shot.cameraMovement)) return shot;
@@ -88,6 +97,7 @@ export function fixCameraMoveFeasibility(brief: CampaignAestheticBrief): FixerRe
         ...brief,
         productionBible: {
             ...brief.productionBible,
+            sceneLibrary: updatedSceneLibrary,
             storyboards: updatedStoryboards,
             globalDirectionNotes: updatedGlobal,
         },
@@ -96,8 +106,8 @@ export function fixCameraMoveFeasibility(brief: CampaignAestheticBrief): FixerRe
         updatedBrief,
         KIND,
         'productionBible.storyboards',
-        'Replaced crane/dolly/track/slider/cable movement language with handheld/gimbal-safe equivalents. Injected no-tracks/no-cranes/no-cables guardrail into globalDirectionNotes.',
-        ['productionBible.storyboards', 'productionBible.globalDirectionNotes'],
+        'Replaced crane/dolly/track/slider/cable movement language with handheld/gimbal-safe equivalents across sceneLibrary and storyboards. Injected no-tracks/no-cranes/no-cables guardrail into globalDirectionNotes.',
+        ['productionBible.sceneLibrary', 'productionBible.storyboards', 'productionBible.globalDirectionNotes'],
     );
 }
 
@@ -200,6 +210,7 @@ function relocateGangwayText(text: string): string {
         .replace(/\bon\s+the\s+gangway\b/gi, `at ${COMPLIANT_LOCATION}`)
         .replace(/\bat\s+the\s+gangway\b/gi, `at ${COMPLIANT_LOCATION}`)
         .replace(/\balong\s+the\s+gangway\b/gi, `at ${COMPLIANT_LOCATION}`)
+        .replace(/\b(back|heading)\s+aboard\b/gi, 'before heading back aboard')
         .replace(/\bgangway\b/gi, COMPLIANT_LOCATION);
 }
 
@@ -210,6 +221,26 @@ export function fixGangwayExchangeProhibited(brief: CampaignAestheticBrief): Fix
     }
 
     let anyChange = false;
+
+    const updatedSceneLibrary: SceneSpec[] = brief.productionBible.sceneLibrary.map(scene => {
+        const locationNeedsFix = GANGWAY_LOCATION_PATTERN.test(scene.location);
+        const actionNeedsFix = isGangwayExchangeScene(scene.subjectAction);
+        const envNeedsFix = isGangwayExchangeScene(scene.environmentDetails);
+        const promptNeedsFix = isGangwayExchangeScene(scene.imagePrompt) || GANGWAY_LOCATION_PATTERN.test(scene.imagePrompt);
+
+        if (!locationNeedsFix && !actionNeedsFix && !envNeedsFix && !promptNeedsFix) {
+            return scene;
+        }
+
+        anyChange = true;
+        return {
+            ...scene,
+            location: locationNeedsFix ? relocateGangwayText(scene.location) : scene.location,
+            subjectAction: (locationNeedsFix || actionNeedsFix) ? relocateGangwayText(scene.subjectAction) : scene.subjectAction,
+            environmentDetails: (locationNeedsFix || envNeedsFix) ? relocateGangwayText(scene.environmentDetails) : scene.environmentDetails,
+            imagePrompt: (locationNeedsFix || promptNeedsFix) ? relocateGangwayText(scene.imagePrompt) : scene.imagePrompt,
+        };
+    });
 
     const updatedStoryboards: Storyboard[] = brief.productionBible.storyboards.map(storyboard => {
         const updatedShots: ShotSpec[] = storyboard.shotSequence.map(shot => {
@@ -249,6 +280,7 @@ export function fixGangwayExchangeProhibited(brief: CampaignAestheticBrief): Fix
         ...brief,
         productionBible: {
             ...brief.productionBible,
+            sceneLibrary: updatedSceneLibrary,
             storyboards: updatedStoryboards,
             globalDirectionNotes: updatedGlobal,
         },
@@ -257,8 +289,8 @@ export function fixGangwayExchangeProhibited(brief: CampaignAestheticBrief): Fix
         updatedBrief,
         KIND,
         'productionBible.storyboards',
-        'Relocated gangway exchange/handoff scenes to compliant dockside location. Injected no-exchanges-on-gangways rule into globalDirectionNotes.',
-        ['productionBible.storyboards', 'productionBible.globalDirectionNotes'],
+        'Relocated gangway exchange/handoff scenes to compliant dockside location across sceneLibrary and storyboards. Injected no-exchanges-on-gangways rule into globalDirectionNotes.',
+        ['productionBible.sceneLibrary', 'productionBible.storyboards', 'productionBible.globalDirectionNotes'],
     );
 }
 

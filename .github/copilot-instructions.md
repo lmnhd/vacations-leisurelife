@@ -150,6 +150,16 @@ When explaining this project:
 - **Project Design Record**: PDR.md (architecture and design decisions)
 - **README**: README.md (setup instructions and project overview)
 - **Agent Guidance**: CLAUDE.md (detailed rules for AI agents)
+- **Deterministic Fixer Policy**: .github/DOCS/deterministic-fixers.md (required reading when working on aesthetic deadlocks, red-team survivors, or production-bible/storyboard feasibility fixes)
+
+---
+
+## Deterministic Fixer Policy
+
+- Agents working on aesthetic deadlocks or repeated red-team blockers must read `.github/DOCS/deterministic-fixers.md` before proposing or implementing new fixer logic.
+- Extend deterministic fixers by reusable issue class, not by campaign-specific hack.
+- Only add a deterministic fixer when the issue targets known schema fields or stable text patterns and can be validated by deterministic assertions.
+- If a blocker is creative, thematic, or judgment-heavy, keep it in manual or LLM-revision territory instead of forcing it into the fixer system.
 
 ---
 

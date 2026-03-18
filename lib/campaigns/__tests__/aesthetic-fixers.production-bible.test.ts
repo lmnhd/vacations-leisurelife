@@ -231,6 +231,16 @@ test('camera fixer touchedPaths includes productionBible.storyboards and globalD
     assert.ok(result.touchedPaths.includes('productionBible.globalDirectionNotes'));
 });
 
+test('camera fixer also normalizes sceneLibrary cameraAngle tracking language', () => {
+    const scene = makeScene({ cameraAngle: 'eye-level tracking along rail' });
+    const brief = makeBrief({ productionBible: makeProductionBible({ sceneLibrary: [scene] }) });
+    const result = fixCameraMoveFeasibility(brief);
+    assert.equal(result.applied, true);
+    const fixedScene = result.brief.productionBible!.sceneLibrary[0];
+    assert.ok(!fixedScene.cameraAngle.match(/\btrack(ing)?\b/i), `tracking still present: "${fixedScene.cameraAngle}"`);
+    assert.ok(result.touchedPaths.includes('productionBible.sceneLibrary'));
+});
+
 // ── 3 & 4: Cabin Type Plausibility ───────────────────────────────────────────
 
 console.log('\nFixer 2: Cabin Type Plausibility\n');
@@ -349,6 +359,23 @@ test('gangway fixer idempotent on storyboard narrationScript too', () => {
     assert.ok(!fixedNarration.match(/\btrade\b.*\bgangway\b/i) && !fixedNarration.match(/\bgangway\b.*\btrade\b/i), `trade+gangway still present: "${fixedNarration}"`);
     const second = fixGangwayExchangeProhibited(first.brief);
     assert.equal(second.applied, false);
+});
+
+test('gangway fixer relocates sceneLibrary gangway exchange source-of-truth fields', () => {
+    const scene = makeScene({
+        location: 'Gangway return, dockside with hull towering',
+        subjectAction: 'offering a gentle Want one? with a tiny postcard-zine as you head back aboard',
+        environmentDetails: 'gangway rails, safety netting, hull graphics, no queue visible, clear walkway',
+        imagePrompt: 'Dockside shade hugs the gangway as two guests drift back aboard, a quick smile and a quiet Want one? in passing',
+    });
+    const brief = makeBrief({ productionBible: makeProductionBible({ sceneLibrary: [scene] }) });
+    const result = fixGangwayExchangeProhibited(brief);
+    assert.equal(result.applied, true);
+    const fixedScene = result.brief.productionBible!.sceneLibrary[0];
+    assert.ok(!fixedScene.location.match(/\bgangway\b/i), `gangway still present in location: "${fixedScene.location}"`);
+    assert.ok(!fixedScene.environmentDetails.match(/\bgangway\b/i), `gangway still present in env: "${fixedScene.environmentDetails}"`);
+    assert.ok(!fixedScene.imagePrompt.match(/\bgangway\b/i), `gangway still present in imagePrompt: "${fixedScene.imagePrompt}"`);
+    assert.ok(result.touchedPaths.includes('productionBible.sceneLibrary'));
 });
 
 // ── 7 & 8: Storyboard Duration Alignment ────────────────────────────────────
