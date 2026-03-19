@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback } from 'react';
 
@@ -32,6 +32,7 @@ interface TrinityRunResponse {
     round: number;
     approved: boolean;
     briefPersisted: boolean;
+    warnings: string[];
     rejectionFeedback: FeedbackItem[];
     history: AgentTurn[];
 }
@@ -42,14 +43,14 @@ interface TrinityRunResponse {
 
 function StatusBadge({ status }: { status: string }) {
     const colorMap: Record<string, string> = {
-        approved: 'bg-green-100 text-green-800',
-        max_rounds_exhausted: 'bg-amber-100 text-amber-800',
-        running: 'bg-blue-100 text-blue-800',
-        rejected: 'bg-red-100 text-red-800',
+        approved: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        max_rounds_exhausted: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        running: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        rejected: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
     };
-    const cls = colorMap[status] ?? 'bg-gray-100 text-gray-700';
+    const cls = colorMap[status] ?? 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     return (
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 border text-xs font-medium ${cls}`}>
             {status.replace(/_/g, ' ')}
         </span>
     );
@@ -57,10 +58,10 @@ function StatusBadge({ status }: { status: string }) {
 
 function SeverityBadge({ severity }: { severity: string }) {
     const cls = severity === 'blocker'
-        ? 'bg-red-100 text-red-700'
-        : 'bg-yellow-100 text-yellow-700';
+        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
     return (
-        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${cls}`}>
+        <span className={`inline-flex items-center rounded px-1.5 py-0.5 border text-xs font-medium ${cls}`}>
             {severity}
         </span>
     );
@@ -68,13 +69,13 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 function AgentBadge({ agent }: { agent: string }) {
     const colorMap: Record<string, string> = {
-        designer: 'bg-purple-100 text-purple-700',
-        builder: 'bg-blue-100 text-blue-700',
-        reviewer: 'bg-orange-100 text-orange-700',
+        designer: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+        builder: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        reviewer: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
     };
-    const cls = colorMap[agent] ?? 'bg-gray-100 text-gray-700';
+    const cls = colorMap[agent] ?? 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     return (
-        <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold uppercase ${cls}`}>
+        <span className={`inline-flex items-center rounded px-2 py-0.5 border text-xs font-semibold uppercase tracking-wider ${cls}`}>
             {agent}
         </span>
     );
@@ -85,38 +86,38 @@ function TurnCard({ turn }: { turn: AgentTurn }) {
     const hasFeedback = turn.decision.feedback.length > 0;
 
     return (
-        <div className="border border-gray-200 rounded-lg p-4 space-y-2">
+        <div className="p-4 space-y-2 border rounded-lg border-white/10 bg-slate-900/30">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <AgentBadge agent={turn.agent} />
-                    <span className="text-sm text-gray-500">Round {turn.round}</span>
+                    <span className="text-sm text-slate-400">Round {turn.round}</span>
                     {turn.agent === 'reviewer' && (
-                        <span className={`text-xs font-medium ${turn.decision.approved ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`text-xs font-medium ${turn.decision.approved ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {turn.decision.approved ? '✓ Approved' : '✗ Rejected'}
                         </span>
                     )}
                 </div>
-                <span className="text-xs text-gray-400">{new Date(turn.createdAt).toLocaleTimeString()}</span>
+                <span className="text-xs text-slate-500">{new Date(turn.createdAt).toLocaleTimeString()}</span>
             </div>
 
             {hasFeedback && (
                 <div>
                     <button
                         onClick={() => setExpanded(!expanded)}
-                        className="text-xs text-gray-500 hover:text-gray-700 underline"
+                        className="text-xs underline text-slate-400 hover:text-slate-300"
                     >
                         {expanded ? 'Hide' : 'Show'} {turn.decision.feedback.length} feedback item(s)
                     </button>
                     {expanded && (
                         <div className="mt-2 space-y-1.5">
                             {turn.decision.feedback.map((item, idx) => (
-                                <div key={idx} className="bg-gray-50 rounded p-2 text-sm space-y-1">
+                                <div key={idx} className="p-2 space-y-1 text-sm border rounded bg-slate-950/50 border-white/5">
                                     <div className="flex items-center gap-2">
                                         <SeverityBadge severity={item.severity} />
-                                        <span className="font-mono text-xs text-gray-600">{item.code}</span>
-                                        <span className="text-xs text-gray-400">→ {item.targetRole}</span>
+                                        <span className="font-mono text-xs text-slate-400">{item.code}</span>
+                                        <span className="text-xs text-slate-500">→ {item.targetRole}</span>
                                     </div>
-                                    <p className="text-gray-700 text-xs">{item.message}</p>
+                                    <p className="text-xs text-slate-300">{item.message}</p>
                                 </div>
                             ))}
                         </div>
@@ -136,45 +137,45 @@ function SessionPanel({ result }: { result: TrinityRunResponse }) {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-                <h2 className="text-base font-semibold text-gray-800">Session Result</h2>
+            <div className="p-5 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
+                <h2 className="text-base font-semibold text-slate-200">Session Result</h2>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <span className="text-gray-500">Session ID</span>
-                        <p className="font-mono text-xs text-gray-700 break-all">{result.sessionId}</p>
+                        <span className="text-slate-500">Session ID</span>
+                        <p className="font-mono text-xs break-all text-slate-300">{result.sessionId}</p>
                     </div>
                     <div>
-                        <span className="text-gray-500">Campaign</span>
-                        <p className="font-medium text-gray-800">{result.campaignId}</p>
+                        <span className="text-slate-500">Campaign</span>
+                        <p className="font-medium text-slate-200">{result.campaignId}</p>
                     </div>
                     <div>
-                        <span className="text-gray-500">Status</span>
+                        <span className="text-slate-500">Status</span>
                         <div className="mt-0.5"><StatusBadge status={result.status} /></div>
                     </div>
                     <div>
-                        <span className="text-gray-500">Rounds completed</span>
-                        <p className="font-medium text-gray-800">{result.round}</p>
+                        <span className="text-slate-500">Rounds completed</span>
+                        <p className="font-medium text-slate-200">{result.round}</p>
                     </div>
                     <div>
-                        <span className="text-gray-500">Brief persisted</span>
-                        <p className={`font-medium ${result.briefPersisted ? 'text-green-600' : 'text-gray-500'}`}>
+                        <span className="text-slate-500">Brief persisted</span>
+                        <p className={`font-medium ${result.briefPersisted ? 'text-emerald-400' : 'text-slate-500'}`}>
                             {result.briefPersisted ? 'Yes — saved as canonical brief' : 'No'}
                         </p>
                     </div>
                 </div>
 
                 {result.rejectionFeedback.length > 0 && (
-                    <div className="mt-3 border-t border-gray-100 pt-3">
-                        <p className="text-sm font-medium text-red-700 mb-2">Unresolved blockers at max rounds:</p>
+                    <div className="pt-4 mt-4 border-t border-white/10">
+                        <p className="mb-2 text-sm font-medium text-rose-400">Unresolved blockers at max rounds:</p>
                         <div className="space-y-1.5">
                             {result.rejectionFeedback.map((item, idx) => (
-                                <div key={idx} className="bg-red-50 rounded p-2 text-xs space-y-0.5">
+                                <div key={idx} className="p-2 space-y-1 text-xs border rounded bg-red-950/30 border-red-500/20">
                                     <div className="flex items-center gap-2">
                                         <SeverityBadge severity={item.severity} />
-                                        <span className="font-mono text-gray-600">{item.code}</span>
-                                        <span className="text-gray-400">→ {item.targetRole}</span>
+                                        <span className="font-mono text-slate-400">{item.code}</span>
+                                        <span className="text-slate-500">→ {item.targetRole}</span>
                                     </div>
-                                    <p className="text-gray-700">{item.message}</p>
+                                    <p className="text-slate-300">{item.message}</p>
                                 </div>
                             ))}
                         </div>
@@ -183,10 +184,10 @@ function SessionPanel({ result }: { result: TrinityRunResponse }) {
             </div>
 
             <div className="space-y-4">
-                <h2 className="text-base font-semibold text-gray-800">Agent History</h2>
+                <h2 className="text-base font-semibold text-slate-200">Agent History</h2>
                 {Object.entries(roundGroups).map(([round, turns]) => (
                     <div key={round} className="space-y-2">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Round {round}</p>
+                        <p className="text-xs font-semibold tracking-widest uppercase text-slate-500">Round {round}</p>
                         {turns.map((turn, idx) => (
                             <TurnCard key={idx} turn={turn} />
                         ))}
@@ -198,7 +199,7 @@ function SessionPanel({ result }: { result: TrinityRunResponse }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Main page
+// Main Page Component
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function TrinityTestPage() {
@@ -234,60 +235,71 @@ export default function TrinityTestPage() {
     }, [normalizedSlug, maxRounds]);
 
     return (
-        <div className="min-h-screen bg-gray-50 py-10 px-4">
+        <div className="min-h-screen px-4 py-10 font-mono bg-slate-950 text-slate-300">
             <div className="max-w-3xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Trinity Pipeline Test</h1>
-                    <p className="mt-1 text-sm text-gray-500">
+                <div className="p-6 border border-white/10 rounded-xl bg-slate-900/50">
+                    <h1 className="text-lg font-semibold tracking-wide text-cyan-400">Trinity Pipeline Test</h1>
+                    <p className="mt-1 text-xs text-slate-500">
                         Runs Designer → Builder → Reviewer in a consensus loop. Persists the brief only on Reviewer approval.
                     </p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-                    <h2 className="text-sm font-semibold text-gray-700">Configuration</h2>
+                <div className="p-5 space-y-4 border border-white/10 rounded-xl bg-slate-900/50">
+                    <h2 className="text-sm font-semibold text-slate-200">Configuration</h2>
 
-                    <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-600">Campaign Slug</label>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] text-slate-500 uppercase tracking-widest">Campaign Slug</label>
                         <input
                             type="text"
                             value={slug}
                             onChange={(e) => setSlug(e.target.value)}
                             placeholder="e.g. needle-drop-2026"
-                            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 text-sm border rounded-lg bg-slate-800 border-white/10 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/40"
                         />
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-600">Max Rounds (1–5)</label>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] text-slate-500 uppercase tracking-widest">Max Rounds (1–5)</label>
                         <input
                             type="number"
                             min={1}
                             max={5}
                             value={maxRounds}
                             onChange={(e) => setMaxRounds(Math.max(1, Math.min(5, parseInt(e.target.value) || 1)))}
-                            className="w-24 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-24 px-3 py-2 text-sm border rounded-lg bg-slate-800 border-white/10 text-slate-200 focus:outline-none focus:border-cyan-500/40"
                         />
                     </div>
 
                     <button
                         onClick={runTrinity}
                         disabled={loading || !normalizedSlug}
-                        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-4 py-2.5 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
                         {loading ? 'Running Trinity session...' : 'Run Trinity'}
                     </button>
 
-                    <div className="text-xs text-gray-400 bg-gray-50 rounded p-3 space-y-1">
-                        <p><span className="font-semibold text-purple-600">Designer</span> — messaging, visual identity, community expression, merch</p>
-                        <p><span className="font-semibold text-blue-600">Builder</span> — productionBible, landingStillBible, filmability</p>
-                        <p><span className="font-semibold text-orange-600">Reviewer</span> — philosophy adherence, coherence, final approval</p>
-                        <p><span className="font-semibold text-gray-600">Kernel</span> — hard structural assertions before and after</p>
+                    <div className="text-xs text-slate-400 bg-slate-950/50 border border-white/5 rounded p-3 space-y-1.5">
+                        <p><span className="font-semibold text-purple-400">Designer</span> — messaging, visual identity, community expression, merch</p>
+                        <p><span className="font-semibold text-blue-400">Builder</span> — productionBible, landingStillBible, filmability</p>
+                        <p><span className="font-semibold text-orange-400">Reviewer</span> — philosophy adherence, coherence, final approval</p>
+                        <p><span className="font-semibold text-slate-500">Kernel</span> — hard structural assertions before and after</p>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+                    <div className="p-4 text-sm text-red-400 border rounded-lg bg-red-500/10 border-red-500/20">
                         <strong>Error:</strong> {error}
+                    </div>
+                )}
+
+                {result && result.warnings.length > 0 && (
+                    <div className="p-4 text-sm border rounded-lg bg-amber-500/10 border-amber-500/20 text-amber-200">
+                        <strong>Warnings:</strong>
+                        <div className="mt-2 space-y-1">
+                            {result.warnings.map((warning, index) => (
+                                <p key={index}>{warning}</p>
+                            ))}
+                        </div>
                     </div>
                 )}
 

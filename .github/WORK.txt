@@ -1,752 +1,1177 @@
-# Aesthetic Pipeline V3 - Trinity Migration
+# CURRENT CODE-DERIVED SPEC: AESTHETIC + PRODUCTION-BIBLE SYSTEM
 
-## Kernel-First Rule
+## Purpose Of This Document
+This document records the actual rules, gates, contracts, statuses, issue types, and artifact requirements currently enforced by code in the aesthetic brief, production bible, landing still bible, validation, remediation, approval, and media-readiness pipeline.
 
-Before any Trinity agent orchestration exists, define the deterministic kernel contract.
+This is not a proposal.
+This is a code-derived description of what the current system does and what the final artifacts are required to satisfy.
 
-The kernel is the immutable law that both legacy V2 and Trinity must satisfy.
+It is also a warning.
 
-It does not rewrite copy.
-It does not auto-fix artifacts.
-It only asserts preconditions and postconditions.
+I do **not** want this same idiotic, convoluted architecture rebuilt again.
+I do **not** want the Trinity plus Red Team plus remediation plus button maze recreated in slightly different packaging.
+I want the outcome preserved, not this process.
 
-```ts
-interface DeterministicKernel {
-	validateCampaignContext(campaign: Campaign): void;
-	assertBriefValidity(brief: CampaignAestheticBrief): void;
-	assertProductionBibleFeasibility(bible: ProductionBible): void;
-}
-```
+The replacement needs to run sweet, smooth, efficiently, predictably, and fast.
 
-Kernel violations must throw immediately. They are contract failures, not prompts for patch generation.
+## Non-Negotiable Product Goal
+The upstream aesthetic step exists to create a correct campaign briefing foundation before image generation and video generation begin.
 
-### Kernel Responsibilities
+That foundation must be strong enough to safely drive:
+- campaign aesthetic direction
+- messaging direction
+- social and video concepts
+- merch direction
+- audio direction
+- production bible
+- landing still bible
+- downstream image prompts
+- downstream video prompts
+- downstream media spend decisions
 
-Preconditions:
+This step matters because downstream image and video systems do not rescue bad upstream direction.
+They amplify it.
 
-- campaign has required identity and routing context
-- ship and destination inputs are structurally usable
-- downstream generation is not invoked on malformed campaign state
+If this brief layer is wrong:
+- prompts are wrong
+- visuals drift
+- scenes become implausible
+- assets become unusable
+- expensive video and image generation time gets wasted
+- campaign cohesion breaks
 
-Postconditions:
+So the system must be correct upstream.
+But the current implementation is vastly overcomplicated.
 
-- brief matches `CampaignAestheticBriefSchema`
-- production bible matches `ProductionBibleSchema`
-- no impossible camera moves
-- no interior-window cabin contradictions
-- no gangway exchange choreography
-- storyboard durations align exactly
-- safety-ops language exists where required
+## High-Level Current Workflow
+The current codebase effectively runs this sequence:
 
-### Kernel Non-Responsibilities
+1. Generate an aesthetic brief.
+2. Generate visual planning from that brief.
+3. Attach a production bible and landing still bible.
+4. Run production-build lint.
+5. Run Trinity review if requested.
+6. Run Red Team validation.
+7. Convert review findings into an issue ledger.
+8. Derive a remediation plan.
+9. Apply deterministic fixes, LLM patches, and/or regeneration.
+10. Re-run validation.
+11. Re-approve manually.
+12. Only then allow downstream media generation.
 
-- slogan taste
-- creative distinctiveness
-- community warmth
-- visual poetry
-- nuanced cross-artifact philosophy review
+This is exactly the kind of multi-stage recovery-heavy system I do not want rebuilt.
 
-Those belong to the Trinity agents, especially Reviewer.
+## Current API Surface
+The current route surface includes the following aesthetic endpoints:
 
----
+- `GET /api/groups/campaign/[slug]/media/aesthetic`
+- `POST /api/groups/campaign/[slug]/media/aesthetic`
+- `DELETE /api/groups/campaign/[slug]/media/aesthetic`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/validate`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/remediate`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/revise`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/approve`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/modify`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/production-bible`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/trinity`
+- `POST /api/groups/campaign/[slug]/media/aesthetic/red-team`
 
-## Trinity Objective
+This route sprawl is part of the current complexity problem.
 
-Replace the current review -> rewrite -> re-review loop with a role-separated, consensus-oriented agent pipeline.
+## The Button Bloat That Must Never Happen Again
+The current system has accumulated a ridiculous set of operator actions and UI buttons, including:
 
-The steady-state path becomes:
+- regenerate
+- refresh build
+- re-run red team
+- validate
+- remediate
+- revise
 
-1. Kernel validates campaign context.
-2. Designer produces creative direction on the canonical brief.
-3. Builder turns that brief into production-realistic artifacts.
-4. Reviewer approves or rejects against philosophy and consistency.
-5. Kernel asserts final structural validity.
-6. Persist only on consensus.
+This is not elegance.
+This is a sign that the architecture cannot trust its own happy path.
 
-## Why V2 Is Still Transitional
+The replacement should avoid this at all costs.
 
-V2 improved the current system, but it remains transitional because it still centers repair after generation:
+## Current UX Replacement Intent
+I want the current stupid test aesthetic devising page ripped out completely.
 
-- typed issue ledgers
-- remediation plans
-- targeted patch engine
-- deterministic fix batches
-- revalidation orchestration
+I want a new step inserted here:
 
-That is materially better than repeated rewrite loops, but it is still a repair architecture.
+Discovery -> New Brief Generation Step -> Image/Media Generation
 
-Trinity is the intended simplification:
+That new page should feel like a coherent product step, not an operator control panel for a sick orchestration machine.
 
-- Designer owns creative identity.
-- Builder owns production feasibility.
-- Reviewer owns coherence and approval.
-- Kernel owns hard guarantees.
+## Required Replacement API Shape
+The replacement must expose two clients over the same core orchestration contract:
 
-The operator should not be trapped in repeated prose deadlocks, stale deterministic suggestions, or post-hoc fixes for artifacts that should have been structurally correct before review.
+1. UI API
+Used by the human-facing page that sits between Discovery and Image/Media Generation.
 
----
+2. Agent API
+Used for rapid iteration testing, automation, prompt iteration, and direct agent-driven experimentation.
 
-## Why V1 Loops
+The Agent API is mandatory.
+We are going to use that Agent API for rapid iteration testing.
 
-The current system is not actually one closed loop. It is three partially connected systems:
+Both APIs must hit the same underlying orchestration layer.
+There must not be a separate human path and an unrelated agent path.
 
-1. Red team finds issues in prose.
-2. Revision rewrites large parts of the brief.
-3. Deterministic fixers mutate selected fields after deadlock.
+## Launch Window Gating Rules
+The current code enforces launch-window rules before approval and in Trinity context validation.
 
-This causes repeated churn for four reasons:
+Rules:
+- Minimum lead time is `180` days.
+- Tight warning band starts at `210` days.
+- `targetDates` must be parseable as either an exact sail date or a month-year string.
+- Vague phrases such as `late summer 2026` or `holiday 2026` are not acceptable launch-window values.
+- If inventory only supports ineligible dates, the ship should be rejected for the run instead of being forced into the plan.
+- Approval is blocked if minimum lead time is violated.
 
-### 1. Findings are prose-first, not closure-first
+## Core Persisted Artifact Contract
+The top-level persisted object is `CampaignAestheticBrief`.
 
-Current red-team output is good for humans, but not precise enough for automated closure. A finding such as "remove crane/dolly moves" does not specify:
+Required top-level fields:
+- `slug`
+- `themeName`
+- `visual`
+- `messaging`
+- `communityExpression`
+- `socialConcepts`
+- `videoConcepts`
+- `merch`
+- `audio`
+- `generatedAt`
+- `generatedBy`
+- `humanReviewStatus`
+- `revisionCycleCount`
 
-- owning artifact
-- exact target paths
-- whether the source of truth is brief copy, storyboard, sceneLibrary, or globalDirectionNotes
-- whether the right action is patch, regenerate, or invalidate
+Optional but important fields:
+- `productionBible`
+- `landingStillBible`
+- `productionBuildLint`
+- `productionBuildStatus`
+- `productionBuildEvaluatedAt`
+- `modificationHistory`
+- `issueLedger`
+- `activeRemediationPlan`
+- `redTeamReview`
+- `revisionNotes`
 
-### 2. Revision uses whole-object rewrite when the problem is field-level repair
+Allowed `generatedBy` values:
+- `agent`
+- `ui-session`
 
-Current revision rewrites the brief, but preserves productionBible and landingStillBible outside the revision payload. That means red team can continue seeing blockers in downstream artifacts the reviser is structurally unable to fix in the same pass.
+Allowed `humanReviewStatus` values:
+- `pending`
+- `approved`
+- `revised`
 
-### 3. Deterministic fixes are inferred late instead of planned early
+## Visual Contract Requirements
+The `visual` object must include:
+- `aestheticLabel`
+- `colorPalette.primary`
+- `colorPalette.secondary`
+- `colorPalette.accent`
+- `colorPalette.background`
+- `colorPalette.textOnDark`
+- `colorPalette.textOnLight`
+- `typographyDirection.headlineStyle`
+- `typographyDirection.bodyStyle`
+- `typographyDirection.suggestedFonts`
+- `imageryMood`
+- `lightingStyle`
+- `compositionNotes`
+- `avoidList`
+- `referenceMoodboard`
+- `plausibilityFramework`
+- `humanRepresentation`
 
-Deterministic fix suggestions are currently surfaced mainly after deadlock. That is too late. V2 should identify deterministic issues on the first validation pass and apply them as part of the standard remediation stage, not as operator rescue.
+### Visual Plausibility Framework Rules
+The current schema explicitly expects:
+- `governingPrinciple`
+- `cruiseNativeMoments`
+- `nicheEnhancedMoments`
+- `implausibleLiteralizations`
+- `allowedProps`
+- `discouragedProps`
 
-### 4. Validation is holistic too often and localized too rarely
+Default governing principle:
+- depict the campaign as a believable modulation of ordinary cruise life, not a staged demonstration of the niche itself
 
-The system repeatedly re-runs broad judgment passes instead of running targeted closure checks against touched artifacts first.
+### Human Representation Rules
+The current schema explicitly expects:
+- `castingGoal`
+- `ageRangeGuidance`
+- `diversityIntent`
+- `pairingGuidance`
+- `stylingGuidance`
+- `antiStereotypeRules`
 
----
+Default human-representation expectations include:
+- visible diversity across skin tones, facial features, and ages where appropriate
+- no tokenism
+- no caricature
+- no costume logic
+- no exaggerated ethnic or cultural stereotype signals
+- varied pairings across the image set
 
-## Trinity Design Principle
+## Messaging Contract Requirements
+The `messaging` object must include:
+- `heroSlogan`
+- `subSlogan`
+- `ctaVariants.waitlist`
+- `ctaVariants.bookNow`
+- `ctaVariants.merch`
+- `ctaVariants.share`
+- `elevatorPitch`
+- `toneKeywords`
+- `voicePersona`
 
-The brief remains the law.
+### Slogan Rules
+Current code enforces or strongly guides the following:
+- hero slogan should be `6 words maximum`
+- sub-slogan should be short enough to sell in one breath
+- sub-slogan quality gate flags slogans over `12 words`
+- no cliches like `paradise`, `perfect vacation`, `dream getaway`, `sail away`, `unforgettable`, `memories`
+- hero slogan must not be purely ambient adjective fog
+- hero slogan should have a verb, contrast, or identity anchor
+- when niche keywords exist, slogan language should anchor to at least one niche keyword
 
-Each agent may only modify the same canonical `CampaignAestheticBrief` object, in sequence, under explicit role boundaries.
+## Community Expression Contract Requirements
+The `communityExpression` object must include:
+- `corePromise`
+- `participationStyle`
+- `socialGravity`
+- `optionalGatherings`
+- `belongingSignals`
+- `solitudeAntiPatterns`
+- `visualTogethernessNotes`
+- `copyFramingRule`
 
-The loop is:
+### Community Rules
+Current code makes these principles central:
+- participation must be optional
+- gatherings must be drop-in / drop-out
+- low-pressure participation must be explicit
+- the system should avoid lonely solo-retreat framing disguised as group language
+- the system should avoid exclusivity theater
+- togetherness should read through pairs, small clusters, shared attention, and companionship rather than crowds or choreography
 
-designer -> builder -> reviewer -> approve or reject -> loop
+Default anti-patterns include:
+- lonely solo retreat framing with decorative group language
+- exclusivity theater that makes the group feel gated or precious
+- empty scenes or copy that remove the emotional reason for the group to exist
 
-The kernel sits outside this loop and rejects structurally invalid inputs or outputs.
+## Social Concepts Contract Requirements
+The `socialConcepts` object must include complete concept sets for:
+- `tiktokOrganic`
+- `instagramReels`
+- `instagramFeed`
+- `facebookAd`
+- `youtubeShort`
+- `pinterest`
+- `emailHeader`
+- `discordBanner`
 
----
+The Designer prompt also imposes these soft rules:
+- vary niche signals across concepts
+- use object cues, wardrobe cues, posture cues, conversational cues, and environmental cues
+- at least half of social and video concepts should signal the niche through non-object cues
+- use route context lightly when present
+- do not let route context turn the campaign into an excursion-led product
+- do not invent unsupported excursions or ports
 
-## Trinity Core Concepts
+## Video Concepts Contract Requirements
+The `videoConcepts` object must include:
+- `heroExplainer`
+- `tiktokSeed`
+- `thresholdAnnouncement`
+- `merchReveal`
+- `countdownSeries`
 
-### 1. Single Source of Truth
+Each `VideoBrief` must include:
+- `title`
+- `durationSeconds`
+- `tool`
+- `scriptOrNarration`
+- `visualDirectionNotes`
+- `avatarRequired`
+- `backgroundDescription`
+- `musicMood`
 
-Do not split canonical truth across revision payloads, scene-library sidecars, or patch deltas.
+Allowed `tool` values:
+- `heygen`
+- `runwayml`
+- `kling`
+- `composite`
 
-Canonical artifact:
+### Video Hard Rules Introduced By Revision + Modification Logic
+Current code explicitly targets these issues:
+- `avatarRequired` should be false when this issue is triggered
+- disallowed tool can be normalized to `runwayml`
+- exact `HH:MM` time strings are disallowed and normalized to colloquial time-of-day phrasing
+- queue/device handling language is disallowed in certain active contexts
+- scarcity-heavy copy can be stripped or normalized
 
-```ts
-CampaignAestheticBrief
-```
+## Merch Contract Requirements
+The `merch` object must include:
+- `conceptStatement`
+- `coreItem`
+- `practicalItem`
+- `nicheSpecificItems`
+- `logoConceptDescription`
+- `tagline`
+- `printStyle`
 
-The Designer, Builder, and Reviewer all receive and return that same object shape.
+Each merch item must include:
+- `productType`
+- `designDescription`
+- `colorway`
+- `dallePrompt`
+- `printfulProductId`
 
-### 2. Trinity Session
+### Merch Rules
+Current code and Trinity review enforce:
+- core merch item must be T-shirt first
+- merch should be apparel-graphic first
+- no non-apparel objects as the primary merch concept
+- print direction should be flat, clean-edged, print-friendly, and screen-print-friendly
+- merch identifier pressure can trigger a disclaimer requirement: `Optional - no branded identifiers or personal information required on any merchandise items.`
 
-```ts
-interface TrinitySession {
-	sessionId: string;
-	campaignId: string;
-	round: number;
-	maxRounds: number;
-	consensus: boolean;
-	status: 'running' | 'approved' | 'rejected' | 'max_rounds_exhausted';
-	brief: CampaignAestheticBrief;
-	history: AgentTurn[];
-	startedAt: string;
-	updatedAt: string;
-}
+## Audio Contract Requirements
+The `audio` object must include:
+- `ambientNarrationScript`
+- `hypeClipScript`
+- `voiceProfile`
+- `musicMood`
 
-interface AgentTurn {
-	agent: 'designer' | 'builder' | 'reviewer';
-	round: number;
-	brief: CampaignAestheticBrief;
-	feedback: string[];
-	approved: boolean;
-	createdAt: string;
-}
-```
+Audio scripts are also subject to some deterministic sweeps:
+- exact time strings may be normalized out
+- scarcity copy may be normalized out
+- queue/device handling copy may be normalized out
 
-### 3. Agent Roles
+## Production Bible Contract Requirements
+The `productionBible` object must include:
+- `sceneLibrary`
+- `storyboards`
+- `globalDirectionNotes`
+- `avoidDirectives`
 
-Designer:
+### Scene Library Requirements
+Each `SceneSpec` must include:
+- `sceneId`
+- `location`
+- `timeOfDay`
+- `lighting`
+- `cameraAngle`
+- `subjectAction`
+- `environmentDetails`
+- `mood`
+- `imagePrompt`
+- `referenceCategory`
 
+### Storyboard Requirements
+Each `Storyboard` must include:
+- `deliverableId`
+- `title`
+- `totalDurationSeconds`
+- `shotSequence`
+- `narrationScript`
+- `musicDirection`
+- `editingStyle`
+
+Each `ShotSpec` must include:
+- `shotNumber`
+- `sceneId`
+- `durationSeconds`
+- `cameraMovement`
+- `subjectMotion`
+- `environmentMotion`
+- `transitionIn`
+- `transitionOut`
+- `emotionalBeat`
+- `narrationSegment`
+- `musicCue`
+
+### Production Bible Hard Rules
+These are explicitly enforced by the Trinity deterministic kernel and/or deterministic fixers:
+
+1. Every scene must be filmable on a real cruise ship without special equipment.
+2. Forbidden camera moves include:
+	 - crane
+	 - dolly
+	 - tracking shot
+	 - slider
+	 - cable cam
+3. Interior staterooms must not be paired with ocean-view or window language in the same scene.
+4. No gangway exchange choreography of any kind.
+5. Storyboard shot durations must sum exactly to `totalDurationSeconds`.
+6. `globalDirectionNotes` must contain the exact passenger-area capture safety sentence:
+	 `Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.`
+7. `avoidDirectives` must reflect concrete prohibitions derived from the brief `visual.avoidList` and plausibility framework.
+
+### Builder Guidance Rules
+The Builder prompt additionally requires:
+- scenes must read cruise-first
+- niche identity should emerge through subject actions, not onboard signage or infrastructure
+- vary ship reference categories across the scene library
+- landing stills must cover `hero_primary`, `hero_alt`, `concept`, `email_header`, and `social_square`
+
+Builder seed generation currently uses and therefore implicitly normalizes around these reference categories:
+- `exterior`
+- `dining`
+- `atrium`
+- `pool_deck`
+- `destination_port`
+- `nightclub`
+
+Builder guidance also names a broader desired category spread:
+- `exterior`
+- `pool_deck`
+- `dining`
+- `stateroom`
+- `atrium`
+- `nightclub`
+- `spa`
+- `destination_port`
+- `theater`
+- `sports_deck`
+
+### Minimum Deliverable Storyboards Expected By Builder Prompt
+Current Builder prompt explicitly expects at least:
+- `tiktok_seed` at `15s`
+- `hero_explainer` at `60s`
+- `threshold_announcement` at `30s`
+- `countdown_1` at `10s`
+
+## Landing Still Bible Contract Requirements
+The `landingStillBible` object must include:
+- `stillLibrary`
+- `globalDirectionNotes`
+- `avoidDirectives`
+
+Each `LandingStillSpec` must include:
+- `stillId`
+- `usage`
+- `location`
+- `timeOfDay`
+- `lighting`
+- `composition`
+- `subjectAction`
+- `environmentDetails`
+- `mood`
+- `imagePrompt`
+- `referenceCategory`
+
+Allowed `usage` values:
+- `hero_primary`
+- `hero_alt`
+- `concept`
+- `email_header`
+- `social_square`
+
+## Trinity System Rules
+Current Trinity behavior is defined as follows:
+
+- Trinity validates campaign context before running.
+- Trinity asserts initial brief validity before running.
+- Trinity runs up to `3` rounds by default.
+- Each round runs:
+	1. designer
+	2. builder
+	3. reviewer
+- Reviewer approval triggers final kernel checks.
+- Approved Trinity sessions persist the brief with `humanReviewStatus = approved`.
+
+### Trinity Reviewer Rules
+Reviewer blocks or warns on the following:
+- workshop, salon, hosted-session, event-program, or managed-program language
+- exclusivity-coded language such as `quiet-luxe`, `elevated salon`, `collector-grade`, `rarefied`
+- missing optionality language in `communityExpression`
+- core merch item no longer being T-shirt first
+- hero slogan exceeding 6 words
+- missing `productionBible`
+- missing `landingStillBible`
+- production kernel feasibility failures
+- weak `avoidDirectives` coverage versus top-level `visual.avoidList`
+
+### Trinity Designer Rules
+Designer is only supposed to own:
 - messaging
 - visual identity
 - community expression
-- merch concept direction
+- merch
+- audio
+- social concepts
+- video concepts
 
-Builder:
+Designer is not supposed to own:
+- production bible
+- storyboards
+- scene library
+- landing still bible
 
+Designer guidance explicitly says:
+- campaign must feel cruise-first, ship-first, horizon-first
+- niche is a social flavor layer
+- hero slogan max 6 words
+- sub-slogan should sell in one breath
+- community expression must protect optionality
+- plausibility framework must explain how the niche appears inside believable cruise life
+- human representation must define diversity without tokenism or stereotype
+- avoid hosted sessions, workshop language, salon events, library infrastructure, organized activations
+- avoid exclusivity-coded language
+
+### Trinity Builder Rules
+Builder is only supposed to own:
 - production bible
 - landing still bible
-- filmability
-- motion realism
-- ship-true scene construction
 
-Reviewer:
-
-- philosophy adherence
-- cross-artifact coherence
-- diversity and anti-stereotype review
-- slogan sharpness
-- final approval or rejection
-
-### 4. Rejection Semantics
-
-Reviewer rejection must be explicit and structured.
-
-It should state:
-
-- what failed
-- why it failed
-- which role should fix it next
-- whether the failure is philosophical, structural, or consistency-related
-
-### 5. Persistence Rule
-
-Do not persist as final until:
-
-1. Reviewer approves.
-2. Deterministic kernel assertions pass.
-
-Persist intermediate Trinity sessions separately from approved briefs.
-
----
-
-## Migration Order
-
-0. Define the deterministic kernel contract first.
-1. Scaffold Trinity types and session state.
-2. Implement Designer, Builder, Reviewer prompts as isolated modules.
-3. Add Trinity orchestrator loop controller.
-4. Add session-store persistence for resumability.
-5. Expose new route: `POST /api/groups/campaign/[slug]/media/aesthetic/trinity`.
-6. Run side-by-side with legacy V2.
-7. Cut over only when Trinity reaches parity on real campaigns.
-
----
-
-## What Survives From V2
-
-Keep:
-
-- `CampaignAestheticBriefSchema`
-- `ProductionBibleSchema`
-- campaign-store persistence patterns
-- thin deterministic assertions for hard guarantees
-
-Retire or reduce over time:
-
-- large repair-first remediation plans
-- broad issue-ledger dependency for normal happy path
-- most deterministic fixers as routine workflow steps
-- whole-object post-hoc refinement as primary convergence strategy
-
----
-
-## Immediate Deliverables
-
-This migration starts with:
-
-1. deterministic kernel contract
-2. Trinity session types
-3. orchestrator skeleton
-4. session-store contract
-
-No legacy route replacement happens until those exist.
-
----
-
-## Target End State
-
-After the first generation round, every blocker should exist as a typed issue record with:
-
-- stable issue code
-- severity
-- human summary
-- owning artifact
-- exact target paths
-- fix mode
-- closure test
-- invalidation consequences
-- whether it can be auto-applied
-
-This turns the flow into:
-
-generate -> validate -> classify -> fix -> verify -> final red team -> approve
-
-instead of:
-
-generate -> review -> rewrite -> review -> deadlock -> patch -> review -> regenerate -> review
-
----
-
-## New Core Concepts
-
-### 1. Unified Issue Ledger
-
-Add a stored issue ledger to the aesthetic brief state.
-
-Suggested shape:
-
-```ts
-type RemediationMode = 'deterministic' | 'llm_patch' | 'regenerate' | 'manual';
-
-type OwningArtifact =
-	| 'brief'
-	| 'production_bible'
-	| 'landing_still_bible'
-	| 'production_build_lint'
-	| 'cross_artifact';
-
-interface AestheticIssueRecord {
-	issueId: string;
-	issueCode: AestheticIssueCode | 'custom';
-	severity: 'warning' | 'blocker';
-	title: string;
-	summary: string;
-	evidence: string[];
-	owningArtifact: OwningArtifact;
-	targetPaths: string[];
-	remediationMode: RemediationMode;
-	closureChecks: string[];
-	invalidates: {
-		redTeamReview: boolean;
-		productionBible: boolean;
-		landingStillBible: boolean;
-		productionBuildLint: boolean;
-	};
-	status: 'open' | 'applied' | 'verified' | 'failed' | 'waived';
-	resolver?: {
-		kind: 'deterministic' | 'llm_patch' | 'regenerate' | 'manual';
-		reference: string;
-	};
-}
-```
-
-Store this on the brief as something like:
-
-```ts
-issueLedger?: AestheticIssueRecord[]
-```
-
-### 2. Remediation Plan
-
-Add a derived remediation plan that groups open issues into one execution batch.
-
-```ts
-interface AestheticRemediationPlan {
-	createdAt: string;
-	sourceReviewId: string;
-	deterministicIssueIds: string[];
-	llmPatchIssueIds: string[];
-	regenerationSteps: Array<'productionBible' | 'landingStillBible' | 'productionBuildLint'>;
-	manualEscalations: string[];
-}
-```
-
-The operator sees one plan, not fragmented findings.
-
-### 3. Targeted LLM Patch Requests
-
-Replace whole-brief revision as the default remediation primitive.
-
-New patch requests must specify:
-
-- issue IDs to address
-- exact fields allowed to change
-- preserved sibling fields
-- artifact ownership
-- forbidden drift zones
-- explicit closure conditions
-
-Example:
-
-```ts
-interface AestheticPatchRequest {
-	issueIds: string[];
-	artifact: 'brief' | 'production_bible' | 'landing_still_bible';
-	allowedPaths: string[];
-	closureChecks: string[];
-	instructions: string[];
-}
-```
-
-The model returns a patch object for allowed paths only, not a full replacement brief.
-
----
-
-## Proposed Pipeline
-
-### Phase 1 - Initial Generation
-
-Keep the existing first-pass aesthetic generation and downstream artifact generation, but mark outputs with a generation bundle id so later validators and fixers all reference the same snapshot.
-
-Output:
-
-- brief
-- productionBible
-- landingStillBible
-- productionBuildLint
-- generationBundleId
-
-### Phase 2 - Unified Validation
-
-Replace the current loosely connected review outputs with one orchestrated validation pass that produces:
-
-- human-readable red-team summary
-- typed issue ledger
-- remediation plan
-
-Validators contributing to the ledger:
-
-1. deterministic validators
-2. production-build lint
-3. red-team judgment pass
-4. schema integrity checks
-5. cross-artifact consistency checks
-
-Important: red team should no longer be responsible for inventing all fix mechanics. It should identify issues, classify severity, and attach evidence. The orchestration layer maps those issues into remediation modes.
-
-### Phase 3 - Remediation
-
-Run remediation in this order:
-
-1. deterministic fix batch
-2. targeted LLM patch batch
-3. regeneration batch for invalidated downstream artifacts
+Builder is not supposed to touch:
+- messaging
+- community expression
+- merch
+- visual identity
+
+Builder revision rounds must:
+- address reviewer feedback exactly
+- not modify unrelated fields
+- always retain the exact safety-ops sentence
+- keep all kernel constraints in effect
+- return complete production bible and landing still bible even for minor revisions
+
+## Red Team Review Rules
+Current Red Team review is the final pre-launch review of the aesthetic brief.
+
+Red Team explicitly audits for:
+- loss of ambient community or common-interest energy
+- workshop, retreat, residency, or event-program takeover
+- lonely premium solo retreat drift
+- cruise implausibility or ship-incompatible scenes
+- weak optionality or introvert-hostile framing
+- poor ethnic diversity
+- repetitive casting
+- stereotype risk
+- human-motion violations in video planning
+- copy or visual systems conflicting with the group promise
+- missing planning detail that prevents confident launch
+
+Allowed Red Team verdicts:
+- `pass`
+- `warn`
+- `block`
+
+Allowed Red Team issue severities:
+- `warning`
+- `blocker`
+
+Allowed Red Team issue categories:
+- `community_drift`
+- `optionality_failure`
+- `workshop_regression`
+- `solitude_drift`
+- `cruise_implausibility`
+- `diversity_gap`
+- `stereotype_risk`
+- `motion_safety`
+- `production_feasibility`
+- `copy_alignment`
+- `other`
+
+Current Red Team gating behavior:
+- media readiness requires red team `pass`
+- approval route blocks if red team did not pass
+- missing production bible or landing still bible currently creates deterministic warnings, not automatic blockers
+
+## Deterministic Scan And Issue Code Rules
+Current deterministic issue codes are:
+- `countdown_series_hard_scarcity`
+- `exact_time_strings`
+- `queue_device_handling`
+- `non_generic_venue_naming`
+- `avatar_required_video`
+- `disallowed_video_tool`
+- `rail_safety_missing`
+- `merch_identifier_pressure`
+- `privacy_line_missing`
+- `filming_permissions_missing`
+- `compliance_risk_scarcity_copy`
+- `camera_move_feasibility`
+- `cabin_type_plausibility`
+- `gangway_exchange_prohibited`
+- `storyboard_duration_alignment`
+- `production_safety_ops_missing`
+
+Allowed deterministic operation kinds are:
+- `replace_countdown_series`
+- `replace_phrase_patterns`
+- `set_boolean`
+- `set_enum`
+- `append_sentence_if_missing`
+- `prepend_sentence_if_missing`
+- `replace_named_venues_with_generic`
+- `normalize_time_strings`
+- `inject_privacy_line`
+- `inject_filming_permission_gate`
+- `inject_rail_safety_language`
+- `normalize_camera_movements`
+- `replace_scene_location`
+- `normalize_cabin_type`
+- `remove_or_relocate_scene_beat`
+- `align_storyboard_durations`
+- `inject_production_safety_ops`
+
+## Deterministic Modification Path Whitelist
+Only explicitly whitelisted fields can be modified through deterministic operations.
+
+Whitelisted path families include:
+- `videoConcepts.countdownSeries`
+- all main `videoConcepts.*` script, visualDirectionNotes, backgroundDescription, musicMood, avatarRequired, tool fields
+- `visual.compositionNotes`
+- `visual.imageryMood`
+- `visual.avoidList`
+- `messaging.heroSlogan`
+- `messaging.subSlogan`
+- `messaging.elevatorPitch`
+- `messaging.voicePersona`
+- `audio.ambientNarrationScript`
+- `audio.hypeClipScript`
+- `audio.musicMood`
+- `audio.voiceProfile`
+- `merch.conceptStatement`
+- `merch.tagline`
+- `revisionNotes`
+- `productionBible.storyboards`
+- `productionBible.sceneLibrary`
+- `productionBible.globalDirectionNotes`
+- `productionBible.avoidDirectives`
+
+Unlisted paths are explicitly rejected.
+
+## Named Deterministic Fix Behaviors
+Current deterministic fix logic includes:
+
+### Time normalization
+- exact times like `08:30` are replaced with broader phrases like `morning`, `afternoon`, or `a set time`
+
+### Venue-name normalization
+- branded venue names can be replaced with generic alternatives
+- examples include replacing explicit brand mentions with generic venues or `the ship`
+
+### Privacy and filming language injection
+- privacy line:
+	`Photos and videos taken during the event are subject to participant consent. Please respect others' privacy.`
+- filming permissions line:
+	`All filming and photography requires prior written approval from the event organizer. Synthetic or stock footage may be substituted where permissions are not obtained.`
+- rail safety line:
+	`Passengers must remain behind deck railings at all times and must not lean over or sit on railings.`
+
+### Camera movement normalization
+Disallowed movement language is replaced with safer equivalents such as:
+- crane -> handheld high angle
+- dolly -> gentle gimbal drift
+- tracking shot -> gimbal follow shot
+- slider -> compact gimbal sweep
+- cable cam -> gimbal arc
+
+The fixer also injects:
+- `No tracks, cranes, sliders, or floor cables in passenger walkways. Use handheld or compact gimbal only.`
+
+### Cabin contradiction normalization
+Interior-plus-window contradictions are normalized toward:
+- `Oceanview stateroom`
+
+### Gangway exchange relocation
+Gangway exchange or handoff language is relocated away from boarding flow to a compliant dockside location.
+
+### Storyboard duration alignment
+Storyboard totals are aligned to the authoritative durations stored in `videoConcepts`.
+
+### Production safety ops injection
+Walkway-sensitive storyboards and global notes receive the required passenger-area capture rules sentence.
+
+## Invalidation Rules After Modification
+Current modification logic computes invalidation after any real change.
 
 Rules:
+- any modification clears red-team review
+- approved or revised briefs become `revised`
+- visual-planning-affecting changes clear production-build lint
+- production-bible in-place repairs trigger special follow-up behavior
 
-- deterministic should run first because it is cheapest and most reliable
-- targeted LLM patch should operate only on allowed fields
-- regeneration happens only if earlier steps invalidated downstream artifacts
-- all steps append machine-readable history
+Default follow-up actions currently include:
+- rerun red team
+- re-approve brief before media generation if it was previously approved/revised
+- regenerate production bible if visual-planning-relevant content changed and bible was not repaired in place
+- rerun production-build lint after in-place production-bible repair
 
-### Phase 4 - Closure Verification
-
-Run closure checks only for touched issue records first.
-
-Examples:
-
-- banned phrase no longer present
-- storyboard duration sums equal declared duration
-- all rail scenes contain safety phrasing
-- no prohibited camera-move tokens remain in sceneLibrary or storyboards
-
-Only after local closure passes do we run final holistic red team.
-
-### Phase 5 - Final Gate
-
-Final red team should be single-pass and binary in intent:
-
-- either approve
-- or emit net-new blockers not covered by closed issue IDs
-
-It should not reopen already verified issues unless new evidence exists.
-
----
-
-## File-Level Implementation Plan
-
-### 1. Schema Layer
-
-Update [lib/campaigns/schema.ts](lib/campaigns/schema.ts)
-
-Add:
-
-- `AestheticIssueRecordSchema`
-- `AestheticRemediationPlanSchema`
-- `AestheticPatchRequestSchema`
-- `AestheticPatchResultSchema`
-- `issueLedger?: AestheticIssueRecord[]`
-- `activeRemediationPlan?: AestheticRemediationPlan`
-
-Extend current issue codes where needed, but keep deterministic issue codes separate from red-team-only semantic issue IDs when exact mapping does not exist.
-
-**Implementation Constraint (OpenAI Structured Output):**
-When mapping `AestheticIssueRecordSchema` or generation schemas to LLM structured output, do not use Zod `.default()` values. Keep fields as required primitives or exact enums to guarantee consistent JSON schema conversion, and handle any desired defaults during runtime normalization.
-
-### 2. Validation Orchestrator
-
-Add new module:
-
-- [lib/campaigns/aesthetic-validation-orchestrator.ts](lib/campaigns/aesthetic-validation-orchestrator.ts)
-
-Responsibilities:
-
-- run deterministic validators
-- run production-build lint collectors
-- run red team
-- merge findings into typed issue ledger
-- derive remediation plan
-- deduplicate overlapping issues across artifacts
-
-### 3. Red Team Refactor
-
-Refactor [lib/campaigns/aesthetic-red-team.ts](lib/campaigns/aesthetic-red-team.ts)
-
-Keep the narrative summary and approval recommendation, but add a stricter issue contract:
-
-- title
-- evidence array
+## Remediation Plan Model
+Current issue-ledger system classifies every issue by:
+- `issueId`
+- `issueCode` or `custom`
 - severity
-- candidate issue code if known
-- owning artifact if inferable
-- suggested remediation mode if inferable
-
-Red team should stop being the only source of remediation semantics.
-
-### 4. LLM Patch Engine
-
-Add new module:
-
-- [lib/campaigns/aesthetic-patch-engine.ts](lib/campaigns/aesthetic-patch-engine.ts)
-
-Responsibilities:
-
-- accept typed patch request
-- expose only allowed fields to the model
-- require patch output, not full object regeneration
-- validate output against target artifact schema
-- compute exact touched paths
-
-**Implementation Constraint (LLM Path Sandboxing):**
-To prevent deep path hallucination, the engine must derive a request-scoped finite path enum from `ALLOWED_OPERATION_PATHS` (from `registry.ts`) based on the active artifact and issue set. The structured output schema must force the LLM to select only from that narrowed enum subset rather than inventing arbitrary dot-notation or touching unrelated sibling fields.
-
-This replaces `reviseAestheticBrief` as the default repair engine.
-
-### 5. Revision Route Replacement
-
-Refactor or replace [app/api/groups/campaign/[slug]/media/aesthetic/revise/route.ts](app/api/groups/campaign/[slug]/media/aesthetic/revise/route.ts)
-
-New route behavior:
-
-- `POST /revise` becomes `POST /remediate` or becomes a thin wrapper over remediation orchestration
-- response returns remediation plan execution summary, not just another rewritten brief
-- deadlock means "unresolved issue IDs remain after all allowed fix modes ran", not "the LLM rewrote twice and still failed"
-
-### 6. Deterministic Fix Layer
-
-Keep [lib/campaigns/aesthetic-modification.ts](lib/campaigns/aesthetic-modification.ts) and the existing fixers, but move them earlier in the lifecycle.
-
-Change the role of deterministic fixers from:
-
-- operator rescue after deadlock
-
-to:
-
-- standard first-stage remediation applied automatically whenever the issue ledger marks an issue as deterministic and auto-applicable
-
-### 7. Cross-Artifact Consistency Checks
-
-Add new module:
-
-- [lib/campaigns/aesthetic-consistency.ts](lib/campaigns/aesthetic-consistency.ts)
-
-Responsibilities:
-
-- ensure source-of-truth alignment between brief, productionBible, storyboards, and sceneLibrary
-- emit issues when one artifact was repaired but sibling artifacts still retain banned content
-- act as a hard deterministic gatekeeper (e.g., mathematically verifying durations match between `videoConcepts` and `storyboards`), turning subjective review failures into deterministic validator failures backed by focused automated tests.
-
-This directly targets the failure class we saw with storyboard cleanup while sceneLibrary still contained the blocker.
-
-### 8. Test UI
-
-Update [app/(tests)/tests/aesthetic-devising/page.tsx](app/(tests)/tests/aesthetic-devising/page.tsx)
-
-Operator view should show:
-
-- issue ledger
-- remediation plan
-- which issues are deterministic vs patch vs regenerate
-- closure status per issue
-- exact reason an issue remains open
-
-Do not show a generic "Deterministic Fix Available" panel detached from current issue state.
-
----
-
-## New Execution Semantics
-
-### Deterministic Issues
-
-Examples:
-
-- countdown hard scarcity
-- exact time strings
-- disallowed avatar/tool usage
-- rail safety language
-- venue genericization
-- camera move feasibility when rule-based text replacement is sufficient
-- storyboard duration alignment
-
-Handling:
-
-- auto-apply by default
-- run closure checks immediately
-- mark `verified` if closure checks pass
-
-### Targeted LLM Patch Issues
-
-Examples:
-
-- ambient tone drift
-- over-solo VO balance
-- weak casting diversity nuance
-- merch conflict requiring nuanced restaging
-- scene plausibility that needs creative reframing, not string replacement
-
-Handling:
-
-- produce typed patch request
-- restrict writable fields
-- run local closure checks
-- only then run final red team
-
-### Regeneration Issues
-
-Examples:
-
-- entire productionBible invalidated by upstream scene changes
-- still library needs rebuild after major visual brief edits
-
-Handling:
-
-- regenerate only the invalidated artifact
-- do not rewrite the parent brief unless required
-
-### Manual Issues
-
-Examples:
-
-- genuine business-rule ambiguity
-- ship-policy uncertainty requiring human confirmation
-- design taste disputes not reducible to deterministic or patchable criteria
-
-Handling:
-
-- explicit operator escalation
-- no fake "try revise again" loop
-
----
-
-## What Changes In Practice
-
-### Old Behavior
-
-1. Red team emits prose.
-2. Revise rewrites the brief.
-3. Some issues survive because downstream artifacts were preserved.
-4. Red team flags them again.
-5. Deadlock occurs.
-6. Operator manually tries deterministic fixes.
-
-### V2 Behavior
-
-1. Validation emits a typed issue ledger once.
-2. Deterministic issues are applied immediately.
-3. Creative issues become targeted patch requests.
-4. Invalidated artifacts regenerate once.
-5. Closure checks verify only what changed.
-6. Final red team either passes or returns truly net-new blockers.
-
----
-
-## Minimum Viable V2
-
-Do not attempt the full redesign in one step. Implement in this order.
-
-### Step 1
-
-Introduce issue ledger storage and remediation plan derivation.
-
-Deliverable:
-
-- red team still exists
-- deterministic fixers still exist
-- but findings are stored as typed issue records
-
-### Step 2
-
-Auto-run deterministic fixers immediately after validation when issues are marked deterministic.
-
-Deliverable:
-
-- deterministic issues no longer wait for deadlock
-
-### Step 3
-
-Replace whole-brief revise with targeted patch engine for brief-only fields.
-
-Deliverable:
-
-- LLM revisions are path-scoped
-
-### Step 4
-
-Extend targeted patching to productionBible and landingStillBible.
-
-Deliverable:
-
-- reviser can actually close downstream planning issues instead of preserving them unchanged
-
-### Step 5
-
-Add cross-artifact consistency validation and final issue closure semantics.
-
-Deliverable:
-
-- source-of-truth drift becomes a first-class detected issue, not a surprise after no-op fixes
-
----
-
-## Non-Negotiable Rules For V2
-
-1. No whole-object rewrite when the issue is field-local.
-2. No deadlock suggestion panel without live issue ledger backing it.
-3. No issue may be reopened after local closure unless there is new evidence.
-4. Every remediation step must declare touched paths and invalidation consequences.
-5. Red team should judge readiness, not act as the only remediation planner.
-6. Deterministic fixes should run before any LLM patch whenever possible.
-7. Downstream artifact ownership must be explicit.
-
----
-
-## Success Criteria
-
-V2 is successful when all of the following are true:
-
-1. A first-pass campaign usually needs at most one remediation batch before final red team.
-2. Deterministic issues are fixed automatically without operator rescue.
-3. LLM-driven fixes operate on explicit target paths, not broad rewrites.
-4. ProductionBible and sceneLibrary blockers are fixable within the same remediation cycle.
-5. Final red team returns only unresolved or net-new blockers.
-6. The test UI shows issue state, remediation mode, and closure status clearly enough that repeated clicking is unnecessary.
-
----
-
-## Recommendation
-
-Do not redesign the entire system from scratch.
-
-Redesign the revision stage into a typed remediation stage.
-
-That is the actual missing piece.
-
-The current architecture already has useful components:
-
-- strong red-team judgment
-- deterministic fix infrastructure
-- production-build lint
-- artifact invalidation semantics
-
-V2 should unify them around issue-ledger-based convergence instead of adding more retries.
+- title
+- summary
+- evidence
+- owning artifact
+- target paths
+- remediation mode
+- closure checks
+- invalidation flags
+- status
+
+Allowed remediation modes:
+- `deterministic`
+- `llm_patch`
+- `regenerate`
+- `manual`
+
+Allowed owning artifacts:
+- `brief`
+- `production_bible`
+- `landing_still_bible`
+- `production_build_lint`
+- `cross_artifact`
+
+Allowed issue statuses:
+- `open`
+- `applied`
+- `verified`
+- `failed`
+- `waived`
+
+Remediation plan contains:
+- deterministic issue ids
+- llm-patch issue ids
+- regeneration steps
+- manual escalations
+
+Allowed regeneration steps:
+- `productionBible`
+- `landingStillBible`
+- `productionBuildLint`
+
+## Cross-Artifact Consistency Rules
+Current consistency checks add additional issues when:
+
+1. storyboard durations do not match authoritative `videoConcepts` durations
+2. storyboard shot `sceneId` values reference scene ids missing from the scene library
+3. banned camera-move tokens still survive across video concepts, scene library, or storyboards
+4. top-level `visual.avoidList` terms are not reflected well enough in `productionBible.avoidDirectives`
+
+## Revision Workflow Rules
+Current revision logic:
+- requires an existing red-team review
+- increments `revisionCycleCount`
+- deadlocks after more than `2` non-improving cycles
+- preserves production bible and landing still bible during LLM revision
+- automatically reruns Red Team after revision
+- returns `deadlock: true` when the same class of issues survives too many times
+
+### Mandatory Revision Sweeps Currently Hard-Coded In Prompting
+The current revision prompt explicitly demands these sweeps before returning:
+
+1. no precise `HH:MM` time strings anywhere
+2. no device handling in active queues
+3. venue naming must be generic unless written approval exists
+4. `avatarRequired` must be false on all video concepts unless explicitly permitted
+5. rail scenes must specify safe body positioning
+6. merch CTAs should include an optional / no-identifiers-needed disclaimer when relevant
+7. privacy line must exist where filming/photos are mentioned
+8. production notes must include a hard gate blocking onboard capture without written approval and mention synthetic/stock fallback
+
+## Production Build Lint Rules
+The production build lint is a pre-spend structural gate over the landing still bible.
+
+It evaluates the still set for:
+- composition clustering
+- niche signal strength
+- generic fallback overuse
+- shot-role coverage
+- hero over-homogeneity
+- identity legibility floor
+
+### Production Build Verdicts
+- `pass`
+- `warn`
+- `fail`
+
+### Production Build Issue Codes
+- `repeated_composition_family`
+- `weak_niche_signal`
+- `generic_fallback_overuse`
+- `missing_role_coverage`
+- `hero_set_too_homogeneous`
+- `identity_legibility_too_low`
+
+### Composition Cluster Families Used By Lint
+The lint currently groups certain recurring still patterns into families such as:
+- `rail_couple_laugh`
+- `quiet_window_solo`
+- `dining_intimacy`
+- `deck_sea_wide`
+- `poolside_relax`
+- `lounge_social`
+
+Generic fallback families explicitly include:
+- `rail_couple_laugh`
+- `quiet_window_solo`
+- `dining_intimacy`
+- `deck_sea_wide`
+
+### Production Build Blocking Rules
+Current lint blocks when any of the following are true:
+
+1. `3+` stills share the same composition family
+2. `4+` stills have no legible niche cue
+3. `4+` stills use generic cruise fallback templates
+4. required shot-role coverage is missing:
+	 - at least `2` hero-capable stills
+	 - at least `2` editorial/concept stills
+	 - at least `1` intimate/tight still
+5. almost every still reads as a hero shot
+6. fewer than `2` stills carry discernible campaign identity in sets of `4+`
+
+### Production Build Warning Rules
+Current lint warns when:
+- `2` stills share a composition family
+- niche signal is borderline weak
+- exactly `3` generic fallback stills appear
+
+## Storyboard Motion Policy Rules For Video Prompting
+Current storyboard shot analysis flags human-motion risk before video prompting.
+
+Motion policy detects:
+- visible people
+- complex human motion
+- foreground human framing
+- object interaction
+- unanchored posture
+- weak environment anchor
+
+Risk levels:
+- `low`
+- `medium`
+- `high`
+
+Current prompt-building strategy prefers:
+- environment-led frames
+- frozen human motion where necessary
+- ship-and-sea-first composition
+- no parallax or warped anatomy
+- no extra limbs
+- no prop duplication
+- no scene swaps
+
+## Approval And Media-Readiness Gates
+Current approval requires:
+- campaign exists
+- brief exists
+- launch window passes minimum lead-time gate
+- red team passes
+
+Approval route sets:
+- `humanReviewStatus = approved`
+
+Current media-readiness assertion requires:
+- `humanReviewStatus === approved`
+- red team verdict is `pass`
+
+If either is false, media generation should not proceed.
+
+## Production Bible Regeneration Route Rules
+Current production-bible regeneration route:
+- regenerates visual planning from the current brief
+- recalculates production-build lint
+- resets approval to `revised` if previously approved or revised
+- clears red-team review
+- returns `422` if production-build lint fails
+
+That means the system treats regenerated production artifacts as potentially invalidating prior approval.
+
+## Modify Route Rules
+Current modify route is explicitly usable by both humans and agents.
+
+It validates:
+- request schema
+- known issue codes
+- known operation kinds
+- allowed target paths
+- existence of at least one issue code or operation
+- existence of an aesthetic brief
+
+It rejects:
+- unknown issue codes
+- unknown operation kinds
+- unwhitelisted target paths
+- all-no-op mutation attempts
+
+## Current Failure / Deadlock Characteristics
+The current system has several baked-in deadlock and escalation patterns:
+
+- Trinity maxes out at `3` rounds
+- revision deadlocks after `2` non-improving cycles
+- remediation can still leave blockers open
+- approval is blocked by launch-window and red-team gates
+- production-build regeneration can return `422 fail`
+- route sprawl encourages repeated manual retries
+
+This is precisely the kind of complicated failure-recovery machine I do not want carried forward.
+
+## Final Summary Of What The Current Final Brief Must Satisfy
+At a minimum, the final aesthetic brief and production planning bundle must currently satisfy all of the following:
+
+1. It must match the full `CampaignAestheticBrief` schema.
+2. It must preserve cruise-first, ship-first plausibility.
+3. It must preserve optionality and low-pressure social framing.
+4. It must avoid workshop, salon, retreat, residency, and hosted-program drift.
+5. It must avoid exclusivity-coded language.
+6. It must maintain diverse, non-stereotyped human representation guidance.
+7. It must keep hero slogan short and non-cliche.
+8. It must keep merch T-shirt first.
+9. It must generate a production bible and landing still bible when required.
+10. The production bible must avoid forbidden camera moves.
+11. The production bible must avoid interior-window cabin contradictions.
+12. The production bible must avoid gangway exchange choreography.
+13. Storyboard durations must align exactly.
+14. Global production notes must include the required passenger-area capture rules sentence.
+15. Avoid directives must meaningfully reflect the top-level avoid list.
+16. Red Team must pass.
+17. Human review status must be approved before media generation.
+18. Production build lint must not fail if the visual planning is to be used for spend-sensitive downstream generation.
+
+## REQUIRED POST-DEBATE GUARDRAILS
+
+To guarantee this system never reverts to the "multi-loop recovery maze," the new generation layer must conform to these three strict technical guardrails:
+
+### 1. Mandate Native Structured Outputs (No Parsers/No Syntax Validators)
+The only way to guarantee a "strong, well-structured generation pass" is to enforce Native Structured Outputs (e.g., `strict: true` JSON schema mode with OpenAI or equivalent). 
+- Do not ask the LLM for markdown and parse it later.
+- Do not let a secondary LLM check for valid JSON.
+Enforcing structure natively at the API level instantly eradicates 90% of the former validation pipeline's job.
+
+### 2. Define the "Intentional Workflow" Failure Mode (One-Strike Rule)
+If revision is needed, it must not loop. Limit the orchestration failure path to a strict 1-strike rule.
+- If the generated brief fails the minimal hard deterministic checks, the engine attempts *one* automated reprompt with the hard rule violation appended.
+- If it fails a second time, it halts completely and reports the specific blocker back to the user/UI.
+No recursive multi-round debugging loops.
+
+### 3. State Cleansing (No Issue Ledgers)
+To stay structurally simple, the entire generation pipeline must be completely stateless within its boundary.
+- Do not log agent conversational history.
+- Do not build or persist "issue ledgers" for the user to tweak.
+- Take the `Discovery` inputs, run the structured generation, and return the immutable `CampaignAestheticBrief` and production bibles.
+
+## Final Instruction To The Replacement Designer
+Do **not** rebuild this architecture.
+
+Preserve the necessary outcomes:
+- a correct upstream campaign brief
+- a correct production bible
+- a correct landing still bible
+- strong media-readiness gates
+
+Do **not** preserve:
+- the Trinity debate maze
+- the validator-on-validator pile-up
+- the issue-ledger babysitting model
+- the repeated remediation loops
+- the garden of rescue buttons
+
+The replacement should be dramatically cleaner than this.
+It should produce the same or better correctness with far less orchestration, less fragility, and far less operator babysitting.
+
+## Exactly 10 Issues Users Will Encounter If This Process Gets Built
+These are the practical usage problems that a real operator, designer, strategist, or agent will run into while trying to use this system in production.
+
+1. **Users will not know which button they are supposed to press next.**
+The system splits generation, validation, remediation, revision, approval, and regeneration into separate actions. That means the operator has to understand internal pipeline state just to move forward.
+
+2. **Users will think the brief is done when it is not actually media-ready.**
+A brief can exist, and even look complete, while still failing red team, failing production-build lint, lacking approval, or having stale production artifacts. The visible existence of a brief is not the same as readiness.
+
+3. **Small edits will trigger large downstream invalidation cascades.**
+Changing messaging, visual notes, audio, or production-bible fields can clear red-team review, reset approval status, and force production-lint or bible reruns. Users will experience this as the system “undoing” progress.
+
+4. **The same issue will appear to be checked multiple times by different subsystems.**
+Camera movement, plausibility, avoid-list coverage, copy drift, and readiness are all checked in overlapping places across Trinity, Red Team, deterministic scans, consistency checks, and production-build lint. Users will perceive this as repetitive, inconsistent policing.
+
+5. **Users will hit situations where the system asks for remediation but does not clearly explain the cheapest fix path.**
+Some issues are deterministic, some require LLM patching, some require regeneration, and some require manual escalation. That distinction is internal-system logic, but the user will still end up paying the complexity cost.
+
+6. **Approval will feel unstable and easy to lose.**
+A brief can become approved, then a subsequent production-bible regeneration, modification, or revision can push it back to `revised` and clear prior review state. Users will feel like the system keeps moving the finish line.
+
+7. **The system will deadlock on stubborn issue classes.**
+Revision cycles can stall, Trinity can exhaust rounds, and remediation can leave blockers open. Users will encounter loops where the system keeps reporting “almost fixed” states without actually converging.
+
+8. **Operators will waste time debugging artifact drift instead of making creative decisions.**
+Because the brief, production bible, landing still bible, issue ledger, remediation plan, and build lint all mutate independently, users will spend time investigating state mismatches instead of refining campaign quality.
+
+9. **The process will encourage manual patching outside the intended workflow.**
+Once users get frustrated by repeated validation loops, they will bypass the official process and directly edit persisted artifacts or run one-off patch scripts just to move forward. That creates even more hidden state drift.
+
+10. **Users will lose trust in the happy path and start treating the system like a recovery console.**
+Once people learn that success often requires validate, remediate, revise, regenerate, and approve in the right order, they will stop experiencing this as a product workflow and start experiencing it as a fragile machine that constantly needs operator rescue.
+
+## Mitigation Plan For Those 10 Issues
+The replacement plan must explicitly neutralize each of the 10 practical failure modes above.
+
+1. **Mitigation for button confusion: collapse the happy path into one primary action.**
+The replacement should present one dominant flow for brief generation and one clear follow-up if review is needed. Internal sub-steps can still exist, but they should not appear to the user as a menu of rescue verbs.
+
+2. **Mitigation for false completion: introduce a single canonical readiness state.**
+The replacement should expose one obvious status that answers the real question: `not ready`, `needs revision`, or `ready for media`. Users should not need to infer readiness from the existence of a brief or partial artifacts.
+
+3. **Mitigation for invalidation cascades: make dependency resets deliberate, scoped, and visible.**
+If a change invalidates downstream work, the system should say exactly what was invalidated and why, using one plain-language explanation. The replacement should minimize broad invalidation and prefer partial recomputation over full reset where possible.
+
+4. **Mitigation for overlapping rule systems: centralize rule enforcement into one canonical validation contract.**
+The replacement should have one definitive rules engine or one consolidated validation pass for structural correctness. Multiple layers may still exist internally, but they must behave as a single coherent source of truth.
+
+5. **Mitigation for unclear remediation paths: automatically choose the cheapest valid fix strategy.**
+The system should decide whether a problem is auto-fixable, needs regeneration, or needs human review, without asking the operator to understand remediation taxonomy. The user should receive a result, not a classification burden.
+
+6. **Mitigation for unstable approval: separate editorial approval from artifact freshness in a predictable way.**
+The replacement should clearly distinguish `content approved`, `artifacts stale`, and `fully ready`. Approval should not feel like it randomly disappears. If approval must be re-confirmed, the reason must be explicit and narrowly scoped.
+
+7. **Mitigation for deadlocks: enforce bounded retries and clear escalation.**
+The replacement should never loop indefinitely. It should have a hard retry ceiling, detect non-improving cycles quickly, and surface a clean escalation path instead of repeatedly re-running the same failing logic.
+
+8. **Mitigation for artifact drift debugging: reduce the number of independently mutable states.**
+The replacement should avoid maintaining too many semi-independent artifacts with separate mutation histories. Prefer a simpler model where the core brief is canonical and any derived artifacts are regenerated or versioned in a traceable, synchronized way.
+
+9. **Mitigation for off-workflow manual patching: provide a first-class agent API and structured edit path.**
+If operators and agents need to iterate quickly, they should have an official, supported path to do it. The Agent API should make direct testing, revision, and re-validation easy so users do not resort to one-off scripts and hidden datastore edits.
+
+10. **Mitigation for loss of trust: design for a trustworthy happy path and treat recovery as exceptional.**
+The replacement must be optimized around the default successful journey, not around a stack of rescue controls. A healthy system should make the ordinary path boringly reliable and reserve exceptional tooling for genuinely exceptional cases.
+
+## Design Translation Of The Mitigation Plan
+To make the mitigation plan concrete, the replacement should adopt the following design principles:
+
+1. One primary generation action.
+2. One canonical readiness status.
+3. One centralized validation contract.
+4. One official agent-facing API for rapid iteration.
+5. One human-facing UI API for the product flow.
+6. Bounded retries with explicit escalation.
+7. Minimal exposed internal state.
+8. Derived artifacts regenerated from the same canonical source, not manually kept in sync across many drifting layers.
+9. Plain-language explanations whenever the system blocks progress.
+10. Recovery tools hidden behind advanced or operator workflows, not promoted as the normal way to use the feature.
+
+## Target Replacement Architecture
+The replacement should not be another orchestration maze. It should be a small, opinionated system with one canonical artifact, one validation contract, one readiness state machine, and one official edit path.
+
+At the center of the system should be a single canonical campaign creative artifact. That artifact should contain the user-approved strategic inputs, the generated aesthetic brief, the production-bible content that is required downstream, the current readiness state, and a traceable revision history. Derived outputs can still exist, but they must be treated as projections of the canonical artifact, not as semi-independent objects that can drift out of sync.
+
+Validation should run as one consolidated pipeline stage. Internally, that stage can still use deterministic rules, model-based review, and consistency checks, but externally it must return one coherent result with one status, one issue list, one explanation of what changed, and one decision about whether the artifact is ready for downstream media generation.
+
+The replacement should expose only three user-meaningful states:
+
+1. `drafting`: the system is building or updating the canonical artifact.
+2. `needs_review`: the system has produced a usable artifact, but unresolved issues or required confirmations remain.
+3. `ready_for_media`: the artifact satisfies all structural rules and is approved for image and video generation.
+
+Do not expose internal statuses like remediation phase, stale partial artifact state, red-team sub-status, or Trinity round count in the main workflow. Those details may exist in logs, but they are not product states.
+
+## Required Replacement UI Flow
+The new page that replaces the current test aesthetic devising page should sit between Discovery and Image Generation / Media Generation exactly as already specified above. That page should be built around one continuous workflow, not a dashboard of rescue controls.
+
+The page should work like this:
+
+1. The operator reviews campaign inputs and presses one primary action to generate or refresh the creative brief.
+2. The system generates the canonical artifact and immediately runs consolidated validation.
+3. The page returns one of two outcomes: either the artifact is ready for media, or the artifact needs review with a short issue list.
+4. If review is needed, the operator can either accept an automatic proposed fix path or make a direct structured edit.
+5. After the edit, the same single pipeline re-runs and returns an updated readiness result.
+
+The page must not require separate visible buttons for validate, remediate, regenerate production bible, re-run red team, or other internal repair verbs. Those are implementation details and should stay behind the primary flow.
+
+## Required Replacement API Contract
+There should be one orchestration layer and two clients over it:
+
+1. A human-facing UI API.
+2. An agent-facing API for rapid iteration, regression testing, and scripted refinement.
+
+Both APIs must hit the same orchestration contract and the same canonical data model. The agent API must not become a separate behavior fork.
+
+The replacement contract should revolve around these operations:
+
+1. `create_or_refresh_brief`
+Input: campaign identifier plus optional operator instructions.
+Output: canonical artifact, readiness state, issue list, and generated change summary.
+
+2. `apply_structured_revision`
+Input: campaign identifier, revision intent, structured field edits or revision instructions.
+Output: updated canonical artifact, readiness state, issue list, and invalidation summary.
+
+3. `get_readiness`
+Input: campaign identifier.
+Output: current canonical artifact snapshot, readiness state, unresolved issues, and last successful validation summary.
+
+4. `approve_for_media`
+Input: campaign identifier plus approver metadata.
+Output: approval record bound to the current validated artifact version.
+
+5. `get_history`
+Input: campaign identifier.
+Output: linear revision history with who changed what, why it changed, and which version became media-ready.
+
+That is enough. Anything beyond that should require a strong justification.
+
+## Required Internal State Model
+The replacement should keep the internal model deliberately small.
+
+Required persistent records:
+
+1. Campaign source inputs.
+2. Canonical creative artifact.
+3. Validation result for the current artifact version.
+4. Approval record bound to a specific artifact version.
+5. Revision history.
+
+Avoid persisting separate mutable ledgers for every intermediate stage unless there is a direct product need for that history. If an artifact can be deterministically re-derived from the canonical source, prefer regeneration over independent mutation.
+
+## What Must Be Deleted From The Product Surface
+The replacement should explicitly remove these concepts from the normal operator experience:
+
+1. Trinity round management as a visible workflow concept.
+2. Separate visible validate and remediate steps.
+3. Separate visible production-bible regeneration as a normal action.
+4. Large clusters of pipeline-state buttons.
+5. Any requirement for the user to understand remediation modes like deterministic versus LLM patch versus regeneration.
+6. Any situation where the existence of a brief can be mistaken for media readiness.
+
+These capabilities may still exist internally or in advanced tooling, but they should not define the product workflow.
+
+## Non-Negotiable Replacement Behaviors
+The next implementation must satisfy these behaviors from day one:
+
+1. Every successful generation or revision run ends with an immediate readiness result.
+2. Every blocking issue is explained in plain language with a recommended next action.
+3. Every artifact approval is version-bound and does not silently disappear.
+4. Every derived artifact is traceable to the exact canonical source version that produced it.
+5. Every automated retry path is bounded.
+6. Every agent-driven edit uses the same contract as the UI.
+7. Every downstream media system can ask one question and get one answer: is this version ready or not?
+
+## Implementation Order For The Replacement
+If another agent is going to build this, the work should happen in this order:
+
+1. Define the canonical creative artifact schema and readiness state machine.
+2. Build the consolidated validation contract around the existing real rules that actually matter.
+3. Implement the single orchestration service that handles create, revise, validate, and approve flows.
+4. Expose that service through one UI API and one agent API with identical behavior.
+5. Build the replacement page between Discovery and Media Generation around one primary flow.
+6. Move advanced recovery operations out of the default UI and behind operator tooling only if they are still needed.
+7. Delete or deprecate the old test aesthetic devising flow once the new path proves stable.
+
+## Final Build Direction
+Do not build another system that assumes failure and then adds repair verbs around it.
+
+Build one that is correct by construction, narrow in state, obvious in status, and fast to iterate through both the UI and the agent API.
+
+That is the replacement target.

@@ -1,0 +1,113 @@
+[
+    {
+        "severity":  "blocker",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Prohibited camera movement language (‚??tracking‚?ù) appears in scene directions",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Exterior rail hero/scene prompts include tabletop prop cues that imply outdoor play",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Lighting recipes for exterior scenes/stills reuse interior window/practicals language",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Mobility‚??aid/adaptive accommodation not concretely planned in any scene/still",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "warning",
+        "remediationMode":  "llm_patch",
+        "issueCode":  "custom",
+        "title":  "Prop‚??heavy cues conflict with stated goal to avoid literalization outside table moments",
+        "targetPaths":  [
+                            "messaging.heroSlogan",
+                            "messaging.subSlogan",
+                            "messaging.elevatorPitch"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Production build currently fails identity legibility and role coverage",
+        "targetPaths":  [
+                            "productionBible.sceneLibrary",
+                            "productionBible.storyboards",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "non_generic_venue_naming",
+        "title":  "Deterministic: non generic venue naming",
+        "targetPaths":  [
+                            "videoConcepts.heroExplainer.scriptOrNarration",
+                            "videoConcepts.tiktokSeed.scriptOrNarration",
+                            "videoConcepts.thresholdAnnouncement.scriptOrNarration",
+                            "videoConcepts.merchReveal.scriptOrNarration",
+                            "videoConcepts.heroExplainer.visualDirectionNotes",
+                            "videoConcepts.tiktokSeed.visualDirectionNotes",
+                            "videoConcepts.thresholdAnnouncement.visualDirectionNotes",
+                            "videoConcepts.merchReveal.visualDirectionNotes",
+                            "visual.compositionNotes",
+                            "messaging.elevatorPitch",
+                            "productionBible.sceneLibrary",
+                            "productionBible.globalDirectionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "deterministic",
+        "issueCode":  "rail_safety_missing",
+        "title":  "Deterministic: rail safety missing",
+        "targetPaths":  [
+                            "visual.compositionNotes"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Build Lint: weak niche signal",
+        "targetPaths":  [
+                            "landingStillBible.stillLibrary"
+                        ]
+    },
+    {
+        "severity":  "blocker",
+        "remediationMode":  "regenerate",
+        "issueCode":  "custom",
+        "title":  "Build Lint: missing role coverage",
+        "targetPaths":  [
+                            "landingStillBible.stillLibrary"
+                        ]
+    }
+]

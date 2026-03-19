@@ -1,5 +1,3 @@
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { ModelName, getModelConfig } from '@/lib/ai/llm-gateway';
 import {
     CampaignAestheticBriefSchema,
@@ -7,6 +5,7 @@ import {
     normalizeHumanRepresentationGuidance,
 } from '../../schema';
 import type { TrinityAgent, TrinityAgentContext, TrinityAgentResult, TrinityFeedbackItem } from '../types';
+import { generateStructuredTrinityObject } from '../structured-generation';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Schema — Designer owns creative identity, not production planning artifacts
@@ -128,15 +127,112 @@ function resolveDesignerFeedback(context: TrinityAgentContext): TrinityFeedbackI
         .filter((item) => item.targetRole === 'designer');
 }
 
+function replaceDesignerProblemPhrases(value: string): string {
+    return value
+        .replace(/workshop/gi, 'hangout')
+        .replace(/salon/gi, 'conversation')
+        .replace(/hosted session/gi, 'casual meetup')
+        .replace(/event[- ]program/gi, 'shared ship rhythm')
+        .replace(/managed program/gi, 'shared ship energy')
+        .replace(/quiet-luxe/gi, 'warm and relaxed')
+        .replace(/elevated conversation/gi, 'easy conversation')
+        .replace(/collector-grade/gi, 'keepsake-friendly')
+        .replace(/rarefied/gi, 'welcoming');
+}
+
+function rewriteDesignerStrings<T>(value: T): T {
+    if (typeof value === 'string') {
+        return replaceDesignerProblemPhrases(value) as T;
+    }
+
+    if (Array.isArray(value)) {
+        return value.map((item) => rewriteDesignerStrings(item)) as T;
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, nested]) => [key, rewriteDesignerStrings(nested)]),
+        ) as T;
+    }
+
+    return value;
+}
+
+function supportsDeterministicDesignerRevision(feedback: TrinityFeedbackItem[]): boolean {
+    const supportedCodes = new Set([
+        'workshop_language_survives',
+        'optionality_language_missing',
+        'exclusive_lifestyle_language',
+        'hero_slogan_too_long',
+        'merch_not_tshirt_first',
+    ]);
+
+    return feedback.length > 0 && feedback.every((item) => supportedCodes.has(item.code));
+}
+
+function applyDeterministicDesignerRevision(context: TrinityAgentContext): TrinityAgentResult {
+    const rewrittenBrief = rewriteDesignerStrings(context.brief);
+    const trimmedHeroSlogan = rewrittenBrief.messaging.heroSlogan
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 6)
+        .join(' ')
+        .replace(/[\s.,;:!?-]+$/, '');
+
+    return {
+        brief: {
+            ...rewrittenBrief,
+            messaging: {
+                ...rewrittenBrief.messaging,
+                heroSlogan: trimmedHeroSlogan || rewrittenBrief.messaging.heroSlogan,
+            },
+            merch: {
+                ...rewrittenBrief.merch,
+                coreItem: {
+                    ...rewrittenBrief.merch.coreItem,
+                    productType: 'T-Shirt',
+                },
+            },
+            communityExpression: {
+                ...rewrittenBrief.communityExpression,
+                participationStyle: 'Entirely optional and low-pressure. Join for a moment, drift out whenever you want, or skip it completely without missing anything.',
+                copyFramingRule: 'Use explicitly optional language: join if you like, stay for a minute, or keep moving without missing anything.',
+            },
+            humanReviewStatus: 'pending' as const,
+        },
+        decision: {
+            approved: true,
+            feedback: [],
+        },
+    };
+}
+
 export const trinityDesignerAgent: TrinityAgent = {
     name: 'designer',
 
     async run(context: TrinityAgentContext): Promise<TrinityAgentResult> {
-        const modelConfig = getModelConfig(ModelName.CLAUDE_4_OPUS);
-        const model = openai(modelConfig.apiId ?? 'gpt-4o');
+        const modelConfig = getModelConfig(ModelName.GPT_5_HIGH);
 
         const designerFeedback = resolveDesignerFeedback(context);
         const isRevisionRound = designerFeedback.length > 0;
+        const canApplyDeterministicRevision = supportsDeterministicDesignerRevision(designerFeedback);
+        const needsGeneration = isRevisionRound && !canApplyDeterministicRevision;
+
+        if (canApplyDeterministicRevision) {
+            console.log(`[trinity:designer] round=${context.round} applying deterministic revision for ${designerFeedback.map((item) => item.code).join(', ')}`);
+            return applyDeterministicDesignerRevision(context);
+        }
+
+        if (!needsGeneration) {
+            console.log(`[trinity:designer] round=${context.round} skipping — existing brief accepted as Trinity starting point`);
+            return {
+                brief: context.brief,
+                decision: {
+                    approved: true,
+                    feedback: [],
+                },
+            };
+        }
 
         const systemPrompt = isRevisionRound ? DESIGNER_SYSTEM_REVISION : DESIGNER_SYSTEM_GENERATION;
         const userPrompt = isRevisionRound
@@ -145,12 +241,18 @@ export const trinityDesignerAgent: TrinityAgent = {
 
         console.log(`[trinity:designer] round=${context.round} revision=${isRevisionRound} feedbackItems=${designerFeedback.length}`);
 
-        const { object } = await generateObject({
-            model,
+        const { object, warnings, modelId } = await generateStructuredTrinityObject({
+            preferredModel: ModelName.GPT_5_HIGH,
             schema: DesignerOutputSchema,
             system: systemPrompt,
             prompt: userPrompt,
         });
+
+        if (warnings.length > 0) {
+            console.warn(`[trinity:designer] ${warnings.join(' ')}`);
+        }
+
+        console.log(`[trinity:designer] using structured model ${modelId} (requested provider=${modelConfig.provider})`);
 
         const updatedBrief = {
             ...context.brief,

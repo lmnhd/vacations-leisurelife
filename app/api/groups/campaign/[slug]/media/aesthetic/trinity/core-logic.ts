@@ -24,6 +24,7 @@ export interface TrinityRunResponse {
     round: number;
     approved: boolean;
     briefPersisted: boolean;
+    warnings: string[];
     rejectionFeedback: TrinityRunResult['rejectionFeedback'];
     history: TrinityRunResult['session']['history'];
 }
@@ -37,6 +38,7 @@ export async function runTrinityCoreLogic(
     request: TrinityRunRequest,
 ): Promise<TrinityRunResponse> {
     const maxRounds = request.maxRounds ?? DEFAULT_MAX_ROUNDS;
+    const warnings: string[] = [];
 
     const [campaign, existingBrief] = await Promise.all([
         getCampaignBlueprint(slug),
@@ -63,7 +65,13 @@ export async function runTrinityCoreLogic(
         },
     );
 
-    await dynamoTrinitySessionStore.save(result.session);
+    try {
+        await dynamoTrinitySessionStore.save(result.session);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown session-store error';
+        warnings.push(`Trinity session persistence failed: ${message}`);
+        console.warn(`[trinity:core-logic] Session save failed for campaign ${slug}: ${message}`);
+    }
 
     let briefPersisted = false;
     if (result.approved) {
@@ -85,6 +93,7 @@ export async function runTrinityCoreLogic(
         round: result.session.round,
         approved: result.approved,
         briefPersisted,
+        warnings,
         rejectionFeedback: result.rejectionFeedback,
         history: result.session.history,
     };
