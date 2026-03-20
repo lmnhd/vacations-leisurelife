@@ -27,6 +27,25 @@ Confirmed pattern:
 
 That state is invalid and must be eliminated.
 
+## Status Update: Approval Gate Bug Is Now Fixed
+
+The production-build approval/readiness mismatch has now been fixed.
+
+That means the next active problem is no longer the approval gate itself.
+The next confirmed bottleneck is production-planning quality:
+
+- `productionBible` strength
+- `landingStillBible` strength
+- production-build lint failure rate
+
+Observed pattern after the gate fix:
+
+- structural brief validation often passes
+- approval is now correctly blocked when `productionBuildStatus = fail`
+- many campaigns still fail production-build lint because the generated visual-planning bundle is too weak
+
+So the next phase must focus on improving the production-planning bundle, not on reopening approval semantics.
+
 ## Non-Negotiable Constraints
 
 1. Do not add more validate/remediate/revise/retry buttons.
@@ -38,6 +57,7 @@ That state is invalid and must be eliminated.
 7. Keep the implementation fast, explicit, and product-oriented.
 8. Keep the process fully compatible with the agent API as a first-class caller, not as an afterthought or debug-only adapter.
 9. Approval and readiness must enforce the same production-build gating semantics as downstream media generation.
+10. Do not regress the fixed production-build approval gate while improving production-planning quality.
 
 ## Product Target
 
@@ -69,6 +89,8 @@ The replacement must produce or preserve:
 
 That readiness signal must include production-build lint outcome and must not mark a campaign media-ready when spend-gated media generation would still reject it.
 
+The immediate product objective inside that constraint is to raise the pass rate of the production-planning bundle so valid campaigns can actually clear the restored gate.
+
 ## Hard Rules To Preserve
 
 Preserve these deterministic gates from the current system:
@@ -84,6 +106,9 @@ Preserve these deterministic gates from the current system:
 - gangway choreography prohibition
 - storyboard duration alignment
 - required passenger-area safety sentence
+
+Preserve the fixed gate and improve the inputs that feed it.
+The goal is not to weaken lint or bypass it.
 
 ## Scope Of Work
 
@@ -134,6 +159,35 @@ Mandatory fix inside this phase:
 - align brief-step readiness semantics with the spend-gated checks already enforced in `lib/campaigns/media/media-orchestrator.ts`
 
 This is not optional cleanup. It is a confirmed correctness bug.
+
+### Phase 2B: Improve Production-Planning Bundle Quality
+
+Now that the approval/readiness gate is fixed, the next required work is to improve the generated production-planning bundle so campaigns stop failing production-build lint.
+
+Primary targets:
+
+- stronger niche signal in the still set
+- higher campaign identity legibility
+- better still-role coverage
+- less composition repetition
+- stronger translation from brief intent into `productionBible.avoidDirectives`, scene design, and still prompts
+
+This work should focus on the generation layer that produces:
+
+- `productionBible`
+- `landingStillBible`
+- `productionBuildLint`
+
+Likely implementation areas for this sub-phase:
+
+- `lib/campaigns/aesthetic-engine.ts`
+- any visual-planning generation helpers used to create `productionBible` and `landingStillBible`
+- `lib/campaigns/media/production-build-lint*`
+
+Important constraint:
+
+- improve generator quality first
+- do **not** relax the lint thresholds just to make the tests pass unless there is a separately justified false-positive case
 
 ### Phase 3: Collapse The Route Surface
 
@@ -193,6 +247,7 @@ Inspect these before coding:
 - `lib/campaigns/aesthetic-revision.ts`
 - `lib/campaigns/aesthetic-red-team.ts`
 - `lib/campaigns/media/media-orchestrator.ts`
+- `lib/campaigns/media/production-build-lint.ts`
 - `lib/campaigns/schema.ts`
 - `app/api/groups/campaign/[slug]/...`
 - current aesthetic test pages and any page between discovery/media flow
@@ -211,6 +266,8 @@ The phase is complete only when all of the following are true:
 8. A campaign with `productionBuildStatus = fail` cannot be approved.
 9. A campaign with `productionBuildStatus = fail` cannot report `ready_for_media`.
 10. Brief-step approval/readiness semantics match downstream spend-gated media checks.
+11. Newly generated campaigns show materially improved production-build lint performance.
+12. The main recurring lint failures are reduced, especially weak niche signal and identity-legibility failures.
 
 ## Verification
 
@@ -225,6 +282,8 @@ Add or update tests for:
 7. approval is blocked when `productionBuildStatus = fail`
 8. readiness is downgraded from `ready_for_media` when `productionBuildStatus = fail`
 9. parity test: brief-step gating matches the spend-gated branch in `media-orchestrator`
+10. representative campaigns show improved production-build lint outcomes after production-planning generation changes
+11. repeated failures such as `weak_niche_signal`, `identity_legibility_too_low`, and still-role coverage gaps are explicitly tested where practical
 
 Likely verification commands:
 
@@ -232,6 +291,7 @@ Likely verification commands:
 - focused tests added for the new brief-step flow
 - one representative end-to-end brief-step test
 - targeted regression covering approved brief + failed production build
+- targeted production-build quality regression tests against representative campaigns or fixtures
 
 ## Handoff Output Requirement
 
