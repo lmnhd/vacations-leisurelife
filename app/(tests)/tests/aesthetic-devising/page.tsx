@@ -452,13 +452,26 @@ export default function AestheticDevisingTestPage() {
         <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
             <div className="max-w-4xl mx-auto space-y-4">
 
+                {/* Deprecation Notice */}
+                <div className="border border-amber-500/40 rounded-xl p-4 bg-amber-500/10">
+                    <p className="text-sm font-semibold text-amber-300">This page is deprecated.</p>
+                    <p className="text-xs text-amber-200/70 mt-1">
+                        Generate, validate, and approve briefs at{' '}
+                        <a href="/tests/brief-studio" className="underline text-amber-300 hover:text-amber-100">
+                            /tests/brief-studio
+                        </a>
+                        {' '}— the Generate button on this page no longer works (route removed).
+                        Load and Delete remain functional.
+                    </p>
+                </div>
+
                 {/* Header */}
                 <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
                     <h1 className="text-lg font-semibold text-cyan-400 tracking-wide">
-                        🎨 Aesthetic Design — Phase 1
+                        🎨 Aesthetic Design — Phase 1 (Legacy)
                     </h1>
                     <p className="text-xs text-slate-500 mt-1">
-                        Load an existing brief, generate a new one, approve, or delete. Run against a campaign slug.
+                        Load an existing brief or delete. Generation has moved to /tests/brief-studio.
                     </p>
                 </div>
 
