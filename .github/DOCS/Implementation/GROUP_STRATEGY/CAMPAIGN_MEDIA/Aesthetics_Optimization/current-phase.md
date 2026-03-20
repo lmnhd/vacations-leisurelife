@@ -8,6 +8,25 @@ This replacement must preserve the final quality bar for campaign briefs, produc
 
 It must **not** preserve the current operator-heavy remediation maze.
 
+## Critical Bug Confirmed In This Phase
+
+The current implementation has a confirmed gating bug:
+
+- campaigns can be approved even when `productionBuildStatus = fail`
+- approved campaigns can report `ready_for_media` even when production-build lint has already failed
+- downstream media generation then blocks correctly, which means upstream readiness and downstream spend gating disagree
+
+This bug has already been reproduced across multiple campaigns and must be treated as in-scope for this phase.
+
+Confirmed pattern:
+
+- structural brief validation passes
+- production build lint fails
+- `approveForMedia()` still succeeds
+- `getReadiness()` still returns `ready_for_media`
+
+That state is invalid and must be eliminated.
+
 ## Non-Negotiable Constraints
 
 1. Do not add more validate/remediate/revise/retry buttons.
@@ -18,6 +37,7 @@ It must **not** preserve the current operator-heavy remediation maze.
 6. Enforce a strict one-strike correction rule only.
 7. Keep the implementation fast, explicit, and product-oriented.
 8. Keep the process fully compatible with the agent API as a first-class caller, not as an afterthought or debug-only adapter.
+9. Approval and readiness must enforce the same production-build gating semantics as downstream media generation.
 
 ## Product Target
 
@@ -47,6 +67,8 @@ The replacement must produce or preserve:
 - landingStillBible
 - a single trustworthy readiness signal for downstream media generation
 
+That readiness signal must include production-build lint outcome and must not mark a campaign media-ready when spend-gated media generation would still reject it.
+
 ## Hard Rules To Preserve
 
 Preserve these deterministic gates from the current system:
@@ -56,6 +78,7 @@ Preserve these deterministic gates from the current system:
 - explicit optionality language
 - merch core item must be T-shirt first
 - production artifacts must exist
+- production-build lint must not be failed at approval time or media-ready time
 - forbidden camera move prohibition
 - cabin contradiction prohibition
 - gangway choreography prohibition
@@ -103,6 +126,14 @@ Likely code areas:
 - `lib/campaigns/brief-engine/`
 - `lib/campaigns/aesthetic-engine.ts`
 - `lib/campaigns/schema.ts`
+
+Mandatory fix inside this phase:
+
+- update brief approval logic so `productionBuildStatus = fail` blocks approval
+- update readiness logic so approved briefs with failed production build do **not** return `ready_for_media`
+- align brief-step readiness semantics with the spend-gated checks already enforced in `lib/campaigns/media/media-orchestrator.ts`
+
+This is not optional cleanup. It is a confirmed correctness bug.
 
 ### Phase 3: Collapse The Route Surface
 
@@ -177,6 +208,9 @@ The phase is complete only when all of the following are true:
 5. Downstream media generation reads one reliable readiness signal.
 6. The old button-maze flow is removed, hidden, or clearly deprecated.
 7. The agent API can execute the same process directly with no UI dependency.
+8. A campaign with `productionBuildStatus = fail` cannot be approved.
+9. A campaign with `productionBuildStatus = fail` cannot report `ready_for_media`.
+10. Brief-step approval/readiness semantics match downstream spend-gated media checks.
 
 ## Verification
 
@@ -188,12 +222,16 @@ Add or update tests for:
 4. approval cannot proceed when blockers remain
 5. any retained legacy route behavior is intentionally covered
 6. agent API invocation reaches the same orchestration path and returns the same readiness semantics as the UI path
+7. approval is blocked when `productionBuildStatus = fail`
+8. readiness is downgraded from `ready_for_media` when `productionBuildStatus = fail`
+9. parity test: brief-step gating matches the spend-gated branch in `media-orchestrator`
 
 Likely verification commands:
 
 - `npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts`
 - focused tests added for the new brief-step flow
 - one representative end-to-end brief-step test
+- targeted regression covering approved brief + failed production build
 
 ## Handoff Output Requirement
 
