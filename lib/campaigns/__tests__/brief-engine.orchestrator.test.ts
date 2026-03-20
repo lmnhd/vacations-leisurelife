@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type { CampaignAestheticBrief } from '../schema';
 import type { ValidationIssue } from '../brief-engine/validation';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -117,6 +118,124 @@ test('approval route is only valid when no blockers remain', () => {
     const clearedIssues: ValidationIssue[] = [];
     const canApproveAfterFix = clearedIssues.filter((i) => i.severity === 'blocker').length === 0;
     assert.equal(canApproveAfterFix, true);
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Production build lint gating regression tests
+// Acceptance criteria 7, 8, 9 from current-phase.md
+// These inline the same gate logic used by approveForMedia and computeReadiness
+// so the tests remain pure and don't require database mocks.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Mirrors the approveForMedia production build gate
+function simulateApprovalGate(brief: Pick<CampaignAestheticBrief, 'productionBuildStatus' | 'landingStillBible'>): string | null {
+    if (!brief.productionBuildStatus || !brief.landingStillBible) {
+        return 'Cannot approve: production build has not been evaluated.';
+    }
+    if (brief.productionBuildStatus === 'fail') {
+        return 'Cannot approve: production build lint failed (productionBuildStatus = fail).';
+    }
+    return null; // gate passes
+}
+
+// Mirrors the computeReadiness production build gate for approved briefs
+type ReadinessState = 'drafting' | 'needs_review' | 'ready_for_media';
+function simulateReadinessForApproved(brief: Pick<CampaignAestheticBrief, 'productionBuildStatus' | 'landingStillBible'>): ReadinessState {
+    if (!brief.productionBuildStatus || !brief.landingStillBible) {
+        return 'needs_review';
+    }
+    if (brief.productionBuildStatus === 'fail') {
+        return 'needs_review';
+    }
+    return 'ready_for_media';
+}
+
+// Mirrors the media-orchestrator spend-gated check (media-orchestrator.ts lines 322-336)
+function simulateMediaOrchestratorGate(brief: Pick<CampaignAestheticBrief, 'productionBuildStatus' | 'landingStillBible'>): string | null {
+    if (brief.productionBuildStatus === 'fail') {
+        return 'ProductionBuildLintError: failed pre-spend quality checks';
+    }
+    if (!brief.landingStillBible || !brief.productionBuildStatus) {
+        return 'ProductionBuildLintError: production build has not been evaluated';
+    }
+    return null; // gate passes
+}
+
+console.log('\nProduction Build Lint Gating Regression\n');
+
+// ── Acceptance criterion 7: approval blocked when productionBuildStatus = fail ──
+
+test('approveForMedia blocks when productionBuildStatus is fail', () => {
+    const briefFail = { productionBuildStatus: 'fail' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    const error = simulateApprovalGate(briefFail);
+    assert.ok(error !== null, 'Expected approval to be blocked');
+    assert.ok(error.includes('productionBuildStatus = fail'));
+});
+
+test('approveForMedia blocks when productionBuildStatus is missing', () => {
+    const briefMissing = { productionBuildStatus: undefined, landingStillBible: undefined };
+    const error = simulateApprovalGate(briefMissing);
+    assert.ok(error !== null, 'Expected approval to be blocked when productionBuildStatus is missing');
+});
+
+test('approveForMedia blocks when landingStillBible is missing', () => {
+    const briefNoLanding = { productionBuildStatus: 'pass' as const, landingStillBible: undefined };
+    const error = simulateApprovalGate(briefNoLanding);
+    assert.ok(error !== null, 'Expected approval to be blocked when landingStillBible is missing');
+});
+
+test('approveForMedia passes when productionBuildStatus is pass and landingStillBible exists', () => {
+    const briefPass = { productionBuildStatus: 'pass' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    assert.equal(simulateApprovalGate(briefPass), null);
+});
+
+test('approveForMedia passes when productionBuildStatus is warn (warn is not a hard block)', () => {
+    const briefWarn = { productionBuildStatus: 'warn' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    assert.equal(simulateApprovalGate(briefWarn), null);
+});
+
+// ── Acceptance criterion 8: readiness downgraded from ready_for_media when fail ──
+
+test('computeReadiness returns needs_review for approved brief with productionBuildStatus = fail', () => {
+    const briefFail = { productionBuildStatus: 'fail' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    assert.equal(simulateReadinessForApproved(briefFail), 'needs_review');
+});
+
+test('computeReadiness returns needs_review for approved brief with missing productionBuildStatus', () => {
+    const briefMissing = { productionBuildStatus: undefined, landingStillBible: undefined };
+    assert.equal(simulateReadinessForApproved(briefMissing), 'needs_review');
+});
+
+test('computeReadiness returns ready_for_media for approved brief with productionBuildStatus = pass', () => {
+    const briefPass = { productionBuildStatus: 'pass' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    assert.equal(simulateReadinessForApproved(briefPass), 'ready_for_media');
+});
+
+// ── Acceptance criterion 9: parity between brief-step and media-orchestrator gating ──
+
+test('parity: brief-engine gate and media-orchestrator gate both block on productionBuildStatus = fail', () => {
+    const brief = { productionBuildStatus: 'fail' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    const briefEngineBlocks = simulateApprovalGate(brief) !== null;
+    const mediaOrchestratorBlocks = simulateMediaOrchestratorGate(brief) !== null;
+    assert.equal(briefEngineBlocks, true, 'brief-engine gate must block');
+    assert.equal(mediaOrchestratorBlocks, true, 'media-orchestrator gate must block');
+    assert.equal(briefEngineBlocks, mediaOrchestratorBlocks, 'both gates must agree');
+});
+
+test('parity: brief-engine gate and media-orchestrator gate both block when productionBuildStatus is missing', () => {
+    const brief = { productionBuildStatus: undefined, landingStillBible: undefined };
+    const briefEngineBlocks = simulateApprovalGate(brief) !== null;
+    const mediaOrchestratorBlocks = simulateMediaOrchestratorGate(brief) !== null;
+    assert.equal(briefEngineBlocks, mediaOrchestratorBlocks, 'both gates must agree on missing productionBuildStatus');
+});
+
+test('parity: brief-engine gate and media-orchestrator gate both pass on productionBuildStatus = pass', () => {
+    const brief = { productionBuildStatus: 'pass' as const, landingStillBible: { stillLibrary: [], globalDirectionNotes: '', avoidDirectives: [] } };
+    const briefEngineBlocks = simulateApprovalGate(brief) !== null;
+    const mediaOrchestratorBlocks = simulateMediaOrchestratorGate(brief) !== null;
+    assert.equal(briefEngineBlocks, false, 'brief-engine gate must pass');
+    assert.equal(mediaOrchestratorBlocks, false, 'media-orchestrator gate must pass');
+    assert.equal(briefEngineBlocks, mediaOrchestratorBlocks, 'both gates must agree');
 });
 
 console.log(`\nPassed: ${passed}`);

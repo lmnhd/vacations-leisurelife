@@ -88,10 +88,17 @@ function buildCorrectionContext(blockers: ValidationIssue[]): string {
 function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): { readiness: ReadinessState; issues: ValidationIssue[]; summary: string } {
     if (brief.humanReviewStatus === 'approved') {
         const validation = validateBrief(brief, campaign);
-        if (validation.passed) {
-            return { readiness: 'ready_for_media', issues: [], summary: 'Brief is approved and passes all structural checks.' };
+        if (!validation.passed) {
+            return { readiness: 'needs_review', issues: validation.issues, summary: `Approved brief has new issues: ${validation.summary}` };
         }
-        return { readiness: 'needs_review', issues: validation.issues, summary: `Approved brief has new issues: ${validation.summary}` };
+        // ── Production build lint gate — must match media-orchestrator spend-gated semantics ──
+        if (!brief.productionBuildStatus || !brief.landingStillBible) {
+            return { readiness: 'needs_review', issues: [], summary: 'Production build has not been evaluated. Regenerate the brief bundle to run pre-media lint before approving.' };
+        }
+        if (brief.productionBuildStatus === 'fail') {
+            return { readiness: 'needs_review', issues: [], summary: 'Production build lint failed (productionBuildStatus = fail). Downstream media generation would reject this brief. Regenerate to resolve production build issues.' };
+        }
+        return { readiness: 'ready_for_media', issues: [], summary: 'Brief is approved and passes all structural and production-build checks.' };
     }
 
     const validation = validateBrief(brief, campaign);
@@ -297,6 +304,22 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
     if (!validation.passed) {
         const blockers = validation.issues.filter((i) => i.severity === 'blocker');
         throw new Error(`Cannot approve: ${blockers.length} blocker(s) remain. ${blockers.map((b) => b.message).join(' | ')}`);
+    }
+
+    // ── Production build lint gate ────────────────────────────────────
+    // Must match spend-gated semantics in media-orchestrator.ts (lines 322-336).
+    // A brief that would be rejected downstream must not be approved upstream.
+    if (!brief.productionBuildStatus || !brief.landingStillBible) {
+        throw new Error(
+            `Cannot approve: production build has not been evaluated for ${slug}. ` +
+            `Regenerate the brief bundle to run pre-approval lint before approving.`
+        );
+    }
+    if (brief.productionBuildStatus === 'fail') {
+        throw new Error(
+            `Cannot approve: production build lint failed (productionBuildStatus = fail) for ${slug}. ` +
+            `Downstream media generation would reject this brief. Regenerate to resolve production build issues.`
+        );
     }
 
     const approvedBrief = applySupervisorState(brief, {
