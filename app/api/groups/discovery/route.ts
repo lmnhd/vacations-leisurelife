@@ -20,6 +20,10 @@ export async function GET(request: NextRequest) {
         const campaignRefs = campaigns.map(c => ({
             id: c.id,
             name: c.name,
+            pricingStatus: c.pricingStatus ?? null,
+            aestheticBriefStatus: c.aestheticBriefStatus ?? null,
+            shipTarget: c.shipTarget ?? null,
+            targetDates: c.targetDates ?? null,
             fetchUrl: `/api/groups/campaign/${c.id}`,
         }));
         return NextResponse.json({ success: true, campaigns: campaignRefs, skippedCount: 0 });

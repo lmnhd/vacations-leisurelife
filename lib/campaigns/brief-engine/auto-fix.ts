@@ -24,7 +24,7 @@ function replaceProblematicPhrases(value: string): string {
 
 function deepRewriteStrings<T>(value: T): T {
     if (typeof value === 'string') {
-        return replaceProblematicPhrases(value) as T;
+        return replaceProblematicPhrases(normalizeCameraMovements(replaceGangwayChoreography(value))) as T;
     }
     if (Array.isArray(value)) {
         return value.map((item) => deepRewriteStrings(item)) as T;
@@ -44,6 +44,16 @@ function normalizeCameraMovements(text: string): string {
         .replace(/\btracking shot\b/gi, 'gimbal follow shot')
         .replace(/\bslider\b/gi, 'compact gimbal sweep')
         .replace(/\bcable[- ]?cam\b/gi, 'gimbal arc');
+}
+
+function replaceGangwayChoreography(text: string): string {
+    return text
+        .replace(/gangway\s+exchanges?/gi, 'dockside greetings')
+        .replace(/gangway\s+handoffs?/gi, 'dockside moments')
+        .replace(/gangway\s+choreograph\w*/gi, 'dockside flow')
+        .replace(/\bgangway\b/gi, 'port-side walkway')
+        .replace(/\bhandoffs?\b/gi, 'shared moments')
+        .replace(/\bchoreograph\w*\b/gi, 'natural');
 }
 
 interface AutoFixResult {
@@ -104,9 +114,11 @@ export function applyAutoFixes(brief: CampaignAestheticBrief, issues: Validation
                             sceneLibrary: fixed.productionBible.sceneLibrary.map((scene) => ({
                                 ...scene,
                                 cameraAngle: normalizeCameraMovements(scene.cameraAngle),
+                                imagePrompt: normalizeCameraMovements(scene.imagePrompt),
                             })),
                             storyboards: fixed.productionBible.storyboards.map((sb) => ({
                                 ...sb,
+                                editingStyle: normalizeCameraMovements(sb.editingStyle),
                                 shotSequence: sb.shotSequence.map((shot) => ({
                                     ...shot,
                                     cameraMovement: normalizeCameraMovements(shot.cameraMovement),
@@ -172,15 +184,24 @@ export function applyAutoFixes(brief: CampaignAestheticBrief, issues: Validation
 
             case 'gangway_exchange_prohibited':
                 if (fixed.productionBible) {
-                    const gangwayPattern = /gangway\s+(exchange|handoff|choreograph)\w*/gi;
                     fixed = {
                         ...fixed,
                         productionBible: {
                             ...fixed.productionBible,
                             sceneLibrary: fixed.productionBible.sceneLibrary.map((scene) => ({
                                 ...scene,
-                                subjectAction: scene.subjectAction.replace(gangwayPattern, 'dockside moment'),
-                                environmentDetails: scene.environmentDetails.replace(gangwayPattern, 'dockside atmosphere'),
+                                location: replaceGangwayChoreography(scene.location),
+                                subjectAction: replaceGangwayChoreography(scene.subjectAction),
+                                environmentDetails: replaceGangwayChoreography(scene.environmentDetails),
+                                imagePrompt: replaceGangwayChoreography(scene.imagePrompt),
+                            })),
+                            storyboards: fixed.productionBible.storyboards.map((sb) => ({
+                                ...sb,
+                                narrationScript: replaceGangwayChoreography(sb.narrationScript),
+                                shotSequence: sb.shotSequence.map((shot) => ({
+                                    ...shot,
+                                    narrationSegment: replaceGangwayChoreography(shot.narrationSegment),
+                                })),
                             })),
                         },
                     };

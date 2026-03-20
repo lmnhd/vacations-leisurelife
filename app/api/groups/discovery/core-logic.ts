@@ -8,6 +8,7 @@ import {
     assertLaunchWindowCompliance,
     buildLaunchWindowPromptGuidance,
     getLaunchWindowAssessment,
+    getLaunchWindowViolations,
     getLaunchWindowPolicy,
 } from '@/lib/campaigns/launch-window';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
@@ -443,6 +444,9 @@ ${psychographicData}
     const { object } = await callGlobalGenerateObject({
         schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
+        operationName: 'DiscoveryStep3-Blueprints',
+        timeoutMs: 300000, // 5 minute timeout for complex generation
+        maxOutputTokens: 12000,
         prompt: `
 You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Perplexity Sonar Deep Research regarding niche subcultures and ship infrastructure:
 
@@ -500,6 +504,21 @@ ${launchWindowPromptGuidance}
 Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim(),
     });
+
+    const launchWindowViolations = getLaunchWindowViolations(
+        object.blueprints.map((blueprint) => ({
+            id: blueprint.id,
+            name: blueprint.name,
+            targetDates: blueprint.targetDates,
+        })),
+        now,
+    );
+
+    if (launchWindowViolations.length > 0) {
+        const details = launchWindowViolations.map((violation) => violation.message).join('; ');
+        console.error(`[runGroupDiscoveryPipeline] Step 3: Rejected generated blueprints before campaign creation: ${details}`);
+        throw new Error(`Discovery generated ineligible sailings before campaign creation: ${details}`);
+    }
 
     assertLaunchWindowCompliance(
         object.blueprints.map((blueprint) => ({

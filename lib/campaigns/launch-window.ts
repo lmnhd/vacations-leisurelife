@@ -40,6 +40,11 @@ export interface LaunchWindowComplianceCandidate {
     targetDates?: string | null;
 }
 
+export interface LaunchWindowViolation {
+    candidate: LaunchWindowComplianceCandidate;
+    message: string;
+}
+
 function normalizeDateText(value: string): string {
     return value
         .replace(/\u2011|\u2012|\u2013|\u2014/g, '-')
@@ -111,27 +116,38 @@ export function assertLaunchWindowCompliance(
     candidates: LaunchWindowComplianceCandidate[],
     now: Date = new Date(),
 ): void {
-    const violations = candidates.flatMap((candidate) => {
-        const targetDates = candidate.targetDates?.trim() ?? '';
-        const assessment = getLaunchWindowAssessment({ targetDates }, now);
-
-        if (!targetDates || assessment.sailingDateIso === null) {
-            return [`${candidate.id}: targetDates must be a parseable sail date or month-year, received "${candidate.targetDates ?? ''}"`];
-        }
-
-        if (assessment.meetsMinimumLeadTime === false) {
-            const label = candidate.name?.trim() || candidate.id;
-            return [
-                `${label}: ${assessment.daysUntilSail} days until sail from targetDates "${targetDates}"; minimum is ${assessment.minimumLeadDays}`,
-            ];
-        }
-
-        return [];
-    });
+    const violations = getLaunchWindowViolations(candidates, now).map((violation) => violation.message);
 
     if (violations.length > 0) {
         throw new Error(`Discovery blueprints violated the launch-window rule: ${violations.join('; ')}`);
     }
+}
+
+export function getLaunchWindowViolations(
+    candidates: LaunchWindowComplianceCandidate[],
+    now: Date = new Date(),
+): LaunchWindowViolation[] {
+    return candidates.flatMap((candidate) => {
+        const targetDates = candidate.targetDates?.trim() ?? '';
+        const assessment = getLaunchWindowAssessment({ targetDates }, now);
+
+        if (!targetDates || assessment.sailingDateIso === null) {
+            return [{
+                candidate,
+                message: `${candidate.id}: targetDates must be a parseable sail date or month-year, received "${candidate.targetDates ?? ''}"`,
+            }];
+        }
+
+        if (assessment.meetsMinimumLeadTime === false) {
+            const label = candidate.name?.trim() || candidate.id;
+            return [{
+                candidate,
+                message: `${label}: ${assessment.daysUntilSail} days until sail from targetDates "${targetDates}"; minimum is ${assessment.minimumLeadDays}`,
+            }];
+        }
+
+        return [];
+    });
 }
 
 export function getLaunchWindowAssessment(

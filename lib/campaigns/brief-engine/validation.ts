@@ -29,27 +29,58 @@ function textMatchesPatterns(text: string, patterns: RegExp[]): boolean {
     return patterns.some((p) => p.test(text));
 }
 
+function getExecutableProductionBibleTexts(bible: ProductionBible): string[] {
+    const sceneTexts = bible.sceneLibrary.flatMap((scene) => [
+        scene.location,
+        scene.timeOfDay,
+        scene.lighting,
+        scene.cameraAngle,
+        scene.subjectAction,
+        scene.environmentDetails,
+        scene.mood,
+        scene.imagePrompt,
+        scene.referenceCategory,
+    ]);
+
+    const storyboardTexts = bible.storyboards.flatMap((storyboard) => [
+        storyboard.title,
+        storyboard.narrationScript,
+        storyboard.musicDirection,
+        storyboard.editingStyle,
+        ...storyboard.shotSequence.flatMap((shot) => [
+            shot.cameraMovement,
+            shot.subjectMotion,
+            shot.environmentMotion,
+            shot.transitionIn,
+            shot.transitionOut,
+            shot.emotionalBeat,
+            shot.narrationSegment,
+            shot.musicCue,
+        ]),
+    ]);
+
+    return [...sceneTexts, ...storyboardTexts]
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+}
+
 function checkProductionBibleFeasibility(bible: ProductionBible): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
-    const allText = JSON.stringify(bible);
+    const executableTexts = getExecutableProductionBibleTexts(bible);
+    const executableTextBlob = executableTexts.join(' ');
 
-    if (textMatchesPatterns(allText, BANNED_CAMERA_MOVES)) {
+    if (executableTexts.some((text) => textMatchesPatterns(text, BANNED_CAMERA_MOVES))) {
         issues.push({ code: 'camera_move_feasibility', message: 'Forbidden camera moves (crane, dolly, tracking shot, slider, cable cam) found in production bible.', severity: 'blocker', autoFixable: true });
     }
 
-    // TODO: Interior-window cabin contradiction check
-    if (/interior\s+stateroom/i.test(allText) && /ocean[- ]?view|window/i.test(allText)) {
-        const sceneTexts = bible.sceneLibrary.map((s) => `${s.location} ${s.environmentDetails}`);
-        for (const sceneText of sceneTexts) {
-            if (/interior/i.test(sceneText) && /ocean[- ]?view|window/i.test(sceneText)) {
+    for (const sceneText of bible.sceneLibrary.map((scene) => `${scene.location} ${scene.environmentDetails} ${scene.imagePrompt}`)) {
+        if (/interior\s+stateroom/i.test(sceneText) && /ocean[- ]?view|window/i.test(sceneText)) {
                 issues.push({ code: 'cabin_type_plausibility', message: 'Interior stateroom paired with ocean-view or window language.', severity: 'blocker', autoFixable: true });
                 break;
-            }
         }
     }
 
-    // TODO: Gangway exchange check
-    if (/gangway\s+(exchange|handoff|choreograph)/i.test(allText)) {
+    if (/gangway\s+(exchange|handoff|choreograph)/i.test(executableTextBlob)) {
         issues.push({ code: 'gangway_exchange_prohibited', message: 'Gangway exchange choreography detected in production bible.', severity: 'blocker', autoFixable: true });
     }
 

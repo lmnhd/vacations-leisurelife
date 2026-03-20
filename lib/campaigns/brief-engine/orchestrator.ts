@@ -1,4 +1,5 @@
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '../campaign-store';
+import { generateAestheticBrief } from '../aesthetic-engine';
 import { runTrinitySession } from '../trinity/orchestrator';
 import { trinityDeterministicKernel } from '../trinity/deterministic-kernel';
 import { trinityDesignerAgent } from '../trinity/agents/designer';
@@ -6,6 +7,7 @@ import { trinityBuilderAgent } from '../trinity/agents/builder';
 import { trinityReviewerAgent } from '../trinity/agents/reviewer';
 import { validateBrief } from './validation';
 import { applyAutoFixes } from './auto-fix';
+import { applySupervisorState } from './supervisor';
 import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '../launch-window';
 import type { CampaignAestheticBrief } from '../schema';
 import type { Campaign } from '../types';
@@ -76,19 +78,24 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
     if (!campaign) throw new Error(`Campaign not found: ${slug}`);
 
     const existingBrief = await getAestheticBrief(slug);
-    if (!existingBrief) throw new Error(`No aesthetic brief exists for ${slug}. Generate the initial brief first via the legacy aesthetic route.`);
+    let brief = existingBrief;
+    if (!brief) {
+        console.log(`[brief-engine] No brief exists for ${slug}. Generating initial brief...`);
+        brief = await generateAestheticBrief(campaign);
+        await saveAestheticBrief(brief);
+    }
 
     console.log(`[brief-engine] create_or_refresh for ${slug}`);
 
     // ── Run Trinity pipeline (designer → builder → reviewer) ──────────
-    const result = await runTrinitySession(campaign, existingBrief, 3, {
+    const result = await runTrinitySession(campaign, brief, 3, {
         kernel: trinityDeterministicKernel,
         designer: trinityDesignerAgent,
         builder: trinityBuilderAgent,
         reviewer: trinityReviewerAgent,
     });
 
-    let brief = result.session.brief;
+    brief = result.session.brief;
 
     // ── Consolidated validation ───────────────────────────────────────
     let validation = validateBrief(brief, campaign);
@@ -117,10 +124,12 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
     }
 
     // ── Persist ───────────────────────────────────────────────────────
-    const briefToPersist = {
-        ...brief,
-        humanReviewStatus: validation.passed ? ('pending' as const) : ('pending' as const),
-    };
+    const briefToPersist = applySupervisorState(brief, {
+        issues: validation.issues,
+        reviewStatus: 'pending',
+        origin: 'create_or_refresh',
+        revisionCycleCount: brief.revisionCycleCount,
+    });
     await saveAestheticBrief(briefToPersist);
 
     const readiness: ReadinessState = validation.passed ? 'needs_review' : 'needs_review';
@@ -192,7 +201,12 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
     }
 
     // ── Persist as revised ────────────────────────────────────────────
-    const revisedBrief = { ...brief, humanReviewStatus: 'revised' as const, revisionCycleCount: (brief.revisionCycleCount ?? 0) + 1 };
+    const revisedBrief = applySupervisorState(brief, {
+        issues: validation.issues,
+        reviewStatus: 'revised',
+        origin: 'structured_revision',
+        revisionCycleCount: (brief.revisionCycleCount ?? 0) + 1,
+    });
     await saveAestheticBrief(revisedBrief);
 
     const readiness: ReadinessState = validation.passed ? 'needs_review' : 'needs_review';
@@ -248,7 +262,12 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
         throw new Error(`Cannot approve: ${blockers.length} blocker(s) remain. ${blockers.map((b) => b.message).join(' | ')}`);
     }
 
-    const approvedBrief = { ...brief, humanReviewStatus: 'approved' as const };
+    const approvedBrief = applySupervisorState(brief, {
+        issues: validation.issues,
+        reviewStatus: 'approved',
+        origin: 'approval',
+        revisionCycleCount: brief.revisionCycleCount,
+    });
     await saveAestheticBrief(approvedBrief);
 
     console.log(`[brief-engine] approved for media: ${slug}`);

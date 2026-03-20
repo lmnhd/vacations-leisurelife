@@ -1,0 +1,50 @@
+[
+    {
+        "slug":  "eurogame-deck-nights-2026",
+        "refreshReadiness":  "needs_review",
+        "refreshSummary":  "Brief generated and passes all structural checks. Ready for approval.",
+        "refreshIssueCodes":  [
+
+                              ],
+        "refreshError":  null,
+        "afterReadiness":  "needs_review",
+        "afterSummary":  "Brief passes structural checks but needs human approval.",
+        "afterIssueCodes":  [
+
+                            ],
+        "afterError":  null,
+        "approveOk":  true,
+        "approveError":  null,
+        "finalReadiness":  "ready_for_media",
+        "finalSummary":  "Brief is approved and passes all structural checks.",
+        "finalIssueCodes":  [
+
+                            ],
+        "finalHumanReviewStatus":  "approved",
+        "finalError":  null
+    },
+    {
+        "slug":  "film-and-zine-afloat-2026",
+        "refreshReadiness":  "needs_review",
+        "refreshSummary":  "Brief generated and passes all structural checks. Ready for approval.",
+        "refreshIssueCodes":  [
+
+                              ],
+        "refreshError":  null,
+        "afterReadiness":  "needs_review",
+        "afterSummary":  "Brief passes structural checks but needs human approval.",
+        "afterIssueCodes":  [
+
+                            ],
+        "afterError":  null,
+        "approveOk":  true,
+        "approveError":  null,
+        "finalReadiness":  "ready_for_media",
+        "finalSummary":  "Brief is approved and passes all structural checks.",
+        "finalIssueCodes":  [
+
+                            ],
+        "finalHumanReviewStatus":  "approved",
+        "finalError":  null
+    }
+]

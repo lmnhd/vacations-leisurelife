@@ -979,6 +979,256 @@ Do **not** preserve:
 - the repeated remediation loops
 - the garden of rescue buttons
 
+## PASS-OFF IMPLEMENTATION PLAN
+
+This section is the actual handoff plan for the next agent.
+
+The goal is not to improve the current maze.
+The goal is to replace it with a single coherent brief-generation step that preserves the hard product outcomes while deleting the operator-heavy orchestration shape.
+
+### Planning Priority Order
+
+1. Preserve the final artifact quality bar.
+2. Collapse the orchestration surface.
+3. Remove retry-loop complexity.
+4. Keep one shared contract for UI and agent callers.
+5. Avoid creating new persistent operational state unless it is absolutely required.
+
+### Explicit Scope Boundary For The Next Agent
+
+The next agent should implement the replacement brief-generation step.
+
+The next agent should **not**:
+- add more remediation buttons
+- add more review loops
+- deepen the issue-ledger system
+- create separate UI and agent orchestration paths
+- preserve Trinity as a first-class operating concept unless a tiny subset is being temporarily reused behind the new single-step interface
+
+The next agent may reuse deterministic checks and selected content rules, but the user-facing architecture must become dramatically simpler.
+
+### Current Branch Reality
+
+There is already code in this branch for the old architecture and some recent supervisor-state scaffolding.
+
+That scaffolding should be treated as provisional, not as the product direction.
+
+If the next agent can reuse small parts of it safely behind a simpler system, fine.
+If not, it should be bypassed or deleted as part of the replacement.
+
+### Replacement Target
+
+Replace the current multi-route aesthetic control surface with one brief-generation product step between Discovery and Media Generation.
+
+Target workflow:
+
+1. Discovery selects a valid campaign.
+2. Brief step generates the full structured brief bundle in one primary pass.
+3. Hard deterministic gates run immediately.
+4. If the result passes, it is ready for human review or direct approval depending on the final product decision.
+5. If the result fails, the engine gets one automated corrective reprompt.
+6. If it fails again, stop and return a clear blocker response.
+
+No recursive remediation maze.
+
+### Required Deliverables
+
+The next agent should deliver all of the following:
+
+1. A concise architecture note describing the new single-step orchestration.
+2. A shared service contract used by both UI and agent callers.
+3. A reduced route surface for generation, read status, and approval.
+4. A replacement UI step between Discovery and Media Generation.
+5. A deterministic gate layer that is minimal, explicit, and fast.
+6. Regression tests for the new happy path and one-strike failure path.
+7. A migration or compatibility decision for old stored briefs and old route callers.
+
+### Phase Plan
+
+#### Phase 0: Freeze The Target
+
+Before writing implementation code, the next agent should produce a short design note that locks these decisions:
+
+- exact route shape
+- exact service entry point
+- approval behavior
+- whether human review remains mandatory or optional for the new step
+- whether production bible and landing still bible are always generated in the first pass or generated lazily
+- which old routes will remain temporarily as compatibility shims
+
+Output of Phase 0:
+- a short approved design note committed into the repo, ideally near this document or under `.github/DOCS/`
+
+#### Phase 1: Define The New Core Contract
+
+Build one shared orchestration contract for both UI and agent callers.
+
+Minimum contract inputs:
+- campaign slug
+- optional override instructions
+- caller type metadata if needed
+
+Minimum contract outputs:
+- generated brief bundle
+- gate result
+- readiness state
+- blocker list when generation fails
+- whether the one corrective reprompt was used
+
+Likely implementation files to touch:
+- `lib/campaigns/brief-engine/`
+- `lib/campaigns/schema.ts`
+- `app/api/groups/campaign/[slug]/...`
+
+Acceptance criteria for Phase 1:
+- one service entry point exists
+- both UI and agent callers can use the same contract
+- no route requires the operator to manually walk validate/remediate/revise in sequence
+
+#### Phase 2: Collapse The Generation Flow
+
+Replace the current layered orchestration with a single primary structured generation pass.
+
+Requirements:
+- native structured outputs only
+- no markdown-to-json parsing path
+- no validator LLM sitting behind the main LLM
+- one automatic corrective reprompt maximum when hard checks fail
+- deterministic checks limited to truly hard rules
+
+Hard checks to preserve:
+- launch-window compliance
+- slogan length ceiling
+- optionality language presence
+- merch T-shirt-first rule
+- production artifact existence
+- forbidden camera move prohibition
+- cabin contradiction prohibition
+- gangway choreography prohibition
+- storyboard duration alignment
+- required safety sentence injection or validation
+
+Acceptance criteria for Phase 2:
+- one-pass generation works for valid campaigns
+- a second auto-correction pass runs only when hard checks fail
+- third-pass loops do not exist
+
+#### Phase 3: Reduce The Route Surface
+
+Consolidate the public API to the minimum set that matches the new product step.
+
+Preferred route categories:
+- fetch current brief-step state
+- generate or regenerate brief step
+- approve brief step
+
+The next agent should explicitly mark which of these current routes are to be removed, shimmed, or left temporarily for compatibility:
+- `/media/aesthetic/validate`
+- `/media/aesthetic/remediate`
+- `/media/aesthetic/revise`
+- `/media/aesthetic/trinity`
+- `/media/aesthetic/red-team`
+- any similar operator-only repair endpoints
+
+Acceptance criteria for Phase 3:
+- route sprawl is materially reduced
+- the happy path no longer depends on chained operator endpoints
+
+#### Phase 4: Build The Replacement UI Step
+
+Create the new page that sits between Discovery and Media Generation.
+
+The page should:
+- present the brief step as a coherent product action
+- show generation state clearly
+- show blockers clearly when the one-strike flow fails
+- avoid exposing remediation internals as a button grid
+- support the same underlying contract as the agent path
+
+The page should not feel like a debugging console.
+
+Likely implementation areas:
+- `app/(tests)/` only if prototyping is necessary
+- final product route under `app/`
+- shared components under `components/`
+
+Acceptance criteria for Phase 4:
+- the page supports the new single-step workflow
+- there is no validate/remediate/revise button maze
+
+#### Phase 5: Compatibility And Cleanup
+
+The next agent must make an explicit decision on legacy compatibility.
+
+Choose one:
+- temporary shim layer over old endpoints
+- immediate removal of old endpoints
+- limited adapter layer during migration window
+
+This decision must be written down before cleanup starts.
+
+Cleanup targets likely include:
+- Trinity-specific route plumbing
+- separate red-team route entrypoints if no longer first-class
+- issue-ledger-first operator workflow surfaces
+- test pages built around manual repair sequencing
+
+Acceptance criteria for Phase 5:
+- old and new paths do not conflict
+- downstream media generation reads one clear readiness contract
+
+### File Investigation Checklist For The Next Agent
+
+The next agent should inspect these areas before coding:
+
+- `lib/campaigns/aesthetic-engine.ts`
+- `lib/campaigns/brief-engine/orchestrator.ts`
+- `lib/campaigns/brief-engine/validation.ts`
+- `lib/campaigns/aesthetic-validation-orchestrator.ts`
+- `lib/campaigns/aesthetic-revision.ts`
+- `lib/campaigns/aesthetic-red-team.ts`
+- `lib/campaigns/media/media-orchestrator.ts`
+- `lib/campaigns/schema.ts`
+- `app/api/groups/campaign/[slug]/...`
+- the current test aesthetic devising pages
+
+### Mandatory Technical Rules For The Next Agent
+
+1. Use native structured outputs.
+2. Keep the new generation path stateless inside its operating boundary.
+3. Enforce the one-strike correction rule only.
+4. Do not add new long-lived issue-ledger workflow dependencies unless the user explicitly overrides this instruction.
+5. Keep UI and agent callers on the same underlying contract.
+6. Preserve the hard campaign-quality and plausibility rules listed earlier in this file.
+
+### Testing Requirements
+
+The next agent should add or update tests for:
+
+1. valid campaign generates a passing brief bundle in one flow
+2. hard-rule failure triggers one corrective reprompt
+3. second failure returns a blocker result and stops
+4. approval cannot proceed when hard blockers remain
+5. compatibility behavior for any retained legacy endpoint
+
+One-off verification commands should likely include:
+
+- `npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts`
+- any new focused generation-flow regression tests the next agent adds
+- one end-to-end brief-step test against a representative campaign slug
+
+### Final Definition Of Done
+
+The replacement is done when all of the following are true:
+
+1. There is one coherent brief-generation step between Discovery and Media Generation.
+2. UI and agent callers share one orchestration contract.
+3. The happy path does not require manual validation/remediation loops.
+4. The engine uses native structured output generation plus minimal deterministic gates.
+5. Failure handling follows the one-strike rule and then stops cleanly.
+6. The old button-maze workflow is removed, hidden, or clearly deprecated.
+7. Downstream media generation receives one trustworthy readiness signal.
+
 The replacement should be dramatically cleaner than this.
 It should produce the same or better correctness with far less orchestration, less fragility, and far less operator babysitting.
 

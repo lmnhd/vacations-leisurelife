@@ -141,7 +141,7 @@ export default function MediaGenerationTestPage() {
             ]);
             if (manifestRes.status === 404) {
                 setManifest(null);
-                setError("No manifest found. Run generation first.");
+                setError("No media outputs exist for this campaign yet. Generate media to create the manifest.");
                 localStorage.removeItem(getManifestStorageKey(targetSlug));
             } else {
                 const data = await manifestRes.json();
@@ -379,18 +379,18 @@ export default function MediaGenerationTestPage() {
                     </button>
 
                     <div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Theme Music Source</div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Music Source</div>
                         <select
                             value={themeMusicSource}
                             onChange={(event) => setThemeMusicSource(event.target.value === 'replicate' ? 'replicate' : 'default')}
                             disabled={isBusy}
                             className="w-full px-3 py-2 text-sm border rounded-lg bg-slate-800 border-white/10 text-slate-200 focus:outline-none focus:border-cyan-500/40 disabled:opacity-40"
                         >
-                            <option value="default">Default Library</option>
+                            <option value="default">Shared Music Library</option>
                             <option value="replicate">Replicate MusicGen</option>
                         </select>
                         <p className="mt-2 text-[11px] text-slate-500">
-                            Audio generation will either reuse a tagged shared library track or call Replicate for a new one.
+                            Choose whether theme music should reuse a tagged library track or generate a new track with Replicate.
                         </p>
                     </div>
 
@@ -404,9 +404,9 @@ export default function MediaGenerationTestPage() {
                 <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">Source Of Truth</div>
+                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">What Each Layer Controls</div>
                             <p className="mt-1 text-xs text-slate-400">
-                                Discovery owns factual campaign constraints. Aesthetic Design owns creative direction. The manifest owns the currently active generated outputs.
+                                Discovery holds campaign facts. Aesthetic Design holds the approved creative direction. The manifest holds the media files currently generated for this campaign.
                             </p>
                         </div>
                         <div className="text-[10px] text-slate-500">
@@ -428,7 +428,7 @@ export default function MediaGenerationTestPage() {
                                 <div className="text-slate-500">{campaign?.pricingStatus ?? 'No pricing status'}{campaign?.startingPrice ? ` · From $${campaign.startingPrice.toLocaleString()}` : ''}</div>
                             </div>
                             <div className="mt-3 text-[11px] text-slate-400">
-                                Use this layer for ship, itinerary, price, booking link, and audience facts.
+                                Use this card for ship, itinerary, pricing, booking link, and audience facts.
                             </div>
                         </div>
 
@@ -445,7 +445,7 @@ export default function MediaGenerationTestPage() {
                                 <div className="text-slate-500">{hasProductionBible ? `${sceneCount} scenes · ${storyboardCount} storyboards` : 'No Production Bible attached'}</div>
                             </div>
                             <div className="mt-3 text-[11px] text-slate-400">
-                                Use this layer for vibe, image prompts, visual language, and the Production Bible.
+                                Use this card for the creative brief, image prompts, visual language, and the Production Bible.
                             </div>
                         </div>
 
@@ -462,7 +462,7 @@ export default function MediaGenerationTestPage() {
                                 <div className="text-slate-500">{manifest?.generatedAt ? new Date(manifest.generatedAt).toLocaleString() : 'No generation timestamp'}</div>
                             </div>
                             <div className="mt-3 text-[11px] text-slate-400">
-                                Use this layer to see what is currently active, reviewable, removable, and live in the asset ledger.
+                                Use this card to see which generated assets currently exist and which ones are active for review.
                             </div>
                         </div>
                     </div>

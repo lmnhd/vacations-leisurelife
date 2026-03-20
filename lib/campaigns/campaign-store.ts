@@ -236,8 +236,20 @@ export async function scanUnmatchedCampaigns(): Promise<Campaign[]> {
     };
 
     try {
-        const response = await chatDynamoDocumentClient.send(new ScanCommand(params));
-        return (response.Items as Campaign[]) ?? [];
+        const campaigns: Campaign[] = [];
+        let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+        do {
+            const response = await chatDynamoDocumentClient.send(new ScanCommand({
+                ...params,
+                ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+            }));
+
+            campaigns.push(...((response.Items as Campaign[]) ?? []));
+            lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+        } while (lastEvaluatedKey);
+
+        return campaigns;
     } catch (error) {
         console.error('[campaign-store] Failed to scan unmatched campaigns:', error);
         throw error;
@@ -256,8 +268,20 @@ export async function scanAllCampaigns(): Promise<Campaign[]> {
     };
 
     try {
-        const response = await chatDynamoDocumentClient.send(new ScanCommand(params));
-        return (response.Items as Campaign[]) ?? [];
+        const campaigns: Campaign[] = [];
+        let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+        do {
+            const response = await chatDynamoDocumentClient.send(new ScanCommand({
+                ...params,
+                ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+            }));
+
+            campaigns.push(...((response.Items as Campaign[]) ?? []));
+            lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+        } while (lastEvaluatedKey);
+
+        return campaigns;
     } catch (error) {
         console.error('[campaign-store] Failed to scan all campaigns:', error);
         throw error;

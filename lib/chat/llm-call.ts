@@ -33,17 +33,125 @@ export async function callGlobalGenerateObject<T>(options: {
     prompt: string;
     schema: z.ZodSchema<T>;
     modelName?: ModelName;
+    timeoutMs?: number;
+    maxOutputTokens?: number;
+    operationName?: string;
 }) {
-    // Resolve model through the gateway registry — falls back to MODEL_FAST (legacy decision profile)
     const targetModel = options.modelName ?? MODEL_FAST;
     const apiId = resolveModelApiId(targetModel);
-    const model = vercelOpenAI(apiId);
-    return generateObject({
-        model,
-        schema: options.schema,
-        system: options.system,
-        prompt: options.prompt,
+    const operationName = options.operationName ?? 'generateObject';
+    const timeoutMs = options.timeoutMs ?? 120000;
+    const baseMaxOutputTokens = options.maxOutputTokens ?? 4000;
+    const fallbackApiId = process.env.OPENAI_FALLBACK_MODEL?.trim();
+    const candidateModels = [
+        apiId,
+        apiId, // retry once on the same model for transient empty responses
+        ...(fallbackApiId && fallbackApiId !== apiId ? [fallbackApiId] : []),
+    ];
+    const attemptTokenLimits = candidateModels.map((_, index) => {
+        const multiplier = index === 0 ? 1 : index === 1 ? 2 : 4;
+        return Math.min(baseMaxOutputTokens * multiplier, 16000);
     });
+    
+    console.log(`[${operationName}] Starting structured generation with ${apiId}...`);
+    const startTime = Date.now();
+    
+    const openai = new OpenAI({ timeout: timeoutMs });
+    
+    try {
+        let lastError: Error | null = null;
+        let schemaRepairJson: string | null = null;
+        let schemaRepairIssues: string | null = null;
+
+        for (let index = 0; index < candidateModels.length; index++) {
+            const activeModel = candidateModels[index] ?? apiId;
+            const maxOutputTokens = attemptTokenLimits[index] ?? baseMaxOutputTokens;
+            const attempt = index + 1;
+            const totalAttempts = candidateModels.length;
+
+            try {
+                if (attempt > 1) {
+                    console.warn(`[${operationName}] Retry ${attempt}/${totalAttempts} using model ${activeModel} (maxOutputTokens=${maxOutputTokens})`);
+                }
+
+                const completion = await openai.chat.completions.create({
+                    model: activeModel,
+                    messages: [
+                        {
+                            role: 'system' as const,
+                            content: [
+                                'Return only valid JSON that matches the requested schema.',
+                                options.system?.trim() ?? '',
+                            ].filter(Boolean).join('\n\n'),
+                        },
+                        {
+                            role: 'user' as const,
+                            content: schemaRepairJson
+                                ? [
+                                    'Repair the JSON below so it strictly satisfies the target schema.',
+                                    'Return only valid JSON with the same top-level structure.',
+                                    'Validation errors to fix:',
+                                    schemaRepairIssues ?? '(not provided)',
+                                    'JSON to repair:',
+                                    schemaRepairJson,
+                                ].join('\n\n')
+                                : options.prompt,
+                        },
+                    ],
+                    response_format: { type: 'json_object' },
+                    ...tokenParam(activeModel, maxOutputTokens),
+                    ...tempParam(activeModel, 0.7),
+                }, { timeout: timeoutMs });
+
+                const choice = completion.choices[0];
+                const rawJson = choice?.message?.content?.trim();
+                if (!rawJson) {
+                    const refusal = (choice?.message as { refusal?: string | null } | undefined)?.refusal ?? null;
+                    throw new Error(
+                        `LLM returned empty response from model ${activeModel} (finish_reason=${choice?.finish_reason ?? 'unknown'}, refusal=${refusal ?? 'none'}, prompt_chars=${options.prompt.length}, max_output_tokens=${maxOutputTokens})`
+                    );
+                }
+
+                const parsed = JSON.parse(rawJson);
+                let result: T;
+                try {
+                    result = options.schema.parse(parsed);
+                } catch (error) {
+                    if (error instanceof z.ZodError) {
+                        const issuePreview = JSON.stringify(error.issues.slice(0, 25), null, 2);
+                        schemaRepairJson = rawJson;
+                        schemaRepairIssues = issuePreview;
+                        throw new Error(`Schema validation failed for model ${activeModel}; queued repair attempt.`);
+                    }
+                    throw error;
+                }
+
+                const duration = Date.now() - startTime;
+                console.log(`[${operationName}] ✅ Completed in ${duration}ms`);
+                return { object: result };
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                const isLastAttempt = attempt >= totalAttempts;
+
+                if (isLastAttempt) {
+                    throw lastError;
+                }
+
+                console.warn(`[${operationName}] Attempt ${attempt} failed: ${lastError.message}`);
+            }
+        }
+
+        throw lastError ?? new Error('LLM structured generation failed without a detailed error.');
+        
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        if (error instanceof OpenAI.APIError && error.code === 'request_timeout') {
+            console.error(`[${operationName}] ❌ TIMEOUT after ${duration}ms`);
+            throw new Error(`${operationName} timed out after ${timeoutMs}ms`);
+        }
+        console.error(`[${operationName}] ❌ Failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+    }
 }
 
 function tokenParam(model: string, count: number): Record<string, number> {
