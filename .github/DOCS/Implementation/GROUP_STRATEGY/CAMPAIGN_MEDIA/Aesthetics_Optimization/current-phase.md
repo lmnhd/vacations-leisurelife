@@ -46,6 +46,28 @@ Observed pattern after the gate fix:
 
 So the next phase must focus on improving the production-planning bundle, not on reopening approval semantics.
 
+## Status Update: Stored Production-Build Lint Can Be Stale
+
+There is now a second confirmed correctness issue that must be handled before treating remaining failed campaigns as pure generator-quality misses.
+
+Confirmed pattern:
+
+- a stored brief still carries `productionBuildStatus = fail`
+- the saved `productionBuildLint` report still contains old blocking issue codes
+- recomputing lint against the same saved `landingStillBible` under current rules yields `warn` or otherwise clears blockers
+- readiness and approval still trust the stale persisted fail state and keep the campaign blocked
+
+This means some campaigns can now be falsely blocked by drift between:
+
+- the current lint implementation
+- the saved `productionBuildLint` snapshot
+- the saved `productionBuildStatus`
+
+The next implementation pass must eliminate this stale-state mismatch.
+
+Do not assume every remaining blocked campaign is evidence that prompt quality is still too weak.
+First prove that the block survives fresh lint recomputation.
+
 ## Non-Negotiable Constraints
 
 1. Do not add more validate/remediate/revise/retry buttons.
@@ -58,6 +80,7 @@ So the next phase must focus on improving the production-planning bundle, not on
 8. Keep the process fully compatible with the agent API as a first-class caller, not as an afterthought or debug-only adapter.
 9. Approval and readiness must enforce the same production-build gating semantics as downstream media generation.
 10. Do not regress the fixed production-build approval gate while improving production-planning quality.
+11. Do not let readiness or approval trust stale persisted production-build status when the current saved still set now evaluates differently under the active lint rules.
 
 ## Product Target
 
@@ -160,9 +183,34 @@ Mandatory fix inside this phase:
 
 This is not optional cleanup. It is a confirmed correctness bug.
 
+### Phase 2A: Eliminate Stale Production-Build Status Drift
+
+Before interpreting remaining failures as generation-quality problems, remove false blocks caused by stale stored lint results.
+
+Primary targets:
+
+- one shared way to recompute production-build lint from the current saved `landingStillBible`
+- readiness and approval semantics that cannot be trapped by an outdated `productionBuildStatus`
+- a clear persistence decision: either recompute on every gate check, or recompute and resave whenever gate checks or fetches detect drift
+- safe handling for existing briefs created before the latest lint and prompt changes
+
+Minimum implementation expectations:
+
+- create or use one shared helper that derives the current production-build lint report from the saved brief data
+- ensure `getReadiness()` and `approveForMedia()` rely on current lint semantics, not only on stale stored fields
+- if drift is detected, resync `productionBuildLint` and `productionBuildStatus` to the recomputed result in one explicit place
+- add a targeted backfill or on-read repair path for older briefs that still carry obsolete fail states
+
+Important constraints:
+
+- do not weaken the gate
+- do not bypass lint to get campaigns approved
+- do not duplicate lint logic across multiple call sites
+- do not treat this as a UI bug; the fix belongs in the shared orchestration/service path
+
 ### Phase 2B: Improve Production-Planning Bundle Quality
 
-Now that the approval/readiness gate is fixed, the next required work is to improve the generated production-planning bundle so campaigns stop failing production-build lint.
+After stale-state drift is eliminated, the next required work is to improve the generated production-planning bundle so campaigns stop failing production-build lint for real content reasons.
 
 Primary targets:
 
@@ -180,6 +228,8 @@ This work should focus on the generation layer that produces:
 
 Likely implementation areas for this sub-phase:
 
+- `lib/campaigns/brief-engine/orchestrator.ts`
+- shared helpers that compute or resync production-build lint state
 - `lib/campaigns/aesthetic-engine.ts`
 - any visual-planning generation helpers used to create `productionBible` and `landingStillBible`
 - `lib/campaigns/media/production-build-lint*`
@@ -243,6 +293,7 @@ Inspect these before coding:
 - `lib/campaigns/aesthetic-engine.ts`
 - `lib/campaigns/brief-engine/orchestrator.ts`
 - `lib/campaigns/brief-engine/validation.ts`
+- any helper that owns production-build recomputation or state resync
 - `lib/campaigns/aesthetic-validation-orchestrator.ts`
 - `lib/campaigns/aesthetic-revision.ts`
 - `lib/campaigns/aesthetic-red-team.ts`
@@ -266,8 +317,9 @@ The phase is complete only when all of the following are true:
 8. A campaign with `productionBuildStatus = fail` cannot be approved.
 9. A campaign with `productionBuildStatus = fail` cannot report `ready_for_media`.
 10. Brief-step approval/readiness semantics match downstream spend-gated media checks.
-11. Newly generated campaigns show materially improved production-build lint performance.
-12. The main recurring lint failures are reduced, especially weak niche signal and identity-legibility failures.
+11. Existing briefs cannot remain blocked solely because stale stored `productionBuildStatus` or `productionBuildLint` drifted from the current lint result for the same saved still set.
+12. Newly generated campaigns show materially improved production-build lint performance.
+13. The main recurring lint failures are reduced, especially weak niche signal and identity-legibility failures.
 
 ## Verification
 
@@ -282,8 +334,9 @@ Add or update tests for:
 7. approval is blocked when `productionBuildStatus = fail`
 8. readiness is downgraded from `ready_for_media` when `productionBuildStatus = fail`
 9. parity test: brief-step gating matches the spend-gated branch in `media-orchestrator`
-10. representative campaigns show improved production-build lint outcomes after production-planning generation changes
-11. repeated failures such as `weak_niche_signal`, `identity_legibility_too_low`, and still-role coverage gaps are explicitly tested where practical
+10. stale-lint regression: a brief with stored `productionBuildStatus = fail` but recomputed current lint of `warn` or `pass` is resynced and no longer falsely blocked
+11. representative campaigns show improved production-build lint outcomes after production-planning generation changes
+12. repeated failures such as `weak_niche_signal`, `identity_legibility_too_low`, and still-role coverage gaps are explicitly tested where practical
 
 Likely verification commands:
 
@@ -291,7 +344,29 @@ Likely verification commands:
 - focused tests added for the new brief-step flow
 - one representative end-to-end brief-step test
 - targeted regression covering approved brief + failed production build
+- targeted regression covering stale stored fail status vs recomputed current lint
 - targeted production-build quality regression tests against representative campaigns or fixtures
+
+## Next Implementation And Process Steps
+
+1. Reproduce the stale-state bug with at least one known campaign and record:
+	- stored `productionBuildStatus`
+	- stored blocking issue codes
+	- recomputed lint verdict and issue codes from the same saved `landingStillBible`
+2. Add one shared recomputation helper in the brief-engine path so there is exactly one source of truth for gate-time production-build evaluation.
+3. Update `getReadiness()` and `approveForMedia()` to use that shared recomputation path and resync stale persisted lint state when drift is detected.
+4. Add a regression test proving an old stored `fail` cannot keep a campaign blocked when the same saved still set now evaluates to `warn` or `pass`.
+5. Only after stale-state drift is fixed, continue evaluating remaining blocked campaigns as genuine production-planning quality failures.
+6. For the quality pass, compare representative campaigns before and after generation changes and separate:
+	- stale-state false blocks
+	- real generator-quality failures
+7. In `phase-result.md`, report stale-state findings separately from generation-quality findings so verification does not conflate the two.
+8. Update `phase-result.md` as part of the work, not as an afterthought. Record the current phase progress, including:
+	- whether stale stored `productionBuildStatus` / `productionBuildLint` drift was reproduced
+	- what shared recompute or resync path was added
+	- which routes or shared service methods now use the recomputed result
+	- whether representative blocked campaigns were false blocks or true quality failures under fresh lint recomputation
+	- exact verification commands and campaign checks used to prove the result
 
 ## Handoff Output Requirement
 
@@ -300,5 +375,7 @@ When done, write a `phase-result.md` file at the repo root containing:
 - what changed
 - which old routes were removed or shimmed
 - the final shared contract
+- explicit progress on stale-state drift handling vs generation-quality improvements
+- whether any previously blocked campaigns were cleared by recomputation/resync alone
 - residual risks
 - exact verification commands run

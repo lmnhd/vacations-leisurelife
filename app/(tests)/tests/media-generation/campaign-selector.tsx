@@ -49,7 +49,12 @@ export function CampaignSelector({ value, onChange, disabled = false }: Campaign
                         try {
                             const readinessRes = await fetch(`/api/groups/campaign/${campaign.id}/brief/readiness`, { cache: "no-store" });
                             if (!readinessRes.ok) {
-                                return { ...campaign, readiness: "drafting" as const };
+                                return { 
+                                    ...campaign, 
+                                    readiness: "drafting" as const,
+                                    pricingStatus: campaign.pricingStatus ?? null,
+                                    aestheticBriefStatus: campaign.aestheticBriefStatus ?? null,
+                                };
                             }
 
                             const readinessData = await readinessRes.json() as { readiness?: "drafting" | "needs_review" | "ready_for_media" };
