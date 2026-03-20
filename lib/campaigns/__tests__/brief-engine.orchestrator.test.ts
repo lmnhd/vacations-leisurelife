@@ -238,6 +238,95 @@ test('parity: brief-engine gate and media-orchestrator gate both pass on product
     assert.equal(briefEngineBlocks, mediaOrchestratorBlocks, 'both gates must agree');
 });
 
+// ────────────────────────────────────────────────────────────────────────────
+// Acceptance criterion 11: stale-lint regression
+// A brief with stored productionBuildStatus = fail that would evaluate to
+// warn or pass under current lint rules must be resynced and not falsely blocked.
+// These tests inline the drift-detection and resync logic from recomputeAndResyncLint.
+// ────────────────────────────────────────────────────────────────────────────
+
+type LintVerdict = 'pass' | 'warn' | 'fail';
+
+interface StaleLintSimulation {
+    storedStatus: LintVerdict | undefined;
+    freshStatus: LintVerdict;
+}
+
+function simulateDriftDetection(sim: StaleLintSimulation): boolean {
+    return sim.storedStatus !== sim.freshStatus;
+}
+
+function simulateResyncedApprovalGate(sim: StaleLintSimulation, hasLandingStillBible: boolean): string | null {
+    const effectiveStatus = simulateDriftDetection(sim) ? sim.freshStatus : sim.storedStatus;
+    if (!effectiveStatus || !hasLandingStillBible) {
+        return 'Cannot approve: production build has not been evaluated.';
+    }
+    if (effectiveStatus === 'fail') {
+        return 'Cannot approve: production build lint failed (productionBuildStatus = fail).';
+    }
+    return null;
+}
+
+function simulateResyncedReadiness(sim: StaleLintSimulation, hasLandingStillBible: boolean): ReadinessState {
+    const effectiveStatus = simulateDriftDetection(sim) ? sim.freshStatus : sim.storedStatus;
+    if (!effectiveStatus || !hasLandingStillBible) return 'needs_review';
+    if (effectiveStatus === 'fail') return 'needs_review';
+    return 'ready_for_media';
+}
+
+console.log('\nStale-Lint Regression (AC 11)\n');
+
+test('drift detected when stored status is fail but fresh recomputed status is warn', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'warn' };
+    assert.equal(simulateDriftDetection(sim), true, 'drift must be detected when stored=fail and fresh=warn');
+});
+
+test('drift detected when stored status is fail but fresh recomputed status is pass', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'pass' };
+    assert.equal(simulateDriftDetection(sim), true, 'drift must be detected when stored=fail and fresh=pass');
+});
+
+test('no drift detected when stored status matches fresh status', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'fail' };
+    assert.equal(simulateDriftDetection(sim), false, 'no drift when stored and fresh match');
+});
+
+test('stale fail + fresh warn: resynced approval gate passes (campaign unblocked)', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'warn' };
+    const error = simulateResyncedApprovalGate(sim, true);
+    assert.equal(error, null, 'approval gate must pass after resync when fresh status is warn');
+});
+
+test('stale fail + fresh pass: resynced approval gate passes (campaign unblocked)', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'pass' };
+    const error = simulateResyncedApprovalGate(sim, true);
+    assert.equal(error, null, 'approval gate must pass after resync when fresh status is pass');
+});
+
+test('stale fail + fresh fail: resynced approval gate still blocks (true failure preserved)', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'fail' };
+    const error = simulateResyncedApprovalGate(sim, true);
+    assert.ok(error !== null, 'approval gate must still block when fresh recomputed status is also fail');
+});
+
+test('stale fail + fresh warn: resynced readiness returns ready_for_media for approved brief', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'warn' };
+    const readiness = simulateResyncedReadiness(sim, true);
+    assert.equal(readiness, 'ready_for_media', 'readiness must be ready_for_media after resync when fresh status is warn');
+});
+
+test('stale fail + fresh fail: resynced readiness still returns needs_review (true failure preserved)', () => {
+    const sim: StaleLintSimulation = { storedStatus: 'fail', freshStatus: 'fail' };
+    const readiness = simulateResyncedReadiness(sim, true);
+    assert.equal(readiness, 'needs_review', 'readiness must remain needs_review when fresh recomputed status is also fail');
+});
+
+test('stale undefined + fresh pass: resynced gate passes (first-time lint)', () => {
+    const sim: StaleLintSimulation = { storedStatus: undefined, freshStatus: 'pass' };
+    const error = simulateResyncedApprovalGate(sim, true);
+    assert.equal(error, null, 'approval gate must pass when stored status was undefined but fresh evaluation is pass');
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 

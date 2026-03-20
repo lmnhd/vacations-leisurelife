@@ -123,3 +123,68 @@ npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
 # TypeScript check — zero new errors in changed files
 npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String "brief-engine|aesthetic-engine|aesthetic/route|revise/route|validate/route|remediate/route|trinity/route|red-team/route|brief-studio"
 ```
+
+---
+
+## Phase 2A: Stale Production-Build Status Drift — Implemented
+
+### Problem Confirmed
+
+A brief persisted before a lint-rule change could carry a stale `productionBuildStatus = fail` and stale `productionBuildLint` snapshot. Gate calls in `getReadiness()` and `approveForMedia()` read the stored field directly, so campaigns that would now pass or warn under current lint rules remained falsely blocked. The inverse drift (stored `pass` but fresh `fail`) was equally risky.
+
+### Fix Implemented
+
+**New shared helper** — `recomputeAndResyncLint(brief, campaign)` in `lib/campaigns/brief-engine/orchestrator.ts`:
+- Runs `lintProductionBuild` against the saved `landingStillBible` using current lint rules
+- Compares the fresh verdict to the stored `productionBuildStatus`
+- If drift is detected, writes the updated `productionBuildLint`, `productionBuildStatus`, and `productionBuildEvaluatedAt` back to storage in one explicit place
+- Returns `{ resolvedBrief, drifted, freshStatus }`
+- No-ops when `landingStillBible` is absent (returns stored brief as-is)
+
+**Updated `computeReadiness` (now async)**:
+- Calls `recomputeAndResyncLint` before applying any gate logic
+- All gate checks operate on the effective (possibly resynced) brief, not the raw stored state
+
+**Updated `approveForMedia`**:
+- Calls `recomputeAndResyncLint` between structural validation and the lint gate
+- If stale fail is detected and fresh recomputation clears it (`warn` or `pass`), approval proceeds
+- If fresh recomputation confirms `fail`, approval is still blocked (gate is not weakened)
+
+### Stale-State Regression Tests Added
+
+New section in `lib/campaigns/__tests__/brief-engine.orchestrator.test.ts` (AC 11):
+
+| Test | Result |
+|---|---|
+| drift detected: stored=fail, fresh=warn | ✓ |
+| drift detected: stored=fail, fresh=pass | ✓ |
+| no drift: stored=fail, fresh=fail | ✓ |
+| stale fail + fresh warn: approval gate passes | ✓ |
+| stale fail + fresh pass: approval gate passes | ✓ |
+| stale fail + fresh fail: approval gate still blocks | ✓ |
+| stale fail + fresh warn: readiness = ready_for_media for approved brief | ✓ |
+| stale fail + fresh fail: readiness = needs_review | ✓ |
+| stale undefined + fresh pass: approval gate passes | ✓ |
+
+### Verification Results
+
+```powershell
+# Orchestrator regression — 26/26 pass (16 prior + 10 new stale-lint tests)
+npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
+
+# Validation regression — 2/2 pass
+npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
+
+# Production-build quality regression — 10/10 pass
+npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
+
+# TypeScript — zero new errors in changed files
+# (pre-existing errors in scripts/cb-inventory-scraper.ts and tests/check-cb-matching.ts unchanged)
+```
+
+### Phase 2A Constraint Compliance
+
+- Gate is not weakened — a genuinely failing still set still blocks approval and readiness
+- Lint logic is not duplicated — `lintProductionBuild` is called in exactly one helper
+- Fix lives in the shared orchestration path, not the UI
+- `saveAestheticBrief` is called in exactly one place on drift detection

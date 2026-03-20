@@ -82,26 +82,81 @@ function buildCorrectionContext(blockers: ValidationIssue[]): string {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Internal: recompute production-build lint from saved still data and resync
+// if the stored verdict has drifted from what current rules produce.
+// This is the single source of truth for gate-time lint evaluation.
+// ────────────────────────────────────────────────────────────────────────────
+
+interface LintResyncResult {
+    resolvedBrief: CampaignAestheticBrief;
+    drifted: boolean;
+    freshStatus: CampaignAestheticBrief['productionBuildStatus'];
+}
+
+async function recomputeAndResyncLint(
+    brief: CampaignAestheticBrief,
+    campaign: Campaign,
+): Promise<LintResyncResult> {
+    if (!brief.landingStillBible) {
+        return { resolvedBrief: brief, drifted: false, freshStatus: brief.productionBuildStatus };
+    }
+
+    const freshLint = lintProductionBuild({
+        landingStillBible: brief.landingStillBible,
+        productionBible: brief.productionBible,
+        themeName: campaign.name,
+        nicheKeywords: campaign.targetingKeywords ?? [],
+    });
+
+    const storedStatus = brief.productionBuildStatus;
+    const freshStatus = freshLint.verdict;
+    const drifted = storedStatus !== freshStatus;
+
+    if (!drifted) {
+        return { resolvedBrief: brief, drifted: false, freshStatus };
+    }
+
+    console.log(`[brief-engine] lint drift for ${campaign.id}: stored=${storedStatus ?? 'undefined'} → recomputed=${freshStatus}`);
+
+    const resynced: CampaignAestheticBrief = {
+        ...brief,
+        productionBuildLint: freshLint,
+        productionBuildStatus: freshStatus,
+        productionBuildEvaluatedAt: freshLint.evaluatedAt,
+    };
+    await saveAestheticBrief(resynced);
+
+    return { resolvedBrief: resynced, drifted: true, freshStatus };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Internal: compute readiness from brief + campaign
 // ────────────────────────────────────────────────────────────────────────────
 
-function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): { readiness: ReadinessState; issues: ValidationIssue[]; summary: string } {
-    if (brief.humanReviewStatus === 'approved') {
-        const validation = validateBrief(brief, campaign);
+async function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): Promise<{ readiness: ReadinessState; issues: ValidationIssue[]; summary: string }> {
+    // Recompute lint from saved still data to catch stale-state drift before applying gates.
+    const { resolvedBrief, drifted } = await recomputeAndResyncLint(brief, campaign);
+    const effectiveBrief = resolvedBrief;
+    if (drifted) {
+        console.log(`[brief-engine] computeReadiness used resynced lint for ${campaign.id}`);
+    }
+
+    if (effectiveBrief.humanReviewStatus === 'approved') {
+        const validation = validateBrief(effectiveBrief, campaign);
         if (!validation.passed) {
             return { readiness: 'needs_review', issues: validation.issues, summary: `Approved brief has new issues: ${validation.summary}` };
         }
         // ── Production build lint gate — must match media-orchestrator spend-gated semantics ──
-        if (!brief.productionBuildStatus || !brief.landingStillBible) {
+        if (!effectiveBrief.productionBuildStatus || !effectiveBrief.landingStillBible) {
             return { readiness: 'needs_review', issues: [], summary: 'Production build has not been evaluated. Regenerate the brief bundle to run pre-media lint before approving.' };
         }
-        if (brief.productionBuildStatus === 'fail') {
+        if (effectiveBrief.productionBuildStatus === 'fail') {
             return { readiness: 'needs_review', issues: [], summary: 'Production build lint failed (productionBuildStatus = fail). Downstream media generation would reject this brief. Regenerate to resolve production build issues.' };
         }
         return { readiness: 'ready_for_media', issues: [], summary: 'Brief is approved and passes all structural and production-build checks.' };
     }
 
-    const validation = validateBrief(brief, campaign);
+    const validation = validateBrief(effectiveBrief, campaign);
     if (validation.passed) {
         return { readiness: 'needs_review', issues: [], summary: 'Brief passes structural checks but needs human approval.' };
     }
@@ -278,7 +333,7 @@ export async function getReadiness(slug: string): Promise<ReadinessResult> {
         return { readiness: 'drafting', brief: null, issues: [], summary: 'No brief exists yet.', campaignName: campaign.name };
     }
 
-    const { readiness, issues, summary } = computeReadiness(brief, campaign);
+    const { readiness, issues, summary } = await computeReadiness(brief, campaign);
     return { readiness, brief, issues, summary, campaignName: campaign.name };
 }
 
@@ -290,8 +345,8 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
     const campaign = await getCampaignBlueprint(slug);
     if (!campaign) throw new Error(`Campaign not found: ${slug}`);
 
-    const brief = await getAestheticBrief(slug);
-    if (!brief) throw new Error(`No brief exists for ${slug}.`);
+    const storedBrief = await getAestheticBrief(slug);
+    if (!storedBrief) throw new Error(`No brief exists for ${slug}.`);
 
     // ── Launch window gate ────────────────────────────────────────────
     const launchWindow = getLaunchWindowAssessment({ matchedSailDate: campaign.matchedSailDate, targetDates: campaign.targetDates });
@@ -300,15 +355,21 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
     }
 
     // ── Structural validation gate ────────────────────────────────────
-    const validation = validateBrief(brief, campaign);
+    const validation = validateBrief(storedBrief, campaign);
     if (!validation.passed) {
         const blockers = validation.issues.filter((i) => i.severity === 'blocker');
         throw new Error(`Cannot approve: ${blockers.length} blocker(s) remain. ${blockers.map((b) => b.message).join(' | ')}`);
     }
 
-    // ── Production build lint gate ────────────────────────────────────
+    // ── Production build lint gate ────────────────────────────────────────────
     // Must match spend-gated semantics in media-orchestrator.ts (lines 322-336).
-    // A brief that would be rejected downstream must not be approved upstream.
+    // Recompute lint first to eliminate stale-state drift before applying the gate.
+    const { resolvedBrief: lintResolvedBrief, drifted: lintDrifted } = await recomputeAndResyncLint(storedBrief, campaign);
+    const brief = lintResolvedBrief;
+    if (lintDrifted) {
+        console.log(`[brief-engine] lint resynced at approval time for ${slug}`);
+    }
+
     if (!brief.productionBuildStatus || !brief.landingStillBible) {
         throw new Error(
             `Cannot approve: production build has not been evaluated for ${slug}. ` +
