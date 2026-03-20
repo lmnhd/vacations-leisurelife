@@ -1,32 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runRemediationCore } from './core-logic';
 
+// DEPRECATED: Remediation is no longer a standalone step. Inline auto-fix and one-strike
+// corrective reprompt are handled inside POST /api/groups/campaign/[slug]/brief.
 export async function POST(
     _req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
 ) {
-    try {
-        const { slug } = await params;
-        const { brief, summary, hasRemainingBlockers } = await runRemediationCore(slug);
-
-        return NextResponse.json(
-            {
-                success: true,
-                brief,
-                summary,
-                hasRemainingBlockers,
-                message: hasRemainingBlockers
-                    ? `Remediation complete. ${summary.remainingOpenIssues.length} blocker(s) remain — check summary.`
-                    : 'Remediation complete. All issues resolved or verified.',
-            },
-            { status: 200 },
-        );
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[Aesthetic Remediate Error]:', error);
-        return NextResponse.json(
-            { error: 'Failed to run aesthetic remediation', details: message },
-            { status: 500 },
-        );
-    }
+    const { slug } = await params;
+    return NextResponse.json(
+        {
+            error: 'This route is deprecated.',
+            details: 'Remediation is now handled automatically inside POST /api/groups/campaign/{slug}/brief.',
+            replacement: `/api/groups/campaign/${slug}/brief`,
+        },
+        { status: 410 },
+    );
 }

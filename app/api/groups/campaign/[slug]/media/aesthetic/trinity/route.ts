@@ -1,25 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runTrinityCoreLogic, TrinityRunRequest } from './core-logic';
 
+// DEPRECATED: Trinity pipeline is no longer part of the primary brief-generation path.
 export async function POST(
-    request: NextRequest,
+    _req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
 ): Promise<NextResponse> {
     const { slug } = await params;
-
-    let body: TrinityRunRequest = {};
-    try {
-        body = await request.json();
-    } catch {
-        // empty body is valid — all fields optional
-    }
-
-    try {
-        const result = await runTrinityCoreLogic(slug, body);
-        return NextResponse.json(result);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[trinity:route] Error for slug=${slug}:`, error);
-        return NextResponse.json({ error: message }, { status: 500 });
-    }
+    return NextResponse.json(
+        {
+            error: 'This route is deprecated.',
+            details: 'The Trinity pipeline has been removed from the brief-generation path. Use POST /api/groups/campaign/{slug}/brief instead.',
+            replacement: `/api/groups/campaign/${slug}/brief`,
+        },
+        { status: 410 },
+    );
 }

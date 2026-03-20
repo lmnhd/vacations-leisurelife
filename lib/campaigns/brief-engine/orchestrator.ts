@@ -1,10 +1,6 @@
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '../campaign-store';
-import { generateAestheticBrief } from '../aesthetic-engine';
-import { runTrinitySession } from '../trinity/orchestrator';
-import { trinityDeterministicKernel } from '../trinity/deterministic-kernel';
-import { trinityDesignerAgent } from '../trinity/agents/designer';
-import { trinityBuilderAgent } from '../trinity/agents/builder';
-import { trinityReviewerAgent } from '../trinity/agents/reviewer';
+import { generateAestheticBrief, generateVisualPlanningFromBrief } from '../aesthetic-engine';
+import { lintProductionBuild } from '../media/production-build-lint';
 import { validateBrief } from './validation';
 import { applyAutoFixes } from './auto-fix';
 import { applySupervisorState } from './supervisor';
@@ -31,6 +27,7 @@ interface BriefEngineResult {
     warnings: string[];
     autoFixApplied: boolean;
     fixedCodes: string[];
+    correctiveRepromptUsed: boolean;
 }
 
 interface ApprovalResult {
@@ -48,7 +45,44 @@ interface ReadinessResult {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Helpers
+// Internal: generate full brief bundle (aesthetic + visual planning + lint)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function generateFullBriefBundle(
+    campaign: Campaign,
+    options?: { correctionContext?: string },
+): Promise<CampaignAestheticBrief> {
+    const brief = await generateAestheticBrief(campaign, options);
+    const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
+    const lintReport = lintProductionBuild({
+        landingStillBible: visualPlanning.landingStillBible,
+        productionBible: visualPlanning.productionBible,
+        themeName: campaign.name,
+        nicheKeywords: campaign.targetingKeywords ?? [],
+    });
+
+    return {
+        ...brief,
+        landingStillBible: visualPlanning.landingStillBible,
+        productionBible: visualPlanning.productionBible,
+        productionBuildLint: lintReport,
+        productionBuildStatus: lintReport.verdict,
+        productionBuildEvaluatedAt: lintReport.evaluatedAt,
+    };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Internal: build a corrective reprompt context string from remaining blockers
+// ────────────────────────────────────────────────────────────────────────────
+
+function buildCorrectionContext(blockers: ValidationIssue[]): string {
+    return blockers
+        .map((b, i) => `${i + 1}. [${b.code}] ${b.message}`)
+        .join('\n');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Internal: compute readiness from brief + campaign
 // ────────────────────────────────────────────────────────────────────────────
 
 function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): { readiness: ReadinessState; issues: ValidationIssue[]; summary: string } {
@@ -69,6 +103,9 @@ function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): { 
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. create_or_refresh_brief
+//    Single orchestration entry point used by both UI and agent callers.
+//    Flow: generate bundle → validate → auto-fix → re-validate →
+//          if still blocked: one corrective reprompt → final validate → stop.
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function createOrRefreshBrief(slug: string, options?: { instructions?: string }): Promise<BriefEngineResult> {
@@ -77,74 +114,80 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
     const campaign = await getCampaignBlueprint(slug);
     if (!campaign) throw new Error(`Campaign not found: ${slug}`);
 
-    const existingBrief = await getAestheticBrief(slug);
-    let brief = existingBrief;
-    if (!brief) {
-        console.log(`[brief-engine] No brief exists for ${slug}. Generating initial brief...`);
-        brief = await generateAestheticBrief(campaign);
-        await saveAestheticBrief(brief);
-    }
-
     console.log(`[brief-engine] create_or_refresh for ${slug}`);
 
-    // ── Run Trinity pipeline (designer → builder → reviewer) ──────────
-    const result = await runTrinitySession(campaign, brief, 3, {
-        kernel: trinityDeterministicKernel,
-        designer: trinityDesignerAgent,
-        builder: trinityBuilderAgent,
-        reviewer: trinityReviewerAgent,
-    });
+    // ── First generation pass: full bundle ────────────────────────────
+    let brief = await generateFullBriefBundle(campaign);
 
-    brief = result.session.brief;
-
-    // ── Consolidated validation ───────────────────────────────────────
+    // ── First validation ──────────────────────────────────────────────
     let validation = validateBrief(brief, campaign);
 
-    // ── One-strike auto-fix if validation fails ───────────────────────
+    // ── One-strike auto-fix ───────────────────────────────────────────
     let autoFixApplied = false;
     let fixedCodes: string[] = [];
+    let correctiveRepromptUsed = false;
 
     if (!validation.passed) {
         const autoFixableCount = validation.issues.filter((i) => i.autoFixable).length;
         if (autoFixableCount > 0) {
-            console.log(`[brief-engine] one-strike auto-fix: ${autoFixableCount} fixable issues`);
+            console.log(`[brief-engine] auto-fix: ${autoFixableCount} fixable issues`);
             const fixResult = applyAutoFixes(brief, validation.issues);
             brief = fixResult.brief;
             fixedCodes = fixResult.fixedCodes;
             autoFixApplied = fixedCodes.length > 0;
-
             if (autoFixApplied) {
                 validation = validateBrief(brief, campaign);
             }
-
             if (fixResult.unfixableCodes.length > 0) {
-                warnings.push(`Unfixable blockers remain: ${fixResult.unfixableCodes.join(', ')}`);
+                warnings.push(`Auto-fix could not address: ${fixResult.unfixableCodes.join(', ')}`);
             }
         }
     }
 
-    // ── Persist ───────────────────────────────────────────────────────
+    // ── One corrective reprompt if blockers still remain ──────────────
+    if (!validation.passed) {
+        const remainingBlockers = validation.issues.filter((i) => i.severity === 'blocker');
+        const nonLaunchBlockers = remainingBlockers.filter((i) => i.code !== 'launch_window_violation');
+
+        if (nonLaunchBlockers.length > 0) {
+            correctiveRepromptUsed = true;
+            const correctionContext = buildCorrectionContext(nonLaunchBlockers);
+            console.log(`[brief-engine] corrective reprompt for ${slug}: ${nonLaunchBlockers.length} blocker(s)`);
+
+            brief = await generateFullBriefBundle(campaign, { correctionContext });
+            const repromptAutoFix = applyAutoFixes(brief, validateBrief(brief, campaign).issues);
+            brief = repromptAutoFix.brief;
+            if (repromptAutoFix.fixedCodes.length > 0) {
+                fixedCodes = [...new Set([...fixedCodes, ...repromptAutoFix.fixedCodes])];
+                autoFixApplied = true;
+            }
+            validation = validateBrief(brief, campaign);
+        }
+    }
+
+    // ── Persist final brief ───────────────────────────────────────────
     const briefToPersist = applySupervisorState(brief, {
         issues: validation.issues,
         reviewStatus: 'pending',
         origin: 'create_or_refresh',
-        revisionCycleCount: brief.revisionCycleCount,
+        revisionCycleCount: (brief.revisionCycleCount ?? 0),
     });
     await saveAestheticBrief(briefToPersist);
 
-    const readiness: ReadinessState = validation.passed ? 'needs_review' : 'needs_review';
+    const blockerCount = validation.issues.filter((i) => i.severity === 'blocker').length;
     const summary = validation.passed
         ? 'Brief generated and passes all structural checks. Ready for approval.'
-        : `Brief generated but ${validation.issues.filter((i) => i.severity === 'blocker').length} blocker(s) remain. ${validation.summary}`;
+        : `Brief generated but ${blockerCount} blocker(s) remain.${correctiveRepromptUsed ? ' Corrective reprompt was used.' : ''} ${validation.summary}`;
 
     return {
-        readiness,
+        readiness: 'needs_review',
         brief: briefToPersist,
         issues: validation.issues,
         summary,
         warnings,
         autoFixApplied,
         fixedCodes,
+        correctiveRepromptUsed,
     };
 }
 
@@ -173,15 +216,9 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
         brief = { ...brief, ...revision.fieldEdits } as CampaignAestheticBrief;
     }
 
-    // ── If instructions provided, run Trinity for one round ───────────
+    // ── If instructions provided, regenerate full bundle with instruction context ──
     if (revision.instructions) {
-        const result = await runTrinitySession(campaign, brief, 1, {
-            kernel: trinityDeterministicKernel,
-            designer: trinityDesignerAgent,
-            builder: trinityBuilderAgent,
-            reviewer: trinityReviewerAgent,
-        });
-        brief = result.session.brief;
+        brief = await generateFullBriefBundle(campaign, { correctionContext: revision.instructions });
     }
 
     // ── Validate ─────────────────────────────────────────────────────
@@ -209,15 +246,15 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
     });
     await saveAestheticBrief(revisedBrief);
 
-    const readiness: ReadinessState = validation.passed ? 'needs_review' : 'needs_review';
     return {
-        readiness,
+        readiness: 'needs_review',
         brief: revisedBrief,
         issues: validation.issues,
         summary: validation.passed ? 'Revision applied. All structural checks pass. Ready for approval.' : validation.summary,
         warnings,
         autoFixApplied,
         fixedCodes,
+        correctiveRepromptUsed: false,
     };
 }
 

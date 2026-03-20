@@ -21,6 +21,7 @@ interface BriefEngineResult {
     warnings: string[];
     autoFixApplied: boolean;
     fixedCodes: string[];
+    correctiveRepromptUsed: boolean;
 }
 
 interface ReadinessResult {
@@ -237,6 +238,13 @@ export default function BriefStudioPage() {
                         )}
 
                         <p className="text-xs text-slate-400">{lastResult?.summary ?? readiness.summary}</p>
+
+                        {/* ── Corrective reprompt banner ──────────────── */}
+                        {lastResult?.correctiveRepromptUsed && (
+                            <div className="p-3 text-xs border rounded-lg bg-violet-500/10 border-violet-500/20 text-violet-300">
+                                <strong>Corrective reprompt used.</strong> First pass had unresolvable blockers — the system ran one corrective regeneration.
+                            </div>
+                        )}
 
                         {/* ── Auto-fix banner ─────────────────────────── */}
                         {lastResult?.autoFixApplied && lastResult.fixedCodes.length > 0 && (

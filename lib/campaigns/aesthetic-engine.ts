@@ -386,7 +386,7 @@ OUTPUT RULES:
     return refinedBrief;
 }
 
-export async function generateAestheticBrief(campaign: Campaign): Promise<CampaignAestheticBrief> {
+export async function generateAestheticBrief(campaign: Campaign, options?: { correctionContext?: string }): Promise<CampaignAestheticBrief> {
     // Resolve model through the gateway registry. Creative task → GPT_5_HIGH (OpenAI Tier-1).
     // Note: uses @ai-sdk/openai adapter for generateObject structured output.
     const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
@@ -510,6 +510,10 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 - For reading/literary campaigns specifically, never use shelf-based ambient infrastructure as the mechanism for discovery; recommendations should move person-to-person, book-to-hand, or remain purely atmospheric.
 `.trim();
 
+    const correctionSuffix = options?.correctionContext
+        ? `\n\nCORRECTIVE REPROMPT — HARD FAILURE CONTEXT:\nThe previous generation produced the following validation blockers. You MUST resolve every one of them in this output.\n${options.correctionContext}`
+        : '';
+
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
     let attempts = 0;
     while (attempts < 3) {
@@ -520,7 +524,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         const { object } = await generateObject({
             model,
             schema: Pass1Schema,
-            system: systemPromptPass1 + feedbackOpt,
+            system: systemPromptPass1 + feedbackOpt + correctionSuffix,
             prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`
         });
 
@@ -581,7 +585,7 @@ PASS 2 GUARDRAILS:
     const { object: platformConcepts } = await generateObject({
         model,
         schema: Pass2Schema,
-        system: systemPromptPass2,
+        system: systemPromptPass2 + correctionSuffix,
         prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`
     });
 
