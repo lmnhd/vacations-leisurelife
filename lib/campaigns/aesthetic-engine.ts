@@ -702,6 +702,44 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
     ].join('\n');
 }
 
+// ── Lint compliance block injected into every visual-planning prompt ──────────
+// Maps directly to the deterministic rules in production-build-lint.ts so the
+// LLM knows the exact fields and exact keywords the machine will scan.
+function buildLintComplianceBlock(campaign: Campaign): string {
+    const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
+    const kwDisplay = nicheKw.length > 0
+        ? nicheKw.join(', ')
+        : campaign.name.toLowerCase().split(/\s+/).filter(t => t.length > 3).join(', ');
+
+    return [
+        'LINT COMPLIANCE REQUIREMENTS — MACHINE-CHECKED — NON-COMPLIANCE BLOCKS CAMPAIGN APPROVAL:',
+        '',
+        '1. NICHE KEYWORD INJECTION (prevents weak_niche_signal and identity_legibility_too_low failures):',
+        `   Campaign niche keywords: ${kwDisplay}`,
+        '   HARD RULE: At least 4 of the 6 landing stills MUST embed at least one of these keywords (or a direct synonym) inside the "imagePrompt" field OR the "subjectAction" field.',
+        '   The remaining 2 stills must include a niche keyword in either "environmentDetails" OR "composition".',
+        '   Zero-keyword stills (no niche term in any of the 4 fields) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.',
+        `   Self-check per still: does imagePrompt OR subjectAction contain at least one of: ${kwDisplay}?`,
+        '',
+        '2. STILL USAGE FIELD DISTRIBUTION (prevents missing_role_coverage failure):',
+        '   Produce exactly this distribution across the 6 stills:',
+        '   - 2 stills: usage = "hero_primary" or "hero_alt" (wide headline-safe hero compositions)',
+        '   - 2 stills: usage = "concept" or "email_header" where the composition field does NOT contain "intimate", "close", "tight", or "detail" (editorial/wide role)',
+        '   - 1 still: usage = "concept" where the composition field MUST contain at least one of: "intimate", "close", "tight", "detail" (intimate/tight role)',
+        '   - 1 still: any remaining usage value (hero_alt, email_header, social_square, or concept)',
+        '   The machine check reads the usage field and composition text directly — comply with exact field values.',
+        '',
+        '3. COMPOSITION VARIETY (prevents repeated_composition_family and generic_fallback_overuse failures):',
+        '   These 4 composition patterns are machine-detected as generic cruise fallbacks. Any pattern appearing 3+ times in the 6 stills is a BLOCKING failure.',
+        '   LIMIT EACH TO AT MOST 1 OF THE 6 STILLS:',
+        '   - Pattern A (rail_couple_laugh): railing or balcony location + couple laughing or smiling together',
+        '   - Pattern B (quiet_window_solo): cabin/porthole/window/stateroom location + solo guest contemplating, gazing, or alone',
+        '   - Pattern C (dining_intimacy): dining/restaurant/dinner location + intimate couple or candlelight mood',
+        '   - Pattern D (deck_sea_wide): deck/bow/stern/outdoor location + couple facing sea/horizon/sunset at wide distance',
+        '   Vary location cluster, subject action, social unit, and mood across all 6 stills so no two stills share both the same location cluster AND the same action cluster.',
+    ].join('\n');
+}
+
 async function generateVisualPlanningBundle(
     model: ReturnType<typeof openai>,
     campaign: Campaign,
@@ -777,6 +815,7 @@ The niche does not need to dominate the frame, but it must be present and identi
 For this campaign, niche presence means: ${communityExpression.belongingSignals.join('; ')}.
 If a scene cannot include at least one of those signals naturally, replace that scene with one that can.
 A scene that reads as "any luxury cruise" rather than "this specific community's cruise" has failed.
+FIELD-LEVEL REQUIREMENT: For every landing still spec, the niche identity must appear in the "imagePrompt" field OR the "subjectAction" field — not just in supporting fields. An automated scanner reads imagePrompt and subjectAction first; stills that carry niche identity only in supplementary fields still register as weak or absent. Embed a campaign-specific term, behavior, or belonging signal directly in imagePrompt and subjectAction.
 
 ## SOCIAL WARMTH FLOOR
 - At least 6 of the 10 scenes must show TWO OR MORE people in relaxed proximity — not just silhouettes or tiny figures.
@@ -832,8 +871,9 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - Prefer 1-3 people max. No dense crowds. No multi-action scenes.
 - At least half of the stills should communicate paired or small-cluster togetherness rather than pure solitude.
 - Across the still set, vary ages, skin tones, facial features, and pairings in a natural way that fits the campaign's intended audience.
-- At least 2 stills must be clearly suitable for primary or alternate landing-page hero use.
-- At least 2 stills must be suitable for concept/editorial section imagery.
+- At least 2 stills must be clearly suitable for primary or alternate landing-page hero use. Assign these usage = "hero_primary" or usage = "hero_alt".
+- At least 2 stills must be suitable for concept/editorial section imagery with WIDE or MEDIUM editorial framing. Assign these usage = "concept" or usage = "email_header" and do NOT include the words "intimate", "close", "tight", or "detail" in the composition field of these stills.
+- At least 1 still must be an intimate or tight composition that captures a different emotional register. Assign this usage = "concept" and the composition field MUST contain at least one of these exact words: "intimate", "close", "tight", or "detail". This is the intimate/tight role and the automated role-coverage check requires exactly one.
 - use usage values only from: hero_primary, hero_alt, concept, email_header, social_square.
 - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
 - If a niche cue appears, it must be subtle and secondary to travel emotion.
@@ -913,6 +953,8 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty/unpopulated scenes", "No corporate body language", "No generic interiors without ship identity", "No formal or staged poses", "No work-like activities".
 `.trim();
 
+    const lintComplianceBlock = buildLintComplianceBlock(campaign);
+
     const contextPrompt = `
 CAMPAIGN CONTEXT (use as inspiration, but ALWAYS reframe through the vacation lens):
 Campaign: ${campaign.name}
@@ -946,6 +988,8 @@ Copy Framing Rule: ${communityExpression.copyFramingRule}
 Music Mood: ${audio.musicMood}
 
 ${remediationContext}
+
+${lintComplianceBlock}
 
 REMINDER: The above describes the campaign THEME. Your job is to turn that theme into VACATION DAYDREAM imagery — artsy, warm, joyful, never formal or serious.
 Plausibility Governing Principle: ${plausibility.governingPrinciple}

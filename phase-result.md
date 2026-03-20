@@ -124,11 +124,58 @@ Response: { readiness: 'ready_for_media', brief: CampaignAestheticBrief, summary
 
 ---
 
-## Tests — 19/19 Pass
+## Phase 2B — Improve Production-Planning Bundle Quality
+
+Addresses acceptance criteria 11 and 12: reduce production-build lint failure rate by improving the generator inputs rather than relaxing lint thresholds.
+
+### Root cause identified
+
+`production-build-lint.ts` is a **lexical scanner** — it reads exact field values (`imagePrompt`, `subjectAction`, `environmentDetails`, `composition`, `usage`) for:
+- niche keyword presence (`campaign.targetingKeywords`)
+- `usage` field values for role classification
+- composition text patterns for generic fallback detection
+
+The LLM was generating valid-looking stills that contained niche signals only in prose descriptions, not in the specific fields the scanner reads. The system prompt had no awareness of which fields were scanned.
+
+### Changes in `lib/campaigns/aesthetic-engine.ts`
+
+**`buildLintComplianceBlock(campaign)` (new function):**
+- Builds a `LINT COMPLIANCE REQUIREMENTS` block from `campaign.targetingKeywords`
+- Injected into `contextPrompt` on every `generateVisualPlanningBundle` call
+- Maps exactly to the 3 deterministic rules in `production-build-lint.ts`:
+  1. **Niche keyword injection** — names exact `targetingKeywords`, requires them in `imagePrompt` OR `subjectAction` for 4 of 6 stills
+  2. **Still usage distribution** — specifies exact `usage` values (2 hero, 2 editorial, 1 intimate `concept`, 1 any) and the `composition` text requirement that drives the intimate-role check
+  3. **Composition variety** — lists all 4 generic fallback family patterns verbatim with a 1-per-6-stills cap
+
+**NICHE RETENTION RULE (strengthened):**
+- Added field-level requirement: niche identity must appear in `imagePrompt` OR `subjectAction` — not only in supplementary fields
+
+**LANDING STILL BIBLE RULES (strengthened):**
+- Replaced vague "at least 2 hero" / "at least 2 editorial" guidance with explicit `usage` field values and composition text constraints
+- Added explicit intimate-role requirement: 1 `concept` still with "intimate", "close", "tight", or "detail" in `composition`
+
+### New test file: `lib/campaigns/__tests__/production-build-quality.test.ts`
+
+10 tests covering AC 10, 11, 12:
+- Niche keyword in `imagePrompt` → `explicit` cue (explicit = passes scanner)
+- No keywords → `absent` cue
+- `weak_niche_signal` blocker fires at 4+ absent stills (pre-guidance failure mode)
+- `weak_niche_signal` does NOT fire with 2 absent stills (post-guidance target)
+- `missing_role_coverage` fires with no intimate composition (pre-guidance failure)
+- `missing_role_coverage` clears with correct usage + intimate (post-guidance target)
+- `missing_role_coverage` fires with <2 hero stills
+- `repeated_composition_family` fires at 3+ rail_couple_laugh
+- `generic_fallback_overuse` fires at 4+ generic stills
+- **AC 10**: full 6-still fixture following new guidance → `lintProductionBuild` passes with 0 blockers, 4+ explicit cue stills
+
+---
+
+## Tests — 29/29 Pass
 
 ```
 npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts   → 17/17
 npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts     → 2/2
+npx tsx lib/campaigns/__tests__/production-build-quality.test.ts    → 10/10
 ```
 
 Test coverage maps to acceptance criteria:
