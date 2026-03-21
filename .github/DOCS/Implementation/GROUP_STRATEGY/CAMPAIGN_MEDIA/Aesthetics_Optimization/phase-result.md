@@ -1,133 +1,135 @@
-📊 PHASE 2B FINDINGS REPORT
-MAJOR SUCCESS - Systemic Issue Resolved
-Before Phase 2B:
+# Phase Result: Architecture Pivot For Aesthetic Briefs
 
-0/3 campaigns ready for media (0% success)
-5-8 production build blockers across sample
-Broad systemic failure across all campaigns
-After Phase 2B:
+## Current Status
 
-2/3 campaigns ready for media (67% success)
-2 production build blockers across sample
-Targeted issue remaining in 1 campaign archetype
-ROOT CAINE IDENTIFIED
-Problem: Generic composition family clustering
+The project is no longer pursuing incremental prompt-balancing as the primary solution for aesthetic brief quality.
 
-rail_couple_laugh (2 stills) - generic couple talking at rail
-deck_sea_wide (2 stills) - generic wide ocean deck views
-Not niche cue absence - all stills actually contain niche keywords
-Detection Method: Production build lint uses composition family clustering to identify generic templates, not just keyword matching.
+Recent work established three durable facts:
 
-REMAINING FAILURE SURFACE
-Single Campaign Archetype: deck-sketchbook-society-2026
+1. Approval and readiness gate correctness are fixed.
+2. Stale stored production-build status drift is fixed.
+3. Prompt-negation tuning for the still-generation layer is not stable enough to trust as the long-term path.
 
-Issue: 0/6 stills have niche cues (complete failure)
-Pattern: Art/creative campaigns need stronger niche expression
-Second Campaign: eastern-caribbean-stitch-sail-2026-09-19
+The active decision is to replace the monolithic visual-planning generation pattern with an architecture-first `Editor's Room` pipeline.
 
-Issue: 4/6 stills use generic composition families
-Status: Niche cues present (6/6) but trapped in generic templates
-TARGETED SOLUTION IDENTIFIED
-Fix Required: Break generic composition families with niche-specific actions
+## What Already Worked
 
-Replace rail couple talking → knitting/crochet show-and-tell
-Replace deck wide views → focused craft activities
-Add composition diversity requirements
-Expected Impact: Reduce generic fallbacks from 4/6 to ≤2/6
+### Phase 2A
 
-PHASE STATUS
-✅ Phase 2A: Fixed stale-state drift (completed)
-✅ Phase 2B: Major improvement achieved (67% success rate)
-🎯 Phase 2C: Targeted niche-expression fix needed (1 remaining archetype)
+- Gate-time production-build lint recomputation and resync were implemented.
+- Readiness and approval no longer trust stale persisted fail state.
+- False blocks caused by stale stored lint drift were eliminated.
 
-RECOMMENDATION
-Proceed with targeted fix for generic composition families in art/creative campaigns. This is no longer a broad systemic issue - it's a specific optimization opportunity that should achieve 100% success rate across the sample.
+### Phase 2B
 
-The Phase 2B prompt improvements are working effectively and have moved the system from complete failure to high success rate with only one targeted optimization remaining.
+- Prompt and guidance improvements produced a real live improvement on the representative sample.
+- At the strongest measured point, the sample improved to `2/3` campaigns ready for media with `2` production-build blockers remaining.
+- This proved that quality could move materially, but it did not prove the prompt-led approach was stable enough to keep scaling.
 
-Feedback submitted
+## What Failed
 
-## Phase 2C: Targeted Art/Creative Archetype Fix — Implemented
+### Phase 2C Prompt-Balancing Attempt
 
-### Baseline Going Into Phase 2C
+- The negation-heavy prompt-tuning pass did not generalize cleanly.
+- Live verification regressed on representative campaigns.
+- The system remained vulnerable to the same core pattern:
+	- overloaded prompt responsibilities
+	- brittle niche expression
+	- generic fallback clustering
+	- unstable still-set behavior across reruns
 
-| Campaign | Structural Blockers | Production Build Blockers | Ready For Media |
-|---|---:|---:|---|
-| `bp-tabletop-icon-2027` | 0 | 0 | **Yes** |
-| `deck-sketchbook-society-2026` | 0 | 2 | No |
-| `eastern-caribbean-stitch-sail-2026-09-19` | 0 | 0 | **Yes** |
+This was the decisive signal that the remaining issue is architectural rather than editorial.
 
-Overall: `2/3` ready for media, `2` production-build blockers remaining, concentrated in the art/creative archetype.
+## Root Cause
 
-### Root Cause For Remaining Failure
+The current monolithic generation step is trying to do too many jobs at once:
 
-`deck-sketchbook-society` and similar art/creative archetypes produced stills where:
-- Niche keywords were present in `imagePrompt`/`subjectAction`  
-- But ALL 6 stills clustered in `rail_couple_laugh` and `deck_sea_wide` generic composition families
-- `generic_fallback_overuse` or `repeated_composition_family` fired because the campaign identity was embedded in generic cruise templates rather than niche-specific activities/locations
+- interpret campaign identity
+- invent niche-native moments
+- satisfy slot distribution
+- generate still prompts
+- avoid generic fallbacks
+- preserve production constraints
+- maintain schema validity
+- self-correct under lint pressure
 
-The identity legibility issue was secondary: even when niche keywords appeared, the scanner couldn't confirm distinct community identity because the scenes were structurally identical to any other cruise campaign.
+That responsibility stack is too large for one generation step to handle reliably. The result is oscillation rather than convergence.
 
-### Phase 2C Changes (`lib/campaigns/aesthetic-engine.ts`)
+## Active Solution Direction
 
-All changes made by reviewing live failure evidence and tightening the system prompt in `systemPromptPass3`. No orchestration or lint threshold changes were made.
+The approved direction is now an `Editor's Room` pipeline.
 
-**LANDING STILL BIBLE RULES section — new location diversity rule:**
-- Added: "Do not let rail-side, balcony, window, cabin, or promenade fallback become the default answer. Across the 6 stills, at least 3 must anchor in a different location family than rail/balcony/window/cabin contemplation."
+Instead of one overloaded generation pass, the system should use a small sequence of specialized steps:
 
-**LANDING STILL NICHE COMPLIANCE section — new identity floor rule:**
-- Added: "IDENTITY FLOOR (identity_legibility_too_low BLOCKER): a viewer should be able to name this campaign's community from the still set alone. At least 4 stills must contain a clear community-specific term or behavior in BOTH imagePrompt and subjectAction, not just one field."
+1. generate community-native action anchors
+2. generate `landingStillBible` from those locked anchors plus slot requirements
+3. lint and structurally validate the still set
+4. revise only failing stills once with issue-specific inputs
+5. generate or synthesize `productionBible` from the brief and validated still set
+6. return final readiness, blockers, and revision-used status
 
-**Per-still workflow Step 4 — updated to enforce diversity:**
-- Old: "Complete remaining fields then move to the next still"
-- New: "Complete remaining fields and ensure the location family, social unit, and emotional register differ from the previous still before moving on"
+This is the first strategy in the project that explicitly separates:
 
-**LANDING STILL ROLE SCAFFOLD — per-slot fallback bans:**
-- Slot 1 HERO_PRIMARY: added "no cabin/window setup"
-- Slot 2 HERO_ALT: added "use a different location family than Slot 1"
-- Slot 3 EDITORIAL_WIDE: added "must NOT use railing, balcony, or horizon-gaze fallback"
-- Slot 4 EDITORIAL_WIDE: added "must use a different location family and social unit than Slot 3"
-- Slot 5 INTIMATE: added "must NOT be a candlelit dining fallback"
-- Slot 6 FLEX: added "choose the least-used location family so far and avoid repeating the dominant composition family"
+- creation
+- critique
+- repair
 
-**New rules added after CHANNEL DISTINCTION:**
-- `GENERIC FALLBACK BAN`: explicit ban on rail-laughing couples, quiet window solos, candlelit dining intimacy, and wide stern/bow horizon gazes repeated across stills; max one per family
-- `LOCATION SPREAD`: 6 stills must span at least 4 distinct location families (promenade, pool edge, dining/lounge, cabin threshold, library/game space, spa/solarium, embarkation/port, offboard destination)
-- `SOCIAL SPREAD`: include at least one pair moment, one solo moment, and one mixed-age/friendship moment
-- `FINAL SELF-CHECK BEFORE RETURNING THE SET`: explicit instruction to count niche terms in `imagePrompt`, niche terms in `subjectAction`, distinct location families, and generic fallback reuse — rewrite before returning if any blocker threshold would be triggered
+That separation is the core architectural move.
 
-### New Regression Tests (`production-build-quality.test.ts`)
+## Representative Benchmark
 
-Added two Phase 2C-specific tests (now 12/12):
+Use the same campaigns for all future comparisons:
 
-- **AC 12a**: Art/creative stills with niche keywords but all clustered in `rail_couple_laugh`/`deck_sea_wide` → `generic_fallback_overuse` fires (composition diversity failure confirmed)
-- **AC 12b**: Corrected art/creative archetype — sketch/watercolor keywords + 6 distinct location families (library, promenade bench, pool deck, pier, lounge, spa solarium) + proper role distribution → `0 blocking issues`, verdict `pass` or `warn`
+- `bp-tabletop-icon-2027`
+- `deck-sketchbook-society`
+- `eastern-caribbean-stitch-sail-2026-09-19`
 
-### Regression Results After Phase 2C
+The latest recorded live results in this phase log are the benchmark to beat.
+Do not claim success from fixture tests alone.
 
-- Orchestrator: **26/26**
-- Validation: **2/2**  
-- Production-build quality: **12/12** (added AC 12a + AC 12b)
+## Current Recommendation
 
-### Required Proof — Live Verification
+Do not spend another implementation cycle on prompt-negation balancing.
 
-Per the spec, AC 12 is satisfied only when fresh-run campaigns show measurable improvement. The Phase 2C code changes are targeted at the exact failure patterns identified in the `deck-sketchbook-society` live run. Verification requires regenerating the three representative campaigns via the shared brief API and comparing:
+Proceed with the architecture-first implementation in:
 
-1. `bp-tabletop-icon-2027` — must stay green
-2. `eastern-caribbean-stitch-sail-2026-09-19` — must stay green  
-3. `deck-sketchbook-society-2026` — target: `0` production-build blockers, `ready_for_media`
+- `lib/campaigns/brief-engine/orchestrator.ts`
+- `lib/campaigns/aesthetic-engine.ts`
+- `lib/campaigns/schema.ts`
 
-### Verification Commands
+Treat `landingStillBible` as the primary creative artifact.
+Treat `productionBible` as a downstream synthesis artifact.
+Treat deterministic lint as the critic.
+Treat isolated still revision as the only allowed corrective pass.
+
+## What Has To Be Proven Next
+
+The next implementation pass must prove all of the following:
+
+1. the new pipeline improves live results on the representative sample
+2. currently passing campaigns stay green
+3. isolated still revision repairs specific failures without destabilizing the rest of the brief
+4. readiness and approval semantics remain correct
+5. stale-lint resync behavior remains correct
+
+## Verification Commands To Use After Implementation
 
 ```powershell
-# All regression tests
+# Regression suites
 npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
 npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
 npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
 
-# Live brief regeneration (run via shared API, not direct LLM calls)
+# Fresh representative live reruns through the shared brief API
 # POST /api/groups/campaign/bp-tabletop-icon-2027/brief
-# POST /api/groups/campaign/eastern-caribbean-stitch-sail-2026-09-19/brief
 # POST /api/groups/campaign/deck-sketchbook-society-2026/brief
+# POST /api/groups/campaign/eastern-caribbean-stitch-sail-2026-09-19/brief
 # Then check GET /api/groups/campaign/{slug}/brief/readiness for each
 ```
+
+## Operator Guidance
+
+- Implement code next.
+- Do not run the full live verification sample yet.
+- Run tests after the pipeline skeleton exists and the intermediate schemas and orchestration steps are wired.
+- Run the representative live sample only after the new generation path is actually in place.
