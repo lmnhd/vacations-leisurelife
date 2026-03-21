@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import type { CampaignAestheticBrief } from '../schema';
 import type { ValidationIssue } from '../brief-engine/validation';
+import { shouldUseIsolatedStillRepair } from '../brief-engine/orchestrator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Orchestrator contract regression tests
@@ -325,6 +326,20 @@ test('stale undefined + fresh pass: resynced gate passes (first-time lint)', () 
     const sim: StaleLintSimulation = { storedStatus: undefined, freshStatus: 'pass' };
     const error = simulateResyncedApprovalGate(sim, true);
     assert.equal(error, null, 'approval gate must pass when stored status was undefined but fresh evaluation is pass');
+});
+
+console.log('\nIsolated Repair Scope\n');
+
+test('isolated still repair is allowed for subset failures only', () => {
+    assert.equal(shouldUseIsolatedStillRepair(['still-2', 'still-4'], 6), true);
+});
+
+test('isolated still repair is skipped when every still fails', () => {
+    assert.equal(shouldUseIsolatedStillRepair(['still-1', 'still-2', 'still-3', 'still-4', 'still-5', 'still-6'], 6), false);
+});
+
+test('isolated still repair is skipped when no stills fail', () => {
+    assert.equal(shouldUseIsolatedStillRepair([], 6), false);
 });
 
 console.log(`\nPassed: ${passed}`);

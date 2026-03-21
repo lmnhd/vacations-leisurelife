@@ -78,8 +78,8 @@ const COMPLIANT_STILLS: LandingStillSpec[] = [
     }),
     makeStill({
         stillId: 'still-3', anchorId: 'anchor-3', slotRole: 'EDITORIAL_WIDE_A', usage: 'concept',
-        location: 'ship promenade', environmentDetails: 'open-air walkway with teak benches',
-        imagePrompt: 'Editorial wide of strategy cards on promenade bench', subjectAction: 'Guest arranging strategy cards on the promenade',
+        location: 'spa solarium daybed alcove', environmentDetails: 'glass roof and thermal loungers',
+        imagePrompt: 'Editorial wide of strategy cards in the spa solarium', subjectAction: 'Guest arranging strategy cards in the spa solarium',
         nicheCarryThrough: 'strategy cards', composition: 'wide overhead establishing',
     }),
     makeStill({
@@ -180,6 +180,24 @@ test('nicheCarryThrough not in imagePrompt triggers niche_carry_mismatch', () =>
     const result = validateAnchorCompliance(ANCHORS, makeBible([still]));
     const v = result.violations.find(v => v.violationType === 'niche_carry_mismatch');
     assert.ok(v, 'expected niche_carry_mismatch violation');
+});
+
+console.log('\nAnchor Compliance — anchor_location_mismatch\n');
+
+test('still text drifting to a different concrete location family triggers anchor_location_mismatch', () => {
+    const still = makeStill({
+        stillId: 'still-location-drift',
+        anchorId: 'anchor-1',
+        location: 'pool deck railing',
+        environmentDetails: 'open rail overlooking the sea',
+        imagePrompt: 'Wide shot of tabletop gaming near the pool deck railing',
+        subjectAction: 'Pair enjoys tabletop gaming beside the pool deck railing',
+    });
+    const result = validateAnchorCompliance(ANCHORS, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(v, 'expected anchor_location_mismatch violation');
+    assert.equal(v.expected, 'library');
+    assert.equal(v.actual, 'rail');
 });
 
 console.log('\nAnchor Compliance — duplicate_slot_role\n');
@@ -290,11 +308,13 @@ test('distinct anchor locationFamilies do NOT trigger duplicate_location_family'
         }),
         makeStill({
             stillId: 'still-spa', anchorId: 'a-2', slotRole: 'HERO_ALT', usage: 'hero_alt',
+            location: 'spa solarium terrace', environmentDetails: 'thermal loungers and calm water features',
             imagePrompt: 'Board games in spa', subjectAction: 'Friends with board games in spa',
             nicheCarryThrough: 'board games',
         }),
         makeStill({
             stillId: 'still-theater', anchorId: 'a-3', slotRole: 'EDITORIAL_WIDE_A', usage: 'concept',
+            location: 'ship theater mezzanine', environmentDetails: 'velvet seating and stage glow',
             imagePrompt: 'Strategy cards in theater', subjectAction: 'Guest arranging strategy cards in theater',
             nicheCarryThrough: 'strategy cards', composition: 'wide overhead establishing',
         }),
@@ -302,6 +322,25 @@ test('distinct anchor locationFamilies do NOT trigger duplicate_location_family'
     const result = validateAnchorCompliance(customAnchors, makeBible(stills));
     const dupes = result.violations.filter(v => v.violationType === 'duplicate_location_family');
     assert.equal(dupes.length, 0, 'distinct anchor families should not collide');
+});
+
+test('duplicate actual still location families are flagged even when anchor metadata differs', () => {
+    const stills = [
+        makeStill({
+            stillId: 'still-drift-a', anchorId: 'anchor-1', slotRole: 'HERO_PRIMARY',
+            location: 'pool deck railing', environmentDetails: 'open rail with sea view',
+            imagePrompt: 'Tabletop gaming on the pool deck railing', subjectAction: 'Pair enjoys tabletop gaming by the rail',
+        }),
+        makeStill({
+            stillId: 'still-drift-b', anchorId: 'anchor-3', slotRole: 'HERO_ALT', usage: 'hero_alt',
+            location: 'pool deck rail corner', environmentDetails: 'teak rail and loungers',
+            imagePrompt: 'Strategy cards beside the pool deck rail', subjectAction: 'Guest arranges strategy cards by the rail',
+            nicheCarryThrough: 'strategy cards',
+        }),
+    ];
+    const result = validateAnchorCompliance(ANCHORS, makeBible(stills));
+    const dupes = result.violations.filter(v => v.violationType === 'duplicate_location_family');
+    assert.equal(dupes.length, 2, 'duplicate actual location families should be flagged');
 });
 
 console.log('\nAnchor Compliance — Utilities\n');

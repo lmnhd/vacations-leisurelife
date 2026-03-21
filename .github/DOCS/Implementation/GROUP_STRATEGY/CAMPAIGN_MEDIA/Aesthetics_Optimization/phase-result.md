@@ -209,3 +209,165 @@ Expected outcomes:
 - `deck-sketchbook-society-2026` → target: 0 production blockers, `ready_for_media`
 
 Before/after blocker counts must be recorded here after live runs.
+
+---
+
+## Architecture Progress — Post-Implementation Live Reruns
+
+### What Changed Since The Editor's Room Landed
+
+Two follow-up hardening changes were made after the first live reruns exposed contract holes:
+
+1. actual still text is now checked against anchor location family instead of trusting anchor metadata alone
+2. isolated still repair is now limited to true subset failures and no longer rewrites a whole 6/6 failing set as if it were a local repair
+
+Supporting regressions now cover:
+
+- anchor location drift
+- duplicate actual location families even when anchor metadata differs
+- subset-only isolated repair semantics
+
+Focused test status after those changes:
+
+- `anchor-compliance.test.ts` → `20/20`
+- `brief-engine.orchestrator.test.ts` → `29/29`
+
+### Latest Representative Live Results
+
+Command used:
+
+```powershell
+npx tsx tests/phase-2c-direct-library.ts
+```
+
+#### `bp-tabletop-icon-2027-7n-caribbean`
+
+- Structural blockers: `0`
+- Production blockers: `1`
+- Production status: `fail`
+- Final readiness: `needs_review`
+- Production issue:
+  - `[missing_role_coverage]` Still set missing required roles: editorial/concept stills (have 1, need 2)
+- Generic fallback stills: `3/6`
+- No niche cue stills: `3/6`
+- Explicit niche cues: `3/6`
+- Isolated still revision behavior: skipped because `6/6` stills failed
+
+Interpretation:
+This campaign is no longer broadly broken. The primary remaining blocker is role coverage, with generic fallback and niche-cue weakness still present but secondary.
+
+#### `eastern-caribbean-stitch-sail-2026-09-19`
+
+- Structural blockers: `0`
+- Production blockers: `3`
+- Production status: `fail`
+- Final readiness: `needs_review`
+- Production issues:
+  - `[weak_niche_signal]` `5/6` stills have no legible niche cue
+  - `[generic_fallback_overuse]` `5/6` stills use generic cruise-lifestyle fallback templates
+  - `[identity_legibility_too_low]` Only `1` still carries discernible campaign identity
+- Generic fallback stills: `5/6`
+- No niche cue stills: `5/6`
+- Explicit niche cues: `1/6`
+- Isolated still revision behavior: skipped because `6/6` stills failed
+
+Interpretation:
+This campaign is primarily a niche-legibility and generic-fallback problem, not a role-coverage problem.
+
+#### `deck-sketchbook-society-2026`
+
+- Diagnostic run showed `9` anchor compliance violations before completion of the full rerun
+- Isolated still revision behavior: skipped because `6/6` stills failed
+
+Interpretation:
+This campaign is currently failing earlier than lint quality optimization. The immediate issue is anchor-contract adherence and whole-set collapse behavior.
+
+### Direct Diagnostic Breakdown — Tabletop
+
+To separate blended failures, a direct diagnostic script was added:
+
+```powershell
+npx tsx tests/phase-2c-diagnostic-breakdown.ts bp-tabletop-icon-2027-7n-caribbean
+```
+
+This script runs the same generation pass and prints:
+
+- generated anchors
+- anchor compliance violations
+- per-still lint diagnostics
+- per-still blocker/warning mapping
+
+### Tabletop Diagnostic Findings
+
+Latest tabletop report:
+
+- primary blocker: `missing_role_coverage`
+- two editorial stills fail `slot_usage_mismatch`
+- three stills are still generic fallback templates
+- one still violates the anchor location contract
+- two stills carry niche labels but still register as `no_niche_cue`
+
+Reported still-level issues:
+
+1. `OTS-03-EDITORIAL-LIBRARY` and `OTS-04-EDITORIAL-SOLARIUM`
+	- flagged with `slot_usage_mismatch`
+	- expected: wide/medium editorial composition
+	- actual wording still fails the slot contract under lint interpretation
+
+2. `OTS-02-HEROALT-POOL`, `OTS-05-INTIMATE-DINING`, `OTS-06-FLEX-BALCONY`
+	- flagged as generic fallback templates
+
+3. `OTS-06-FLEX-BALCONY`
+	- anchor violation: `anchor_location_mismatch`
+	- expected: `balcony`
+	- actual: `rail`
+
+4. `OTS-01-HERO-POOL` and `OTS-06-FLEX-BALCONY`
+	- still receiving `no_niche_cue` despite declared niche carry-through values
+
+### What Improved
+
+1. approval/readiness semantics remain correct
+2. stale stored lint drift remains corrected
+3. anchor location drift is now caught deterministically
+4. isolated repair no longer destabilizes whole failing sets by pretending a 6/6 collapse is a local repair case
+5. tabletop moved from multi-blocker failure down to a single explicit production blocker
+
+### What Did Not Improve Yet
+
+1. role coverage is still not reliably satisfied on tabletop
+2. generic fallback clustering remains strong on stitch and still present on tabletop
+3. niche-legibility remains weak on stitch and partially weak on tabletop
+4. sketchbook still fails too early on anchor compliance to treat production lint as the primary issue
+
+### Residual Blocker Classes Still Remaining
+
+The remaining problems are now cleanly separable:
+
+1. role coverage interpretation
+2. generic fallback generation patterns
+3. niche cue legibility mismatch
+4. anchor contract drift
+5. whole-set failure behavior
+
+### Current Recommendation
+
+Do not make another blended prompt pass.
+
+The next implementation phase should work the failure classes independently in this order:
+
+1. tabletop role coverage first
+2. generic fallback reduction second
+3. niche-legibility alignment third
+4. sketchbook anchor-contract cleanup and explicit whole-set failure behavior after that
+
+### Next Proving Target
+
+Use `bp-tabletop-icon-2027-7n-caribbean` as the next proving campaign.
+
+Success for the next pass means:
+
+1. `missing_role_coverage` is removed
+2. the tabletop editorial slots stop failing `slot_usage_mismatch`
+3. no approval/readiness regressions are introduced
+4. any remaining blocker after that is named explicitly as the next independent failure class

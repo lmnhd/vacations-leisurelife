@@ -56,6 +56,11 @@ interface ReadinessResult {
     campaignName: string | null;
 }
 
+export function shouldUseIsolatedStillRepair(failingStillIds: string[], totalStillCount: number): boolean {
+    const uniqueFailingStillCount = new Set(failingStillIds).size;
+    return totalStillCount > 0 && uniqueFailingStillCount > 0 && uniqueFailingStillCount < totalStillCount;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Internal: generate full brief bundle (aesthetic + visual planning + lint)
 // ────────────────────────────────────────────────────────────────────────────
@@ -92,8 +97,9 @@ async function generateFullBriefBundle(
     const lintFailingIds = extractFailingStillIds(stillsLint.blockingIssues);
     const anchorFailingIds = extractViolationStillIds(anchorCompliance.violations);
     const allFailingIds = [...new Set([...lintFailingIds, ...anchorFailingIds])];
+    const canUseIsolatedRepair = shouldUseIsolatedStillRepair(allFailingIds, landingStillBible.stillLibrary.length);
 
-    if (allFailingIds.length > 0) {
+    if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
         const repairedStills = await repairFailingStills(
             campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock,
@@ -113,6 +119,8 @@ async function generateFullBriefBundle(
         if (!anchorCompliance.passed) {
             console.log(`[brief-engine] post-repair anchor violations remain: ${anchorCompliance.violations.length}`);
         }
+    } else if (allFailingIds.length > 0) {
+        console.log(`[brief-engine] skipping isolated repair for ${campaign.id}: ${allFailingIds.length}/${landingStillBible.stillLibrary.length} stills failed`);
     }
 
     // ── Step 6: Production bible from validated stills ────────────────────

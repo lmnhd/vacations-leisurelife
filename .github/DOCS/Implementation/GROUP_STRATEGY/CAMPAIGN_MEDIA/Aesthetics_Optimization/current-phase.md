@@ -1,44 +1,66 @@
-# Current Phase: Replace Monolithic Prompting With An Editor's Room
+# Current Phase: Break Down Landing Still Failure Classes
 
 ## Mission
 
-Replace the current monolithic visual-planning prompt with a small-team generation pipeline for the aesthetic brief.
+Keep the Editor's Room pipeline, but stop treating failed landing-still sets as one blended problem.
 
-The new system must improve `landingStillBible` and `productionBible` quality through workflow structure, not through repeated prompt-negation balancing.
+The next implementation phase must break the remaining failures into independent classes, fix them one at a time, and prove each fix against live diagnostics.
 
-It must preserve one shared orchestration contract, one trustworthy readiness signal, and the already-fixed approval/readiness gate semantics.
+The immediate goal is to make `landingStillBible` generation debuggable and reliable by separating:
+
+1. role coverage failures
+2. generic fallback failures
+3. niche legibility failures
+4. anchor contract failures
+5. whole-set collapse handling
 
 ## Why This Phase Exists
 
-Recent live verification established three things:
+Recent live verification and direct diagnostic output established three things:
 
-1. Approval and readiness gate correctness have already been fixed.
-2. Stale stored production-build status drift has already been handled.
-3. Dense prompt balancing for still generation does not generalize reliably and can regress live quality.
+1. Approval/readiness gate correctness is still intact.
+2. Stale stored production-build drift is still handled.
+3. The remaining failures are now specific and separable, not evidence that the whole Editor's Room architecture should be discarded.
 
-That means the next implementation pass should stop trying to perfect a single giant prompt.
-The active problem is now architectural: how to build better bibles with a cleaner generation topology.
+The latest report for `bp-tabletop-icon-2027-7n-caribbean` shows a narrow, actionable blocker profile:
+
+1. `missing_role_coverage` is the primary blocker.
+2. Two editorial stills are failing `slot_usage_mismatch` because their composition wording is being interpreted incorrectly.
+3. Three stills still fall into generic fallback templates.
+4. One still violates the anchor location contract.
+5. Two stills claim niche carry-through but do not register as legible niche cues under lint.
+
+That means the next implementation pass should stop making broad, multi-goal prompt changes.
+The active problem is now deterministic decomposition and targeted remediation.
 
 ## Active Strategy
 
-The new execution target is an `Editor's Room` pipeline.
+The execution target for this phase is not a new pipeline.
 
-Instead of asking one LLM call to simultaneously act as niche strategist, visual director, schema formatter, and compliance checker, the system should use a short sequence of specialized steps:
+The execution target is a cleaner debugging and remediation loop around the existing Editor's Room pipeline.
 
-1. Generate community-native action anchors.
-2. Generate `landingStillBible` from those locked anchors plus slot requirements.
-3. Generate `productionBible` from the campaign brief and the validated still set.
-4. Run deterministic lint and structural validation.
-5. If specific stills fail, revise only those stills once with issue-specific inputs.
-6. Recompute lint and either pass, stop with blockers, or return revision-used status.
+Work each failure class independently.
 
-The design goal is blissful elegance:
+Current priority order:
 
-- positive prompts
-- smaller schemas per step
-- deterministic critique
-- isolated still repair
-- no recursive remediation maze
+1. fix role coverage interpretation
+2. fix explicit generic fallback generation patterns
+3. fix niche cue legibility mismatch between still text and lint recognition
+4. fix anchor contract drift where still text escapes the seeded location family
+5. define the correct behavior when all 6 stills fail at once
+
+The first concrete campaign target is `bp-tabletop-icon-2027-7n-caribbean`.
+
+Do not try to fix stitch and sketchbook at the same time.
+Use tabletop to close the role-coverage and composition-contract gap first.
+
+The design goal for this phase is diagnostic elegance:
+
+- one failure class per implementation pass
+- one campaign used as the proving ground for that class
+- direct still-by-still diagnostics
+- no blended prompt tinkering
+- no threshold weakening
 
 ## Product Target
 
@@ -47,12 +69,12 @@ Desired workflow:
 1. Discovery selects a valid campaign.
 2. User or agent API client triggers one brief-generation action through the shared contract.
 3. System generates the core campaign brief and planning inputs.
-4. A concept step generates a small set of community-native action anchors for the still set.
+4. A concept step generates community-native action anchors for the still set.
 5. A visual-translation step generates `landingStillBible` from those anchors and slot requirements.
-6. A production-synthesis step generates `productionBible` from the brief and the validated still set.
-7. Hard deterministic checks run immediately.
-8. If specific stills fail, the system gets one isolated corrective revision pass on only those failing stills.
-9. If the revision still fails, the system stops and returns clear blockers.
+6. Deterministic diagnostics expose exactly which stills failed and why.
+7. Engineering works one failure class at a time instead of mutating prompts globally.
+8. If a campaign fails on one class only, the implementation target is narrowed to that class only.
+9. If all 6 stills fail, the system is treated as a whole-set failure case, not as an isolated still-repair case.
 10. If the result passes, the campaign moves to review or approval through one clear readiness state.
 
 ## Non-Negotiable Constraints
@@ -62,159 +84,170 @@ Desired workflow:
 3. Do not deepen the issue-ledger workflow.
 4. Do not build recursive repair loops.
 5. Use native structured outputs for the primary generation path.
-6. Enforce a strict one-correction-pass rule only.
+6. Enforce a strict one-correction-pass rule only for true subset failures.
 7. Keep the implementation fast, explicit, and product-oriented.
 8. Approval and readiness must continue matching downstream media-generation gating.
 9. Do not regress the fixed stale-state resync behavior.
 10. Do not weaken production-build lint thresholds to manufacture success.
 11. Do not continue the add-more-negations/remove-some-negations prompt-balancing loop.
+12. Do not treat a whole-set collapse as evidence that isolated repair should be broadened.
+13. Do not work multiple failure classes in one code pass unless they share the same deterministic root cause.
 
 ## Scope Of Work
 
-### Phase A: Lock The New Generation Topology
+### Phase A: Make Failure Classes First-Class
 
-Define the new shared orchestration shape for the Editor's Room model.
+Define and document the independent failure classes that remain in landing still generation.
 
 Minimum design requirements:
 
-- one shared service entry point for UI and agent callers
-- intermediate artifact for action anchors
-- still-only revision input format for isolated repairs
-- clear ownership of `landingStillBible` versus `productionBible`
-- one consistent readiness result after validation and lint
+- explicit per-still diagnostics for lint behavior
+- explicit anchor-violation reporting from the same generation pass
+- a clear mapping from blocker code to implementation target
+- one proving campaign per failure class
+- no mixing of unrelated fixes in one pass
 
-### Phase B: Build The Shared Editor's Room Pipeline
+### Phase B: Fix Tabletop Role Coverage First
 
-Implement one orchestration path with these steps:
+Use `bp-tabletop-icon-2027-7n-caribbean` as the first proving case.
 
-1. generate core brief and planning context
-2. generate action anchors
-3. generate `landingStillBible`
-4. lint and structurally validate the still set
-5. if needed, regenerate only failing stills once
-6. regenerate or synthesize `productionBible` from the validated still set
-7. recompute final lint and readiness state
+Current evidence says the main blocker is role coverage, not total campaign identity collapse.
+
+Implementation target:
+
+1. ensure editorial slots reliably produce lint-recognized editorial/wide compositions
+2. eliminate the current `slot_usage_mismatch` on the two tabletop editorial stills
+3. clear `missing_role_coverage` without weakening lint rules
+4. preserve the passes already achieved on structural blockers and approval semantics
 
 Minimum outputs:
 
-- full brief bundle
-- `landingStillBible`
-- `productionBible`
-- readiness state
-- pass/fail gate result
-- blocker list if generation fails
-- whether isolated still revision was used
+- tabletop rerun with per-still diagnostics
+- tabletop blocker count before and after
+- proof that role coverage was fixed or clearly narrowed further
+- exact remaining blocker codes after the role-coverage fix
 
-### Phase C: Preserve Shared Contract Discipline
+### Phase C: Address Generic Fallback Patterns Separately
 
-Keep the same shared route/API surface philosophy:
+Once tabletop role coverage is fixed or no longer primary, address generic fallback generation as its own problem.
 
-- UI and agent callers use the same orchestration service
-- no agent-only shortcut route
-- no UI-only hidden sequencing
-- no return to operator-button choreography
+Primary signals:
 
-### Phase D: Make The Bibles First-Class
+1. `generic_fallback_template` flags on individual stills
+2. `generic_fallback_overuse` on the lint report
 
-The bibles are the primary target of this phase.
+Do not combine this work with niche-legibility fixes unless the evidence proves the same still text change resolves both.
 
-`landingStillBible` should be treated as the main creative artifact that carries identity, variety, and slot coverage.
+### Phase D: Fix Niche Legibility Separately
 
-`productionBible` should be treated as a downstream synthesis artifact derived from:
+The next independent class is the mismatch between declared niche carry-through and lint-recognized niche identity.
 
-- campaign brief
-- validated still set
-- deterministic production constraints
+Primary signals:
 
-Do not continue treating both as co-equal freeform blobs emitted from one overloaded prompt.
+1. still has `nicheCarryThrough`
+2. still still receives `no_niche_cue`
+3. campaign still fails `weak_niche_signal` or `identity_legibility_too_low`
+
+This is a separate contract problem between still text generation and lint cue detection.
+
+### Phase E: Define Whole-Set Failure Behavior
+
+If all 6 stills fail, the system should no longer pretend the problem is a localized still-repair case.
+
+This phase must define what happens next when the set is globally unsalvageable:
+
+1. stop with blockers
+2. full-set still regeneration with correction context
+3. anchor regeneration plus still regeneration
+
+Pick one path deliberately and test it.
 
 ## Relevant Files
 
 - `lib/campaigns/brief-engine/orchestrator.ts`
-- `lib/campaigns/aesthetic-engine.ts`
+- `lib/campaigns/editors-room.ts`
 - `lib/campaigns/schema.ts`
-- tightly related visual-planning helpers
 - `lib/campaigns/media/production-build-lint.ts`
+- `tests/phase-2c-diagnostic-breakdown.ts`
 
 ## Acceptance Criteria
 
 The phase is complete only when all of the following are true:
 
 1. UI and agent callers still share one underlying brief-step contract.
-2. The happy path no longer depends on monolithic prompt balancing.
-3. Native structured outputs remain in the main generation path.
-4. Failure handling uses one isolated corrective pass at most, then stops.
-5. Downstream media generation still reads one reliable readiness signal.
-6. A campaign with `productionBuildStatus = fail` cannot be approved.
-7. A campaign with `productionBuildStatus = fail` cannot report `ready_for_media`.
-8. Existing briefs cannot remain blocked solely because stale stored lint drifted from the current lint result.
-9. Newly generated campaigns show materially improved production-build lint performance on the representative sample.
-10. The main recurring lint failures are reduced, especially `weak_niche_signal`, `identity_legibility_too_low`, and `repeated_composition_family`.
-11. The isolated-still revision path repairs specific failures without destabilizing previously good stills.
+2. Native structured outputs remain in the main generation path.
+3. Approval and readiness gate semantics remain unchanged.
+4. Existing briefs cannot remain blocked solely because stale stored lint drifted from the current lint result.
+5. `bp-tabletop-icon-2027-7n-caribbean` no longer fails on `missing_role_coverage`.
+6. The tabletop editorial stills no longer fail `slot_usage_mismatch`.
+7. Tabletop does not regress into new blocker codes while role coverage is being fixed.
+8. Diagnostic output can show, per still, anchor violations and lint diagnostics from the same generation pass.
+9. Generic fallback remediation is worked as a separate pass from role coverage.
+10. Niche-legibility remediation is worked as a separate pass from generic fallback remediation.
+11. Whole-set failure handling is explicitly defined and tested rather than silently skipped.
 
 ## Verification
 
 Add or update tests for:
 
-1. valid campaign generates a passing brief bundle through the new multi-step flow
-2. one hard-rule failure triggers one isolated corrective pass
-3. second failure returns blockers and stops
-4. approval cannot proceed when blockers remain
-5. agent API invocation reaches the same orchestration path as the UI path
-6. approval is blocked when `productionBuildStatus = fail`
-7. readiness is downgraded from `ready_for_media` when `productionBuildStatus = fail`
-8. stale-lint resync behavior still holds
-9. action-anchor generation produces schema-valid intermediate output
-10. isolated still revision only touches targeted stills
-11. representative campaigns show improved live production-build outcomes after the architecture change
+1. tabletop editorial slots produce lint-recognized editorial coverage
+2. tabletop no longer fails `missing_role_coverage`
+3. existing approval block when `productionBuildStatus = fail` still holds
+4. stale-lint resync behavior still holds
+5. anchor diagnostics remain accurate for location drift and slot mismatches
+6. isolated still revision only applies to true subset failures
+7. whole-set failure behavior follows the newly chosen explicit rule
+8. the new diagnostic script can be run against representative campaigns and produce usable per-still output
 
 Likely verification commands:
 
 - `npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts`
-- focused tests for the new orchestration flow
-- targeted regression for approval + failed production build
-- targeted regression for stale stored fail status vs recomputed current lint
-- targeted production-build quality regression tests against representative campaigns or fixtures
+- `npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts`
+- `npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts`
+- `npx tsx tests/phase-2c-diagnostic-breakdown.ts bp-tabletop-icon-2027-7n-caribbean`
+- `npx tsx tests/phase-2c-direct-library.ts`
 
 ## Next Agent Instructions
 
 ### Objective
 
-Implement the Editor's Room pipeline for aesthetic brief generation with special attention on `landingStillBible` and `productionBible`.
+Implement the next narrow remediation pass against the existing Editor's Room pipeline.
+
+The immediate objective is to fix tabletop role coverage without blending that work with the other failure classes.
 
 ### Do First
 
 1. Read the latest findings in `phase-result.md` before making changes.
 2. Assume approval/readiness gate correctness and stale-state resync are already handled unless a new regression proves otherwise.
-3. Use the latest representative live results in `phase-result.md` as the benchmark to beat.
+3. Read the latest tabletop diagnostic report and treat it as the primary benchmark for this phase.
+4. Run `tests/phase-2c-diagnostic-breakdown.ts` on tabletop before changing logic.
 
 Representative campaigns:
 
-- `bp-tabletop-icon-2027`
+- `bp-tabletop-icon-2027-7n-caribbean`
 - `deck-sketchbook-society`
 - `eastern-caribbean-stitch-sail-2026-09-19`
 
 ### Primary Implementation Target
 
-Replace the monolithic visual-planning generation pattern with a short pipeline of specialized steps:
+Fix tabletop role coverage first.
 
-1. Generate community-native action anchors first.
-2. Generate `landingStillBible` from those anchors plus slot requirements.
-3. Run deterministic lint and structural validation.
-4. If specific stills fail, regenerate only those stills once with issue-specific revision input.
-5. Generate or synthesize `productionBible` from the brief and validated still set.
-6. Return the final readiness and blocker state.
+Specific target from the latest report:
+
+1. tabletop has 1 editorial still when it needs 2
+2. two editorial stills are currently failing slot/composition interpretation
+3. fix that first before working generic fallback or niche cue strength
 
 Likely primary file:
 
-- `lib/campaigns/brief-engine/orchestrator.ts`
+- `lib/campaigns/editors-room.ts`
 
 Secondary files only if required:
 
-- `lib/campaigns/aesthetic-engine.ts`
+- `lib/campaigns/brief-engine/orchestrator.ts`
 - `lib/campaigns/schema.ts`
-- tightly related visual-planning helpers
-- tests for production-build quality regressions
+- `lib/campaigns/media/production-build-lint.ts`
+- tests for targeted tabletop regressions
 
 ### Do Not Do
 
@@ -223,29 +256,30 @@ Secondary files only if required:
 3. Do not treat fixture-only test success as sufficient evidence.
 4. Do not add button-maze remediation logic or new operator workflows.
 5. Do not continue the prompt-negation balancing loop.
-6. Do not regenerate the full still set when only one or two stills failed unless the whole set is unsalvageable.
-7. Do not regress campaigns that currently pass.
+6. Do not work stitch or sketchbook blockers in the same code pass unless the tabletop fix clearly generalizes.
+7. Do not claim success for generic fallback or niche legibility if the actual pass only fixed role coverage.
+8. Do not regress campaigns that currently pass.
 
 ### Required Proof For Completion
 
 Minimum proof:
 
-1. Regenerate representative campaigns after the pipeline change.
-2. Record structural blockers, production-build blockers, and ready-for-media rate before and after.
-3. Show whether blocker frequency improves on the same representative sample.
-4. Call out which blocker codes were reduced and which persisted.
-5. State explicitly whether currently passing campaigns stayed green.
-6. State explicitly whether isolated-still revision was exercised and what it repaired.
+1. Rerun tabletop diagnostics after the code change.
+2. Show the before/after status of `missing_role_coverage`.
+3. Show the before/after status of the two editorial tabletop stills.
+4. Record whether generic fallback count changed, but treat that as secondary unless directly affected by the role-coverage fix.
+5. State explicitly whether isolated-still revision was used, skipped, or not applicable.
+6. If the tabletop blocker changes, name the new primary blocker class exactly.
 
 ### Required `phase-result.md` Update
 
-Update `phase-result.md` as part of the work and add a new architecture-progress section containing:
+Update `phase-result.md` as part of the work and add a new failure-class progress section containing:
 
-- what orchestration and generation-step changes were made
-- what intermediate artifacts were introduced, especially action anchors and still-only revision inputs
-- which representative campaigns were rerun
-- before/after blocker counts for the sample
-- whether `weak_niche_signal`, `identity_legibility_too_low`, role-coverage failures, and `repeated_composition_family` improved
-- whether the bibles became more stable under live reruns
-- residual production-build blocker patterns that still remain
-- exact commands used for reruns and verification
+- the exact tabletop blocker profile before the pass
+- what was changed to address role coverage specifically
+- tabletop before/after blocker counts
+- whether the editorial still contract became stable
+- whether generic fallback and niche-legibility remained unchanged, improved incidentally, or worsened
+- whether the fix generalized to stitch or sketchbook if those were rerun
+- residual blocker classes still remaining after the pass
+- exact commands used for diagnostics, reruns, and verification

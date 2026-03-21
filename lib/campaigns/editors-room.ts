@@ -322,6 +322,7 @@ type AnchorViolationType =
     | 'missing_anchor_binding'
     | 'niche_signal_dropped'
     | 'niche_carry_mismatch'
+    | 'anchor_location_mismatch'
     | 'duplicate_slot_role'
     | 'slot_usage_mismatch'
     | 'duplicate_location_family';
@@ -349,6 +350,33 @@ const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; composition
 };
 
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
+
+const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
+    [['rail', 'railing'], 'rail'],
+    [['balcony'], 'balcony'],
+    [['pool', 'lido'], 'pool_deck'],
+    [['deck', 'outdoor'], 'deck'],
+    [['cabin', 'stateroom', 'porthole', 'window'], 'cabin'],
+    [['library', 'reading room'], 'library'],
+    [['spa', 'solarium', 'thermal'], 'spa'],
+    [['dining', 'restaurant', 'meal', 'table'], 'dining'],
+    [['lounge', 'bar'], 'lounge'],
+    [['atrium', 'lobby', 'grand hall'], 'atrium'],
+    [['bow', 'stern', 'promenade'], 'promenade'],
+    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
+    [['theater', 'stage', 'auditorium'], 'theater'],
+    [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
+];
+
+function inferLocationFamilyFromText(text: string): string {
+    const normalized = text.toLowerCase();
+    for (const [keywords, family] of LOCATION_FAMILY_KEYWORDS) {
+        if (keywords.some(keyword => normalized.includes(keyword))) {
+            return family;
+        }
+    }
+    return 'other';
+}
 
 // ── Step 5: Deterministic anchor-compliance validation ─────────────────────────
 
@@ -408,6 +436,22 @@ export function validateAnchorCompliance(
                     actual: `absent from: ${missingIn.join(', ')}`,
                 });
             }
+        }
+
+        const expectedLocationFamily = inferLocationFamilyFromText(anchor.locationFamily);
+        const actualLocationFamily = inferLocationFamilyFromText(`${still.location} ${still.environmentDetails}`);
+        if (
+            expectedLocationFamily !== 'other'
+            && actualLocationFamily !== 'other'
+            && expectedLocationFamily !== actualLocationFamily
+        ) {
+            violations.push({
+                stillId: still.stillId,
+                violationType: 'anchor_location_mismatch',
+                message: `anchor locationFamily "${anchor.locationFamily}" drifted to still location family "${actualLocationFamily}"`,
+                expected: expectedLocationFamily,
+                actual: actualLocationFamily,
+            });
         }
     }
 
@@ -479,11 +523,17 @@ export function validateAnchorCompliance(
         }
     }
 
-    // ── Check 6: location family uniqueness (anchor-declared, not lint extractor) ──
+    // ── Check 6: location family uniqueness uses actual still text before anchor metadata ──
     const locFamilyCounts = new Map<string, string[]>();
     for (const still of stills) {
         const anchor = still.anchorId ? anchorMap.get(still.anchorId) : undefined;
-        const fam = anchor?.locationFamily ?? still.location.toLowerCase();
+        const actualFamily = inferLocationFamilyFromText(`${still.location} ${still.environmentDetails}`);
+        const anchorFamily = anchor ? inferLocationFamilyFromText(anchor.locationFamily) : 'other';
+        const fam = actualFamily !== 'other'
+            ? actualFamily
+            : anchorFamily !== 'other'
+                ? anchorFamily
+                : still.location.toLowerCase();
         const ids = locFamilyCounts.get(fam) ?? [];
         ids.push(still.stillId);
         locFamilyCounts.set(fam, ids);
