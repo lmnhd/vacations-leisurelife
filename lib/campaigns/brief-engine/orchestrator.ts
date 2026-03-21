@@ -81,9 +81,7 @@ async function generateFullBriefBundle(
     let isolatedStillRevisionUsed = false;
     if (stillsLint.blockingIssues.length > 0) {
         const failingIds = extractFailingStillIds(stillsLint.blockingIssues);
-        const totalStills = landingStillBible.stillLibrary.length;
-        // Only isolate if a subset failed — full-set failure falls through to production bible then stops
-        if (failingIds.length > 0 && failingIds.length < totalStills) {
+        if (failingIds.length > 0) {
             console.log(`[brief-engine] isolated still repair for ${campaign.id}: ${failingIds.join(', ')}`);
             const repairedStills = await repairFailingStills(
                 campaign, brief, landingStillBible, failingIds, stillsLint.blockingIssues,

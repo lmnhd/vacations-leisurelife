@@ -216,6 +216,16 @@ export const LandingStillUsageEnum = z.enum([
 ]);
 export type LandingStillUsage = z.infer<typeof LandingStillUsageEnum>;
 
+export const LandingStillSlotRoleEnum = z.enum([
+    'HERO_PRIMARY',
+    'HERO_ALT',
+    'EDITORIAL_WIDE_A',
+    'EDITORIAL_WIDE_B',
+    'INTIMATE',
+    'FLEX',
+]);
+export type LandingStillSlotRole = z.infer<typeof LandingStillSlotRoleEnum>;
+
 export const LandingStillSpecSchema = z.object({
     stillId: z.string(),
     usage: LandingStillUsageEnum,
@@ -228,6 +238,9 @@ export const LandingStillSpecSchema = z.object({
     mood: z.string(),
     imagePrompt: z.string(),
     referenceCategory: z.string(),
+    anchorId: z.string().optional(),
+    slotRole: LandingStillSlotRoleEnum.optional(),
+    nicheCarryThrough: z.string().optional(),
 });
 export type LandingStillSpec = z.infer<typeof LandingStillSpecSchema>;
 

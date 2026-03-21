@@ -103,26 +103,30 @@ export async function generateLandingStillBible(
     const model = getHighModel();
     const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
     const anchorList = anchors.anchors
-        .map((a, i) => `Anchor ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`)
+        .map((a, i) => `anchorId="${a.anchorId}" | Slot ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`)
         .join('\n');
 
     const system = `
 You are a visual director translating community action anchors into 6 landing still specs for a niche cruise campaign.
 
-SLOT ASSIGNMENT:
-- Slot 1 (HERO_PRIMARY): usage="hero_primary" — wide — niche in imagePrompt + subjectAction — no cabin/window setup
-- Slot 2 (HERO_ALT): usage="hero_alt" — wide or medium — niche in both fields — different location family than Slot 1
-- Slot 3 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition MUST NOT contain intimate/close/tight/detail — niche in both fields — NOT railing/balcony/horizon fallback
-- Slot 4 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition MUST NOT contain intimate/close/tight/detail — niche in both fields — different location family AND social unit from Slot 3
-- Slot 5 (INTIMATE): usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche in both fields — NOT candlelit dining fallback
-- Slot 6 (FLEX): usage="hero_alt", "email_header", "social_square", or "concept" — niche in imagePrompt or subjectAction — least-used location family so far
+SLOT ASSIGNMENT — for each still, populate the three audit fields:
+  anchorId: copy the anchorId value from the anchor that seeded this still
+  slotRole: set to the enum value for this slot (HERO_PRIMARY, HERO_ALT, EDITORIAL_WIDE_A, EDITORIAL_WIDE_B, INTIMATE, or FLEX)
+  nicheCarryThrough: write the exact niche keyword or phrase you embedded in BOTH imagePrompt AND subjectAction
 
-ANCHOR SEEDS (use as starting points, translate into full still specs):
+- Slot 1 → slotRole=HERO_PRIMARY, usage="hero_primary" — wide — niche in imagePrompt + subjectAction — no cabin/window setup
+- Slot 2 → slotRole=HERO_ALT, usage="hero_alt" — wide or medium — niche in both fields — different location family than Slot 1
+- Slot 3 → slotRole=EDITORIAL_WIDE_A, usage="concept" or "email_header" — composition MUST NOT contain intimate/close/tight/detail — niche in both fields — NOT railing/balcony/horizon fallback
+- Slot 4 → slotRole=EDITORIAL_WIDE_B, usage="concept" or "email_header" — composition MUST NOT contain intimate/close/tight/detail — niche in both fields — different location family AND social unit from Slot 3
+- Slot 5 → slotRole=INTIMATE, usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche in both fields — NOT candlelit dining fallback
+- Slot 6 → slotRole=FLEX, usage="hero_alt", "email_header", "social_square", or "concept" — niche in imagePrompt or subjectAction — least-used location family so far
+
+ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 
 ${lintBlock}
 
-FINAL SELF-CHECK: before returning, verify each still has a niche signal in both imagePrompt and subjectAction, no two stills share the same location family, and no generic fallback pattern is repeated more than once.
+FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once.
 `.trim();
 
     const ctx = `
@@ -168,11 +172,19 @@ export async function repairFailingStills(
         .join('\n');
 
     const passingContext = passingStills
-        .map(s => `stillId=${s.stillId} | location=${s.location} | usage=${s.usage} | socialUnit inferred from composition`)
+        .map(s => [
+            `stillId=${s.stillId} | slotRole=${s.slotRole ?? 'unknown'} | location=${s.location} | usage=${s.usage}`,
+            `  nicheCarryThrough: ${s.nicheCarryThrough ?? '(not set)'}`,
+        ].join('\n'))
         .join('\n');
 
     const failingContext = failingStills
-        .map(s => `stillId=${s.stillId} | location=${s.location} | usage=${s.usage}\n  imagePrompt: ${s.imagePrompt}\n  subjectAction: ${s.subjectAction}`)
+        .map(s => [
+            `stillId=${s.stillId} | slotRole=${s.slotRole ?? 'unknown'} | anchorId=${s.anchorId ?? 'unknown'} | location=${s.location} | usage=${s.usage}`,
+            `  imagePrompt: ${s.imagePrompt}`,
+            `  subjectAction: ${s.subjectAction}`,
+            `  nicheCarryThrough (current, failing): ${s.nicheCarryThrough ?? '(missing)'}`,
+        ].join('\n'))
         .join('\n\n');
 
     const RepairSchema = z.object({ stills: z.array(LandingStillSpecSchema) });
@@ -182,15 +194,20 @@ You are repairing specific failing landing stills for a niche cruise campaign.
 Rewrite ONLY the failing stills listed below. Return them with their original stillId values.
 Do not touch or describe passing stills.
 
+AUDIT FIELDS — each repaired still must include:
+  anchorId: preserve the original value from the failing still
+  slotRole: preserve the original value from the failing still
+  nicheCarryThrough: write the EXACT niche keyword or phrase you embedded in BOTH imagePrompt AND subjectAction to resolve the blocker
+
 BLOCKERS TO RESOLVE:
 ${blockerSummary}
 
-PASSING STILLS (for reference — do not repeat their location families or social units):
+PASSING STILLS (for reference — do not repeat their location families or niche terms):
 ${passingContext}
 
 ${lintBlock}
 
-For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already used by a passing still, and avoid every generic fallback family.
+For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by a passing still, and avoid every generic fallback family.
 `.trim();
 
     const prompt = `
@@ -216,7 +233,7 @@ export async function generateProductionBibleFromStills(
     const model = getHighModel();
 
     const stillSummary = landingStillBible.stillLibrary
-        .map(s => `[${s.usage}] ${s.location}: ${s.subjectAction}`)
+        .map(s => `[${s.slotRole ?? s.usage}] ${s.location}: ${s.subjectAction}${s.nicheCarryThrough ? ` | niche="${s.nicheCarryThrough}"` : ''}`)
         .join('\n');
 
     const visual = brief.visual;
