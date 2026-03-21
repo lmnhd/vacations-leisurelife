@@ -1,190 +1,148 @@
-# Phase Result: Brief-Generation Maze Replacement
+# Phase Result: Aesthetics Optimization Phase 2A
 
 ## What Changed
 
-### Core Orchestration (`lib/campaigns/brief-engine/orchestrator.ts`)
+### Shared Gate-Time Lint Recompute
 
-- **Removed Trinity pipeline** (`runTrinitySession`, designer/builder/reviewer agents) from the primary generation path.
-- **New `generateFullBriefBundle` internal helper** — calls `generateAestheticBrief` + `generateVisualPlanningFromBrief` + `lintProductionBuild` in one sequence, returning a fully assembled brief bundle including `productionBible`, `landingStillBible`, and lint results.
-- **New one-strike flow in `createOrRefreshBrief`**:
-  1. Generate full bundle
-  2. Validate
-  3. Auto-fix auto-fixable issues → re-validate
-  4. If non-launch-window blockers still remain → one corrective reprompt (full regeneration with blocker context injected)
-  5. Auto-fix + final validate
-  6. Persist and return — stop regardless
-- Added `correctiveRepromptUsed: boolean` to `BriefEngineResult`.
-- `applyStructuredRevision` now uses `generateFullBriefBundle` with instruction context instead of Trinity for instruction-driven revisions.
+- Added `recomputeAndResyncLint(brief, campaign)` in `lib/campaigns/brief-engine/orchestrator.ts`.
+- The helper recomputes `productionBuildLint` from the saved `landingStillBible` using the current `lintProductionBuild(...)` rules.
+- When the recomputed verdict differs from the stored `productionBuildStatus`, the helper resyncs:
+	- `productionBuildLint`
+	- `productionBuildStatus`
+	- `productionBuildEvaluatedAt`
+- The resync is persisted in one place through `saveAestheticBrief(...)`.
+- If `landingStillBible` is absent, the helper returns without attempting recompute.
 
-### Generation Engine (`lib/campaigns/aesthetic-engine.ts`)
+### Readiness And Approval Now Use Current Lint Semantics
 
-- `generateAestheticBrief` now accepts `options?: { correctionContext?: string }`.
-- `correctionContext` is appended as a hard failure list into Pass 1 and Pass 2 system prompts when the corrective reprompt is triggered.
+- `computeReadiness(...)` is now async and calls `recomputeAndResyncLint(...)` before applying any production-build gate logic.
+- `getReadiness(...)` therefore reports readiness using the effective current lint result, not only the previously stored status.
+- `approveForMedia(...)` now calls `recomputeAndResyncLint(...)` after structural validation and before the production-build gate.
+- Result: a stale stored `fail` that now recomputes to `warn` or `pass` no longer keeps a campaign falsely blocked.
+- A genuine recomputed `fail` still blocks approval and keeps readiness at `needs_review`.
 
-### UI (`app/(tests)/tests/brief-studio/page.tsx`)
+## Stale-State Findings
 
-- Added `correctiveRepromptUsed: boolean` to `BriefEngineResult` local interface.
-- Added a violet banner displayed when `correctiveRepromptUsed` is true.
+### Confirmed False-Block Pattern
 
-### Design Note
+- A saved brief can retain stale `productionBuildStatus = fail` and stale blocking issue codes after lint logic or generation guidance has changed.
+- Recomputing lint against the same saved still set can now yield `warn` instead of `fail`.
+- Before this phase, readiness and approval trusted the stale stored fields and could keep the campaign blocked incorrectly.
 
-- `.github/DOCS/Implementation/BRIEF_STEP_REPLACEMENT.md` — design note covering entry point, route surface, generation sequence, one-strike rule, and agent API usage.
+### Representative Campaign Check
 
----
+- `transpacific-vinyl-listening-nov-2026` reproduced the stale-state drift pattern.
+- Stored state showed:
+	- `productionBuildStatus = fail`
+	- blocking issues: `weak_niche_signal`, `identity_legibility_too_low`
+- Fresh recomputation against the same saved `landingStillBible` showed:
+	- verdict: `warn`
+	- no blocking issues
+	- warning: `weak_niche_signal`
+- This confirmed that at least some remaining blocked campaigns were false blocks caused by stale persisted lint state rather than fresh generator failure.
 
-## Routes Removed or Shimmed
+## Routes Or Shared Methods Affected
 
-All deprecated routes now return **410 Gone** with a `replacement` field pointing to `/api/groups/campaign/{slug}/brief`.
+- `lib/campaigns/brief-engine/orchestrator.ts`
+	- `recomputeAndResyncLint(...)`
+	- `computeReadiness(...)`
+	- `getReadiness(...)`
+	- `approveForMedia(...)`
 
-| Route | Status |
-|---|---|
-| `POST /api/groups/campaign/[slug]/media/aesthetic` | **410** — use `/brief` POST |
-| `POST /api/groups/campaign/[slug]/media/aesthetic/validate` | **410** |
-| `POST /api/groups/campaign/[slug]/media/aesthetic/remediate` | **410** |
-| `POST /api/groups/campaign/[slug]/media/aesthetic/revise` | **410** |
-| `POST /api/groups/campaign/[slug]/media/aesthetic/trinity` | **410** |
-| `POST /api/groups/campaign/[slug]/media/aesthetic/red-team` | **410** |
-| `GET /api/groups/campaign/[slug]/media/aesthetic` | **retained** — fetch brief |
-| `DELETE /api/groups/campaign/[slug]/media/aesthetic` | **retained** — delete brief |
+No route surface changes were required for Phase 2A. The fix stays in the shared orchestration path used by both UI and agent callers.
 
-### Retained Clean Routes (unchanged)
+## Final Shared Contract Status
 
-- `POST   /api/groups/campaign/[slug]/brief`
-- `PATCH  /api/groups/campaign/[slug]/brief`
-- `GET    /api/groups/campaign/[slug]/brief/readiness`
-- `POST   /api/groups/campaign/[slug]/brief/approve`
-- `GET    /api/groups/campaign/[slug]/brief/history`
+- The existing brief-step contract remains unchanged at the route level.
+- The behavioral change is internal correctness:
+	- readiness and approval now derive production-build gating from current saved content plus current lint semantics
+	- stale stored verdicts are resynced instead of blindly trusted
 
----
+## Generation-Quality Progress Versus Stale-State Progress
 
-## Final Shared Contract
+### Completed In Phase 2A
 
-### Generate / Refresh
+- Eliminated false blocking caused by stale stored production-build verdicts.
+- Preserved the already-fixed approval gate for true `fail` cases.
+- Added regression coverage for stale-lint drift and resync behavior.
 
-```
-POST /api/groups/campaign/{slug}/brief
-Body: {} | { instructions?: string }
+### Still Open
 
-Response: BriefEngineResult {
-  readiness: 'needs_review'
-  brief: CampaignAestheticBrief
-  issues: ValidationIssue[]
-  summary: string
-  warnings: string[]
-  autoFixApplied: boolean
-  fixedCodes: string[]
-  correctiveRepromptUsed: boolean
-}
-```
+- Phase 2B remains open.
+- The remaining work is improving production-planning bundle quality for newly generated campaigns so real production-build blocker frequency drops on fresh runs.
+- This is separate from the stale-state fix and should be evaluated with live generation runs and representative campaign comparisons.
 
-### Get Readiness
+## Phase 2B Blocker-Frequency Snapshot
 
-```
-GET /api/groups/campaign/{slug}/brief/readiness
+### Fresh Campaign Frequency Check
 
-Response: {
-  readiness: 'drafting' | 'needs_review' | 'ready_for_media'
-  brief: CampaignAestheticBrief | null
-  issues: ValidationIssue[]
-  summary: string
-  campaignName: string | null
-}
-```
+Across three fresh campaigns, structural quality is now materially stronger, but production-build quality remains the gating bottleneck.
 
-### Approve
+| Campaign | Structural Blockers | Production Build Blockers | Total Blockers | Ready For Media |
+|---|---:|---:|---:|---|
+| `bp-tabletop-icon-2027` | 0 | 1 | 1 | No |
+| `deck-sketchbook-society` | 0 | 2 | 2 | No |
+| `eastern-caribbean-stitch-sail-2026-09-19` | 0 | 2 | 2 | No |
+| **Total** | **0** | **5** | **5** | **0/3** |
 
-```
-POST /api/groups/campaign/{slug}/brief/approve
+### Measured Outcome
 
-Response: { readiness: 'ready_for_media', brief: CampaignAestheticBrief, summary: string }
-Throws 500 if blockers remain or launch window too short.
-```
+- Structural blockers across the sample: `0`
+- Production-build blockers across the sample: `5`
+- Fresh campaigns reaching `ready_for_media`: `0%`
+- Auto-fix successfully cleared structural issues, but did not resolve the production-build failures.
 
----
+### Observed Production-Build Failure Patterns
+
+- `weak_niche_signal` is still the dominant blocker pattern.
+- missing campaign identity in the still set remains a recurring failure mode.
+- still-role coverage gaps still appear in some campaigns.
+
+Representative example from the fresh run set:
+
+- `eastern-caribbean-stitch-sail-2026-09-19`
+	- structural blockers: `0`
+	- production-build blockers: `2`
+	- warnings: `3` total
+	- auto-fix applied: `3` fixes
+	- ready for media: `no`
+	- blocker pattern: `5/6` stills had no legible niche cue and only `1` still carried campaign identity
+
+### Interpretation
+
+- Phase 2A succeeded in fixing stale-state false blocks.
+- The latest fresh-run sample suggests Phase 2B is still incomplete.
+- The main remaining problem is not structural brief validity; it is the still-generation layer failing to embed strong enough niche cues and campaign identity into the landing still set.
+- The next implementation focus should stay on `aesthetic-engine.ts` and the visual-planning prompt path, with success measured by reduced production-build blocker frequency on fresh campaign runs.
 
 ## Residual Risks
 
-1. **Trinity test file** (`lib/campaigns/__tests__/trinity-pipeline.test.ts`) still exists and passes — Trinity library code is unchanged. If Trinity is removed entirely in a future cleanup, those tests must be removed too.
-2. **`aesthetic-devising/page.tsx`** still calls the old `POST /media/aesthetic` route (now 410). The page will show an error on generate. Users should be directed to `/tests/brief-studio` instead. The page is still usable for Load/Delete.
-3. **`applyStructuredRevision` instruction path** now regenerates the full bundle rather than doing a targeted single-round Trinity pass. This is heavier but consistent with the one-contract rule.
-4. **Pre-existing TypeScript errors** in `tests/check-cb-matching.ts`, `app/(tests)/tests/media-generation/campaign-selector.tsx`, and `scripts/cb-inventory-scraper.ts` are unrelated to this phase and were present before.
-
----
+1. Phase 2A fixes stale stored lint drift at gate time, but it does not itself improve prompt quality for newly generated campaigns.
+2. Existing campaigns may still require fresh evaluation to distinguish true generator-quality failures from previously stale stored results.
+3. The representative campaign evidence currently proves the false-block pattern exists, but broader backfill or sweep behavior for all historical briefs was not implemented in this phase unless covered elsewhere.
+4. The current fresh-campaign sample shows `0%` structural blockers but `100%` production-build failure rate, so the production-planning bundle remains the dominant obstacle to completion.
 
 ## Verification Commands Run
 
 ```powershell
+# Orchestrator regression including stale-lint tests (26/26 pass)
+npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
+
 # Validation regression (2/2 pass)
 npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
 
-# New orchestrator contract tests (6/6 pass)
-npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
-
-# TypeScript check — zero new errors in changed files
-npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String "brief-engine|aesthetic-engine|aesthetic/route|revise/route|validate/route|remediate/route|trinity/route|red-team/route|brief-studio"
-```
-
----
-
-## Phase 2A: Stale Production-Build Status Drift — Implemented
-
-### Problem Confirmed
-
-A brief persisted before a lint-rule change could carry a stale `productionBuildStatus = fail` and stale `productionBuildLint` snapshot. Gate calls in `getReadiness()` and `approveForMedia()` read the stored field directly, so campaigns that would now pass or warn under current lint rules remained falsely blocked. The inverse drift (stored `pass` but fresh `fail`) was equally risky.
-
-### Fix Implemented
-
-**New shared helper** — `recomputeAndResyncLint(brief, campaign)` in `lib/campaigns/brief-engine/orchestrator.ts`:
-- Runs `lintProductionBuild` against the saved `landingStillBible` using current lint rules
-- Compares the fresh verdict to the stored `productionBuildStatus`
-- If drift is detected, writes the updated `productionBuildLint`, `productionBuildStatus`, and `productionBuildEvaluatedAt` back to storage in one explicit place
-- Returns `{ resolvedBrief, drifted, freshStatus }`
-- No-ops when `landingStillBible` is absent (returns stored brief as-is)
-
-**Updated `computeReadiness` (now async)**:
-- Calls `recomputeAndResyncLint` before applying any gate logic
-- All gate checks operate on the effective (possibly resynced) brief, not the raw stored state
-
-**Updated `approveForMedia`**:
-- Calls `recomputeAndResyncLint` between structural validation and the lint gate
-- If stale fail is detected and fresh recomputation clears it (`warn` or `pass`), approval proceeds
-- If fresh recomputation confirms `fail`, approval is still blocked (gate is not weakened)
-
-### Stale-State Regression Tests Added
-
-New section in `lib/campaigns/__tests__/brief-engine.orchestrator.test.ts` (AC 11):
-
-| Test | Result |
-|---|---|
-| drift detected: stored=fail, fresh=warn | ✓ |
-| drift detected: stored=fail, fresh=pass | ✓ |
-| no drift: stored=fail, fresh=fail | ✓ |
-| stale fail + fresh warn: approval gate passes | ✓ |
-| stale fail + fresh pass: approval gate passes | ✓ |
-| stale fail + fresh fail: approval gate still blocks | ✓ |
-| stale fail + fresh warn: readiness = ready_for_media for approved brief | ✓ |
-| stale fail + fresh fail: readiness = needs_review | ✓ |
-| stale undefined + fresh pass: approval gate passes | ✓ |
-
-### Verification Results
-
-```powershell
-# Orchestrator regression — 26/26 pass (16 prior + 10 new stale-lint tests)
-npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
-
-# Validation regression — 2/2 pass
-npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
-
-# Production-build quality regression — 10/10 pass
+# Production-build quality regression (10/10 pass)
 npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
 
-# TypeScript — zero new errors in changed files
-# (pre-existing errors in scripts/cb-inventory-scraper.ts and tests/check-cb-matching.ts unchanged)
+# Representative stale-state campaign recomputation check
+npx tsx tmp/evaluate-campaigns.ts transpacific-vinyl-listening-nov-2026 drift-festival-icon-2026
+
+# Fresh campaign blocker-frequency check
+# Results recorded for:
+# - bp-tabletop-icon-2027
+# - deck-sketchbook-society
+# - eastern-caribbean-stitch-sail-2026-09-19
+
+# Fresh-vs-stored lint drift inspection for transpacific campaign
+npx tsx -e "import { loadEnvConfig } from '@next/env'; loadEnvConfig(process.cwd()); async function main(){ const storeMod = await import('./lib/campaigns/campaign-store'); const store:any = storeMod.default; const lintMod:any = await import('./lib/campaigns/media/production-build-lint'); const lint = lintMod.default?.lintProductionBuild ?? lintMod.lintProductionBuild; const brief = await store.getAestheticBrief('transpacific-vinyl-listening-nov-2026'); if (!brief) { console.log('brief_not_found'); return; } const report = lint({ landingStillBible: brief.landingStillBible, themeName: brief.themeName, nicheKeywords: brief.nicheKeywords ?? [] }); console.log(JSON.stringify({ storedVerdict: brief.productionBuildLint?.verdict, storedBlocking: brief.productionBuildLint?.blockingIssues?.map((i:any)=>i.code) ?? [], storedWarnings: brief.productionBuildLint?.warnings?.map((i:any)=>i.code) ?? [], recomputedVerdict: report.verdict, recomputedBlocking: report.blockingIssues.map((i:any)=>i.code), recomputedWarnings: report.warnings.map((i:any)=>i.code), recomputedPatternSummary: report.patternSummary }, null, 2)); } main().catch(err => { console.error(err); process.exit(1); });"
 ```
-
-### Phase 2A Constraint Compliance
-
-- Gate is not weakened — a genuinely failing still set still blocks approval and readiness
-- Lint logic is not duplicated — `lintProductionBuild` is called in exactly one helper
-- Fix lives in the shared orchestration path, not the UI
-- `saveAestheticBrief` is called in exactly one place on drift detection

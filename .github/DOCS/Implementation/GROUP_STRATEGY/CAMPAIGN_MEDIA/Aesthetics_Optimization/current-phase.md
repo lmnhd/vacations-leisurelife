@@ -68,6 +68,25 @@ The next implementation pass must eliminate this stale-state mismatch.
 Do not assume every remaining blocked campaign is evidence that prompt quality is still too weak.
 First prove that the block survives fresh lint recomputation.
 
+## Status Update: Phase 2A Is Complete
+
+Phase 2A has now been completed.
+
+Confirmed outcome:
+
+- gate-time production-build lint is recomputed from the saved still set
+- stale stored `productionBuildStatus` and `productionBuildLint` can be resynced
+- readiness and approval no longer rely only on stale persisted fail state
+- at least one representative campaign was confirmed to be a false block cleared by recomputation logic
+
+That means the next active implementation target is now fully Phase 2B:
+
+- improve fresh production-planning output quality
+- reduce production-build blocker frequency on newly generated campaigns
+- specifically reduce `weak_niche_signal`, identity-legibility misses, and still-role coverage failures
+
+Do not spend the next pass reopening the stale-state fix unless a new regression is found.
+
 ## Non-Negotiable Constraints
 
 1. Do not add more validate/remediate/revise/retry buttons.
@@ -212,6 +231,16 @@ Important constraints:
 
 After stale-state drift is eliminated, the next required work is to improve the generated production-planning bundle so campaigns stop failing production-build lint for real content reasons.
 
+Current measured status from fresh runs:
+
+- structural blockers across the current 3-campaign sample: `0`
+- production-build blockers across the same sample: `5`
+- fresh campaigns reaching `ready_for_media`: `0/3`
+- dominant blocker pattern: `weak_niche_signal`
+- recurring secondary patterns: identity-legibility misses and still-role coverage gaps
+
+This means the current bottleneck is now clearly the still-generation layer, not structural brief formation and not stale stored gate state.
+
 Primary targets:
 
 - stronger niche signal in the still set
@@ -238,6 +267,7 @@ Important constraint:
 
 - improve generator quality first
 - do **not** relax the lint thresholds just to make the tests pass unless there is a separately justified false-positive case
+- success must be demonstrated on fresh campaign generations, not only fixture-level tests
 
 ### Phase 3: Collapse The Route Surface
 
@@ -347,26 +377,70 @@ Likely verification commands:
 - targeted regression covering stale stored fail status vs recomputed current lint
 - targeted production-build quality regression tests against representative campaigns or fixtures
 
-## Next Implementation And Process Steps
+## Next Agent Instructions
 
-1. Reproduce the stale-state bug with at least one known campaign and record:
-	- stored `productionBuildStatus`
-	- stored blocking issue codes
-	- recomputed lint verdict and issue codes from the same saved `landingStillBible`
-2. Add one shared recomputation helper in the brief-engine path so there is exactly one source of truth for gate-time production-build evaluation.
-3. Update `getReadiness()` and `approveForMedia()` to use that shared recomputation path and resync stale persisted lint state when drift is detected.
-4. Add a regression test proving an old stored `fail` cannot keep a campaign blocked when the same saved still set now evaluates to `warn` or `pass`.
-5. Only after stale-state drift is fixed, continue evaluating remaining blocked campaigns as genuine production-planning quality failures.
-6. For the quality pass, compare representative campaigns before and after generation changes and separate:
-	- stale-state false blocks
-	- real generator-quality failures
-7. In `phase-result.md`, report stale-state findings separately from generation-quality findings so verification does not conflate the two.
-8. Update `phase-result.md` as part of the work, not as an afterthought. Record the current phase progress, including:
-	- whether stale stored `productionBuildStatus` / `productionBuildLint` drift was reproduced
-	- what shared recompute or resync path was added
-	- which routes or shared service methods now use the recomputed result
-	- whether representative blocked campaigns were false blocks or true quality failures under fresh lint recomputation
-	- exact verification commands and campaign checks used to prove the result
+The next agent should treat Phase 2A as complete and execute only the next production-quality pass.
+
+### Objective
+
+Improve fresh `landingStillBible` and related visual-planning output so newly generated campaigns stop failing production-build lint for content reasons.
+
+### Do First
+
+1. Read the Phase 2A findings in `phase-result.md` before making changes.
+2. Assume stale-state false blocks are already handled unless a new regression is discovered.
+3. Use the current fresh-run sample as the baseline quality benchmark:
+	- `bp-tabletop-icon-2027`
+	- `deck-sketchbook-society`
+	- `eastern-caribbean-stitch-sail-2026-09-19`
+
+### Primary Implementation Target
+
+Concentrate on prompt and generation quality in the visual-planning path, especially:
+
+- explicit niche cues in `imagePrompt` and `subjectAction`
+- campaign identity legibility across multiple stills, not just one
+- stronger role distribution across hero, editorial/concept, and intimate coverage
+- less generic fallback composition reuse
+- stronger mapping from brief identity into still-level scene/action wording
+
+Likely primary file:
+
+- `lib/campaigns/aesthetic-engine.ts`
+
+Secondary files only if required:
+
+- tightly related visual-planning helpers
+- tests for production-build quality regressions
+
+### Do Not Do
+
+1. Do not weaken production-build lint thresholds just to improve pass rate.
+2. Do not reopen approval semantics or stale-state resync unless a new failing regression proves it is broken.
+3. Do not treat fixture-only test success as sufficient evidence.
+4. Do not add button-maze remediation logic or new operator workflows.
+
+### Required Proof For Completion
+
+The next agent must show fresh-run improvement, not only code inspection.
+
+Minimum proof:
+
+1. Regenerate representative campaigns after the prompt/generation changes.
+2. Record structural blockers, production-build blockers, and ready-for-media rate before and after.
+3. Show whether blocker frequency improves on the same representative sample.
+4. Call out which blocker codes were reduced and which persisted.
+
+### Required `phase-result.md` Update
+
+Update `phase-result.md` as part of the work and add a new Phase 2B progress section containing:
+
+- what prompt or generation changes were made
+- which representative campaigns were rerun
+- before/after blocker counts for the sample
+- whether `weak_niche_signal`, identity-legibility failures, and role-coverage failures improved
+- residual production-build blocker patterns that still remain
+- exact commands used for reruns and verification
 
 ## Handoff Output Requirement
 
