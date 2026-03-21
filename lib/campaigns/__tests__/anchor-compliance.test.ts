@@ -95,7 +95,7 @@ const COMPLIANT_STILLS: LandingStillSpec[] = [
         nicheCarryThrough: 'miniature painting', composition: 'intimate close-up detail',
     }),
     makeStill({
-        stillId: 'still-6', anchorId: 'anchor-6', slotRole: 'FLEX', usage: 'social_square',
+        stillId: 'still-6', anchorId: 'anchor-6', slotRole: 'FLEX', usage: 'concept',
         location: 'ship atrium grand hall', environmentDetails: 'multi-story atrium',
         imagePrompt: 'Social shot of game night gathering in atrium', subjectAction: 'Community game night in the grand atrium',
         nicheCarryThrough: 'game night', composition: 'medium group shot',
@@ -226,45 +226,82 @@ test('EDITORIAL_WIDE_A with intimate composition triggers slot_usage_mismatch', 
     assert.ok(v, 'expected slot_usage_mismatch for EDITORIAL_WIDE composition');
 });
 
-console.log('\nAnchor Compliance — duplicate_location_family\n');
+test('EDITORIAL_WIDE_A with usage=hero_primary triggers slot_usage_mismatch', () => {
+    const still = makeStill({
+        stillId: 'still-editorial-hero', slotRole: 'EDITORIAL_WIDE_A', usage: 'hero_primary',
+        location: 'ship promenade', environmentDetails: 'open walkway',
+        imagePrompt: 'Wide shot of strategy cards on promenade', subjectAction: 'Guest arranging strategy cards',
+        nicheCarryThrough: 'strategy cards', anchorId: 'anchor-3',
+        composition: 'wide establishing shot',
+    });
+    const result = validateAnchorCompliance(ANCHORS, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'slot_usage_mismatch' && v.message.includes('EDITORIAL_WIDE_A'));
+    assert.ok(v, 'expected slot_usage_mismatch for editorial slot with hero usage');
+});
 
-test('two stills in same location family triggers duplicate_location_family', () => {
+test('EDITORIAL_WIDE_B with usage=email_header passes (allowed editorial usage)', () => {
+    const still = makeStill({
+        stillId: 'still-editorial-email', slotRole: 'EDITORIAL_WIDE_B', usage: 'email_header',
+        location: 'dining lounge', environmentDetails: 'elegant booths',
+        imagePrompt: 'Wide shot of dice rolling in dining lounge', subjectAction: 'Pair engaged in dice rolling over cocktails',
+        nicheCarryThrough: 'dice rolling', anchorId: 'anchor-4',
+        composition: 'wide environmental shot',
+    });
+    const result = validateAnchorCompliance(ANCHORS, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'slot_usage_mismatch');
+    assert.ok(!v, 'email_header should be allowed for EDITORIAL_WIDE_B');
+});
+
+console.log('\nAnchor Compliance — duplicate_location_family (anchor-declared)\n');
+
+test('two stills sharing same anchor locationFamily triggers duplicate_location_family', () => {
+    // Both stills use anchors with the same locationFamily
+    const customAnchors = [
+        { anchorId: 'a-1', nicheSignal: 'tabletop gaming', locationFamily: 'library' },
+        { anchorId: 'a-2', nicheSignal: 'board games', locationFamily: 'library' },
+    ];
     const stills = [
         makeStill({
-            stillId: 'still-lib-a', location: 'ship library', environmentDetails: 'bookshelves',
-            slotRole: 'HERO_PRIMARY',
+            stillId: 'still-lib-a', anchorId: 'a-1', slotRole: 'HERO_PRIMARY',
+            imagePrompt: 'Tabletop gaming in library', subjectAction: 'Pair enjoys tabletop gaming',
         }),
         makeStill({
-            stillId: 'still-lib-b', location: 'library corner', environmentDetails: 'reading area',
-            slotRole: 'HERO_ALT', usage: 'hero_alt', anchorId: 'anchor-2',
-            imagePrompt: 'Board games in cruise library', subjectAction: 'Friends with board games in library',
+            stillId: 'still-lib-b', anchorId: 'a-2', slotRole: 'HERO_ALT', usage: 'hero_alt',
+            imagePrompt: 'Board games in library', subjectAction: 'Friends with board games',
             nicheCarryThrough: 'board games',
         }),
     ];
-    // Both map to 'other' location family since 'library' isn't in the lint location map
-    // — this tests the actual extractLocationFamily behavior
-    const result = validateAnchorCompliance(ANCHORS, makeBible(stills));
+    const result = validateAnchorCompliance(customAnchors, makeBible(stills));
     const dupes = result.violations.filter(v => v.violationType === 'duplicate_location_family');
     assert.equal(dupes.length, 2, 'both stills should be flagged for duplicate location family');
 });
 
-test('two stills in deck location family triggers duplicate_location_family', () => {
+test('distinct anchor locationFamilies do NOT trigger duplicate_location_family', () => {
+    // library vs spa vs theater — all would collapse to "other" under lint extractor
+    const customAnchors = [
+        { anchorId: 'a-1', nicheSignal: 'tabletop gaming', locationFamily: 'library' },
+        { anchorId: 'a-2', nicheSignal: 'board games', locationFamily: 'spa' },
+        { anchorId: 'a-3', nicheSignal: 'strategy cards', locationFamily: 'theater' },
+    ];
     const stills = [
         makeStill({
-            stillId: 'still-deck-a', location: 'pool deck', environmentDetails: 'outdoor seating',
-            slotRole: 'HERO_PRIMARY',
-            imagePrompt: 'Tabletop gaming on pool deck', subjectAction: 'Playing tabletop gaming on deck',
+            stillId: 'still-lib', anchorId: 'a-1', slotRole: 'HERO_PRIMARY',
+            imagePrompt: 'Tabletop gaming in library', subjectAction: 'Pair enjoys tabletop gaming',
         }),
         makeStill({
-            stillId: 'still-deck-b', location: 'lido deck', environmentDetails: 'outdoor bar area',
-            slotRole: 'HERO_ALT', usage: 'hero_alt', anchorId: 'anchor-2',
-            imagePrompt: 'Board games on lido deck', subjectAction: 'Friends with board games on lido deck',
+            stillId: 'still-spa', anchorId: 'a-2', slotRole: 'HERO_ALT', usage: 'hero_alt',
+            imagePrompt: 'Board games in spa', subjectAction: 'Friends with board games in spa',
             nicheCarryThrough: 'board games',
         }),
+        makeStill({
+            stillId: 'still-theater', anchorId: 'a-3', slotRole: 'EDITORIAL_WIDE_A', usage: 'concept',
+            imagePrompt: 'Strategy cards in theater', subjectAction: 'Guest arranging strategy cards in theater',
+            nicheCarryThrough: 'strategy cards', composition: 'wide overhead establishing',
+        }),
     ];
-    const result = validateAnchorCompliance(ANCHORS, makeBible(stills));
+    const result = validateAnchorCompliance(customAnchors, makeBible(stills));
     const dupes = result.violations.filter(v => v.violationType === 'duplicate_location_family');
-    assert.ok(dupes.length >= 2, 'both deck stills should be flagged');
+    assert.equal(dupes.length, 0, 'distinct anchor families should not collide');
 });
 
 console.log('\nAnchor Compliance — Utilities\n');

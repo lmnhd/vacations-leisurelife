@@ -24,7 +24,6 @@ import {
     joinCampaignList,
     sanitizePromptList,
 } from './aesthetic-engine';
-import { extractLocationFamily } from './media/production-build-lint';
 
 // ── Generation-only schemas: audit fields required (OpenAI structured output rejects .optional fields) ──
 // These are used ONLY for generateObject calls. schema.ts keeps .optional() for backward-compat reading
@@ -340,13 +339,13 @@ export interface AnchorComplianceResult {
     passed: boolean;
 }
 
-const SLOT_ROLE_USAGE_MAP: Record<string, { usage: string; compositionRule?: 'intimate' | 'wide' }> = {
-    HERO_PRIMARY: { usage: 'hero_primary' },
-    HERO_ALT: { usage: 'hero_alt' },
-    EDITORIAL_WIDE_A: { usage: 'concept', compositionRule: 'wide' },
-    EDITORIAL_WIDE_B: { usage: 'concept', compositionRule: 'wide' },
-    INTIMATE: { usage: 'concept', compositionRule: 'intimate' },
-    FLEX: { usage: 'concept' },  // FLEX allows any usage
+const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; compositionRule?: 'intimate' | 'wide' }> = {
+    HERO_PRIMARY: { allowedUsages: ['hero_primary'] },
+    HERO_ALT: { allowedUsages: ['hero_alt'] },
+    EDITORIAL_WIDE_A: { allowedUsages: ['concept', 'email_header'], compositionRule: 'wide' },
+    EDITORIAL_WIDE_B: { allowedUsages: ['concept', 'email_header'], compositionRule: 'wide' },
+    INTIMATE: { allowedUsages: ['concept'], compositionRule: 'intimate' },
+    FLEX: { allowedUsages: ['hero_alt', 'concept', 'email_header', 'social_square'] },
 };
 
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
@@ -441,17 +440,14 @@ export function validateAnchorCompliance(
         const rule = SLOT_ROLE_USAGE_MAP[still.slotRole];
         if (!rule) continue;
 
-        // FLEX allows any usage — skip usage check
-        if (still.slotRole !== 'FLEX' && still.slotRole !== 'EDITORIAL_WIDE_A' && still.slotRole !== 'EDITORIAL_WIDE_B') {
-            if (still.usage !== rule.usage) {
-                violations.push({
-                    stillId: still.stillId,
-                    violationType: 'slot_usage_mismatch',
-                    message: `slotRole=${still.slotRole} requires usage="${rule.usage}", got "${still.usage}"`,
-                    expected: rule.usage,
-                    actual: still.usage,
-                });
-            }
+        if (!rule.allowedUsages.includes(still.usage)) {
+            violations.push({
+                stillId: still.stillId,
+                violationType: 'slot_usage_mismatch',
+                message: `slotRole=${still.slotRole} requires usage in [${rule.allowedUsages.join(', ')}], got "${still.usage}"`,
+                expected: rule.allowedUsages.join(' | '),
+                actual: still.usage,
+            });
         }
 
         // INTIMATE must have intimate composition keyword
@@ -483,10 +479,11 @@ export function validateAnchorCompliance(
         }
     }
 
-    // ── Check 6: location family uniqueness ─────────────────────────────
+    // ── Check 6: location family uniqueness (anchor-declared, not lint extractor) ──
     const locFamilyCounts = new Map<string, string[]>();
     for (const still of stills) {
-        const fam = extractLocationFamily(still);
+        const anchor = still.anchorId ? anchorMap.get(still.anchorId) : undefined;
+        const fam = anchor?.locationFamily ?? still.location.toLowerCase();
         const ids = locFamilyCounts.get(fam) ?? [];
         ids.push(still.stillId);
         locFamilyCounts.set(fam, ids);
