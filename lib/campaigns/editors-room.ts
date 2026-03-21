@@ -13,7 +13,7 @@ import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type { Campaign } from './types';
 import type { CampaignAestheticBrief, LandingStillBible, LandingStillSpec, ProductionBuildLintIssue } from './schema';
-import { LandingStillBibleSchema, LandingStillSpecSchema, ProductionBibleSchema } from './schema';
+import { LandingStillBibleSchema, LandingStillSlotRoleEnum, LandingStillSpecSchema, ProductionBibleSchema } from './schema';
 import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
 import { ModelName, getModelConfig } from '@/lib/ai/llm-gateway';
 import {
@@ -24,6 +24,22 @@ import {
     joinCampaignList,
     sanitizePromptList,
 } from './aesthetic-engine';
+
+// ── Generation-only schemas: audit fields required (OpenAI structured output rejects .optional fields) ──
+// These are used ONLY for generateObject calls. schema.ts keeps .optional() for backward-compat reading
+// of persisted stills that pre-date the audit fields.
+
+const StillSpecForGenerationSchema = LandingStillSpecSchema.extend({
+    anchorId: z.string(),
+    slotRole: LandingStillSlotRoleEnum,
+    nicheCarryThrough: z.string(),
+});
+
+const BibleForGenerationSchema = LandingStillBibleSchema.extend({
+    stillLibrary: z.array(StillSpecForGenerationSchema),
+});
+
+const RepairResultSchema = z.object({ stills: z.array(StillSpecForGenerationSchema) });
 
 // ── Internal: anchor schema (intermediate only — not exported as a named type) ──
 
@@ -144,7 +160,7 @@ Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrincipl
     console.log(`[editors-room] generateLandingStillBible for ${campaign.id}`);
     const { object } = await generateObject({
         model,
-        schema: LandingStillBibleSchema,
+        schema: BibleForGenerationSchema,
         system,
         prompt: ctx,
     });
@@ -187,8 +203,6 @@ export async function repairFailingStills(
         ].join('\n'))
         .join('\n\n');
 
-    const RepairSchema = z.object({ stills: z.array(LandingStillSpecSchema) });
-
     const system = `
 You are repairing specific failing landing stills for a niche cruise campaign.
 Rewrite ONLY the failing stills listed below. Return them with their original stillId values.
@@ -219,7 +233,7 @@ ${failingContext}
 `.trim();
 
     console.log(`[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(', ')}`);
-    const { object } = await generateObject({ model, schema: RepairSchema, system, prompt });
+    const { object } = await generateObject({ model, schema: RepairResultSchema, system, prompt });
     return object.stills;
 }
 
