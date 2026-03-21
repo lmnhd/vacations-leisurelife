@@ -1,5 +1,13 @@
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '../campaign-store';
-import { generateAestheticBrief, generateVisualPlanningFromBrief } from '../aesthetic-engine';
+import { generateAestheticBrief } from '../aesthetic-engine';
+import {
+    generateActionAnchors,
+    generateLandingStillBible,
+    repairFailingStills,
+    generateProductionBibleFromStills,
+    extractFailingStillIds,
+    mergeRepairedStills,
+} from '../editors-room';
 import { lintProductionBuild } from '../media/production-build-lint';
 import { validateBrief } from './validation';
 import { applyAutoFixes } from './auto-fix';
@@ -28,6 +36,7 @@ interface BriefEngineResult {
     autoFixApplied: boolean;
     fixedCodes: string[];
     correctiveRepromptUsed: boolean;
+    isolatedStillRevisionUsed: boolean;
 }
 
 interface ApprovalResult {
@@ -51,23 +60,63 @@ interface ReadinessResult {
 async function generateFullBriefBundle(
     campaign: Campaign,
     options?: { correctionContext?: string },
-): Promise<CampaignAestheticBrief> {
+): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean }> {
+    // ── Step 1: Core aesthetic brief ─────────────────────────────────────
     const brief = await generateAestheticBrief(campaign, options);
-    const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
-    const lintReport = lintProductionBuild({
-        landingStillBible: visualPlanning.landingStillBible,
-        productionBible: visualPlanning.productionBible,
+
+    // ── Step 2: Community-native action anchors ───────────────────────────
+    const anchors = await generateActionAnchors(campaign, brief);
+
+    // ── Step 3: Landing still bible from locked anchors ───────────────────
+    let landingStillBible = await generateLandingStillBible(campaign, brief, anchors);
+
+    // ── Step 4: Lint stills only — identify specific failures ─────────────
+    let stillsLint = lintProductionBuild({
+        landingStillBible,
+        themeName: campaign.name,
+        nicheKeywords: campaign.targetingKeywords ?? [],
+    });
+
+    // ── Step 5: Isolated still repair — one pass, only failing stills ─────
+    let isolatedStillRevisionUsed = false;
+    if (stillsLint.blockingIssues.length > 0) {
+        const failingIds = extractFailingStillIds(stillsLint.blockingIssues);
+        const totalStills = landingStillBible.stillLibrary.length;
+        // Only isolate if a subset failed — full-set failure falls through to production bible then stops
+        if (failingIds.length > 0 && failingIds.length < totalStills) {
+            console.log(`[brief-engine] isolated still repair for ${campaign.id}: ${failingIds.join(', ')}`);
+            const repairedStills = await repairFailingStills(
+                campaign, brief, landingStillBible, failingIds, stillsLint.blockingIssues,
+            );
+            landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
+            stillsLint = lintProductionBuild({
+                landingStillBible,
+                themeName: campaign.name,
+                nicheKeywords: campaign.targetingKeywords ?? [],
+            });
+            isolatedStillRevisionUsed = true;
+        }
+    }
+
+    // ── Step 6: Production bible from validated stills ────────────────────
+    const productionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible);
+
+    // ── Step 7: Final lint including production bible ─────────────────────
+    const finalLint = lintProductionBuild({
+        landingStillBible,
+        productionBible,
         themeName: campaign.name,
         nicheKeywords: campaign.targetingKeywords ?? [],
     });
 
     return {
         ...brief,
-        landingStillBible: visualPlanning.landingStillBible,
-        productionBible: visualPlanning.productionBible,
-        productionBuildLint: lintReport,
-        productionBuildStatus: lintReport.verdict,
-        productionBuildEvaluatedAt: lintReport.evaluatedAt,
+        landingStillBible,
+        productionBible,
+        productionBuildLint: finalLint,
+        productionBuildStatus: finalLint.verdict,
+        productionBuildEvaluatedAt: finalLint.evaluatedAt,
+        isolatedStillRevisionUsed,
     };
 }
 
@@ -179,7 +228,10 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
     console.log(`[brief-engine] create_or_refresh for ${slug}`);
 
     // ── First generation pass: full bundle ────────────────────────────
-    let brief = await generateFullBriefBundle(campaign);
+    let isolatedStillRevisionUsed = false;
+    const firstBundle = await generateFullBriefBundle(campaign);
+    isolatedStillRevisionUsed = firstBundle.isolatedStillRevisionUsed;
+    let brief: CampaignAestheticBrief = firstBundle;
 
     // ── First validation ──────────────────────────────────────────────
     let validation = validateBrief(brief, campaign);
@@ -216,7 +268,9 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
             const correctionContext = buildCorrectionContext(nonLaunchBlockers);
             console.log(`[brief-engine] corrective reprompt for ${slug}: ${nonLaunchBlockers.length} blocker(s)`);
 
-            brief = await generateFullBriefBundle(campaign, { correctionContext });
+            const repromptBundle = await generateFullBriefBundle(campaign, { correctionContext });
+            isolatedStillRevisionUsed = isolatedStillRevisionUsed || repromptBundle.isolatedStillRevisionUsed;
+            brief = repromptBundle;
             const repromptAutoFix = applyAutoFixes(brief, validateBrief(brief, campaign).issues);
             brief = repromptAutoFix.brief;
             if (repromptAutoFix.fixedCodes.length > 0) {
@@ -250,6 +304,7 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
         autoFixApplied,
         fixedCodes,
         correctiveRepromptUsed,
+        isolatedStillRevisionUsed,
     };
 }
 
@@ -279,8 +334,11 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
     }
 
     // ── If instructions provided, regenerate full bundle with instruction context ──
+    let isolatedStillRevisionUsed = false;
     if (revision.instructions) {
-        brief = await generateFullBriefBundle(campaign, { correctionContext: revision.instructions });
+        const revBundle = await generateFullBriefBundle(campaign, { correctionContext: revision.instructions });
+        isolatedStillRevisionUsed = revBundle.isolatedStillRevisionUsed;
+        brief = revBundle;
     }
 
     // ── Validate ─────────────────────────────────────────────────────
@@ -317,6 +375,7 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
         autoFixApplied,
         fixedCodes,
         correctiveRepromptUsed: false,
+        isolatedStillRevisionUsed,
     };
 }
 

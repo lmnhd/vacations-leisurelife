@@ -167,7 +167,7 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords
     return failures;
 }
 
-function joinCampaignList(values?: string[]): string {
+export function joinCampaignList(values?: string[]): string {
     if (!values || values.length === 0) {
         return 'None provided';
     }
@@ -197,7 +197,7 @@ function sanitizePromptText(value?: string): string {
         .trim();
 }
 
-function sanitizePromptList(values?: string[]): string[] {
+export function sanitizePromptList(values?: string[]): string[] {
     if (!values || values.length === 0) {
         return [];
     }
@@ -205,7 +205,7 @@ function sanitizePromptList(values?: string[]): string[] {
     return values.map((value) => sanitizePromptText(value));
 }
 
-function getCanonicalShipName(campaign: Campaign): string {
+export function getCanonicalShipName(campaign: Campaign): string {
     const shipTarget = campaign.shipTarget?.trim();
     if (shipTarget) {
         return shipTarget;
@@ -219,7 +219,7 @@ function getCanonicalShipName(campaign: Campaign): string {
     return 'TBD';
 }
 
-function buildShipContext(campaign: Campaign): string {
+export function buildShipContext(campaign: Campaign): string {
     const canonicalShip = getCanonicalShipName(campaign);
     const matchedShipName = campaign.matchedShipName?.trim();
 
@@ -245,7 +245,7 @@ function buildRouteContext(campaign: Campaign): string {
     return routeParts.length > 0 ? routeParts.join(' | ') : 'No route context provided';
 }
 
-function buildEventFramingGuidance(campaign: Campaign): string {
+export function buildEventFramingGuidance(campaign: Campaign): string {
     const highlightEvents = sanitizePromptList(campaign.highlightEvents);
 
     if (highlightEvents.length === 0) {
@@ -705,7 +705,7 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
 // ── Lint compliance block injected into every visual-planning prompt ──────────
 // Maps directly to the deterministic rules in production-build-lint.ts so the
 // LLM knows the exact fields and exact keywords the machine will scan.
-function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
+export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
     const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
     const kwDisplay = nicheKw.length > 0
         ? nicheKw.join(', ')
