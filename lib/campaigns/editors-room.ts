@@ -24,6 +24,7 @@ import {
     joinCampaignList,
     sanitizePromptList,
 } from './aesthetic-engine';
+import { extractLocationFamily } from './media/production-build-lint';
 
 // ── Generation-only schemas: audit fields required (OpenAI structured output rejects .optional fields) ──
 // These are used ONLY for generateObject calls. schema.ts keeps .optional() for backward-compat reading
@@ -176,6 +177,7 @@ export async function repairFailingStills(
     currentBible: LandingStillBible,
     failingStillIds: string[],
     blockerIssues: ProductionBuildLintIssue[],
+    anchorViolationsBlock?: string,
 ): Promise<LandingStillSpec[]> {
     const model = getHighModel();
     const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
@@ -215,7 +217,7 @@ AUDIT FIELDS — each repaired still must include:
 
 BLOCKERS TO RESOLVE:
 ${blockerSummary}
-
+${anchorViolationsBlock ? `\n${anchorViolationsBlock}\n` : ''}
 PASSING STILLS (for reference — do not repeat their location families or niche terms):
 ${passingContext}
 
@@ -313,6 +315,213 @@ ${VIDEO_DELIVERABLE_SPECS.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds
     });
 
     return object;
+}
+
+// ── Anchor compliance types ────────────────────────────────────────────────────
+
+type AnchorViolationType =
+    | 'missing_anchor_binding'
+    | 'niche_signal_dropped'
+    | 'niche_carry_mismatch'
+    | 'duplicate_slot_role'
+    | 'slot_usage_mismatch'
+    | 'duplicate_location_family';
+
+export interface AnchorViolation {
+    stillId: string;
+    violationType: AnchorViolationType;
+    message: string;
+    expected: string;
+    actual: string;
+}
+
+export interface AnchorComplianceResult {
+    violations: AnchorViolation[];
+    passed: boolean;
+}
+
+const SLOT_ROLE_USAGE_MAP: Record<string, { usage: string; compositionRule?: 'intimate' | 'wide' }> = {
+    HERO_PRIMARY: { usage: 'hero_primary' },
+    HERO_ALT: { usage: 'hero_alt' },
+    EDITORIAL_WIDE_A: { usage: 'concept', compositionRule: 'wide' },
+    EDITORIAL_WIDE_B: { usage: 'concept', compositionRule: 'wide' },
+    INTIMATE: { usage: 'concept', compositionRule: 'intimate' },
+    FLEX: { usage: 'concept' },  // FLEX allows any usage
+};
+
+const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
+
+// ── Step 5: Deterministic anchor-compliance validation ─────────────────────────
+
+export function validateAnchorCompliance(
+    anchors: { anchorId: string; nicheSignal: string; locationFamily: string }[],
+    bible: LandingStillBible,
+): AnchorComplianceResult {
+    const violations: AnchorViolation[] = [];
+    const anchorMap = new Map(anchors.map(a => [a.anchorId, a]));
+    const stills = bible.stillLibrary;
+
+    for (const still of stills) {
+        // ── Check 1: anchorId exists and maps to a real anchor ──────────
+        if (!still.anchorId || !anchorMap.has(still.anchorId)) {
+            violations.push({
+                stillId: still.stillId,
+                violationType: 'missing_anchor_binding',
+                message: `anchorId "${still.anchorId ?? '(empty)'}" does not match any generated anchor`,
+                expected: `one of: ${anchors.map(a => a.anchorId).join(', ')}`,
+                actual: still.anchorId ?? '(empty)',
+            });
+            continue; // skip niche checks — no anchor to compare against
+        }
+
+        const anchor = anchorMap.get(still.anchorId)!;
+
+        // ── Check 2: anchor's nicheSignal appears in imagePrompt + subjectAction ──
+        const nicheLC = anchor.nicheSignal.toLowerCase();
+        const imgLC = still.imagePrompt.toLowerCase();
+        const actLC = still.subjectAction.toLowerCase();
+
+        if (!imgLC.includes(nicheLC) || !actLC.includes(nicheLC)) {
+            const missingIn: string[] = [];
+            if (!imgLC.includes(nicheLC)) missingIn.push('imagePrompt');
+            if (!actLC.includes(nicheLC)) missingIn.push('subjectAction');
+            violations.push({
+                stillId: still.stillId,
+                violationType: 'niche_signal_dropped',
+                message: `anchor nicheSignal "${anchor.nicheSignal}" missing from ${missingIn.join(' and ')}`,
+                expected: `"${anchor.nicheSignal}" in both imagePrompt and subjectAction`,
+                actual: `absent from: ${missingIn.join(', ')}`,
+            });
+        }
+
+        // ── Check 3: nicheCarryThrough accuracy ────────────────────────
+        if (still.nicheCarryThrough) {
+            const carryLC = still.nicheCarryThrough.toLowerCase();
+            if (!imgLC.includes(carryLC) || !actLC.includes(carryLC)) {
+                const missingIn: string[] = [];
+                if (!imgLC.includes(carryLC)) missingIn.push('imagePrompt');
+                if (!actLC.includes(carryLC)) missingIn.push('subjectAction');
+                violations.push({
+                    stillId: still.stillId,
+                    violationType: 'niche_carry_mismatch',
+                    message: `nicheCarryThrough "${still.nicheCarryThrough}" not found in ${missingIn.join(' and ')}`,
+                    expected: `"${still.nicheCarryThrough}" in both fields`,
+                    actual: `absent from: ${missingIn.join(', ')}`,
+                });
+            }
+        }
+    }
+
+    // ── Check 4: slotRole uniqueness ────────────────────────────────────
+    const slotRoleCounts = new Map<string, string[]>();
+    for (const still of stills) {
+        if (still.slotRole) {
+            const ids = slotRoleCounts.get(still.slotRole) ?? [];
+            ids.push(still.stillId);
+            slotRoleCounts.set(still.slotRole, ids);
+        }
+    }
+    for (const [role, ids] of slotRoleCounts) {
+        if (ids.length > 1) {
+            for (const id of ids) {
+                violations.push({
+                    stillId: id,
+                    violationType: 'duplicate_slot_role',
+                    message: `slotRole "${role}" assigned to ${ids.length} stills`,
+                    expected: 'unique slotRole per still',
+                    actual: `shared by: ${ids.join(', ')}`,
+                });
+            }
+        }
+    }
+
+    // ── Check 5: slotRole ↔ usage mapping ──────────────────────────────
+    for (const still of stills) {
+        if (!still.slotRole) continue;
+        const rule = SLOT_ROLE_USAGE_MAP[still.slotRole];
+        if (!rule) continue;
+
+        // FLEX allows any usage — skip usage check
+        if (still.slotRole !== 'FLEX' && still.slotRole !== 'EDITORIAL_WIDE_A' && still.slotRole !== 'EDITORIAL_WIDE_B') {
+            if (still.usage !== rule.usage) {
+                violations.push({
+                    stillId: still.stillId,
+                    violationType: 'slot_usage_mismatch',
+                    message: `slotRole=${still.slotRole} requires usage="${rule.usage}", got "${still.usage}"`,
+                    expected: rule.usage,
+                    actual: still.usage,
+                });
+            }
+        }
+
+        // INTIMATE must have intimate composition keyword
+        if (rule.compositionRule === 'intimate') {
+            const compLC = still.composition.toLowerCase();
+            if (!INTIMATE_KEYWORDS.some(kw => compLC.includes(kw))) {
+                violations.push({
+                    stillId: still.stillId,
+                    violationType: 'slot_usage_mismatch',
+                    message: `slotRole=INTIMATE requires intimate/close/tight/detail in composition`,
+                    expected: 'intimate keyword in composition',
+                    actual: still.composition,
+                });
+            }
+        }
+
+        // EDITORIAL_WIDE must NOT have intimate composition keyword
+        if (rule.compositionRule === 'wide') {
+            const compLC = still.composition.toLowerCase();
+            if (INTIMATE_KEYWORDS.some(kw => compLC.includes(kw))) {
+                violations.push({
+                    stillId: still.stillId,
+                    violationType: 'slot_usage_mismatch',
+                    message: `slotRole=${still.slotRole} must NOT have intimate/close/tight/detail in composition`,
+                    expected: 'wide or medium composition',
+                    actual: still.composition,
+                });
+            }
+        }
+    }
+
+    // ── Check 6: location family uniqueness ─────────────────────────────
+    const locFamilyCounts = new Map<string, string[]>();
+    for (const still of stills) {
+        const fam = extractLocationFamily(still);
+        const ids = locFamilyCounts.get(fam) ?? [];
+        ids.push(still.stillId);
+        locFamilyCounts.set(fam, ids);
+    }
+    for (const [fam, ids] of locFamilyCounts) {
+        if (ids.length > 1) {
+            for (const id of ids) {
+                violations.push({
+                    stillId: id,
+                    violationType: 'duplicate_location_family',
+                    message: `location family "${fam}" shared by ${ids.length} stills`,
+                    expected: 'unique location family per still',
+                    actual: `shared by: ${ids.join(', ')}`,
+                });
+            }
+        }
+    }
+
+    return { violations, passed: violations.length === 0 };
+}
+
+// ── Utility: extract unique still IDs from anchor violations ───────────────────
+
+export function extractViolationStillIds(violations: AnchorViolation[]): string[] {
+    return [...new Set(violations.map(v => v.stillId))];
+}
+
+// ── Utility: format anchor violations for repair prompt ────────────────────────
+
+export function formatViolationsForRepair(violations: AnchorViolation[]): string {
+    if (violations.length === 0) return '';
+    const lines = violations.map(v =>
+        `stillId=${v.stillId} | violation=${v.violationType} | expected: ${v.expected} | actual: ${v.actual}`
+    );
+    return `ANCHOR COMPLIANCE VIOLATIONS:\n${lines.join('\n')}`;
 }
 
 // ── Utility: extract all failing still IDs from a lint report ─────────────────

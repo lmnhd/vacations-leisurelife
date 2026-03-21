@@ -47,7 +47,7 @@ const LOCATION_FAMILY_MAP: Array<[string[], string]> = [
     [['port', 'shore', 'dock', 'pier', 'harbor'], 'port_shore'],
 ];
 
-function extractLocationFamily(still: LandingStillSpec): string {
+export function extractLocationFamily(still: LandingStillSpec): string {
     const combined = `${still.location} ${still.environmentDetails}`.toLowerCase();
     for (const [keywords, family] of LOCATION_FAMILY_MAP) {
         if (keywords.some(kw => combined.includes(kw))) return family;

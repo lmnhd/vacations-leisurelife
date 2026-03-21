@@ -7,6 +7,9 @@ import {
     generateProductionBibleFromStills,
     extractFailingStillIds,
     mergeRepairedStills,
+    validateAnchorCompliance,
+    extractViolationStillIds,
+    formatViolationsForRepair,
 } from '../editors-room';
 import { lintProductionBuild } from '../media/production-build-lint';
 import { validateBrief } from './validation';
@@ -67,32 +70,48 @@ async function generateFullBriefBundle(
     // ── Step 2: Community-native action anchors ───────────────────────────
     const anchors = await generateActionAnchors(campaign, brief);
 
-    // ── Step 3: Landing still bible from locked anchors ───────────────────
+    // ── Step 3: Landing still bible from locked anchors ───────────────
     let landingStillBible = await generateLandingStillBible(campaign, brief, anchors);
 
-    // ── Step 4: Lint stills only — identify specific failures ─────────────
+    // ── Step 3.5: Deterministic anchor-compliance gate ───────────────
+    let anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
+    let anchorViolationsBlock = formatViolationsForRepair(anchorCompliance.violations);
+    if (!anchorCompliance.passed) {
+        console.log(`[brief-engine] anchor compliance violations for ${campaign.id}: ${anchorCompliance.violations.length}`);
+    }
+
+    // ── Step 4: Lint stills only — identify specific failures ─────────
     let stillsLint = lintProductionBuild({
         landingStillBible,
         themeName: campaign.name,
         nicheKeywords: campaign.targetingKeywords ?? [],
     });
 
-    // ── Step 5: Isolated still repair — one pass, only failing stills ─────
+    // ── Step 5: Unified repair — anchor violations + lint blockers ─────
     let isolatedStillRevisionUsed = false;
-    if (stillsLint.blockingIssues.length > 0) {
-        const failingIds = extractFailingStillIds(stillsLint.blockingIssues);
-        if (failingIds.length > 0) {
-            console.log(`[brief-engine] isolated still repair for ${campaign.id}: ${failingIds.join(', ')}`);
-            const repairedStills = await repairFailingStills(
-                campaign, brief, landingStillBible, failingIds, stillsLint.blockingIssues,
-            );
-            landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
-            stillsLint = lintProductionBuild({
-                landingStillBible,
-                themeName: campaign.name,
-                nicheKeywords: campaign.targetingKeywords ?? [],
-            });
-            isolatedStillRevisionUsed = true;
+    const lintFailingIds = extractFailingStillIds(stillsLint.blockingIssues);
+    const anchorFailingIds = extractViolationStillIds(anchorCompliance.violations);
+    const allFailingIds = [...new Set([...lintFailingIds, ...anchorFailingIds])];
+
+    if (allFailingIds.length > 0) {
+        console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
+        const repairedStills = await repairFailingStills(
+            campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock,
+        );
+        landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
+
+        // Re-validate both gates after repair
+        anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
+        anchorViolationsBlock = formatViolationsForRepair(anchorCompliance.violations);
+        stillsLint = lintProductionBuild({
+            landingStillBible,
+            themeName: campaign.name,
+            nicheKeywords: campaign.targetingKeywords ?? [],
+        });
+        isolatedStillRevisionUsed = true;
+
+        if (!anchorCompliance.passed) {
+            console.log(`[brief-engine] post-repair anchor violations remain: ${anchorCompliance.violations.length}`);
         }
     }
 
