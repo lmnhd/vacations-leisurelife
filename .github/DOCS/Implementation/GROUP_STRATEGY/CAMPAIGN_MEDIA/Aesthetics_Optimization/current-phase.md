@@ -87,6 +87,68 @@ That means the next active implementation target is now fully Phase 2B:
 
 Do not spend the next pass reopening the stale-state fix unless a new regression is found.
 
+## Status Update: Phase 2B Implementation Is Complete
+
+The Phase 2B prompt and generation changes have now been implemented.
+
+Confirmed implementation status:
+
+- contradictory niche-suppression guidance was removed from the authoritative system prompt
+- `buildLintComplianceBlock(...)` now accepts campaign-specific belonging signals and supplies scanner-recognizable niche vocabulary
+- a dedicated `LANDING STILL NICHE COMPLIANCE` system-prompt section now states the machine-enforced blocker rule and per-still workflow
+- a dedicated `LANDING STILL ROLE SCAFFOLD` system-prompt section now enforces slot order and role distribution during generation
+- regression suites continue to pass after these changes
+
+That means the remaining open work in this phase is no longer implementation-first.
+The remaining open work is verification-first:
+
+- prove AC 12 on fresh campaign generations
+- measure whether production-build blocker frequency actually improved on real outputs
+- record before/after results in `phase-result.md`
+
+Do not spend the next pass inventing more prompt changes unless live verification shows the current implementation still fails materially.
+
+## Status Update: Step 3 Verification Shows Material Improvement
+
+Fresh live verification has now shown a strong improvement on the representative three-campaign sample.
+
+Confirmed latest outcome:
+
+- structural blockers: `0` across the full sample
+- production-build blockers: reduced to `2` total
+- campaigns reaching `ready_for_media`: `2/3`
+- both passing campaigns were approved successfully through the shared contract
+
+This means the current prompt and orchestration changes are producing real quality gains on fresh outputs.
+The remaining open issue is now narrow rather than systemic:
+
+- `deck-sketchbook-society-2026` still fails with `weak_niche_signal` and `identity_legibility_too_low`
+
+The next pass, if any, should be targeted and evidence-driven:
+
+- do not reopen structural validation or stale-state work
+- do not rewrite the whole prompt system again
+- focus only on campaign archetypes that still under-express niche identity in live output
+- keep using the same representative live sample when measuring further changes
+
+## Status Update: Phase 2C Is The Execution Target
+
+The next pass is now a targeted execution pass, not another broad verification cycle.
+
+Confirmed remaining pattern from the latest live sample and follow-up review:
+
+- the remaining failure is concentrated in art/creative campaign archetypes
+- the issue is not broad structural failure and not stale-state drift
+- the key problem is generic composition-family clustering that weakens campaign identity even when some niche vocabulary is present
+
+Execution focus for the next agent:
+
+- break generic cruise fallback patterns in still generation
+- make niche-specific actions and interactions carry the scene
+- preserve the current `2/3` live success rate while pushing the remaining representative campaign over the line
+
+Treat this as Phase 2C: a narrow generator-quality correction for the remaining archetype, not a rewrite of the overall system.
+
 ## Non-Negotiable Constraints
 
 1. Do not add more validate/remediate/revise/retry buttons.
@@ -231,7 +293,7 @@ Important constraints:
 
 After stale-state drift is eliminated, the next required work is to improve the generated production-planning bundle so campaigns stop failing production-build lint for real content reasons.
 
-Current measured status from fresh runs:
+Baseline measured status from the pre-improvement fresh runs:
 
 - structural blockers across the current 3-campaign sample: `0`
 - production-build blockers across the same sample: `5`
@@ -241,6 +303,13 @@ Current measured status from fresh runs:
 
 This means the current bottleneck is now clearly the still-generation layer, not structural brief formation and not stale stored gate state.
 
+Implementation status update:
+
+- the main Phase 2B prompt changes are now in place
+- fixture and regression coverage pass
+- live campaign verification showed material improvement
+- one remaining archetype still needs targeted Phase 2C correction
+
 Primary targets:
 
 - stronger niche signal in the still set
@@ -248,6 +317,8 @@ Primary targets:
 - better still-role coverage
 - less composition repetition
 - stronger translation from brief intent into `productionBible.avoidDirectives`, scene design, and still prompts
+- stronger niche-specific action so scenes are built around community behavior rather than generic cruise poses
+- lower reuse of generic composition families such as rail-couple and wide-deck fallback patterns
 
 This work should focus on the generation layer that produces:
 
@@ -268,6 +339,7 @@ Important constraint:
 - improve generator quality first
 - do **not** relax the lint thresholds just to make the tests pass unless there is a separately justified false-positive case
 - success must be demonstrated on fresh campaign generations, not only fixture-level tests
+- do **not** regress the two representative campaigns that now pass
 
 ### Phase 3: Collapse The Route Surface
 
@@ -277,49 +349,44 @@ Preferred route categories:
 
 - fetch brief-step state
 - generate or regenerate brief step
-- approve brief step
+
+Phase 3 route-surface cleanup is not the active execution target in this pass.
 
 Agent API requirement for this phase:
 
-- each retained route must be usable directly by an agent caller without requiring hidden UI context
-- request and response contracts must be documented clearly enough for scripted use
-- if a separate agent-facing endpoint is introduced, it must still call the same underlying orchestration service
+- keep using the same shared orchestration path and route surface for regeneration and readiness checks
+- do not introduce a special-case verification or agent-only generation path
 
-Current likely deprecation or shim targets:
+### Primary Execution Target
 
-- `/media/aesthetic/validate`
-- `/media/aesthetic/remediate`
-- `/media/aesthetic/revise`
-- `/media/aesthetic/trinity`
-- `/media/aesthetic/red-team`
+Make a focused prompt/generation update in the visual-planning path, then regenerate the representative sample through the shared brief-step flow and measure:
 
-### Phase 4: Build The Replacement UI Step
+- structural blocker count
+- production-build blocker count
+- ready-for-media rate
+- blocker-code frequency, especially:
+	- `weak_niche_signal`
+	- `identity_legibility_too_low`
+	- `repeated_composition_family`
 
-Create a coherent page between Discovery and Media Generation.
+Use the existing shared route or orchestration flow. Do not create a special execution path.
 
-The page must:
+### Code Changes Are In Scope
 
-- present one generation action
-- show clear readiness state
-- show blockers clearly when generation stops
-- avoid surfacing remediation internals as a control panel
+Live verification has already shown broad improvement. Code changes are now justified, but only in a narrow area:
 
-The page must not introduce UI-only logic that diverges from what the agent API sees or does.
+- `lib/campaigns/aesthetic-engine.ts`
+- tightly related visual-planning helpers if required
+- production-build quality regression tests if new focused coverage is warranted
 
-### Phase 5: Compatibility Cleanup
+Do not turn this into broader route cleanup, UI work, or orchestration redesign.
 
-Make an explicit decision on legacy compatibility:
-
-- shim old routes temporarily
-- remove them immediately
-- or add a limited adapter layer during migration
-
-Document the choice before cleanup.
-
+4. Do not claim the targeted fix works solely from prompt edits or fixture tests.
+5. Do not skip before/after comparison against both the recorded baseline and the current `2/3` success sample.
 ## File Investigation Checklist
 
 Inspect these before coding:
-
+The next agent must show fresh-run improvement, not only code inspection.
 - `lib/campaigns/aesthetic-engine.ts`
 - `lib/campaigns/brief-engine/orchestrator.ts`
 - `lib/campaigns/brief-engine/validation.ts`
@@ -327,17 +394,21 @@ Inspect these before coding:
 - `lib/campaigns/aesthetic-validation-orchestrator.ts`
 - `lib/campaigns/aesthetic-revision.ts`
 - `lib/campaigns/aesthetic-red-team.ts`
+5. State explicitly whether AC 12 is satisfied or still open.
 - `lib/campaigns/media/media-orchestrator.ts`
 - `lib/campaigns/media/production-build-lint.ts`
 - `lib/campaigns/schema.ts`
 - `app/api/groups/campaign/[slug]/...`
 - current aesthetic test pages and any page between discovery/media flow
-
+- that the current pass was live verification of the already-implemented Phase 2B changes
 ## Acceptance Criteria
 
 The phase is complete only when all of the following are true:
 
 1. UI and agent callers share one underlying brief-step contract.
+
+If the targeted rerun clears the remaining representative failure without regressing the two current successes, mark AC 12 as satisfied.
+If the rerun still fails, describe the remaining blocker patterns precisely and keep the next change tightly scoped to those patterns.
 2. The happy path no longer requires validate/remediate/revise loop choreography.
 3. Native structured outputs are used in the main generation path.
 4. Failure handling uses one corrective reprompt at most, then stops.
@@ -379,20 +450,21 @@ Likely verification commands:
 
 ## Next Agent Instructions
 
-The next agent should treat Phase 2A as complete and execute only the next production-quality pass.
+The next agent should treat Phase 2A and Phase 2B as complete and execute only the targeted Phase 2C production-quality pass.
 
 ### Objective
 
-Improve fresh `landingStillBible` and related visual-planning output so newly generated campaigns stop failing production-build lint for content reasons.
+Improve fresh `landingStillBible` and related visual-planning output so the remaining art/creative campaign archetype stops failing production-build lint for content reasons.
 
 ### Do First
 
-1. Read the Phase 2A findings in `phase-result.md` before making changes.
+1. Read the latest findings in `phase-result.md` before making changes.
 2. Assume stale-state false blocks are already handled unless a new regression is discovered.
 3. Use the current fresh-run sample as the baseline quality benchmark:
 	- `bp-tabletop-icon-2027`
 	- `deck-sketchbook-society`
 	- `eastern-caribbean-stitch-sail-2026-09-19`
+	- current verified status: `0` structural blockers, `2` production-build blockers, `2/3` ready for media
 
 ### Primary Implementation Target
 
@@ -403,6 +475,8 @@ Concentrate on prompt and generation quality in the visual-planning path, especi
 - stronger role distribution across hero, editorial/concept, and intimate coverage
 - less generic fallback composition reuse
 - stronger mapping from brief identity into still-level scene/action wording
+- replacing generic rail/deck fallback scenes with niche-specific actions and interaction patterns
+- breaking composition-family clustering in art/creative campaigns
 
 Likely primary file:
 
@@ -419,6 +493,8 @@ Secondary files only if required:
 2. Do not reopen approval semantics or stale-state resync unless a new failing regression proves it is broken.
 3. Do not treat fixture-only test success as sufficient evidence.
 4. Do not add button-maze remediation logic or new operator workflows.
+5. Do not broaden this into a whole-system prompt rewrite.
+6. Do not regress the two representative campaigns that currently pass.
 
 ### Required Proof For Completion
 
@@ -430,15 +506,17 @@ Minimum proof:
 2. Record structural blockers, production-build blockers, and ready-for-media rate before and after.
 3. Show whether blocker frequency improves on the same representative sample.
 4. Call out which blocker codes were reduced and which persisted.
+5. State explicitly whether `deck-sketchbook-society-2026` still fails and whether the two currently passing campaigns stayed green.
 
 ### Required `phase-result.md` Update
 
-Update `phase-result.md` as part of the work and add a new Phase 2B progress section containing:
+Update `phase-result.md` as part of the work and add a new Phase 2C progress section containing:
 
 - what prompt or generation changes were made
 - which representative campaigns were rerun
 - before/after blocker counts for the sample
 - whether `weak_niche_signal`, identity-legibility failures, and role-coverage failures improved
+- whether generic composition-family clustering was reduced
 - residual production-build blocker patterns that still remain
 - exact commands used for reruns and verification
 

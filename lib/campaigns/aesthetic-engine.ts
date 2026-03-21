@@ -894,6 +894,7 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - At least 1 still must be an intimate or tight composition that captures a different emotional register. Assign this usage = "concept" and the composition field MUST contain at least one of these exact words: "intimate", "close", "tight", or "detail". This is the intimate/tight role and the automated role-coverage check requires exactly one.
 - use usage values only from: hero_primary, hero_alt, concept, email_header, social_square.
 - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
+- Do not let rail-side, balcony, window, cabin, or promenade fallback become the default answer. Across the 6 stills, at least 3 must anchor in a different location family than rail/balcony/window/cabin contemplation.
 - Niche cues must appear naturally — not as the focal subject but as an identifiable, observable detail that proves this community's presence without overwhelming the vacation-first feel.
 - A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
 
@@ -905,22 +906,24 @@ SCANNER RULE (weak_niche_signal BLOCKER): if 4 or more of the 6 stills have NO n
 
 To pass: aim for ALL 6 stills to carry at least one niche cue in imagePrompt or subjectAction. At most 2 stills may be niche-absent across all four fields.
 
+IDENTITY FLOOR (identity_legibility_too_low BLOCKER): a viewer should be able to name this campaign's community from the still set alone. At least 4 stills must contain a clear community-specific term or behavior in BOTH imagePrompt and subjectAction, not just one field.
+
 PER-STILL GENERATION WORKFLOW — follow for every landing still in order:
 1. Write imagePrompt first. The first or second sentence must include a niche-specific behavior, term, or belonging signal naturally within the scene. Do not save it for later in the description.
 2. Write subjectAction next. Describe what makes this moment specific to THIS community — not generic vacation behavior. A niche term or community-specific behavior must appear here.
 3. Confirm both imagePrompt and subjectAction each contain a niche signal before proceeding.
-4. Complete remaining fields (composition, environmentDetails, mood, etc.) then move to the next still.
+4. Complete remaining fields (composition, environmentDetails, mood, etc.) and ensure the location family, social unit, and emotional register differ from the previous still before moving on.
 IMPORTANT: do not write all 6 stills then retroactively patch niche terms. Embed them at generation time, per step 1, for every still.
 
 ## LANDING STILL ROLE SCAFFOLD — GENERATE IN THIS SLOT ORDER
 
 Generate exactly 6 landing stills in this slot order. Each slot specifies the required usage value and composition constraint:
-- Slot 1 (HERO_PRIMARY): usage="hero_primary" — wide composition — niche term required in imagePrompt
-- Slot 2 (HERO_ALT): usage="hero_alt" — wide or medium composition — niche term required in imagePrompt
-- Slot 3 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required
-- Slot 4 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required
-- Slot 5 (INTIMATE): usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche term required
-- Slot 6 (FLEX): usage="hero_alt", "email_header", "social_square", or "concept" — niche term required in imagePrompt or subjectAction
+- Slot 1 (HERO_PRIMARY): usage="hero_primary" — wide composition — niche term required in imagePrompt and subjectAction — no cabin/window setup
+- Slot 2 (HERO_ALT): usage="hero_alt" — wide or medium composition — niche term required in imagePrompt and subjectAction — use a different location family than Slot 1
+- Slot 3 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required in both fields — must NOT use railing, balcony, or horizon-gaze fallback
+- Slot 4 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required in both fields — must use a different location family and social unit than Slot 3
+- Slot 5 (INTIMATE): usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche term required in both fields — must NOT be a candlelit dining fallback
+- Slot 6 (FLEX): usage="hero_alt", "email_header", "social_square", or "concept" — niche term required in imagePrompt or subjectAction — choose the least-used location family so far and avoid repeating the dominant composition family
 
 ## SCENE RULES
 - mood field: name the VACATION emotion (e.g. "sunset wonder", "playful discovery", "golden hour magic"), never a work emotion (e.g. "focused", "rigorous", "purposeful")
@@ -977,6 +980,10 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - Avoid spectacle dependency. The image should still work if the viewer sees it for one second.
 - CHANNEL DISTINCTION: Landing stills should feel compositionally different from scene-library shots. Stills favor tight framing, clean negative space, and intimate subject scale. Scenes favor wider establishing framing, environmental depth, and architectural context.
 - At least 2 of 6 landing stills should use a framing approach that would NOT work as a scene-library cut — for example, tight crop on hands sharing a phone screen, macro detail of a botanical cuff, or a direct-to-camera smile with ocean bokeh.
+- GENERIC FALLBACK BAN: do not solve multiple stills with repeated rail-laughing couples, repeated quiet window solos, repeated candlelit dining intimacy, or repeated wide stern/bow horizon gazes. Any of those families repeated 3 times becomes a blocker; aim to use each family no more than once.
+- LOCATION SPREAD: the 6 stills should span at least 4 distinct location families such as promenade, pool edge, dining/lounge, cabin threshold, library/game space, spa/solarium, embarkation/port, or offboard destination context when available.
+- SOCIAL SPREAD: include at least one pair moment, one solo moment, and one mixed-age or friendship moment across the set so the campaign identity is not reduced to one repeating guest archetype.
+- FINAL SELF-CHECK BEFORE RETURNING THE SET: count how many stills contain a niche term in imagePrompt; count how many contain a niche term in subjectAction; count how many distinct location families appear; count how many stills reuse a generic fallback family. If the counts would trigger weak_niche_signal, identity_legibility_too_low, generic_fallback_overuse, missing_role_coverage, or repeated_composition_family, rewrite before returning.
 
 ## STORYBOARD RULES
 - Each storyboard must follow an emotional arc: intrigue/hook → building desire → peak euphoria → "this could be you" CTA.
