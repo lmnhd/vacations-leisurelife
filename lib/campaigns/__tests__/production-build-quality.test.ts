@@ -301,6 +301,125 @@ test('AC 10: well-structured still set following new guidance passes lintProduct
     );
 });
 
+// ── Phase 2C: Art/creative archetype regression ──────────────────────────────
+// Covers the deck-sketchbook-society pattern:
+//   niche keywords present but composition families are all generic cruise fallbacks.
+// The fix is enforcing diverse composition families + niche actions in slot descriptions.
+
+const SKETCH_KEYWORDS = ['sketching', 'sketchbook', 'botanical drawing', 'watercolor'];
+
+function makeSketchStillNichePresent(id: string, overrides: Partial<LandingStillSpec> = {}): LandingStillSpec {
+    return makeStill({
+        stillId: id,
+        usage: 'concept',
+        imagePrompt: overrides.imagePrompt ?? 'Warm afternoon light as a guest sits at the rail with a sketchbook open, pencil poised above a half-finished botanical drawing',
+        subjectAction: overrides.subjectAction ?? 'guest sketching botanical specimens in a leather sketchbook at the deck railing',
+        composition: overrides.composition ?? 'medium shot, couple at railing, laughing together',
+        location: overrides.location ?? 'deck railing',
+        ...overrides,
+    });
+}
+
+console.log('\nProduction Build Quality Regression — Phase 2C Art/Creative Archetype\n');
+
+test('AC 12a: art/creative stills with niche keywords but all in generic composition families get generic_fallback_overuse (composition diversity failure)', () => {
+    // Niche keywords ARE present in imagePrompt/subjectAction — scanner sees them
+    // But ALL stills use generic fallback composition families (rail couple laugh, deck sea wide)
+    const stills: LandingStillSpec[] = [
+        makeSketchStillNichePresent('s1', { location: 'deck railing', subjectAction: 'couple laughing together over a sketchbook', composition: 'couple at rail smiling laughing' }),
+        makeSketchStillNichePresent('s2', { location: 'railing', subjectAction: 'couple laughing sharing sketching tips', composition: 'couple at railing laughing together' }),
+        makeSketchStillNichePresent('s3', { location: 'deck bow', subjectAction: 'guest with sketchbook gazing at the ocean horizon', composition: 'wide deck sea horizon couple facing horizon sunset' }),
+        makeSketchStillNichePresent('s4', { location: 'stern deck', subjectAction: 'sketching the wake and horizon from the deck', composition: 'deck sea wide couple at horizon' }),
+        makeSketchStillNichePresent('s5'),
+        makeSketchStillNichePresent('s6'),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: SKETCH_KEYWORDS });
+
+    // Niche signal should be fine — keywords are present
+    const nicheBlocker = report.blockingIssues.find(i => i.code === 'weak_niche_signal');
+    assert.ok(!nicheBlocker, `weak_niche_signal must NOT fire when niche keywords are present, got: ${nicheBlocker?.message}`);
+
+    // But composition family clustering should fire
+    const compositionBlocker = report.blockingIssues.find(
+        i => i.code === 'repeated_composition_family' || i.code === 'generic_fallback_overuse'
+    );
+    assert.ok(compositionBlocker, `a composition family blocker must fire when multiple generic fallback families are overused, got verdicts: ${report.blockingIssues.map(b => b.code).join(', ')}`);
+});
+
+test('AC 12b: corrected art/creative archetype with niche terms + diverse composition families passes lint (post-Phase 2C target)', () => {
+    // Same niche keywords, but each still uses a different location family + no repeated generic fallback
+    const stills: LandingStillSpec[] = [
+        makeStill({
+            stillId: 'hero-1',
+            usage: 'hero_primary',
+            location: 'ship library reading room',
+            subjectAction: 'guest spreading watercolor sketches across the reading room table, ocean visible through the port windows',
+            imagePrompt: 'Afternoon light in the ship library as a guest lays out a series of botanical watercolor sketches on the reading table — port windows open to the ocean, natural light, 35mm film grain',
+            composition: 'wide editorial shot, library shelves framing subject, ocean glimpsed through window',
+            mood: 'quiet creative focus',
+        }),
+        makeStill({
+            stillId: 'hero-2',
+            usage: 'hero_alt',
+            location: 'ship promenade forward section',
+            subjectAction: 'two guests comparing sketchbooks on a promenade bench, pointing at each other\'s botanical drawings with delighted surprise',
+            imagePrompt: 'Morning light on the promenade as two guests sit side by side comparing open sketchbooks, pointing and laughing over botanical drawings — turquoise ocean stretching beyond the rail, 35mm film grain',
+            composition: 'medium wide shot, promenade bench, ocean horizon behind',
+            mood: 'shared creative discovery',
+        }),
+        makeStill({
+            stillId: 'editorial-1',
+            usage: 'email_header',
+            location: 'ship pool deck shaded area',
+            subjectAction: 'guest reclining under a canvas canopy with a sketchbook propped against their knees, lazily capturing the ship\'s funnel from below',
+            imagePrompt: 'Dappled midday shade over the pool deck as a guest reclines with a sketchbook balanced on their knees, pencil working across the page — funnel silhouette above, candid travel photography',
+            composition: 'medium wide editorial framing, pool and sky visible, open airy',
+            mood: 'relaxed sun-filled creativity',
+        }),
+        makeStill({
+            stillId: 'editorial-2',
+            usage: 'concept',
+            location: 'embarkation pier port-side',
+            subjectAction: 'guest standing at the gangway holding a sketchbook open to a drawing of the ship\'s hull, comparing the sketch to the real vessel behind them',
+            imagePrompt: 'Golden port-morning light as a guest stands on the pier holding an open sketchbook with a detailed drawing of the ship — actual hull rising behind them, travel photography, natural light',
+            composition: 'medium wide editorial, ship hull and pier context, open framing',
+            mood: 'playful documentary joy',
+        }),
+        makeStill({
+            stillId: 'intimate-1',
+            usage: 'concept',
+            location: 'ship lounge window banquette',
+            subjectAction: 'two guests leaning close over a single sketchbook, one guiding the other\'s pencil through a botanical detail',
+            imagePrompt: 'Soft window light in the ship lounge as two guests lean together over an open sketchbook, one guest gently guiding the other\'s pencil across a botanical sketch — intimate candid travel photography',
+            composition: 'intimate close medium shot, window light, two-person tight framing',
+            mood: 'intimate creative warmth',
+        }),
+        makeStill({
+            stillId: 'social-1',
+            usage: 'social_square',
+            location: 'ship spa solarium',
+            subjectAction: 'guest relaxing in the solarium pool with a waterproof sketchbook propped on the pool edge, sketching the glass ceiling above',
+            imagePrompt: 'Soft diffused light in the ship solarium as a guest floats in the warm pool, sketchbook propped on the pool rim, drawing the arching glass ceiling — candid travel photography, serene',
+            composition: 'square editorial crop, glass ceiling and pool framing, medium distance',
+            mood: 'serene creative solitude',
+        }),
+    ];
+
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: SKETCH_KEYWORDS });
+
+    assert.equal(report.blockingIssues.length, 0,
+        `Expected 0 blocking issues in corrected art/creative archetype, got:\n${report.blockingIssues.map(i => `  [${i.code}] ${i.message}`).join('\n')}`
+    );
+    assert.ok(report.verdict === 'pass' || report.verdict === 'warn',
+        `Expected pass or warn, got: ${report.verdict}`
+    );
+    assert.ok(report.scoreSummary.explicitCueCount >= 4,
+        `Expected 4+ explicit cue stills, got: ${report.scoreSummary.explicitCueCount}`
+    );
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 
