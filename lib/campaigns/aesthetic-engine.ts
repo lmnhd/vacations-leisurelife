@@ -705,11 +705,28 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
 // ── Lint compliance block injected into every visual-planning prompt ──────────
 // Maps directly to the deterministic rules in production-build-lint.ts so the
 // LLM knows the exact fields and exact keywords the machine will scan.
-function buildLintComplianceBlock(campaign: Campaign): string {
+function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
     const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
     const kwDisplay = nicheKw.length > 0
         ? nicheKw.join(', ')
         : campaign.name.toLowerCase().split(/\s+/).filter(t => t.length > 3).join(', ');
+
+    const vocabularyLines: string[] = belongingSignals && belongingSignals.length > 0
+        ? [
+            '',
+            `   NICHE SIGNAL VOCABULARY — any of the following satisfy the keyword check when present in imagePrompt or subjectAction:`,
+            `   Keywords: ${kwDisplay}`,
+            '   Campaign belonging signals (observable scene details that also satisfy the scanner):',
+            ...belongingSignals.slice(0, 6).map((s, i) => `   ${i + 1}. ${s}`),
+            '',
+            `   COMPLIANT imagePrompt pattern: "[Atmosphere and light], [ship or port location], [guest experiencing something specific to the ${campaign.name} community — at least one of the above terms embedded here], [ocean or ship as backdrop]"`,
+            `   NON-COMPLIANT imagePrompt pattern: "[Atmosphere and light], [any ship location], [generic vacation action — laughing, gazing, couple at rail — no niche term present]" — FAILS scanner`,
+        ]
+        : [
+            '',
+            `   COMPLIANT pattern: embed at least one of these: ${kwDisplay} — naturally inside imagePrompt or subjectAction.`,
+            '   NON-COMPLIANT pattern: imagePrompt and subjectAction both describe generic vacation activity with no niche-specific term — FAILS scanner.',
+        ];
 
     return [
         'LINT COMPLIANCE REQUIREMENTS — MACHINE-CHECKED — NON-COMPLIANCE BLOCKS CAMPAIGN APPROVAL:',
@@ -720,6 +737,7 @@ function buildLintComplianceBlock(campaign: Campaign): string {
         '   The remaining 2 stills must include a niche keyword in either "environmentDetails" OR "composition".',
         '   Zero-keyword stills (no niche term in any of the 4 fields) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.',
         `   Self-check per still: does imagePrompt OR subjectAction contain at least one of: ${kwDisplay}?`,
+        ...vocabularyLines,
         '',
         '2. STILL USAGE FIELD DISTRIBUTION (prevents missing_role_coverage failure):',
         '   Produce exactly this distribution across the 6 stills:',
@@ -876,8 +894,33 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - At least 1 still must be an intimate or tight composition that captures a different emotional register. Assign this usage = "concept" and the composition field MUST contain at least one of these exact words: "intimate", "close", "tight", or "detail". This is the intimate/tight role and the automated role-coverage check requires exactly one.
 - use usage values only from: hero_primary, hero_alt, concept, email_header, social_square.
 - Prefer ocean-forward, rail-side, balcony, promenade, or clean ship-interior compositions over busy event scenes.
-- If a niche cue appears, it must be subtle and secondary to travel emotion.
+- Niche cues must appear naturally — not as the focal subject but as an identifiable, observable detail that proves this community's presence without overwhelming the vacation-first feel.
 - A landing still may borrow atmosphere from the scene library, but it should not depend on storyboard-style complexity.
+
+## LANDING STILL NICHE COMPLIANCE — MACHINE-ENFORCED BLOCKER
+
+Every landing still bible is scanned by a deterministic rule engine immediately after generation. Violations are blocking failures that prevent campaign approval and require full regeneration.
+
+SCANNER RULE (weak_niche_signal BLOCKER): if 4 or more of the 6 stills have NO niche term in ANY of the four scanned fields (imagePrompt, subjectAction, environmentDetails, composition), the campaign is blocked.
+
+To pass: aim for ALL 6 stills to carry at least one niche cue in imagePrompt or subjectAction. At most 2 stills may be niche-absent across all four fields.
+
+PER-STILL GENERATION WORKFLOW — follow for every landing still in order:
+1. Write imagePrompt first. The first or second sentence must include a niche-specific behavior, term, or belonging signal naturally within the scene. Do not save it for later in the description.
+2. Write subjectAction next. Describe what makes this moment specific to THIS community — not generic vacation behavior. A niche term or community-specific behavior must appear here.
+3. Confirm both imagePrompt and subjectAction each contain a niche signal before proceeding.
+4. Complete remaining fields (composition, environmentDetails, mood, etc.) then move to the next still.
+IMPORTANT: do not write all 6 stills then retroactively patch niche terms. Embed them at generation time, per step 1, for every still.
+
+## LANDING STILL ROLE SCAFFOLD — GENERATE IN THIS SLOT ORDER
+
+Generate exactly 6 landing stills in this slot order. Each slot specifies the required usage value and composition constraint:
+- Slot 1 (HERO_PRIMARY): usage="hero_primary" — wide composition — niche term required in imagePrompt
+- Slot 2 (HERO_ALT): usage="hero_alt" — wide or medium composition — niche term required in imagePrompt
+- Slot 3 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required
+- Slot 4 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required
+- Slot 5 (INTIMATE): usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche term required
+- Slot 6 (FLEX): usage="hero_alt", "email_header", "social_square", or "concept" — niche term required in imagePrompt or subjectAction
 
 ## SCENE RULES
 - mood field: name the VACATION emotion (e.g. "sunset wonder", "playful discovery", "golden hour magic"), never a work emotion (e.g. "focused", "rigorous", "purposeful")
@@ -953,7 +996,7 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty/unpopulated scenes", "No corporate body language", "No generic interiors without ship identity", "No formal or staged poses", "No work-like activities".
 `.trim();
 
-    const lintComplianceBlock = buildLintComplianceBlock(campaign);
+    const lintComplianceBlock = buildLintComplianceBlock(campaign, coreAesthetic.communityExpression.belongingSignals);
 
     const contextPrompt = `
 CAMPAIGN CONTEXT (use as inspiration, but ALWAYS reframe through the vacation lens):
