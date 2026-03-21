@@ -133,3 +133,79 @@ npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
 - Do not run the full live verification sample yet.
 - Run tests after the pipeline skeleton exists and the intermediate schemas and orchestration steps are wired.
 - Run the representative live sample only after the new generation path is actually in place.
+
+---
+
+## Editor's Room Pipeline — Implemented (commit `ebb82b2`)
+
+### Architecture Change
+
+Replaced the monolithic `generateVisualPlanningFromBrief` call (one LLM pass generating both `landingStillBible` + `productionBible` simultaneously) with a 7-step pipeline in `generateFullBriefBundle`.
+
+### New File: `lib/campaigns/editors-room.ts`
+
+Four exported generation functions:
+
+| Function | Purpose | Input | Output |
+|---|---|---|---|
+| `generateActionAnchors` | Community-native action seeds | campaign + brief | 6-8 anchors with location, niche signal, social unit |
+| `generateLandingStillBible` | 6 stills from locked anchors + slot rules | campaign + brief + anchors | `LandingStillBible` |
+| `repairFailingStills` | One-pass isolated repair for specific stills | campaign + brief + failing IDs + blockers | `LandingStillSpec[]` (only failing stills) |
+| `generateProductionBibleFromStills` | Scene library + storyboards from validated stills | campaign + brief + validated stills | `ProductionBible` |
+
+Two exported utility functions: `extractFailingStillIds` + `mergeRepairedStills`.
+
+### Updated Orchestration Flow (`orchestrator.ts`)
+
+```
+Step 1: generateAestheticBrief          — core brief (unchanged)
+Step 2: generateActionAnchors           — 6-8 community-native seeds (NEW)
+Step 3: generateLandingStillBible       — 6 stills from anchors (NEW)
+Step 4: lintProductionBuild (stills)    — identify which stills failed (NEW split point)
+Step 5: repairFailingStills (if needed) — one-pass isolated repair, subset only (NEW)
+Step 6: generateProductionBibleFromStills — scenes + storyboards from validated stills (NEW)
+Step 7: lintProductionBuild (final)     — full report including production bible
+```
+
+The isolated repair (Step 5) only triggers if `blockingIssues.length > 0` and the failing stills are a strict subset of the set (partial failure). Full-set failure falls through to production bible generation then returns blockers.
+
+### What Each Step Separates
+
+- **Creation** (`generateActionAnchors` + `generateLandingStillBible`): niche identity locked before any visual generation happens; prompt responsibility reduced per call
+- **Critique** (`lintProductionBuild`): deterministic machine check, not embedded in the generation prompt
+- **Repair** (`repairFailingStills`): knows exactly which stills failed and why, doesn't destabilize passing stills
+- **Synthesis** (`generateProductionBibleFromStills`): production bible gets the validated still set as reference — can use actual community identity rather than inferring it
+
+### New `BriefEngineResult` Field
+
+`isolatedStillRevisionUsed: boolean` — set to `true` if Step 5 ran. Propagated through `createOrRefreshBrief` and `applyStructuredRevision`.
+
+### Exported Helpers (aesthetic-engine.ts)
+
+Six private functions made exported so editors-room.ts can share them:
+`buildLintComplianceBlock`, `getCanonicalShipName`, `buildShipContext`, `buildEventFramingGuidance`, `joinCampaignList`, `sanitizePromptList`.
+
+### Regression Results After Implementation
+
+- Orchestrator: **26/26**
+- Validation: **2/2**
+- Production-build quality: **12/12**
+
+### Live Verification Required
+
+Run against three representative campaigns:
+
+```powershell
+# Direct library approach (no dev server needed)
+npx tsx tests/phase-2c-direct-library.ts
+
+# Or via HTTP (dev server must be running)
+npx tsx tests/phase-2c-live-verification.ts
+```
+
+Expected outcomes:
+- `bp-tabletop-icon-2027-7n-caribbean` → stays green (0 production blockers)
+- `eastern-caribbean-stitch-sail-2026-09-19` → stays green
+- `deck-sketchbook-society-2026` → target: 0 production blockers, `ready_for_media`
+
+Before/after blocker counts must be recorded here after live runs.
