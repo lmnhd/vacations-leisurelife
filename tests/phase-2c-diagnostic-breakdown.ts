@@ -142,6 +142,7 @@ async function inspectCampaign(campaign: Campaign): Promise<void> {
     const {
         generateActionAnchors,
         generateLandingStillBible,
+        normalizeEditorialCompositions,
         validateAnchorCompliance,
     } = await import('../lib/campaigns/editors-room');
     const { lintProductionBuild } = await import('../lib/campaigns/media/production-build-lint');
@@ -153,7 +154,9 @@ async function inspectCampaign(campaign: Campaign): Promise<void> {
 
     const brief = await generateAestheticBrief(campaign);
     const anchors = await generateActionAnchors(campaign, brief);
-    const landingStillBible = await generateLandingStillBible(campaign, brief, anchors);
+    const rawBible = await generateLandingStillBible(campaign, brief, anchors);
+    // Step 3.1: normalize editorial compositions (matches orchestrator)
+    const landingStillBible = normalizeEditorialCompositions(rawBible);
     const anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
     const lint = lintProductionBuild({
         landingStillBible,
