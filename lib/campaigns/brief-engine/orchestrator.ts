@@ -13,6 +13,7 @@ import {
     normalizeEditorialCompositions,
 } from '../editors-room';
 import { lintProductionBuild } from '../media/production-build-lint';
+import { getExpandedNicheKeywords } from '../reference-packs';
 import { validateBrief } from './validation';
 import { applyAutoFixes } from './auto-fix';
 import { applySupervisorState } from './supervisor';
@@ -92,10 +93,11 @@ async function generateFullBriefBundle(
     }
 
     // ── Step 4: Lint stills only — identify specific failures ─────────
+    const expandedNicheKeywords = getExpandedNicheKeywords(campaign);
     let stillsLint = lintProductionBuild({
         landingStillBible,
         themeName: campaign.name,
-        nicheKeywords: campaign.targetingKeywords ?? [],
+        nicheKeywords: expandedNicheKeywords,
     });
 
     // ── Step 5: Unified repair — anchor violations + lint blockers ─────
@@ -118,7 +120,7 @@ async function generateFullBriefBundle(
         stillsLint = lintProductionBuild({
             landingStillBible,
             themeName: campaign.name,
-            nicheKeywords: campaign.targetingKeywords ?? [],
+            nicheKeywords: expandedNicheKeywords,
         });
         isolatedStillRevisionUsed = true;
 
@@ -137,7 +139,7 @@ async function generateFullBriefBundle(
         landingStillBible,
         productionBible,
         themeName: campaign.name,
-        nicheKeywords: campaign.targetingKeywords ?? [],
+        nicheKeywords: expandedNicheKeywords,
     });
 
     return {
@@ -185,7 +187,7 @@ async function recomputeAndResyncLint(
         landingStillBible: brief.landingStillBible,
         productionBible: brief.productionBible,
         themeName: campaign.name,
-        nicheKeywords: campaign.targetingKeywords ?? [],
+        nicheKeywords: getExpandedNicheKeywords(campaign),
     });
 
     const storedStatus = brief.productionBuildStatus;

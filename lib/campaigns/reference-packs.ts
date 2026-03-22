@@ -445,6 +445,16 @@ export function getSlotReferenceBundle(
     };
 }
 
+// ── Public API: expand niche keywords with reference pack signals ────────────
+
+export function getExpandedNicheKeywords(campaign: Campaign): string[] {
+    const base = campaign.targetingKeywords ?? [];
+    const pack = getReferencePack(campaign);
+    if (!pack) return base;
+    const merged = new Set([...base.map(k => k.toLowerCase()), ...pack.requiredNicheSignals.map(k => k.toLowerCase())]);
+    return [...merged];
+}
+
 // ── Public API: format reference bundle as prompt text ──────────────────────
 
 export function formatReferenceBundleForPrompt(bundle: SlotReferenceBundle): string {

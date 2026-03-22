@@ -145,6 +145,7 @@ async function inspectCampaign(campaign: Campaign): Promise<void> {
         validateAnchorCompliance,
     } = await import('../lib/campaigns/editors-room');
     const { lintProductionBuild } = await import('../lib/campaigns/media/production-build-lint');
+    const { getExpandedNicheKeywords } = await import('../lib/campaigns/reference-packs');
 
     console.log(`\n🔍 DIAGNOSTIC: ${campaign.id}`);
     console.log('─'.repeat(50));
@@ -157,7 +158,7 @@ async function inspectCampaign(campaign: Campaign): Promise<void> {
     const lint = lintProductionBuild({
         landingStillBible,
         themeName: campaign.name,
-        nicheKeywords: campaign.targetingKeywords ?? [],
+        nicheKeywords: getExpandedNicheKeywords(campaign),
     });
 
     const anchorViolationsByStill = groupAnchorViolationsByStill(anchorCompliance.violations);

@@ -10,7 +10,7 @@
 
 import assert from 'node:assert';
 import type { Campaign } from '../types';
-import { inferNicheFamily, getReferencePack, getSlotReferenceBundle, formatReferenceBundleForPrompt, formatReferencePackForGeneration } from '../reference-packs';
+import { inferNicheFamily, getReferencePack, getSlotReferenceBundle, formatReferenceBundleForPrompt, formatReferencePackForGeneration, getExpandedNicheKeywords } from '../reference-packs';
 import type { ReferencePack } from '../reference-pack-types';
 
 let passed = 0;
@@ -184,6 +184,48 @@ test('winning example shot intents have all required fields', () => {
         assert.ok(win.shotIntent.antiFallbackNote, `${win.exampleId}: antiFallbackNote missing`);
         assert.ok(win.shotIntent.locationFamily, `${win.exampleId}: locationFamily missing`);
     }
+});
+
+// ── Expanded niche keywords ──────────────────────────────────────────────────
+
+console.log('\nReference Packs — Expanded Niche Keywords\n');
+
+test('getExpandedNicheKeywords merges campaign keywords with pack signals', () => {
+    const campaign = makeCampaign({ targetingKeywords: ['embroidery', 'fiber arts'], id: 'stitch-test' });
+    const expanded = getExpandedNicheKeywords(campaign);
+    assert.ok(expanded.includes('embroidery'), 'must include original keyword');
+    assert.ok(expanded.includes('fiber arts'), 'must include original keyword');
+    assert.ok(expanded.includes('crochet'), 'must include pack signal: crochet');
+    assert.ok(expanded.includes('yarn'), 'must include pack signal: yarn');
+    assert.ok(expanded.includes('knitting'), 'must include pack signal: knitting');
+    assert.ok(expanded.includes('embroidery hoop'), 'must include pack signal: embroidery hoop');
+});
+
+test('getExpandedNicheKeywords deduplicates overlapping keywords', () => {
+    const campaign = makeCampaign({ targetingKeywords: ['embroidery', 'stitch'], id: 'stitch-dedup' });
+    const expanded = getExpandedNicheKeywords(campaign);
+    const embroideryCount = expanded.filter(k => k === 'embroidery').length;
+    assert.equal(embroideryCount, 1, 'embroidery must appear exactly once');
+});
+
+test('getExpandedNicheKeywords returns base keywords for unknown niche', () => {
+    const campaign = makeCampaign({ targetingKeywords: ['relaxation', 'spa'], id: 'generic-test' });
+    const expanded = getExpandedNicheKeywords(campaign);
+    assert.deepStrictEqual(expanded, ['relaxation', 'spa']);
+});
+
+test('getExpandedNicheKeywords returns empty array for no keywords and no pack', () => {
+    const campaign = makeCampaign({ targetingKeywords: [], id: 'empty-test' });
+    const expanded = getExpandedNicheKeywords(campaign);
+    assert.deepStrictEqual(expanded, []);
+});
+
+test('tabletop expanded keywords include board game and dice', () => {
+    const campaign = makeCampaign({ targetingKeywords: ['tabletop'], id: 'tabletop-expand' });
+    const expanded = getExpandedNicheKeywords(campaign);
+    assert.ok(expanded.includes('board game'), 'must include board game');
+    assert.ok(expanded.includes('dice'), 'must include dice');
+    assert.ok(expanded.includes('game piece'), 'must include game piece');
 });
 
 console.log(`\nPassed: ${passed}`);
