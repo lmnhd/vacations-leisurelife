@@ -241,6 +241,14 @@ export const LandingStillSpecSchema = z.object({
     anchorId: z.string().optional(),
     slotRole: LandingStillSlotRoleEnum.optional(),
     nicheCarryThrough: z.string().optional(),
+    // ── Shot-intent underlayer (optional for backward compat, required in generation) ──
+    shotIntent: z.string().optional(),
+    cameraDistance: z.string().optional(),
+    framingMode: z.string().optional(),
+    heroSubject: z.string().optional(),
+    nicheCue: z.string().optional(),
+    antiFallbackNote: z.string().optional(),
+    referencePackId: z.string().optional(),
 });
 export type LandingStillSpec = z.infer<typeof LandingStillSpecSchema>;
 

@@ -24,6 +24,8 @@ import {
     joinCampaignList,
     sanitizePromptList,
 } from './aesthetic-engine';
+import { getReferencePack, formatReferencePackForGeneration, formatReferenceBundleForPrompt, getSlotReferenceBundle } from './reference-packs';
+import { CameraDistanceEnum, FramingModeEnum } from './reference-pack-types';
 
 // ── Generation-only schemas: audit fields required (OpenAI structured output rejects .optional fields) ──
 // These are used ONLY for generateObject calls. schema.ts keeps .optional() for backward-compat reading
@@ -33,6 +35,14 @@ const StillSpecForGenerationSchema = LandingStillSpecSchema.extend({
     anchorId: z.string(),
     slotRole: LandingStillSlotRoleEnum,
     nicheCarryThrough: z.string(),
+    // ── Shot-intent underlayer (required in generation) ──
+    shotIntent: z.string(),
+    cameraDistance: CameraDistanceEnum,
+    framingMode: FramingModeEnum,
+    heroSubject: z.string(),
+    nicheCue: z.string(),
+    antiFallbackNote: z.string(),
+    referencePackId: z.string(),
 });
 
 const BibleForGenerationSchema = LandingStillBibleSchema.extend({
@@ -122,13 +132,25 @@ export async function generateLandingStillBible(
         .map((a, i) => `anchorId="${a.anchorId}" | Slot ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`)
         .join('\n');
 
+    // ── Reference grounding ──────────────────────────────────────────────
+    const refPack = getReferencePack(campaign);
+    const referenceBlock = refPack ? formatReferencePackForGeneration(refPack) : '';
+    const refPackId = refPack?.referencePackId ?? 'none';
+
     const system = `
 You are a visual director translating community action anchors into 6 landing still specs for a niche cruise campaign.
 
-SLOT ASSIGNMENT — for each still, populate the three audit fields:
+SLOT ASSIGNMENT — for each still, populate the audit and shot-intent fields:
   anchorId: copy the anchorId value from the anchor that seeded this still
   slotRole: set to the enum value for this slot (HERO_PRIMARY, HERO_ALT, EDITORIAL_WIDE_A, EDITORIAL_WIDE_B, INTIMATE, or FLEX)
   nicheCarryThrough: write the exact niche keyword or phrase you embedded in BOTH imagePrompt AND subjectAction
+  shotIntent: one sentence describing what this still must communicate
+  cameraDistance: one of extreme_wide, wide, medium_wide, medium, medium_close, close_up, macro
+  framingMode: one of establishing, environmental_portrait, over_the_shoulder, two_shot, single_subject, detail_insert, overhead, low_angle_hero
+  heroSubject: the primary subject that must be visible and recognizable
+  nicheCue: the specific niche object, prop, or action visible in frame
+  antiFallbackNote: one sentence explaining what generic fallback this still avoids
+  referencePackId: set to "${refPackId}"
 
 - Slot 1 → slotRole=HERO_PRIMARY, usage="hero_primary" — wide — niche in imagePrompt + subjectAction — no cabin/window setup
 - Slot 2 → slotRole=HERO_ALT, usage="hero_alt" — wide or medium — niche in both fields — different location family than Slot 1
@@ -139,10 +161,10 @@ SLOT ASSIGNMENT — for each still, populate the three audit fields:
 
 ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
-
+${referenceBlock}
 ${lintBlock}
 
-FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once.
+FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene.
 `.trim();
 
     const ctx = `
@@ -157,7 +179,7 @@ Belonging Signals: ${brief.communityExpression?.belongingSignals?.join('; ') ?? 
 Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrinciple ?? ''}
 `.trim();
 
-    console.log(`[editors-room] generateLandingStillBible for ${campaign.id}`);
+    console.log(`[editors-room] generateLandingStillBible for ${campaign.id} (refPack=${refPackId})`);
     const { object } = await generateObject({
         model,
         schema: BibleForGenerationSchema,
@@ -229,6 +251,15 @@ export async function repairFailingStills(
         ].join('\n'))
         .join('\n');
 
+    // ── Reference grounding for repair ───────────────────────────────────
+    const refPack = getReferencePack(campaign);
+    const refPackId = refPack?.referencePackId ?? 'none';
+    const slotRefBlocks = failingStills.map(s => {
+        if (!refPack || !s.slotRole) return '';
+        const bundle = getSlotReferenceBundle(refPack, s.slotRole);
+        return `\nREFERENCE FOR ${s.stillId} (${s.slotRole}):\n${formatReferenceBundleForPrompt(bundle)}`;
+    }).filter(Boolean).join('\n');
+
     const failingContext = failingStills
         .map(s => [
             `stillId=${s.stillId} | slotRole=${s.slotRole ?? 'unknown'} | anchorId=${s.anchorId ?? 'unknown'} | location=${s.location} | usage=${s.usage}`,
@@ -247,16 +278,23 @@ AUDIT FIELDS — each repaired still must include:
   anchorId: preserve the original value from the failing still
   slotRole: preserve the original value from the failing still
   nicheCarryThrough: write the EXACT niche keyword or phrase you embedded in BOTH imagePrompt AND subjectAction to resolve the blocker
+  shotIntent: one sentence describing what this still must communicate
+  cameraDistance: one of extreme_wide, wide, medium_wide, medium, medium_close, close_up, macro
+  framingMode: one of establishing, environmental_portrait, over_the_shoulder, two_shot, single_subject, detail_insert, overhead, low_angle_hero
+  heroSubject: the primary subject that must be visible and recognizable
+  nicheCue: the specific niche object, prop, or action visible in frame
+  antiFallbackNote: one sentence explaining what generic fallback this still avoids
+  referencePackId: set to "${refPackId}"
 
 BLOCKERS TO RESOLVE:
 ${blockerSummary}
 ${anchorViolationsBlock ? `\n${anchorViolationsBlock}\n` : ''}
 PASSING STILLS (for reference — do not repeat their location families or niche terms):
 ${passingContext}
-
+${slotRefBlocks}
 ${lintBlock}
 
-For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by a passing still, and avoid every generic fallback family.
+For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by a passing still, and avoid every generic fallback family. Use the reference examples as guides for niche-native imagery.
 `.trim();
 
     const prompt = `
@@ -267,7 +305,7 @@ FAILING STILLS TO REPAIR:
 ${failingContext}
 `.trim();
 
-    console.log(`[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(', ')}`);
+    console.log(`[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(', ')} (refPack=${refPackId})`);
     const { object } = await generateObject({ model, schema: RepairResultSchema, system, prompt });
     return object.stills;
 }
