@@ -168,6 +168,40 @@ Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrincipl
     return object;
 }
 
+// ── Step 3.1: Deterministic editorial composition normalizer ──────────────────
+// Lint's extractShotRole classifies concept-usage stills with intimate/close/tight/detail
+// composition keywords as 'intimate' rather than 'editorial'. EDITORIAL_WIDE slots must
+// never carry those keywords. This step runs after generation and before anchor compliance
+// so the compliance gate and lint both see corrected compositions.
+
+const INTIMATE_KEYWORD_REPLACEMENTS: [RegExp, string][] = [
+    [/\bintimate\b/gi, 'wide'],
+    [/\bclose-up\b/gi, 'medium'],
+    [/\bclose\b/gi, 'medium'],
+    [/\btight\b/gi, 'medium'],
+    [/\bdetailed\b/gi, 'environmental'],
+    [/\bdetail\b/gi, 'environmental'],
+];
+
+export function normalizeEditorialCompositions(bible: LandingStillBible): LandingStillBible {
+    const EDITORIAL_WIDE_ROLES = new Set(['EDITORIAL_WIDE_A', 'EDITORIAL_WIDE_B']);
+    let changed = false;
+    const stillLibrary = bible.stillLibrary.map(still => {
+        if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole)) return still;
+        const compLC = still.composition.toLowerCase();
+        const needsFix = INTIMATE_KEYWORDS.some(kw => compLC.includes(kw));
+        if (!needsFix) return still;
+        let fixed = still.composition;
+        for (const [pattern, replacement] of INTIMATE_KEYWORD_REPLACEMENTS) {
+            fixed = fixed.replace(pattern, replacement);
+        }
+        changed = true;
+        return { ...still, composition: fixed };
+    });
+    if (!changed) return bible;
+    return { ...bible, stillLibrary };
+}
+
 // ── Step 3: Repair only the failing stills (one pass, isolated) ───────────────
 
 export async function repairFailingStills(

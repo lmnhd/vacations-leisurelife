@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { validateAnchorCompliance, extractViolationStillIds, formatViolationsForRepair } from '../editors-room';
+import { validateAnchorCompliance, extractViolationStillIds, formatViolationsForRepair, normalizeEditorialCompositions } from '../editors-room';
 import type { LandingStillSpec, LandingStillBible } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -367,6 +367,110 @@ test('formatViolationsForRepair produces structured block', () => {
 
 test('formatViolationsForRepair returns empty string for no violations', () => {
     assert.equal(formatViolationsForRepair([]), '');
+});
+
+// ── normalizeEditorialCompositions ──────────────────────────────────────────
+
+console.log('\nPhase B — Editorial Composition Normalization\n');
+
+test('EDITORIAL_WIDE with intimate composition is normalized to wide', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-intimate',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        composition: 'Intimate close-up shot of guests at the table',
+        location: 'ship library', environmentDetails: 'bookshelves',
+        imagePrompt: 'Tabletop gaming in library', subjectAction: 'Pair enjoys tabletop gaming',
+        anchorId: 'anchor-1',
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    const fixed = result.stillLibrary[0];
+    assert.ok(!fixed.composition.toLowerCase().includes('intimate'), 'intimate should be replaced');
+    assert.ok(!fixed.composition.toLowerCase().includes('close-up'), 'close-up should be replaced');
+});
+
+test('EDITORIAL_WIDE with tight composition is normalized', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-tight',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        composition: 'Tight editorial frame around board game components',
+        location: 'ship library', environmentDetails: 'bookshelves',
+        imagePrompt: 'Board games in library', subjectAction: 'Friends with board games',
+        anchorId: 'anchor-2',
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    const fixed = result.stillLibrary[0];
+    assert.ok(!fixed.composition.toLowerCase().includes('tight'), 'tight should be replaced');
+});
+
+test('EDITORIAL_WIDE with detail composition is normalized', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-detail',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'email_header',
+        composition: 'Detailed overhead view of strategy card arrangement',
+        location: 'ship promenade', environmentDetails: 'promenade walkway',
+        imagePrompt: 'Strategy cards on promenade', subjectAction: 'Guest arranging strategy cards',
+        anchorId: 'anchor-3',
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    const fixed = result.stillLibrary[0];
+    assert.ok(!fixed.composition.toLowerCase().includes('detail'), 'detail should be replaced');
+});
+
+test('HERO_PRIMARY with intimate composition is NOT touched', () => {
+    const originalComposition = 'Intimate close shot of two guests';
+    const bible = makeBible([makeStill({
+        stillId: 'hero-intimate',
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        composition: originalComposition,
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    assert.equal(result.stillLibrary[0].composition, originalComposition, 'HERO stills must not be modified');
+});
+
+test('INTIMATE slot composition is NOT touched', () => {
+    const originalComposition = 'Intimate close-up of miniature painting';
+    const bible = makeBible([makeStill({
+        stillId: 'intimate-correct',
+        slotRole: 'INTIMATE',
+        usage: 'concept',
+        composition: originalComposition,
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    assert.equal(result.stillLibrary[0].composition, originalComposition, 'INTIMATE stills must not be modified');
+});
+
+test('EDITORIAL_WIDE with safe composition is returned unchanged', () => {
+    const originalComposition = 'Wide overhead establishing shot of the library';
+    const bible = makeBible([makeStill({
+        stillId: 'ed-wide-safe',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        composition: originalComposition,
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    assert.equal(result.stillLibrary[0].composition, originalComposition, 'safe compositions must not be mutated');
+    assert.equal(result, bible, 'should return same reference when no changes made');
+});
+
+test('after normalization EDITORIAL_WIDE stills no longer trigger slot_usage_mismatch in anchor compliance', () => {
+    const anchors = [{ anchorId: 'anchor-1', nicheSignal: 'tabletop gaming', locationFamily: 'library' }];
+    const bible = makeBible([makeStill({
+        stillId: 'ed-was-intimate',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        composition: 'Intimate close-up of tabletop gaming components',
+        location: 'ship library', environmentDetails: 'bookshelves',
+        imagePrompt: 'Wide shot of tabletop gaming in library', subjectAction: 'Guests enjoying tabletop gaming',
+        nicheCarryThrough: 'tabletop gaming', anchorId: 'anchor-1',
+    })]);
+    const normalized = normalizeEditorialCompositions(bible);
+    const result = validateAnchorCompliance(anchors, normalized);
+    const mismatch = result.violations.find(v => v.violationType === 'slot_usage_mismatch' && v.message.includes('EDITORIAL_WIDE'));
+    assert.ok(!mismatch, 'slot_usage_mismatch on EDITORIAL_WIDE composition should be resolved after normalization');
 });
 
 // ── Summary ──────────────────────────────────────────────────────────────────
