@@ -1,305 +1,388 @@
-# Current Phase: Break Down Landing Still Failure Classes
+# Current Phase: Reference-Grounded Still Generation
 
 ## Mission
 
-Keep the Editor's Room pipeline, but stop treating failed landing-still sets as one blended problem.
+Keep the Editor's Room pipeline and the failure-class mindset, but stop asking the still generator to invent niche-native imagery from scratch on every run.
 
-The next implementation phase must break the remaining failures into independent classes, fix them one at a time, and prove each fix against live diagnostics.
+The next implementation phase should add a concrete grounding layer ahead of `landingStillBible` generation so the model is biased toward known-good niche imagery and away from known-toxic generic cruise patterns.
 
-The immediate goal is to make `landingStillBible` generation debuggable and reliable by separating:
+This phase turns three brainstorm ideas into one executable plan:
 
-1. role coverage failures
-2. generic fallback failures
-3. niche legibility failures
-4. anchor contract failures
-5. whole-set collapse handling
+1. Golden Reference Injection is the primary implementation
+2. a single critic pass is the optional secondary reinforcement
+3. a compact structured shot underlayer is the contract that keeps the prose honest
 
 ## Why This Phase Exists
 
-Recent live verification and direct diagnostic output established three things:
+Recent work already proved several things:
 
-1. Approval/readiness gate correctness is still intact.
-2. Stale stored production-build drift is still handled.
-3. The remaining failures are now specific and separable, not evidence that the whole Editor's Room architecture should be discarded.
+1. the Editor's Room architecture is the correct base direction
+2. approval and readiness gate correctness are intact
+3. stale stored production-build drift is already handled
+4. prompt-negation balancing is not the durable path
 
-The latest report for `bp-tabletop-icon-2027-7n-caribbean` shows a narrow, actionable blocker profile:
+Recent live evidence also changed the tactical picture:
 
-1. `missing_role_coverage` is the primary blocker.
-2. Two editorial stills are failing `slot_usage_mismatch` because their composition wording is being interpreted incorrectly.
-3. Three stills still fall into generic fallback templates.
-4. One still violates the anchor location contract.
-5. Two stills claim niche carry-through but do not register as legible niche cues under lint.
+1. tabletop improved from a hard production fail to a narrower `warn` / `needs_review` state and hit the immediate target
+2. stitch still behaves primarily like a generic-fallback and weak-niche-signal failure
+3. sketchbook still behaves like an anchor-contract and whole-set stability problem
 
-The latest Phase B diagnostic result tightened that further:
+That means the next best move is not another role-coverage micro-fix.
+The next best move is to ground generation with explicit examples so the model stops snapping back to default cruise-lifestyle imagery.
 
-1. `OTS-03-EDITORIAL_A` now classifies correctly as editorial.
-2. `OTS-04-EDITORIAL_B` still classifies as intimate.
-3. `missing_role_coverage` is therefore still the primary blocker.
-4. The current composition-normalization attempt is not broad enough to eliminate all intimate-triggering cues.
+## Core Diagnosis
 
-That means the next implementation pass should stop making broad, multi-goal prompt changes.
-The active problem is now deterministic decomposition and targeted remediation.
+The remaining failures are not all the same, but two of them share a common upstream cause:
+
+1. `generic_fallback_overuse`
+2. `weak_niche_signal`
+3. `identity_legibility_too_low`
+
+These happen when the model knows the slot contract but still reaches for its safest latent image prior.
+
+In practice that means:
+
+1. slot metadata is present but the prose still sounds stock
+2. declared niche carry-through exists but the scene does not read as community-native
+3. anchor compliance can still pass while the actual visual language remains generic
+
+This is why more negative wording is not enough.
+The generator needs positive reference gravity, not more prose prohibitions.
 
 ## Active Strategy
 
-The execution target for this phase is not a new pipeline.
+The execution target for this phase is not a new orchestration system.
 
-The execution target is a cleaner debugging and remediation loop around the existing Editor's Room pipeline.
+The execution target is a reference-grounded generation layer added inside the existing Editor's Room pipeline.
 
-Work each failure class independently.
+Priority order for this phase:
 
-Current priority order:
+1. add curated pre-shot reference packs
+2. inject those references into still generation and subset repair
+3. require a small structured shot contract per still
+4. only add one critic pass if reference grounding alone does not clear the target failure class
 
-1. fix role coverage interpretation
-2. fix explicit generic fallback generation patterns
-3. fix niche cue legibility mismatch between still text and lint recognition
-4. fix anchor contract drift where still text escapes the seeded location family
-5. define the correct behavior when all 6 stills fail at once
+This keeps the current architectural rules intact:
 
-The first concrete campaign target is `bp-tabletop-icon-2027-7n-caribbean`.
-
-Do not try to fix stitch and sketchbook at the same time.
-Use tabletop to close the role-coverage and composition-contract gap first.
-
-The design goal for this phase is diagnostic elegance:
-
-- one failure class per implementation pass
-- one campaign used as the proving ground for that class
-- direct still-by-still diagnostics
-- no blended prompt tinkering
+- one shared path for UI and agent callers
+- native structured outputs remain primary
+- deterministic lint stays the final judge
+- no recursive revision maze
 - no threshold weakening
+
+## Concrete Implementation Proposal
+
+### Proposal Summary
+
+Add a new reference-grounding step before `generateLandingStillBible` and `repairFailingStills`.
+
+That step will retrieve a small curated pack of:
+
+1. two known-good example patterns for the campaign's niche family and slot role
+2. one explicitly toxic generic pattern to avoid
+3. a compact shot-intent contract the generator must fill before writing prose
+
+The generator will still return normal structured still objects, but those stills will now be built from a stronger semantic scaffold.
+
+### What Gets Added
+
+#### 1. Pre-Shot Reference Pack
+
+Create a curated in-repo reference source, not a vector database in the first pass.
+
+Use a static TypeScript or JSON-backed module with entries keyed by niche family and slot role.
+
+Minimum shape:
+
+1. `referencePackId`
+2. `nicheFamily`
+3. `slotRole`
+4. `winningExamples[]`
+5. `toxicExamples[]`
+6. `requiredNicheSignals[]`
+7. `bannedFallbackPatterns[]`
+8. `cameraIntentHints[]`
+9. `locationFamilyHints[]`
+
+The first pack only needs enough coverage for representative campaigns:
+
+1. tabletop
+2. stitch
+3. sketchbook
+
+Do not wait for a universal corpus before implementing the mechanism.
+
+#### 2. Shot Intent Underlayer
+
+Do not replace prose with a full DSL yet.
+
+Instead, add a compact structured underlayer that sits underneath each still spec and guides the prose.
+
+Minimum fields per still:
+
+1. `shotIntent`
+2. `cameraDistance`
+3. `framingMode`
+4. `heroSubject`
+5. `nicheCue`
+6. `antiFallbackNote`
+7. `locationFamily`
+
+These fields should be generated alongside the existing still content and then reflected in the prose description.
+
+The goal is not syntax purity.
+The goal is to give lint-relevant semantics a stable home that is more explicit than freeform wording.
+
+#### 3. Golden Reference Injection In Prompts
+
+Update the still-generation prompt inputs so each slot receives:
+
+1. the locked anchor
+2. the slot contract
+3. two winning reference examples from the same niche family / slot role
+4. one toxic fallback example labeled as forbidden
+5. the required shot-intent fields that must be satisfied
+
+This is the main implementation for the phase.
+
+It should be applied in:
+
+1. `generateLandingStillBible`
+2. `repairFailingStills`
+
+The repair pass should reuse the same reference pack but only for the failing slots.
+
+#### 4. Single Critic Pass Only If Needed
+
+Do not introduce an open-ended generator-critic loop.
+
+If reference injection alone does not clear the target failure class, add one constrained critic pass between still generation and deterministic lint.
+
+That critic is allowed to do exactly one job:
+
+1. score each still for generic fallback risk
+2. score each still for niche legibility
+3. score each still for role-readability
+4. explain failures in terse structured fields
+
+If used, the critic may trigger one whole-set editorial rewrite before deterministic lint.
+
+It may not:
+
+1. recurse
+2. replace deterministic lint
+3. create a second repair system
+4. override anchor compliance
+
+Critic status for this phase: optional, not required for the first implementation pass.
 
 ## Product Target
 
-Desired workflow:
+Desired workflow for this phase:
 
-1. Discovery selects a valid campaign.
-2. User or agent API client triggers one brief-generation action through the shared contract.
-3. System generates the core campaign brief and planning inputs.
-4. A concept step generates community-native action anchors for the still set.
-5. A visual-translation step generates `landingStillBible` from those anchors and slot requirements.
-6. Deterministic diagnostics expose exactly which stills failed and why.
-7. Engineering works one failure class at a time instead of mutating prompts globally.
-8. If a campaign fails on one class only, the implementation target is narrowed to that class only.
-9. If all 6 stills fail, the system is treated as a whole-set failure case, not as an isolated still-repair case.
-10. If the result passes, the campaign moves to review or approval through one clear readiness state.
+1. discovery selects a valid campaign
+2. shared brief generation path builds the core campaign brief and anchors
+3. system retrieves a niche-specific pre-shot reference pack for each slot
+4. system generates stills using anchor plus slot contract plus reference pack plus shot-intent contract
+5. deterministic diagnostics expose exactly which stills failed and why
+6. subset repair, if applicable, reuses the same reference grounding for only the failing stills
+7. approval and readiness remain governed by the same downstream media gate
 
 ## Non-Negotiable Constraints
 
-1. Do not add more validate/remediate/revise/retry buttons.
-2. Do not create separate orchestration paths for UI and agent callers.
-3. Do not deepen the issue-ledger workflow.
-4. Do not build recursive repair loops.
-5. Use native structured outputs for the primary generation path.
-6. Enforce a strict one-correction-pass rule only for true subset failures.
-7. Keep the implementation fast, explicit, and product-oriented.
-8. Approval and readiness must continue matching downstream media-generation gating.
-9. Do not regress the fixed stale-state resync behavior.
-10. Do not weaken production-build lint thresholds to manufacture success.
-11. Do not continue the add-more-negations/remove-some-negations prompt-balancing loop.
-12. Do not treat a whole-set collapse as evidence that isolated repair should be broadened.
-13. Do not work multiple failure classes in one code pass unless they share the same deterministic root cause.
+1. do not add more validate/remediate/revise/retry buttons
+2. do not create separate orchestration paths for UI and agent callers
+3. do not deepen the issue-ledger workflow
+4. do not build recursive repair loops
+5. use native structured outputs for the primary generation path
+6. keep deterministic lint as the final gate
+7. keep the one-correction-pass rule for subset repair
+8. do not weaken production-build lint thresholds to manufacture success
+9. do not return to prompt-negation balancing as the main strategy
+10. do not introduce a vector database in the first pass
+11. do not replace the prose brief with a full DSL in this phase
+12. do not let the critic become a second orchestration tree
 
 ## Scope Of Work
 
-### Phase A: Make Failure Classes First-Class
+### Phase A: Add Reference Pack Infrastructure
 
-Define and document the independent failure classes that remain in landing still generation.
-
-Minimum design requirements:
-
-- explicit per-still diagnostics for lint behavior
-- explicit anchor-violation reporting from the same generation pass
-- a clear mapping from blocker code to implementation target
-- one proving campaign per failure class
-- no mixing of unrelated fixes in one pass
-
-### Phase B: Fix Tabletop Role Coverage First
-
-Use `bp-tabletop-icon-2027-7n-caribbean` as the first proving case.
-
-Current evidence says the main blocker is role coverage, not total campaign identity collapse.
-
-Status: still incomplete.
-
-The first normalization pass improved one of the two editorial slots but did not clear the blocker.
-
-Implementation target:
-
-1. ensure editorial slots reliably produce lint-recognized editorial/wide compositions
-2. eliminate the current `slot_usage_mismatch` on the two tabletop editorial stills
-3. clear `missing_role_coverage` without weakening lint rules
-4. preserve the passes already achieved on structural blockers and approval semantics
-
-Latest concrete failure:
-
-1. `OTS-03-EDITORIAL_A` is now correct
-2. `OTS-04-EDITORIAL_B` is still being read as `role=intimate`
-3. the problematic composition wording includes: `airily wide, side-table foreground and open lounger context`
-4. the next pass must either broaden composition normalization or deliberately adjust lint role classification logic for editorial-wide language
+Implement a small curated reference library for representative niches.
 
 Minimum outputs:
 
-- tabletop rerun with per-still diagnostics
-- tabletop blocker count before and after
-- proof that role coverage was fixed or clearly narrowed further
-- exact remaining blocker codes after the role-coverage fix
+1. reference-pack type definitions
+2. static source file with initial packs for tabletop, stitch, and sketchbook
+3. helper that maps campaign context plus slot role to the correct reference bundle
 
-### Phase C: Address Generic Fallback Patterns Separately
+### Phase B: Inject References Into Still Generation
 
-Once tabletop role coverage is fixed or no longer primary, address generic fallback generation as its own problem.
+Wire the reference pack into `generateLandingStillBible`.
 
-Primary signals:
+Minimum outputs:
 
-1. `generic_fallback_template` flags on individual stills
-2. `generic_fallback_overuse` on the lint report
+1. prompt/context update that includes two winning examples and one toxic example
+2. required shot-intent underlayer fields in the structured output
+3. audit fields showing which reference pack or example IDs were used
 
-Do not combine this work with niche-legibility fixes unless the evidence proves the same still text change resolves both.
+Primary proving target:
 
-### Phase D: Fix Niche Legibility Separately
+1. `eastern-caribbean-stitch-sail-2026-09-19`
 
-The next independent class is the mismatch between declared niche carry-through and lint-recognized niche identity.
+Reason:
 
-Primary signals:
+1. stitch is currently the cleanest benchmark for generic fallback and weak niche signal
+2. tabletop already improved enough that it is no longer the best architecture discriminator
 
-1. still has `nicheCarryThrough`
-2. still still receives `no_niche_cue`
-3. campaign still fails `weak_niche_signal` or `identity_legibility_too_low`
+### Phase C: Reuse References In Subset Repair
 
-This is a separate contract problem between still text generation and lint cue detection.
+Wire the same grounding into `repairFailingStills`.
 
-### Phase E: Define Whole-Set Failure Behavior
+Minimum outputs:
 
-If all 6 stills fail, the system should no longer pretend the problem is a localized still-repair case.
+1. failing stills receive the same niche-family reference discipline
+2. repair prompt explicitly reuses slot contract plus reference pack plus failing issue codes
+3. passing stills remain untouched
 
-This phase must define what happens next when the set is globally unsalvageable:
+### Phase D: Decide Whether A Critic Pass Is Still Necessary
 
-1. stop with blockers
-2. full-set still regeneration with correction context
-3. anchor regeneration plus still regeneration
+Only if Phase B and Phase C still leave the representative campaign failing on semantic quality classes, add one critic pass.
 
-Pick one path deliberately and test it.
+Primary trigger conditions:
+
+1. `generic_fallback_overuse` remains the lead blocker after reference injection
+2. `weak_niche_signal` remains the lead blocker after reference injection
+3. the still text reads semantically generic even though anchor and slot contracts pass
+
+If those conditions are not true, do not add the critic.
 
 ## Relevant Files
 
-- `lib/campaigns/brief-engine/orchestrator.ts`
 - `lib/campaigns/editors-room.ts`
+- `lib/campaigns/brief-engine/orchestrator.ts`
 - `lib/campaigns/schema.ts`
 - `lib/campaigns/media/production-build-lint.ts`
 - `tests/phase-2c-diagnostic-breakdown.ts`
+
+Likely new files:
+
+- `lib/campaigns/reference-packs.ts`
+- `lib/campaigns/reference-pack-types.ts`
 
 ## Acceptance Criteria
 
 The phase is complete only when all of the following are true:
 
-1. UI and agent callers still share one underlying brief-step contract.
-2. Native structured outputs remain in the main generation path.
-3. Approval and readiness gate semantics remain unchanged.
-4. Existing briefs cannot remain blocked solely because stale stored lint drifted from the current lint result.
-5. `bp-tabletop-icon-2027-7n-caribbean` no longer fails on `missing_role_coverage`.
-6. The tabletop editorial stills no longer fail `slot_usage_mismatch`.
-7. Tabletop does not regress into new blocker codes while role coverage is being fixed.
-8. Diagnostic output can show, per still, anchor violations and lint diagnostics from the same generation pass.
-9. Generic fallback remediation is worked as a separate pass from role coverage.
-10. Niche-legibility remediation is worked as a separate pass from generic fallback remediation.
-11. Whole-set failure handling is explicitly defined and tested rather than silently skipped.
+1. UI and agent callers still share one underlying brief-step contract
+2. native structured outputs remain in the main generation path
+3. approval and readiness gate semantics remain unchanged
+4. existing briefs cannot remain blocked solely because stale stored lint drifted from the current lint result
+5. the new reference pack is used during still generation and subset repair
+6. the structured still output includes the new shot-intent underlayer fields or an equivalent compact contract
+7. the representative generic-fallback proving campaign improves without threshold weakening
+8. diagnostic output can show, per still, anchor violations and lint diagnostics from the same generation pass
+9. tabletop does not regress while this phase targets generic fallback and niche signal
+10. the first implementation pass can improve stitch or another chosen proving campaign without introducing a second orchestration maze
 
 ## Verification
 
 Add or update tests for:
 
-1. tabletop editorial slots produce lint-recognized editorial coverage
-2. tabletop no longer fails `missing_role_coverage`
-3. existing approval block when `productionBuildStatus = fail` still holds
-4. stale-lint resync behavior still holds
-5. anchor diagnostics remain accurate for location drift and slot mismatches
-6. isolated still revision only applies to true subset failures
-7. whole-set failure behavior follows the newly chosen explicit rule
-8. the new diagnostic script can be run against representative campaigns and produce usable per-still output
+1. reference packs resolve by niche family and slot role
+2. still generation prompt inputs include the expected winning and toxic examples
+3. shot-intent underlayer fields are present in generation output
+4. existing approval block when `productionBuildStatus = fail` still holds
+5. stale-lint resync behavior still holds
+6. anchor diagnostics remain accurate for location drift and slot mismatches
+7. isolated still revision only applies to true subset failures
+8. representative diagnostics clearly show whether generic fallback and niche-signal counts improved
 
 Likely verification commands:
 
 - `npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts`
 - `npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts`
 - `npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts`
-- `npx tsx tests/phase-2c-diagnostic-breakdown.ts bp-tabletop-icon-2027-7n-caribbean`
+- `npx tsx lib/campaigns/__tests__/production-build-quality.test.ts`
+- `npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19`
 - `npx tsx tests/phase-2c-direct-library.ts`
 
 ## Next Agent Instructions
 
 ### Objective
 
-Implement the next narrow remediation pass against the existing Editor's Room pipeline.
+Implement the first concrete reference-grounding pass inside the existing Editor's Room pipeline.
 
-The immediate objective is to fix tabletop role coverage without blending that work with the other failure classes.
+The immediate objective is to reduce generic fallback and improve niche legibility without changing approval semantics, lint thresholds, or orchestration topology.
 
 ### Do First
 
-1. Read the latest findings in `phase-result.md` before making changes.
-2. Assume approval/readiness gate correctness and stale-state resync are already handled unless a new regression proves otherwise.
-3. Read the latest tabletop diagnostic report and treat it as the primary benchmark for this phase.
-4. Run `tests/phase-2c-diagnostic-breakdown.ts` on tabletop before changing logic.
+1. read the latest findings in `phase-result.md` before making changes
+2. assume approval/readiness correctness and stale-state resync are already handled unless a new regression proves otherwise
+3. read `work1.md` and `work2.md` for rationale, but implement the concrete plan from this file rather than reopening abstract brainstorming
+4. run the diagnostic script on stitch before changing logic
 
 Representative campaigns:
 
 - `bp-tabletop-icon-2027-7n-caribbean`
-- `deck-sketchbook-society`
+- `deck-sketchbook-society-2026`
 - `eastern-caribbean-stitch-sail-2026-09-19`
 
 ### Primary Implementation Target
 
-Fix tabletop role coverage first.
+Implement Golden Reference Injection first.
 
-Specific target from the latest report:
+Specific target for the first pass:
 
-1. tabletop has 1 editorial still when it needs 2
-2. `OTS-03-EDITORIAL_A` is already fixed
-3. `OTS-04-EDITORIAL_B` is still failing slot/composition interpretation
-4. fix that first before working generic fallback or niche cue strength
+1. add a small static reference pack mechanism
+2. wire it into `generateLandingStillBible`
+3. require the compact shot-intent underlayer in output
+4. reuse the same mechanism in `repairFailingStills` if time allows
 
 Likely primary file:
 
 - `lib/campaigns/editors-room.ts`
 
-Secondary files only if required:
+Secondary files if required:
 
-- `lib/campaigns/brief-engine/orchestrator.ts`
+- `lib/campaigns/reference-packs.ts`
+- `lib/campaigns/reference-pack-types.ts`
 - `lib/campaigns/schema.ts`
-- `lib/campaigns/media/production-build-lint.ts`
-- tests for targeted tabletop regressions
+- `lib/campaigns/brief-engine/orchestrator.ts`
+- targeted tests
 
 ### Do Not Do
 
-1. Do not weaken production-build lint thresholds just to improve pass rate.
-2. Do not reopen approval semantics or stale-state resync unless a failing regression proves it is broken.
-3. Do not treat fixture-only test success as sufficient evidence.
-4. Do not add button-maze remediation logic or new operator workflows.
-5. Do not continue the prompt-negation balancing loop.
-6. Do not work stitch or sketchbook blockers in the same code pass unless the tabletop fix clearly generalizes.
-7. Do not claim success for generic fallback or niche legibility if the actual pass only fixed role coverage.
-8. Do not regress campaigns that currently pass.
+1. do not weaken production-build lint thresholds just to improve pass rate
+2. do not reopen approval semantics or stale-state resync unless a failing regression proves it is broken
+3. do not treat fixture-only test success as sufficient evidence
+4. do not add button-maze remediation logic or new operator workflows
+5. do not return to the negation-balancing loop
+6. do not build a vector store first
+7. do not replace the entire still contract with a full DSL in this pass
+8. do not add a critic pass unless reference grounding has already been tested and proved insufficient
+9. do not regress campaigns that currently pass or partially pass
 
 ### Required Proof For Completion
 
 Minimum proof:
 
-1. Rerun tabletop diagnostics after the code change.
-2. Show the before/after status of `missing_role_coverage`.
-3. Show the before/after status of `OTS-03-EDITORIAL_A` and `OTS-04-EDITORIAL_B` individually.
-4. Record whether generic fallback count changed, but treat that as secondary unless directly affected by the role-coverage fix.
-5. State explicitly whether isolated-still revision was used, skipped, or not applicable.
-6. If the tabletop blocker changes, name the new primary blocker class exactly.
+1. rerun representative diagnostics after the code change
+2. show before and after generic fallback counts for the proving campaign
+3. show before and after niche-cue counts for the proving campaign
+4. state whether reference grounding changed role coverage incidentally or not at all
+5. state explicitly whether isolated-still revision was used, skipped, or not applicable
+6. if the primary blocker changes, name the new blocker class exactly
 
 ### Required `phase-result.md` Update
 
-Update `phase-result.md` as part of the work and add a new failure-class progress section containing:
+Update `phase-result.md` as part of the work and add a new section containing:
 
-- the exact tabletop blocker profile before the pass
-- what was changed to address role coverage specifically
-- whether the attempted composition normalization worked only partially
-- tabletop before/after blocker counts
-- whether the editorial still contract became stable
-- whether generic fallback and niche-legibility remained unchanged, improved incidentally, or worsened
-- whether the fix generalized to stitch or sketchbook if those were rerun
-- residual blocker classes still remaining after the pass
+- the exact proving-campaign blocker profile before the pass
+- the reference-pack mechanism added in this phase
+- what fields were added to the shot-intent underlayer
+- whether the initial pass used only reference grounding or also used a critic
+- before and after generic fallback counts
+- before and after niche-legibility counts
+- whether tabletop regressed, stayed stable, or improved incidentally
+- whether sketchbook changed if rerun
 - exact commands used for diagnostics, reruns, and verification
