@@ -75,6 +75,12 @@ function printStillBreakdown(
         console.log(`    location: ${still.location}`);
         console.log(`    composition: ${still.composition}`);
         console.log(`    subjectAction: ${still.subjectAction}`);
+        if (still.shotIntent) {
+            console.log(`    shotIntent: ${still.shotIntent}`);
+            console.log(`    camera: ${still.cameraDistance ?? '?'} | framing: ${still.framingMode ?? '?'} | heroSubject: ${still.heroSubject ?? '?'}`);
+            console.log(`    nicheCue: ${still.nicheCue ?? '?'} | antiFallback: ${still.antiFallbackNote ?? '?'}`);
+            console.log(`    refPack: ${still.referencePackId ?? '(none)'}`);
+        }
 
         if (diagnostic) {
             console.log(`    lint: role=${diagnostic.shotRole} | cue=${diagnostic.cueStrength} | generic=${diagnostic.isGenericFallback ? 'yes' : 'no'}`);
