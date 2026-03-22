@@ -43,6 +43,7 @@ interface BriefEngineResult {
     fixedCodes: string[];
     correctiveRepromptUsed: boolean;
     isolatedStillRevisionUsed: boolean;
+    wholeSetRegenerationUsed: boolean;
 }
 
 interface ApprovalResult {
@@ -64,6 +65,11 @@ export function shouldUseIsolatedStillRepair(failingStillIds: string[], totalSti
     return totalStillCount > 0 && uniqueFailingStillCount > 0 && uniqueFailingStillCount < totalStillCount;
 }
 
+export function shouldUseWholeSetRegeneration(failingStillIds: string[], totalStillCount: number): boolean {
+    const uniqueFailingStillCount = new Set(failingStillIds).size;
+    return totalStillCount > 0 && uniqueFailingStillCount === totalStillCount;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Internal: generate full brief bundle (aesthetic + visual planning + lint)
 // ────────────────────────────────────────────────────────────────────────────
@@ -71,7 +77,7 @@ export function shouldUseIsolatedStillRepair(failingStillIds: string[], totalSti
 async function generateFullBriefBundle(
     campaign: Campaign,
     options?: { correctionContext?: string },
-): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean }> {
+): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean; wholeSetRegenerationUsed: boolean }> {
     // ── Step 1: Core aesthetic brief ─────────────────────────────────────
     const brief = await generateAestheticBrief(campaign, options);
 
@@ -108,6 +114,7 @@ async function generateFullBriefBundle(
 
     // ── Step 5: Unified repair — anchor violations + lint blockers ─────
     let isolatedStillRevisionUsed = false;
+    let wholeSetRegenerationUsed = false;
     const lintFailingIds = extractFailingStillIds(stillsLint.blockingIssues);
     const anchorFailingIds = extractViolationStillIds(anchorCompliance.violations);
     const allFailingIds = [...new Set([...lintFailingIds, ...anchorFailingIds])];
@@ -133,8 +140,36 @@ async function generateFullBriefBundle(
         if (!anchorCompliance.passed) {
             console.log(`[brief-engine] post-repair anchor violations remain: ${anchorCompliance.violations.length}`);
         }
-    } else if (allFailingIds.length > 0) {
-        console.log(`[brief-engine] skipping isolated repair for ${campaign.id}: ${allFailingIds.length}/${landingStillBible.stillLibrary.length} stills failed`);
+    } else if (shouldUseWholeSetRegeneration(allFailingIds, landingStillBible.stillLibrary.length)) {
+        // ── Whole-set failure path: every still failed both gates ──────────────
+        // Isolated repair cannot preserve uniqueness when the full set collapses.
+        // One-strike: regenerate the full still set with the failure profile as
+        // hard-failure correction context, then re-validate. Do not retry further.
+        const anchorFailureSummary = anchorViolationsBlock
+            ? `Anchor contract violations:\n${anchorViolationsBlock}`
+            : '';
+        const lintFailureSummary = stillsLint.blockingIssues.length > 0
+            ? `Lint blockers:\n${stillsLint.blockingIssues.map(i => `[${i.code}] ${i.message}`).join('\n')}`
+            : '';
+        const correctionContext = [anchorFailureSummary, lintFailureSummary].filter(Boolean).join('\n\n');
+
+        console.log(`[brief-engine] whole-set failure for ${campaign.id}: all ${allFailingIds.length} stills failed — regenerating with correction context`);
+        landingStillBible = await generateLandingStillBible(campaign, brief, anchors, { correctionContext });
+        landingStillBible = normalizeEditorialCompositions(landingStillBible);
+        landingStillBible = normalizeEditorialUsage(landingStillBible);
+
+        anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
+        anchorViolationsBlock = formatViolationsForRepair(anchorCompliance.violations);
+        stillsLint = lintProductionBuild({
+            landingStillBible,
+            themeName: campaign.name,
+            nicheKeywords: expandedNicheKeywords,
+        });
+
+        wholeSetRegenerationUsed = true;
+        if (!anchorCompliance.passed) {
+            console.log(`[brief-engine] post-whole-set-regen anchor violations remain: ${anchorCompliance.violations.length}`);
+        }
     }
 
     // ── Step 6: Production bible from validated stills ────────────────────
@@ -156,6 +191,7 @@ async function generateFullBriefBundle(
         productionBuildStatus: finalLint.verdict,
         productionBuildEvaluatedAt: finalLint.evaluatedAt,
         isolatedStillRevisionUsed,
+        wholeSetRegenerationUsed,
     };
 }
 
@@ -268,8 +304,10 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
 
     // ── First generation pass: full bundle ────────────────────────────
     let isolatedStillRevisionUsed = false;
+    let wholeSetRegenerationUsed = false;
     const firstBundle = await generateFullBriefBundle(campaign);
     isolatedStillRevisionUsed = firstBundle.isolatedStillRevisionUsed;
+    wholeSetRegenerationUsed = firstBundle.wholeSetRegenerationUsed;
     let brief: CampaignAestheticBrief = firstBundle;
 
     // ── First validation ──────────────────────────────────────────────
@@ -309,6 +347,7 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
 
             const repromptBundle = await generateFullBriefBundle(campaign, { correctionContext });
             isolatedStillRevisionUsed = isolatedStillRevisionUsed || repromptBundle.isolatedStillRevisionUsed;
+            wholeSetRegenerationUsed = wholeSetRegenerationUsed || repromptBundle.wholeSetRegenerationUsed;
             brief = repromptBundle;
             const repromptAutoFix = applyAutoFixes(brief, validateBrief(brief, campaign).issues);
             brief = repromptAutoFix.brief;
@@ -344,6 +383,7 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
         fixedCodes,
         correctiveRepromptUsed,
         isolatedStillRevisionUsed,
+        wholeSetRegenerationUsed,
     };
 }
 
@@ -415,6 +455,7 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
         fixedCodes,
         correctiveRepromptUsed: false,
         isolatedStillRevisionUsed,
+        wholeSetRegenerationUsed: false,
     };
 }
 

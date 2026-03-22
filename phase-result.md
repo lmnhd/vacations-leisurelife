@@ -287,3 +287,108 @@ npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-202
 # TypeScript — zero new errors in changed files
 npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String "editors-room|orchestrator|anchor-compliance"
 ```
+
+---
+
+# Phase Result: Whole-Set Anchor Reliability
+
+**Target campaign:** `deck-sketchbook-society-2026`
+
+## Sketchbook Failure Profile (Before This Pass)
+
+Diagnostic run of `deck-sketchbook-society-2026` under the fixed anchor-contract pipeline produced:
+- `Anchor violations: 0`
+- `Lint blockers: 0`
+- `Explicit cue stills: 6/6`
+
+Sketchbook ran clean this run. The remaining work was therefore not fixing a current live failure — it was **hardening the system for the whole-set collapse case**, which was previously an implicit silent fallthrough with no defined behavior.
+
+## Explicit Whole-Set Behavior Chosen
+
+**Option selected: Regenerate the full still set with correction context (one-strike).**
+
+When `shouldUseWholeSetRegeneration` returns true (all stills in the set failed both the anchor compliance gate and the lint gate), the pipeline now:
+1. Formats the anchor violation profile + lint blocker list as a `correctionContext` string
+2. Calls `generateLandingStillBible` again with the failure profile injected as a `HARD FAILURES FROM PREVIOUS GENERATION` block
+3. Re-runs both deterministic normalizers (`normalizeEditorialCompositions`, `normalizeEditorialUsage`)
+4. Re-validates both gates
+5. Surfaces remaining violations if still failing — does not retry further (one-strike rule preserved)
+
+This is consistent with the corrective-reprompt pattern already in `generateAestheticBrief`.
+
+## What Changed
+
+### `editors-room.ts`
+
+**`generateLandingStillBible` signature extended:**
+- Added `options?: { correctionContext?: string }` parameter
+- When `correctionContext` is provided, injects a `HARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following` block into the system prompt before FINAL SELF-CHECK
+
+**`inferLocationFamilyFromStillFields` (user addition, same commit):**
+- New helper: checks `location` field first; only falls through to `environmentDetails` if location resolves to `other`
+- Used in both `anchor_location_mismatch` check and `duplicate_location_family` check
+- Prevents `environmentDetails` from overriding a contract-compliant `location` field
+
+### `orchestrator.ts`
+
+**New exported function `shouldUseWholeSetRegeneration`:**
+- Returns `true` when all stills (deduped) failed — `uniqueFailingCount === totalStillCount`
+- Symmetric counterpart to `shouldUseIsolatedStillRepair`; they are mutually exclusive
+
+**Replaced silent fallthrough with explicit whole-set path:**
+- Old: `else if (allFailingIds.length > 0) { console.log('skipping...') }` — no action
+- New: `else if (shouldUseWholeSetRegeneration(...))` — full regeneration with correction context, re-normalizers, re-validation, one-strike
+
+**`generateFullBriefBundle` return type extended:**
+- Now returns `CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean; wholeSetRegenerationUsed: boolean }`
+- `wholeSetRegenerationUsed` tracked as a local variable, propagated through `createOrRefreshBrief` and `BriefEngineResult`
+
+## Before / After Counts
+
+| | anchor violations | lint blockers | whole-set path |
+|--|--|--|--|
+| Sketchbook baseline | 0 | 0 | implicit fallthrough (silent) |
+| Post-fix | 0 | 0 | explicit one-strike regeneration |
+
+## Stitch Stability
+
+Stitch (`eastern-caribbean-stitch-sail-2026-09-19`) stayed at `0 / 0` — no regression.
+
+## Tabletop Stability
+
+Not rerun — no generation path changes affect tabletop specifically.
+
+## Isolated Still Revision
+
+Still applies only to true subset failures. Whole-set path now takes over when `uniqueFailingCount === totalStillCount`. The two paths are mutually exclusive.
+
+## Test Results
+
+| Suite | Tests | Status |
+|--|--|--|
+| `anchor-compliance.test.ts` | 39 | ✅ all pass |
+| `brief-engine.orchestrator.test.ts` | 36 | ✅ all pass |
+| `brief-engine.validation.test.ts` | 2 | ✅ all pass |
+
+New tests added to `brief-engine.orchestrator.test.ts`:
+- `shouldUseWholeSetRegeneration` returns true for 6/6 failure
+- Returns false for subset failure
+- Returns false for zero failures
+- Isolated repair and whole-set are mutually exclusive
+- Subset failure: isolated=true, whole-set=false
+- No failure: both false
+
+## Verification Commands
+
+```powershell
+# All unit tests
+npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
+
+# Sketchbook diagnostic
+npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026
+
+# Confirm stitch stable
+npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19
+```

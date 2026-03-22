@@ -125,6 +125,7 @@ export async function generateLandingStillBible(
     campaign: Campaign,
     brief: CampaignAestheticBrief,
     anchors: ActionAnchorSet,
+    options?: { correctionContext?: string },
 ): Promise<LandingStillBible> {
     const model = getHighModel();
     const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
@@ -173,7 +174,7 @@ ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 ${referenceBlock}
 ${lintBlock}
-
+${options?.correctionContext ? `\nHARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following in this regeneration:\n${options.correctionContext}\n` : ''}
 FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location field contains a concrete keyword from its anchor's declared locationFamily — for a balcony anchor the word "balcony" must appear in the location field, not just "railing".
 `.trim();
 

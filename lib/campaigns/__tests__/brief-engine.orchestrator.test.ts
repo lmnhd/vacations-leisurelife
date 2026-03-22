@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import type { CampaignAestheticBrief } from '../schema';
 import type { ValidationIssue } from '../brief-engine/validation';
-import { shouldUseIsolatedStillRepair } from '../brief-engine/orchestrator';
+import { shouldUseIsolatedStillRepair, shouldUseWholeSetRegeneration } from '../brief-engine/orchestrator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Orchestrator contract regression tests
@@ -340,6 +340,46 @@ test('isolated still repair is skipped when every still fails', () => {
 
 test('isolated still repair is skipped when no stills fail', () => {
     assert.equal(shouldUseIsolatedStillRepair([], 6), false);
+});
+
+console.log('\nWhole-Set Regeneration Path\n');
+
+test('whole-set regeneration is used when all stills fail', () => {
+    assert.equal(shouldUseWholeSetRegeneration(['s1', 's2', 's3', 's4', 's5', 's6'], 6), true);
+});
+
+test('whole-set regeneration is NOT used when only a subset fails', () => {
+    assert.equal(shouldUseWholeSetRegeneration(['s2', 's4'], 6), false);
+});
+
+test('whole-set regeneration is NOT used when no stills fail', () => {
+    assert.equal(shouldUseWholeSetRegeneration([], 6), false);
+});
+
+test('whole-set regeneration is NOT used for single-still total set (same as subset repair)', () => {
+    assert.equal(shouldUseWholeSetRegeneration(['s1'], 1), true, 'single-still set collapsing entirely should still trigger whole-set path');
+});
+
+test('isolated repair and whole-set regeneration are mutually exclusive', () => {
+    const allFailing = ['s1', 's2', 's3', 's4', 's5', 's6'];
+    const totalCount = 6;
+    const isolated = shouldUseIsolatedStillRepair(allFailing, totalCount);
+    const wholeSet = shouldUseWholeSetRegeneration(allFailing, totalCount);
+    assert.equal(isolated, false, 'isolated repair must be false when all stills fail');
+    assert.equal(wholeSet, true, 'whole-set must be true when all stills fail');
+    assert.equal(isolated && wholeSet, false, 'paths must be mutually exclusive');
+});
+
+test('subset failure: isolated repair true, whole-set false', () => {
+    const subsetFailing = ['s2', 's5'];
+    const totalCount = 6;
+    assert.equal(shouldUseIsolatedStillRepair(subsetFailing, totalCount), true);
+    assert.equal(shouldUseWholeSetRegeneration(subsetFailing, totalCount), false);
+});
+
+test('no failure: both paths false', () => {
+    assert.equal(shouldUseIsolatedStillRepair([], 6), false);
+    assert.equal(shouldUseWholeSetRegeneration([], 6), false);
 });
 
 console.log(`\nPassed: ${passed}`);
