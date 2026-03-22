@@ -294,7 +294,7 @@ ${passingContext}
 ${slotRefBlocks}
 ${lintBlock}
 
-For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by a passing still, and avoid every generic fallback family. Use the reference examples as guides for niche-native imagery.
+For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by ANY other still (passing or failing — each still in this repair batch must use a DIFFERENT location family), and avoid every generic fallback family. Use the reference examples as guides for niche-native imagery.
 `.trim();
 
     const prompt = `
