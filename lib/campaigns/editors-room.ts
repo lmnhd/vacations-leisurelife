@@ -424,8 +424,8 @@ const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; composition
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
 
 const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
-    [['rail', 'railing'], 'rail'],
     [['balcony'], 'balcony'],
+    [['rail', 'railing'], 'rail'],
     [['pool', 'lido'], 'pool_deck'],
     [['deck', 'outdoor'], 'deck'],
     [['cabin', 'stateroom', 'porthole', 'window'], 'cabin'],
