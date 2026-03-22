@@ -497,3 +497,52 @@ npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
 ```
 
 Commit: `561c94d`
+
+---
+
+## Phase B Fix #2 — slotRole-Aware Lint Classification
+
+### Why Fix #1 Was Insufficient
+
+The composition normalizer (`normalizeEditorialCompositions`) only catches a known set of intimate keywords (`intimate`, `close`, `close-up`, `tight`, `detail`, `detailed`). Live diagnostic showed `OTS-04-EDITORIAL_B` with composition `"airily wide, side-table foreground and open lounger context"` — no intimate keywords present, yet lint still classified it as `role=intimate`.
+
+The normalizer approach is inherently fragile: the LLM generates unbounded composition text, and substring matching will always have edge cases the normalizer cannot predict.
+
+### Root Cause
+
+Lint's `extractShotRole` used only `usage` + composition substring matching to determine roles, completely ignoring the structurally-enforced `slotRole`. Even when anchor compliance verified a still's slot assignment, lint would override it based on composition heuristics.
+
+### What Was Changed
+
+Modified `extractShotRole` in `lib/campaigns/media/production-build-lint.ts` to check `slotRole` first:
+
+- `HERO_PRIMARY` / `HERO_ALT` → `hero`
+- `EDITORIAL_WIDE_A` / `EDITORIAL_WIDE_B` → `editorial`
+- `INTIMATE` → `intimate`
+- `FLEX` and `undefined` → fall through to existing `usage`/composition inference
+
+This is not weakening lint — it's making lint structurally consistent with the anchor compliance gate that already enforces slot assignments. Backward compatible: stills without `slotRole` use existing inference.
+
+### Regression Tests Added
+
+`lib/campaigns/__tests__/production-build-quality.test.ts` — 2 new tests:
+
+- `EDITORIAL_WIDE` with intimate composition keywords is still editorial when `slotRole` is set
+- `missing_role_coverage` still fires when `slotRole` is absent and composition triggers intimate (backward compat)
+
+### Test Status After Fix #2
+
+| Suite | Result |
+|-------|--------|
+| `anchor-compliance.test.ts` | 27/27 |
+| `brief-engine.orchestrator.test.ts` | 29/29 |
+| `brief-engine.validation.test.ts` | 2/2 |
+| `production-build-quality.test.ts` | 14/14 |
+
+### Expected Impact
+
+- `missing_role_coverage` should now be permanently resolved for any still set where anchor compliance has assigned `EDITORIAL_WIDE_A` and `EDITORIAL_WIDE_B` — regardless of what composition text the LLM generates
+- The normalizer (fix #1) remains as defense-in-depth for the anchor compliance gate's own composition check
+- This fix eliminates the cat-and-mouse game of predicting LLM composition wording
+
+Commit: `df14aa3`
