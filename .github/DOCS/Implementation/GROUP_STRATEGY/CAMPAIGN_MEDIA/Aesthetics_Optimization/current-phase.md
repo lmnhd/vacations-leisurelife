@@ -1,4 +1,4 @@
-# Current Phase: Anchor-Contract Reliability
+# Current Phase: Whole-Set Anchor Reliability
 
 ## Mission
 
@@ -22,22 +22,25 @@ Recent implementation work already solved or materially improved the earlier sem
 3. stitch no longer fails on generic fallback or weak niche signal in the latest diagnostic output
 4. lint blockers for stitch are now `0`
 
-The latest direct diagnostic output for `eastern-caribbean-stitch-sail-2026-09-19` tightens the picture:
+The latest verified diagnostic output for `eastern-caribbean-stitch-sail-2026-09-19` now shows:
 
-1. `Anchor violations: 3`
+1. `Anchor violations: 0`
 2. `Lint blockers: 0`
 3. `Explicit cue stills: 6/6`
 4. `No-cue stills: 0/6`
 5. `Generic fallback stills: 0/6`
 
-The remaining failures are therefore not primarily about niche signal or generic fallback anymore.
-They are about contract fidelity between:
+That means the stitch proving target for anchor-contract reliability is complete enough.
+
+The remaining failures are therefore no longer centered on stitch.
+They are centered on the harder whole-set reliability case, especially:
 
 1. declared anchor location family
 2. generated still location/composition phrasing
 3. deterministic anchor-compliance interpretation
+4. what the system does when a whole set collapses at once
 
-The current remaining issue class is now real anchor drift, not lint blindness.
+The current remaining issue class is whole-set anchor instability, not semantic quality.
 
 ## Core Diagnosis
 
@@ -50,12 +53,9 @@ Current failure modes:
 3. editorial slots can still trigger `slot_usage_mismatch` when composition language is technically compliant but not phrased in the exact contract-friendly way the validator expects
 4. repair behavior must preserve uniqueness and contract fidelity across the whole batch, not only per still
 
-The stitch diagnostic output is the clearest current benchmark:
+The stitch proving target is no longer the blocker.
 
-1. slot-3 and slot-4 are semantically correct and lint-clean, but still receive `slot_usage_mismatch`
-2. slot-6 is semantically correct and lint-clean, but still receives `anchor_location_mismatch` because balcony/rail phrasing is still drifting across the contract boundary
-
-That means the next pass must improve anchor obedience and validator alignment, not semantic richness.
+That means the next pass must move to the harder campaign where anchor reliability still collapses under broader set pressure.
 
 ## Active Strategy
 
@@ -63,10 +63,10 @@ The execution target for this phase is a tighter anchor contract across generati
 
 Priority order:
 
-1. reduce true location-family drift in first-pass still generation
-2. reduce validator false negatives on contract-compliant editorial-wide phrasing
-3. strengthen repair instructions so repaired stills preserve both anchor location and slot contract simultaneously
-4. keep semantic gains from reference grounding intact while tightening contract obedience
+1. rerun and characterize `deck-sketchbook-society-2026` under the current fixed pipeline
+2. isolate whether the remaining failure is anchor drift, duplicate families, or whole-set collapse handling
+3. define the explicit behavior for 6/6 failing still sets
+4. keep stitch and tabletop stable while moving to the harder whole-set case
 
 The design goal for this phase is contract reliability:
 
@@ -104,61 +104,37 @@ Desired workflow:
 
 ## Scope Of Work
 
-### Phase A: Tighten Location-Family Obedience In Generation
+### Phase A: Re-Benchmark Sketchbook Under The Fixed Contract Layer
 
-Focus on true first-pass drift.
-
-Implementation targets:
-
-1. strengthen prompt wording so location family is treated as a hard scene boundary, not a soft suggestion
-2. make the shot-intent underlayer reinforce the same location family explicitly
-3. ensure each still's self-check verifies that location wording stays inside the anchor family
-
-Primary proving target:
-
-1. `eastern-caribbean-stitch-sail-2026-09-19`
-
-Specific benchmark from latest diagnostic:
-
-1. slot-6 must stop drifting from `balcony` into `rail`
-
-### Phase B: Align Editorial Composition Contract With Validator
-
-Address residual `slot_usage_mismatch` where the still is semantically editorial/wide but the anchor validator still rejects the wording.
-
-Current benchmark from latest stitch diagnostic:
-
-1. slot-3: `medium_wide two_shot in a cozy library nook...`
-2. slot-4: `medium_wide environmental portrait... open, airy Solarium context...`
-3. both are lint-clean and role-correct
-4. both still fail anchor-compliance slot interpretation
-
-Implementation target:
-
-1. decide whether the validator should explicitly accept `medium_wide` as satisfying `wide or medium`
-2. if not, normalize or canonicalize composition language before anchor validation so the contract is expressed in accepted vocabulary
-3. preserve the existing slotRole-aware lint behavior
-
-This phase should prefer contract normalization or validator precision over broad heuristic weakening.
-
-### Phase C: Strengthen Repair Discipline Around Anchor Fidelity
-
-Ensure subset repair cannot reintroduce location drift or intra-batch duplication.
+Use the current pipeline after the stitch fixes and capture the real remaining failure profile for `deck-sketchbook-society-2026`.
 
 Implementation targets:
 
-1. repaired stills must explicitly restate anchor family and slot contract in their self-check
-2. repair prompt must forbid family drift relative to both anchor metadata and already-accepted stills
-3. repaired stills must remain unique across the repair batch
+1. rerun diagnostics on sketchbook before changing logic
+2. separate anchor violations from lint blockers clearly
+3. identify whether failures are localized or truly 6/6 whole-set
 
-### Phase D: Re-Test Sketchbook As The Hard Case
+### Phase B: Define Whole-Set Failure Behavior Explicitly
 
-Only after stitch anchor drift is reduced should sketchbook be rerun as the harder anchor-contract / whole-set case.
+If all 6 stills fail, the system should not pretend the problem is localized repair.
 
-Reason:
+Choose and implement one explicit behavior:
 
-1. stitch is the cleanest proving ground because semantic blockers are already cleared
-2. sketchbook still collapses earlier and is a worse first benchmark for this narrower pass
+1. stop with blockers
+2. regenerate the full still set with correction context
+3. regenerate anchors plus stills
+
+Do not leave this as implicit fallthrough behavior.
+
+### Phase C: Preserve Partial-Repair Discipline
+
+Keep subset repair strict.
+
+Implementation targets:
+
+1. partial failures still use subset repair only
+2. full-set collapse must take the newly chosen whole-set path
+3. stitch and tabletop must not regress
 
 ## Relevant Files
 
@@ -182,10 +158,10 @@ The phase is complete only when all of the following are true:
 2. native structured outputs remain in the main generation path
 3. approval and readiness gate semantics remain unchanged
 4. existing briefs cannot remain blocked solely because stale stored lint drifted from the current lint result
-5. stitch or another chosen proving campaign remains at `0` lint blockers while anchor violations are reduced
-6. latest stitch diagnostic no longer shows balcony-to-rail drift on slot-6
-7. latest stitch diagnostic no longer shows the current editorial `slot_usage_mismatch` wording failures on slot-3 and slot-4, or those failures are explicitly narrowed to a deterministic validator gap with a committed rule choice
-8. tabletop does not regress on role coverage or semantic quality while this phase targets anchor fidelity
+5. stitch remains at `0` anchor violations and `0` lint blockers
+6. tabletop does not regress on role coverage or semantic quality
+7. sketchbook failure mode is explicitly characterized from the current pipeline, not inferred from stale runs
+8. full-set failure handling is explicitly defined and tested
 9. diagnostic output can still show, per still, anchor violations and lint diagnostics from the same generation pass
 10. repair remains subset-only and preserves inter-still uniqueness
 
@@ -193,14 +169,14 @@ The phase is complete only when all of the following are true:
 
 Add or update tests for:
 
-1. balcony-authored still text with nearby railing language still resolves correctly to `balcony` when appropriate
-2. first-pass generation instructions preserve declared location family more reliably
-3. `medium_wide` editorial phrasing either passes contract validation or is normalized deterministically before validation
-4. existing approval block when `productionBuildStatus = fail` still holds
-5. stale-lint resync behavior still holds
-6. anchor diagnostics remain accurate for real location drift and slot mismatches
-7. isolated still revision only applies to true subset failures
-8. representative diagnostics clearly show reduced anchor violations without reintroducing generic fallback or weak niche signal
+1. existing stitch anchor-reliability regressions remain green
+2. full-set failure behavior follows the newly chosen explicit rule
+3. existing approval block when `productionBuildStatus = fail` still holds
+4. stale-lint resync behavior still holds
+5. anchor diagnostics remain accurate for real location drift and slot mismatches
+6. isolated still revision only applies to true subset failures
+7. representative diagnostics clearly distinguish sketchbook whole-set collapse from localized failure
+8. stitch and tabletop remain stable after the whole-set behavior change
 
 Likely verification commands:
 
@@ -210,6 +186,7 @@ Likely verification commands:
 - `npx tsx lib/campaigns/__tests__/reference-packs.test.ts`
 - `npx tsx lib/campaigns/__tests__/production-build-quality.test.ts`
 - `npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19`
+- `npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026`
 - `npx tsx tests/phase-2c-direct-library.ts`
 
 ## Next Agent Instructions
@@ -218,14 +195,14 @@ Likely verification commands:
 
 Implement the next narrow remediation pass against the existing Editor's Room pipeline.
 
-The immediate objective is to reduce true anchor drift and residual anchor-contract wording failures without reopening already-solved semantic quality work.
+The immediate objective is to define and harden whole-set failure behavior without reopening already-solved stitch semantic and anchor-contract work.
 
 ### Do First
 
 1. read the latest findings in `phase-result.md` before making changes
 2. assume approval/readiness correctness, stale-state resync, reference grounding, and slotRole-aware lint are already handled unless a new regression proves otherwise
-3. run `tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19` before changing logic
-4. inspect the exact code paths that classify location family and evaluate editorial-wide slot usage
+3. run `tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026` before changing logic
+4. confirm stitch remains green so the next pass does not regress it
 
 Representative campaigns:
 
@@ -235,13 +212,13 @@ Representative campaigns:
 
 ### Primary Implementation Target
 
-Fix stitch anchor-contract reliability first.
+Fix explicit whole-set behavior first.
 
-Specific target from the latest diagnostic:
+Specific target for the next pass:
 
-1. slot-6 must stop failing `anchor_location_mismatch` for `balcony`
-2. slot-3 and slot-4 must stop failing `slot_usage_mismatch` when they are already lint-clean editorial stills
-3. no semantic regressions may be introduced while fixing those contract failures
+1. characterize sketchbook under the current fixed pipeline
+2. choose the correct explicit path for 6/6 failure
+3. implement that path without regressing stitch or tabletop
 
 Likely primary files:
 
@@ -269,22 +246,21 @@ Secondary files only if required:
 
 Minimum proof:
 
-1. rerun stitch diagnostics after the code change
-2. show before and after anchor violation counts
-3. show before and after status of slot-3, slot-4, and slot-6 individually
-4. show that lint blockers remain `0` or name any regression exactly
-5. state explicitly whether isolated-still revision was used, skipped, or not applicable
+1. rerun sketchbook diagnostics after the code change
+2. state the exact whole-set behavior now chosen for 6/6 failures
+3. show whether stitch and tabletop stayed stable
+4. show that lint blockers and anchor diagnostics still report accurately
+5. state explicitly whether isolated-still revision was used, skipped, or replaced by the chosen whole-set path
 6. if a residual blocker remains, name the exact failure class
 
 ### Required `phase-result.md` Update
 
 Update `phase-result.md` as part of the work and add a new section containing:
 
-- the exact stitch anchor-violation profile before the pass
-- what was changed to reduce location drift specifically
-- what was changed to resolve or narrow the editorial `slot_usage_mismatch` wording issue
-- before and after anchor violation counts
-- whether lint blockers stayed at `0`
+- the exact sketchbook failure profile before the pass
+- the explicit whole-set behavior chosen in this phase
+- before and after failure counts
+- whether stitch stayed at `0 / 0`
 - whether tabletop regressed, stayed stable, or improved incidentally
-- whether sketchbook changed if rerun
+- whether sketchbook improved or merely became more explicitly classified
 - exact commands used for diagnostics, reruns, and verification

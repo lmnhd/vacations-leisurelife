@@ -832,3 +832,86 @@ The main remaining live issue is true LLM location drift against the anchor seed
 - occasional `duplicate_location_family`
 
 Those now have stronger generation constraints, better classifier behavior, and a stricter repair contract.
+
+---
+
+## Phase E — Location Field Precedence For Anchor Validation
+
+### Root Cause
+
+The remaining stitch anchor failures were not purely generation drift.
+The validator was still allowing `environmentDetails` to override an explicit, contract-compliant `location` field when inferring actual location family.
+
+That created a deterministic false-negative pattern:
+
+1. the still `location` field correctly named the anchor family
+2. ambient wording in `environmentDetails` contained keywords from another family
+3. anchor compliance used the combined text and misclassified the still anyway
+4. the same misclassification could then cascade into `duplicate_location_family`
+
+### Change
+
+`lib/campaigns/editors-room.ts`
+
+Added `inferLocationFamilyFromStillFields(location, environmentDetails)` and changed anchor validation to use:
+
+1. `location` field first
+2. `environmentDetails` only as fallback when `location` is ambiguous
+
+This aligns the deterministic validator with the prompt contract already in place:
+
+- the `location` field is the authoritative family declaration
+- `environmentDetails` may enrich the scene but should not override a valid location-family label
+
+### Regression Tests Added
+
+`lib/campaigns/__tests__/anchor-compliance.test.ts`
+
+- explicit `location` beats conflicting `environmentDetails` for anchor family matching
+- duplicate location family uses explicit `location` before `environmentDetails`
+
+### Verification
+
+Focused regression status after the fix:
+
+| Suite | Result |
+|---|---|
+| `anchor-compliance.test.ts` | 39/39 |
+| `brief-engine.orchestrator.test.ts` | 29/29 |
+
+Diagnostic rerun:
+
+```powershell
+npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19
+```
+
+### Stitch Before / After
+
+| Metric | Before | After |
+|---|---|---|
+| Anchor violations | 3 | 0 |
+| Lint blockers | 0 | 0 |
+| Explicit cue stills | 6/6 | 6/6 |
+| Generic fallback stills | 0/6 | 0/6 |
+
+### Outcome
+
+The stitch proving target is now clean on the diagnostic path:
+
+1. `anchor_location_mismatch` cleared
+2. `duplicate_location_family` cleared
+3. lint blockers remained at `0`
+4. semantic-quality gains from reference grounding were preserved
+
+### Next Remaining Target
+
+The next unresolved proving case is no longer stitch.
+
+The next meaningful target is:
+
+1. `deck-sketchbook-society-2026`
+
+Focus there should be on:
+
+1. anchor-contract reliability under harder whole-set conditions
+2. explicit whole-set failure behavior when the set is globally unsalvageable

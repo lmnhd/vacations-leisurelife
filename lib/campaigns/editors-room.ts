@@ -486,6 +486,14 @@ function inferLocationFamilyFromText(text: string): string {
     return 'other';
 }
 
+function inferLocationFamilyFromStillFields(location: string, environmentDetails: string): string {
+    const locationFamily = inferLocationFamilyFromText(location);
+    if (locationFamily !== 'other') {
+        return locationFamily;
+    }
+    return inferLocationFamilyFromText(environmentDetails);
+}
+
 // ── Step 5: Deterministic anchor-compliance validation ─────────────────────────
 
 export function validateAnchorCompliance(
@@ -547,7 +555,7 @@ export function validateAnchorCompliance(
         }
 
         const expectedLocationFamily = inferLocationFamilyFromText(anchor.locationFamily);
-        const actualLocationFamily = inferLocationFamilyFromText(`${still.location} ${still.environmentDetails}`);
+        const actualLocationFamily = inferLocationFamilyFromStillFields(still.location, still.environmentDetails);
         if (
             expectedLocationFamily !== 'other'
             && actualLocationFamily !== 'other'
@@ -635,7 +643,7 @@ export function validateAnchorCompliance(
     const locFamilyCounts = new Map<string, string[]>();
     for (const still of stills) {
         const anchor = still.anchorId ? anchorMap.get(still.anchorId) : undefined;
-        const actualFamily = inferLocationFamilyFromText(`${still.location} ${still.environmentDetails}`);
+        const actualFamily = inferLocationFamilyFromStillFields(still.location, still.environmentDetails);
         const anchorFamily = anchor ? inferLocationFamilyFromText(anchor.locationFamily) : 'other';
         const fam = actualFamily !== 'other'
             ? actualFamily

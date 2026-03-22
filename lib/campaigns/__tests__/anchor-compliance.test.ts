@@ -555,6 +555,61 @@ test('balcony-anchored still with only "balcony" in location (no railing) passes
     assert.ok(!v, 'pure balcony location should pass with no mismatch');
 });
 
+test('explicit location field beats conflicting environmentDetails for anchor family matching', () => {
+    const anchors = [{ anchorId: 'anchor-4', nicheSignal: 'dice rolling', locationFamily: 'dining lounge' }];
+    const still = makeStill({
+        stillId: 'still-location-wins',
+        anchorId: 'anchor-4',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        location: 'dining lounge table',
+        environmentDetails: 'spa-style cushions and solarium glow in the distance',
+        imagePrompt: 'Wide shot of dice rolling in the dining lounge',
+        subjectAction: 'Pair engaged in dice rolling over sparkling water in the dining lounge',
+        nicheCarryThrough: 'dice rolling',
+        composition: 'wide environmental shot',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const mismatch = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!mismatch, 'contract-compliant location field should not be overridden by environmentDetails keywords');
+});
+
+test('duplicate location family uses explicit location field before environmentDetails', () => {
+    const anchors = [
+        { anchorId: 'anchor-a', nicheSignal: 'strategy cards', locationFamily: 'spa solarium' },
+        { anchorId: 'anchor-b', nicheSignal: 'dice rolling', locationFamily: 'dining lounge' },
+    ];
+    const stills = [
+        makeStill({
+            stillId: 'still-spa-family',
+            anchorId: 'anchor-a',
+            slotRole: 'EDITORIAL_WIDE_A',
+            usage: 'concept',
+            location: 'spa solarium lounge',
+            environmentDetails: 'thermal loungers and soft shade',
+            imagePrompt: 'Wide shot of strategy cards in the spa solarium',
+            subjectAction: 'Guest arranging strategy cards in the spa solarium',
+            nicheCarryThrough: 'strategy cards',
+            composition: 'wide environmental shot',
+        }),
+        makeStill({
+            stillId: 'still-dining-family',
+            anchorId: 'anchor-b',
+            slotRole: 'EDITORIAL_WIDE_B',
+            usage: 'concept',
+            location: 'dining lounge table',
+            environmentDetails: 'spa-style cushions and solarium glow in the distance',
+            imagePrompt: 'Wide shot of dice rolling in the dining lounge',
+            subjectAction: 'Pair engaged in dice rolling over sparkling water in the dining lounge',
+            nicheCarryThrough: 'dice rolling',
+            composition: 'wide environmental shot',
+        }),
+    ];
+    const result = validateAnchorCompliance(anchors, makeBible(stills));
+    const dupes = result.violations.filter(v => v.violationType === 'duplicate_location_family');
+    assert.equal(dupes.length, 0, 'distinct explicit location fields should not collapse into the same family due to environmentDetails');
+});
+
 // ── Phase B: normalizeEditorialUsage ──────────────────────────────────────────────────────
 
 console.log('\nPhase B — Editorial Usage Normalization\n');
