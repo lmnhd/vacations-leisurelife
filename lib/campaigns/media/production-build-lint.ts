@@ -124,7 +124,7 @@ function extractShotRole(still: LandingStillSpec): 'hero' | 'editorial' | 'intim
 
 const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
     [['rail', 'railing', 'balcony'], ['laugh', 'smile', 'couple', 'two', 'partner', 'together'], 'rail_couple_laugh'],
-    [['window', 'porthole', 'cabin', 'round window', 'stateroom'], ['quiet', 'solo', 'single', 'alone', 'contempl', 'gaze'], 'quiet_window_solo'],
+    [['porthole', 'round window', 'stateroom'], ['quiet', 'solo', 'single', 'alone', 'contempl', 'gaze'], 'quiet_window_solo'],
     [['dining', 'restaurant', 'dinner'], ['intimate', 'couple', 'candlelight', 'close', 'tender'], 'dining_intimacy'],
     [['deck', 'outdoor', 'bow', 'stern'], ['couple', 'sea', 'sunset', 'horizon', 'distance', 'wide', 'far', 'view'], 'deck_sea_wide'],
     [['pool', 'lido'], ['relax', 'lounge', 'float', 'swim', 'splash'], 'poolside_relax'],

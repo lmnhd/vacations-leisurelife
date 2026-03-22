@@ -915,3 +915,187 @@ Focus there should be on:
 
 1. anchor-contract reliability under harder whole-set conditions
 2. explicit whole-set failure behavior when the set is globally unsalvageable
+
+---
+
+## Phase F — Sketchbook Re-Benchmark After Stitch Fixes
+
+### Why This Matters
+
+After the stitch proving target reached `0` anchor violations and `0` lint blockers, the next question was whether `deck-sketchbook-society-2026` was still a live failure case or whether whole-set handling had become purely defensive hardening.
+
+Fresh diagnostic evidence shows sketchbook is still an active failure case.
+
+### Diagnostic Command
+
+```powershell
+npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026
+```
+
+### Latest Sketchbook Diagnostic Result
+
+| Metric | Value |
+|---|---|
+| Anchor violations | 4 |
+| Lint blockers | 1 |
+| Explicit cue stills | 6/6 |
+| No-cue stills | 0/6 |
+| Generic fallback stills | 0/6 |
+
+### Active Failure Profile
+
+This is not currently a 6/6 whole-set collapse.
+
+The real remaining blockers are narrower and cleaner:
+
+1. `anchor_location_mismatch`
+2. `duplicate_location_family`
+3. `repeated_composition_family`
+
+### Still-Level Breakdown
+
+#### 1. Rail Precedence Causing Anchor Drift
+
+Two stills fail because the explicit location text contains the correct primary family plus the word `rail`, and the family classifier currently resolves `rail` first:
+
+- `S1-HERO-POOL`
+	- expected: `pool_deck`
+	- actual: `rail`
+	- location: `pool deck shaded lounger zone near the rail on Brilliance of the Seas`
+
+- `S2-HEROALT-ATRIUM`
+	- expected: `atrium`
+	- actual: `rail`
+	- location: `ship atrium (Centrum) rail at Deck 4/5`
+
+These two misclassifications also cascade into:
+
+- `duplicate_location_family` shared by `S1-HERO-POOL` and `S2-HEROALT-ATRIUM`
+
+This is the same structural pattern previously fixed for balcony vs rail, but now for pool-deck/atrium vs rail precedence inside the explicit `location` field.
+
+#### 2. Composition Family Collapse
+
+Three stills are semantically valid and anchor-clean but still collapse into the same deterministic composition read:
+
+- `S3-EDITORIAL-A-SOLARIUM`
+- `S4-EDITORIAL-B-DINING`
+- `S5-INTIMATE-LIBRARY`
+
+All three resolve to:
+
+- `compositionFamily = quiet_window_solo`
+
+That triggers:
+
+- `[repeated_composition_family] 3 stills share composition family "quiet_window_solo"`
+
+### What This Means
+
+The next active failure class is not generic fallback.
+It is also not weak niche signal.
+It is not even whole-set behavior first.
+
+The next active failure class is:
+
+1. primary-location-family precedence when `rail` appears inside otherwise valid location text
+2. deterministic composition-family collapse for sketchbook's quieter scenes
+
+### Whole-Set Behavior Status
+
+Whole-set regeneration is implemented and tested, but this sketchbook run does not currently prove or require it.
+
+Reason:
+
+1. sketchbook did not fail 6/6
+2. the live diagnostic shows localized deterministic problems, not total collapse
+
+So whole-set handling should now be treated as completed hardening, not the primary next proving target.
+
+---
+
+## Phase Result: Sketchbook Location And Composition Collapse
+
+### Status: Complete
+
+### Proving Target
+
+`deck-sketchbook-society-2026`
+
+### Failure Profile (Before)
+
+**Anchor violations:**
+- `anchor_location_mismatch` on S1-HERO-POOL: `pool deck … near the rail` → inferred `rail` instead of `pool_deck`
+- `anchor_location_mismatch` on S2-HEROALT-ATRIUM: `ship atrium (Centrum) rail at Deck 4/5` → inferred `rail` instead of `atrium`
+- `duplicate_location_family` cascade: both misclassified stills shared `rail`
+
+**Lint blockers:**
+- `repeated_composition_family` blocker: S3-SOLARIUM, S4-DINING, S5-LIBRARY all resolved to `quiet_window_solo` (3-still cluster → blocker threshold)
+
+### Root Causes
+
+**Rail-precedence bug**: `LOCATION_FAMILY_KEYWORDS` in `editors-room.ts` placed `['rail', 'railing']` second in the ordered list — before `pool`, `atrium`, and all other specific venues. Because `inferLocationFamilyFromText` returns on first match, any location text containing "rail" anywhere (e.g., "near the rail", "rail at Deck 4") would resolve to `rail` even when a more specific venue keyword also appeared.
+
+**`quiet_window_solo` over-classification**: `COMPOSITION_CLUSTER_MAP` in `production-build-lint.ts` included bare `window` and `cabin` as location triggers for the `quiet_window_solo` cluster. These generic words appear in the `environmentDetails` of library, solarium, and dining stills (e.g., "panoramic windows", "window-side table"), causing false-positive cluster matches for any quiet/solo/contemplative action combined with any mention of a window.
+
+### Fixes Applied
+
+**Phase A — Rail-precedence fix** (`lib/campaigns/editors-room.ts`):
+
+Moved `['rail', 'railing']` to the **last** position in `LOCATION_FAMILY_KEYWORDS`. All specific named venues (pool_deck, promenade, library, spa, dining, lounge, atrium, port, theater, sports_deck, deck, cabin) are now checked first. Rail only wins when no named venue keyword is present in the location text.
+
+**Phase B — `quiet_window_solo` narrowing** (`lib/campaigns/media/production-build-lint.ts`):
+
+Removed bare `window` and `cabin` from the location trigger keywords for `quiet_window_solo`. The cluster now only matches on `porthole`, `round window`, `stateroom` — vocabulary that is exclusively cabin-specific and will not appear in library, solarium, or dining descriptions.
+
+### Post-Fix Results
+
+Diagnostic: `npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026`
+
+| Metric | Before | After |
+|---|---|---|
+| Anchor violations | 2 (`anchor_location_mismatch` × 2) | **0** |
+| Lint blockers | 1 (`repeated_composition_family` ≥ 3) | **0** |
+| Explicit cue stills | 6/6 | 6/6 |
+| Generic fallback stills | 0/6 | 0/6 |
+
+Remaining warnings (non-blocking, ≥ 2-still threshold only):
+- `rail_couple_laugh`: 2 stills (GRW-01, GRW-03) — warning
+- `rail_reading`: 2 stills (GRW-04, GRW-05) — warning
+
+These are pre-existing lint labeling artefacts in `extractCompositionFamily` (separate function from anchor compliance). They do not affect launch readiness.
+
+### Stitch Stability
+
+All 102 unit tests pass after the changes (42 anchor-compliance + 22 production-build-quality + 36 orchestrator + 2 validation). The `LOCATION_FAMILY_KEYWORDS` reorder does not affect stitch because stitch anchors do not combine specific venue keywords with incidental "rail" references in the same location text.
+
+### Regression Tests Added
+
+**`lib/campaigns/__tests__/anchor-compliance.test.ts`** (+3 tests):
+- pool_deck-anchored still with "pool deck … near the rail" resolves to `pool_deck` not `rail`
+- atrium-anchored still with "atrium … rail at Deck 4" resolves to `atrium` not `rail`
+- rail-only location still still resolves to `rail` (no regression)
+
+**`lib/campaigns/__tests__/production-build-quality.test.ts`** (+5 tests):
+- library still with "window" in environmentDetails does NOT collapse into `quiet_window_solo`
+- solarium editorial still with "windows" in environmentDetails does NOT collapse into `quiet_window_solo`
+- dining still with "window-side" in location does NOT collapse into `quiet_window_solo`
+- true cabin porthole still DOES still resolve to `quiet_window_solo`
+- 3-still sketchbook scenario does NOT trigger `repeated_composition_family` blocker
+
+### Files Changed
+
+- `lib/campaigns/editors-room.ts` — `LOCATION_FAMILY_KEYWORDS` reorder
+- `lib/campaigns/media/production-build-lint.ts` — `quiet_window_solo` cluster narrowing
+- `lib/campaigns/__tests__/anchor-compliance.test.ts` — 3 new regression tests
+- `lib/campaigns/__tests__/production-build-quality.test.ts` — 5 new regression tests
+
+### Commands Used
+
+```
+npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026
+npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts
+npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
+```

@@ -1,0 +1,178 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: deck-sketchbook-society-2026
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Deck Sketchbook Society: Golden Rail Window
+[aesthetic-engine] Starting aesthetic brief generation for deck-sketchbook-society-2026
+[aesthetic-engine] Model resolved for deck-sketchbook-society-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for deck-sketchbook-society-2026
+node.exe : [aesthetic-engine] Pass 1 quality gate failed for deck-sketchbook-society-2026 on attempt 1: Sub slogan too long (14 words, max 12); Slogan does not anchor to niche identity ΓÇö expected at least one of: urban sketching, 
+travel journaling, plein air, art journaling, fountain pens
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([aesthetic-engi..., fountain pens:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[aesthetic-engine] Pass 1 core aesthetic attempt 2 for deck-sketchbook-society-2026
+[aesthetic-engine] Pass 1 accepted for deck-sketchbook-society-2026 on attempt 2
+[aesthetic-engine] Pass 2 platform concepts for deck-sketchbook-society-2026
+[aesthetic-engine] Refinement pass for deck-sketchbook-society-2026
+[editors-room] generateActionAnchors for deck-sketchbook-society-2026
+[editors-room] generateLandingStillBible for deck-sketchbook-society-2026 (refPack=ref-sketchbook-v1)
+
+≡ƒº¡ ANCHORS:
+  1. DSS-GRW-01
+     locationFamily: pool deck
+     nicheSignal: plein air
+     socialUnit: pair
+     action: In the pool deck shade, two friends pause between swims for quick plein air color spots of lime towels and the Eastern Caribbean aqua; a small enamel pin with the railΓÇæline icon glints on a canvas tote as they compare seaΓÇæblue mixes, capping pens and keeping one hand free before moving again.
+  2. DSS-GRW-02
+     locationFamily: spa solarium
+     nicheSignal: art journaling
+     socialUnit: solo
+     action: Tucked beside the spa solarium glass, a guest lays a folded kraft mat on their lap and tapes a leaf print and ticket stub into an art journaling spread of palm shadows; a graphite smudge on a fingertip catches the dapple as they rest the pen hand and exhale.
+  3. DSS-GRW-03
+     locationFamily: ship atrium
+     nicheSignal: urban sketching
+     socialUnit: pair
+     action: Perched along the ship atrium railing, a pair does urban sketching of the glass elevators and brass curves, trading a quick line about paper tooth while a visible fountainΓÇæpen clip peeks from a pocket; they sketch only when stopped, then grin up at the chandelier glow.
+  4. DSS-GRW-04
+     locationFamily: cabin balcony
+     nicheSignal: fountain pens
+     socialUnit: solo
+     action: On a cabin balcony chair with the wake flickering below, a traveler blocks in the pilot boat and pastel harbor using a fine nib from their fountain pens roll, blotter tucked under and one hand free on the armrest as Brilliance of the Seas eases toward St. Maarten.
+  5. DSS-GRW-05
+     locationFamily: library
+     nicheSignal: travel journaling
+     socialUnit: solo
+     action: In a quiet library nook, a solo traveler opens a travel journaling spread to glue a San Juan postage cancel beside a quick pen sketch of pier cranes; a subtle railΓÇæline enamel pin rests on their toteΓÇöan easy indoor pivot from the windy deck.
+  6. DSS-GRW-06
+     locationFamily: dining lounge
+     nicheSignal: fountain pens
+     socialUnit: pair
+     action: Waiting for omelets at a dining lounge window, two friends jot tugboat silhouettes and harbor lines with fountain pens, murmuring about seaΓÇæblue mixes; they cap nibs as plates land, sketches paused until theyΓÇÖre stopped again.
+  7. DSS-GRW-07
+     locationFamily: embarkation pier
+     nicheSignal: urban sketching
+     socialUnit: solo
+     action: Feet planted on the embarkation pier, backpack at toes, a solo traveler thumbnails the shipΓÇÖs bow angles and gangway bustle in urban sketching; a fineliner clip is visible, and they sketch only when stopped before joining the line.
+  8. DSS-GRW-08
+     locationFamily: promenade
+     nicheSignal: plein air
+     socialUnit: pair
+     action: In a windΓÇæsheltered bench recess on the promenade deck, two friends tape sheets to folded kraft mats for a quick plein air study of the foamy wake; they alternate holding iced tea and sketching, swap a laugh about paper tooth, then tuck pens away before strolling on.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó GRW-01-HERO
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: DSS-GRW-01 | nicheCarryThrough: plein air
+    location: Brilliance of the Seas pool deck shade ΓÇö open deck loungers zone by the pool
+    composition: wide establishing sweep across the pool deck shade with airy headline space; two friends seated with compact sketchbooks and pens; active color spotting; no cabin or window elements anywhere
+    subjectAction: Two friends pause between swims to do quick plein air color spots of lime towels and Eastern Caribbean aqua, compare seaΓÇæblue mixes, cap pens, and keep one hand free before moving again.
+    shotIntent: Make plein air feel naturally at home on the pool deck as an easy, joyful pause between swims.
+    camera: wide | framing: establishing | heroSubject: two friends actively sketching with pocket sketchbooks on the pool deck
+    nicheCue: open sketchbook pages with seaΓÇæblue swatches and capped pens | antiFallback: Avoid generic pool loungingΓÇöensure visible sketchbooks and active plein air marks, not just people relaxing.
+    refPack: ref-sketchbook-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=warm | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" ΓÇö mild repetition.
+
+  ΓÇó GRW-02-HALT
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: DSS-GRW-02 | nicheCarryThrough: art journaling
+    location: spa solarium glass seating alcove
+    composition: medium low-angle hero on a solo guest at a glass-side alcove; open journal central; tropical plants and spa glass framing the figure
+    subjectAction: A solo guest tapes a leaf print and ticket stub into an art journaling spread, smoothing kraft tape on the page, pen hand resting with a graphite smudge as they exhale.
+    shotIntent: Present art journaling as a calm, identity-forward moment in the solarium, not a generic spa gaze.
+    camera: medium | framing: low_angle_hero | heroSubject: solo guest with open art journal at the solarium glass
+    nicheCue: art journal spread with taped leaf print and ticket stub | antiFallback: Avoid quiet-window-solo vibesΓÇöshow the art journaling spread, tape, and pen hand, not mere gazing.
+    refPack: ref-sketchbook-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=reading | mood=neutral | composition=deck_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó GRW-03-EWA
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: DSS-GRW-03 | nicheCarryThrough: urban sketching
+    location: ship atrium (Centrum) mezzanine seating facing glass elevators
+    composition: medium_wide environmental two_shot framed by elevators and sweeping brass; open sketchbooks prominent; architecture leads the eye
+    subjectAction: A pair stops at the atrium mezzanine for urban sketching of glass elevators and brass curves, trading a quick line about paper tooth as a fountainΓÇæpen clip peeks from a pocket.
+    shotIntent: Show urban sketching as a lively architectural discovery in the shipΓÇÖs atrium.
+    camera: medium_wide | framing: two_shot | heroSubject: two guests sketching the atrium architecture with open sketchbooks
+    nicheCue: open sketchbooks with elevator linework and a visible fountainΓÇæpen clip | antiFallback: Avoid generic railing or horizon compositionsΓÇöanchor the frame on active urban sketching within atrium architecture.
+    refPack: ref-sketchbook-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" ΓÇö mild repetition.
+
+  ΓÇó GRW-04-EWB
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: DSS-GRW-04 | nicheCarryThrough: fountain pens
+    location: cabin balcony chair and side table
+    composition: medium over-the-shoulder from the balcony chair toward pastel harbor and pilot boat; pens roll and blotter clearly visible on the side table
+    subjectAction: A traveler blocks in the pilot boat and pastel harbor using a fine nib from their fountain pens roll, blotter tucked under the page and one hand free on the balcony armrest.
+    shotIntent: Position fountain pens as a compact, balconyΓÇæfriendly tool for capturing sailΓÇæin scenes.
+    camera: medium | framing: over_the_shoulder | heroSubject: solo traveler sketching with a fineΓÇænib fountain pen on the cabin balcony
+    nicheCue: fountain pens roll with fine nib in use and a blotter under the page | antiFallback: Avoid a generic balcony horizon gazeΓÇöshow fountain pens in use, the pens roll, and the inΓÇæprogress sketch.
+    refPack: ref-sketchbook-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_reading
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_reading" ΓÇö mild repetition.
+
+  ΓÇó GRW-05-INT
+    slotRole: INTIMATE | usage: concept
+    anchorId: DSS-GRW-05 | nicheCarryThrough: travel journaling
+    location: ship library reading room
+    composition: intimate, tight close detail on hands and paper; texture-forward view of a travel journal spread and tools
+    subjectAction: A solo traveler adds a San Juan postage cancel beside a quick pen sketch of pier cranes in a travel journaling spread, pressing the edge with a fingertip lightly smudged with graphite.
+    shotIntent: Capture the tactile pleasure of travel journaling at an intimate scale.
+    camera: close_up | framing: detail_insert | heroSubject: hands working in a travel journal spread
+    nicheCue: travel journal page with San Juan postage cancel and pierΓÇæcrane pen sketch | antiFallback: Avoid a generic bookish close-upΓÇömake the travel journaling marks, tools, and ephemera unmistakable.
+    refPack: ref-sketchbook-v1
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_reading
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_reading" ΓÇö mild repetition.
+
+  ΓÇó GRW-06-FLEX
+    slotRole: FLEX | usage: social_square
+    anchorId: DSS-GRW-06 | nicheCarryThrough: fountain pens
+    location: dining lounge window table
+    composition: medium environmental portrait of a pair at a dining lounge window table; compact sketch kit neat beside mugs; servers setting plates mid-action
+    subjectAction: Two friends jot tugboat silhouettes and harbor lines with fountain pens as omelets arrive, capping nibs to pause and resume after theyΓÇÖre stopped again.
+    shotIntent: Show art-making woven into an easy dining lounge pause using fountain pens.
+    camera: medium | framing: environmental_portrait | heroSubject: two friends at a dining lounge window table with a sketchbook and fountain pens visible
+    nicheCue: fountain pens beside a compact sketchbook with tugboat linework | antiFallback: Avoid generic dining coverageΓÇöensure fountain pens and the inΓÇæprogress sketch stay visible; no candlelight or romance cues.
+    refPack: ref-sketchbook-v1
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=cabin_window | action=dining | mood=neutral | composition=cabin_window_dining
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

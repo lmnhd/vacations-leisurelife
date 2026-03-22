@@ -461,12 +461,10 @@ const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; composition
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
 
 const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
+    // ── Specific named venues — checked first so they win when rail appears alongside ──
     [['balcony'], 'balcony'],
-    [['rail', 'railing'], 'rail'],
     [['pool', 'lido'], 'pool_deck'],
-    [['bow', 'stern', 'promenade'], 'promenade'],  // before cabin — 'promenade window nook' → promenade
-    [['deck', 'outdoor'], 'deck'],
-    [['cabin', 'stateroom', 'porthole'], 'cabin'],  // 'window' removed — too generic, matches promenade/library windows
+    [['bow', 'stern', 'promenade'], 'promenade'],
     [['library', 'reading room'], 'library'],
     [['spa', 'solarium', 'thermal'], 'spa'],
     [['dining', 'restaurant', 'meal', 'table'], 'dining'],
@@ -475,6 +473,10 @@ const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
     [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
     [['theater', 'stage', 'auditorium'], 'theater'],
     [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
+    [['deck', 'outdoor'], 'deck'],
+    [['cabin', 'stateroom', 'porthole'], 'cabin'],
+    // ── Rail is a structural/perimeter feature — only wins when no named venue is present ──
+    [['rail', 'railing'], 'rail'],
 ];
 
 function inferLocationFamilyFromText(text: string): string {

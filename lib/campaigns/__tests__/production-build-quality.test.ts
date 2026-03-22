@@ -524,6 +524,110 @@ test('AC 13c: generic_fallback_overuse STILL fires when stills match generic clu
     assert.ok(blocker, 'generic_fallback_overuse must still fire when stills lack niche cues in generic clusters');
 });
 
+// ── Phase B: quiet_window_solo composition collapse regression ───────────────
+
+console.log('\nPhase B — quiet_window_solo Narrowing\n');
+
+test('library still with "window" in environmentDetails does NOT collapse into quiet_window_solo', () => {
+    const still = makeStill({
+        stillId: 'library-window',
+        slotRole: 'INTIMATE',
+        usage: 'concept',
+        location: 'ship library reading nook',
+        environmentDetails: 'panoramic window view of the sea, bookshelves lining the walls',
+        subjectAction: 'Solo guest quietly reading in the library window seat',
+        composition: 'intimate close detail of reader alone by the light',
+    });
+    const report = lintProductionBuild({ landingStillBible: makeBible([still]), nicheKeywords: [] });
+    const d = report.stillDiagnostics[0];
+    assert.ok(d.compositionFamily !== 'quiet_window_solo',
+        `library still with window in env should NOT be quiet_window_solo, got: ${d.compositionFamily}`);
+});
+
+test('solarium editorial still with "windows" in environmentDetails does NOT collapse into quiet_window_solo', () => {
+    const still = makeStill({
+        stillId: 'solarium-window',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        location: 'spa solarium loungers',
+        environmentDetails: 'floor-to-ceiling panoramic windows filling the solarium with light',
+        subjectAction: 'Guest gazing contemplatively through the solarium glass, art journal open',
+        composition: 'wide editorial shot of solarium with guests',
+    });
+    const report = lintProductionBuild({ landingStillBible: makeBible([still]), nicheKeywords: [] });
+    const d = report.stillDiagnostics[0];
+    assert.ok(d.compositionFamily !== 'quiet_window_solo',
+        `solarium still with window in env should NOT be quiet_window_solo, got: ${d.compositionFamily}`);
+});
+
+test('dining still with "window-side" in location does NOT collapse into quiet_window_solo', () => {
+    const still = makeStill({
+        stillId: 'dining-window',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        location: 'window-side dining table in main restaurant',
+        environmentDetails: 'white tablecloth, solo diner with sketchbook open',
+        subjectAction: 'Solo guest quietly sketching at a window-side dining table',
+        composition: 'wide editorial with single subject at table',
+    });
+    const report = lintProductionBuild({ landingStillBible: makeBible([still]), nicheKeywords: [] });
+    const d = report.stillDiagnostics[0];
+    assert.ok(d.compositionFamily !== 'quiet_window_solo',
+        `dining still with window in location should NOT be quiet_window_solo, got: ${d.compositionFamily}`);
+});
+
+test('true cabin porthole still DOES still resolve to quiet_window_solo', () => {
+    const still = makeStill({
+        stillId: 'porthole-solo',
+        slotRole: 'FLEX',
+        usage: 'concept',
+        location: 'cabin stateroom porthole',
+        environmentDetails: 'round porthole, sea view, low ambient light',
+        subjectAction: 'Solo guest gazing quietly out the stateroom porthole alone',
+        composition: 'quiet contemplative solo shot at the porthole',
+    });
+    const report = lintProductionBuild({ landingStillBible: makeBible([still]), nicheKeywords: [] });
+    const d = report.stillDiagnostics[0];
+    assert.equal(d.compositionFamily, 'quiet_window_solo',
+        `genuine cabin porthole still SHOULD still resolve to quiet_window_solo`);
+});
+
+test('3 non-cabin stills that previously collapsed do NOT trigger repeated_composition_family', () => {
+    const stills = [
+        makeStill({
+            stillId: 'sketchbook-s3',
+            slotRole: 'EDITORIAL_WIDE_A',
+            usage: 'concept',
+            location: 'spa solarium day lounger',
+            environmentDetails: 'panoramic glass wall windows, thermal loungers, soft natural light',
+            subjectAction: 'Guest gazing contemplatively at art journal in solarium, alone',
+            composition: 'wide editorial shot of solarium with solo guest',
+        }),
+        makeStill({
+            stillId: 'sketchbook-s4',
+            slotRole: 'EDITORIAL_WIDE_B',
+            usage: 'concept',
+            location: 'window-side dining table in main restaurant',
+            environmentDetails: 'solo diner, quiet lunch service, window light',
+            subjectAction: 'Solo guest quietly seated at dining table alone with sketchbook',
+            composition: 'wide editorial dining shot',
+        }),
+        makeStill({
+            stillId: 'sketchbook-s5',
+            slotRole: 'INTIMATE',
+            usage: 'concept',
+            location: 'ship library reading alcove',
+            environmentDetails: 'bookshelves, reading lamp, bay window seat looking out to sea',
+            subjectAction: 'Solo guest alone in library, contemplating the view through bay window',
+            composition: 'intimate close detail in quiet library setting',
+        }),
+    ];
+    const report = lintProductionBuild({ landingStillBible: makeBible(stills), nicheKeywords: [] });
+    const blocker = report.blockingIssues.find(i => i.code === 'repeated_composition_family');
+    assert.ok(!blocker,
+        `solarium/dining/library quiet scenes should NOT collapse into quiet_window_solo — got: ${blocker?.message ?? 'no blocker'}`);
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 

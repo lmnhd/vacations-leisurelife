@@ -188,10 +188,10 @@ test('still text drifting to a different concrete location family triggers ancho
     const still = makeStill({
         stillId: 'still-location-drift',
         anchorId: 'anchor-1',
-        location: 'pool deck railing',
-        environmentDetails: 'open rail overlooking the sea',
-        imagePrompt: 'Wide shot of tabletop gaming near the pool deck railing',
-        subjectAction: 'Pair enjoys tabletop gaming beside the pool deck railing',
+        location: 'outer ship railing overlooking the sea',
+        environmentDetails: 'open air, metal railing, sea beyond',
+        imagePrompt: 'Wide shot of tabletop gaming at the ship railing',
+        subjectAction: 'Pair enjoys tabletop gaming at the ship railing',
     });
     const result = validateAnchorCompliance(ANCHORS, makeBible([still]));
     const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
@@ -693,6 +693,67 @@ test('after normalizeEditorialUsage EDITORIAL_WIDE with previously invalid usage
     const result = validateAnchorCompliance(anchors, normalized);
     const mismatch = result.violations.find(v => v.violationType === 'slot_usage_mismatch');
     assert.ok(!mismatch, 'slot_usage_mismatch should be resolved after normalizeEditorialUsage');
+});
+
+// ── Phase A: pool-deck/atrium vs rail precedence regression ────────────────
+
+console.log('\nPhase A — Pool-Deck/Atrium Precedence Over Rail\n');
+
+test('pool_deck-anchored still with "pool deck ... near the rail" resolves to pool_deck not rail', () => {
+    const anchors = [{ anchorId: 'anchor-pool', nicheSignal: 'urban sketching', locationFamily: 'pool deck' }];
+    const still = makeStill({
+        stillId: 'still-pool-rail',
+        anchorId: 'anchor-pool',
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        location: 'pool deck shaded lounger zone near the rail on Brilliance of the Seas',
+        environmentDetails: 'lido deck, sun shade structure overhead',
+        imagePrompt: 'Wide hero shot of urban sketching at the pool deck lounger zone',
+        subjectAction: 'Solo guest urban sketching the horizon from a shaded pool deck lounger',
+        nicheCarryThrough: 'urban sketching',
+        composition: 'wide establishing shot',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'pool deck location with incidental "rail" reference should resolve to pool_deck — pool is now checked before rail');
+});
+
+test('atrium-anchored still with "atrium ... rail at Deck 4" resolves to atrium not rail', () => {
+    const anchors = [{ anchorId: 'anchor-atrium', nicheSignal: 'urban sketching', locationFamily: 'ship atrium' }];
+    const still = makeStill({
+        stillId: 'still-atrium-rail',
+        anchorId: 'anchor-atrium',
+        slotRole: 'HERO_ALT',
+        usage: 'hero_alt',
+        location: 'ship atrium (Centrum) rail at Deck 4/5',
+        environmentDetails: 'multi-deck atrium with glass elevators',
+        imagePrompt: 'Wide shot of urban sketching in the Centrum atrium looking down',
+        subjectAction: 'Solo guest urban sketching the atrium levels from the Deck 4 rail',
+        nicheCarryThrough: 'urban sketching',
+        composition: 'wide establishing overhead',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'atrium location with incidental "rail" reference should resolve to atrium — atrium is now checked before rail');
+});
+
+test('rail-only location still resolves to rail (no regression on true rail stills)', () => {
+    const anchors = [{ anchorId: 'anchor-rail', nicheSignal: 'urban sketching', locationFamily: 'open rail' }];
+    const still = makeStill({
+        stillId: 'still-rail-only',
+        anchorId: 'anchor-rail',
+        slotRole: 'FLEX',
+        usage: 'hero_alt',
+        location: 'outer ship railing',
+        environmentDetails: 'open air and ocean',
+        imagePrompt: 'Solo guest sketching from the exterior railing',
+        subjectAction: 'Solo guest urban sketching the ocean horizon from the exterior railing',
+        nicheCarryThrough: 'urban sketching',
+        composition: 'medium wide over-shoulder',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'rail-only location should still resolve to rail — no regression');
 });
 
 // ── Summary ────────────────────────────────────────────────────────────────────
