@@ -198,7 +198,12 @@ function buildStillDiagnostic(
     const shotRole = extractShotRole(still);
     const compositionFamily = extractCompositionFamily(still);
     const cueStrength = detectCueStrength(still, nicheKeywords);
-    const isGeneric = GENERIC_FALLBACK_FAMILIES.has(compositionFamily);
+    // A still with an explicit niche cue is niche-specific by definition —
+    // its spatial composition cluster does not override that identity.
+    // Only suppress generic flag when niche keywords are provided (context is available) AND cue is explicit.
+    // Without niche keywords, preserve original spatial cluster detection (no context to redeem by).
+    const nicheRedeems = nicheKeywords.length > 0 && cueStrength === 'explicit';
+    const isGeneric = GENERIC_FALLBACK_FAMILIES.has(compositionFamily) && !nicheRedeems;
 
     const flags: string[] = [];
     if (isGeneric) flags.push('generic_fallback_template');

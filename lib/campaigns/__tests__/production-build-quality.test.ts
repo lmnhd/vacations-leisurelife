@@ -462,6 +462,68 @@ test('missing_role_coverage still fires when slotRole is absent and composition 
     assert.ok(blocker, 'missing_role_coverage must still fire for stills without slotRole when composition triggers intimate');
 });
 
+// ── Phase D: Niche-cue redeems generic fallback ──────────────────────────────
+// A still with an explicit niche cue is niche-specific by definition.
+// Its spatial composition cluster (rail_couple_laugh, quiet_window_solo, etc.)
+// does not override that identity — isGenericFallback must be false.
+
+console.log('\nProduction Build Quality Regression — Niche Cue Redeems Generic Fallback\n');
+
+test('AC 13a: still on rail with niche keyword in imagePrompt is NOT flagged as generic', () => {
+    // A balcony/rail still would normally hit rail_couple_laugh if it has "couple".
+    // With an explicit niche keyword, isGenericFallback must be suppressed.
+    const stills = [
+        makeStill({ stillId: 's1', usage: 'hero_primary', slotRole: 'HERO_PRIMARY', composition: 'wide hero establishing', imagePrompt: 'wide deck shot with crochet hooks on a tray' }),
+        makeStill({ stillId: 's2', usage: 'hero_alt', slotRole: 'HERO_ALT', composition: 'wide alternate hero' }),
+        makeStill({ stillId: 's3', usage: 'concept', slotRole: 'EDITORIAL_WIDE_A', composition: 'wide editorial mid-ship open deck', imagePrompt: 'knitting circle on deck' }),
+        makeStill({ stillId: 's4', usage: 'concept', slotRole: 'EDITORIAL_WIDE_B', composition: 'wide atrium editorial' }),
+        makeStill({ stillId: 's5', usage: 'concept', slotRole: 'INTIMATE', composition: 'intimate close detail', subjectAction: 'turning a sock heel on double-pointed needles at the rail, partner laughing beside', location: 'cabin balcony railing', imagePrompt: 'sock heel knitting on railing with partner' }),
+        makeStill({ stillId: 's6', usage: 'concept', slotRole: 'FLEX', composition: 'medium social framing', imagePrompt: 'stitch markers on a ring being traded' }),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: ['knitting', 'crochet', 'sock heel', 'stitch marker'] });
+    const s5Diagnostic = report.stillDiagnostics.find(d => d.stillId === 's5');
+    assert.ok(s5Diagnostic, 's5 diagnostic must exist');
+    assert.equal(s5Diagnostic.isGenericFallback, false,
+        `s5 with explicit niche keyword must NOT be flagged as generic fallback, got compositionFamily=${s5Diagnostic.compositionFamily}`
+    );
+    assert.equal(s5Diagnostic.cueStrength, 'explicit', 's5 cueStrength must be explicit');
+});
+
+test('AC 13b: generic_fallback_overuse does NOT fire when explicit-cue stills are in generic composition clusters', () => {
+    // 4 stills in generic spatial clusters, but all have explicit niche keywords — no fallback blocker
+    const stills = [
+        makeStill({ stillId: 's1', usage: 'hero_primary', slotRole: 'HERO_PRIMARY', composition: 'wide deck shot couple sea', location: 'deck bow stern', imagePrompt: 'board game pieces on deck table' }),
+        makeStill({ stillId: 's2', usage: 'hero_alt', slotRole: 'HERO_ALT', composition: 'railing couple laugh', location: 'cabin balcony railing', imagePrompt: 'dice rolling with crochet hook nearby, couple laughing' }),
+        makeStill({ stillId: 's3', usage: 'concept', slotRole: 'EDITORIAL_WIDE_A', composition: 'quiet cabin window solo', location: 'cabin window porthole', imagePrompt: 'knitting by porthole window, sock on needles' }),
+        makeStill({ stillId: 's4', usage: 'concept', slotRole: 'EDITORIAL_WIDE_B', composition: 'wide lounge editorial' }),
+        makeStill({ stillId: 's5', usage: 'concept', slotRole: 'INTIMATE', composition: 'intimate close detail', subjectAction: 'stitch marker trade', imagePrompt: 'stitch marker detail' }),
+        makeStill({ stillId: 's6', usage: 'concept', slotRole: 'FLEX', composition: 'medium social framing', imagePrompt: 'tabletop game session on ship deck' }),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: ['board game', 'dice', 'crochet', 'knitting', 'stitch marker', 'tabletop'] });
+    const blocker = report.blockingIssues.find(i => i.code === 'generic_fallback_overuse');
+    assert.ok(!blocker,
+        `generic_fallback_overuse must NOT fire when stills have explicit niche cues, got: ${blocker?.message}`
+    );
+});
+
+test('AC 13c: generic_fallback_overuse STILL fires when stills match generic clusters without niche cues', () => {
+    // Same spatial clusters as 13b, but NO niche keywords — fallback blocker must fire
+    const stills = [
+        makeStill({ stillId: 's1', usage: 'hero_primary', slotRole: 'HERO_PRIMARY', composition: 'wide deck shot couple sea', location: 'deck bow stern' }),
+        makeStill({ stillId: 's2', usage: 'hero_alt', slotRole: 'HERO_ALT', composition: 'railing couple laugh', location: 'cabin balcony railing' }),
+        makeStill({ stillId: 's3', usage: 'concept', slotRole: 'EDITORIAL_WIDE_A', composition: 'quiet cabin window solo', location: 'cabin window porthole' }),
+        makeStill({ stillId: 's4', usage: 'concept', slotRole: 'EDITORIAL_WIDE_B', composition: 'intimate dining couple candlelight', location: 'dining restaurant dinner' }),
+        makeStill({ stillId: 's5', usage: 'concept', slotRole: 'INTIMATE', composition: 'intimate close detail' }),
+        makeStill({ stillId: 's6', usage: 'concept', slotRole: 'FLEX', composition: 'medium social framing' }),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: [] });
+    const blocker = report.blockingIssues.find(i => i.code === 'generic_fallback_overuse');
+    assert.ok(blocker, 'generic_fallback_overuse must still fire when stills lack niche cues in generic clusters');
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 
