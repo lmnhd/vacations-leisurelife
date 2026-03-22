@@ -30,6 +30,13 @@ The latest report for `bp-tabletop-icon-2027-7n-caribbean` shows a narrow, actio
 4. One still violates the anchor location contract.
 5. Two stills claim niche carry-through but do not register as legible niche cues under lint.
 
+The latest Phase B diagnostic result tightened that further:
+
+1. `OTS-03-EDITORIAL_A` now classifies correctly as editorial.
+2. `OTS-04-EDITORIAL_B` still classifies as intimate.
+3. `missing_role_coverage` is therefore still the primary blocker.
+4. The current composition-normalization attempt is not broad enough to eliminate all intimate-triggering cues.
+
 That means the next implementation pass should stop making broad, multi-goal prompt changes.
 The active problem is now deterministic decomposition and targeted remediation.
 
@@ -113,12 +120,23 @@ Use `bp-tabletop-icon-2027-7n-caribbean` as the first proving case.
 
 Current evidence says the main blocker is role coverage, not total campaign identity collapse.
 
+Status: still incomplete.
+
+The first normalization pass improved one of the two editorial slots but did not clear the blocker.
+
 Implementation target:
 
 1. ensure editorial slots reliably produce lint-recognized editorial/wide compositions
 2. eliminate the current `slot_usage_mismatch` on the two tabletop editorial stills
 3. clear `missing_role_coverage` without weakening lint rules
 4. preserve the passes already achieved on structural blockers and approval semantics
+
+Latest concrete failure:
+
+1. `OTS-03-EDITORIAL_A` is now correct
+2. `OTS-04-EDITORIAL_B` is still being read as `role=intimate`
+3. the problematic composition wording includes: `airily wide, side-table foreground and open lounger context`
+4. the next pass must either broaden composition normalization or deliberately adjust lint role classification logic for editorial-wide language
 
 Minimum outputs:
 
@@ -235,8 +253,9 @@ Fix tabletop role coverage first.
 Specific target from the latest report:
 
 1. tabletop has 1 editorial still when it needs 2
-2. two editorial stills are currently failing slot/composition interpretation
-3. fix that first before working generic fallback or niche cue strength
+2. `OTS-03-EDITORIAL_A` is already fixed
+3. `OTS-04-EDITORIAL_B` is still failing slot/composition interpretation
+4. fix that first before working generic fallback or niche cue strength
 
 Likely primary file:
 
@@ -266,7 +285,7 @@ Minimum proof:
 
 1. Rerun tabletop diagnostics after the code change.
 2. Show the before/after status of `missing_role_coverage`.
-3. Show the before/after status of the two editorial tabletop stills.
+3. Show the before/after status of `OTS-03-EDITORIAL_A` and `OTS-04-EDITORIAL_B` individually.
 4. Record whether generic fallback count changed, but treat that as secondary unless directly affected by the role-coverage fix.
 5. State explicitly whether isolated-still revision was used, skipped, or not applicable.
 6. If the tabletop blocker changes, name the new primary blocker class exactly.
@@ -277,6 +296,7 @@ Update `phase-result.md` as part of the work and add a new failure-class progres
 
 - the exact tabletop blocker profile before the pass
 - what was changed to address role coverage specifically
+- whether the attempted composition normalization worked only partially
 - tabletop before/after blocker counts
 - whether the editorial still contract became stable
 - whether generic fallback and niche-legibility remained unchanged, improved incidentally, or worsened

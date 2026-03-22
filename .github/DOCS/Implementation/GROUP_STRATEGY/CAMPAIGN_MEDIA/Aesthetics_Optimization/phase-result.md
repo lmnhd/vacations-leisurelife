@@ -325,6 +325,37 @@ Reported still-level issues:
 4. `OTS-01-HERO-POOL` and `OTS-06-FLEX-BALCONY`
 	- still receiving `no_niche_cue` despite declared niche carry-through values
 
+### Phase B Diagnostic Result — Role Coverage Still Not Cleared
+
+An additional tabletop-focused pass attempted to fix role coverage by normalizing editorial compositions.
+
+Result: incomplete.
+
+Observed outcome:
+
+1. `missing_role_coverage` is still firing
+2. `OTS-03-EDITORIAL_A` now classifies correctly as `role=editorial`
+3. `OTS-04-EDITORIAL_B` still classifies incorrectly as `role=intimate`
+
+Current root cause assessment:
+
+1. the current `normalizeEditorialCompositions()` logic only removes or rewrites a subset of intimate-triggering language
+2. `OTS-04-EDITORIAL_B` still contains composition cues that pull lint toward intimate classification
+3. current composition wording reported for the failing still:
+   - `airily wide, side-table foreground and open lounger context`
+4. this means the role-coverage problem is not solved by the current targeted normalization pass
+
+Interpretation:
+
+The first tabletop remediation pass partially worked, but only for one editorial slot.
+The next pass must deliberately choose between:
+
+1. broadening editorial composition normalization so editorial slots cannot retain intimate cues that override `wide`
+2. adjusting lint role-classification logic so legitimate editorial-wide phrasing is not misread as intimate
+
+Do not treat this as a generic-fallback or niche-legibility pass yet.
+`missing_role_coverage` remains the active blocker to clear first.
+
 ### What Improved
 
 1. approval/readiness semantics remain correct
@@ -360,6 +391,13 @@ The next implementation phase should work the failure classes independently in t
 2. generic fallback reduction second
 3. niche-legibility alignment third
 4. sketchbook anchor-contract cleanup and explicit whole-set failure behavior after that
+
+Immediate next-step recommendation for tabletop:
+
+1. inspect the exact lint shot-role classifier for why `OTS-04-EDITORIAL_B` is resolving to `intimate`
+2. either strengthen editorial composition normalization or adjust deterministic role classification with a narrowly scoped rule
+3. rerun tabletop diagnostics only after that change
+4. do not claim Phase B complete until `missing_role_coverage` is actually gone
 
 ### Next Proving Target
 
