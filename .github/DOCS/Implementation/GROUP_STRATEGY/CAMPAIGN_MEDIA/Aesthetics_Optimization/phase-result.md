@@ -626,3 +626,49 @@ The generator had no reference examples — it was translating abstract anchor s
 - Composition family classifier enhancement to recognize niche-native location patterns
 - Additional reference packs for other campaign archetypes
 - Optional critic pass if reference grounding alone doesn't fully clear generic fallback for all campaigns
+
+---
+
+## Phase D — Niche-Cue Redeems Generic Fallback
+
+### Root Cause
+
+`generic_fallback_overuse` was firing on stills that genuinely contain niche-specific objects (crochet hooks, sock heels, Ravelry, stitch markers) because `isGenericFallback` was computed purely from the spatial composition cluster (`rail_couple_laugh`, `quiet_window_solo`, etc.), with no awareness of whether the still's content was actually niche-specific. A still that names a specific craft object in `imagePrompt`+`subjectAction` is NOT a generic fallback — the niche cue redeems it regardless of where the scene is set.
+
+### Change
+
+`lib/campaigns/media/production-build-lint.ts` — `buildStillDiagnostic()`
+
+```javascript
+// Before
+const isGeneric = GENERIC_FALLBACK_FAMILIES.has(compositionFamily);
+
+// After
+const nicheRedeems = nicheKeywords.length > 0 && cueStrength === 'explicit';
+const isGeneric = GENERIC_FALLBACK_FAMILIES.has(compositionFamily) && !nicheRedeems;
+```
+
+**Key nuance:** Redemption only triggers when `nicheKeywords.length > 0`. Without provided niche context, the original spatial cluster detection is preserved — the linter cannot know whether a "quiet porthole" still is niche-specific or just quiet.
+
+### Regression Tests (AC 13a/b/c)
+
+| Test | Description | Expected |
+|---|---|---|
+| AC 13a | Rail still with explicit niche keyword | `isGenericFallback = false` |
+| AC 13b | 4 stills in generic clusters, all with explicit cue | No `generic_fallback_overuse` blocker |
+| AC 13c | Same spatial clusters, NO niche keywords | `generic_fallback_overuse` still fires |
+
+### Test Results
+
+| Suite | Result |
+|---|---|
+| `production-build-quality.test.ts` | 17/17 |
+| All 5 suites total | **96/96** |
+
+### Impact
+
+- `generic_fallback_overuse` no longer fires on niche campaigns that generate craft-specific imagery in familiar spatial settings
+- Stills with explicit niche vocabulary (craft objects, app names, tool names) are correctly cleared
+- No regression in campaigns without niche keywords (spatial cluster detection unchanged)
+
+Commit: `3140eb5`

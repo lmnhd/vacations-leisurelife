@@ -164,16 +164,12 @@ function detectCueStrength(
 
     if (nicheKeywords.length > 0) {
         const lowerKw = nicheKeywords.map(k => k.toLowerCase());
-        const primaryHit = lowerKw.some(kw =>
-            [...promptTokens, ...actionTokens].some(t => t.includes(kw))
-        );
-        if (primaryHit) return 'explicit';
-
-        const secondaryHit = lowerKw.some(kw =>
-            [...envTokens, ...compTokens].some(t => t.includes(kw))
-        );
-        if (secondaryHit) return 'subtle';
-
+        // Use full raw text for matching — single tokens can't contain multi-word phrases
+        // like "sock heel", "stitch marker", "embroidery hoop", etc.
+        const primaryText = `${still.imagePrompt} ${still.subjectAction}`.toLowerCase();
+        const secondaryText = `${still.environmentDetails} ${still.composition}`.toLowerCase();
+        if (lowerKw.some(kw => primaryText.includes(kw))) return 'explicit';
+        if (lowerKw.some(kw => secondaryText.includes(kw))) return 'subtle';
         return 'absent';
     }
 
