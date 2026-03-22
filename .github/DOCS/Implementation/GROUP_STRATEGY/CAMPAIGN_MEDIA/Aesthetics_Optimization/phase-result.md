@@ -753,3 +753,82 @@ Not added. The Phase D acceptance criteria says: "only add one critic pass if re
 ### Tabletop Regression Check
 
 All 96 regression tests pass including AC 12a (art/creative archetype with niche keywords in generic composition families still triggers `repeated_composition_family`). Tabletop remains stable.
+
+---
+
+## Final Follow-On Fixes — Anchor Location Parity And Repair Discipline
+
+### 1. Diagnostic / Orchestrator Parity
+
+`tests/phase-2c-diagnostic-breakdown.ts` was reporting `slot_usage_mismatch` evidence that the real orchestrator would not produce, because the diagnostic path skipped `normalizeEditorialCompositions()`.
+
+Fix:
+
+- imported `normalizeEditorialCompositions`
+- applied it immediately after `generateLandingStillBible()`
+- anchor compliance + lint now inspect the same post-normalization still set the orchestrator uses
+
+Commit: `c9a1580`
+
+### 2. Balcony vs Rail Location Family Priority
+
+`anchor_location_mismatch` on strings like `"cabin balcony railing"` was often a classifier-ordering issue, not true semantic drift.
+
+Root cause:
+
+- `LOCATION_FAMILY_KEYWORDS` checked `rail` / `railing` before `balcony`
+- text containing both words resolved to `rail`
+- anchors expecting `balcony` were incorrectly flagged as drifted
+
+Fix:
+
+- moved `balcony` ahead of `rail` in `LOCATION_FAMILY_KEYWORDS`
+
+Result:
+
+- balcony-authored stills now resolve to `balcony` first
+- false-positive balcony→rail drift is reduced without weakening any thresholds
+
+Commit: `68c9848`
+
+### 3. Repair Pass Intra-Batch Location Uniqueness
+
+When multiple stills failed `duplicate_location_family`, the repair prompt only told the model to avoid location families already used by passing stills. That left a hole: two failing stills could both be repaired into the same new family.
+
+Fix:
+
+- strengthened the repair prompt so each repaired still must use a location family not already claimed by **any** other still
+- explicitly requires every still in the repair batch to use a **different** location family
+
+Commit: `c679d68`
+
+### 4. Generation Prompt: Stronger Anchor Location Contract
+
+`generateLandingStillBible()` now includes an explicit location contract before the anchor seed list:
+
+- if anchor `locationFamily` is `balcony`, the still location must remain on/near a cabin balcony
+- if anchor `locationFamily` is `deck`, the still location must remain on an open deck area
+- if anchor `locationFamily` is `dining`, the still location must remain in a dining venue
+- the model is told not to substitute a different location family even if the scene idea seems better
+
+The final self-check also now requires that each still's location matches its anchor's declared location family.
+
+### Verification After Follow-On Fixes
+
+| Suite | Result |
+|---|---|
+| `anchor-compliance.test.ts` | 27/27 |
+| `brief-engine.orchestrator.test.ts` | 29/29 |
+| `brief-engine.validation.test.ts` | 2/2 |
+| `reference-packs.test.ts` | 21/21 |
+| `production-build-quality.test.ts` | 17/17 |
+| Total | **96/96** |
+
+### Current Remaining Failure Class
+
+The main remaining live issue is true LLM location drift against the anchor seed in some runs, not lint blindness:
+
+- `anchor_location_mismatch`
+- occasional `duplicate_location_family`
+
+Those now have stronger generation constraints, better classifier behavior, and a stricter repair contract.

@@ -159,12 +159,18 @@ SLOT ASSIGNMENT — for each still, populate the audit and shot-intent fields:
 - Slot 5 → slotRole=INTIMATE, usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche in both fields — NOT candlelit dining fallback
 - Slot 6 → slotRole=FLEX, usage="hero_alt", "email_header", "social_square", or "concept" — niche in imagePrompt or subjectAction — least-used location family so far
 
+LOCATION CONTRACT — each still's 'location' field MUST match the locationFamily declared in its anchor seed:
+  If anchor locationFamily is "balcony" → still location must be on/near a cabin balcony
+  If anchor locationFamily is "deck" → still location must be on an open deck area
+  If anchor locationFamily is "dining" → still location must be in a dining venue
+  Do not substitute a different location family even if the scene idea is compelling.
+
 ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 ${referenceBlock}
 ${lintBlock}
 
-FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene.
+FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location matches its anchor's declared locationFamily.
 `.trim();
 
     const ctx = `
