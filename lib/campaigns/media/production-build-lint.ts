@@ -98,6 +98,13 @@ function extractMoodFamily(still: LandingStillSpec): string {
 // ── Shot role ────────────────────────────────────────────────────────────
 
 function extractShotRole(still: LandingStillSpec): 'hero' | 'editorial' | 'intimate' | 'supporting' {
+    // ── Structural slot assignment takes priority when present ────────
+    // slotRole is enforced by anchor compliance; trust it over composition heuristics.
+    if (still.slotRole === 'HERO_PRIMARY' || still.slotRole === 'HERO_ALT') return 'hero';
+    if (still.slotRole === 'EDITORIAL_WIDE_A' || still.slotRole === 'EDITORIAL_WIDE_B') return 'editorial';
+    if (still.slotRole === 'INTIMATE') return 'intimate';
+    // FLEX and undefined slotRole fall through to usage/composition inference
+
     if (still.usage === 'hero_primary' || still.usage === 'hero_alt') return 'hero';
     if (still.usage === 'concept') {
         const compLower = still.composition.toLowerCase();

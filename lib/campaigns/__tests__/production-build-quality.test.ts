@@ -420,6 +420,48 @@ test('AC 12b: corrected art/creative archetype with niche terms + diverse compos
     );
 });
 
+// ── Phase B: slotRole-aware role classification ──────────────────────────────
+// extractShotRole now trusts slotRole when present, so EDITORIAL_WIDE stills
+// are always classified as editorial regardless of composition keywords.
+
+console.log('\nProduction Build Quality Regression — slotRole-Aware Classification\n');
+
+test('EDITORIAL_WIDE with intimate composition keywords is still editorial when slotRole is set', () => {
+    // Without slotRole this would be classified as intimate due to composition keywords.
+    // With slotRole=EDITORIAL_WIDE_A, lint should classify as editorial.
+    const stills = [
+        makeStill({ stillId: 's1', usage: 'hero_primary', slotRole: 'HERO_PRIMARY', composition: 'wide hero establishing' }),
+        makeStill({ stillId: 's2', usage: 'hero_alt', slotRole: 'HERO_ALT', composition: 'wide hero alternate' }),
+        makeStill({ stillId: 's3', usage: 'concept', slotRole: 'EDITORIAL_WIDE_A', composition: 'intimate close-up detail of strategy cards on a wide table' }),
+        makeStill({ stillId: 's4', usage: 'concept', slotRole: 'EDITORIAL_WIDE_B', composition: 'airily wide, side-table foreground and open lounger context' }),
+        makeStill({ stillId: 's5', usage: 'concept', slotRole: 'INTIMATE', composition: 'intimate close crop of hands sharing a game piece' }),
+        makeStill({ stillId: 's6', usage: 'concept', slotRole: 'FLEX', composition: 'medium social framing' }),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: NICHE_KEYWORDS });
+    const blocker = report.blockingIssues.find(i => i.code === 'missing_role_coverage');
+    assert.ok(!blocker,
+        `missing_role_coverage must NOT fire when EDITORIAL_WIDE slots are present, got: ${blocker?.message}`
+    );
+});
+
+test('missing_role_coverage still fires when slotRole is absent and composition triggers intimate', () => {
+    // Backward compat: stills without slotRole fall through to composition-based inference
+    const stills = [
+        makeStill({ stillId: 's1', usage: 'hero_primary', composition: 'wide hero' }),
+        makeStill({ stillId: 's2', usage: 'hero_alt', composition: 'wide hero alt' }),
+        makeStill({ stillId: 's3', usage: 'concept', composition: 'intimate close shot of guests' }),
+        makeStill({ stillId: 's4', usage: 'concept', composition: 'tight detail of game components' }),
+        makeStill({ stillId: 's5', usage: 'social_square', composition: 'social square crop' }),
+        makeStill({ stillId: 's6', usage: 'concept', composition: 'wide editorial establishing' }),
+    ];
+    const bible = makeBible(stills);
+    const report = lintProductionBuild({ landingStillBible: bible, nicheKeywords: NICHE_KEYWORDS });
+    const blocker = report.blockingIssues.find(i => i.code === 'missing_role_coverage');
+    // s3 and s4 are intimate (composition keywords), s6 is editorial — only 1 editorial, needs 2
+    assert.ok(blocker, 'missing_role_coverage must still fire for stills without slotRole when composition triggers intimate');
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 
