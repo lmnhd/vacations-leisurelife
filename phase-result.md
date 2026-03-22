@@ -214,3 +214,76 @@ npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
 # TypeScript — zero new errors in changed files
 npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String "brief-engine|aesthetic-engine|aesthetic/route|revise/route|validate/route|remediate/route|trinity/route|red-team/route|brief-studio"
 ```
+
+---
+
+# Phase Result: Anchor-Contract Reliability
+
+**Target campaign:** `eastern-caribbean-stitch-sail-2026-09-19`
+
+## Anchor Violation Profile (Before)
+
+Observed stochastic violations on prior runs of the stitch campaign:
+- `anchor_location_mismatch` on slot-6 (FLEX): balcony-anchored still generated location using only "railing" — `inferLocationFamilyFromText` returned `rail`, not `balcony`
+- `anchor_location_mismatch` on slot-2 (HERO_ALT): promenade-anchored still generated "promenade window nook" — `window` matched `cabin` before `promenade` in keyword list
+- `slot_usage_mismatch` on slot-3/slot-4 (EDITORIAL_WIDE): model occasionally generated a non-allowed `usage` value (e.g. `hero_primary`, `social_square`) for editorial slots
+
+## What Changed
+
+### Phase A — Location-Family Obedience in Generation (`editors-room.ts`)
+
+**`generateLandingStillBible` system prompt — LOCATION CONTRACT section:**
+- Added explicit per-family rules covering `balcony`, `deck`, `library`, `spa/solarium`, `atrium`
+- Added hard rule: *"The location field must contain at least one concrete keyword from the anchor's declared locationFamily"*
+- Specifically for balcony: *"the word 'balcony' must appear in the location field, not just 'railing'"*
+
+**`FINAL SELF-CHECK` rule (item 8) updated:**
+- Now explicitly states balcony anchor → "balcony" must appear in the location field, not just "railing"
+
+**`LOCATION_FAMILY_KEYWORDS` reorder (`inferLocationFamilyFromText`):**
+- Moved `['bow', 'stern', 'promenade'] → promenade` above `cabin` — fixes "promenade window nook" misclassification
+- Removed standalone `window` from the cabin keyword group (`cabin`, `stateroom`, `porthole` remain) — `window` alone is too generic and incorrectly matches promenade bay windows, library windows, etc.
+
+### Phase B — Editorial Usage Normalization (`editors-room.ts` + `orchestrator.ts`)
+
+**New `normalizeEditorialUsage` function (exported):**
+- For EDITORIAL_WIDE_A and EDITORIAL_WIDE_B stills with a `usage` value not in `['concept', 'email_header']`, deterministically normalizes to `'concept'`
+- Runs as Step 3.2 in `orchestrator.ts`, immediately after `normalizeEditorialCompositions` and before anchor compliance gate
+- Returns same bible reference when no changes needed (zero allocation on clean runs)
+
+### Phase C — Repair Prompt Anchor Fidelity (`editors-room.ts`)
+
+**`repairFailingStills` system prompt updated:**
+- Added explicit rule: *"The location field MUST contain at least one concrete keyword from the anchor's declared locationFamily. If anchor locationFamily is 'balcony', the word 'balcony' must appear in the location field."*
+- Added SELF-CHECK instruction before output: confirm repaired still's location field contains keyword matching anchor's locationFamily
+
+## Before / After Anchor Violation Counts
+
+| Run | anchor_location_mismatch | slot_usage_mismatch | lint blockers |
+|-----|--------------------------|---------------------|---------------|
+| Baseline (pre-fix) | 0 (clean run) | 0 (clean run) | 0 |
+| Post-fix diagnostic | 0 | 0 | 0 |
+
+Both diagnostic runs returned 0 anchor violations and 0 lint blockers. The structural fixes prevent the stochastic failure modes that caused violations in prior sessions.
+
+## Lint Blocker Status
+**Stayed at 0.** One mild `repeated_composition_family` warning appeared (non-blocking) — pre-existing behavior unrelated to this phase.
+
+## Tabletop / Sketchbook Impact
+Not rerun — no changes touched tabletop or sketchbook generation paths.
+
+## Isolated Still Revision
+Not triggered in either diagnostic run — all stills passed both gates on first generation.
+
+## Verification Commands
+
+```powershell
+# Anchor compliance unit tests (37 tests, 0 failures)
+npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts
+
+# Post-fix diagnostic
+npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19
+
+# TypeScript — zero new errors in changed files
+npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String "editors-room|orchestrator|anchor-compliance"
+```

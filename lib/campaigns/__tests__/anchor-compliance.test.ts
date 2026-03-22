@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { validateAnchorCompliance, extractViolationStillIds, formatViolationsForRepair, normalizeEditorialCompositions } from '../editors-room';
+import { validateAnchorCompliance, extractViolationStillIds, formatViolationsForRepair, normalizeEditorialCompositions, normalizeEditorialUsage } from '../editors-room';
 import type { LandingStillSpec, LandingStillBible } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -473,7 +473,174 @@ test('after normalization EDITORIAL_WIDE stills no longer trigger slot_usage_mis
     assert.ok(!mismatch, 'slot_usage_mismatch on EDITORIAL_WIDE composition should be resolved after normalization');
 });
 
-// ── Summary ──────────────────────────────────────────────────────────────────
+// ── Phase A: balcony/rail location drift regression ──────────────────────
+
+console.log('\nPhase A — Balcony/Rail Location Family Precision\n');
+
+test('promenade-anchored still with "promenade window nook" resolves to promenade not cabin', () => {
+    const anchors = [{ anchorId: 'anchor-5', nicheSignal: 'Ravelry', locationFamily: 'promenade' }];
+    const still = makeStill({
+        stillId: 'still-promenade-window',
+        anchorId: 'anchor-5',
+        slotRole: 'HERO_ALT',
+        usage: 'hero_alt',
+        location: 'promenade window nook',
+        environmentDetails: 'bay window seat along the promenade deck',
+        imagePrompt: 'Hero shot of knitter in the promenade window nook with Ravelry open',
+        subjectAction: 'Solo guest knitting in promenade window nook with Ravelry on phone',
+        nicheCarryThrough: 'Ravelry',
+        composition: 'medium_wide single_subject in window nook',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'promenade window nook should resolve to promenade — promenade keyword now checked before cabin/window');
+});
+
+test('balcony-anchored still with only "railing" in location (no "balcony") triggers anchor_location_mismatch', () => {
+    const anchors = [{ anchorId: 'anchor-5', nicheSignal: 'miniature painting', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-balcony-drift',
+        anchorId: 'anchor-5',
+        slotRole: 'INTIMATE',
+        usage: 'concept',
+        location: 'private railing above the sea',
+        environmentDetails: 'warm breeze, metal railing, sea view',
+        imagePrompt: 'Intimate close shot of miniature painting at the railing',
+        subjectAction: 'Solo guest focused on miniature painting at the railing',
+        nicheCarryThrough: 'miniature painting',
+        composition: 'intimate close-up detail',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(v, 'expected anchor_location_mismatch when balcony anchor drifts to railing-only location text');
+    assert.equal(v.expected, 'balcony');
+    assert.equal(v.actual, 'rail');
+});
+
+test('balcony-anchored still with both "balcony" and "railing" in location passes anchor_location_mismatch', () => {
+    const anchors = [{ anchorId: 'anchor-5', nicheSignal: 'miniature painting', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-balcony-ok',
+        anchorId: 'anchor-5',
+        slotRole: 'INTIMATE',
+        usage: 'concept',
+        location: 'cabin balcony railing',
+        environmentDetails: 'private balcony with railing and sea view',
+        imagePrompt: 'Intimate close shot of miniature painting on the cabin balcony',
+        subjectAction: 'Solo guest focused on miniature painting on the balcony',
+        nicheCarryThrough: 'miniature painting',
+        composition: 'intimate close-up detail',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'balcony+railing in location should pass — balcony is checked first in inferLocationFamilyFromText');
+});
+
+test('balcony-anchored still with only "balcony" in location (no railing) passes anchor_location_mismatch', () => {
+    const anchors = [{ anchorId: 'anchor-5', nicheSignal: 'miniature painting', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-balcony-clean',
+        anchorId: 'anchor-5',
+        slotRole: 'INTIMATE',
+        usage: 'concept',
+        location: 'private cabin balcony',
+        environmentDetails: 'sea view from the balcony',
+        imagePrompt: 'Intimate close shot of miniature painting on the cabin balcony',
+        subjectAction: 'Solo guest focused on miniature painting on the balcony',
+        nicheCarryThrough: 'miniature painting',
+        composition: 'intimate close-up detail',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'pure balcony location should pass with no mismatch');
+});
+
+// ── Phase B: normalizeEditorialUsage ──────────────────────────────────────────────────────
+
+console.log('\nPhase B — Editorial Usage Normalization\n');
+
+test('EDITORIAL_WIDE_A with invalid usage is normalized to concept', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-bad-usage',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'hero_primary',  // invalid for editorial slot
+        composition: 'wide establishing shot',
+        location: 'ship library', environmentDetails: 'bookshelves',
+        imagePrompt: 'Tabletop gaming in library', subjectAction: 'Pair enjoys tabletop gaming',
+        anchorId: 'anchor-1',
+    })]);
+    const result = normalizeEditorialUsage(bible);
+    assert.equal(result.stillLibrary[0].usage, 'concept', 'invalid usage should be normalized to concept');
+});
+
+test('EDITORIAL_WIDE_B with invalid usage is normalized to concept', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-b-bad-usage',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'social_square',  // invalid for editorial slot
+        composition: 'wide overhead shot',
+        location: 'dining lounge', environmentDetails: 'elegant booths',
+        imagePrompt: 'Dice rolling in dining lounge', subjectAction: 'Pair engaged in dice rolling',
+        anchorId: 'anchor-4', nicheCarryThrough: 'dice rolling',
+    })]);
+    const result = normalizeEditorialUsage(bible);
+    assert.equal(result.stillLibrary[0].usage, 'concept', 'invalid usage should be normalized to concept');
+});
+
+test('EDITORIAL_WIDE with already-valid usage=concept is unchanged', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-valid-concept',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        composition: 'wide establishing shot',
+    })]);
+    const result = normalizeEditorialUsage(bible);
+    assert.equal(result.stillLibrary[0].usage, 'concept', 'valid concept usage should not change');
+    assert.equal(result, bible, 'should return same reference when no changes made');
+});
+
+test('EDITORIAL_WIDE with already-valid usage=email_header is unchanged', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-valid-email',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'email_header',
+        composition: 'wide environmental shot',
+    })]);
+    const result = normalizeEditorialUsage(bible);
+    assert.equal(result.stillLibrary[0].usage, 'email_header', 'valid email_header usage should not change');
+    assert.equal(result, bible, 'should return same reference when no changes made');
+});
+
+test('HERO_PRIMARY with any usage is NOT touched by normalizeEditorialUsage', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'hero-pass-through',
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        composition: 'wide establishing shot',
+    })]);
+    const result = normalizeEditorialUsage(bible);
+    assert.equal(result.stillLibrary[0].usage, 'hero_primary', 'HERO stills must not be modified');
+    assert.equal(result, bible, 'should return same reference for non-editorial stills');
+});
+
+test('after normalizeEditorialUsage EDITORIAL_WIDE with previously invalid usage no longer triggers slot_usage_mismatch', () => {
+    const anchors = [{ anchorId: 'anchor-3', nicheSignal: 'strategy cards', locationFamily: 'spa solarium' }];
+    const bible = makeBible([makeStill({
+        stillId: 'ed-was-bad-usage',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'hero_primary',  // invalid — would trigger slot_usage_mismatch before normalization
+        composition: 'wide overhead establishing shot',
+        location: 'spa solarium daybed alcove', environmentDetails: 'glass roof and thermal loungers',
+        imagePrompt: 'Editorial wide of strategy cards in the spa solarium', subjectAction: 'Guest arranging strategy cards in the spa solarium',
+        nicheCarryThrough: 'strategy cards', anchorId: 'anchor-3',
+    })]);
+    const normalized = normalizeEditorialUsage(bible);
+    const result = validateAnchorCompliance(anchors, normalized);
+    const mismatch = result.violations.find(v => v.violationType === 'slot_usage_mismatch');
+    assert.ok(!mismatch, 'slot_usage_mismatch should be resolved after normalizeEditorialUsage');
+});
+
+// ── Summary ────────────────────────────────────────────────────────────────────
 
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);

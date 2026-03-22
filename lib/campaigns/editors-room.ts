@@ -160,17 +160,21 @@ SLOT ASSIGNMENT — for each still, populate the audit and shot-intent fields:
 - Slot 6 → slotRole=FLEX, usage="hero_alt", "email_header", "social_square", or "concept" — niche in imagePrompt or subjectAction — least-used location family so far
 
 LOCATION CONTRACT — each still's 'location' field MUST match the locationFamily declared in its anchor seed:
-  If anchor locationFamily is "balcony" → still location must be on/near a cabin balcony
-  If anchor locationFamily is "deck" → still location must be on an open deck area
+  If anchor locationFamily is "balcony" → still location field MUST contain the word "balcony" — do not write only "railing" or "rail" without balcony present
+  If anchor locationFamily is "deck" → still location must be on an open deck area — do not write "railing" or "balcony" as the primary descriptor
   If anchor locationFamily is "dining" → still location must be in a dining venue
-  Do not substitute a different location family even if the scene idea is compelling.
+  If anchor locationFamily is "library" → still location must be in the ship library or reading room — do not use pool, deck, or railing locations
+  If anchor locationFamily is "spa" or "solarium" → still location must be in a spa, solarium, or thermal area
+  If anchor locationFamily is "atrium" → still location must be in the ship atrium or grand lobby
+  Do not substitute a different location family even if the scene idea is more compelling.
+  The location field must contain at least one concrete keyword from the anchor's declared locationFamily.
 
 ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 ${referenceBlock}
 ${lintBlock}
 
-FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location matches its anchor's declared locationFamily.
+FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location field contains a concrete keyword from its anchor's declared locationFamily — for a balcony anchor the word "balcony" must appear in the location field, not just "railing".
 `.trim();
 
     const ctx = `
@@ -225,6 +229,26 @@ export function normalizeEditorialCompositions(bible: LandingStillBible): Landin
         }
         changed = true;
         return { ...still, composition: fixed };
+    });
+    if (!changed) return bible;
+    return { ...bible, stillLibrary };
+}
+
+// ── Step 3.2: Deterministic editorial usage normalizer ──────────────────────
+// Fixes invalid usage values on EDITORIAL_WIDE_A and EDITORIAL_WIDE_B stills.
+// If the model generates a non-allowed usage (e.g. 'medium_wide', 'hero_primary')
+// for an editorial slot, normalize it to 'concept' before anchor compliance runs.
+
+const EDITORIAL_WIDE_ALLOWED_USAGES = new Set<LandingStillSpec['usage']>(['concept', 'email_header']);
+
+export function normalizeEditorialUsage(bible: LandingStillBible): LandingStillBible {
+    const EDITORIAL_WIDE_ROLES = new Set(['EDITORIAL_WIDE_A', 'EDITORIAL_WIDE_B']);
+    let changed = false;
+    const stillLibrary = bible.stillLibrary.map(still => {
+        if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole)) return still;
+        if (EDITORIAL_WIDE_ALLOWED_USAGES.has(still.usage)) return still;
+        changed = true;
+        return { ...still, usage: 'concept' as LandingStillSpec['usage'] };
     });
     if (!changed) return bible;
     return { ...bible, stillLibrary };
@@ -300,7 +324,13 @@ ${passingContext}
 ${slotRefBlocks}
 ${lintBlock}
 
-For each repaired still: embed a niche term in BOTH imagePrompt AND subjectAction, use a location family not already claimed by ANY other still (passing or failing — each still in this repair batch must use a DIFFERENT location family), and avoid every generic fallback family. Use the reference examples as guides for niche-native imagery.
+For each repaired still:
+- Embed a niche term in BOTH imagePrompt AND subjectAction.
+- The location field MUST contain at least one concrete keyword from the anchor's declared locationFamily. If the anchor locationFamily is "balcony", the word "balcony" must appear in the location field.
+- Use a location family not already claimed by ANY other still (passing or failing — each still in this repair batch must use a DIFFERENT location family).
+- Avoid every generic fallback family.
+- SELF-CHECK before output: confirm the repaired still's location field contains a keyword matching its anchor's declared locationFamily.
+- Use the reference examples as guides for niche-native imagery.
 `.trim();
 
     const prompt = `
@@ -433,14 +463,14 @@ const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
     [['balcony'], 'balcony'],
     [['rail', 'railing'], 'rail'],
     [['pool', 'lido'], 'pool_deck'],
+    [['bow', 'stern', 'promenade'], 'promenade'],  // before cabin — 'promenade window nook' → promenade
     [['deck', 'outdoor'], 'deck'],
-    [['cabin', 'stateroom', 'porthole', 'window'], 'cabin'],
+    [['cabin', 'stateroom', 'porthole'], 'cabin'],  // 'window' removed — too generic, matches promenade/library windows
     [['library', 'reading room'], 'library'],
     [['spa', 'solarium', 'thermal'], 'spa'],
     [['dining', 'restaurant', 'meal', 'table'], 'dining'],
     [['lounge', 'bar'], 'lounge'],
     [['atrium', 'lobby', 'grand hall'], 'atrium'],
-    [['bow', 'stern', 'promenade'], 'promenade'],
     [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
     [['theater', 'stage', 'auditorium'], 'theater'],
     [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],

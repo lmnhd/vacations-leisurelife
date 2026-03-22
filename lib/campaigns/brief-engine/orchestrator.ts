@@ -11,6 +11,7 @@ import {
     extractViolationStillIds,
     formatViolationsForRepair,
     normalizeEditorialCompositions,
+    normalizeEditorialUsage,
 } from '../editors-room';
 import { lintProductionBuild } from '../media/production-build-lint';
 import { getExpandedNicheKeywords } from '../reference-packs';
@@ -80,10 +81,15 @@ async function generateFullBriefBundle(
     // ── Step 3: Landing still bible from locked anchors ───────────────
     let landingStillBible = await generateLandingStillBible(campaign, brief, anchors);
 
-    // ── Step 3.1: Deterministic editorial composition normalizer ────────
+    // ── Step 3.1: Deterministic editorial composition normalizer ──────────────
     // Replaces intimate/close/tight/detail keywords in EDITORIAL_WIDE compositions
     // so lint's extractShotRole counts them as editorial, not intimate.
     landingStillBible = normalizeEditorialCompositions(landingStillBible);
+
+    // ── Step 3.2: Deterministic editorial usage normalizer ───────────────────
+    // Fixes invalid usage values on EDITORIAL_WIDE stills (e.g. model writes
+    // 'medium_wide' instead of 'concept') before anchor compliance runs.
+    landingStillBible = normalizeEditorialUsage(landingStillBible);
 
     // ── Step 3.5: Deterministic anchor-compliance gate ───────────────
     let anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
