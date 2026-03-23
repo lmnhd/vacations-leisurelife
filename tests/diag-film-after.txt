@@ -1,0 +1,176 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: film-and-zine-afloat-2026
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Film & Zine Afloat: Two Tiny Windows
+[aesthetic-engine] Starting aesthetic brief generation for film-and-zine-afloat-2026
+[aesthetic-engine] Model resolved for film-and-zine-afloat-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for film-and-zine-afloat-2026
+node.exe : [aesthetic-engine] Pass 1 quality gate failed for film-and-zine-afloat-2026 on attempt 1: Sub slogan too long (14 words, max 12); Slogan does not anchor to niche identity ΓÇö expected at least one of: film photography, 
+35mm, pointΓÇæandΓÇæshoot, postcard swap, zine swap
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([aesthetic-engi...swap, zine swap:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[aesthetic-engine] Pass 1 core aesthetic attempt 2 for film-and-zine-afloat-2026
+[aesthetic-engine] Pass 1 accepted for film-and-zine-afloat-2026 on attempt 2
+[aesthetic-engine] Pass 2 platform concepts for film-and-zine-afloat-2026
+[aesthetic-engine] Refinement pass for film-and-zine-afloat-2026
+[editors-room] generateActionAnchors for film-and-zine-afloat-2026
+[editors-room] generateLandingStillBible for film-and-zine-afloat-2026 (refPack=none)
+
+≡ƒº¡ ANCHORS:
+  1. FAZ-01
+     locationFamily: pool deck
+     nicheSignal: film photography
+     socialUnit: pair
+     action: Between sun-warmed loungers on the pool deck, two friends trade turns for a breezy film photography snapΓÇöone leans in and clicks a sunny candid as the other lifts a pineapple drink, a pointΓÇæandΓÇæshoot on a wrist strap over a linen shirtΓÇöthen they clink cups and sink back into the shade.
+  2. FAZ-02
+     locationFamily: library
+     nicheSignal: 35mm
+     socialUnit: solo
+     action: In the quiet library nook, a traveler opens a pocket notebook with a tiny stamp doodle beside a cappuccino, labels a fresh 35mm roll, and smiles at the mini-prints they'll trade later before tucking everything into a tote with an enamel camera pin.
+  3. FAZ-03
+     locationFamily: ship atrium
+     nicheSignal: zine swap
+     socialUnit: pair
+     action: By the glass elevators in the ship atrium, two passengers pause between songs for a quick zine swapΓÇöpocket zines oneΓÇæforΓÇæoneΓÇöeach back marked with a postageΓÇæstyle microΓÇæstamp; they share a grin and drift on as the piano carries the moment.
+  4. FAZ-04
+     locationFamily: cabin balcony
+     nicheSignal: pointΓÇæandΓÇæshoot
+     socialUnit: solo
+     action: On a cabin balcony at golden hour, a guest frames a seaside still lifeΓÇösunglasses, a shell, and a folded deck mapΓÇöthen clicks a pointΓÇæandΓÇæshoot on selfΓÇætimer against the rolling blue before kicking their feet up in the breeze.
+  5. FAZ-05
+     locationFamily: spa solarium
+     nicheSignal: film photography
+     socialUnit: pair
+     action: Under the solariumΓÇÖs glass canopy, one friend floats at the pool edge while the other raises a 35mm for a film photography snap of the sparkle on their smile; the camera drops back to the towel, enamel pin winking on a denim strap, and they slide into the hot tub.
+  6. FAZ-06
+     locationFamily: dining lounge
+     nicheSignal: postcard swap
+     socialUnit: pair
+     action: At a sunny window table in the dining lounge, seatmates keep it breezy with a postcard swapΓÇöone postcard slid across a saucer with a quiet grin, a tiny stamp sketch peeking from a pocket notebookΓÇöthen they toast iced coffee and head for dessert.
+  7. FAZ-07
+     locationFamily: embarkation pier
+     nicheSignal: film photography
+     socialUnit: solo
+     action: On the embarkation pier with the ship towering ahead, a traveler steps aside from the flow, lifts their camera for a quick film photography frame of ΓÇÿRhapsody of the SeasΓÇÖ gleaming on the hull, then tucks a miniΓÇæprint sleeve away and glides back into the easy pace.
+  8. FAZ-08
+     locationFamily: observation lounge
+     nicheSignal: film photography
+     socialUnit: solo
+     action: Curled into an observation lounge window nook at sailaway, a guest sets a tiny zine beside a spritz, clicks a film photography frame of glassΓÇæandΓÇæsea reflections, stamps the back of a miniΓÇæprint, and tucks it into a book as the islands slide by.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó FAZ-01-S1
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: FAZ-01 | nicheCarryThrough: film photography
+    location: pool deck between sun loungers (open deck area)
+    composition: wide two-shot among loungers with airy headline-safe negative space toward pool blues; candid, active exchange; no cabin/window setup; not at railing
+    subjectAction: Two friends trade turns for a film photography snap with a pointΓÇæandΓÇæshoot on a wrist strap, one lifting a pineapple drink before they clink and sink back into the shade.
+    shotIntent: Kick off with playful, sunlit camaraderie that makes the film photography niche instantly legible on deck.
+    camera: wide | framing: two_shot | heroSubject: two friends on the pool deck
+    nicheCue: pointΓÇæandΓÇæshoot camera on a wrist strap over a linen shirt | antiFallback: Avoids the generic couple-at-rail horizon shot by staying among loungers with no cabin/window setup.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=dining | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+  ΓÇó FAZ-02-S2
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: FAZ-02 | nicheCarryThrough: 35mm
+    location: ship library reading nook (library stacks and armchairs)
+    composition: medium environmental portrait at a small library table; open, uncluttered negative space; not intimate/close/tight/detail
+    subjectAction: A solo traveler labels a fresh 35mm roll in a pocket notebook, sips cappuccino, and smiles at the mini-prints theyΓÇÖll trade later before tucking the 35mm into a tote with an enamel camera pin.
+    shotIntent: Offer a calm, solitary counterpoint that clearly signals 35mm preparation without turning the library into a set.
+    camera: medium | framing: environmental_portrait | heroSubject: solo traveler at a library table
+    nicheCue: fresh 35mm film roll and pocket notebook with a tiny stamp doodle | antiFallback: Avoids the stateroom-window contemplation trope by anchoring the scene in the ship library with active hands.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=other | action=laughing | mood=neutral | composition=other_laughing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó FAZ-03-S3
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: FAZ-03 | nicheCarryThrough: zine swap
+    location: ship atrium by the glass elevators
+    composition: establishing wide of the atrium with flowing foot traffic and generous headline-safe negative space; NOT wide/medium/medium/environmental; not a railing/balcony/horizon fallback
+    subjectAction: Two passengers pause for a quick zine swap, exchanging pocket zines marked with a microΓÇæstamp before drifting on with a grin.
+    shotIntent: Show that spontaneous, lowΓÇælift zine swap can happen in passing without disrupting flow.
+    camera: wide | framing: establishing | heroSubject: two passengers mid-exchange
+    nicheCue: pocket zines with postageΓÇæstyle microΓÇæstamps | antiFallback: Avoids balcony/rail horizon clich├⌐s by using the atriumΓÇÖs interior energy and a zine swap action.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=lounge | action=walking | mood=neutral | composition=lounge_walking
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó FAZ-04-S4
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: FAZ-04 | nicheCarryThrough: pointΓÇæandΓÇæshoot
+    location: cabin balcony with small table and chair
+    composition: breezy editorial wide on the cabin balcony; NOT wide/medium/medium/environmental; negative space toward sky; focus on still life and relaxed posture, not horizon-gazing
+    subjectAction: A solo guest frames a seaside still lifeΓÇösunglasses, a shell, a folded deck mapΓÇöthen clicks a pointΓÇæandΓÇæshoot on selfΓÇætimer and kicks their feet up.
+    shotIntent: Highlight a quiet, selfΓÇæsufficient pointΓÇæandΓÇæshoot moment that feels easy and personal on a balcony.
+    camera: medium_wide | framing: single_subject | heroSubject: solo guest on the cabin balcony
+    nicheCue: pointΓÇæandΓÇæshoot set on selfΓÇætimer beside a small still life | antiFallback: Avoids railΓÇæcouple and horizonΓÇægaze tropes by centering a selfΓÇætimer stillΓÇælife setup.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=walking | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+  ΓÇó FAZ-05-S5
+    slotRole: INTIMATE | usage: concept
+    anchorId: FAZ-05 | nicheCarryThrough: film photography
+    location: spa solarium beneath the glass canopy
+    composition: close, intimate two-shot with shallow depth of field; tight crop prioritizing expression and camera; detail of enamel pin; quiet background
+    subjectAction: One friend at the pool edge raises a 35mm camera for a film photography snap of their friendΓÇÖs sparkling smile, then lowers it back to the towel.
+    shotIntent: Deliver a tender, close vignette that makes the film photography vibe feel effortless and lowΓÇækey indoors.
+    camera: medium_close | framing: two_shot | heroSubject: two friends at the solarium pool edge
+    nicheCue: 35mm camera raised for a film photography snap; enamel camera pin on strap | antiFallback: Avoids candlelit dining intimacy by rooting the moment in the bright, airy solarium.
+    refPack: none
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=deck | action=laughing | mood=neutral | composition=deck_laughing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó FAZ-06-S6
+    slotRole: FLEX | usage: social_square
+    anchorId: FAZ-06 | nicheCarryThrough: postcard swap
+    location: dining lounge sunny window table
+    composition: balanced medium_wide two-top with clean table lines and room for copy; friendly posture; not intimate/close/tight/detail
+    subjectAction: Seatmates share a postcard swap, sliding a postcard across a saucer with a quiet grin, clinking iced coffees, and tucking a tiny stamp sketch back into a pocket notebook.
+    shotIntent: Show how a quick, friendly postcard swap fits naturally into a coffee break without turning into an event.
+    camera: medium_wide | framing: two_shot | heroSubject: two seatmates at a dining lounge two-top
+    nicheCue: postcard slid across a saucer | antiFallback: Avoids candlelit dining romance by keeping it bright, casual, and taskΓÇæfocused.
+    refPack: none
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=cabin_window | action=reading | mood=neutral | composition=dining_intimacy
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

@@ -628,6 +628,65 @@ test('3 non-cabin stills that previously collapsed do NOT trigger repeated_compo
         `solarium/dining/library quiet scenes should NOT collapse into quiet_window_solo — got: ${blocker?.message ?? 'no blocker'}`);
 });
 
+// ── Phase B: Scenic composition cluster regression tests ──────────────────
+
+test('stargazing deck scene resolves to night_sky_deck not deck_sea_wide', () => {
+    const still = makeStill({
+        stillId: 'nightsky-deck-1',
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        location: 'open deck bow area at night',
+        environmentDetails: 'dark sky, ocean horizon, stars visible overhead',
+        subjectAction: 'Guest tilts telescope toward the constellation overhead, stargazing in quiet wonder',
+        composition: 'wide establishing on the bow deck with star field above',
+        imagePrompt: 'Guest stargazing with a telescope on the ship bow deck at night',
+    });
+    const report = lintProductionBuild({ landingStillBible: makeBible([still]), nicheKeywords: ['stargazing'] });
+    const diagComp = report.patternSummary;
+    assert.ok(
+        !report.blockingIssues.find(i => i.code === 'repeated_composition_family'),
+        'single night-sky still should not trigger any composition blocker'
+    );
+});
+
+test('3 night-sky stills with explicit niche cues downgrade repeated_composition_family from blocker to warning', () => {
+    const makeNightSkyStill = (id: string) => makeStill({
+        stillId: id,
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        location: 'open deck at night',
+        environmentDetails: 'dark sky, stars overhead, ocean horizon',
+        subjectAction: `Guest points telescope at constellation overhead, stargazing with quiet awe`,
+        composition: 'wide shot on the deck under a starfield',
+        imagePrompt: `Guest stargazing with telescope on the deck, constellation visible above`,
+    });
+    const stills = [makeNightSkyStill('ns-1'), makeNightSkyStill('ns-2'), makeNightSkyStill('ns-3')];
+    const report = lintProductionBuild({ landingStillBible: makeBible(stills), nicheKeywords: ['stargazing', 'telescope', 'constellation'] });
+    const blocker = report.blockingIssues.find(i => i.code === 'repeated_composition_family');
+    assert.ok(!blocker,
+        `3 night-sky stills with explicit niche cues should NOT produce a repeated_composition_family blocker — all niche-redeemed: ${blocker?.message ?? 'no blocker'}`);
+    const warning = report.warnings.find(i => i.code === 'repeated_composition_family');
+    assert.ok(warning, '3 niche-redeemed stills in same family should still produce a repeated_composition_family warning');
+});
+
+test('3 generic deck-sea-wide stills with NO niche cues still block as before (no regression)', () => {
+    const makeGenericDeckStill = (id: string) => makeStill({
+        stillId: id,
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        location: 'open deck',
+        environmentDetails: 'ocean horizon, wide sea view',
+        subjectAction: 'Couple gazes at the horizon together, sea view in the distance',
+        composition: 'wide shot couple gazing at the ocean horizon',
+        imagePrompt: 'Couple on deck looking at sunset horizon and the sea view',
+    });
+    const stills = [makeGenericDeckStill('gen-1'), makeGenericDeckStill('gen-2'), makeGenericDeckStill('gen-3')];
+    const report = lintProductionBuild({ landingStillBible: makeBible(stills), nicheKeywords: [] });
+    const blocker = report.blockingIssues.find(i => i.code === 'repeated_composition_family');
+    assert.ok(blocker,
+        '3 generic deck-sea-wide stills with no niche cues should still produce a repeated_composition_family blocker — no regression');
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 

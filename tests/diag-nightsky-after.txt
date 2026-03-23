@@ -1,0 +1,167 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: night-sky-sea-2026
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Night Sky & Sea: Dusk & Dawn Edition
+[aesthetic-engine] Starting aesthetic brief generation for night-sky-sea-2026
+[aesthetic-engine] Model resolved for night-sky-sea-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for night-sky-sea-2026
+[aesthetic-engine] Pass 1 accepted for night-sky-sea-2026 on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for night-sky-sea-2026
+[aesthetic-engine] Refinement pass for night-sky-sea-2026
+[editors-room] generateActionAnchors for night-sky-sea-2026
+[editors-room] generateLandingStillBible for night-sky-sea-2026 (refPack=none)
+
+≡ƒº¡ ANCHORS:
+  1. equinox-obs-iss
+     locationFamily: observation lounge
+     nicheSignal: ISS/satellite
+     socialUnit: pair
+     action: In the Sky Observation Lounge at dusk, two guests lean into the forward glass as a bright ISS/satellite streaks; the subtle red phone film edge catches the low light while their lidded coffees sit untouched, a quiet ΓÇ£thereΓÇ¥ shared between them.
+  2. equinox-lawn-orion
+     locationFamily: lawn club
+     nicheSignal: Orion
+     socialUnit: pair
+     action: On the Lawn Club grass, a pair tuck fleece throw corners around their shoulders and trace OrionΓÇÖs belt with a fingertip, a tiny star wheel edge peeking from a pocket as Caribbean breeze ruffles the blades.
+  3. equinox-balcony-jupisat
+     locationFamily: cabin balcony
+     nicheSignal: Jupiter/Saturn
+     socialUnit: solo
+     action: On a veranda cabin balcony at blue hour, a solo guest lifts a lidded coffee and snaps a quick phone shotΓÇöred film in placeΓÇöof Jupiter/Saturn glowing above a calm wake.
+  4. equinox-promenade-stargazing
+     locationFamily: promenade
+     nicheSignal: stargazing
+     socialUnit: pair
+     action: Mid-walk on the promenade, two strangers pause shoulder-to-shoulder for a brief stargazing check, one pointing out a pinpoint while the other smiles over a warm cupΓÇösoft voices and brief eye contact after a shared spot.
+  5. equinox-pool-stargazing
+     locationFamily: pool deck
+     nicheSignal: stargazing
+     socialUnit: solo
+     action: Tucked by a quiet corner of the pool deck at dawn, a solo guest adjusts a fleece wrap and dims their phone to red, timing a short stargazing window between cloud wisps with a cocoa steaming nearby.
+  6. equinox-dining-jupisat
+     locationFamily: dining lounge
+     nicheSignal: Jupiter/Saturn
+     socialUnit: pair
+     action: In the dining lounge by the window, a pair split late-night pie while glancing up to spot Jupiter/Saturn through the glass; a phone with red film rests on the table, napkins tucked, dessert forks paused.
+  7. equinox-library-family
+     locationFamily: library
+     nicheSignal: family friendly
+     socialUnit: solo
+     action: In the shipΓÇÖs library nook, a solo guest flips the Daily Program where a small box reads ΓÇ£family friendly tonight on the Lawn Club,ΓÇ¥ a star wheel edge tucked in their pocket as they grin and settle deeper into the armchair.
+  8. equinox-atrium-iss
+     locationFamily: ship atrium
+     nicheSignal: ISS/satellite
+     socialUnit: pair
+     action: Under the ship atriumΓÇÖs glow, a pair compare quick clips from last nightΓÇÖs ISS/satellite pass, the red phone film edge catching light as they trade a quiet high-five and head for gelato.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó S1-equinox-obs-iss-hero
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: equinox-obs-iss | nicheCarryThrough: ISS/satellite
+    location: Sky Observation Lounge, forward glass bay
+    composition: wide two-shot anchored inside the Observation Lounge with forward glass and ship context; ample negative sky; no cabin/window setup
+    subjectAction: Two guests lean into the glass and quietly point out an ISS/satellite streak, lidded coffees idle while a red phone film edge catches low light.
+    shotIntent: Make the Observation Lounge read as a quiet, shared first-spot of an ISS/satelliteΓÇöhuman-scale and unobtrusive.
+    camera: wide | framing: two_shot | heroSubject: two guests at the Sky Observation Lounge glass
+    nicheCue: ISS/satellite streak visible above the horizon line and a subtle red phone film edge on a phone | antiFallback: Avoids balcony-rail couple clich├⌐ by placing the action inside the Observation Lounge and centering the ISS/satellite streak, not a generic sea stare.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=lounge | action=lounging | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S2-equinox-lawn-orion-heroalt
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: equinox-lawn-orion | nicheCarryThrough: Orion
+    location: Lawn Club grass, starboard ridge
+    composition: open-grass medium-wide with turf texture foreground, sky band high; blanket wrap and body language guide gaze to sky; no railing in frame
+    subjectAction: A pair tuck fleece corners and trace Orion with a fingertip while a small star wheel edge peeks from a pocket.
+    shotIntent: Position the Lawn Club as an easy, blanket-warm Orion moment that feels spontaneous and wind-kissed.
+    camera: medium_wide | framing: environmental_portrait | heroSubject: paired guests on Lawn Club grass
+    nicheCue: the Orion belt traced by a pointing fingertip and a pocketed star wheel edge | antiFallback: Avoids deck-horizon couple silhouette by grounding the scene on turf with a clear Orion gesture and no railing.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=other | action=gazing | mood=warm | composition=other_gazing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S3-equinox-balcony-jupisat-edA
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: equinox-balcony-jupisat | nicheCarryThrough: Jupiter/Saturn
+    location: veranda cabin balcony, starboard side
+    composition: editorial wide over-the-shoulder from behind the subject on the balcony, subject three-quarters with sky band high and ample negative spaceΓÇöno horizon embrace or lean-to-rail pose
+    subjectAction: A solo guest raises a lidded coffee and frames a quick phone shot of Jupiter/Saturn through a red phone film.
+    shotIntent: Deliver a clean, self-made Jupiter/Saturn catch that feels like a quick personal win before the day starts.
+    camera: medium_wide | framing: over_the_shoulder | heroSubject: solo guest on the veranda balcony
+    nicheCue: Jupiter/Saturn pairing above the wake and a phone with red film | antiFallback: Steers away from the balcony-horizon trope by focusing the frame on an over-the-shoulder Jupiter/Saturn capture and props rather than a rail pose.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=walking | mood=neutral | composition=rail_walking
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S4-equinox-promenade-stargazing-edB
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: equinox-promenade-stargazing | nicheCarryThrough: stargazing
+    location: Deck 5 Promenade, aft starboard benches
+    composition: wide establishing of the promenade run with benches and open walkway; small figures midΓÇæstride pause; generous sky and ship context; editorial breathing room
+    subjectAction: Two strangers pause shoulder-to-shoulder for a brief stargazing checkΓÇöone points a pinpoint while the other smiles over a warm cup.
+    shotIntent: Express how stargazing slips naturally into promenade lifeΓÇöa brief, human exchange without stopping the flow.
+    camera: wide | framing: establishing | heroSubject: two passing guests on the promenade
+    nicheCue: pointing gesture to a star with a lidded coffee in hand | antiFallback: Avoids the generic deck-sunset couple by showing a fleeting promenade stargazing pause with benches and movement, not a posed horizon view.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=deck | action=laughing | mood=neutral | composition=night_sky_deck
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "night_sky_deck" ΓÇö mild repetition.
+
+  ΓÇó S5-equinox-pool-stargazing-intimate
+    slotRole: INTIMATE | usage: concept
+    anchorId: equinox-pool-stargazing | nicheCarryThrough: stargazing
+    location: quiet corner of the pool deck, leeward side
+    composition: intimate, tight detail insert on hands, fleece wrap, dimmed red-screen phone, and cocoa steam; background softly falls to deck texture
+    subjectAction: A solo guest dims their phone to red for stargazing and adjusts a fleece wrap while timing a window between cloud wisps, cocoa steaming nearby.
+    shotIntent: Deliver a tactile, close morning prep that makes stargazing feel warm, simple, and fully part of deck life.
+    camera: close_up | framing: detail_insert | heroSubject: hands with fleece wrap and phone on the pool deck
+    nicheCue: red-screen phone set for stargazing alongside a steaming cocoa | antiFallback: Avoids candlelit dining intimacy by rooting the quiet in a pool-deck dawn detail with practical red-screen prep.
+    refPack: none
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=deck | action=other | mood=neutral | composition=night_sky_deck
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "night_sky_deck" ΓÇö mild repetition.
+
+  ΓÇó S6-equinox-dining-jupisat-flex
+    slotRole: FLEX | usage: social_square
+    anchorId: equinox-dining-jupisat | nicheCarryThrough: Jupiter/Saturn
+    location: dining lounge, window-side banquette
+    composition: square-friendly medium two-shot across a dessert plate; windowed sky band visible; relaxed posture and casual table clutter keep it everyday, not date-night
+    subjectAction: A pair split late-night pie and glance up to spot Jupiter/Saturn through the dining lounge window; a phone with red film rests by the napkins.
+    shotIntent: Show how a Jupiter/Saturn glance can ride along with late-night dessertΓÇöbright, casual, and un-staged.
+    camera: medium | framing: two_shot | heroSubject: two guests at a dining lounge table
+    nicheCue: Jupiter/Saturn framed in the window with a red-film phone on the table | antiFallback: Avoids the dining intimacy trope by keeping lighting bright and action casualΓÇödessert pause plus Jupiter/Saturn glance, not candlelight romance.
+    refPack: none
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=cabin_window | action=lounging | mood=neutral | composition=cabin_window_lounging
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

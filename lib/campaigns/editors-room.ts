@@ -461,23 +461,24 @@ const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; composition
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
 
 const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
-    // ── Specific named venues — checked first so they win when balcony/rail appears alongside ──
-    [['pool', 'lido'], 'pool_deck'],
-    [['bow', 'stern', 'promenade'], 'promenade'],
+    // ── Most-specific named indoor/outdoor venues first ─────────────────────
+    // Ordering principle: more-specific named spaces beat less-specific or structural ones
+    // when both keywords appear in the same location text.
     [['library', 'reading room'], 'library'],
-    [['spa', 'solarium', 'thermal'], 'spa'],
-    [['dining', 'restaurant', 'meal', 'table'], 'dining'],
-    [['lounge', 'bar'], 'lounge'],
-    [['atrium', 'lobby', 'grand hall'], 'atrium'],
-    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
     [['theater', 'stage', 'auditorium'], 'theater'],
+    [['spa', 'solarium', 'thermal'], 'spa'],     // before pool — 'spa solarium by the pool' → spa
+    [['atrium', 'lobby', 'grand hall'], 'atrium'], // before balcony — 'Centrum balcony in the atrium' → atrium
+    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
+    [['dining', 'restaurant', 'meal'], 'dining'],          // 'table' removed — too generic (pool table, side table, bistro table, etc.)
+    [['bow', 'stern', 'promenade'], 'promenade'],
+    [['pool', 'lido'], 'pool_deck'],              // after spa — 'spa solarium near the pool' → spa
     [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
     [['deck', 'outdoor'], 'deck'],
-    // ── Balcony is a private cabin fixture — only wins when no named venue is present ──
-    // (checked before cabin so "cabin balcony" → balcony, not cabin)
-    [['balcony'], 'balcony'],
+    // ── Private fixtures — only win when no named venue is present ──────────
+    [['balcony'], 'balcony'],                     // before lounge — 'balcony lounge chair' → balcony
+    [['lounge', 'bar'], 'lounge'],
     [['cabin', 'stateroom', 'porthole'], 'cabin'],
-    // ── Rail is a structural/perimeter feature — only wins when no named venue is present ──
+    // ── Structural/perimeter feature — last resort ───────────────────────────
     [['rail', 'railing'], 'rail'],
 ];
 

@@ -126,6 +126,9 @@ const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
     [['rail', 'railing', 'balcony'], ['laugh', 'smile', 'couple', 'two', 'partner', 'together'], 'rail_couple_laugh'],
     [['porthole', 'round window', 'stateroom'], ['quiet', 'solo', 'single', 'alone', 'contempl', 'gaze'], 'quiet_window_solo'],
     [['dining', 'restaurant', 'dinner'], ['intimate', 'couple', 'candlelight', 'close', 'tender'], 'dining_intimacy'],
+    // night_sky_deck must come before deck_sea_wide — stargazing scenes have 'deck' location and
+    // 'view/horizon/sea' action, so without this earlier cluster they collapse into deck_sea_wide.
+    [['deck', 'outdoor', 'bow', 'stern'], ['star', 'night sky', 'telescope', 'constellation', 'milky', 'astro', 'lunar', 'moon', 'stargazing', 'celestial'], 'night_sky_deck'],
     [['deck', 'outdoor', 'bow', 'stern'], ['couple', 'sea', 'sunset', 'horizon', 'distance', 'wide', 'far', 'view'], 'deck_sea_wide'],
     [['pool', 'lido'], ['relax', 'lounge', 'float', 'swim', 'splash'], 'poolside_relax'],
     [['lounge', 'bar'], ['drink', 'sip', 'cocktail', 'chat', 'talk'], 'lounge_social'],
@@ -282,13 +285,33 @@ export function lintProductionBuild(input: ProductionBuildLintInput): Production
     for (const [family, ids] of Object.entries(compositionGroups)) {
         if (ids.length > maxCompositionFamilySize) maxCompositionFamilySize = ids.length;
         if (ids.length >= 3) {
-            blockingIssues.push({
-                code: 'repeated_composition_family',
-                severity: 'blocker',
-                message: `${ids.length} stills share composition family "${family}" — set collapses into the same read.`,
-                affectedStillIds: ids,
-                details: `Vary location, subject action, and framing. Affected: ${ids.join(', ')}.`,
-            });
+            // Downgrade to warning only when:
+            // (a) actual niche keywords were supplied (so we have context to evaluate redemption)
+            // (b) the family is NOT a known generic-fallback cluster (those should still block
+            //     even with niche cues — visual diversity is a separate requirement)
+            // (c) every still in the cluster has an explicit niche cue
+            const allNicheRedeemed = effectiveNicheKeywords.length > 0
+                && !GENERIC_FALLBACK_FAMILIES.has(family)
+                && ids.every(id => {
+                    const diag = diagnostics.find(d => d.stillId === id);
+                    return diag?.cueStrength === 'explicit';
+                });
+            if (allNicheRedeemed) {
+                warnings.push({
+                    code: 'repeated_composition_family',
+                    severity: 'warning',
+                    message: `${ids.length} stills share composition family "${family}" — all have explicit niche cues so this is thematic consistency, not generic collapse.`,
+                    affectedStillIds: ids,
+                });
+            } else {
+                blockingIssues.push({
+                    code: 'repeated_composition_family',
+                    severity: 'blocker',
+                    message: `${ids.length} stills share composition family "${family}" — set collapses into the same read.`,
+                    affectedStillIds: ids,
+                    details: `Vary location, subject action, and framing. Affected: ${ids.join(', ')}.`,
+                });
+            }
         } else if (ids.length === 2) {
             warnings.push({
                 code: 'repeated_composition_family',

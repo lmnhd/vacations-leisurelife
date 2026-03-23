@@ -794,6 +794,65 @@ test('rail-only location still resolves to rail (no regression on true rail stil
     assert.ok(!v, 'rail-only location should still resolve to rail — no regression');
 });
 
+// ── Phase A venue-taxonomy regression tests ───────────────────────────────────
+
+test('spa-anchored still with "spa solarium by the pool" resolves to spa not pool_deck', () => {
+    const anchors = [{ anchorId: 'anchor-spa-pool', nicheSignal: 'fiber arts travel', locationFamily: 'spa solarium' }];
+    const still = makeStill({
+        stillId: 'still-spa-pool',
+        anchorId: 'anchor-spa-pool',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        location: 'spa solarium seating nook by the pool',
+        environmentDetails: 'warm glass canopy, plunge pool visible in the distance',
+        imagePrompt: 'Solo guest knitting a linen swatch in the spa solarium by the pool',
+        subjectAction: 'A solo guest knits a fiber arts travel swatch in the spa solarium by the pool between dips',
+        nicheCarryThrough: 'fiber arts travel',
+        composition: 'medium-wide environmental portrait in the solarium',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'spa solarium by the pool should resolve to spa — spa is now checked before pool_deck');
+});
+
+test('balcony-anchored still with "balcony lounge chair" resolves to balcony not lounge', () => {
+    const anchors = [{ anchorId: 'anchor-bal-lounge', nicheSignal: 'plein air', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-bal-lounge-chair',
+        anchorId: 'anchor-bal-lounge',
+        slotRole: 'FLEX',
+        usage: 'social_square',
+        location: 'private cabin balcony lounge chair',
+        environmentDetails: 'ocean view, balcony bistro table with sketchbook',
+        imagePrompt: 'Solo guest doing plein air on the cabin balcony lounge chair',
+        subjectAction: 'A solo guest sketches a plein air study from the cabin balcony lounge chair',
+        nicheCarryThrough: 'plein air',
+        composition: 'medium over-the-shoulder from the balcony lounge chair',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'cabin balcony lounge chair should resolve to balcony — balcony is now checked before lounge');
+});
+
+test('pool-deck-anchored still with "pool deck lounge table" still resolves to pool_deck not lounge (no regression)', () => {
+    const anchors = [{ anchorId: 'anchor-pool-lounge', nicheSignal: 'board games', locationFamily: 'pool deck' }];
+    const still = makeStill({
+        stillId: 'still-pool-lounge-table',
+        anchorId: 'anchor-pool-lounge',
+        slotRole: 'HERO_ALT',
+        usage: 'hero_alt',
+        location: 'shaded lounge table on the pool deck',
+        environmentDetails: 'pool deck area, swimmers in background',
+        imagePrompt: 'Solo guest playing board games at a shaded lounge table on the pool deck',
+        subjectAction: 'A solo guest deals a quick board games round at a shaded lounge table on the pool deck',
+        nicheCarryThrough: 'board games',
+        composition: 'wide low-angle hero of solo guest at pool deck lounge table',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'pool deck lounge table should resolve to pool_deck — pool is checked before lounge, no regression');
+});
+
 // ── Summary ────────────────────────────────────────────────────────────────────
 
 console.log(`\nPassed: ${passed}`);

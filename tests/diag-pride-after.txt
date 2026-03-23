@@ -1,0 +1,167 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: open-seas-pride-2026
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Open Seas Pride: Southern Caribbean
+[aesthetic-engine] Starting aesthetic brief generation for open-seas-pride-2026
+[aesthetic-engine] Model resolved for open-seas-pride-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for open-seas-pride-2026
+[aesthetic-engine] Pass 1 accepted for open-seas-pride-2026 on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for open-seas-pride-2026
+[aesthetic-engine] Refinement pass for open-seas-pride-2026
+[editors-room] generateActionAnchors for open-seas-pride-2026
+[editors-room] generateLandingStillBible for open-seas-pride-2026 (refPack=none)
+
+≡ƒº¡ ANCHORS:
+  1. OSP-SC-01
+     locationFamily: pool deck
+     nicheSignal: Pride at Sea
+     socialUnit: pair
+     action: Two friends in matching sun hats trade sunscreen and laughter on the main pool deck, perched by a little cluster of rainbow towels; they clink frozen drinks as the DJ drops a queer classic beside a booth placard that reads Pride at Sea.
+  2. OSP-SC-02
+     locationFamily: spa solarium
+     nicheSignal: Southern Caribbean
+     socialUnit: solo
+     action: A solo traveler curls into a shaded Solarium lounger, flipping through a Southern Caribbean port map with a gentle Pride flag bookmark peeking out, snapping a pic of glittered nails catching the dappled poollight.
+  3. OSP-SC-03
+     locationFamily: ship atrium
+     nicheSignal: Drag Brunch
+     socialUnit: pair
+     action: During Drag Brunch in the ship atrium, a pair leans over the rail cheering a queen strutting down the staircase; one saves an open seat with a grin and a rainbow napkin while the other raises a mimosa for the mid-sashay selfie.
+  4. OSP-SC-04
+     locationFamily: cabin balcony
+     nicheSignal: Pride at Sea
+     socialUnit: solo
+     action: On a cabin balcony, a solo guest sketches the island skyline, coffee beside a lanyard that reads Pride at Sea; a subtle identity pin on their cap glints in the sun.
+  5. OSP-SC-05
+     locationFamily: embarkation pier
+     nicheSignal: LGBTQ+ Cruise
+     socialUnit: pair
+     action: At the embarkation pier, a pair reunites in a squeeze-and-spin hello, slipping a luggage tag on that reads LGBTQ+ Cruise while a tiny Pride flag peeks from a back pocket.
+  6. OSP-SC-06
+     locationFamily: library
+     nicheSignal: Chosen Family
+     socialUnit: solo
+     action: In the quiet library nook, a solo reader tucks a handwritten noteΓÇö'for my Chosen Family, enjoy the plot twist'ΓÇöinside a traded paperback, enamel pronoun pin resting on the cover.
+  7. OSP-SC-07
+     locationFamily: rock-climbing wall
+     nicheSignal: Southern Caribbean
+     socialUnit: pair
+     action: At the rock-climbing wall, a pair takes turns ringing the bell, one filming the otherΓÇÖs triumphant grin as a rainbow wrist wrap flashes and someone cheers, 'Southern Caribbean summit!'
+  8. OSP-SC-08
+     locationFamily: piano bar
+     nicheSignal: Pride at Sea
+     socialUnit: solo
+     action: In the piano bar, a solo guest slides onto a stool as the player eases into a queer classic; they set down a Pride at Sea coaster and keep the adjacent seat open for a new friend with a smile.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó osp-sc-01-hero
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: OSP-SC-01 | nicheCarryThrough: Pride at Sea
+    location: main pool deck near the DJ booth
+    composition: wide, energetic two-shot anchored by a rainbow towel cluster and DJ booth energyΓÇöno cabin or window elements in frame
+    subjectAction: Two friends in matching sun hats trade sunscreen and clink frozen drinks, laughing to a queer classic as a Pride at Sea placard sits by the DJ table.
+    shotIntent: Deliver an instantly welcoming deck hero that reads queer-positive through Pride at Sea signals and easy friendship, not horizon clich├⌐s.
+    camera: wide | framing: two_shot | heroSubject: two friends
+    nicheCue: Pride at Sea booth placard beside the DJ table | antiFallback: Avoids the deck-sea-horizon couple trope by centering pool-deck action and DJ energy rather than a railing or sunset gaze.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=laughing | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+  ΓÇó osp-sc-02-heroalt
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: OSP-SC-02 | nicheCarryThrough: Southern Caribbean
+    location: spa Solarium loungers under the glass canopy
+    composition: airy environmental portrait with layered palms and glass, relaxed negative space, serene deck rules signage subtly present
+    subjectAction: A solo traveler pages through a Southern Caribbean port map in the Solarium, snapping a photo of glittered nails as a Pride flag bookmark peeks out.
+    shotIntent: Signal restorative LGBTQ+ comfort and solo ease while actively dreaming through a Southern Caribbean day in the Solarium.
+    camera: medium | framing: environmental_portrait | heroSubject: solo traveler
+    nicheCue: Pride-flag bookmark tucked into the Southern Caribbean map | antiFallback: Avoids the quiet-window-solo cabin trope by placing the moment in the Solarium with active trip-planning and Pride cues.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=lounge | action=reading | mood=contemplative | composition=lounge_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó osp-sc-03-edA
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: OSP-SC-03 | nicheCarryThrough: Drag Brunch
+    location: grand atrium near the grand staircase
+    composition: bustling establishing frame of the atrium tiers and staircase, performance-forward with generous crowd contextΓÇöno horizon or balcony emphasis
+    subjectAction: At Drag Brunch in the atrium, one guest saves an open seat with a smile and rainbow napkin while the other raises a mimosa and snaps a mid-sashay selfie of the queen.
+    shotIntent: Showcase the communal spark and open-seat welcome of Drag Brunch as a signature pride-forward moment within iconic ship architecture.
+    camera: wide | framing: establishing | heroSubject: pair of guests celebrating in the atrium
+    nicheCue: rainbow napkin saving an open seat during Drag Brunch | antiFallback: Avoids a balcony/railing generic by foregrounding atrium stage energy and the saved-seat belonging cue instead of an anonymous couple-at-rail moment.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=lounge | action=laughing | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+  ΓÇó osp-sc-04-edB
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: OSP-SC-04 | nicheCarryThrough: Pride at Sea
+    location: private cabin balcony overlooking the sea
+    composition: open environmental portrait on the balcony with sketchbook, coffee, and horizon as supporting backdropΓÇöno medium crops or environmental emphasis
+    subjectAction: On the balcony, a solo guest sketches the island skyline, coffee beside a lanyard reading Pride at Sea as a subtle identity pin glints in the sun.
+    shotIntent: Convey personal pride and reflective creativity on a balcony with an unmistakable Pride at Sea marker.
+    camera: medium_wide | framing: environmental_portrait | heroSubject: solo guest sketching
+    nicheCue: Pride at Sea lanyard beside the coffee | antiFallback: Avoids the balcony-couple-laugh-at-horizon clich├⌐ by focusing on a solo creative moment with explicit Pride at Sea identifiers.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó osp-sc-05-int
+    slotRole: INTIMATE | usage: concept
+    anchorId: OSP-SC-05 | nicheCarryThrough: LGBTQ+ Cruise
+    location: embarkation pier at the terminal entrance
+    composition: intimate, close two-shot framed amid rolling bags and terminal cues; foreground hands and tag readable while keeping faces joyful and in-frame
+    subjectAction: They squeeze-and-spin hello on the embarkation pier, slipping on an LGBTQ+ Cruise luggage tag as a tiny Pride flag peeks from a back pocket.
+    shotIntent: Capture arrival-thrill intimacy with a readable LGBTQ+ Cruise tag and pocket Pride cue in a joyful embrace.
+    camera: medium_close | framing: two_shot | heroSubject: reuniting pair
+    nicheCue: luggage tag labeled LGBTQ+ Cruise | antiFallback: Avoids candlelit dining intimacy by staging the close moment at the bright, kinetic embarkation pier.
+    refPack: none
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=lounge | action=laughing | mood=warm | composition=lounge_laughing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó osp-sc-06-flex
+    slotRole: FLEX | usage: social_square
+    anchorId: OSP-SC-06 | nicheCarryThrough: Chosen Family
+    location: ship library nook by the stacks
+    composition: cozy over-the-shoulder view that reads the book cover and tucked note, shelves and armchairs softly framing the subject
+    subjectAction: In the library, a solo reader tucks a handwritten noteΓÇöΓÇ£for my Chosen Family, enjoy the plot twistΓÇ¥ΓÇöinto a traded paperback and rests a pronoun pin on the cover.
+    shotIntent: Express cozy kinship through a leave-behind Chosen Family note and pronoun pin within the shipΓÇÖs quiet library haven.
+    camera: medium_close | framing: over_the_shoulder | heroSubject: solo reader
+    nicheCue: handwritten note mentioning Chosen Family tucked into the paperback | antiFallback: Avoids the quiet-window-solo trope by focusing on a purposeful leave-behind gesture and pronoun pin in the library instead of gazing through glass.
+    refPack: none
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=dining | action=laughing | mood=warm | composition=dining_laughing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

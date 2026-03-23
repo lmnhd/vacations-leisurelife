@@ -1,0 +1,167 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: bp-readers-serenade-2027-7n-alaska
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: ReadersΓÇÖ Inside Passage: Indie Book & Conversation Cruise
+[aesthetic-engine] Starting aesthetic brief generation for bp-readers-serenade-2027-7n-alaska
+[aesthetic-engine] Model resolved for bp-readers-serenade-2027-7n-alaska: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for bp-readers-serenade-2027-7n-alaska
+[aesthetic-engine] Pass 1 accepted for bp-readers-serenade-2027-7n-alaska on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for bp-readers-serenade-2027-7n-alaska
+[aesthetic-engine] Refinement pass for bp-readers-serenade-2027-7n-alaska
+[editors-room] generateActionAnchors for bp-readers-serenade-2027-7n-alaska
+[editors-room] generateLandingStillBible for bp-readers-serenade-2027-7n-alaska (refPack=none)
+
+≡ƒº¡ ANCHORS:
+  1. anchor-01
+     locationFamily: promenade
+     nicheSignal: indie bookstore
+     socialUnit: pair
+     action: On the teak promenade, two friends sink into a bench, trading a handwritten recommendation card while a folded indie bookstore tote rests at their feet and the ship hums by the rail.
+  2. anchor-02
+     locationFamily: pool deck
+     nicheSignal: reading
+     socialUnit: solo
+     action: Shaded lounger on the pool deck: a solo guest barefoot and smiling, mid-chapter reading with a caf├⌐ bookmark receipt peeking from the paperback and a lemonade sweating on the side table.
+  3. anchor-03
+     locationFamily: library
+     nicheSignal: quiet lounge
+     socialUnit: pair
+     action: Inside the libraryΓÇÖs quiet lounge nook, two guests lean in over the same dog-eared page, share a quiet nod, and compare their matching scarf pins before returning to the paragraph.
+  4. anchor-04
+     locationFamily: spa solarium
+     nicheSignal: nature writing
+     socialUnit: solo
+     action: Spa solarium chaise among palm fronds: a solo traveler sips herbal tea and turns pages of nature writing while mist beads on the glass roof and the ship glides steady beneath.
+  5. anchor-05
+     locationFamily: dining lounge
+     nicheSignal: book club
+     socialUnit: pair
+     action: Corner banquette in the dining lounge: two guests split warm pastries and quietly swap handwritten recommendation cardsΓÇöan easy, on-the-spot book club moment between bites.
+  6. anchor-06
+     locationFamily: cabin balcony
+     nicheSignal: Alaska
+     socialUnit: pair
+     action: Under a knit throw on the cabin balcony, a pair smile as one softly reads a line aloud and the other dog-ears the page, tiny enamel pin catching light while blue Alaska glaciers slide past.
+  7. anchor-07
+     locationFamily: embarkation pier
+     nicheSignal: reading
+     socialUnit: solo
+     action: At the embarkation pier, a solo traveler perches on their suitcase, folded tote at their feet, happily lost in reading as the shipΓÇÖs name gleams on the hull and boarding buzzes around them.
+  8. anchor-08
+     locationFamily: ship atrium
+     nicheSignal: Dark Academia
+     socialUnit: solo
+     action: Ship atrium cafe table: a solo guest in a soft tweed scarf scribbles a friendly handwritten recommendation card to tuck into a hardcover with moody Dark Academia jacket art, lapel pin winking.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó still-01
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: anchor-01 | nicheCarryThrough: indie bookstore
+    location: teak promenade bench on the shipΓÇÖs promenade
+    composition: wide environmental two_shot on the teak promenade with generous headline-safe negative space; no cabin/window setup
+    subjectAction: two friends on the promenade share a handwritten recommendation card from an indie bookstore, leaning back on the bench with relaxed, salty-breeze ease
+    shotIntent: Lead with a headline-safe on-deck moment that signals bookish belonging through a shared indie bookstore recommendation.
+    camera: wide | framing: two_shot | heroSubject: two friends seated on a promenade bench
+    nicheCue: handwritten recommendation card and folded indie bookstore tote | antiFallback: Avoids the rail-couple-laugh trope by centering a bench-side exchange and inward connection rather than horizon gazing.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" ΓÇö mild repetition.
+
+  ΓÇó still-02
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: anchor-02 | nicheCarryThrough: reading
+    location: shaded lounger area on the pool deck
+    composition: medium_wide single_subject recline with open lines and copy-safe space; deck context without horizon
+    subjectAction: a solo guest barefoot and smiling is mid-chapter reading, a caf├⌐ bookmark receipt peeking from the paperback while a lemonade sweats on the side table
+    shotIntent: Offer a second hero that proves quiet, self-led reading belongs comfortably on the pool deck.
+    camera: medium_wide | framing: single_subject | heroSubject: solo reader on a shaded pool deck lounger
+    nicheCue: caf├⌐ bookmark receipt protruding from the paperback | antiFallback: Avoids deck_sea_wide and rail-couple-laugh by featuring a solo reader oriented to the pool setting, not the horizon or railing.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=reading | mood=warm | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó still-03
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: anchor-03 | nicheCarryThrough: quiet lounge
+    location: library quiet lounge nook
+    composition: wide environmental two_shot in the libraryΓÇÖs quiet lounge nook with breathing room and shelving depth; no medium or environmental framing
+    subjectAction: in the quiet lounge, two guests lean in over the same dog-eared page, share a quiet nod, then resume reading together
+    shotIntent: Editorially frame the library as a shared haven where the quiet lounge fosters small, word-centered connections.
+    camera: wide | framing: environmental_portrait | heroSubject: two library guests in lounge chairs
+    nicheCue: matching scarf pins and a shared, dog-eared hardcover | antiFallback: Avoids railing/balcony/horizon fallback by staying interior and book-forward with no exterior vista emphasis.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=intimate | composition=dining_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó still-04
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: anchor-04 | nicheCarryThrough: nature writing
+    location: spa solarium chaise in the spa solarium
+    composition: medium_wide environmental single_subject on a chaise among palm fronds; airy, restorative space without medium framing
+    subjectAction: a solo traveler in the spa solarium sips herbal tea and reads nature writing, unhurried and comfortably settled
+    shotIntent: Show a restorative, plant-softened zone where nature writing and tea become a personal reset between moments onboard.
+    camera: medium_wide | framing: single_subject | heroSubject: solo traveler reclining on a spa solarium chaise
+    nicheCue: hardcover of nature writing and a warm herbal tea cup | antiFallback: Avoids quiet_window_solo by emphasizing the solariumΓÇÖs garden light and reading action rather than a contemplative cabin window gaze.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=other | action=reading | mood=neutral | composition=other_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó still-05
+    slotRole: INTIMATE | usage: concept
+    anchorId: anchor-05 | nicheCarryThrough: book club
+    location: corner banquette in the dining lounge
+    composition: intimate, close over_the_shoulder view across the banquette focusing on hands, pastries, and handwritten cards
+    subjectAction: two friends share a casual book club moment in the dining lounge, quietly swapping handwritten recommendation cards between bites of warm pastries
+    shotIntent: Deliver a tight, tactile peek at an easy, on-the-spot book club exchange over pastriesΓÇöbook-first, not date-night.
+    camera: medium_close | framing: over_the_shoulder | heroSubject: two friends at a corner banquette
+    nicheCue: handwritten book club recommendation cards and pastries | antiFallback: Avoids dining_intimacy by using daylight, friendly body language, and card exchange rather than a candlelit romantic setup.
+    refPack: none
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=warm | composition=dining_intimacy
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó still-06
+    slotRole: FLEX | usage: social_square
+    anchorId: anchor-06 | nicheCarryThrough: Alaska
+    location: cabin balcony under a knit throw
+    composition: medium two_shot on the cabin balcony with inward-facing focus on the book and faces; background glaciers softly present without horizon-leaning pose
+    subjectAction: on the cabin balcony, a pair settle under a knit throw as one reads a line aloud about Alaska and the other gently dog-ears the page
+    shotIntent: Offer a cozy balcony vignette where the read-aloud and Alaska backdrop gently meet without turning into a horizon pose.
+    camera: medium | framing: two_shot | heroSubject: pair nestled under a knit throw on the cabin balcony
+    nicheCue: Alaska glaciers visible beyond and a small enamel pin catching light | antiFallback: Avoids the balcony-horizon cuddle clich├⌐ by foregrounding the page and the shared read rather than posed gazing at the view.
+    refPack: none
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" ΓÇö mild repetition.
+
+Γ£à Diagnostic breakdown completed
