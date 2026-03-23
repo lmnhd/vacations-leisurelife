@@ -1,0 +1,167 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: bp-tabletop-icon-2027-7n-caribbean
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Open Tabletop at Sea: Board Games and TTRPGs Without the Tournament
+[aesthetic-engine] Starting aesthetic brief generation for bp-tabletop-icon-2027-7n-caribbean
+[aesthetic-engine] Model resolved for bp-tabletop-icon-2027-7n-caribbean: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for bp-tabletop-icon-2027-7n-caribbean
+[aesthetic-engine] Pass 1 accepted for bp-tabletop-icon-2027-7n-caribbean on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for bp-tabletop-icon-2027-7n-caribbean
+[aesthetic-engine] Refinement pass for bp-tabletop-icon-2027-7n-caribbean
+[editors-room] generateActionAnchors for bp-tabletop-icon-2027-7n-caribbean
+[editors-room] generateLandingStillBible for bp-tabletop-icon-2027-7n-caribbean (refPack=ref-tabletop-v1)
+
+≡ƒº¡ ANCHORS:
+  1. A1-promenade-dropin
+     locationFamily: promenade
+     nicheSignal: drop-in play
+     socialUnit: pair
+     action: On the promenade, two new friends slide a travel-size card game onto a cafe table, set a handwritten 'Need 1ΓÇô2' note by the napkins, and laugh as a meeple pin sparks quick chat about shipside drop-in play before the parade rolls through.
+  2. A2-pooldeck-boardsolo
+     locationFamily: pool deck
+     nicheSignal: board games
+     socialUnit: solo
+     action: In the shade on the pool deck, a guest deals a quick solo round from a pocket deck, a leave-and-return marker keeping their spot while friends swim, captioned 'sunbreak board games before the next splash.'
+  3. A3-library-ttrpgduo
+     locationFamily: library
+     nicheSignal: TTRPG
+     socialUnit: pair
+     action: Cozy in the library armchairs, two players skim one-shot pregens, click open a tiny dice tin, and trade a quiet joke about house rules over shared cheesecakeΓÇö'perfect mini TTRPG pit stop before the show.'
+  4. A4-solarium-tabletopsolo
+     locationFamily: spa solarium
+     nicheSignal: tabletop
+     socialUnit: solo
+     action: In the spa solarium, a solo cruiser sips citrus water and breezes through a tabletop roll-and-write on a lap tray, their tote's meeple pin catching the light between pool dips.
+  5. A5-dining-inclusivepair
+     locationFamily: dining lounge
+     nicheSignal: inclusive
+     socialUnit: pair
+     action: Post-entree in the dining lounge, a pair sets a travel board on the linen and says 'open to all,' snapping a pic of the little 'Need 1ΓÇô2' tentΓÇöeasy, inclusive vibes as dessert arrives.
+  6. A6-balcony-caribbeansolo
+     locationFamily: cabin balcony
+     nicheSignal: Caribbean
+     socialUnit: solo
+     action: On a private cabin balcony at golden hour, a traveler plays a gentle journaling game with a pocket deck peeking from their shirt pocket, jotting island promptsΓÇö'solo vibes, pure Caribbean,' dice clacking softly under the breeze.
+  7. A7-pier-familyfriendly
+     locationFamily: embarkation pier
+     nicheSignal: family-friendly
+     socialUnit: pair
+     action: Along the embarkation pier rail, two strangers spot each other's meeple pins and start comparing favorites, swapping tips on where the family-friendly game nook usually pops up onboard.
+  8. A8-atrium-dropin-solo
+     locationFamily: ship atrium
+     nicheSignal: drop-in play
+     socialUnit: solo
+     action: In the ship atrium lounge seating, one guest sets out a paused travel board with a friendly 'Need 1ΓÇô2' card and a leave-and-return marker, snapping a quick shot to tag it as drop-in play before grabbing lattes.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó S1-hero-promenade-dropin
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: A1-promenade-dropin | nicheCarryThrough: drop-in play
+    location: Icon of the Seas promenade cafe table along the ship promenade
+    composition: wide establishing of a promenade cafe table with lively corridor depth and foot-traffic flow
+    subjectAction: Two new friends invite drop-in play by sliding a compact travel card game onto the cafe table and setting a friendly ΓÇ£Need 1ΓÇô2ΓÇ¥ note, laughing as a meeple pin sparks instant camaraderie.
+    shotIntent: Lead with promenade energy while clearly signaling drop-in play as a welcoming, lightweight way to meet seatmates fast.
+    camera: wide | framing: establishing | heroSubject: pair of guests at a promenade cafe table
+    nicheCue: ΓÇÿNeed 1ΓÇô2ΓÇÖ note and travel-size card game with a visible meeple pin | antiFallback: Avoids the generic couple-at-railing trope by centering an active game setup and the ΓÇÿNeed 1ΓÇô2ΓÇÖ invite on the promenade rather than any horizon gaze.
+    refPack: ref-tabletop-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=dining | action=laughing | mood=neutral | composition=dining_laughing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S2-heroalt-pooldeck-boardsolo
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: A2-pooldeck-boardsolo | nicheCarryThrough: board games
+    location: shaded lounge table on the pool deck
+    composition: wide low-angle hero of a solo guest at a shaded pool deck table with swimmers soft in the background
+    subjectAction: A solo guest starts a quick board games round with a pocket deck between swims, a leave-and-return marker saving their spot while friends splash nearby.
+    shotIntent: Elevate a poolside moment into niche territory by showing board games fitting naturally between swims.
+    camera: wide | framing: low_angle_hero | heroSubject: solo guest at a shaded pool deck table
+    nicheCue: pocket deck and leave-and-return marker in clear view | antiFallback: Avoids generic pool lounging by foregrounding a pocket deck and the act of starting board games rather than just sunbathing.
+    refPack: ref-tabletop-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=rail | action=other | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+  ΓÇó S3-editorial-library-ttrpgduo
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: A3-library-ttrpgduo | nicheCarryThrough: TTRPG
+    location: ship library reading room armchairs with a small table
+    composition: medium-wide environmental library scene with bookshelves, armchairs, and relaxed mid-setup posture
+    subjectAction: Two players skim one-shot pregens and click open a tiny dice tin for a quick TTRPG pit stop, trading a quiet house-rules joke over shared cheesecake.
+    shotIntent: Show that a quiet library nook is perfect for a bite-sized TTRPG setup without consuming the day.
+    camera: medium_wide | framing: environmental_portrait | heroSubject: two players in library armchairs
+    nicheCue: tiny dice tin and printed TTRPG pregens on the table | antiFallback: Avoids generic reading-room ambiance by making dice, pregens, and a TTRPG in progress the unmistakable focus.
+    refPack: ref-tabletop-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=warm | composition=dining_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S4-editorial-solarium-tabletopsolo
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: A4-solarium-tabletopsolo | nicheCarryThrough: tabletop
+    location: spa solarium lounger area beneath the glass roof
+    composition: medium-wide environmental solarium view with a single lounger, lap tray, and airy glass architecture
+    subjectAction: A solo cruiser sips citrus water and breezes through a tabletop roll-and-write on a lap tray, toteΓÇÖs meeple pin catching the light between pool dips.
+    shotIntent: Position tabletop as an easy, restorative solarium activity that fits seamlessly between spa dips.
+    camera: medium_wide | framing: single_subject | heroSubject: solo cruiser reclined on a solarium lounger
+    nicheCue: roll-and-write sheet with pencil on a lap tray | antiFallback: Avoids generic spa relaxation by keeping the tabletop roll-and-write and pencil legible as the focal action.
+    refPack: ref-tabletop-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=lounge | action=dining | mood=contemplative | composition=lounge_social
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S5-intimate-dining-inclusivepair
+    slotRole: INTIMATE | usage: concept
+    anchorId: A5-dining-inclusivepair | nicheCarryThrough: inclusive
+    location: dining lounge table with linen in the main dining lounge
+    composition: intimate close detail of hands placing a ΓÇÿNeed 1ΓÇô2ΓÇÖ tent and a travel board on linen as dessert plates arrive
+    subjectAction: A pair signals inclusive play by setting a ΓÇÿNeed 1ΓÇô2ΓÇÖ tent on the linen and snapping a quick pic before sharing dessertΓÇöan easy, inclusive invite for seatmates.
+    shotIntent: Make the inclusive invitation feel tangible and easyΓÇöfingertip-scale components and the ΓÇÿNeed 1ΓÇô2ΓÇÖ tent convey belonging at a glance.
+    camera: close_up | framing: detail_insert | heroSubject: hands and travel board on the dining lounge table
+    nicheCue: ΓÇÿNeed 1ΓÇô2ΓÇÖ tent next to a small travel board with tokens | antiFallback: Avoids candlelit romance by focusing on an inclusive gameplay invite and components rather than wine glasses or mood lighting.
+    refPack: ref-tabletop-v1
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=dining | action=dining | mood=warm | composition=dining_intimacy
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó S6-flex-balcony-caribbean
+    slotRole: FLEX | usage: social_square
+    anchorId: A6-balcony-caribbeansolo | nicheCarryThrough: Caribbean
+    location: private cabin balcony chair and side table
+    composition: medium over-the-shoulder view that favors notebook, pocket deck, and dice on the balcony table with soft ocean beyond
+    subjectAction: A traveler journals island prompts as part of a gentle Caribbean solo game, a pocket deck peeking from their shirt pocket while dice clack softly in the breeze.
+    shotIntent: Show that a quiet balcony moment becomes uniquely personal when a Caribbean-themed journaling game is in play.
+    camera: medium | framing: over_the_shoulder | heroSubject: solo traveler writing in a notebook on the balcony
+    nicheCue: pocket deck and small dice beside a journaling notebook | antiFallback: Avoids balcony horizon-gazing by focusing on the Caribbean journaling game in action rather than a distant view.
+    refPack: ref-tabletop-v1
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "deck_sea_wide" ΓÇö mild repetition.
+
+Γ£à Diagnostic breakdown completed

@@ -1027,7 +1027,7 @@ So whole-set handling should now be treated as completed hardening, not the prim
 **Anchor violations:**
 - `anchor_location_mismatch` on S1-HERO-POOL: `pool deck … near the rail` → inferred `rail` instead of `pool_deck`
 - `anchor_location_mismatch` on S2-HEROALT-ATRIUM: `ship atrium (Centrum) rail at Deck 4/5` → inferred `rail` instead of `atrium`
-- `duplicate_location_family` cascade: both misclassified stills shared `rail`
+- `duplicate_location_family` cascade: the two rail misclassifications produced 2 additional duplicate-family violations in the full diagnostic, for 4 total anchor violations before the fix
 
 **Lint blockers:**
 - `repeated_composition_family` blocker: S3-SOLARIUM, S4-DINING, S5-LIBRARY all resolved to `quiet_window_solo` (3-still cluster → blocker threshold)
@@ -1054,7 +1054,7 @@ Diagnostic: `npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-soci
 
 | Metric | Before | After |
 |---|---|---|
-| Anchor violations | 2 (`anchor_location_mismatch` × 2) | **0** |
+| Anchor violations | 4 total (`anchor_location_mismatch` × 2 + duplicate cascade × 2) | **0** |
 | Lint blockers | 1 (`repeated_composition_family` ≥ 3) | **0** |
 | Explicit cue stills | 6/6 | 6/6 |
 | Generic fallback stills | 0/6 | 0/6 |
@@ -1093,6 +1093,75 @@ All 102 unit tests pass after the changes (42 anchor-compliance + 22 production-
 ### Commands Used
 
 ```
+npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026
+npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts
+npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.orchestrator.test.ts
+npx tsx lib/campaigns/__tests__/brief-engine.validation.test.ts
+```
+
+---
+
+## Phase Result: Representative Re-Benchmark And Next Blocker Selection
+
+### Status: Complete
+
+### Re-Benchmark Summary
+
+All three representative campaigns run fresh through `tests/phase-2c-diagnostic-breakdown.ts`.
+
+| Campaign | Anchor violations | Lint blockers | Explicit cue stills | Isolated repair used |
+|---|---|---|---|---|
+| `eastern-caribbean-stitch-sail-2026-09-19` | **0** | **0** | 6/6 | no |
+| `bp-tabletop-icon-2027-7n-caribbean` | **0** | **0** | 6/6 | no |
+| `deck-sketchbook-society-2026` (re-run) | 3 → **0** after follow-up fix | **0** | 6/6 | no |
+
+### Follow-Up Fix: Balcony/Atrium Precedence
+
+The sketchbook re-benchmark run revealed a new variant of the location-precedence bug. The anchor declared `locationFamily: ship atrium` and the model wrote:
+
+```
+location: "Centrum balcony settee in the ship atrium"
+```
+
+The location text contains BOTH `balcony` AND `atrium`. Since `balcony` was still checked first in `LOCATION_FAMILY_KEYWORDS` (it was moved before named venues were added), `balcony` won over `atrium`, producing an `anchor_location_mismatch` and a `duplicate_location_family` cascade (the Centrum balcony was classified the same as a genuine cabin balcony still).
+
+**Root cause**: Same structural problem as the rail-precedence bug. `balcony` is a private cabin fixture that can also appear as an architectural descriptor within other venues (atrium gallery level, promenade balcony, etc.). When it appears alongside a more specific named venue, the named venue should win.
+
+**Fix** (`lib/campaigns/editors-room.ts`): Moved `balcony` from position 1 to after all named venue families. New final ordering: `pool_deck → promenade → library → spa → dining → lounge → atrium → port → theater → sports_deck → deck → balcony → cabin → rail`.
+
+Verified: "private cabin balcony" still resolves to `balcony` (no other venue keyword present). "Centrum balcony settee in the ship atrium" now resolves to `atrium`.
+
+### Regression Tests Added
+
+**`lib/campaigns/__tests__/anchor-compliance.test.ts`** (+2 tests):
+- `"Centrum balcony settee in the ship atrium"` resolves to `atrium` not `balcony`
+- pure `"private cabin balcony"` still resolves to `balcony` (no regression)
+
+### Final Test Counts
+
+104 tests, all pass: 44 anchor-compliance + 22 production-build-quality + 36 orchestrator + 2 validation.
+
+### Next Blocker Status
+
+**The representative set is benchmark-clean.**
+
+All three campaigns produce 0 anchor violations and 0 lint blockers on fresh runs. No new blocker class was discovered. The classifier fix applied here (`balcony` precedence) is a deterministic hardening of the same family as the previous `rail` fix — it closes a class of compound-venue location texts that could misclassify an atrium/named-venue anchor as `balcony`.
+
+The `LOCATION_FAMILY_KEYWORDS` ordering is now stable with a clear semantic principle: **specific named cruise venues beat structural architectural features** (deck areas, balcony, railing).
+
+Remaining non-blocking warnings observed across campaigns:
+- `rail_couple_laugh`: 2-still pairings (warning threshold, not blocker)
+- `deck_sea_wide`: 2-still pairings (warning threshold, not blocker)
+- `rail_reading`: 2-still pairings (warning threshold, not blocker)
+
+None of these require remediation. They reflect the lint classifier's spatial-cluster labeling, which is separate from anchor compliance.
+
+### Commands Used
+
+```
+npx tsx tests/phase-2c-diagnostic-breakdown.ts bp-tabletop-icon-2027-7n-caribbean
+npx tsx tests/phase-2c-diagnostic-breakdown.ts eastern-caribbean-stitch-sail-2026-09-19
 npx tsx tests/phase-2c-diagnostic-breakdown.ts deck-sketchbook-society-2026
 npx tsx lib/campaigns/__tests__/anchor-compliance.test.ts
 npx tsx lib/campaigns/__tests__/production-build-quality.test.ts

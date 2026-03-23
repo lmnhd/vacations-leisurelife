@@ -461,8 +461,7 @@ const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; composition
 const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
 
 const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
-    // ── Specific named venues — checked first so they win when rail appears alongside ──
-    [['balcony'], 'balcony'],
+    // ── Specific named venues — checked first so they win when balcony/rail appears alongside ──
     [['pool', 'lido'], 'pool_deck'],
     [['bow', 'stern', 'promenade'], 'promenade'],
     [['library', 'reading room'], 'library'],
@@ -474,6 +473,9 @@ const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
     [['theater', 'stage', 'auditorium'], 'theater'],
     [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
     [['deck', 'outdoor'], 'deck'],
+    // ── Balcony is a private cabin fixture — only wins when no named venue is present ──
+    // (checked before cabin so "cabin balcony" → balcony, not cabin)
+    [['balcony'], 'balcony'],
     [['cabin', 'stateroom', 'porthole'], 'cabin'],
     // ── Rail is a structural/perimeter feature — only wins when no named venue is present ──
     [['rail', 'railing'], 'rail'],

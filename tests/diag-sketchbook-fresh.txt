@@ -1,0 +1,169 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: deck-sketchbook-society-2026
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Deck Sketchbook Society: Golden Rail Window
+[aesthetic-engine] Starting aesthetic brief generation for deck-sketchbook-society-2026
+[aesthetic-engine] Model resolved for deck-sketchbook-society-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for deck-sketchbook-society-2026
+[aesthetic-engine] Pass 1 accepted for deck-sketchbook-society-2026 on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for deck-sketchbook-society-2026
+[aesthetic-engine] Refinement pass for deck-sketchbook-society-2026
+[editors-room] generateActionAnchors for deck-sketchbook-society-2026
+[editors-room] generateLandingStillBible for deck-sketchbook-society-2026 (refPack=ref-sketchbook-v1)
+
+≡ƒº¡ ANCHORS:
+  1. DSS-GRW-01
+     locationFamily: ship atrium
+     nicheSignal: fountain pens
+     socialUnit: pair
+     action: Paused on a Centrum balcony settee, sleeves rolled and slim sling at feet, a pair sits out of the lane with pocketΓÇæsize sketchbooks open, trading a soft ΓÇ£nice edge on that lineΓÇ¥ while testing fountain pens to catch golden rail reflections below.
+  2. DSS-GRW-02
+     locationFamily: pool deck
+     nicheSignal: plein air
+     socialUnit: solo
+     action: In shade on the pool deck, a solo guest settles into a lounger with a pocketΓÇæsize sketchbook on one knee, iced tea in the free hand, dashing a quick plein air study of sunΓÇæsparkles and rail shine without blocking any walkway.
+  3. DSS-GRW-03
+     locationFamily: spa solarium
+     nicheSignal: travel journaling
+     socialUnit: pair
+     action: A light gust sends the duo indoors for an easy pivotΓÇötucked by the spa solariumΓÇÖs sunny glass, they relax with pocketΓÇæsize sketchbooks, travel journaling the steam and palms while one murmurs, ΓÇ£nice edge on that line,ΓÇ¥ no instruction vibe at all.
+  4. DSS-GRW-04
+     locationFamily: dining lounge
+     nicheSignal: art journaling
+     socialUnit: solo
+     action: Morning in the dining lounge: a solo guest at a window booth turns croissant crumbs, coffee, and the golden rail outside into a small art journaling spread in a pocketΓÇæsize sketchbook; one hand stays free for sips between lines.
+  5. DSS-GRW-05
+     locationFamily: cabin balcony
+     nicheSignal: urban sketching
+     socialUnit: solo
+     action: Low and comfy on the cabin balcony, sleeves rolled and sling bag by the door, a solo member maps lifeboat curves and the Caribbean wake in pocketΓÇæsize urban sketching, pausing quietly with no walkway in play.
+  6. DSS-GRW-06
+     locationFamily: embarkation pier
+     nicheSignal: travel journaling
+     socialUnit: pair
+     action: On a bench at the embarkation pier, out of foot traffic, a pair does breezy travel journaling of Brilliance of the SeasΓÇÖ profile before boardingΓÇöone hand free for a welcomeΓÇæback cone, the other sketching; a gentle ΓÇ£nice edge on that line,ΓÇ¥ then they cap pens and rejoin the lane.
+  7. DSS-GRW-07
+     locationFamily: library
+     nicheSignal: fountain pens
+     socialUnit: solo
+     action: Quiet in the library, a solo guest with a small lapel pin lines up fountain pens on a napkin and opens a pocketΓÇæsize sketchbook over a nautical atlas, sketching the Centrum through glass with an easy, unplugged posture.
+  8. DSS-GRW-08
+     locationFamily: promenade deck
+     nicheSignal: plein air
+     socialUnit: pair
+     action: Golden hour on the promenade deck: the pair chooses a bench near the wake and tucks bags inboard to keep lanes open, trading tiny plein air thumbnails of the burnished rail and an island silhouette before capping pens and walking off with one hand free.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 3
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Anchor violation codes:
+    - anchor_location_mismatch
+    - duplicate_location_family
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó DSS-GRW-01-HP
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: DSS-GRW-01 | nicheCarryThrough: fountain pens
+    location: Centrum balcony settee in the ship atrium
+    composition: wide two_shot with establishing atrium layers; seated out of the lane; no cabin/window setup
+    subjectAction: A pair relaxes on a Centrum balcony settee, testing fountain pens with pocket-size sketchbooks open, trading a soft ΓÇ£nice edge on that lineΓÇ¥ while staying clear of footpaths.
+    shotIntent: Plant the community identity at hero scale by showing fountain pen testing and sketching naturally embedded in the shipΓÇÖs atrium scene.
+    camera: wide | framing: two_shot | heroSubject: pair of guests with open pocket-size sketchbooks
+    nicheCue: fountain pen nibs and pocket-size sketchbooks visibly in use | antiFallback: Avoids generic atrium lounging by foregrounding active fountain pen tests and open sketchbooks.
+    refPack: ref-sketchbook-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations:
+      - [anchor_location_mismatch] expected=atrium | actual=balcony
+      - [duplicate_location_family] expected=unique location family per still | actual=shared by: DSS-GRW-01-HP, DSS-GRW-05-INT
+    lint issues: none
+
+  ΓÇó DSS-GRW-02-HA
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: DSS-GRW-02 | nicheCarryThrough: plein air
+    location: pool deck shaded lounger area
+    composition: medium single_subject, low_angle_hero read; seated out of the walkway with open lane visible
+    subjectAction: A solo guest settles into a shaded lounger, making a quick plein air sketch in a pocket-size sketchbook with iced tea in the free hand, sketching only when stopped.
+    shotIntent: Give a hero-alt identity beat that frames plein air sketching as effortless poolside downtime.
+    camera: medium | framing: low_angle_hero | heroSubject: solo guest with open sketchbook on lounger
+    nicheCue: pocket-size sketchbook used for a plein air study | antiFallback: Avoids generic pool lounging by featuring active plein air sketching with sketchbook visible.
+    refPack: ref-sketchbook-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=reading | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó DSS-GRW-03-EWA
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: DSS-GRW-03 | nicheCarryThrough: travel journaling
+    location: spa solarium seating nook by the glass
+    composition: medium_wide environmental two_shot with airy glasshouse context; relaxed spacing; no medium framing
+    subjectAction: Two guests sit side by side, travel journaling steam, palms, and light patterns in pocket-size sketchbooks while one murmurs, ΓÇ£nice edge on that line,ΓÇ¥ no instruction vibe.
+    shotIntent: Show travel journaling as a calm, location-specific ship discovery inside the spa solarium.
+    camera: medium_wide | framing: two_shot | heroSubject: pair of guests with sketchbooks in the solarium
+    nicheCue: travel journaling spread visible across open pages | antiFallback: Avoids spa-generic serenity by foregrounding open sketchbooks and active travel journaling rather than passive lounging or horizon views.
+    refPack: ref-sketchbook-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=other | action=reading | mood=neutral | composition=other_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó DSS-GRW-04-EWB
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: DSS-GRW-04 | nicheCarryThrough: art journaling
+    location: dining lounge window booth
+    composition: medium_wide single_subject at a booth; table surface organized; non-wide breakfast scene with wide breathing room
+    subjectAction: A solo guest builds an art journaling spread between coffee sips, keeping the booth tidy and the aisle clear.
+    shotIntent: Illustrate art journaling woven into everyday breakfast without turning it into a staged dining scene.
+    camera: medium_wide | framing: single_subject | heroSubject: solo guest at booth with open sketchbook
+    nicheCue: art journaling spread with coffee and croissant as page elements | antiFallback: Avoids generic dining or romantic candlelit tropes by clearly showing an art journaling page in progress at morning light.
+    refPack: ref-sketchbook-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=lounge_social
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó DSS-GRW-05-INT
+    slotRole: INTIMATE | usage: concept
+    anchorId: DSS-GRW-05 | nicheCarryThrough: urban sketching
+    location: cabin balcony seating by the sliding door
+    composition: intimate, close detail_insert on hands and page; tight crop on nib-to-paper with soft wake beyond
+    subjectAction: A solo member traces lifeboat curves and wake rhythms in urban sketching, sleeves rolled, sling bag by the door, pausing quietly with no walkway in play.
+    shotIntent: Capture the tactile, private feel of urban sketching on the balcony with attention to hands, nib, and emerging lines.
+    camera: close_up | framing: detail_insert | heroSubject: hands drawing in a pocket-size sketchbook
+    nicheCue: urban sketching linework visible with fountain pen or fineliner | antiFallback: Avoids candlelit dining or generic balcony gazing by focusing on close, intentional sketching details.
+    refPack: ref-sketchbook-v1
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=rail | action=reading | mood=neutral | composition=rail_reading
+    flags: (none)
+    anchor violations:
+      - [duplicate_location_family] expected=unique location family per still | actual=shared by: DSS-GRW-01-HP, DSS-GRW-05-INT
+    lint issues: none
+
+  ΓÇó DSS-GRW-06-FLEX
+    slotRole: FLEX | usage: social_square
+    anchorId: DSS-GRW-06 | nicheCarryThrough: travel journaling
+    location: embarkation pier bench, terminal side
+    composition: medium two_shot on a bench out of foot traffic; ship profile framed beyond; relaxed posture with clear pedestrian lane
+    subjectAction: A pair sits on a pier bench doing light travel journaling of Brilliance of the SeasΓÇÖ profile; one hand holds a welcome-back cone while the other sketches, then they cap pens and rejoin the lane.
+    shotIntent: Show pre-boarding as a light, social moment where travel journaling tags the ship and signals belonging.
+    camera: medium | framing: two_shot | heroSubject: pair on bench with open sketchbooks and pen caps
+    nicheCue: travel journaling kit with open pocket sketchbook and pen | antiFallback: Avoids generic port waiting by featuring active sketching of the shipΓÇÖs profile with sketchbooks visible.
+    refPack: ref-sketchbook-v1
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=lounge | action=lounging | mood=neutral | composition=lounge_lounging
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

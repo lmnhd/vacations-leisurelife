@@ -1,0 +1,163 @@
+﻿≡ƒÄ» PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+≡ƒöì DIAGNOSTIC: eastern-caribbean-stitch-sail-2026-09-19
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Campaign: Stitch & Sail: Eastern Caribbean Maker Cruise
+[aesthetic-engine] Starting aesthetic brief generation for eastern-caribbean-stitch-sail-2026-09-19
+[aesthetic-engine] Model resolved for eastern-caribbean-stitch-sail-2026-09-19: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for eastern-caribbean-stitch-sail-2026-09-19
+[aesthetic-engine] Pass 1 accepted for eastern-caribbean-stitch-sail-2026-09-19 on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for eastern-caribbean-stitch-sail-2026-09-19
+[aesthetic-engine] Refinement pass for eastern-caribbean-stitch-sail-2026-09-19
+[editors-room] generateActionAnchors for eastern-caribbean-stitch-sail-2026-09-19
+[editors-room] generateLandingStillBible for eastern-caribbean-stitch-sail-2026-09-19 (refPack=ref-stitch-v1)
+
+≡ƒº¡ ANCHORS:
+  1. stitch-sail-ec-01
+     locationFamily: pool deck
+     nicheSignal: knitting cruise
+     socialUnit: pair
+     action: Poolside on Icon of the Seas, two friends in handmade cardigans over swimsuits clink umbrella drinks while one adds a sunny round to a granny-square coaster; a small yarn cake peeks from a tote as they laugh about their shared knitting cruise goal and trade quick compliments on the drape.
+  2. stitch-sail-ec-02
+     locationFamily: promenade
+     nicheSignal: Ravelry
+     socialUnit: solo
+     action: At a tiny bar table on the promenade, a solo traveler with a subtle yarn enamel pin sips iced latte, flips through a folded pattern zine, and casually scrolls Ravelry to queue a breezy tank as the shipΓÇÖs parade strolls by.
+  3. stitch-sail-ec-03
+     locationFamily: library
+     nicheSignal: crochet community
+     socialUnit: pair
+     action: Tucked into a quiet library nook, a pair compares stitch maps in pocket pattern zines, swapping a tape measure and soft compliments on texture, finishing with a quiet 'crochet community' toast with tea.
+  4. stitch-sail-ec-04
+     locationFamily: spa solarium
+     nicheSignal: fiber arts travel
+     socialUnit: solo
+     action: In the spa solariumΓÇÖs warm light, a solo guest in a gauzy cover-up knits a linen swatch between steam cycles, a rolled towel as armrest and citrus water beading nearby, a tiny enamel pin glinting on a project pouchΓÇösoaking in a fiber arts travel pause.
+  5. stitch-sail-ec-05
+     locationFamily: dining lounge
+     nicheSignal: maker vacation
+     socialUnit: pair
+     action: In a cozy dining lounge corner, two seatmates slide mini-skeins across a tiny bar table like color chips, exchange pattern zines, and toast with tropical spritzers to their shared maker vacation.
+  6. stitch-sail-ec-06
+     locationFamily: cabin balcony
+     nicheSignal: Ravelry
+     socialUnit: solo
+     action: Morning on a cabin balcony, a solo cruiser pins a palm-sized swatch to a travel blocking mat on the bistro table, coffee steaming and a discreet hook-and-needle enamel pin catching light while they update Ravelry notes between ocean breezes.
+  7. stitch-sail-ec-07
+     locationFamily: embarkation pier
+     nicheSignal: knitting cruise
+     socialUnit: pair
+     action: At the embarkation pier sign, a pair snaps a quick selfie of their matching knit/crochet enamel pins and a cheerful yarn cake peeking from a tote, grinning about the start of this knitting cruise before rolling aboard.
+  8. stitch-sail-ec-08
+     locationFamily: ship atrium
+     nicheSignal: maker vacation
+     socialUnit: solo
+     action: Under the ship atriumΓÇÖs glass, a solo maker finishes the last few stitches on a raffia sunhat brim as a passerby offers a kind compliment on the textureΓÇöpure maker vacation ease set to live band vibes.
+
+≡ƒôè SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+
+≡ƒû╝∩╕Å STILL-BY-STILL BREAKDOWN:
+
+  ΓÇó stitch-sail-ec-01-hero-primary
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: stitch-sail-ec-01 | nicheCarryThrough: knitting cruise
+    location: pool deck lounge area
+    composition: wide, open pool deck scene with two friends side by side on loungers; colorful umbrella drinks and a tote with a yarn cake clearly visible; ship life and ocean in soft-focus background ΓÇö no cabin/window setup
+    subjectAction: two friends on the pool deck clink umbrella drinks while one adds a sunny round to a granny-square coaster, laughing about their shared knitting cruise goal
+    shotIntent: Announce that this is a knitting cruise where fiber fun lives poolside, not hidden away.
+    camera: wide | framing: two_shot | heroSubject: pair of friends in handmade cardigans crafting poolside
+    nicheCue: granny-square coaster in progress and a yarn cake peeking from tote | antiFallback: Avoids generic pool lounging by centering live crochet and visible yarn props ΓÇö not a railing couple or empty horizon.
+    refPack: ref-stitch-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=deck | action=laughing | mood=warm | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó stitch-sail-ec-02-hero-alt
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: stitch-sail-ec-02 | nicheCarryThrough: Ravelry
+    location: promenade tiny bar table
+    composition: dynamic, low-angle environmental portrait at a tiny bar table along the promenade; passing parade in soft motion blur; phone screen and pattern zine readable
+    subjectAction: a solo traveler sips an iced latte, flips a folded pattern zine, and casually scrolls Ravelry to queue a breezy tank
+    shotIntent: Make Ravelry browsing feel naturally at home on the promenade between onboard moments.
+    camera: medium | framing: low_angle_hero | heroSubject: solo traveler at promenade table with phone and pattern zine
+    nicheCue: Ravelry on phone screen and a folded pattern zine | antiFallback: Avoids a generic caf├⌐ shot by clearly showing Ravelry in use and a pattern zine as identity anchors.
+    refPack: ref-stitch-v1
+    lint: role=hero | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=neutral | composition=lounge_social
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó stitch-sail-ec-03-editorial-a
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: stitch-sail-ec-03 | nicheCarryThrough: crochet community
+    location: ship library reading nook
+    composition: open, medium-wide two_shot framed by bookshelves and an armchair cluster; tea and tools on a side table; no medium framing or environmental emphasis
+    subjectAction: a pair in the library compare stitch maps in pocket pattern zines, swapping a tape measure and toasting tea to their crochet community
+    shotIntent: Show the crochet community as a gentle, social learning moment in the ship library.
+    camera: medium_wide | framing: two_shot | heroSubject: pair of crafters comparing stitch maps with tea
+    nicheCue: crochet hooks, pocket pattern zines, and a tape measure on the table | antiFallback: Avoids generic library reading by foregrounding pattern zines, crochet tools, and shared stitch-map comparison ΓÇö not a railing/horizon trope.
+    refPack: ref-stitch-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=warm | composition=dining_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó stitch-sail-ec-04-editorial-b
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: stitch-sail-ec-04 | nicheCarryThrough: fiber arts travel
+    location: spa solarium loungers
+    composition: breezy medium-wide environmental portrait; solo guest reclined on a lounger with project pouch at side table; lush plants and glass canopy context ΓÇö not medium or environmental
+    subjectAction: a solo guest in the spa solarium knits a linen swatch and soaks in fiber arts travel calm between steam cycles
+    shotIntent: Prove fiber arts travel fits even the spaΓÇÖs most tranquil moments.
+    camera: medium_wide | framing: environmental_portrait | heroSubject: solo guest knitting a linen swatch in the solarium
+    nicheCue: knitting needles with linen swatch and a project pouch sporting a craft enamel pin | antiFallback: Avoids generic spa relaxation by clearly featuring active knitting and a visible project pouch.
+    refPack: ref-stitch-v1
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=lounge | action=gazing | mood=contemplative | composition=lounge_gazing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó stitch-sail-ec-05-intimate
+    slotRole: INTIMATE | usage: concept
+    anchorId: stitch-sail-ec-05 | nicheCarryThrough: maker vacation
+    location: dining lounge corner banquette
+    composition: intimate, tight, close detail over a tiny bar table ΓÇö hands slide miniΓÇæskeins like color chips, pattern zines halfΓÇæfolded, spritzers midΓÇæclink
+    subjectAction: two seatmates trade mini-skeins and exchange pattern zines, toasting their shared maker vacation
+    shotIntent: Celebrate the tactile joy of a maker vacation with color play at the table.
+    camera: close_up | framing: detail_insert | heroSubject: hands of two seatmates trading miniΓÇæskeins
+    nicheCue: miniΓÇæskeins arranged like color chips and pocket pattern zines | antiFallback: Avoids candlelit dining romance by focusing on hands, miniΓÇæskeins, and pattern zines ΓÇö not faces, candles, or formal plates.
+    refPack: ref-stitch-v1
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=dining | action=dining | mood=joyful | composition=dining_intimacy
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  ΓÇó stitch-sail-ec-06-flex
+    slotRole: FLEX | usage: social_square
+    anchorId: stitch-sail-ec-06 | nicheCarryThrough: Ravelry
+    location: cabin balcony bistro table
+    composition: balanced medium view centered on the balcony bistro table ΓÇö travel blocking mat with a pinned swatch, steaming coffee, phone open to notes; ocean and balcony rail blur beyond
+    subjectAction: a solo cruiser pins a palmΓÇæsized swatch to a travel blocking mat and updates Ravelry notes between ocean breezes
+    shotIntent: Show a quick balcony microΓÇæsession where Ravelry updates and blocking fit preΓÇæbreakfast calm.
+    camera: medium | framing: single_subject | heroSubject: solo cruiser at the balcony table pinning a swatch
+    nicheCue: travel blocking mat with pinned swatch and Ravelry notes visible on phone | antiFallback: Avoids the quiet-window-solo trope by focusing on active blocking and visible Ravelry notes, not horizon-gazing.
+    refPack: ref-stitch-v1
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=rail | action=gazing | mood=neutral | composition=rail_gazing
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+Γ£à Diagnostic breakdown completed

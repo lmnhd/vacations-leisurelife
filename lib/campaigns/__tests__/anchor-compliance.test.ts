@@ -737,6 +737,44 @@ test('atrium-anchored still with "atrium ... rail at Deck 4" resolves to atrium 
     assert.ok(!v, 'atrium location with incidental "rail" reference should resolve to atrium — atrium is now checked before rail');
 });
 
+test('atrium-anchored still with "Centrum balcony settee in the ship atrium" resolves to atrium not balcony', () => {
+    const anchors = [{ anchorId: 'anchor-atrium-bal', nicheSignal: 'fountain pens', locationFamily: 'ship atrium' }];
+    const still = makeStill({
+        stillId: 'still-centrum-balcony',
+        anchorId: 'anchor-atrium-bal',
+        slotRole: 'HERO_PRIMARY',
+        usage: 'hero_primary',
+        location: 'Centrum balcony settee in the ship atrium',
+        environmentDetails: 'multi-deck atrium glass elevators visible, pair seated on balcony ledge',
+        imagePrompt: 'Wide hero shot of fountain pen sketching on the Centrum balcony settee in the atrium',
+        subjectAction: 'Pair tests fountain pens on the Centrum balcony settee in the atrium, sketchbooks open',
+        nicheCarryThrough: 'fountain pens',
+        composition: 'wide two_shot with atrium layers',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'Centrum balcony settee in the ship atrium should resolve to atrium — atrium is now checked before balcony');
+});
+
+test('pure cabin balcony still still resolves to balcony (no regression)', () => {
+    const anchors = [{ anchorId: 'anchor-bal', nicheSignal: 'urban sketching', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-pure-balcony',
+        anchorId: 'anchor-bal',
+        slotRole: 'FLEX',
+        usage: 'hero_alt',
+        location: 'private cabin balcony',
+        environmentDetails: 'ocean view, bistro table, no other venue present',
+        imagePrompt: 'Medium shot of urban sketching on the private cabin balcony',
+        subjectAction: 'Solo guest doing urban sketching on the private cabin balcony',
+        nicheCarryThrough: 'urban sketching',
+        composition: 'medium over-the-shoulder',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'pure cabin balcony should still resolve to balcony — no regression');
+});
+
 test('rail-only location still resolves to rail (no regression on true rail stills)', () => {
     const anchors = [{ anchorId: 'anchor-rail', nicheSignal: 'urban sketching', locationFamily: 'open rail' }];
     const still = makeStill({
