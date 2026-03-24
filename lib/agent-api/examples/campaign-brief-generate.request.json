@@ -1,0 +1,10 @@
+{
+  "requestedBy": "openclaw",
+  "runNow": false,
+  "input": {
+    "workflowId": "campaign_brief_generate",
+    "campaignSlug": "film-and-zine-afloat-2026",
+    "stopBeforeMedia": true,
+    "instructions": "Focus on premium editorial clarity and crisp niche signal carry-through."
+  }
+}

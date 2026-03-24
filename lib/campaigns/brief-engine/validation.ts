@@ -127,7 +127,7 @@ export function validateBrief(brief: CampaignAestheticBrief, campaign: Campaign)
         issues.push({
             code: 'launch_window_violation',
             message: `Sailing is ${launchWindow.daysUntilSail} days away. Minimum required is ${MINIMUM_CAMPAIGN_LEAD_DAYS} days.`,
-            severity: 'blocker',
+            severity: 'warning',
             autoFixable: false,
         });
     }

@@ -1,0 +1,169 @@
+
+🔍 VERIFYING ALL DISCOVERY CAMPAIGNS
+
+Found 18 campaigns in database
+
+
+[1/18] Open Tabletop at Sea: Board Games and TTRPGs Without the Tournament
+      ID: bp-tabletop-icon-2027-7n-caribbean
+      Sail Date: Sept. 26, 2026
+      Days Until Sail: 187
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[2/18] Readers’ Inside Passage: Indie Book & Conversation Cruise
+      ID: bp-readers-serenade-2027-7n-alaska
+      Sail Date: June 2027
+      Days Until Sail: 435
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[3/18] Film & Zine Afloat: Two Tiny Windows
+      ID: film-and-zine-afloat-2026
+      Sail Date: Sept. 17, 2026
+      Days Until Sail: 178
+      Launch Window: ❌ VIOLATION (< 180 days)
+      Brief: ✓ Present
+      Theme: Film & Zine Afloat: Two Tiny Windows
+      Status: needs_review
+      Summary: Approved brief has new issues: 1 blocker(s) found. 0 are auto-fixable.
+      Blockers: 1, Warnings: 1
+        - [BLOCKER] launch_window_violation: Sailing is 178 days away. Minimum required is 180 days.
+
+[4/18] Unhurried Passage: Cottagecore Alaska Cruise
+      ID: alaska-slow-living-2026-09-20
+      Sail Date: 2026-09-20
+      Days Until Sail: 181
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Unhurried Passage: Cottagecore Alaska Cruise
+      Status: needs_review
+      Summary: Brief passes structural checks but needs human approval.
+
+[5/18] Drift Festival at Sea
+      ID: drift-festival-icon-2026
+      Sail Date: Sept. 26, 2026
+      Days Until Sail: 187
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Drift Festival at Sea
+      Status: ready_for_media
+      Summary: Brief is approved and passes all structural and production-build checks.
+
+[6/18] Needle Drop North: Vinyl Voyage
+      ID: vinyl-scandinavia-2026
+      Sail Date: October 2026
+      Days Until Sail: 192
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[7/18] Open-Deck Festival: Live Music & Community Celebration at Sea
+      ID: bp-opendeck-icon-2027-7n-caribbean
+      Sail Date: Sept. 26, 2026
+      Days Until Sail: 187
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Open-Deck Festival: Live Music & Community Celebration at Sea
+      Status: needs_review
+      Summary: Production build lint failed (productionBuildStatus = fail). Downstream media generation would reject this brief. Regenerate to resolve production build issues.
+
+[8/18] Crate Waves: Transpacific Vinyl Listening Voyage
+      ID: transpacific-vinyl-listening-nov-2026
+      Sail Date: May 12, 2027
+      Days Until Sail: 415
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Crate Waves: Transpacific Vinyl Listening Voyage
+      Status: needs_review
+      Summary: Brief passes structural checks but needs human approval.
+
+[9/18] Open Seas Pride: Southern Caribbean
+      ID: open-seas-pride-2026
+      Sail Date: Nov. 16, 2026
+      Days Until Sail: 238
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Open Seas Pride: Southern Caribbean
+      Status: needs_review
+      Summary: Production build lint failed (productionBuildStatus = fail). Downstream media generation would reject this brief. Regenerate to resolve production build issues.
+
+[10/18] Sunrise Steeps: Alaska Tea Ritual Voyage
+      ID: alaska-tea-ritual-2026-09-20
+      Sail Date: 2026-09-20
+      Days Until Sail: 181
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[11/18] Deck Sketchbook Society: Golden Rail Window
+      ID: deck-sketchbook-society-2026
+      Sail Date: Nov. 16, 2026
+      Days Until Sail: 238
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Deck Sketchbook Society: Golden Rail Window
+      Status: needs_review
+      Summary: Brief passes structural checks but needs human approval.
+
+[12/18] Stitch & Sail: Eastern Caribbean Maker Cruise
+      ID: eastern-caribbean-stitch-sail-2026-09-19
+      Sail Date: Sept. 26, 2026
+      Days Until Sail: 187
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[13/18] Makers’ Slow Studio Voyage
+      ID: bp-makers-ascent-2027-10n-med
+      Sail Date: May 2027
+      Days Until Sail: 404
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[14/18] Deck Reads: Greek Isles Book Lovers Sailaway
+      ID: greek-isles-book-lovers-2026-09-26
+      Sail Date: Oct. 3, 2026
+      Days Until Sail: 194
+      Launch Window: ✓ COMPLIANT
+      Brief: ✓ Present
+      Theme: Deck Reads: Greek Isles Book Lovers Sailaway
+      Status: needs_review
+      Summary: Approved brief has new issues: 1 blocker(s) found. 1 are auto-fixable.
+      Blockers: 1, Warnings: 0
+        - [BLOCKER] workshop_language_survives: Workshop, salon, hosted-session, or event-program language appears in the brief.
+
+[15/18] Sunset Save States: Card Room Shuffle
+      ID: retro-handheld-arcade-2026
+      Sail Date: Oct. 10, 2026
+      Days Until Sail: 201
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[16/18] Night Sky & Sea: Dusk & Dawn Edition
+      ID: night-sky-sea-2026
+      Sail Date: Nov. 16, 2026
+      Days Until Sail: 238
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[17/18] Frames & Horizons: Scandinavian Photo Cruise
+      ID: aesthetic-scandinavia-2026
+      Sail Date: October 2026
+      Days Until Sail: 192
+      Launch Window: ✓ COMPLIANT
+      Brief: ❌ NOT FOUND
+
+[18/18] Sea of Stories: Bookish Mediterranean Cruise
+      ID: bookish-mediterranean-2026
+      Sail Date: 2026-09-18
+      Days Until Sail: 179
+      Launch Window: ❌ VIOLATION (< 180 days)
+      Brief: ❌ NOT FOUND
+
+==================================================
+SUMMARY:
+  Total Campaigns: 18
+  Ready for Media: 1
+  Needs Review: 7
+  No Brief: 10
+==================================================
+
+❌ Some campaigns missing briefs

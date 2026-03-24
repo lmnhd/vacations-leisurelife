@@ -232,9 +232,15 @@ export default function ProductionBibleTestPage() {
 
     // ── Quick Approve Brief (for test efficiency) ─────────────────────────
     const handleApproveBrief = async () => {
+        const confirmed = window.confirm(
+            brief?.humanReviewStatus === 'revised'
+                ? 'Re-approve this brief for media generation?\n\nThis updates stored approval state so downstream media generation can proceed from the current Production Bible.'
+                : 'Approve this brief for media generation?\n\nThis updates stored approval state so downstream media generation can proceed.'
+        );
+        if (!confirmed) return;
         setPageState("generating");
         setError("");
-        setGenerateLog(["Approving brief for testing..."]);
+        setGenerateLog(["Approving brief for media generation..."]);
         try {
             const { response: res, data } = await approveAestheticBrief(slug);
             if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);
@@ -249,6 +255,10 @@ export default function ProductionBibleTestPage() {
 
     // ── Generate scene images via the REAL pipeline ───────────────────────
     const handleGenerateSceneImages = async () => {
+        const confirmed = window.confirm(
+            `Generate missing scene images for "${slug}"?\n\nThis calls live media providers and may incur cost. Existing scene images are preserved.\n\nRun Preflight Check first if you want to inspect coverage without spending.`
+        );
+        if (!confirmed) return;
         setPageState("generating");
         setError("");
         setGenerateLog(["Starting scene image generation via real pipeline..."]);
@@ -332,6 +342,12 @@ export default function ProductionBibleTestPage() {
 
     // ── Generate storyboard videos via the REAL pipeline ──────────────────
     const handleGenerateVideos = async (deliverableId?: string) => {
+        const confirmed = window.confirm(
+            deliverableId
+                ? `Generate storyboard video for ${deliverableId}?\n\nThis calls live media providers and may incur cost.`
+                : `Generate all storyboard videos for "${slug}"?\n\nThis calls live media providers and may incur cost across multiple deliverables.`
+        );
+        if (!confirmed) return;
         setPageState("generating");
         setError("");
         setGeneratingStoryboardId(deliverableId ?? null);
@@ -376,6 +392,10 @@ export default function ProductionBibleTestPage() {
 
     // ── Generate full pipeline ────────────────────────────────────────────
     const handleGenerateAll = async () => {
+        const confirmed = window.confirm(
+            `Run the full media pipeline for "${slug}"?\n\nThis can trigger live image, video, and related provider calls and may incur cost across multiple services.`
+        );
+        if (!confirmed) return;
         setPageState("generating");
         setError("");
         setGenerateLog(["Starting full media generation via real pipeline..."]);
@@ -425,6 +445,10 @@ export default function ProductionBibleTestPage() {
     // ── Regenerate Production Bible (rewrites scene specs) ─────────────────
     const handleRegenerateBible = async () => {
         if (!slug.trim()) return;
+        const confirmed = window.confirm(
+            `Regenerate the Production Bible for "${slug}"?\n\nThis rewrites scene specs, re-runs lint, and can invalidate the current approval state.`
+        );
+        if (!confirmed) return;
         setPageState("generating");
         setError("");
         setGenerateLog(["Regenerating Production Bible scene specs with updated creative direction..."]);
@@ -856,6 +880,9 @@ export default function ProductionBibleTestPage() {
 
                 {/* Action buttons */}
                 <div className="space-y-2">
+                    <div className="rounded-lg border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
+                        Production actions below are live operations. Use <span className="font-semibold text-amber-100">Preflight Check</span> for a read-only coverage pass, and expect confirmations before any generate or regenerate call.
+                    </div>
                     <div className="text-xs text-zinc-500 font-medium uppercase tracking-wide">Step 1 — Scene Specs</div>
                     <div className="flex gap-2 flex-wrap">
                         <button
@@ -877,7 +904,7 @@ export default function ProductionBibleTestPage() {
                                     : 'Quickly override pending state so media generation can proceed'}
                             >
                                 {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                                {brief?.humanReviewStatus === 'revised' ? 'Quick Re-Approve Brief' : 'Quick Approve Brief'}
+                                {brief?.humanReviewStatus === 'revised' ? 'Re-Approve Brief for Media' : 'Approve Brief for Media'}
                             </button>
                         )}
                     </div>
@@ -890,7 +917,7 @@ export default function ProductionBibleTestPage() {
                             title={lintIsBlocking ? 'Production build failed lint gate — fix the build before generating scene images' : !bible ? "No Production Bible — regenerate scene specs first" : "Only missing scene-library entries will be generated; existing scene images are preserved."}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-                            Generate Scene Images
+                            Generate Paid Scene Images
                         </button>
                         <button
                             className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
@@ -907,16 +934,16 @@ export default function ProductionBibleTestPage() {
                             disabled={isBusy || !bible}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
-                            Generate All Storyboard Videos
+                            Generate Paid Storyboard Videos
                         </button>
                         <button
                             className="bg-amber-900/50 hover:bg-amber-800/50 border border-amber-700 text-amber-300 px-4 py-2 rounded text-sm flex items-center gap-2 disabled:opacity-40"
                             onClick={handleGenerateAll}
                             disabled={isBusy || lintIsBlocking}
-                            title={lintIsBlocking ? 'Production build has failed lint gate — fix the build before running the full pipeline' : 'Run full media generation pipeline'}
+                            title={lintIsBlocking ? 'Production build has failed lint gate — fix the build before running the full pipeline' : 'Run full paid media generation pipeline'}
                         >
                             {pageState === "generating" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                            Full Pipeline
+                            Run Full Paid Pipeline
                         </button>
                     </div>
                 </div>

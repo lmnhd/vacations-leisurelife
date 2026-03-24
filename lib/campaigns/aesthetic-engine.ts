@@ -1,9 +1,8 @@
-import { generateObject } from 'ai';
 import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { Campaign } from './types';
-import { ModelName, getModelConfig, modelForTask } from '@/lib/ai/llm-gateway';
+import { ModelName, modelForTask } from '@/lib/ai/llm-gateway';
+import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import {
     CampaignAestheticBrief,
     CampaignAestheticBriefSchema,
@@ -284,9 +283,9 @@ function buildRefinementContext(campaign: Campaign): string {
 }
 
 async function refineAestheticBrief(
-    model: ReturnType<typeof openai>,
     campaign: Campaign,
     draftBrief: CampaignAestheticBrief,
+    instructions?: string,
 ): Promise<CampaignAestheticBrief> {
     const refinementPrompt = `
 You are GitHub Copilot using GPT-5.4 in a dedicated aesthetic refinement phase.
@@ -358,11 +357,17 @@ OUTPUT RULES:
 - If the campaign context provides a ship name, use that exact ship name in copy fields and do not invent another ship.
 `.trim();
 
-    const { object } = await generateObject({
-        model,
+    const instructionBlock = instructions
+        ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${instructions}`
+        : '';
+
+    const { object } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: RefinementSchema,
-        system: refinementPrompt,
+        system: refinementPrompt + instructionBlock,
         prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
+        maxOutputTokens: 7000,
+        operationName: `aesthetic-refinement:${campaign.id}`,
     });
 
     const refinedMerch = normalizeMerchBrief(campaign.name, object.merch);
@@ -386,17 +391,9 @@ OUTPUT RULES:
     return refinedBrief;
 }
 
-export async function generateAestheticBrief(campaign: Campaign, options?: { correctionContext?: string }): Promise<CampaignAestheticBrief> {
-    // Resolve model through the gateway registry. Creative task → GPT_5_HIGH (OpenAI Tier-1).
-    // Note: uses @ai-sdk/openai adapter for generateObject structured output.
-    const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
-    const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
-    const resolvedModelId = aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH;
-
+export async function generateAestheticBrief(campaign: Campaign, options?: { correctionContext?: string; instructions?: string }): Promise<CampaignAestheticBrief> {
     console.log(`[aesthetic-engine] Starting aesthetic brief generation for ${campaign.id}`);
-    console.log(
-        `[aesthetic-engine] Model resolved for ${campaign.id}: enum=${ModelName.GPT_5_HIGH}, provider=${aestheticModelConfig.provider}, apiId=${resolvedModelId}`
-    );
+    console.log(`[aesthetic-engine] Structured generation helper selected for ${campaign.id}: model=${ModelName.GPT_5_HIGH}`);
 
     const brandGuidelines = `
 Leisure Life Interactive Brand Guidelines:
@@ -513,6 +510,9 @@ CRITICAL MESSAGING AND SOCIAL RULES:
     const correctionSuffix = options?.correctionContext
         ? `\n\nCORRECTIVE REPROMPT — HARD FAILURE CONTEXT:\nThe previous generation produced the following validation blockers. You MUST resolve every one of them in this output.\n${options.correctionContext}`
         : '';
+    const instructionSuffix = options?.instructions
+        ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${options.instructions}`
+        : '';
 
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
     let attempts = 0;
@@ -521,11 +521,13 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         console.log(`[aesthetic-engine] Pass 1 core aesthetic attempt ${attempts} for ${campaign.id}`);
         const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
 
-        const { object } = await generateObject({
-            model,
+        const { object } = await callGlobalGenerateObject({
+            modelName: ModelName.GPT_5_HIGH,
             schema: Pass1Schema,
-            system: systemPromptPass1 + feedbackOpt + correctionSuffix,
-            prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`
+            system: systemPromptPass1 + feedbackOpt + instructionSuffix + correctionSuffix,
+            prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
+            maxOutputTokens: 9000,
+            operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
         });
 
         const normalizedObject: z.infer<typeof Pass1Schema> = {
@@ -582,11 +584,13 @@ PASS 2 GUARDRAILS:
 
     console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
-    const { object: platformConcepts } = await generateObject({
-        model,
+    const { object: platformConcepts } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: Pass2Schema,
-        system: systemPromptPass2 + correctionSuffix,
-        prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`
+        system: systemPromptPass2 + instructionSuffix + correctionSuffix,
+        prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`,
+        maxOutputTokens: 7000,
+        operationName: `aesthetic-pass2:${campaign.id}`,
     });
 
     // Assemble the core brief. The default generate route now immediately follows
@@ -604,7 +608,7 @@ PASS 2 GUARDRAILS:
     };
 
     console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);
-    return refineAestheticBrief(model, campaign, draftBrief);
+    return refineAestheticBrief(campaign, draftBrief, options?.instructions);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -641,9 +645,6 @@ export async function generateVisualPlanningFromBrief(
     campaign: Campaign,
     brief: CampaignAestheticBrief
 ): Promise<VisualPlanningBundle> {
-    const aestheticModelConfig = getModelConfig(ModelName.GPT_5_HIGH);
-    const model = openai(aestheticModelConfig.apiId ?? ModelName.GPT_5_HIGH);
-
     const coreAesthetic = {
         visual: brief.visual,
         messaging: brief.messaging,
@@ -659,7 +660,7 @@ export async function generateVisualPlanningFromBrief(
 
     const remediationContext = buildVisualPlanningRemediationContext(brief);
 
-    return generateVisualPlanningBundle(model, campaign, coreAesthetic, platformConcepts, remediationContext);
+    return generateVisualPlanningBundle(campaign, coreAesthetic, platformConcepts, remediationContext);
 }
 
 function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): string {
@@ -759,7 +760,6 @@ export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: 
 }
 
 async function generateVisualPlanningBundle(
-    model: ReturnType<typeof openai>,
     campaign: Campaign,
     coreAesthetic: z.infer<typeof Pass1Schema>,
     platformConcepts: z.infer<typeof Pass2Schema>,
@@ -1050,11 +1050,13 @@ Video Deliverables to storyboard:
 ${VIDEO_DELIVERABLES.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join('\n')}
 `.trim();
 
-    const { object: visualPlanning } = await generateObject({
-        model,
+    const { object: visualPlanning } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: VisualPlanningBundleSchema,
         system: systemPromptPass3,
         prompt: contextPrompt,
+        maxOutputTokens: 12000,
+        operationName: `visual-planning:${campaign.id}`,
     });
 
     return visualPlanning;

@@ -13,7 +13,7 @@
  *   npx tsx scripts/run-phase-b.ts --slug retro-gaming-2026 --slug houseplant-botanical-caribbean-2026
  */
 
-import 'dotenv/config';
+import { loadEnvConfig } from '@next/env';
 import { scrapeGroupInventory } from './cb-inventory-scraper';
 import { matchGroupInventoryToCampaign } from '../lib/campaigns/cb-inventory-matcher';
 import {
@@ -22,6 +22,8 @@ import {
     upsertCampaignPricingMatch,
     markCampaignUnmatched,
 } from '../lib/campaigns/campaign-store';
+
+loadEnvConfig(process.cwd());
 
 // ─── CLI argument parsing ────────────────────────────────────────────────────
 

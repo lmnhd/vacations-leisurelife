@@ -1,0 +1,168 @@
+🎯 PHASE 2C DIAGNOSTIC BREAKDOWN
+Inspecting anchor compliance and lint diagnostics from the same generation pass
+
+🔍 DIAGNOSTIC: alaska-slow-living-2026-09-20
+──────────────────────────────────────────────────
+Campaign: Unhurried Passage: Cottagecore Alaska Cruise
+[aesthetic-engine] Starting aesthetic brief generation for alaska-slow-living-2026-09-20
+[aesthetic-engine] Model resolved for alaska-slow-living-2026-09-20: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for alaska-slow-living-2026-09-20
+[aesthetic-engine] Pass 1 core aesthetic attempt 2 for alaska-slow-living-2026-09-20
+[aesthetic-engine] Pass 1 accepted for alaska-slow-living-2026-09-20 on attempt 2
+[aesthetic-engine] Pass 2 platform concepts for alaska-slow-living-2026-09-20
+[aesthetic-engine] Refinement pass for alaska-slow-living-2026-09-20
+[editors-room] generateActionAnchors for alaska-slow-living-2026-09-20
+[editors-room] generateLandingStillBible for alaska-slow-living-2026-09-20 (refPack=none)
+
+🧭 ANCHORS:
+  1. UP-01
+     locationFamily: cabin balcony
+     nicheSignal: Alaska Inside Passage
+     socialUnit: pair
+     action: On a Serenade of the Seas cabin balcony, two friends in muted knits lean over a hand-sketched map, passing twine-tied notes and tracing coves as the Alaska Inside Passage drifts by, enamel mugs steaming between them.
+  2. UP-02
+     locationFamily: spa solarium
+     nicheSignal: handmade
+     socialUnit: solo
+     action: In the warm spa solarium, a guest in a vintage cardigan lounges by the window, quietly hand‑stitching a tiny handmade spruce‑sprig patch onto a tote, a thermos nestled beside ferny light and the ship’s hush.
+  3. UP-03
+     locationFamily: promenade
+     nicheSignal: deck journaling
+     socialUnit: pair
+     action: At the sheltered promenade rail in morning mist, two shipmates perch on a bench with enamel mugs, swapping pencils and deck journaling side by side, pressing a spruce sprig into the page before soft eye contact and rail‑side smiles.
+  4. UP-04
+     locationFamily: library
+     nicheSignal: cottagecore
+     socialUnit: solo
+     action: In the cozy library, a traveler tucks a pressed sprig as a bookmark into a dog‑eared novel, then sketches small mushrooms in a cottagecore notebook, cardigan sleeves pushed up and a pine‑and‑mist palette tin open on the table.
+  5. UP-05
+     locationFamily: dining lounge
+     nicheSignal: slow living
+     socialUnit: pair
+     action: In a dining lounge window nook, two friends share a teapot and split a warm scone, trading twine‑tied notes with mossy doodles and making a gentle toast to slow living as green fjords slide past the glass.
+  6. UP-06
+     locationFamily: ship atrium
+     nicheSignal: handmade
+     socialUnit: solo
+     action: Under the ship atrium skylight, a guest pauses to braid twine around a journal spine, tucking in a tiny pressed cedar and pinning a handmade ribbon to a vintage cardigan, exchanging a passing smile with a neighbor drifting by.
+  7. UP-07
+     locationFamily: embarkation pier
+     nicheSignal: Alaska Inside Passage
+     socialUnit: pair
+     action: On the embarkation pier, two travelers kneel by a suitcase to tie twine on a luggage tag and slip a cedar sprig under the handle, grinning up at the ship and whispering, “to the Alaska Inside Passage,” enamel mug peeking from a side pocket.
+  8. UP-08
+     locationFamily: pool deck
+     nicheSignal: deck journaling
+     socialUnit: solo
+     action: Wrapped in a muted knit on a sunny corner of the pool deck, a guest props an enamel mug and opens to a fresh spread for deck journaling, watercoloring the pine‑gray coastline as a friendly passerby drops off a spare pencil with a nod.
+
+📊 SUMMARY:
+  Anchor violations: 0
+  Lint blockers: 0
+  Explicit cue stills: 6/6
+  No-cue stills: 0/6
+  Generic fallback stills: 0/6
+  Lint issue codes:
+    - repeated_composition_family
+
+🖼️ STILL-BY-STILL BREAKDOWN:
+
+  • UP-LS-01
+    slotRole: HERO_PRIMARY | usage: hero_primary
+    anchorId: UP-01 | nicheCarryThrough: Alaska Inside Passage
+    location: Serenade of the Seas cabin balcony
+    composition: wide balcony two-shot across the small balcony table; horizon softened; headline-safe negative space on open sky—no cabin/window setup
+    subjectAction: Two friends in muted knits trace coves on a hand‑sketched map and trade twine‑tied notes for the Alaska Inside Passage while enamel mugs steam between them.
+    shotIntent: Signal the campaign’s slow, map-forward curiosity on a balcony without defaulting to generic rail-gazing.
+    camera: wide | framing: two_shot | heroSubject: two friends collaborating over a map
+    nicheCue: twine-tied notes beside enamel mugs | antiFallback: Avoids the railing-couple-laugh trope by centering map-tracing and twine notes instead of horizon-facing smiles.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=rail | action=walking | mood=neutral | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" — mild repetition.
+
+  • UP-LS-02
+    slotRole: HERO_ALT | usage: hero_alt
+    anchorId: UP-02 | nicheCarryThrough: handmade
+    location: Serenade of the Seas spa solarium
+    composition: medium-wide environmental portrait across chaise and planters; quiet workspace feel; generous top-left copy space
+    subjectAction: A guest in a vintage cardigan hand-stitches a handmade spruce‑sprig patch onto a canvas tote, pausing to sip from a thermos.
+    shotIntent: Offer a calm, crafty counterpoint hero that frames making by hand as a welcome onboard pace.
+    camera: medium_wide | framing: environmental_portrait | heroSubject: solo guest sewing beside the solarium windows
+    nicheCue: needle, green thread, and spruce-sprig patch | antiFallback: Avoids quiet-window-solo contemplation by focusing attention on hands and stitchwork rather than gazing out.
+    refPack: none
+    lint: role=hero | cue=explicit | generic=no
+    families: location=other | action=dining | mood=neutral | composition=other_dining
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  • UP-LS-03
+    slotRole: EDITORIAL_WIDE_A | usage: email_header
+    anchorId: UP-03 | nicheCarryThrough: deck journaling
+    location: Serenade of the Seas promenade deck bench
+    composition: Wide open, side-on establishing along the promenade benches; ample negative space; no rail or horizon emphasis
+    subjectAction: Two shipmates swap pencils and sit side by side, doing deck journaling together, pressing a spruce sprig into the page between sips from enamel mugs.
+    shotIntent: Frame communal quiet and the journaling ritual as a signature morning rhythm without reverting to rail-at-horizon clichés.
+    camera: wide | framing: establishing | heroSubject: two shipmates seated with open journals
+    nicheCue: open journal spread with pressed spruce sprig and pencils | antiFallback: Sidesteps railing/balcony/horizon fallback by staging on a promenade bench under lifeboats with the ship walkway as the visual lead.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=deck | action=reading | mood=neutral | composition=deck_sea_wide
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  • UP-LS-04
+    slotRole: EDITORIAL_WIDE_B | usage: concept
+    anchorId: UP-04 | nicheCarryThrough: cottagecore
+    location: Serenade of the Seas library reading room
+    composition: wide, table-in-context composition across book stacks and armchairs; copy-safe negative space; no medium or medium treatment
+    subjectAction: A traveler tucks a pressed sprig as a bookmark and sketches small mushrooms in a cottagecore notebook, sleeves pushed up.
+    shotIntent: Show that the library invites slow, crafty page-time within the community’s cottagecore aesthetic.
+    camera: wide | framing: environmental_portrait | heroSubject: solo traveler at a library table
+    nicheCue: pressed sprig used as a bookmark beside a pine-and-mist watercolor tin | antiFallback: Avoids tight book-closeups or window-gazing tropes by keeping a roomy reading-room context and active sketching.
+    refPack: none
+    lint: role=editorial | cue=explicit | generic=no
+    families: location=dining | action=reading | mood=neutral | composition=dining_reading
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  • UP-LS-05
+    slotRole: INTIMATE | usage: concept
+    anchorId: UP-05 | nicheCarryThrough: slow living
+    location: Serenade of the Seas dining lounge window nook
+    composition: intimate, tight detail of hands splitting a warm scone and pouring tea; close framing on teapot, steam, and a twine-tied note
+    subjectAction: Two friends make a gentle toast to slow living, sharing a teapot and a warm scone while trading twine‑tied notes with mossy doodles.
+    shotIntent: Make the unhurried, share-a-bite ritual feel tactile and friendly rather than formal dining.
+    camera: close_up | framing: detail_insert | heroSubject: hands of two friends with teapot and scone
+    nicheCue: twine-tied note exchanged beside the teapot | antiFallback: Avoids candlelit dining intimacy by using daylight, shared pastry, and platonic hand interactions.
+    refPack: none
+    lint: role=intimate | cue=explicit | generic=no
+    families: location=cabin_window | action=other | mood=warm | composition=dining_intimacy
+    flags: (none)
+    anchor violations: none
+    lint issues: none
+
+  • UP-LS-06
+    slotRole: FLEX | usage: social_square
+    anchorId: UP-06 | nicheCarryThrough: handmade
+    location: Serenade of the Seas ship atrium
+    composition: centered, clean single-subject with airy verticals; square-friendly crop flexibility
+    subjectAction: A guest braids twine around a journal spine and pins a handmade ribbon to a vintage cardigan, sharing a brief neighborly smile.
+    shotIntent: Cue everyday neighborliness and maker energy in the heart of the ship without staging a formal activity.
+    camera: medium | framing: single_subject | heroSubject: solo guest with journal and cardigan
+    nicheCue: hand-braided twine wrap and handmade ribbon on cardigan | antiFallback: Avoids grand-lobby spectacle by keeping the action small and personal, not performance-based.
+    refPack: none
+    lint: role=supporting | cue=explicit | generic=no
+    families: location=lounge | action=laughing | mood=contemplative | composition=rail_couple_laugh
+    flags: (none)
+    anchor violations: none
+    lint issues:
+      - [repeated_composition_family] 2 stills share composition family "rail_couple_laugh" — mild repetition.
+
+✅ Diagnostic breakdown completed

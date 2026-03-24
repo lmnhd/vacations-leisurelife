@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { CampaignSelector } from '../media-generation/campaign-selector';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Local types mirroring orchestrator response shapes
@@ -11,6 +12,46 @@ interface ValidationIssue {
     message: string;
     severity: 'blocker' | 'warning';
     autoFixable: boolean;
+}
+
+interface ProductionBuildLintIssue {
+    code: string;
+    severity: 'blocker' | 'warning';
+    message: string;
+    affectedStillIds: string[];
+    details?: string;
+}
+
+interface ProductionBuildStillDiagnostic {
+    stillId: string;
+    usage: string;
+    locationFamily: string;
+    actionFamily: string;
+    moodFamily: string;
+    shotRole: 'hero' | 'editorial' | 'intimate' | 'supporting';
+    cueStrength: 'explicit' | 'subtle' | 'absent';
+    isGenericFallback: boolean;
+    compositionFamily: string;
+    flags: string[];
+}
+
+interface ProductionBuildLintReport {
+    verdict: 'pass' | 'warn' | 'fail';
+    blockingIssues: ProductionBuildLintIssue[];
+    warnings: ProductionBuildLintIssue[];
+    scoreSummary: {
+        totalStills: number;
+        noCueCount: number;
+        subtleCueCount: number;
+        explicitCueCount: number;
+        genericFallbackCount: number;
+        heroRoleCount: number;
+        editorialRoleCount: number;
+        intimateRoleCount: number;
+        maxCompositionFamilySize: number;
+    };
+    stillDiagnostics: ProductionBuildStillDiagnostic[];
+    evaluatedAt: string;
 }
 
 interface BriefEngineResult {
@@ -82,6 +123,85 @@ function IssueRow({ issue }: { issue: ValidationIssue }) {
     );
 }
 
+function getProductionIssueRepairHint(issue: ProductionBuildLintIssue): string {
+    switch (issue.code) {
+        case 'missing_role_coverage':
+            return 'Regenerate toward a balanced still pack: at least 2 hero stills, 2 editorial or concept stills, and 1 intimate still.';
+        case 'generic_fallback_overuse':
+            return 'Move affected stills away from stock cruise reads. Replace rail-couple, quiet-window, dining-intimacy, and generic deck-wide scenes with campaign-specific actions and locations.';
+        case 'weak_niche_signal':
+            return 'Push visible campaign identity into more stills. The niche needs to be legible in the image itself, not only implied by copy.';
+        case 'identity_legibility_too_low':
+            return 'At least two stills need to prove the campaign identity on sight. Regenerate with clearer niche behavior, props, styling, or framing.';
+        case 'hero_set_too_homogeneous':
+            return 'Break the set out of all-hero scale. Add editorial and intimate framing so the still pack has usable range.';
+        case 'repeated_composition_family':
+            return 'Diversify the affected stills by changing location family, subject action, and framing so the set stops collapsing into one repeated visual read.';
+        default:
+            return 'Regenerate with these affected stills and failure codes in mind.';
+    }
+}
+
+function ProductionLintIssueRow({
+    issue,
+    diagnostics,
+}: {
+    issue: ProductionBuildLintIssue;
+    diagnostics: ProductionBuildStillDiagnostic[];
+}) {
+    const severityCls = issue.severity === 'blocker'
+        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+        : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+    const affectedDiagnostics = diagnostics.filter((diagnostic) => issue.affectedStillIds.includes(diagnostic.stillId));
+
+    return (
+        <div className="space-y-3 rounded-lg border border-white/5 bg-slate-900/30 p-4">
+            <div className="flex items-start gap-3">
+                <span className={`shrink-0 inline-flex items-center rounded px-1.5 py-0.5 border text-[10px] font-semibold uppercase tracking-wider ${severityCls}`}>
+                    {issue.severity}
+                </span>
+                <div className="min-w-0 flex-1 space-y-1">
+                    <p className="text-xs font-mono text-slate-400">{issue.code}</p>
+                    <p className="text-sm text-slate-200">{issue.message}</p>
+                    {issue.details && (
+                        <p className="text-xs text-slate-400">{issue.details}</p>
+                    )}
+                    <p className="text-xs text-cyan-300">{getProductionIssueRepairHint(issue)}</p>
+                </div>
+            </div>
+
+            {issue.affectedStillIds.length > 0 && (
+                <div className="space-y-2 rounded-md border border-white/5 bg-slate-950/60 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500">Affected stills</p>
+                    <div className="flex flex-wrap gap-2">
+                        {issue.affectedStillIds.map((stillId) => (
+                            <span key={stillId} className="rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[10px] font-mono text-cyan-200">
+                                {stillId}
+                            </span>
+                        ))}
+                    </div>
+                    {affectedDiagnostics.length > 0 && (
+                        <div className="grid gap-2 md:grid-cols-2">
+                            {affectedDiagnostics.map((diagnostic) => (
+                                <div key={diagnostic.stillId} className="rounded border border-white/5 bg-slate-900/50 p-2 text-[11px] text-slate-300">
+                                    <p className="font-mono text-cyan-300">{diagnostic.stillId}</p>
+                                    <p>Role: <span className="text-slate-200">{diagnostic.shotRole}</span></p>
+                                    <p>Cue: <span className="text-slate-200">{diagnostic.cueStrength}</span></p>
+                                    <p>Composition: <span className="text-slate-200">{diagnostic.compositionFamily}</span></p>
+                                    <p>Location: <span className="text-slate-200">{diagnostic.locationFamily}</span></p>
+                                    {diagnostic.flags.length > 0 && (
+                                        <p>Flags: <span className="text-slate-200">{diagnostic.flags.join(', ')}</span></p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Main Page Component
 // ────────────────────────────────────────────────────────────────────────────
@@ -96,6 +216,13 @@ export default function BriefStudioPage() {
     const [error, setError] = useState<string | null>(null);
 
     const normalizedSlug = slug.trim();
+    const activeBrief = (lastResult?.brief ?? readiness?.brief) as Record<string, unknown> | null;
+    const productionBuildStatusValue = activeBrief?.['productionBuildStatus'];
+    const productionBuildStatus = typeof productionBuildStatusValue === 'string' ? productionBuildStatusValue : null;
+    const productionBuildLint = activeBrief?.['productionBuildLint'] as ProductionBuildLintReport | undefined;
+    const hasLandingStillBible = Boolean(activeBrief?.['landingStillBible']);
+    const hasStoredBrief = Boolean(readiness?.brief);
+    const storedReviewStatus = typeof activeBrief?.['humanReviewStatus'] === 'string' ? activeBrief['humanReviewStatus'] : null;
 
     // ── Load readiness state ──────────────────────────────────────────
     const loadReadiness = useCallback(async () => {
@@ -120,6 +247,12 @@ export default function BriefStudioPage() {
     // ── Generate / refresh brief ──────────────────────────────────────
     const generateBrief = useCallback(async () => {
         if (!normalizedSlug) return;
+        const confirmed = window.confirm(
+            hasStoredBrief
+                ? `Regenerate the stored brief for "${normalizedSlug}"?\n\nThis will run new LLM generation passes, rebuild the visual-planning bundle, overwrite the saved brief artifacts, and may incur provider cost.\n\nUse "Load Selected Brief" if you only want to reload the saved state.`
+                : `Generate the first brief for "${normalizedSlug}"?\n\nThis will run live LLM generation and may incur provider cost.`
+        );
+        if (!confirmed) return;
         setLoading(true);
         setAction('generating');
         setError(null);
@@ -139,7 +272,7 @@ export default function BriefStudioPage() {
             setLoading(false);
             setAction(null);
         }
-    }, [normalizedSlug]);
+    }, [hasStoredBrief, normalizedSlug]);
 
     // ── Approve for media ─────────────────────────────────────────────
     const approve = useCallback(async () => {
@@ -181,7 +314,32 @@ export default function BriefStudioPage() {
     const issues = lastResult?.issues ?? readiness?.issues ?? [];
     const blockers = issues.filter((i) => i.severity === 'blocker');
     const warnings = issues.filter((i) => i.severity === 'warning');
-    const canApprove = readiness?.readiness === 'needs_review' && blockers.length === 0;
+    const productionBlockingIssues = productionBuildLint?.blockingIssues ?? [];
+    const productionWarnings = productionBuildLint?.warnings ?? [];
+    const productionDiagnostics = productionBuildLint?.stillDiagnostics ?? [];
+    const hasProductionLintIssues = productionBlockingIssues.length > 0 || productionWarnings.length > 0;
+    const productionApprovalBlockReason = (() => {
+        if (!activeBrief) return null;
+        if (!hasLandingStillBible || !productionBuildStatus) {
+            return 'Production build has not been evaluated yet. Regenerate the brief bundle to run pre-media lint before approving.';
+        }
+        if (productionBuildStatus === 'fail') {
+            const firstIssue = productionBlockingIssues[0]?.message;
+            return firstIssue
+                ? `Production build lint failed. Primary blocker: ${firstIssue}`
+                : 'Production build lint failed. Regenerate the brief bundle to resolve production build issues before approving.';
+        }
+        return null;
+    })();
+    const canApprove = readiness?.readiness === 'needs_review' && blockers.length === 0 && !productionApprovalBlockReason;
+    const approvalBlockedReason = (() => {
+        if (!readiness) return 'Load a brief first.';
+        if (readiness.readiness === 'ready_for_media') return 'This brief is already approved and ready for media generation.';
+        if (blockers.length > 0) return blockers[0]?.message ?? 'Resolve blocker issues before approving.';
+        if (productionApprovalBlockReason) return productionApprovalBlockReason;
+        if (readiness.readiness !== 'needs_review') return 'This brief is not in an approval-ready review state yet.';
+        return null;
+    })();
 
     return (
         <div className="min-h-screen px-4 py-10 font-mono bg-slate-950 text-slate-300">
@@ -198,21 +356,20 @@ export default function BriefStudioPage() {
                 {/* ── Campaign Input ─────────────────────────────────── */}
                 <div className="p-5 space-y-4 border border-white/10 rounded-xl bg-slate-900/50">
                     <div className="space-y-1.5">
-                        <label className="block text-[10px] text-slate-500 uppercase tracking-widest">Campaign Slug</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={slug}
-                                onChange={(e) => setSlug(e.target.value)}
-                                placeholder="e.g. needle-drop-2026"
-                                className="flex-1 px-3 py-2 text-sm border rounded-lg bg-slate-800 border-white/10 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/40"
-                            />
+                        <label className="block text-[10px] text-slate-500 uppercase tracking-widest">Existing Briefs</label>
+                        <CampaignSelector
+                            value={slug}
+                            onChange={setSlug}
+                            disabled={loading}
+                            defaultFilter="designed"
+                        />
+                        <div className="flex justify-end">
                             <button
                                 onClick={handleLoadCampaign}
                                 disabled={loading || !normalizedSlug}
                                 className="px-4 py-2 text-sm font-semibold border rounded-lg bg-slate-800 border-white/10 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                             >
-                                {action === 'checking' ? 'Loading...' : 'Load'}
+                                {action === 'checking' ? 'Loading...' : 'Load Selected Brief'}
                             </button>
                         </div>
                     </div>
@@ -238,6 +395,24 @@ export default function BriefStudioPage() {
                         )}
 
                         <p className="text-xs text-slate-400">{lastResult?.summary ?? readiness.summary}</p>
+
+                        {storedReviewStatus === 'approved' && readiness.readiness !== 'ready_for_media' && (
+                            <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-200">
+                                <strong>Stored approval is no longer valid.</strong> This brief was previously marked approved, but current readiness was downgraded after structural or pre-media lint checks. Use the production build issues below to see exactly what is blocking approval now.
+                            </div>
+                        )}
+
+                        {readiness.brief && (
+                            <div className="p-3 text-xs border rounded-lg bg-amber-500/10 border-amber-500/20 text-amber-200">
+                                <strong>Reload is separate from regeneration.</strong> <span className="text-amber-100">Load Selected Brief</span> only fetches the stored record. <span className="text-amber-100">Regenerate Brief</span> runs fresh LLM generation, overwrites the saved brief bundle, and may incur provider cost.
+                            </div>
+                        )}
+
+                        {productionBuildStatus === 'fail' && (
+                            <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3 text-xs text-cyan-100">
+                                <strong>You are not expected to fix these manually.</strong> This page is reporting why the saved brief cannot be approved. <span className="text-cyan-50">Load Selected Brief</span> and <span className="text-cyan-50">Approve for Media</span> are read-only checks. <span className="text-cyan-50">Regenerate Brief</span> is the automated self-heal path: it reruns brief generation, rebuilds the landing still pack, attempts isolated still repair when possible, retries whole-set regeneration when the pack collapses, then re-runs pre-media lint.
+                            </div>
+                        )}
 
                         {/* ── Corrective reprompt banner ──────────────── */}
                         {lastResult?.correctiveRepromptUsed && (
@@ -272,6 +447,57 @@ export default function BriefStudioPage() {
                             </div>
                         )}
 
+                        {productionBuildLint && (
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div className="rounded-lg border border-white/5 bg-slate-950/60 p-4">
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500">Pre-media lint</p>
+                                    <p className={`mt-2 text-sm font-semibold ${productionBuildLint.verdict === 'fail' ? 'text-rose-300' : productionBuildLint.verdict === 'warn' ? 'text-amber-300' : 'text-emerald-300'}`}>
+                                        {productionBuildLint.verdict.toUpperCase()}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-400">Evaluated at {productionBuildLint.evaluatedAt}</p>
+                                    <p className="mt-2 text-xs text-slate-300">
+                                        {productionBlockingIssues.length} blocker{productionBlockingIssues.length !== 1 ? 's' : ''} and {productionWarnings.length} warning{productionWarnings.length !== 1 ? 's' : ''} in the current landing still pack.
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border border-white/5 bg-slate-950/60 p-4">
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500">Lint score summary</p>
+                                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-300">
+                                        <p>Hero stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.heroRoleCount}</span></p>
+                                        <p>Editorial stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.editorialRoleCount}</span></p>
+                                        <p>Intimate stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.intimateRoleCount}</span></p>
+                                        <p>No-cue stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.noCueCount}</span></p>
+                                        <p>Subtle-cue stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.subtleCueCount}</span></p>
+                                        <p>Fallback stills: <span className="text-slate-100">{productionBuildLint.scoreSummary.genericFallbackCount}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {hasProductionLintIssues && (
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500">Production build issues</p>
+                                    <p className="mt-1 text-xs text-slate-400">These are the specific pre-media blockers and warnings stopping approval. They are diagnostic output for the automated regeneration path, not a request for manual still editing.</p>
+                                </div>
+
+                                {productionBlockingIssues.map((issue) => (
+                                    <ProductionLintIssueRow
+                                        key={`blocker-${issue.code}-${issue.affectedStillIds.join('-')}`}
+                                        issue={issue}
+                                        diagnostics={productionDiagnostics}
+                                    />
+                                ))}
+
+                                {productionWarnings.map((issue) => (
+                                    <ProductionLintIssueRow
+                                        key={`warning-${issue.code}-${issue.affectedStillIds.join('-')}`}
+                                        issue={issue}
+                                        diagnostics={productionDiagnostics}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
                         {/* ── Actions ─────────────────────────────────── */}
                         <div className="flex gap-2 pt-2">
                             <button
@@ -279,19 +505,24 @@ export default function BriefStudioPage() {
                                 disabled={loading}
                                 className="flex-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-4 py-2.5 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                             >
-                                {action === 'generating' ? 'Generating...' : readiness.brief ? 'Refresh Brief' : 'Generate Brief'}
+                                {action === 'generating' ? (hasStoredBrief ? 'Regenerating...' : 'Generating...') : hasStoredBrief ? 'Regenerate Brief' : 'Generate Brief'}
                             </button>
 
-                            {canApprove && (
-                                <button
-                                    onClick={approve}
-                                    disabled={loading}
-                                    className="flex-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 px-4 py-2.5 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                >
-                                    {action === 'approving' ? 'Approving...' : 'Approve for Media'}
-                                </button>
-                            )}
+                            <button
+                                onClick={approve}
+                                disabled={loading || !canApprove}
+                                title={!canApprove ? approvalBlockedReason ?? 'Approval is currently unavailable.' : 'Approve this brief for downstream media generation.'}
+                                className="flex-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 px-4 py-2.5 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            >
+                                {action === 'approving' ? 'Approving...' : 'Approve for Media'}
+                            </button>
                         </div>
+
+                        {!canApprove && approvalBlockedReason && (
+                            <p className="text-[11px] text-slate-500">
+                                Approval unavailable: {approvalBlockedReason}
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -318,9 +549,10 @@ export default function BriefStudioPage() {
 
                 {/* ── Legend ─────────────────────────────────────────── */}
                 <div className="text-xs text-slate-400 bg-slate-950/50 border border-white/5 rounded p-3 space-y-1.5">
-                    <p><span className="font-semibold text-cyan-400">Generate / Refresh</span> — runs Trinity pipeline (Designer → Builder → Reviewer), auto-fixes, validates</p>
+                    <p><span className="font-semibold text-cyan-400">Load Selected Brief</span> — read-only fetch of the stored brief, readiness, and history</p>
+                    <p><span className="font-semibold text-cyan-400">Regenerate Brief</span> — automated self-heal path: reruns brief generation, rebuilds visual-planning artifacts, attempts still repair or whole-set retry when needed, re-runs lint, overwrites stored brief state, and may incur provider cost</p>
                     <p><span className="font-semibold text-emerald-400">Approve for Media</span> — locks brief for downstream image and video generation</p>
-                    <p><span className="font-semibold text-slate-500">One-strike rule</span> — if auto-fix fails, the issue is reported. No recursive loops.</p>
+                    <p><span className="font-semibold text-slate-500">One-strike rule</span> — if the automated repair path still fails, the issue is reported instead of silently looping.</p>
                 </div>
             </div>
         </div>
@@ -356,7 +588,7 @@ function BriefPreview({ brief }: { brief: Record<string, unknown> }) {
                     <p className="text-slate-200 font-medium">{String(brief.themeName ?? '—')}</p>
                 </div>
                 <div>
-                    <span className="text-slate-500">Status</span>
+                    <span className="text-slate-500">Stored Review Status</span>
                     <p className="text-slate-200 font-medium">{String(brief.humanReviewStatus ?? '—')}</p>
                 </div>
                 {messaging && (

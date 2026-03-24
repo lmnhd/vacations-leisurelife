@@ -41,6 +41,10 @@ export function ReviseRegenerateModal({
             setError('Prompt cannot be empty.');
             return;
         }
+        const confirmed = window.confirm(
+            `Regenerate this ${isVideo ? 'video' : 'image'} asset?\n\nThis will call live provider APIs${isVideo ? ' and may take several minutes' : ''}. Any successful result will replace the current asset output in the manifest.`
+        );
+        if (!confirmed) return;
         setIsRegenerating(true);
         setError('');
         try {
@@ -77,7 +81,12 @@ export function ReviseRegenerateModal({
                         <p className="text-xs text-zinc-500 mt-0.5 font-mono truncate max-w-sm">{assetId}</p>
                         {isVideo && (
                             <p className="text-xs text-amber-500 mt-1">
-                                ⚠ Video regeneration may take several minutes.
+                                Live provider call. Video regeneration may take several minutes and may incur cost.
+                            </p>
+                        )}
+                        {!isVideo && (
+                            <p className="text-xs text-amber-500 mt-1">
+                                Live provider call. Image regeneration may incur cost.
                             </p>
                         )}
                     </div>
@@ -176,12 +185,12 @@ export function ReviseRegenerateModal({
                         {isRegenerating ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Regenerating…
+                                Regenerating Asset…
                             </>
                         ) : (
                             <>
                                 <Wand2 className="w-4 h-4" />
-                                Regenerate
+                                Regenerate Asset
                             </>
                         )}
                     </button>

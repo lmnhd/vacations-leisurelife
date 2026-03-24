@@ -1,0 +1,178 @@
+
+🔍 DIAGNOSING CAMPAIGN DATABASE
+
+Total campaigns in database: 18
+
+All campaigns:
+
+  - Open Tabletop at Sea: Board Games and TTRPGs Without the Tournament
+    ID: bp-tabletop-icon-2027-7n-caribbean
+    Target Dates: January 2027
+    Matched Sail Date: Sept. 26, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T22:15:54.002Z
+
+  - Readers’ Inside Passage: Indie Book & Conversation Cruise
+    ID: bp-readers-serenade-2027-7n-alaska
+    Target Dates: June 2027
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T22:15:54.002Z
+
+  - Film & Zine Afloat: Two Tiny Windows
+    ID: film-and-zine-afloat-2026
+    Target Dates: 2026-11-02
+    Matched Sail Date: Sept. 17, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-15T19:20:29.378Z
+
+  - Unhurried Passage: Cottagecore Alaska Cruise
+    ID: alaska-slow-living-2026-09-20
+    Target Dates: 2026-09-20
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T20:58:06.635Z
+
+  - Drift Festival at Sea
+    ID: drift-festival-icon-2026
+    Target Dates: 2026-09-19
+    Matched Sail Date: Sept. 26, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T20:26:04.470Z
+
+  - Needle Drop North: Vinyl Voyage
+    ID: vinyl-scandinavia-2026
+    Target Dates: October 2026
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T20:26:04.470Z
+
+  - Open-Deck Festival: Live Music & Community Celebration at Sea
+    ID: bp-opendeck-icon-2027-7n-caribbean
+    Target Dates: March 2027
+    Matched Sail Date: Sept. 26, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T22:15:54.002Z
+
+  - Crate Waves: Transpacific Vinyl Listening Voyage
+    ID: transpacific-vinyl-listening-nov-2026
+    Target Dates: November 2026
+    Matched Sail Date: May 12, 2027
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T20:58:06.635Z
+
+  - Open Seas Pride: Southern Caribbean
+    ID: open-seas-pride-2026
+    Target Dates: 2026-12-05
+    Matched Sail Date: Nov. 16, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T20:26:04.470Z
+
+  - Sunrise Steeps: Alaska Tea Ritual Voyage
+    ID: alaska-tea-ritual-2026-09-20
+    Target Dates: 2026-09-20
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T20:58:06.635Z
+
+  - Deck Sketchbook Society: Golden Rail Window
+    ID: deck-sketchbook-society-2026
+    Target Dates: 2026-11-16
+    Matched Sail Date: Nov. 16, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-15T19:20:29.378Z
+
+  - Stitch & Sail: Eastern Caribbean Maker Cruise
+    ID: eastern-caribbean-stitch-sail-2026-09-19
+    Target Dates: 2026-09-19
+    Matched Sail Date: Sept. 26, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T20:58:06.635Z
+
+  - Makers’ Slow Studio Voyage
+    ID: bp-makers-ascent-2027-10n-med
+    Target Dates: May 2027
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T22:15:54.002Z
+
+  - Deck Reads: Greek Isles Book Lovers Sailaway
+    ID: greek-isles-book-lovers-2026-09-26
+    Target Dates: 2026-09-26
+    Matched Sail Date: Oct. 3, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-19T20:58:06.634Z
+
+  - Sunset Save States: Card Room Shuffle
+    ID: retro-handheld-arcade-2026
+    Target Dates: November 2026
+    Matched Sail Date: Oct. 10, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-15T19:20:29.379Z
+
+  - Night Sky & Sea: Dusk & Dawn Edition
+    ID: night-sky-sea-2026
+    Target Dates: 2026-12-05
+    Matched Sail Date: Nov. 16, 2026
+    Status: DRAFT
+    Pricing Status: CB_MATCHED
+    Created At: 2026-03-15T19:20:29.378Z
+
+  - Frames & Horizons: Scandinavian Photo Cruise
+    ID: aesthetic-scandinavia-2026
+    Target Dates: October 2026
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T20:26:04.470Z
+
+  - Sea of Stories: Bookish Mediterranean Cruise
+    ID: bookish-mediterranean-2026
+    Target Dates: 2026-09-18
+    Matched Sail Date: N/A
+    Status: DRAFT
+    Pricing Status: UNMATCHED
+    Created At: 2026-03-19T20:26:04.470Z
+
+
+🔎 Checking for cottagecore campaign from end-to-end test:
+  ❌ Campaign "bp-cottagecore-infinity-2026-10n-grtr" NOT FOUND in database
+
+
+📋 Checking for briefs on all campaigns:
+  ❌ bp-tabletop-icon-2027-7n-caribbean: No brief
+  ❌ bp-readers-serenade-2027-7n-alaska: No brief
+  ✓ film-and-zine-afloat-2026: Film & Zine Afloat: Two Tiny Windows (approved)
+  ✓ alaska-slow-living-2026-09-20: Unhurried Passage: Cottagecore Alaska Cruise (pending)
+  ✓ drift-festival-icon-2026: Drift Festival at Sea (approved)
+  ❌ vinyl-scandinavia-2026: No brief
+  ✓ bp-opendeck-icon-2027-7n-caribbean: Open-Deck Festival: Live Music & Community Celebration at Sea (approved)
+  ✓ transpacific-vinyl-listening-nov-2026: Crate Waves: Transpacific Vinyl Listening Voyage (pending)
+  ✓ open-seas-pride-2026: Open Seas Pride: Southern Caribbean (approved)
+  ❌ alaska-tea-ritual-2026-09-20: No brief
+  ✓ deck-sketchbook-society-2026: Deck Sketchbook Society: Golden Rail Window (pending)
+  ❌ eastern-caribbean-stitch-sail-2026-09-19: No brief
+  ❌ bp-makers-ascent-2027-10n-med: No brief
+  ✓ greek-isles-book-lovers-2026-09-26: Deck Reads: Greek Isles Book Lovers Sailaway (approved)
+  ❌ retro-handheld-arcade-2026: No brief
+  ❌ night-sky-sea-2026: No brief
+  ❌ aesthetic-scandinavia-2026: No brief
+  ❌ bookish-mediterranean-2026: No brief
+
+
+Summary: 8/18 campaigns have briefs

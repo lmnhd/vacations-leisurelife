@@ -8,14 +8,13 @@
  *   4. generateProductionBibleFromStills — scene library + storyboards from validated stills
  */
 
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type { Campaign } from './types';
 import type { CampaignAestheticBrief, LandingStillBible, LandingStillSpec, ProductionBuildLintIssue } from './schema';
 import { LandingStillBibleSchema, LandingStillSlotRoleEnum, LandingStillSpecSchema, ProductionBibleSchema } from './schema';
 import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
-import { ModelName, getModelConfig } from '@/lib/ai/llm-gateway';
+import { ModelName } from '@/lib/ai/llm-gateway';
+import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import {
     buildLintComplianceBlock,
     getCanonicalShipName,
@@ -68,20 +67,13 @@ const ActionAnchorSetSchema = z.object({
 
 type ActionAnchorSet = z.infer<typeof ActionAnchorSetSchema>;
 
-// ── Model helper ──────────────────────────────────────────────────────────────
-
-function getHighModel() {
-    const cfg = getModelConfig(ModelName.GPT_5_HIGH);
-    return openai(cfg.apiId ?? ModelName.GPT_5_HIGH);
-}
-
 // ── Step 1: Generate community-native action anchors ─────────────────────────
 
 export async function generateActionAnchors(
     campaign: Campaign,
     brief: CampaignAestheticBrief,
+    options?: { instructions?: string },
 ): Promise<ActionAnchorSet> {
-    const model = getHighModel();
     const nicheKw = (campaign.targetingKeywords ?? []).join(', ') || campaign.name;
     const belonging = brief.communityExpression?.belongingSignals?.join('; ') ?? 'None';
     const solitudeAnti = brief.communityExpression?.solitudeAntiPatterns?.join('; ') ?? 'None';
@@ -106,14 +98,20 @@ BANNED FALLBACK ANCHORS (do not generate these):
 Niche vocabulary: ${nicheKw}
 Belonging signals: ${belonging}
 Solitude anti-patterns to avoid as anchor seeds: ${solitudeAnti}
+${options?.instructions ? `
+OPERATOR INSTRUCTIONS:
+Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
+${options.instructions}` : ''}
 `.trim();
 
     console.log(`[editors-room] generateActionAnchors for ${campaign.id}`);
-    const { object } = await generateObject({
-        model,
+    const { object } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: ActionAnchorSetSchema,
         system,
         prompt: `Campaign: ${campaign.name}\nShip: ${getCanonicalShipName(campaign)}\nDestination: ${campaign.targetDestination ?? 'TBD'}`,
+        maxOutputTokens: 3000,
+        operationName: `editors-room:anchors:${campaign.id}`,
     });
 
     return object;
@@ -125,9 +123,8 @@ export async function generateLandingStillBible(
     campaign: Campaign,
     brief: CampaignAestheticBrief,
     anchors: ActionAnchorSet,
-    options?: { correctionContext?: string },
+    options?: { correctionContext?: string; instructions?: string },
 ): Promise<LandingStillBible> {
-    const model = getHighModel();
     const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
     const anchorList = anchors.anchors
         .map((a, i) => `anchorId="${a.anchorId}" | Slot ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`)
@@ -174,6 +171,10 @@ ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 ${referenceBlock}
 ${lintBlock}
+${options?.instructions ? `
+OPERATOR INSTRUCTIONS:
+Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
+${options.instructions}` : ''}
 ${options?.correctionContext ? `\nHARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following in this regeneration:\n${options.correctionContext}\n` : ''}
 FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location field contains a concrete keyword from its anchor's declared locationFamily — for a balcony anchor the word "balcony" must appear in the location field, not just "railing".
 `.trim();
@@ -191,11 +192,13 @@ Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrincipl
 `.trim();
 
     console.log(`[editors-room] generateLandingStillBible for ${campaign.id} (refPack=${refPackId})`);
-    const { object } = await generateObject({
-        model,
+    const { object } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: BibleForGenerationSchema,
         system,
         prompt: ctx,
+        maxOutputTokens: 9000,
+        operationName: `editors-room:landing-stills:${campaign.id}`,
     });
 
     return object;
@@ -216,17 +219,26 @@ const INTIMATE_KEYWORD_REPLACEMENTS: [RegExp, string][] = [
     [/\bdetail\b/gi, 'environmental'],
 ];
 
+const EDITORIAL_WIDE_SYNONYM_KEYWORDS = ['broad', 'expansive', 'sweeping', 'open'];
+
 export function normalizeEditorialCompositions(bible: LandingStillBible): LandingStillBible {
     const EDITORIAL_WIDE_ROLES = new Set(['EDITORIAL_WIDE_A', 'EDITORIAL_WIDE_B']);
     let changed = false;
     const stillLibrary = bible.stillLibrary.map(still => {
         if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole)) return still;
         const compLC = still.composition.toLowerCase();
-        const needsFix = INTIMATE_KEYWORDS.some(kw => compLC.includes(kw));
+        const hasExplicitWideToken = compLC.includes('wide') || compLC.includes('medium');
+        const needsIntimateFix = INTIMATE_KEYWORDS.some(kw => compLC.includes(kw));
+        const needsWideCanonicalization = !hasExplicitWideToken
+            && EDITORIAL_WIDE_SYNONYM_KEYWORDS.some(kw => compLC.includes(kw));
+        const needsFix = needsIntimateFix || needsWideCanonicalization;
         if (!needsFix) return still;
         let fixed = still.composition;
         for (const [pattern, replacement] of INTIMATE_KEYWORD_REPLACEMENTS) {
             fixed = fixed.replace(pattern, replacement);
+        }
+        if (needsWideCanonicalization) {
+            fixed = `Wide ${fixed.charAt(0).toLowerCase()}${fixed.slice(1)}`;
         }
         changed = true;
         return { ...still, composition: fixed };
@@ -264,8 +276,8 @@ export async function repairFailingStills(
     failingStillIds: string[],
     blockerIssues: ProductionBuildLintIssue[],
     anchorViolationsBlock?: string,
+    options?: { instructions?: string },
 ): Promise<LandingStillSpec[]> {
-    const model = getHighModel();
     const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
 
     const failingStills = currentBible.stillLibrary.filter(s => failingStillIds.includes(s.stillId));
@@ -324,6 +336,10 @@ PASSING STILLS (for reference — do not repeat their location families or niche
 ${passingContext}
 ${slotRefBlocks}
 ${lintBlock}
+${options?.instructions ? `
+OPERATOR INSTRUCTIONS:
+Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
+${options.instructions}` : ''}
 
 For each repaired still:
 - Embed a niche term in BOTH imagePrompt AND subjectAction.
@@ -343,7 +359,14 @@ ${failingContext}
 `.trim();
 
     console.log(`[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(', ')} (refPack=${refPackId})`);
-    const { object } = await generateObject({ model, schema: RepairResultSchema, system, prompt });
+    const { object } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
+        schema: RepairResultSchema,
+        system,
+        prompt,
+        maxOutputTokens: 7000,
+        operationName: `editors-room:repair-stills:${campaign.id}`,
+    });
     return object.stills;
 }
 
@@ -353,9 +376,8 @@ export async function generateProductionBibleFromStills(
     campaign: Campaign,
     brief: CampaignAestheticBrief,
     landingStillBible: LandingStillBible,
+    options?: { instructions?: string },
 ): Promise<z.infer<typeof ProductionBibleSchema>> {
-    const model = getHighModel();
-
     const stillSummary = landingStillBible.stillLibrary
         .map(s => `[${s.slotRole ?? s.usage}] ${s.location}: ${s.subjectAction}${s.nicheCarryThrough ? ` | niche="${s.nicheCarryThrough}"` : ''}`)
         .join('\n');
@@ -387,6 +409,10 @@ STORYBOARD RULES:
 - transitionIn/transitionOut: hard cut, cross-dissolve, whip pan, match cut, fade from black, J-cut, L-cut
 - narrationSegment: premium travel documentary voiceover — warm, personal, aspirational
 - Do not design shots around walking toward camera, dancing, clinking, sipping, or hand-to-object choreography
+${options?.instructions ? `
+OPERATOR INSTRUCTIONS:
+Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
+${options.instructions}` : ''}
 `.trim();
 
     const ctx = `
@@ -415,11 +441,13 @@ ${VIDEO_DELIVERABLE_SPECS.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds
 `.trim();
 
     console.log(`[editors-room] generateProductionBibleFromStills for ${campaign.id}`);
-    const { object } = await generateObject({
-        model,
+    const { object } = await callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
         schema: ProductionBibleSchema,
         system,
         prompt: ctx,
+        maxOutputTokens: 12000,
+        operationName: `editors-room:production-bible:${campaign.id}`,
     });
 
     return object;
@@ -468,16 +496,17 @@ const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
     [['theater', 'stage', 'auditorium'], 'theater'],
     [['spa', 'solarium', 'thermal'], 'spa'],     // before pool — 'spa solarium by the pool' → spa
     [['atrium', 'lobby', 'grand hall'], 'atrium'], // before balcony — 'Centrum balcony in the atrium' → atrium
-    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'],
     [['dining', 'restaurant', 'meal'], 'dining'],          // 'table' removed — too generic (pool table, side table, bistro table, etc.)
     [['bow', 'stern', 'promenade'], 'promenade'],
     [['pool', 'lido'], 'pool_deck'],              // after spa — 'spa solarium near the pool' → spa
     [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
+    // ── Private fixtures — explicit balcony should beat generic deck wording ─
+    [['balcony'], 'balcony'],                     // 'private cabin balcony with teak deck' → balcony
     [['deck', 'outdoor'], 'deck'],
-    // ── Private fixtures — only win when no named venue is present ──────────
-    [['balcony'], 'balcony'],                     // before lounge — 'balcony lounge chair' → balcony
+    // ── Lower-specificity interior/social fixtures ──────────────────────────
     [['lounge', 'bar'], 'lounge'],
     [['cabin', 'stateroom', 'porthole'], 'cabin'],
+    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'], // after onboard fixtures — 'balcony with harbor view' stays balcony
     // ── Structural/perimeter feature — last resort ───────────────────────────
     [['rail', 'railing'], 'rail'],
 ];
@@ -500,6 +529,14 @@ function inferLocationFamilyFromStillFields(location: string, environmentDetails
     return inferLocationFamilyFromText(environmentDetails);
 }
 
+function normalizeComparisonText(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 // ── Step 5: Deterministic anchor-compliance validation ─────────────────────────
 
 export function validateAnchorCompliance(
@@ -511,6 +548,9 @@ export function validateAnchorCompliance(
     const stills = bible.stillLibrary;
 
     for (const still of stills) {
+        const imgLC = normalizeComparisonText(still.imagePrompt);
+        const actLC = normalizeComparisonText(still.subjectAction);
+
         // ── Check 1: anchorId exists and maps to a real anchor ──────────
         if (!still.anchorId || !anchorMap.has(still.anchorId)) {
             violations.push({
@@ -526,9 +566,7 @@ export function validateAnchorCompliance(
         const anchor = anchorMap.get(still.anchorId)!;
 
         // ── Check 2: anchor's nicheSignal appears in imagePrompt + subjectAction ──
-        const nicheLC = anchor.nicheSignal.toLowerCase();
-        const imgLC = still.imagePrompt.toLowerCase();
-        const actLC = still.subjectAction.toLowerCase();
+        const nicheLC = normalizeComparisonText(anchor.nicheSignal);
 
         if (!imgLC.includes(nicheLC) || !actLC.includes(nicheLC)) {
             const missingIn: string[] = [];
@@ -545,7 +583,7 @@ export function validateAnchorCompliance(
 
         // ── Check 3: nicheCarryThrough accuracy ────────────────────────
         if (still.nicheCarryThrough) {
-            const carryLC = still.nicheCarryThrough.toLowerCase();
+            const carryLC = normalizeComparisonText(still.nicheCarryThrough);
             if (!imgLC.includes(carryLC) || !actLC.includes(carryLC)) {
                 const missingIn: string[] = [];
                 if (!imgLC.includes(carryLC)) missingIn.push('imagePrompt');

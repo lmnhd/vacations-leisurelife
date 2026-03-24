@@ -18,7 +18,7 @@ import { getExpandedNicheKeywords } from '../reference-packs';
 import { validateBrief } from './validation';
 import { applyAutoFixes } from './auto-fix';
 import { applySupervisorState } from './supervisor';
-import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '../launch-window';
+import { getLaunchWindowAssessment } from '../launch-window';
 import type { CampaignAestheticBrief } from '../schema';
 import type { Campaign } from '../types';
 import type { ValidationIssue } from './validation';
@@ -60,6 +60,23 @@ interface ReadinessResult {
     campaignName: string | null;
 }
 
+function mapProductionBuildLintIssues(brief: CampaignAestheticBrief): ValidationIssue[] {
+    const report = brief.productionBuildLint;
+    if (!report) {
+        return [];
+    }
+
+    return [
+        ...report.blockingIssues,
+        ...report.warnings,
+    ].map((issue) => ({
+        code: issue.code,
+        message: issue.details ? `${issue.message} ${issue.details}` : issue.message,
+        severity: issue.severity,
+        autoFixable: false,
+    }));
+}
+
 export function shouldUseIsolatedStillRepair(failingStillIds: string[], totalStillCount: number): boolean {
     const uniqueFailingStillCount = new Set(failingStillIds).size;
     return totalStillCount > 0 && uniqueFailingStillCount > 0 && uniqueFailingStillCount < totalStillCount;
@@ -76,16 +93,16 @@ export function shouldUseWholeSetRegeneration(failingStillIds: string[], totalSt
 
 async function generateFullBriefBundle(
     campaign: Campaign,
-    options?: { correctionContext?: string },
+    options?: { correctionContext?: string; instructions?: string },
 ): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean; wholeSetRegenerationUsed: boolean }> {
     // ── Step 1: Core aesthetic brief ─────────────────────────────────────
     const brief = await generateAestheticBrief(campaign, options);
 
     // ── Step 2: Community-native action anchors ───────────────────────────
-    const anchors = await generateActionAnchors(campaign, brief);
+    const anchors = await generateActionAnchors(campaign, brief, { instructions: options?.instructions });
 
     // ── Step 3: Landing still bible from locked anchors ───────────────
-    let landingStillBible = await generateLandingStillBible(campaign, brief, anchors);
+    let landingStillBible = await generateLandingStillBible(campaign, brief, anchors, { instructions: options?.instructions });
 
     // ── Step 3.1: Deterministic editorial composition normalizer ──────────────
     // Replaces intimate/close/tight/detail keywords in EDITORIAL_WIDE compositions
@@ -123,7 +140,7 @@ async function generateFullBriefBundle(
     if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
         const repairedStills = await repairFailingStills(
-            campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock,
+            campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock, { instructions: options?.instructions },
         );
         landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
 
@@ -154,7 +171,10 @@ async function generateFullBriefBundle(
         const correctionContext = [anchorFailureSummary, lintFailureSummary].filter(Boolean).join('\n\n');
 
         console.log(`[brief-engine] whole-set failure for ${campaign.id}: all ${allFailingIds.length} stills failed — regenerating with correction context`);
-        landingStillBible = await generateLandingStillBible(campaign, brief, anchors, { correctionContext });
+        landingStillBible = await generateLandingStillBible(campaign, brief, anchors, {
+            correctionContext,
+            instructions: options?.instructions,
+        });
         landingStillBible = normalizeEditorialCompositions(landingStillBible);
         landingStillBible = normalizeEditorialUsage(landingStillBible);
 
@@ -172,8 +192,12 @@ async function generateFullBriefBundle(
         }
     }
 
+    if (!anchorCompliance.passed) {
+        throw new Error(`Anchor compliance unresolved after repair/regeneration (${anchorCompliance.violations.length} violation(s)).`);
+    }
+
     // ── Step 6: Production bible from validated stills ────────────────────
-    const productionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible);
+    const productionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible, { instructions: options?.instructions });
 
     // ── Step 7: Final lint including production bible ─────────────────────
     const finalLint = lintProductionBuild({
@@ -257,7 +281,7 @@ async function recomputeAndResyncLint(
 // Internal: compute readiness from brief + campaign
 // ────────────────────────────────────────────────────────────────────────────
 
-async function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): Promise<{ readiness: ReadinessState; issues: ValidationIssue[]; summary: string }> {
+async function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaign): Promise<{ readiness: ReadinessState; brief: CampaignAestheticBrief; issues: ValidationIssue[]; summary: string }> {
     // Recompute lint from saved still data to catch stale-state drift before applying gates.
     const { resolvedBrief, drifted } = await recomputeAndResyncLint(brief, campaign);
     const effectiveBrief = resolvedBrief;
@@ -268,23 +292,30 @@ async function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaig
     if (effectiveBrief.humanReviewStatus === 'approved') {
         const validation = validateBrief(effectiveBrief, campaign);
         if (!validation.passed) {
-            return { readiness: 'needs_review', issues: validation.issues, summary: `Approved brief has new issues: ${validation.summary}` };
+            return { readiness: 'needs_review', brief: effectiveBrief, issues: validation.issues, summary: `Approved brief has new issues: ${validation.summary}` };
         }
         // ── Production build lint gate — must match media-orchestrator spend-gated semantics ──
         if (!effectiveBrief.productionBuildStatus || !effectiveBrief.landingStillBible) {
-            return { readiness: 'needs_review', issues: [], summary: 'Production build has not been evaluated. Regenerate the brief bundle to run pre-media lint before approving.' };
+            return { readiness: 'needs_review', brief: effectiveBrief, issues: [], summary: 'Production build has not been evaluated. Regenerate the brief bundle to run pre-media lint before approving.' };
         }
         if (effectiveBrief.productionBuildStatus === 'fail') {
-            return { readiness: 'needs_review', issues: [], summary: 'Production build lint failed (productionBuildStatus = fail). Downstream media generation would reject this brief. Regenerate to resolve production build issues.' };
+            const productionIssues = mapProductionBuildLintIssues(effectiveBrief);
+            const blockingCount = effectiveBrief.productionBuildLint?.blockingIssues.length ?? 0;
+            return {
+                readiness: 'needs_review',
+                brief: effectiveBrief,
+                issues: productionIssues,
+                summary: `Production build lint failed (${blockingCount} blocker${blockingCount === 1 ? '' : 's'}). Downstream media generation would reject this brief. Review the production build issues below, then regenerate to resolve them.`,
+            };
         }
-        return { readiness: 'ready_for_media', issues: [], summary: 'Brief is approved and passes all structural and production-build checks.' };
+        return { readiness: 'ready_for_media', brief: effectiveBrief, issues: [], summary: 'Brief is approved and passes all structural and production-build checks.' };
     }
 
     const validation = validateBrief(effectiveBrief, campaign);
     if (validation.passed) {
-        return { readiness: 'needs_review', issues: [], summary: 'Brief passes structural checks but needs human approval.' };
+        return { readiness: 'needs_review', brief: effectiveBrief, issues: [], summary: 'Brief passes structural checks but needs human approval.' };
     }
-    return { readiness: 'needs_review', issues: validation.issues, summary: validation.summary };
+    return { readiness: 'needs_review', brief: effectiveBrief, issues: validation.issues, summary: validation.summary };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -305,7 +336,7 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
     // ── First generation pass: full bundle ────────────────────────────
     let isolatedStillRevisionUsed = false;
     let wholeSetRegenerationUsed = false;
-    const firstBundle = await generateFullBriefBundle(campaign);
+    const firstBundle = await generateFullBriefBundle(campaign, { instructions: options?.instructions });
     isolatedStillRevisionUsed = firstBundle.isolatedStillRevisionUsed;
     wholeSetRegenerationUsed = firstBundle.wholeSetRegenerationUsed;
     let brief: CampaignAestheticBrief = firstBundle;
@@ -345,7 +376,10 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
             const correctionContext = buildCorrectionContext(nonLaunchBlockers);
             console.log(`[brief-engine] corrective reprompt for ${slug}: ${nonLaunchBlockers.length} blocker(s)`);
 
-            const repromptBundle = await generateFullBriefBundle(campaign, { correctionContext });
+            const repromptBundle = await generateFullBriefBundle(campaign, {
+                correctionContext,
+                instructions: options?.instructions,
+            });
             isolatedStillRevisionUsed = isolatedStillRevisionUsed || repromptBundle.isolatedStillRevisionUsed;
             wholeSetRegenerationUsed = wholeSetRegenerationUsed || repromptBundle.wholeSetRegenerationUsed;
             brief = repromptBundle;
@@ -472,8 +506,14 @@ export async function getReadiness(slug: string): Promise<ReadinessResult> {
         return { readiness: 'drafting', brief: null, issues: [], summary: 'No brief exists yet.', campaignName: campaign.name };
     }
 
-    const { readiness, issues, summary } = await computeReadiness(brief, campaign);
-    return { readiness, brief, issues, summary, campaignName: campaign.name };
+    const readinessResult = await computeReadiness(brief, campaign);
+    return {
+        readiness: readinessResult.readiness,
+        brief: readinessResult.brief,
+        issues: readinessResult.issues,
+        summary: readinessResult.summary,
+        campaignName: campaign.name,
+    };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -486,12 +526,6 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
 
     const storedBrief = await getAestheticBrief(slug);
     if (!storedBrief) throw new Error(`No brief exists for ${slug}.`);
-
-    // ── Launch window gate ────────────────────────────────────────────
-    const launchWindow = getLaunchWindowAssessment({ matchedSailDate: campaign.matchedSailDate, targetDates: campaign.targetDates });
-    if (launchWindow.meetsMinimumLeadTime === false) {
-        throw new Error(`Launch window too short: ${launchWindow.daysUntilSail} days. Minimum is ${MINIMUM_CAMPAIGN_LEAD_DAYS}.`);
-    }
 
     // ── Structural validation gate ────────────────────────────────────
     const validation = validateBrief(storedBrief, campaign);

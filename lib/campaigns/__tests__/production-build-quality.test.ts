@@ -687,6 +687,88 @@ test('3 generic deck-sea-wide stills with NO niche cues still block as before (n
         '3 generic deck-sea-wide stills with no niche cues should still produce a repeated_composition_family blocker — no regression');
 });
 
+test('3 active creative deck scenes resolve away from generic deck_sea_wide and only warn when all cues are explicit', () => {
+    const makeCreativeDeckStill = (id: string, location: string, subjectAction: string, imagePrompt: string) => makeStill({
+        stillId: id,
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'concept',
+        location,
+        environmentDetails: 'ocean context present but the scene centers on the creative action',
+        subjectAction,
+        composition: 'medium-wide environmental portrait with scenic context still readable',
+        imagePrompt,
+    });
+    const stills = [
+        makeCreativeDeckStill(
+            'creative-1',
+            'pool deck shaded edge near loungers and bar',
+            'Solo traveler lines up a point-and-shoot candid beside a lime-rimmed mocktail and tiny zine pin',
+            'Point-and-shoot camera framed on the pool deck as a solo traveler lines up a candid shot'
+        ),
+        makeCreativeDeckStill(
+            'creative-2',
+            'private cabin balcony with ocean view',
+            'Guest threads a fresh 35mm roll into a compact camera on the balcony while a mini-print flips in the breeze',
+            '35mm film roll being loaded into a compact camera on a private cabin balcony'
+        ),
+        makeCreativeDeckStill(
+            'creative-3',
+            'spa solarium under the glass roof near greenery and waterfalls',
+            'Sun-damp traveler pens a breezy note for a postcard swap while a tiny zine peeks from a shirt pocket',
+            'Postcard swap note being written in the spa solarium with a tiny zine visible'
+        ),
+    ];
+    const report = lintProductionBuild({
+        landingStillBible: makeBible(stills),
+        nicheKeywords: ['point-and-shoot', '35mm', 'postcard swap', 'zine'],
+    });
+    const blocker = report.blockingIssues.find(i => i.code === 'repeated_composition_family');
+    assert.ok(!blocker, 'active creative deck scenes should no longer block as generic deck_sea_wide');
+    const warning = report.warnings.find(i => i.code === 'repeated_composition_family');
+    assert.ok(warning, 'if these scenes still cluster, they should downgrade to warning as non-generic explicit-cue repetition');
+});
+
+test('explicit location beats incidental environment leakage for composition clustering', () => {
+    const stills = [
+        makeStill({
+            stillId: 'location-primary-atrium',
+            slotRole: 'EDITORIAL_WIDE_A',
+            usage: 'email_header',
+            location: 'ship atrium (Centrum) landing near glass elevators',
+            environmentDetails: 'multi-deck atrium layers with a distant glimpse of upper deck signage',
+            subjectAction: 'Two friends toast Chosen Family and trade phones for a candid pose',
+            composition: 'dynamic wide with vertical layers of the atrium and open space',
+            imagePrompt: 'Wide editorial view of two friends posing in the ship atrium with pride flags tucked in pockets',
+        }),
+        makeStill({
+            stillId: 'location-primary-balcony',
+            slotRole: 'INTIMATE',
+            usage: 'concept',
+            location: 'private cabin balcony with teak chair',
+            environmentDetails: 'harbor lights beyond the glass panel and sea breeze at dusk',
+            subjectAction: 'Solo guest paints sunset-toned nails while texting friends about a Pride at Sea meetup',
+            composition: 'intimate tight close detail on hands at a small balcony table',
+            imagePrompt: 'Tight balcony-table detail of a manicure and meetup text before Pride at Sea',
+        }),
+        makeStill({
+            stillId: 'location-primary-track',
+            slotRole: 'FLEX',
+            usage: 'social_square',
+            location: 'jogging track on the open upper deck, aft loop',
+            environmentDetails: 'trade winds, horizon far off, rainbow pins visible on shirts',
+            subjectAction: 'Two friends slow their pace to swap earbuds and laugh about the Chosen Family Jam playlist',
+            composition: 'lateral medium-wide movement with staggered two-shot and track markings guiding flow',
+            imagePrompt: 'Two friends on the jogging track swapping earbuds and laughing into the wind',
+        }),
+    ];
+    const report = lintProductionBuild({
+        landingStillBible: makeBible(stills),
+        nicheKeywords: ['Chosen Family', 'Pride at Sea'],
+    });
+    const blocker = report.blockingIssues.find(i => i.code === 'repeated_composition_family');
+    assert.ok(!blocker, 'atrium, balcony, and track scenes should not collapse into one deck-based composition family via incidental environment text');
+});
+
 console.log(`\nPassed: ${passed}`);
 console.log(`Failed: ${failed}`);
 

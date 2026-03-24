@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { scanAllCampaigns, scanUnmatchedCampaigns } from '../campaign-store';
+import { markCampaignUnmatched, scanAllCampaigns, scanUnmatchedCampaigns } from '../campaign-store';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 
 type SendShape = {
@@ -98,6 +98,32 @@ async function main(): Promise<void> {
             assert.equal(observedKeys[0], undefined);
             assert.deepEqual(observedKeys[1], { PK: 'CAMPAIGN#campaign-a', SK: 'METADATA' });
             assert.deepEqual(campaigns.map((campaign) => campaign.id), ['campaign-a', 'campaign-b', 'campaign-c']);
+        } finally {
+            client.send = originalSend;
+        }
+    });
+
+    await test('markCampaignUnmatched clears stale CB match fields while preserving unmatched state', async () => {
+        const client = chatDynamoDocumentClient as unknown as SendShape;
+        const originalSend = client.send;
+        let capturedInput: Record<string, unknown> | undefined;
+
+        client.send = async (command: unknown) => {
+            capturedInput = (command as { input?: Record<string, unknown> }).input;
+            return {};
+        };
+
+        try {
+            await markCampaignUnmatched('campaign-stale-match');
+            assert.ok(capturedInput);
+            assert.equal(capturedInput?.TableName, 'lll-shadow-campaigns');
+            assert.deepEqual(capturedInput?.Key, { PK: 'CAMPAIGN#campaign-stale-match', SK: 'METADATA' });
+            assert.equal(
+                capturedInput?.UpdateExpression,
+                'SET pricingStatus = :pricingStatus, updatedAt = :now REMOVE cbagenttoolsGroupId, cbagenttoolsBookingLink, cbPriceAdvantage, priceSource, matchedShipName, matchedSailDate, matchedDeparturePort, matchedNights',
+            );
+            assert.equal((capturedInput?.ExpressionAttributeValues as Record<string, unknown>)[':pricingStatus'], 'UNMATCHED');
+            assert.equal(typeof (capturedInput?.ExpressionAttributeValues as Record<string, unknown>)[':now'], 'string');
         } finally {
             client.send = originalSend;
         }

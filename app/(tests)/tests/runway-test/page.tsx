@@ -198,6 +198,11 @@ export default function RunwayTestPage() {
             setGenerateError("Motion prompt is required.");
             return;
         }
+        const estimatedCost = creditCost(durationSeconds);
+        const confirmed = window.confirm(
+            `Generate a ${durationSeconds}s paid RunwayML test clip?\n\nEstimated cost: ${estimatedCost}\nThis hits live RunwayML and will consume credits.\n\nContinue?`
+        );
+        if (!confirmed) return;
 
         setGenerating(true);
         setGenerateError(null);
@@ -533,7 +538,7 @@ export default function RunwayTestPage() {
                             ) : (
                                 <>
                                     <Zap className="w-4 h-4" />
-                                    Generate {durationSeconds}s Test Clip · {creditCost(durationSeconds)}
+                                    Generate Paid {durationSeconds}s Test Clip · {creditCost(durationSeconds)}
                                 </>
                             )}
                         </button>
@@ -619,6 +624,10 @@ function ResultCard({
     };
 
     const promoteClip = async () => {
+        const confirmed = window.confirm(
+            `Promote this test clip into ${PROMOTION_TARGETS.find(target => target.value === promotionTarget)?.label ?? promotionTarget}?\n\nThis writes the clip into the campaign manifest.`
+        );
+        if (!confirmed) return;
         setPromoting(true);
         setPromotionMessage(null);
         try {

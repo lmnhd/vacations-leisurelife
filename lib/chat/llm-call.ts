@@ -60,8 +60,6 @@ export async function callGlobalGenerateObject<T>(options: {
     
     try {
         let lastError: Error | null = null;
-        let schemaRepairJson: string | null = null;
-        let schemaRepairIssues: string | null = null;
 
         for (let index = 0; index < candidateModels.length; index++) {
             const activeModel = candidateModels[index] ?? apiId;
@@ -74,56 +72,75 @@ export async function callGlobalGenerateObject<T>(options: {
                     console.warn(`[${operationName}] Retry ${attempt}/${totalAttempts} using model ${activeModel} (maxOutputTokens=${maxOutputTokens})`);
                 }
 
-                const completion = await openai.chat.completions.create({
-                    model: activeModel,
-                    messages: [
-                        {
-                            role: 'system' as const,
-                            content: [
-                                'Return only valid JSON that matches the requested schema.',
-                                options.system?.trim() ?? '',
-                            ].filter(Boolean).join('\n\n'),
-                        },
-                        {
-                            role: 'user' as const,
-                            content: schemaRepairJson
-                                ? [
-                                    'Repair the JSON below so it strictly satisfies the target schema.',
-                                    'Return only valid JSON with the same top-level structure.',
-                                    'Validation errors to fix:',
-                                    schemaRepairIssues ?? '(not provided)',
-                                    'JSON to repair:',
-                                    schemaRepairJson,
-                                ].join('\n\n')
-                                : options.prompt,
-                        },
-                    ],
-                    response_format: { type: 'json_object' },
-                    ...tokenParam(activeModel, maxOutputTokens),
-                    ...tempParam(activeModel, 0.7),
-                }, { timeout: timeoutMs });
+                const systemContent = [
+                    'Return only valid JSON that matches the requested schema.',
+                    options.system?.trim() ?? '',
+                ].filter(Boolean).join('\n\n');
 
-                const choice = completion.choices[0];
-                const rawJson = choice?.message?.content?.trim();
-                if (!rawJson) {
-                    const refusal = (choice?.message as { refusal?: string | null } | undefined)?.refusal ?? null;
-                    throw new Error(
-                        `LLM returned empty response from model ${activeModel} (finish_reason=${choice?.finish_reason ?? 'unknown'}, refusal=${refusal ?? 'none'}, prompt_chars=${options.prompt.length}, max_output_tokens=${maxOutputTokens})`
-                    );
-                }
+                const requestJson = async (userContent: string) => {
+                    const completion = await openai.chat.completions.create({
+                        model: activeModel,
+                        messages: [
+                            {
+                                role: 'system' as const,
+                                content: systemContent,
+                            },
+                            {
+                                role: 'user' as const,
+                                content: userContent,
+                            },
+                        ],
+                        response_format: { type: 'json_object' },
+                        ...tokenParam(activeModel, maxOutputTokens),
+                        ...tempParam(activeModel, 0.7),
+                    }, { timeout: timeoutMs });
 
-                const parsed = JSON.parse(rawJson);
+                    const choice = completion.choices[0];
+                    const rawJson = choice?.message?.content?.trim();
+                    if (!rawJson) {
+                        const refusal = (choice?.message as { refusal?: string | null } | undefined)?.refusal ?? null;
+                        throw new Error(
+                            `LLM returned empty response from model ${activeModel} (finish_reason=${choice?.finish_reason ?? 'unknown'}, refusal=${refusal ?? 'none'}, prompt_chars=${options.prompt.length}, max_output_tokens=${maxOutputTokens})`
+                        );
+                    }
+
+                    return rawJson;
+                };
+
+                const parseSchema = (rawJson: string): T => {
+                    const parsed = JSON.parse(rawJson);
+                    return options.schema.parse(parsed);
+                };
+
+                const rawJson = await requestJson(options.prompt);
                 let result: T;
                 try {
-                    result = options.schema.parse(parsed);
+                    result = parseSchema(rawJson);
                 } catch (error) {
-                    if (error instanceof z.ZodError) {
-                        const issuePreview = JSON.stringify(error.issues.slice(0, 25), null, 2);
-                        schemaRepairJson = rawJson;
-                        schemaRepairIssues = issuePreview;
-                        throw new Error(`Schema validation failed for model ${activeModel}; queued repair attempt.`);
+                    if (!(error instanceof z.ZodError)) {
+                        throw error;
                     }
-                    throw error;
+
+                    const issuePreview = JSON.stringify(error.issues.slice(0, 25), null, 2);
+                    console.warn(`[${operationName}] Schema validation failed for model ${activeModel}; attempting JSON repair.`);
+                    const repairedRawJson = await requestJson([
+                        'Repair the JSON below so it strictly satisfies the target schema.',
+                        'Return only valid JSON with the same top-level structure.',
+                        'Validation errors to fix:',
+                        issuePreview,
+                        'JSON to repair:',
+                        rawJson,
+                    ].join('\n\n'));
+
+                    try {
+                        result = parseSchema(repairedRawJson);
+                    } catch (repairError) {
+                        if (repairError instanceof z.ZodError) {
+                            const repairIssuePreview = JSON.stringify(repairError.issues.slice(0, 25), null, 2);
+                            throw new Error(`Schema repair failed for model ${activeModel}. Remaining issues: ${repairIssuePreview}`);
+                        }
+                        throw repairError;
+                    }
                 }
 
                 const duration = Date.now() - startTime;

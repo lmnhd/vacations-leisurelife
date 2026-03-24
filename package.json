@@ -11,7 +11,10 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "update-deals": "node scripts/trigger-update.js",
-    "sim": "npx tsx --env-file=.env.local tests/simulator.ts"
+    "sim": "npx tsx --env-file=.env.local tests/simulator.ts",
+    "agent:brief-prototype": "npx tsx --env-file=.env.local scripts/agent-api-brief-prototype.ts --",
+    "agent:worker": "npx tsx --env-file=.env.local scripts/agent-api-worker.ts --",
+    "agent:check-brief": "npx tsx --env-file=.env.local scripts/check-brief-status.ts --"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

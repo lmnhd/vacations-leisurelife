@@ -1258,6 +1258,79 @@ npx tsx lib/campaigns/__tests__/production-build-quality.test.ts
 
 ---
 
+## Closure Addendum: Residual-Class Cleanup
+
+The original completion claim was directionally correct but not fully closed. Fresh live reruns after that claim exposed two residuals and one validator edge that required an additional deterministic pass.
+
+### Residuals Found After The Original Completion Claim
+
+| Campaign | Residual issue |
+|---|---|
+| `film-and-zine-afloat-2026` | balcony scene resolved to `port` because `harbor` wording overrode explicit balcony text |
+| `open-seas-pride-2026` | interior / balcony / track scenes collapsed into `deck_sea_wide`; later an editorial-wide composition phrase (`broad`) failed slot compliance |
+| `bp-tabletop-icon-2027-7n-caribbean` | validator false-failed `drop‑in play` because Unicode hyphen variants were not normalized |
+
+### Deterministic Fixes Added In The Closure Pass
+
+**Venue-family inference** (`lib/campaigns/editors-room.ts`)
+
+1. moved `balcony` ahead of generic `deck` and moved `port` behind explicit onboard fixtures
+2. kept `atrium` ahead of balcony / rail references
+3. preserved explicit `location` precedence over `environmentDetails`
+
+**Composition clustering** (`lib/campaigns/media/production-build-lint.ts`)
+
+1. added `creative_deck_activity` so active analog / postcard / zine / camera scenes no longer collapse into generic `deck_sea_wide`
+2. changed location-family extraction and composition clustering to inspect `location` first and only fall back to `environmentDetails` when needed
+
+**Editorial-wide normalization** (`lib/campaigns/editors-room.ts`)
+
+1. canonicalized editorial-wide synonyms such as `broad`, `expansive`, `sweeping`, and `open` to explicit `wide` wording before slot compliance validation
+
+**Anchor phrase validation** (`lib/campaigns/editors-room.ts`)
+
+1. added normalized text comparison for anchor niche phrases and `nicheCarryThrough`
+2. Unicode dash variants now normalize to ASCII `-`, preventing false failures like `drop‑in play` vs `drop-in play`
+
+### Post-Closure Verification
+
+Focused regressions after the final closure pass:
+
+| Suite | Result |
+|---|---|
+| `anchor-compliance.test.ts` | **51 / 51** |
+| `production-build-quality.test.ts` | **27 / 27** |
+
+New regressions now cover:
+
+1. balcony with harbor-in-view still resolves to `balcony`, not `port`
+2. explicit location beats incidental environment leakage for composition clustering
+3. editorial-wide `broad` composition wording is normalized to explicit `wide`
+4. Unicode-hyphen niche phrases pass anchor and carry-through validation
+
+### Targeted Live Reruns
+
+| Campaign | Final anchor violations / lint blockers |
+|---|---|
+| `film-and-zine-afloat-2026` | **0 / 0** |
+| `open-seas-pride-2026` | **0 / 0** |
+
+These reruns preserved the earlier cue-strength gains:
+
+1. `6 / 6` explicit cue stills
+2. `0 / 6` no-cue stills
+3. `0 / 6` generic-fallback stills
+
+### Closure Assessment
+
+The residual issues found after the initial completion claim were all deterministic interpretation bugs, not prompt-quality regressions.
+
+After the closure pass:
+
+1. the residual pair (`film-and-zine`, `open-seas-pride`) is clean on live rerun
+2. the validator no longer false-fails hyphenated niche phrases
+3. the closure claim for this phase is now supported by the actual deterministic fixes and focused live proof
+
 ## Phase Result: Wider Coverage Sweep
 
 ### Status: Complete

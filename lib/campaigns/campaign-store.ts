@@ -205,7 +205,10 @@ export async function markCampaignUnmatched(slug: string): Promise<void> {
     const params = {
         TableName: TABLE_NAME,
         Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
-        UpdateExpression: 'SET pricingStatus = :pricingStatus, updatedAt = :now',
+        UpdateExpression: [
+            'SET pricingStatus = :pricingStatus, updatedAt = :now',
+            'REMOVE cbagenttoolsGroupId, cbagenttoolsBookingLink, cbPriceAdvantage, priceSource, matchedShipName, matchedSailDate, matchedDeparturePort, matchedNights',
+        ].join(' '),
         ExpressionAttributeValues: {
             ':pricingStatus': 'UNMATCHED' as const,
             ':now': new Date().toISOString(),

@@ -205,15 +205,32 @@ test('supervisor rejects approved state when blockers remain', () => {
     assert.throws(() => applySupervisorState(makeBrief(), {
         issues: [
             {
-                code: 'launch_window_violation',
-                message: 'Sailing is too close to launch.',
+                code: 'workshop_language_survives',
+                message: 'Workshop language remains in the brief.',
                 severity: 'blocker',
-                autoFixable: false,
+                autoFixable: true,
             },
         ],
         reviewStatus: 'approved',
         origin: 'approval',
     }));
+});
+
+test('supervisor allows approved state when launch window is warning-only', () => {
+    const approved = applySupervisorState(makeBrief(), {
+        issues: [
+            {
+                code: 'launch_window_violation',
+                message: 'Sailing is too close to launch.',
+                severity: 'warning',
+                autoFixable: false,
+            },
+        ],
+        reviewStatus: 'approved',
+        origin: 'approval',
+    });
+
+    assert.equal(approved.humanReviewStatus, 'approved');
 });
 
 console.log(`\nPassed: ${passed}`);

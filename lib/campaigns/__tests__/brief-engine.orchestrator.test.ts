@@ -79,11 +79,11 @@ test('BriefEngineResult includes correctiveRepromptUsed field', () => {
     assert.equal(usedReprompt.correctiveRepromptUsed, true);
 });
 
-test('launch_window_violation blocker does not trigger corrective reprompt by design', () => {
+test('launch_window_violation warning does not trigger corrective reprompt by design', () => {
     const blockers: ValidationIssue[] = [
-        { code: 'launch_window_violation', message: 'Sailing is 5 days away. Minimum is 30.', severity: 'blocker', autoFixable: false },
+        { code: 'launch_window_violation', message: 'Sailing is 5 days away. Minimum is 30.', severity: 'warning', autoFixable: false },
     ];
-    // Corrective reprompt should skip launch_window blockers since they cannot be resolved by regeneration
+    // Corrective reprompt should skip launch_window issues since they cannot be resolved by regeneration
     const nonLaunchBlockers = blockers.filter((b) => b.code !== 'launch_window_violation');
     assert.equal(nonLaunchBlockers.length, 0);
     assert.equal(buildCorrectionContext(nonLaunchBlockers), '');

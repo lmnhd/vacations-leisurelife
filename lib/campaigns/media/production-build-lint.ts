@@ -48,9 +48,13 @@ const LOCATION_FAMILY_MAP: Array<[string[], string]> = [
 ];
 
 export function extractLocationFamily(still: LandingStillSpec): string {
-    const combined = `${still.location} ${still.environmentDetails}`.toLowerCase();
+    const locationText = still.location.toLowerCase();
+    const environmentText = still.environmentDetails.toLowerCase();
     for (const [keywords, family] of LOCATION_FAMILY_MAP) {
-        if (keywords.some(kw => combined.includes(kw))) return family;
+        if (keywords.some(kw => locationText.includes(kw))) return family;
+    }
+    for (const [keywords, family] of LOCATION_FAMILY_MAP) {
+        if (keywords.some(kw => environmentText.includes(kw))) return family;
     }
     return 'other';
 }
@@ -126,6 +130,9 @@ const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
     [['rail', 'railing', 'balcony'], ['laugh', 'smile', 'couple', 'two', 'partner', 'together'], 'rail_couple_laugh'],
     [['porthole', 'round window', 'stateroom'], ['quiet', 'solo', 'single', 'alone', 'contempl', 'gaze'], 'quiet_window_solo'],
     [['dining', 'restaurant', 'dinner'], ['intimate', 'couple', 'candlelight', 'close', 'tender'], 'dining_intimacy'],
+    // Active creative deck/balcony/solarium scenes should not collapse into the generic
+    // deck_sea_wide bucket just because the composition remains wide and scenic context is present.
+    [['deck', 'outdoor', 'pool', 'solarium', 'balcony'], ['camera', '35mm', 'point-and-shoot', 'point‑and‑shoot', 'film', 'postcard', 'zine', 'stamp', 'mini-print', 'mini‑print', 'notebook', 'thread', 'load'], 'creative_deck_activity'],
     // night_sky_deck must come before deck_sea_wide — stargazing scenes have 'deck' location and
     // 'view/horizon/sea' action, so without this earlier cluster they collapse into deck_sea_wide.
     [['deck', 'outdoor', 'bow', 'stern'], ['star', 'night sky', 'telescope', 'constellation', 'milky', 'astro', 'lunar', 'moon', 'stargazing', 'celestial'], 'night_sky_deck'],
@@ -135,11 +142,18 @@ const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
 ];
 
 function extractCompositionFamily(still: LandingStillSpec): string {
-    const locationText = `${still.location} ${still.environmentDetails}`.toLowerCase();
+    const locationText = still.location.toLowerCase();
+    const environmentText = still.environmentDetails.toLowerCase();
     const actionText = `${still.subjectAction} ${still.composition}`.toLowerCase();
 
     for (const [locKw, actKw, family] of COMPOSITION_CLUSTER_MAP) {
         const locationHit = locKw.some(kw => locationText.includes(kw));
+        const actionHit = actKw.some(kw => actionText.includes(kw));
+        if (locationHit && actionHit) return family;
+    }
+
+    for (const [locKw, actKw, family] of COMPOSITION_CLUSTER_MAP) {
+        const locationHit = locKw.some(kw => environmentText.includes(kw));
         const actionHit = actKw.some(kw => actionText.includes(kw));
         if (locationHit && actionHit) return family;
     }

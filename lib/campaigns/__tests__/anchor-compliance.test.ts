@@ -168,6 +168,20 @@ test('still with nicheSignal in both fields passes niche check', () => {
     assert.ok(!result.violations.some(v => v.violationType === 'niche_signal_dropped'));
 });
 
+test('hyphenated niche phrase matches across Unicode dash variants', () => {
+    const anchors = [{ anchorId: 'anchor-hyphen', nicheSignal: 'drop-in play', locationFamily: 'dining lounge' }];
+    const still = makeStill({
+        stillId: 'still-hyphen-niche',
+        anchorId: 'anchor-hyphen',
+        imagePrompt: 'Wide shot of guests setting up drop‑in play after dessert',
+        subjectAction: 'Guests wave over passersby for drop‑in play at the table',
+        nicheCarryThrough: 'drop-in play',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    assert.ok(!result.violations.some(v => v.violationType === 'niche_signal_dropped'), 'Unicode dash variants should not break nicheSignal matching');
+    assert.ok(!result.violations.some(v => v.violationType === 'niche_carry_mismatch'), 'Unicode dash variants should not break nicheCarryThrough matching');
+});
+
 console.log('\nAnchor Compliance — niche_carry_mismatch\n');
 
 test('nicheCarryThrough not in imagePrompt triggers niche_carry_mismatch', () => {
@@ -456,6 +470,20 @@ test('EDITORIAL_WIDE with safe composition is returned unchanged', () => {
     assert.equal(result, bible, 'should return same reference when no changes made');
 });
 
+test('EDITORIAL_WIDE with broad establishing composition is canonicalized to explicit wide wording', () => {
+    const bible = makeBible([makeStill({
+        stillId: 'ed-broad-safe',
+        slotRole: 'EDITORIAL_WIDE_A',
+        usage: 'email_header',
+        composition: 'Broad, serene establishing of side-by-side daybeds beneath the glass roof',
+        location: 'spa solarium', environmentDetails: 'glass roof and tropical planters',
+        imagePrompt: 'Wide solarium daybed scene with Pride cues', subjectAction: 'Pair relaxes under the glass roof with Pride at Sea towels',
+        anchorId: 'anchor-broad',
+    })]);
+    const result = normalizeEditorialCompositions(bible);
+    assert.ok(result.stillLibrary[0].composition.toLowerCase().includes('wide'), 'broad editorial composition should be canonicalized to explicit wide wording');
+});
+
 test('after normalization EDITORIAL_WIDE stills no longer trigger slot_usage_mismatch in anchor compliance', () => {
     const anchors = [{ anchorId: 'anchor-1', nicheSignal: 'tabletop gaming', locationFamily: 'library' }];
     const bible = makeBible([makeStill({
@@ -553,6 +581,25 @@ test('balcony-anchored still with only "balcony" in location (no railing) passes
     const result = validateAnchorCompliance(anchors, makeBible([still]));
     const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
     assert.ok(!v, 'pure balcony location should pass with no mismatch');
+});
+
+test('balcony-anchored still with harbor in view still resolves to balcony, not port', () => {
+    const anchors = [{ anchorId: 'anchor-bal-harbor', nicheSignal: '35mm', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-balcony-harbor-view',
+        anchorId: 'anchor-bal-harbor',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        location: 'Cabin balcony with stool, Nassau harbor in view',
+        environmentDetails: 'private balcony table, harbor skyline beyond the glass panel',
+        imagePrompt: '35mm camera loaded on a cabin balcony stool with Nassau harbor in the distance',
+        subjectAction: 'Guest loads a 35mm roll on the cabin balcony while looking out toward Nassau harbor',
+        nicheCarryThrough: '35mm',
+        composition: 'medium over-the-shoulder framing with balcony rail and harbor beyond',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'harbor-view wording should not override an explicit cabin balcony location');
 });
 
 test('explicit location field beats conflicting environmentDetails for anchor family matching', () => {
@@ -851,6 +898,25 @@ test('pool-deck-anchored still with "pool deck lounge table" still resolves to p
     const result = validateAnchorCompliance(anchors, makeBible([still]));
     const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
     assert.ok(!v, 'pool deck lounge table should resolve to pool_deck — pool is checked before lounge, no regression');
+});
+
+test('balcony-anchored still with explicit balcony plus incidental deck wording resolves to balcony not deck', () => {
+    const anchors = [{ anchorId: 'anchor-bal-deck', nicheSignal: 'book club', locationFamily: 'cabin balcony' }];
+    const still = makeStill({
+        stillId: 'still-balcony-deck-panel',
+        anchorId: 'anchor-bal-deck',
+        slotRole: 'EDITORIAL_WIDE_B',
+        usage: 'concept',
+        location: 'private cabin balcony with teak deck and glass panel',
+        environmentDetails: 'ocean view beside the private stateroom',
+        imagePrompt: 'Solo guest reading book club notes on a private cabin balcony with teak deck and glass panel',
+        subjectAction: 'A solo guest reviews a book club note card on the private cabin balcony with teak deck and glass panel',
+        nicheCarryThrough: 'book club',
+        composition: 'medium-wide over-the-shoulder on the balcony',
+    });
+    const result = validateAnchorCompliance(anchors, makeBible([still]));
+    const v = result.violations.find(v => v.violationType === 'anchor_location_mismatch');
+    assert.ok(!v, 'explicit balcony wording should beat incidental deck wording — private cabin balcony with teak deck should resolve to balcony');
 });
 
 // ── Summary ────────────────────────────────────────────────────────────────────

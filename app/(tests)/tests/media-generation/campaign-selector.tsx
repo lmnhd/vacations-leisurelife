@@ -24,12 +24,13 @@ interface CampaignSelectorProps {
     value: string;
     onChange: (slug: string) => void;
     disabled?: boolean;
+    defaultFilter?: CampaignFilter;
 }
 
-export function CampaignSelector({ value, onChange, disabled = false }: CampaignSelectorProps) {
+export function CampaignSelector({ value, onChange, disabled = false, defaultFilter = "cb_matched" }: CampaignSelectorProps) {
     const [campaigns, setCampaigns] = useState<CampaignRef[]>([]);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState<CampaignFilter>("cb_matched");
+    const [filter, setFilter] = useState<CampaignFilter>(defaultFilter);
 
     const fetchCampaigns = async () => {
         setLoading(true);

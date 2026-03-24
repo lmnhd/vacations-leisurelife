@@ -1,0 +1,25 @@
+AGENT API BRIEF PROTOTYPE
+Running direct worker jobs for campaign brief generation.
+
+=== night-sky-sea-2026 ===
+[brief-engine] create_or_refresh for night-sky-sea-2026
+[aesthetic-engine] Starting aesthetic brief generation for night-sky-sea-2026
+[aesthetic-engine] Model resolved for night-sky-sea-2026: enum=gpt-5.2-high, provider=openai, apiId=gpt-5
+[aesthetic-engine] Pass 1 core aesthetic attempt 1 for night-sky-sea-2026
+[aesthetic-engine] Pass 1 quality gate failed for night-sky-sea-2026 on attempt 1: Hero slogan too long (8 words, max 6); Slogan does not anchor to niche identity — expected at least one of: stargazing, family friendly, orion, jupiter/saturn, iss/satellite
+[aesthetic-engine] Pass 1 core aesthetic attempt 2 for night-sky-sea-2026
+[aesthetic-engine] Pass 1 accepted for night-sky-sea-2026 on attempt 2
+[aesthetic-engine] Pass 2 platform concepts for night-sky-sea-2026
+[aesthetic-engine] Refinement pass for night-sky-sea-2026
+[editors-room] generateActionAnchors for night-sky-sea-2026
+[editors-room] generateLandingStillBible for night-sky-sea-2026 (refPack=none)
+[editors-room] generateProductionBibleFromStills for night-sky-sea-2026
+[brief-engine] auto-fix: 2 fixable issues
+Generate job: agent_job_02ebcb0d-ad3
+Status: completed
+Summary: Brief generated and passes all structural checks. Ready for approval.
+Readiness: needs_review
+Persisted: yes
+Blockers: 0
+Stored brief: yes
+Approval: skipped
