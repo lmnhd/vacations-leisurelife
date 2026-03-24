@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrRefreshBrief, applyStructuredRevision } from '@/lib/campaigns/brief-engine/orchestrator';
 import type { RevisionInput } from '@/lib/campaigns/brief-engine/orchestrator';
 
+// Hard server-side timeout for brief generation (ms).
+// Brief generation is a multi-stage LLM pipeline; 5 minutes is the outer wall.
+const BRIEF_GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
+
 // POST /api/groups/campaign/[slug]/brief — create_or_refresh_brief
 export async function POST(
     req: NextRequest,
@@ -10,12 +14,25 @@ export async function POST(
     try {
         const { slug } = await params;
         const body = await req.json().catch(() => ({})) as { instructions?: string };
-        const result = await createOrRefreshBrief(slug, { instructions: body.instructions });
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(
+                () => reject(new Error(`[brief-engine:timeout] Brief generation for "${slug}" exceeded ${BRIEF_GENERATION_TIMEOUT_MS / 1000}s server deadline. The pipeline may have stalled on a heavy LLM stage. Try again — if this recurs, check server logs for the last completed stage.`)),
+                BRIEF_GENERATION_TIMEOUT_MS,
+            );
+        });
+
+        const result = await Promise.race([
+            createOrRefreshBrief(slug, { instructions: body.instructions }),
+            timeoutPromise,
+        ]);
+
         return NextResponse.json(result, { status: 200 });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
+        const isTimeout = message.includes('[brief-engine:timeout]');
         console.error('[brief-engine:POST]', error);
-        return NextResponse.json({ error: message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: isTimeout ? 504 : 500 });
     }
 }
 

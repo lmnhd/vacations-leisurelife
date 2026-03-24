@@ -24,6 +24,21 @@ import type { Campaign } from '../types';
 import type { ValidationIssue } from './validation';
 
 // ────────────────────────────────────────────────────────────────────────────
+// Stage duration instrumentation — surfaces slow LLM stages in server logs
+// ────────────────────────────────────────────────────────────────────────────
+
+function stageTimer(stageName: string, campaignId: string): () => void {
+    const start = Date.now();
+    console.log(`[brief-engine:stage] START  ${stageName} (${campaignId})`);
+    return () => {
+        const elapsedMs = Date.now() - start;
+        const elapsedSec = (elapsedMs / 1000).toFixed(1);
+        const slow = elapsedMs > 30_000 ? ' ⚠ SLOW' : '';
+        console.log(`[brief-engine:stage] END    ${stageName} (${campaignId}) — ${elapsedSec}s${slow}`);
+    };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Readiness state machine — 3 states, no more
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -95,14 +110,23 @@ async function generateFullBriefBundle(
     campaign: Campaign,
     options?: { correctionContext?: string; instructions?: string },
 ): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean; wholeSetRegenerationUsed: boolean }> {
-    // ── Step 1: Core aesthetic brief ─────────────────────────────────────
+    const bundleStart = Date.now();
+    console.log(`[brief-engine:bundle] START full bundle (${campaign.id})`);
+
+    // ── Step 1: Core aesthetic brief (pass 1 + pass 2 + refinement) ──────
+    const endAesthetic = stageTimer('pass1+pass2+refinement', campaign.id);
     const brief = await generateAestheticBrief(campaign, options);
+    endAesthetic();
 
     // ── Step 2: Community-native action anchors ───────────────────────────
+    const endAnchors = stageTimer('anchor-generation', campaign.id);
     const anchors = await generateActionAnchors(campaign, brief, { instructions: options?.instructions });
+    endAnchors();
 
     // ── Step 3: Landing still bible from locked anchors ───────────────
+    const endStillBible = stageTimer('landing-still-bible', campaign.id);
     let landingStillBible = await generateLandingStillBible(campaign, brief, anchors, { instructions: options?.instructions });
+    endStillBible();
 
     // ── Step 3.1: Deterministic editorial composition normalizer ──────────────
     // Replaces intimate/close/tight/detail keywords in EDITORIAL_WIDE compositions
@@ -139,9 +163,11 @@ async function generateFullBriefBundle(
 
     if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
+        const endRepair = stageTimer('isolated-still-repair', campaign.id);
         const repairedStills = await repairFailingStills(
             campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock, { instructions: options?.instructions },
         );
+        endRepair();
         landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
 
         // Re-validate both gates after repair
@@ -171,10 +197,12 @@ async function generateFullBriefBundle(
         const correctionContext = [anchorFailureSummary, lintFailureSummary].filter(Boolean).join('\n\n');
 
         console.log(`[brief-engine] whole-set failure for ${campaign.id}: all ${allFailingIds.length} stills failed — regenerating with correction context`);
+        const endWholeRegen = stageTimer('whole-set-regeneration', campaign.id);
         landingStillBible = await generateLandingStillBible(campaign, brief, anchors, {
             correctionContext,
             instructions: options?.instructions,
         });
+        endWholeRegen();
         landingStillBible = normalizeEditorialCompositions(landingStillBible);
         landingStillBible = normalizeEditorialUsage(landingStillBible);
 
@@ -197,7 +225,9 @@ async function generateFullBriefBundle(
     }
 
     // ── Step 6: Production bible from validated stills ────────────────────
+    const endProdBible = stageTimer('production-bible-generation', campaign.id);
     const productionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible, { instructions: options?.instructions });
+    endProdBible();
 
     // ── Step 7: Final lint including production bible ─────────────────────
     const finalLint = lintProductionBuild({
@@ -206,6 +236,9 @@ async function generateFullBriefBundle(
         themeName: campaign.name,
         nicheKeywords: expandedNicheKeywords,
     });
+
+    const totalSec = ((Date.now() - bundleStart) / 1000).toFixed(1);
+    console.log(`[brief-engine:bundle] END   full bundle (${campaign.id}) — total ${totalSec}s | lint=${finalLint.verdict}`);
 
     return {
         ...brief,

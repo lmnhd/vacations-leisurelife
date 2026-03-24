@@ -210,6 +210,7 @@ export default function BriefStudioPage() {
     const [slug, setSlug] = useState('');
     const [loading, setLoading] = useState(false);
     const [action, setAction] = useState<string | null>(null);
+    const [timedOut, setTimedOut] = useState(false);
     const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
     const [lastResult, setLastResult] = useState<BriefEngineResult | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -245,6 +246,12 @@ export default function BriefStudioPage() {
     }, [normalizedSlug]);
 
     // ── Generate / refresh brief ──────────────────────────────────────
+    // Client timeout: 6 minutes. The server enforces its own 5-minute deadline;
+    // the extra 60 seconds gives the server time to respond with its timeout error
+    // before the client aborts. On timeout the user sees an explicit message and
+    // a Reload Saved State recovery button.
+    const CLIENT_TIMEOUT_MS = 6 * 60 * 1000;
+
     const generateBrief = useCallback(async () => {
         if (!normalizedSlug) return;
         const confirmed = window.confirm(
@@ -256,19 +263,34 @@ export default function BriefStudioPage() {
         setLoading(true);
         setAction('generating');
         setError(null);
+        setTimedOut(false);
+
+        const controller = new AbortController();
+        const clientTimeoutId = setTimeout(() => {
+            controller.abort();
+        }, CLIENT_TIMEOUT_MS);
+
         try {
             const res = await fetch(`/api/groups/campaign/${normalizedSlug}/brief`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
+                signal: controller.signal,
             });
             const data = await res.json() as (BriefEngineResult & { error?: string });
             if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
             setLastResult(data);
             setReadiness({ readiness: data.readiness, brief: data.brief, issues: data.issues, summary: data.summary, campaignName: null });
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to generate brief');
+            const isAbort = err instanceof DOMException && err.name === 'AbortError';
+            if (isAbort) {
+                setTimedOut(true);
+                setError(`Generation timed out after ${CLIENT_TIMEOUT_MS / 60000} minutes. The server pipeline is still running in the background — click "Reload Saved State" in a moment to check if the brief was persisted.`);
+            } else {
+                setError(err instanceof Error ? err.message : 'Failed to generate brief');
+            }
         } finally {
+            clearTimeout(clientTimeoutId);
             setLoading(false);
             setAction(null);
         }
@@ -376,9 +398,26 @@ export default function BriefStudioPage() {
                 </div>
 
                 {/* ── Error ──────────────────────────────────────────── */}
-                {error && (
+                {error && !timedOut && (
                     <div className="p-4 text-sm border rounded-lg bg-red-500/10 border-red-500/20 text-red-400">
                         <strong>Error:</strong> {error}
+                    </div>
+                )}
+
+                {/* ── Timeout recovery ──────────────────────────────── */}
+                {timedOut && (
+                    <div className="p-4 space-y-3 border rounded-lg bg-amber-500/10 border-amber-500/20">
+                        <p className="text-sm font-semibold text-amber-300">Generation timed out on the client</p>
+                        <p className="text-xs text-amber-200">
+                            The server pipeline may still be running. Wait a moment, then reload the saved state to check if the brief was persisted.
+                        </p>
+                        <button
+                            onClick={handleLoadCampaign}
+                            disabled={loading || !normalizedSlug}
+                            className="px-4 py-2 text-xs font-semibold border rounded-lg bg-amber-500/20 border-amber-500/30 text-amber-200 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                            Reload Saved State
+                        </button>
                     </div>
                 )}
 

@@ -706,6 +706,20 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
 // ── Lint compliance block injected into every visual-planning prompt ──────────
 // Maps directly to the deterministic rules in production-build-lint.ts so the
 // LLM knows the exact fields and exact keywords the machine will scan.
+
+// Detect music/festival/open-deck campaign types from keywords or name so we can
+// inject hard niche-identity rules that ban the known generic fallback patterns.
+function isMusicFestivalCampaign(campaign: Campaign): boolean {
+    const haystack = [
+        campaign.name,
+        ...(campaign.targetingKeywords ?? []),
+        campaign.nicheExpressionMode ?? '',
+    ].join(' ').toLowerCase();
+    return ['music', 'festival', 'open deck', 'open-deck', 'band', 'concert', 'dj', 'live music', 'vinyl', 'listening'].some(
+        term => haystack.includes(term),
+    );
+}
+
 export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
     const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
     const kwDisplay = nicheKw.length > 0
@@ -728,6 +742,24 @@ export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: 
             `   COMPLIANT pattern: embed at least one of these: ${kwDisplay} — naturally inside imagePrompt or subjectAction.`,
             '   NON-COMPLIANT pattern: imagePrompt and subjectAction both describe generic vacation activity with no niche-specific term — FAILS scanner.',
         ];
+
+    const musicFestivalNicheBlock: string[] = isMusicFestivalCampaign(campaign)
+        ? [
+            '',
+            '4. MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ADDITIONAL HARD RULES (niche identity must be visible on sight):',
+            '   This campaign is flagged as a music, festival, or open-deck community. Generic cruise visuals are not sufficient.',
+            '   HARD RULES:',
+            '   - At least 3 of the 6 stills must show an observable on-image signal of live-music, festival culture, or open-deck community identity.',
+            '     Acceptable signals: a guest dancing on deck, a live performer or stage visible in background, guests gathered around a sound system, vinyl records or earbuds as props, crowd energy at an outdoor deck event, a DJ booth visible in scene.',
+            '   - The following compositions are BANNED for music/festival campaigns (do not use even as one of 6):',
+            '     × deck_sea_wide (couple facing horizon/sunset at wide distance with no music cue)',
+            '     × quiet_window_solo (solo guest gazing out porthole or cabin window with no music cue)',
+            '     × port_shore_laughing (guests on shore or pier laughing with no music cue in frame)',
+            '     × cabin_window_other (any cabin or window setup with no music identity in frame)',
+            '   - cueStrength must be "explicit" (not "subtle", not "absent") for at least 3 stills — meaning the niche is immediately legible from the image alone without reading the caption.',
+            '   - Do NOT use slogan copy or caption text to carry the music identity — it must be visible in the scene itself.',
+        ]
+        : [];
 
     return [
         'LINT COMPLIANCE REQUIREMENTS — MACHINE-CHECKED — NON-COMPLIANCE BLOCKS CAMPAIGN APPROVAL:',
@@ -756,6 +788,7 @@ export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: 
         '   - Pattern C (dining_intimacy): dining/restaurant/dinner location + intimate couple or candlelight mood',
         '   - Pattern D (deck_sea_wide): deck/bow/stern/outdoor location + couple facing sea/horizon/sunset at wide distance',
         '   Vary location cluster, subject action, social unit, and mood across all 6 stills so no two stills share both the same location cluster AND the same action cluster.',
+        ...musicFestivalNicheBlock,
     ].join('\n');
 }
 
