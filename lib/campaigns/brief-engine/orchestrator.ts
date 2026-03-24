@@ -27,13 +27,27 @@ import type { ValidationIssue } from './validation';
 // Stage duration instrumentation — surfaces slow LLM stages in server logs
 // ────────────────────────────────────────────────────────────────────────────
 
-function stageTimer(stageName: string, campaignId: string): () => void {
+interface StageTiming {
+    stageName: string;
+    elapsedMs: number;
+}
+
+interface BriefTimingPass {
+    passLabel: 'initial' | 'corrective_reprompt';
+    totalElapsedMs: number | null;
+    stages: StageTiming[];
+}
+
+const activeBriefTimingSnapshots = new Map<string, BriefTimingPass[]>();
+
+function stageTimer(stageName: string, campaignId: string, timings: StageTiming[]): () => void {
     const start = Date.now();
     console.log(`[brief-engine:stage] START  ${stageName} (${campaignId})`);
     return () => {
         const elapsedMs = Date.now() - start;
         const elapsedSec = (elapsedMs / 1000).toFixed(1);
         const slow = elapsedMs > 30_000 ? ' ⚠ SLOW' : '';
+        timings.push({ stageName, elapsedMs });
         console.log(`[brief-engine:stage] END    ${stageName} (${campaignId}) — ${elapsedSec}s${slow}`);
     };
 }
@@ -54,6 +68,7 @@ interface BriefEngineResult {
     issues: ValidationIssue[];
     summary: string;
     warnings: string[];
+    timings: BriefTimingPass[];
     autoFixApplied: boolean;
     fixedCodes: string[];
     correctiveRepromptUsed: boolean;
@@ -108,23 +123,34 @@ export function shouldUseWholeSetRegeneration(failingStillIds: string[], totalSt
 
 async function generateFullBriefBundle(
     campaign: Campaign,
+    timingPass: BriefTimingPass,
     options?: { correctionContext?: string; instructions?: string },
-): Promise<CampaignAestheticBrief & { isolatedStillRevisionUsed: boolean; wholeSetRegenerationUsed: boolean }> {
+): Promise<CampaignAestheticBrief & {
+    isolatedStillRevisionUsed: boolean;
+    wholeSetRegenerationUsed: boolean;
+}> {
     const bundleStart = Date.now();
+    timingPass.stages.length = 0;
+    timingPass.totalElapsedMs = null;
     console.log(`[brief-engine:bundle] START full bundle (${campaign.id})`);
 
     // ── Step 1: Core aesthetic brief (pass 1 + pass 2 + refinement) ──────
-    const endAesthetic = stageTimer('pass1+pass2+refinement', campaign.id);
-    const brief = await generateAestheticBrief(campaign, options);
+    const endAesthetic = stageTimer('aesthetic-bundle-total', campaign.id, timingPass.stages);
+    const brief = await generateAestheticBrief(campaign, {
+        ...options,
+        recordStageTiming: (stageName, elapsedMs) => {
+            timingPass.stages.push({ stageName, elapsedMs });
+        },
+    });
     endAesthetic();
 
     // ── Step 2: Community-native action anchors ───────────────────────────
-    const endAnchors = stageTimer('anchor-generation', campaign.id);
+    const endAnchors = stageTimer('anchor-generation', campaign.id, timingPass.stages);
     const anchors = await generateActionAnchors(campaign, brief, { instructions: options?.instructions });
     endAnchors();
 
     // ── Step 3: Landing still bible from locked anchors ───────────────
-    const endStillBible = stageTimer('landing-still-bible', campaign.id);
+    const endStillBible = stageTimer('landing-still-bible', campaign.id, timingPass.stages);
     let landingStillBible = await generateLandingStillBible(campaign, brief, anchors, { instructions: options?.instructions });
     endStillBible();
 
@@ -163,7 +189,7 @@ async function generateFullBriefBundle(
 
     if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
-        const endRepair = stageTimer('isolated-still-repair', campaign.id);
+        const endRepair = stageTimer('isolated-still-repair', campaign.id, timingPass.stages);
         const repairedStills = await repairFailingStills(
             campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock, { instructions: options?.instructions },
         );
@@ -197,7 +223,7 @@ async function generateFullBriefBundle(
         const correctionContext = [anchorFailureSummary, lintFailureSummary].filter(Boolean).join('\n\n');
 
         console.log(`[brief-engine] whole-set failure for ${campaign.id}: all ${allFailingIds.length} stills failed — regenerating with correction context`);
-        const endWholeRegen = stageTimer('whole-set-regeneration', campaign.id);
+        const endWholeRegen = stageTimer('whole-set-regeneration', campaign.id, timingPass.stages);
         landingStillBible = await generateLandingStillBible(campaign, brief, anchors, {
             correctionContext,
             instructions: options?.instructions,
@@ -225,7 +251,7 @@ async function generateFullBriefBundle(
     }
 
     // ── Step 6: Production bible from validated stills ────────────────────
-    const endProdBible = stageTimer('production-bible-generation', campaign.id);
+    const endProdBible = stageTimer('production-bible-generation', campaign.id, timingPass.stages);
     const productionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible, { instructions: options?.instructions });
     endProdBible();
 
@@ -238,6 +264,7 @@ async function generateFullBriefBundle(
     });
 
     const totalSec = ((Date.now() - bundleStart) / 1000).toFixed(1);
+    timingPass.totalElapsedMs = Date.now() - bundleStart;
     console.log(`[brief-engine:bundle] END   full bundle (${campaign.id}) — total ${totalSec}s | lint=${finalLint.verdict}`);
 
     return {
@@ -360,98 +387,127 @@ async function computeReadiness(brief: CampaignAestheticBrief, campaign: Campaig
 
 export async function createOrRefreshBrief(slug: string, options?: { instructions?: string }): Promise<BriefEngineResult> {
     const warnings: string[] = [];
+    const timings: BriefTimingPass[] = [];
 
     const campaign = await getCampaignBlueprint(slug);
     if (!campaign) throw new Error(`Campaign not found: ${slug}`);
 
     console.log(`[brief-engine] create_or_refresh for ${slug}`);
 
-    // ── First generation pass: full bundle ────────────────────────────
-    let isolatedStillRevisionUsed = false;
-    let wholeSetRegenerationUsed = false;
-    const firstBundle = await generateFullBriefBundle(campaign, { instructions: options?.instructions });
-    isolatedStillRevisionUsed = firstBundle.isolatedStillRevisionUsed;
-    wholeSetRegenerationUsed = firstBundle.wholeSetRegenerationUsed;
-    let brief: CampaignAestheticBrief = firstBundle;
+    activeBriefTimingSnapshots.set(slug, timings);
 
-    // ── First validation ──────────────────────────────────────────────
-    let validation = validateBrief(brief, campaign);
+    try {
+        // ── First generation pass: full bundle ────────────────────────────
+        let isolatedStillRevisionUsed = false;
+        let wholeSetRegenerationUsed = false;
+        const initialTimingPass: BriefTimingPass = {
+            passLabel: 'initial',
+            totalElapsedMs: null,
+            stages: [],
+        };
+        timings.push(initialTimingPass);
+        const firstBundle = await generateFullBriefBundle(campaign, initialTimingPass, { instructions: options?.instructions });
+        isolatedStillRevisionUsed = firstBundle.isolatedStillRevisionUsed;
+        wholeSetRegenerationUsed = firstBundle.wholeSetRegenerationUsed;
+        let brief: CampaignAestheticBrief = firstBundle;
 
-    // ── One-strike auto-fix ───────────────────────────────────────────
-    let autoFixApplied = false;
-    let fixedCodes: string[] = [];
-    let correctiveRepromptUsed = false;
+        // ── First validation ──────────────────────────────────────────────
+        let validation = validateBrief(brief, campaign);
 
-    if (!validation.passed) {
-        const autoFixableCount = validation.issues.filter((i) => i.autoFixable).length;
-        if (autoFixableCount > 0) {
-            console.log(`[brief-engine] auto-fix: ${autoFixableCount} fixable issues`);
-            const fixResult = applyAutoFixes(brief, validation.issues);
-            brief = fixResult.brief;
-            fixedCodes = fixResult.fixedCodes;
-            autoFixApplied = fixedCodes.length > 0;
-            if (autoFixApplied) {
+        // ── One-strike auto-fix ───────────────────────────────────────────
+        let autoFixApplied = false;
+        let fixedCodes: string[] = [];
+        let correctiveRepromptUsed = false;
+
+        if (!validation.passed) {
+            const autoFixableCount = validation.issues.filter((i) => i.autoFixable).length;
+            if (autoFixableCount > 0) {
+                console.log(`[brief-engine] auto-fix: ${autoFixableCount} fixable issues`);
+                const fixResult = applyAutoFixes(brief, validation.issues);
+                brief = fixResult.brief;
+                fixedCodes = fixResult.fixedCodes;
+                autoFixApplied = fixedCodes.length > 0;
+                if (autoFixApplied) {
+                    validation = validateBrief(brief, campaign);
+                }
+                if (fixResult.unfixableCodes.length > 0) {
+                    warnings.push(`Auto-fix could not address: ${fixResult.unfixableCodes.join(', ')}`);
+                }
+            }
+        }
+
+        // ── One corrective reprompt if blockers still remain ──────────────
+        if (!validation.passed) {
+            const remainingBlockers = validation.issues.filter((i) => i.severity === 'blocker');
+            const nonLaunchBlockers = remainingBlockers.filter((i) => i.code !== 'launch_window_violation');
+
+            if (nonLaunchBlockers.length > 0) {
+                correctiveRepromptUsed = true;
+                const correctionContext = buildCorrectionContext(nonLaunchBlockers);
+                console.log(`[brief-engine] corrective reprompt for ${slug}: ${nonLaunchBlockers.length} blocker(s)`);
+
+                const correctiveTimingPass: BriefTimingPass = {
+                    passLabel: 'corrective_reprompt',
+                    totalElapsedMs: null,
+                    stages: [],
+                };
+                timings.push(correctiveTimingPass);
+                const repromptBundle = await generateFullBriefBundle(campaign, correctiveTimingPass, {
+                    correctionContext,
+                    instructions: options?.instructions,
+                });
+                isolatedStillRevisionUsed = isolatedStillRevisionUsed || repromptBundle.isolatedStillRevisionUsed;
+                wholeSetRegenerationUsed = wholeSetRegenerationUsed || repromptBundle.wholeSetRegenerationUsed;
+                brief = repromptBundle;
+                const repromptAutoFix = applyAutoFixes(brief, validateBrief(brief, campaign).issues);
+                brief = repromptAutoFix.brief;
+                if (repromptAutoFix.fixedCodes.length > 0) {
+                    fixedCodes = [...new Set([...fixedCodes, ...repromptAutoFix.fixedCodes])];
+                    autoFixApplied = true;
+                }
                 validation = validateBrief(brief, campaign);
             }
-            if (fixResult.unfixableCodes.length > 0) {
-                warnings.push(`Auto-fix could not address: ${fixResult.unfixableCodes.join(', ')}`);
-            }
         }
+
+        // ── Persist final brief ───────────────────────────────────────────
+        const briefToPersist = applySupervisorState(brief, {
+            issues: validation.issues,
+            reviewStatus: 'pending',
+            origin: 'create_or_refresh',
+            revisionCycleCount: (brief.revisionCycleCount ?? 0),
+        });
+        await saveAestheticBrief(briefToPersist);
+
+        const blockerCount = validation.issues.filter((i) => i.severity === 'blocker').length;
+        const summary = validation.passed
+            ? 'Brief generated and passes all structural checks. Ready for approval.'
+            : `Brief generated but ${blockerCount} blocker(s) remain.${correctiveRepromptUsed ? ' Corrective reprompt was used.' : ''} ${validation.summary}`;
+
+        return {
+            readiness: 'needs_review',
+            brief: briefToPersist,
+            issues: validation.issues,
+            summary,
+            warnings,
+            timings,
+            autoFixApplied,
+            fixedCodes,
+            correctiveRepromptUsed,
+            isolatedStillRevisionUsed,
+            wholeSetRegenerationUsed,
+        };
+    } finally {
+        activeBriefTimingSnapshots.delete(slug);
     }
+}
 
-    // ── One corrective reprompt if blockers still remain ──────────────
-    if (!validation.passed) {
-        const remainingBlockers = validation.issues.filter((i) => i.severity === 'blocker');
-        const nonLaunchBlockers = remainingBlockers.filter((i) => i.code !== 'launch_window_violation');
-
-        if (nonLaunchBlockers.length > 0) {
-            correctiveRepromptUsed = true;
-            const correctionContext = buildCorrectionContext(nonLaunchBlockers);
-            console.log(`[brief-engine] corrective reprompt for ${slug}: ${nonLaunchBlockers.length} blocker(s)`);
-
-            const repromptBundle = await generateFullBriefBundle(campaign, {
-                correctionContext,
-                instructions: options?.instructions,
-            });
-            isolatedStillRevisionUsed = isolatedStillRevisionUsed || repromptBundle.isolatedStillRevisionUsed;
-            wholeSetRegenerationUsed = wholeSetRegenerationUsed || repromptBundle.wholeSetRegenerationUsed;
-            brief = repromptBundle;
-            const repromptAutoFix = applyAutoFixes(brief, validateBrief(brief, campaign).issues);
-            brief = repromptAutoFix.brief;
-            if (repromptAutoFix.fixedCodes.length > 0) {
-                fixedCodes = [...new Set([...fixedCodes, ...repromptAutoFix.fixedCodes])];
-                autoFixApplied = true;
-            }
-            validation = validateBrief(brief, campaign);
-        }
-    }
-
-    // ── Persist final brief ───────────────────────────────────────────
-    const briefToPersist = applySupervisorState(brief, {
-        issues: validation.issues,
-        reviewStatus: 'pending',
-        origin: 'create_or_refresh',
-        revisionCycleCount: (brief.revisionCycleCount ?? 0),
-    });
-    await saveAestheticBrief(briefToPersist);
-
-    const blockerCount = validation.issues.filter((i) => i.severity === 'blocker').length;
-    const summary = validation.passed
-        ? 'Brief generated and passes all structural checks. Ready for approval.'
-        : `Brief generated but ${blockerCount} blocker(s) remain.${correctiveRepromptUsed ? ' Corrective reprompt was used.' : ''} ${validation.summary}`;
-
-    return {
-        readiness: 'needs_review',
-        brief: briefToPersist,
-        issues: validation.issues,
-        summary,
-        warnings,
-        autoFixApplied,
-        fixedCodes,
-        correctiveRepromptUsed,
-        isolatedStillRevisionUsed,
-        wholeSetRegenerationUsed,
-    };
+export function getBriefTimingSnapshot(slug: string): BriefTimingPass[] {
+    const snapshot = activeBriefTimingSnapshots.get(slug) ?? [];
+    return snapshot.map((pass) => ({
+        passLabel: pass.passLabel,
+        totalElapsedMs: pass.totalElapsedMs,
+        stages: pass.stages.map((stage) => ({ ...stage })),
+    }));
 }
 
 // ────────────────────────────────────────────────────────────────────────────

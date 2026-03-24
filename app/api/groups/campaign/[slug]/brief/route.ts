@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrRefreshBrief, applyStructuredRevision } from '@/lib/campaigns/brief-engine/orchestrator';
+import { createOrRefreshBrief, applyStructuredRevision, getBriefTimingSnapshot } from '@/lib/campaigns/brief-engine/orchestrator';
 import type { RevisionInput } from '@/lib/campaigns/brief-engine/orchestrator';
 
 // Hard server-side timeout for brief generation (ms).
@@ -11,8 +11,9 @@ export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
 ) {
+    let slug = 'unknown';
     try {
-        const { slug } = await params;
+        ({ slug } = await params);
         const body = await req.json().catch(() => ({})) as { instructions?: string };
 
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -31,8 +32,9 @@ export async function POST(
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         const isTimeout = message.includes('[brief-engine:timeout]');
+        const timings = isTimeout ? getBriefTimingSnapshot(slug) : [];
         console.error('[brief-engine:POST]', error);
-        return NextResponse.json({ error: message }, { status: isTimeout ? 504 : 500 });
+        return NextResponse.json({ error: message, timings }, { status: isTimeout ? 504 : 500 });
     }
 }
 

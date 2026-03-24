@@ -391,7 +391,10 @@ OUTPUT RULES:
     return refinedBrief;
 }
 
-export async function generateAestheticBrief(campaign: Campaign, options?: { correctionContext?: string; instructions?: string }): Promise<CampaignAestheticBrief> {
+export async function generateAestheticBrief(
+    campaign: Campaign,
+    options?: { correctionContext?: string; instructions?: string; recordStageTiming?: (stageName: string, elapsedMs: number) => void },
+): Promise<CampaignAestheticBrief> {
     console.log(`[aesthetic-engine] Starting aesthetic brief generation for ${campaign.id}`);
     console.log(`[aesthetic-engine] Structured generation helper selected for ${campaign.id}: model=${ModelName.GPT_5_HIGH}`);
 
@@ -515,6 +518,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         : '';
 
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
+    const pass1Start = Date.now();
     let attempts = 0;
     while (attempts < 3) {
         attempts++;
@@ -555,6 +559,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 
     // Fallback if it failed 3 times, keep last result
     const coreAesthetic = pass1Result!.object;
+    options?.recordStageTiming?.('aesthetic-pass1-core', Date.now() - pass1Start);
 
     // PASS 2: Platform Extrapolations
     const systemPromptPass2 = `
@@ -584,6 +589,7 @@ PASS 2 GUARDRAILS:
 
     console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
+    const pass2Start = Date.now();
     const { object: platformConcepts } = await callGlobalGenerateObject({
         modelName: ModelName.GPT_5_HIGH,
         schema: Pass2Schema,
@@ -592,6 +598,7 @@ PASS 2 GUARDRAILS:
         maxOutputTokens: 7000,
         operationName: `aesthetic-pass2:${campaign.id}`,
     });
+    options?.recordStageTiming?.('aesthetic-pass2-platform', Date.now() - pass2Start);
 
     // Assemble the core brief. The default generate route now immediately follows
     // with visual-planning generation so saved briefs include production artifacts.
@@ -608,7 +615,10 @@ PASS 2 GUARDRAILS:
     };
 
     console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);
-    return refineAestheticBrief(campaign, draftBrief, options?.instructions);
+    const refinementStart = Date.now();
+    const refinedBrief = await refineAestheticBrief(campaign, draftBrief, options?.instructions);
+    options?.recordStageTiming?.('aesthetic-refinement', Date.now() - refinementStart);
+    return refinedBrief;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
