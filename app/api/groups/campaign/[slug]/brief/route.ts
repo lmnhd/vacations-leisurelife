@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { applyStructuredRevision } from '@/lib/campaigns/brief-engine/orchestrator';
-import { getBriefJobDiagnostics } from '@/lib/campaigns/brief-engine/orchestrator';
 import type { RevisionInput } from '@/lib/campaigns/brief-engine/orchestrator';
 import { submitAgentJob } from '@/lib/agent-api/runner';
 import { getAgentJob } from '@/lib/agent-api/store';
@@ -25,8 +24,8 @@ export async function GET(
             return NextResponse.json({ error: `Job not found: ${jobId}` }, { status: 404 });
         }
 
-        // Attach any failure diagnostics so the UI can show partial timings on error.
-        const failureDiagnostics = (job.status === 'failed') ? getBriefJobDiagnostics(slug) : null;
+        // Attach persisted failure diagnostics from the worker execution
+        const failureDiagnostics = (job.status === 'failed') ? (job.failureDiagnostics ?? null) : null;
 
         return NextResponse.json({
             jobId: job.jobId,

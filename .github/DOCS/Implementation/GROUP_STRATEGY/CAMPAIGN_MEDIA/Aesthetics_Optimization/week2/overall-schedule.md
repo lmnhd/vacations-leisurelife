@@ -16,108 +16,112 @@ The rule for week 2 is simple:
 
 ## Verified Progress
 
-The following work appears to be implemented already and should be treated as landed pending live verification:
+The following work is now verified:
 
 1. the brief route now acts as enqueue plus status instead of full synchronous generation
 2. Brief Studio now polls job status instead of waiting on one long blocking request
-3. failure diagnostics can now be attached to failed jobs
+3. the worker queue-consumption bug has been fixed, so queued jobs now transition to `running`
+4. live worker-backed runs now reach `generate_brief`
+5. the first Pass 1 flattening and durable diagnostics changes have landed in code
 
-Live verification also established one new blocker:
+Live verification established the next real blockers:
 
-1. jobs enqueue successfully
-2. polling works
-3. jobs remain stuck in `queued`
-4. no worker step starts running
+1. jobs no longer stall in `queued`
+2. both fresh verification campaigns still fail inside Pass 1 during `generate_brief`
+3. the visible terminal failure is still `[aesthetic-engine:pass1-timeout] Attempt 1 ... exceeded 90s`
+4. worker logs still show schema validation failure followed by repair churn before timeout
+5. `failureDiagnostics` persistence is now partial rather than absent: open-deck persisted it, drift did not
+6. failed jobs can retain stale step state, with `generate_brief` still marked `running` after terminal failure
 
-Because of that, the schedule changes here again: worker consumption must be fixed before further reruns are meaningful.
+Because of that, the schedule changes again: queue execution is no longer priority 1, but the first Pass 1 stabilization pass was not sufficient. The next agent should treat remaining Pass 1 repair churn, inconsistent diagnostics persistence, and failed-step finalization as the immediate workflow tasks.
 
 ---
 
-### Priority 1: Make queued worker-backed brief jobs actually execute
+### Priority 1: Stabilize the Pass 1 schema contract
 
 Why this comes first:
 
-1. live verification showed the route and UI can enqueue and poll, but execution never starts
-2. no amount of rerunning will help until queued jobs are consumed
-3. campaign tuning is still wasted if the worker path is inert
+1. live verification already proved the worker path executes
+2. the first flattening pass landed, but both verification campaigns still timed out in Pass 1
+3. campaign tuning is still wasted until Pass 1 can return a valid structured payload without repair spirals
 
 Primary outputs:
 
-1. queued jobs transition to `running`
-2. worker steps advance beyond `pending`
-3. terminal success or failure becomes reachable
+1. identify which fields in the new flat schema are still driving validation and repair churn
+2. reduce remaining schema-repair loops enough that drift completes inside bounded runtime
+3. keep fallback/default population in post-generation normalization
+4. avoid expanding the contract again while debugging the remaining failure families
 
 ---
 
-### Priority 2: Verify the worker-backed regeneration flow live after queue consumption is fixed
+### Priority 2: Persist worker-visible failure diagnostics durably
 
 Why this comes second:
 
-1. the route and UI implementation have changed materially since the original timeout tests
-2. we need a fresh control-case and problem-case run through the now-executing worker flow
-3. only then can we see whether the remaining blocker is Pass 1 churn or something else
+1. failures are now happening in the worker, not at enqueue time
+2. runtime verification proved diagnostics persistence is inconsistent across campaigns
+3. paid reruns should not be required just to recover the last real failure context
 
 Primary outputs:
 
-1. quick enqueue response from POST
-2. terminal job status through polling
-3. persisted success or actionable failed-job diagnostics
+1. both drift and open-deck persist non-null `failureDiagnostics` on failure
+2. route responses reflect worker-generated failure context consistently
+3. Brief Studio can display actionable diagnostics after refresh or reconnect for every failed job
 
 ---
 
-### Priority 3: Fix Pass 1 observability and schema/runtime churn if reruns still fail
-
-Why this comes second:
-
-1. prior evidence points to Pass 1 churn as the main wall-clock consumer
-2. `WORK2.txt` identifies nested missing-field failures and object-array mismatches as likely root causes
-3. if the worker path still fails, this is the highest-value technical fix area
-
-Primary outputs:
-
-1. flatter generation-time schema contract
-2. less retry churn
-3. more reliable first-pass validity
-4. post-generation normalization handles fallbacks instead of the live model schema
-
----
-
-### Priority 4: Harden the worker-backed status and diagnostics path
+### Priority 3: Finalize failed-step state truthfully
 
 Why this comes third:
 
-1. the worker-backed path appears to be implemented already
-2. if reruns fail, the next leverage point is better persisted diagnostics and clearer terminal states
-3. the route should remain a thin status surface, not drift back toward synchronous execution
+1. failed jobs currently leave `generate_brief` marked `running`
+2. stale step state makes polling output less trustworthy for both users and the next engineer
+3. this is a small but important correctness fix before more reruns
 
 Primary outputs:
 
-1. reliable failed-job diagnostics
-2. clearer worker step reporting
-3. route remains enqueue plus status only
-4. Brief Studio stays recoverable under failure
+1. failed jobs mark the active step as `failed`
+2. step messages explain the terminal failure reason
+3. job-level and step-level status no longer contradict each other
 
 ---
 
-### Priority 5: Re-run workflow validation campaigns after technical fixes
+### Priority 4: Re-run the control and problem campaigns after the technical fixes
 
 Why this comes fourth:
 
-1. drift is the control campaign
-2. open-deck is the known problematic campaign
-3. the same pair should be used again once workflow is stable
+1. `drift-festival-icon-2026` remains the control case
+2. `bp-opendeck-icon-2027-7n-caribbean` remains the known difficult case
+3. the same pair should validate the remaining Pass 1 fixes, diagnostics consistency, and step-state truthfulness
 
 Primary outputs:
 
-1. drift completes inside bounded runtime
-2. open-deck completes inside bounded runtime
-3. timing telemetry clearly identifies where time is spent
+1. drift completes through the worker-backed flow inside bounded runtime
+2. open-deck reaches a real terminal outcome with durable diagnostics
+3. the team can distinguish workflow failure from campaign-quality failure cleanly
+4. failed-step state is truthful if either campaign still fails
 
 ---
 
-### Priority 6: Fix music/festival aesthetics issue class
+### Priority 5: Harden Pass 1 observability and bounding
 
 Why this comes fifth:
+
+1. even after schema cleanup, attempt-level timing should remain inspectable
+2. bounded failures are cheaper and easier to reason about than opaque long retries
+3. observability must survive failure, not only success
+
+Primary outputs:
+
+1. attempt-level Pass 1 timing remains visible
+2. failure payloads explain whether the miss was timeout, schema repair, or provider latency
+3. no single invisible retry loop dominates wall-clock time
+
+---
+
+### Priority 6: Fix the music/festival aesthetics issue class
+
+Why this comes sixth:
 
 1. this is the main campaign-content problem after workflow is unblocked
 2. open-deck is the best active test case
@@ -134,34 +138,33 @@ Primary outputs:
 
 ### Day 1
 
-1. identify why queued brief jobs are not being consumed
-2. verify whether the worker process or worker subscription is missing
-3. confirm that a queued brief job can transition to `running`
+1. inspect the remaining validation and repair churn against the new flat Pass 1 schema
+2. identify the exact fields still triggering repair before timeout
+3. tighten or simplify those fields without reintroducing nested schema burden
 
 ### Day 2
 
-1. rerun `drift-festival-icon-2026` through the executing worker-backed brief flow
-2. rerun `bp-opendeck-icon-2027-7n-caribbean` through the executing worker-backed brief flow
-3. capture job completion or failed-job diagnostics from those runs
+1. make `failureDiagnostics` persistence consistent across both drift and open-deck failure paths
+2. fix failed-step finalization so `generate_brief` does not remain `running` after terminal failure
+3. verify that Brief Studio still renders the diagnostics contract cleanly
 
 ### Day 3
 
-1. if reruns still fail, instrument Pass 1 attempts and fallback transitions
-2. flatten generation-time schema shape where validation churn is worst
-3. reduce nested missing-field failures
-4. move fallback/default population into post-generation TypeScript normalization
+1. rerun `drift-festival-icon-2026` through the worker-backed brief flow
+2. rerun `bp-opendeck-icon-2027-7n-caribbean` through the worker-backed brief flow
+3. capture either successful completion or durable failed-job diagnostics with truthful step state
 
 ### Day 4
 
-1. harden worker diagnostics persistence and job-state reporting
+1. harden Pass 1 attempt telemetry and timeout visibility
 2. verify that route lifetime no longer governs regeneration runtime
-3. close any Brief Studio polling or recovery gaps exposed by reruns
+3. close any residual worker-state or polling gaps exposed by reruns
 
 ### Day 5
 
-1. rerun the same two campaigns after queue-consumption and Pass 1 fixes
-2. confirm worker-backed reliability and stable telemetry
-3. only then move to music/festival issue-class tuning if workflow is truly unblocked
+1. only after workflow is stable, move to music/festival issue-class tuning
+2. use open-deck as the first campaign-quality test case
+3. keep drift as a control whenever new prompt or issue-class guidance is introduced
 
 ---
 
@@ -169,13 +172,18 @@ Primary outputs:
 
 Stop campaign-tuning work if either of these is still true:
 
-1. the route still cannot complete reliably in bounded time
-2. the failure diagnostics still do not identify the exact Pass 1 bottleneck
+1. drift still cannot complete worker-backed regeneration in bounded time
+2. failed jobs still do not preserve the real Pass 1 failure detail durably and consistently
 
 Stop workflow refactoring and move to campaign tuning only when both are true:
 
 1. drift can regenerate successfully in bounded time
-2. open-deck can regenerate successfully in bounded time, even if it still fails lint afterward
+2. open-deck can reach a truthful terminal result in bounded time, even if it still fails lint or campaign-quality checks afterward
+
+Do not treat the diagnostics task as complete while either of these is still true:
+
+1. one failed campaign persists `failureDiagnostics` while another returns `null`
+2. a failed job still leaves its active step marked `running`
 
 ---
 
@@ -184,7 +192,8 @@ Stop workflow refactoring and move to campaign tuning only when both are true:
 Week 2 is successful when all of the following are true:
 
 1. regeneration is bounded and observable
-2. failure diagnostics survive failed runs
+2. worker-generated failure diagnostics survive failed runs and can be read through the polling route consistently across campaigns
 3. Brief Studio no longer depends on a single long blocking request
-4. drift completes as a control case
-5. open-deck reaches the point where only true campaign-quality blockers remain
+4. failed jobs expose truthful step-level status instead of stale `running` state
+5. drift completes as a control case
+6. open-deck reaches the point where only true campaign-quality blockers remain

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { approveForMedia, createOrRefreshBrief, getReadiness } from '@/lib/campaigns/brief-engine/orchestrator';
+import { approveForMedia, createOrRefreshBrief, getReadiness, getBriefJobDiagnostics } from '@/lib/campaigns/brief-engine/orchestrator';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import {
     AgentJobRecordSchema,
@@ -137,6 +137,8 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
                     persistedBrief ? 'Persisted brief found in storage' : 'Persisted brief missing from storage',
                 );
 
+                const failureDiagnostics = persistedBrief ? undefined : (getBriefJobDiagnostics(record.campaignSlug) || undefined);
+
                 currentRecord = {
                     ...currentRecord,
                     status: persistedBrief ? (blockerCount > 0 ? 'blocked' : 'completed') : 'failed',
@@ -150,6 +152,7 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
                         approvalAttempted: false,
                         approvalSucceeded: false,
                     },
+                    failureDiagnostics,
                 };
                 break;
             }
@@ -200,6 +203,13 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Agent job execution failed';
+        
+        // Provide diagnostics safely if we happen to fail during brief generation
+        let failureDiagnostics = undefined;
+        if (record.input.workflowId === 'campaign_brief_generate') {
+            failureDiagnostics = getBriefJobDiagnostics(record.campaignSlug) || undefined;
+        }
+
         currentRecord = {
             ...currentRecord,
             status: 'failed',
@@ -210,6 +220,7 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
                 approvalAttempted: record.input.workflowId === 'campaign_brief_approve',
                 approvalSucceeded: false,
             },
+            failureDiagnostics,
         };
     }
 

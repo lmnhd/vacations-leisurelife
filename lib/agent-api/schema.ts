@@ -144,6 +144,7 @@ export const AgentJobRecordSchema = z.object({
     steps: z.array(AgentExecutionStepSchema).default([]),
     summary: AgentJobSummarySchema.optional(),
     error: z.string().optional(),
+    failureDiagnostics: z.any().optional(),
 });
 export type AgentJobRecord = z.infer<typeof AgentJobRecordSchema>;
 

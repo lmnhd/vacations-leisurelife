@@ -42,19 +42,28 @@ export async function listAgentJobsForCampaign(campaignSlug: string): Promise<Ag
 }
 
 export async function listQueuedAgentJobs(limit = 10): Promise<AgentJobRecord[]> {
-    const result = await chatDynamoDocumentClient.send(new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'begins_with(SK, :prefix) AND #jobStatus = :queued',
-        ExpressionAttributeNames: {
-            '#jobStatus': 'status',
-        },
-        ExpressionAttributeValues: {
-            ':prefix': 'AGENT#JOB#',
-            ':queued': 'queued',
-        },
-    }));
+    const queuedJobs: AgentJobRecord[] = [];
+    let exclusiveStartKey: Record<string, unknown> | undefined;
 
-    return ((result.Items ?? []) as AgentJobRecord[])
+    do {
+        const result = await chatDynamoDocumentClient.send(new ScanCommand({
+            TableName: TABLE_NAME,
+            FilterExpression: 'begins_with(SK, :prefix) AND #jobStatus = :queued',
+            ExpressionAttributeNames: {
+                '#jobStatus': 'status',
+            },
+            ExpressionAttributeValues: {
+                ':prefix': 'AGENT#JOB#',
+                ':queued': 'queued',
+            },
+            ExclusiveStartKey: exclusiveStartKey,
+        }));
+
+        queuedJobs.push(...((result.Items ?? []) as AgentJobRecord[]));
+        exclusiveStartKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+    } while (exclusiveStartKey && queuedJobs.length < limit);
+
+    return queuedJobs
         .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
         .slice(0, limit);
 }

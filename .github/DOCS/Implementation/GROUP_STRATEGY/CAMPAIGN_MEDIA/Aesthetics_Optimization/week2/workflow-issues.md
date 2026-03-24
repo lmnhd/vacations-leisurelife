@@ -10,82 +10,26 @@ These issues must be treated as system reliability work, not prompt-tuning work.
 
 ## Current Status
 
-Two live HTTP regeneration tests were run through the real brief route:
+The worker-backed brief flow has now been validated far enough to separate solved transport problems from active execution problems.
 
-1. `drift-festival-icon-2026`
-2. `bp-opendeck-icon-2027-7n-caribbean`
+Verified current state:
 
-Both failed with the same result:
+1. the brief route now enqueues work and returns quickly
+2. Brief Studio polls job status instead of waiting on one long request
+3. queued jobs are now being consumed by the worker
+4. live worker-backed jobs reach `generate_brief`
+5. the active failure now happens inside Pass 1
 
-1. HTTP `504`
-2. server deadline reached at `300s`
-3. no completed timing stage returned before timeout
+The remaining workflow blockers are:
 
-This means the current primary blocker is workflow reliability, not campaign content quality.
+1. Pass 1 schema brittleness still causes structured-output repair churn and `pass1-timeout`
+2. worker failure diagnostics must remain durable and route-readable under failure
 
-Since that test run, the transport layer has changed materially:
-
-1. `app/api/groups/campaign/[slug]/brief/route.ts` now enqueues regeneration work to the agent worker path instead of waiting synchronously for full completion
-2. the same route now exposes job-status polling through `GET ?jobId=`
-3. Brief Studio now polls job status and renders persisted failure diagnostics
-
-This means the original synchronous-route blocker has been addressed architecturally, but it still needs live validation.
-
-Live verification has now been performed against that new flow.
-
-Observed result:
-
-1. POST returns quickly with a job identifier
-2. GET polling works
-3. both campaigns remain stuck in `queued`
-4. no worker step transitions to `running`
-5. no failure diagnostics are produced because execution never starts
-
-This means the next primary blocker is not route timeout. It is missing or non-consuming worker execution.
+This means campaign tuning is still downstream. The system first needs stable Pass 1 generation and truthful failure observability.
 
 ---
 
-## Workflow Issue 1: Queued brief jobs are not being consumed by the worker path
-
-### Evidence
-
-The new worker-backed route was tested live on:
-
-1. `drift-festival-icon-2026`
-2. `bp-opendeck-icon-2027-7n-caribbean`
-
-For both campaigns:
-
-1. POST returned a job ID quickly
-2. polling worked
-3. job status remained `queued`
-4. all steps stayed `pending`
-5. no transition to `running` occurred
-
-### Meaning
-
-The route and UI are no longer the immediate blocker.
-
-The execution blocker is that the worker-backed flow is not actually consuming queued jobs.
-
-Until queued jobs start running, regeneration reliability is still unproven.
-
-### Required Fix
-
-1. Identify why queued jobs are not being picked up.
-2. Verify whether the worker process is missing, disabled, or not consuming this workflow type.
-3. Ensure queued brief jobs transition from `queued` to `running`.
-4. Only after queue consumption works, rerun the control and problem campaigns.
-
-### Acceptance Criteria
-
-1. A queued brief job transitions to `running` without manual database intervention.
-2. Every run resolves to a persisted success state or an explicit failure state.
-3. Failed jobs retain actionable diagnostics.
-
----
-
-## Workflow Issue 2: Pass 1 is consuming the wall-clock budget
+## Workflow Issue 1: Pass 1 is consuming the wall-clock budget
 
 ### Evidence
 
@@ -124,7 +68,7 @@ In practical terms, the system is likely burning time inside Pass 1 itself throu
 
 ---
 
-## Workflow Issue 3: Structured schema/runtime mismatch is causing retry spirals
+## Workflow Issue 2: Structured schema/runtime mismatch is causing retry spirals
 
 ### Evidence
 
@@ -165,6 +109,36 @@ This is not a campaign-briefing problem. It is a structured-output contract prob
 
 ---
 
+## Workflow Issue 3: Failure diagnostics must survive the worker boundary
+
+### Evidence
+
+The worker can now execute jobs, and the job record can now persist `failureDiagnostics` durably.
+
+That closes the earlier process-local observability gap where the route and worker could disagree about failure state.
+
+The remaining requirement is runtime confirmation that the persisted diagnostics exposed to polling match the real worker-visible failure details.
+
+### Meaning
+
+The issue is no longer architectural uncertainty about where diagnostics should live.
+
+The issue is making sure the worker-backed failure payload remains truthful, durable, and useful enough to prevent blind paid reruns.
+
+### Required Fix
+
+1. keep worker failure diagnostics attached to the durable job record
+2. verify that polling surfaces the stored diagnostics instead of route-local memory
+3. confirm failed-job detail is still readable after refresh or reconnect
+
+### Acceptance Criteria
+
+1. a failed worker-backed job returns non-null `failureDiagnostics`
+2. the diagnostics reflect the same failure context seen by the worker
+3. the UI can inspect the latest failure without reopening worker logs
+
+---
+
 ## Workflow Issue 4: Brief Studio job UX needs live verification and polish, not a ground-up redesign
 
 ### Evidence
@@ -199,13 +173,13 @@ The remaining concern is whether the job UX is robust in real use:
 
 ---
 
-## Workflow Issue 5: Execution should move to the headless worker path
+## Workflow Issue 5: Execution should remain on the headless worker path
 
 ### Evidence
 
 `WORK2.txt` explicitly recommends keeping long-running generation loops inside the direct TypeScript/Node worker path instead of the Next.js API route.
 
-This is now partially implemented:
+This is now implemented:
 
 1. POST enqueues work via the agent runner
 2. GET returns job state
@@ -217,7 +191,7 @@ This is more specific than a generic async-job recommendation.
 
 The execution target should be the headless worker path, with the HTTP route acting as a thin launcher or status client rather than the place where full generation lives.
 
-That target now appears to be the active implementation direction. The remaining work is verification and any cleanup needed if the worker still fails inside Pass 1.
+That target is now the active implementation. The remaining work is keeping Pass 1 stable and keeping worker-side failure state inspectable.
 
 ### Required Fix
 
@@ -237,11 +211,15 @@ That target now appears to be the active implementation direction. The remaining
 
 ### Current Improvement
 
-Recent instrumentation work now exposes partial timing snapshots on timeout.
+Recent work now gives the system:
+
+1. attempt-level Pass 1 timing hooks
+2. durable job-level failure diagnostics
+3. a polling route that can return persisted diagnostics directly from the job record
 
 ### Remaining Gap
 
-The current snapshot proves only that no named stage completed before timeout. That is useful, but still too coarse for the next fix.
+The next step is not inventing more observability from scratch. It is verifying that the new diagnostics stay accurate under real failed runs and still leave enough detail to inspect Pass 1 behavior without rerunning blindly.
 
 ### Required Fix
 
@@ -258,10 +236,12 @@ The current snapshot proves only that no named stage completed before timeout. T
 
 ## Workflow Priority
 
-1. Fix worker consumption so queued jobs actually execute.
-2. Re-run the worker-backed route with live verification campaigns.
-3. Fix Pass 1 observability and bounding where worker diagnostics still point to churn.
-4. Fix schema/runtime mismatch driving repair churn.
-5. Refine worker diagnostics and Brief Studio recovery UX if reruns expose gaps.
+These priorities now mirror the post-queue-fix order in `overall-schedule.md`:
+
+1. **Stabilize the Pass 1 generation contract.**
+2. **Keep worker failure diagnostics durable and truthful.**
+3. Re-run the worker-backed route with live verification campaigns.
+4. Refine observability and Brief Studio recovery only where reruns expose real gaps.
+5. Move to campaign tuning only after workflow reliability is proven.
 
 Until these are done, campaign tuning work should be treated as secondary.

@@ -83,8 +83,86 @@ const Pass1Schema = CampaignAestheticBriefSchema.omit({
     humanReviewStatus: true,
     revisionNotes: true,
     redTeamReview: true,
+    revisionCycleCount: true,
     slug: true,
     themeName: true
+});
+
+// Flat schema for Pass 1 Generation to avoid Zod omission/repair loops
+const GenerationPass1Schema = z.object({
+    visual: z.object({
+        aestheticLabel: z.string(),
+        primaryColor: z.string(),
+        secondaryColor: z.string(),
+        accentColor: z.string(),
+        backgroundColor: z.string(),
+        textOnDarkColor: z.string(),
+        textOnLightColor: z.string(),
+        headlineStyle: z.string(),
+        bodyStyle: z.string(),
+        suggestedFonts: z.array(z.string()),
+        imageryMood: z.string(),
+        lightingStyle: z.string(),
+        compositionNotes: z.string(),
+        avoidList: z.array(z.string()),
+        referenceMoodboard: z.array(z.string()),
+        plausibilityGoverningPrinciple: z.string(),
+        cruiseNativeMoments: z.array(z.string()),
+        nicheEnhancedMoments: z.array(z.string()),
+        implausibleLiteralizations: z.array(z.string()),
+        allowedProps: z.array(z.string()),
+        discouragedProps: z.array(z.string()),
+        castingGoal: z.string(),
+        ageRangeGuidance: z.string(),
+        diversityIntent: z.string(),
+        pairingGuidance: z.string(),
+        stylingGuidance: z.string(),
+        antiStereotypeRules: z.array(z.string()),
+    }),
+    messaging: z.object({
+        heroSlogan: z.string(),
+        subSlogan: z.string(),
+        ctaWaitlist: z.string(),
+        ctaBookNow: z.string(),
+        ctaMerch: z.string(),
+        ctaShare: z.string(),
+        elevatorPitch: z.string(),
+        toneKeywords: z.array(z.string()),
+        voicePersona: z.string(),
+    }),
+    communityExpression: z.object({
+        corePromise: z.string(),
+        participationStyle: z.string(),
+        socialGravity: z.string(),
+        optionalGatherings: z.array(z.string()),
+        belongingSignals: z.array(z.string()),
+        solitudeAntiPatterns: z.array(z.string()),
+        visualTogethernessNotes: z.string(),
+        copyFramingRule: z.string(),
+    }),
+    merch: z.object({
+        conceptStatement: z.string(),
+        logoConceptDescription: z.string(),
+        tagline: z.string(),
+        printStyle: z.string(),
+        coreProductType: z.string(),
+        coreDesignDescription: z.string(),
+        coreColorway: z.string(),
+        practicalProductType: z.string(),
+        practicalDesignDescription: z.string(),
+        practicalColorway: z.string(),
+        nicheSpecificItems: z.array(z.object({
+            productType: z.string(),
+            designDescription: z.string(),
+            colorway: z.string()
+        })).describe('Array of merch objects (not strings) that fit the niche.'),
+    }),
+    audio: z.object({
+        ambientNarrationScript: z.string(),
+        hypeClipScript: z.string(),
+        voiceProfile: z.string(),
+        musicMood: z.string(),
+    }),
 });
 
 // Helper Schema for Pass 2 (Only heavy platform concepts)
@@ -522,47 +600,98 @@ CRITICAL MESSAGING AND SOCIAL RULES:
     // break with the last accepted result (or use the partial if no attempt passed).
     const PASS1_ATTEMPT_TIMEOUT_MS = 90_000;
 
-    // ── normalizePass1Output: fills nested fields that the model commonly omits.
+    // ── normalizePass1Output: maps flat LLM generation to full nested Pass1 shape.
     // Keeps the live structured-output contract strict while absorbing model gaps in TS.
-    function normalizePass1Output(raw: z.infer<typeof Pass1Schema>): z.infer<typeof Pass1Schema> {
-        const palette = raw.visual.colorPalette;
-        const typography = raw.visual.typographyDirection;
-        const messaging = raw.messaging;
+    function normalizePass1Output(raw: z.infer<typeof GenerationPass1Schema>): z.infer<typeof Pass1Schema> {
         return {
-            ...raw,
             visual: {
-                ...raw.visual,
+                aestheticLabel: raw.visual.aestheticLabel,
                 colorPalette: {
-                    primary: palette.primary || '#1a2b3c',
-                    secondary: palette.secondary || '#4d5e6f',
-                    accent: palette.accent || '#f0c040',
-                    background: palette.background || '#0a0a0a',
-                    textOnDark: palette.textOnDark || '#ffffff',
-                    textOnLight: palette.textOnLight || '#111111',
+                    primary: raw.visual.primaryColor || '#1a2b3c',
+                    secondary: raw.visual.secondaryColor || '#4d5e6f',
+                    accent: raw.visual.accentColor || '#f0c040',
+                    background: raw.visual.backgroundColor || '#0a0a0a',
+                    textOnDark: raw.visual.textOnDarkColor || '#ffffff',
+                    textOnLight: raw.visual.textOnLightColor || '#111111',
                 },
                 typographyDirection: {
-                    headlineStyle: typography.headlineStyle || 'Bold, uppercase, high-contrast',
-                    bodyStyle: typography.bodyStyle || 'Clean sans-serif, generous line height',
-                    suggestedFonts: typography.suggestedFonts?.length ? typography.suggestedFonts : ['Inter', 'Outfit'],
+                    headlineStyle: raw.visual.headlineStyle || 'Bold, uppercase, high-contrast',
+                    bodyStyle: raw.visual.bodyStyle || 'Clean sans-serif, generous line height',
+                    suggestedFonts: raw.visual.suggestedFonts?.length ? raw.visual.suggestedFonts : ['Inter', 'Outfit'],
                 },
-                plausibilityFramework: normalizeVisualPlausibilityFramework(raw.visual.plausibilityFramework),
-                humanRepresentation: normalizeHumanRepresentationGuidance(raw.visual.humanRepresentation),
+                imageryMood: raw.visual.imageryMood,
+                lightingStyle: raw.visual.lightingStyle,
+                compositionNotes: raw.visual.compositionNotes,
+                avoidList: raw.visual.avoidList,
+                referenceMoodboard: raw.visual.referenceMoodboard,
+                plausibilityFramework: normalizeVisualPlausibilityFramework({
+                    governingPrinciple: raw.visual.plausibilityGoverningPrinciple,
+                    cruiseNativeMoments: raw.visual.cruiseNativeMoments,
+                    nicheEnhancedMoments: raw.visual.nicheEnhancedMoments,
+                    implausibleLiteralizations: raw.visual.implausibleLiteralizations,
+                    allowedProps: raw.visual.allowedProps,
+                    discouragedProps: raw.visual.discouragedProps,
+                }),
+                humanRepresentation: normalizeHumanRepresentationGuidance({
+                    castingGoal: raw.visual.castingGoal,
+                    ageRangeGuidance: raw.visual.ageRangeGuidance,
+                    diversityIntent: raw.visual.diversityIntent,
+                    pairingGuidance: raw.visual.pairingGuidance,
+                    stylingGuidance: raw.visual.stylingGuidance,
+                    antiStereotypeRules: raw.visual.antiStereotypeRules,
+                }),
             },
             messaging: {
-                ...messaging,
-                heroSlogan: messaging.heroSlogan || `${raw.visual.aestheticLabel} by sea`,
-                subSlogan: messaging.subSlogan || 'Your kind of cruise.',
+                heroSlogan: raw.messaging.heroSlogan || `${raw.visual.aestheticLabel} by sea`,
+                subSlogan: raw.messaging.subSlogan || 'Your kind of cruise.',
                 ctaVariants: {
-                    waitlist: messaging.ctaVariants?.waitlist || 'Join the List',
-                    bookNow: messaging.ctaVariants?.bookNow || 'Book Now',
-                    merch: messaging.ctaVariants?.merch || 'Shop the Look',
-                    share: messaging.ctaVariants?.share || 'Share This',
+                    waitlist: raw.messaging.ctaWaitlist || 'Join the List',
+                    bookNow: raw.messaging.ctaBookNow || 'Book Now',
+                    merch: raw.messaging.ctaMerch || 'Shop the Look',
+                    share: raw.messaging.ctaShare || 'Share This',
                 },
-                toneKeywords: messaging.toneKeywords?.length ? messaging.toneKeywords : ['aspirational', 'specific', 'welcoming'],
-                elevatorPitch: messaging.elevatorPitch || '',
-                voicePersona: messaging.voicePersona || '',
+                toneKeywords: raw.messaging.toneKeywords?.length ? raw.messaging.toneKeywords : ['aspirational', 'specific', 'welcoming'],
+                elevatorPitch: raw.messaging.elevatorPitch || '',
+                voicePersona: raw.messaging.voicePersona || '',
             },
-            merch: normalizeMerchBrief(campaign.name, raw.merch),
+            communityExpression: {
+                corePromise: raw.communityExpression.corePromise,
+                participationStyle: raw.communityExpression.participationStyle,
+                socialGravity: raw.communityExpression.socialGravity,
+                optionalGatherings: raw.communityExpression.optionalGatherings,
+                belongingSignals: raw.communityExpression.belongingSignals,
+                solitudeAntiPatterns: raw.communityExpression.solitudeAntiPatterns,
+                visualTogethernessNotes: raw.communityExpression.visualTogethernessNotes,
+                copyFramingRule: raw.communityExpression.copyFramingRule,
+            },
+            merch: normalizeMerchBrief(campaign.name, {
+                conceptStatement: raw.merch.conceptStatement,
+                logoConceptDescription: raw.merch.logoConceptDescription,
+                tagline: raw.merch.tagline,
+                printStyle: raw.merch.printStyle,
+                coreItem: {
+                    productType: raw.merch.coreProductType,
+                    designDescription: raw.merch.coreDesignDescription,
+                    colorway: raw.merch.coreColorway,
+                    dallePrompt: '',
+                    printfulProductId: '',
+                },
+                practicalItem: {
+                    productType: raw.merch.practicalProductType,
+                    designDescription: raw.merch.practicalDesignDescription,
+                    colorway: raw.merch.practicalColorway,
+                    dallePrompt: '',
+                    printfulProductId: '',
+                },
+                nicheSpecificItems: raw.merch.nicheSpecificItems.map(item => ({
+                    productType: item.productType,
+                    designDescription: item.designDescription,
+                    colorway: item.colorway,
+                    dallePrompt: '',
+                    printfulProductId: '',
+                })),
+            }),
+            audio: raw.audio,
         };
     }
 
@@ -589,7 +718,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         console.log(`[aesthetic-engine:pass1-attempt] START attempt=${attempts} campaign=${campaign.id}`);
         const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
 
-        let attemptObject: z.infer<typeof Pass1Schema> | undefined;
+        let attemptObject: z.infer<typeof GenerationPass1Schema> | undefined;
         try {
             const attemptTimeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(
@@ -600,7 +729,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
             const { object } = await Promise.race([
                 callGlobalGenerateObject({
                     modelName: ModelName.GPT_5_HIGH,
-                    schema: Pass1Schema,
+                    schema: GenerationPass1Schema,
                     system: systemPromptPass1 + musicFestivalPass1Block + feedbackOpt + instructionSuffix + correctionSuffix,
                     prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
                     maxOutputTokens: 9000,
