@@ -23,33 +23,65 @@ Both failed with the same result:
 
 This means the current primary blocker is workflow reliability, not campaign content quality.
 
+Since that test run, the transport layer has changed materially:
+
+1. `app/api/groups/campaign/[slug]/brief/route.ts` now enqueues regeneration work to the agent worker path instead of waiting synchronously for full completion
+2. the same route now exposes job-status polling through `GET ?jobId=`
+3. Brief Studio now polls job status and renders persisted failure diagnostics
+
+This means the original synchronous-route blocker has been addressed architecturally, but it still needs live validation.
+
+Live verification has now been performed against that new flow.
+
+Observed result:
+
+1. POST returns quickly with a job identifier
+2. GET polling works
+3. both campaigns remain stuck in `queued`
+4. no worker step transitions to `running`
+5. no failure diagnostics are produced because execution never starts
+
+This means the next primary blocker is not route timeout. It is missing or non-consuming worker execution.
+
 ---
 
-## Workflow Issue 1: `/brief` route cannot complete within the server deadline
+## Workflow Issue 1: Queued brief jobs are not being consumed by the worker path
 
 ### Evidence
 
-The live route `app/api/groups/campaign/[slug]/brief/route.ts` timed out for both test campaigns at the hard five-minute server deadline.
+The new worker-backed route was tested live on:
 
-The timeout response now includes partial timing snapshots, and both campaigns returned an `initial` pass with no completed stages.
+1. `drift-festival-icon-2026`
+2. `bp-opendeck-icon-2027-7n-caribbean`
+
+For both campaigns:
+
+1. POST returned a job ID quickly
+2. polling worked
+3. job status remained `queued`
+4. all steps stayed `pending`
+5. no transition to `running` occurred
 
 ### Meaning
 
-The failure occurs before the route finishes even the first completed outer generation stage.
+The route and UI are no longer the immediate blocker.
 
-The current synchronous HTTP model is not reliable enough for the full regeneration pipeline.
+The execution blocker is that the worker-backed flow is not actually consuming queued jobs.
+
+Until queued jobs start running, regeneration reliability is still unproven.
 
 ### Required Fix
 
-1. Stop treating full brief regeneration as a normal blocking HTTP request.
-2. Move long-running generation into a worker or async job flow.
-3. Make the route return a job identifier and pollable status instead of waiting for full completion.
+1. Identify why queued jobs are not being picked up.
+2. Verify whether the worker process is missing, disabled, or not consuming this workflow type.
+3. Ensure queued brief jobs transition from `queued` to `running`.
+4. Only after queue consumption works, rerun the control and problem campaigns.
 
 ### Acceptance Criteria
 
-1. Regeneration never leaves the client hanging indefinitely.
+1. A queued brief job transitions to `running` without manual database intervention.
 2. Every run resolves to a persisted success state or an explicit failure state.
-3. A timed-out browser request does not mean lost observability.
+3. Failed jobs retain actionable diagnostics.
 
 ---
 
@@ -133,21 +165,31 @@ This is not a campaign-briefing problem. It is a structured-output contract prob
 
 ---
 
-## Workflow Issue 4: UI state recovery is still tied too tightly to a long request
+## Workflow Issue 4: Brief Studio job UX needs live verification and polish, not a ground-up redesign
 
 ### Evidence
 
-The Brief Studio client now has timeout handling and clearer copy, but the end-to-end user experience still depends on a single expensive request path.
+Brief Studio now appears to:
+
+1. enqueue regeneration through POST
+2. poll job state through GET
+3. render active job steps and failed-job diagnostics
 
 ### Meaning
 
-Even with better client messaging, the underlying architecture still asks the page to wait on a server path that is currently too heavy.
+The core client-side architectural shift has already happened.
+
+The remaining concern is whether the job UX is robust in real use:
+
+1. does polling stay reliable through real worker failures
+2. are terminal states clear enough
+3. is recovery obvious after failed or blocked jobs
 
 ### Required Fix
 
-1. Shift Brief Studio from request-waiting to job-tracking.
-2. Show queued, running, failed, and completed states explicitly.
-3. Preserve the ability to reload saved state independently from job execution.
+1. Verify the polling flow against real regeneration runs.
+2. Confirm that queued, running, failed, blocked, and completed states are understandable in the UI.
+3. Refine recovery behavior only where the live reruns expose gaps.
 
 ### Acceptance Criteria
 
@@ -163,17 +205,25 @@ Even with better client messaging, the underlying architecture still asks the pa
 
 `WORK2.txt` explicitly recommends keeping long-running generation loops inside the direct TypeScript/Node worker path instead of the Next.js API route.
 
+This is now partially implemented:
+
+1. POST enqueues work via the agent runner
+2. GET returns job state
+3. Brief Studio polls that state and renders failure diagnostics
+
 ### Meaning
 
 This is more specific than a generic async-job recommendation.
 
 The execution target should be the headless worker path, with the HTTP route acting as a thin launcher or status client rather than the place where full generation lives.
 
+That target now appears to be the active implementation direction. The remaining work is verification and any cleanup needed if the worker still fails inside Pass 1.
+
 ### Required Fix
 
-1. Keep the heavy generation pipeline in the headless worker runtime.
-2. Use the route only to enqueue, inspect, or retrieve results.
-3. Ensure retry loops and schema-repair loops no longer depend on route lifetime.
+1. Verify that the worker-backed path is the active path used by Brief Studio.
+2. Confirm that heavy generation no longer depends on route lifetime.
+3. If worker execution still stalls, use persisted diagnostics to fix Pass 1 and schema churn there rather than reverting to route-bound execution.
 
 ### Acceptance Criteria
 
@@ -208,10 +258,10 @@ The current snapshot proves only that no named stage completed before timeout. T
 
 ## Workflow Priority
 
-1. Fix Pass 1 observability and bounding.
-2. Fix schema/runtime mismatch driving repair churn.
-3. Move canonical execution to the headless worker path.
-4. Expose async job status through the route and Brief Studio.
-5. Upgrade Brief Studio to track jobs instead of blocking on the request.
+1. Fix worker consumption so queued jobs actually execute.
+2. Re-run the worker-backed route with live verification campaigns.
+3. Fix Pass 1 observability and bounding where worker diagnostics still point to churn.
+4. Fix schema/runtime mismatch driving repair churn.
+5. Refine worker diagnostics and Brief Studio recovery UX if reruns expose gaps.
 
 Until these are done, campaign tuning work should be treated as secondary.

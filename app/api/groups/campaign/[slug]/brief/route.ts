@@ -1,44 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrRefreshBrief, applyStructuredRevision, getBriefTimingSnapshot } from '@/lib/campaigns/brief-engine/orchestrator';
+import { applyStructuredRevision } from '@/lib/campaigns/brief-engine/orchestrator';
+import { getBriefJobDiagnostics } from '@/lib/campaigns/brief-engine/orchestrator';
 import type { RevisionInput } from '@/lib/campaigns/brief-engine/orchestrator';
+import { submitAgentJob } from '@/lib/agent-api/runner';
+import { getAgentJob } from '@/lib/agent-api/store';
 
-// Hard server-side timeout for brief generation (ms).
-// Brief generation is a multi-stage LLM pipeline; 5 minutes is the outer wall.
-const BRIEF_GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
+// GET /api/groups/campaign/[slug]/brief?jobId=<id>
+// Returns agent job status + any persisted failure diagnostics.
+export async function GET(
+    _req: NextRequest,
+    { params }: { params: Promise<{ slug: string }> },
+) {
+    try {
+        const { slug } = await params;
+        const url = new URL(_req.url);
+        const jobId = url.searchParams.get('jobId');
 
-// POST /api/groups/campaign/[slug]/brief — create_or_refresh_brief
+        if (!jobId) {
+            return NextResponse.json({ error: 'Missing jobId query parameter' }, { status: 400 });
+        }
+
+        const job = await getAgentJob(slug, jobId);
+        if (!job) {
+            return NextResponse.json({ error: `Job not found: ${jobId}` }, { status: 404 });
+        }
+
+        // Attach any failure diagnostics so the UI can show partial timings on error.
+        const failureDiagnostics = (job.status === 'failed') ? getBriefJobDiagnostics(slug) : null;
+
+        return NextResponse.json({
+            jobId: job.jobId,
+            status: job.status,
+            campaignSlug: job.campaignSlug,
+            steps: job.steps,
+            summary: job.summary,
+            error: job.error,
+            createdAt: job.createdAt,
+            startedAt: job.startedAt,
+            completedAt: job.completedAt,
+            failureDiagnostics,
+        }, { status: 200 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[brief-engine:GET]', error);
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
+}
+
+// POST /api/groups/campaign/[slug]/brief — enqueue async brief generation
+// Returns 202 + { jobId } immediately. Client polls GET ?jobId= for status.
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
 ) {
-    let slug = 'unknown';
     try {
-        ({ slug } = await params);
+        const { slug } = await params;
         const body = await req.json().catch(() => ({})) as { instructions?: string };
 
-        const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(
-                () => reject(new Error(`[brief-engine:timeout] Brief generation for "${slug}" exceeded ${BRIEF_GENERATION_TIMEOUT_MS / 1000}s server deadline. The pipeline may have stalled on a heavy LLM stage. Try again — if this recurs, check server logs for the last completed stage.`)),
-                BRIEF_GENERATION_TIMEOUT_MS,
-            );
-        });
+        const job = await submitAgentJob(
+            {
+                workflowId: 'campaign_brief_generate',
+                campaignSlug: slug,
+                stopBeforeMedia: true,
+                ...(body.instructions ? { instructions: body.instructions } : {}),
+            },
+            'brief-studio-ui',
+            { runNow: false },
+        );
 
-        const result = await Promise.race([
-            createOrRefreshBrief(slug, { instructions: body.instructions }),
-            timeoutPromise,
-        ]);
-
-        return NextResponse.json(result, { status: 200 });
+        return NextResponse.json({ jobId: job.jobId, status: job.status }, { status: 202 });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        const isTimeout = message.includes('[brief-engine:timeout]');
-        const timings = isTimeout ? getBriefTimingSnapshot(slug) : [];
         console.error('[brief-engine:POST]', error);
-        return NextResponse.json({ error: message, timings }, { status: isTimeout ? 504 : 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
-// PATCH /api/groups/campaign/[slug]/brief — apply_structured_revision
+// PATCH /api/groups/campaign/[slug]/brief — apply_structured_revision (stays synchronous)
 export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },

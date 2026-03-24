@@ -40,6 +40,23 @@ interface BriefTimingPass {
 
 const activeBriefTimingSnapshots = new Map<string, BriefTimingPass[]>();
 
+// ── Persisted failure diagnostics — survives route timeout ──────────────────
+// Keyed by slug. Stores timing snapshot + error message from the most recent
+// failed or timed-out run so Brief Studio can display it without re-running.
+
+interface BriefFailureDiagnostic {
+    slug: string;
+    failedAt: string;
+    errorMessage: string;
+    timings: BriefTimingPass[];
+}
+
+const briefFailureDiagnostics = new Map<string, BriefFailureDiagnostic>();
+
+export function getBriefJobDiagnostics(slug: string): BriefFailureDiagnostic | null {
+    return briefFailureDiagnostics.get(slug) ?? null;
+}
+
 function stageTimer(stageName: string, campaignId: string, timings: StageTiming[]): () => void {
     const start = Date.now();
     console.log(`[brief-engine:stage] START  ${stageName} (${campaignId})`);
@@ -497,6 +514,25 @@ export async function createOrRefreshBrief(slug: string, options?: { instruction
             wholeSetRegenerationUsed,
         };
     } finally {
+        // Keep diagnostics from failed runs so they survive route timeout.
+        // We detect failure by checking whether execution reached the try-return
+        // above. If the timing passes still have null totalElapsedMs the run did
+        // not complete; persist them as a failure diagnostic.
+        const snapshot = activeBriefTimingSnapshots.get(slug) ?? [];
+        const isIncomplete = snapshot.some((pass) => pass.totalElapsedMs === null);
+        if (isIncomplete) {
+            briefFailureDiagnostics.set(slug, {
+                slug,
+                failedAt: new Date().toISOString(),
+                errorMessage: 'Generation did not complete — partial timing snapshot preserved.',
+                timings: snapshot.map((pass) => ({
+                    passLabel: pass.passLabel,
+                    totalElapsedMs: pass.totalElapsedMs,
+                    stages: pass.stages.map((stage) => ({ ...stage })),
+                })),
+            });
+            console.log(`[brief-engine] failure diagnostics persisted for ${slug}: ${snapshot.length} pass(es), ${snapshot.reduce((acc, p) => acc + p.stages.length, 0)} stage(s)`);
+        }
         activeBriefTimingSnapshots.delete(slug);
     }
 }
@@ -537,8 +573,11 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
 
     // ── If instructions provided, regenerate full bundle with instruction context ──
     let isolatedStillRevisionUsed = false;
+    const revisionTimings: BriefTimingPass[] = [];
     if (revision.instructions) {
-        const revBundle = await generateFullBriefBundle(campaign, { correctionContext: revision.instructions });
+        const revTimingPass: BriefTimingPass = { passLabel: 'initial', totalElapsedMs: null, stages: [] };
+        revisionTimings.push(revTimingPass);
+        const revBundle = await generateFullBriefBundle(campaign, revTimingPass, { correctionContext: revision.instructions });
         isolatedStillRevisionUsed = revBundle.isolatedStillRevisionUsed;
         brief = revBundle;
     }
@@ -574,6 +613,7 @@ export async function applyStructuredRevision(slug: string, revision: RevisionIn
         issues: validation.issues,
         summary: validation.passed ? 'Revision applied. All structural checks pass. Ready for approval.' : validation.summary,
         warnings,
+        timings: revisionTimings,
         autoFixApplied,
         fixedCodes,
         correctiveRepromptUsed: false,

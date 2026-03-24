@@ -517,32 +517,117 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${options.instructions}`
         : '';
 
+// ── PASS1_TIMEOUT_MS: per-attempt wall-clock cap (ms).
+    // If a single callGlobalGenerateObject call exceeds this, we abort the attempt and
+    // break with the last accepted result (or use the partial if no attempt passed).
+    const PASS1_ATTEMPT_TIMEOUT_MS = 90_000;
+
+    // ── normalizePass1Output: fills nested fields that the model commonly omits.
+    // Keeps the live structured-output contract strict while absorbing model gaps in TS.
+    function normalizePass1Output(raw: z.infer<typeof Pass1Schema>): z.infer<typeof Pass1Schema> {
+        const palette = raw.visual.colorPalette;
+        const typography = raw.visual.typographyDirection;
+        const messaging = raw.messaging;
+        return {
+            ...raw,
+            visual: {
+                ...raw.visual,
+                colorPalette: {
+                    primary: palette.primary || '#1a2b3c',
+                    secondary: palette.secondary || '#4d5e6f',
+                    accent: palette.accent || '#f0c040',
+                    background: palette.background || '#0a0a0a',
+                    textOnDark: palette.textOnDark || '#ffffff',
+                    textOnLight: palette.textOnLight || '#111111',
+                },
+                typographyDirection: {
+                    headlineStyle: typography.headlineStyle || 'Bold, uppercase, high-contrast',
+                    bodyStyle: typography.bodyStyle || 'Clean sans-serif, generous line height',
+                    suggestedFonts: typography.suggestedFonts?.length ? typography.suggestedFonts : ['Inter', 'Outfit'],
+                },
+                plausibilityFramework: normalizeVisualPlausibilityFramework(raw.visual.plausibilityFramework),
+                humanRepresentation: normalizeHumanRepresentationGuidance(raw.visual.humanRepresentation),
+            },
+            messaging: {
+                ...messaging,
+                heroSlogan: messaging.heroSlogan || `${raw.visual.aestheticLabel} by sea`,
+                subSlogan: messaging.subSlogan || 'Your kind of cruise.',
+                ctaVariants: {
+                    waitlist: messaging.ctaVariants?.waitlist || 'Join the List',
+                    bookNow: messaging.ctaVariants?.bookNow || 'Book Now',
+                    merch: messaging.ctaVariants?.merch || 'Shop the Look',
+                    share: messaging.ctaVariants?.share || 'Share This',
+                },
+                toneKeywords: messaging.toneKeywords?.length ? messaging.toneKeywords : ['aspirational', 'specific', 'welcoming'],
+                elevatorPitch: messaging.elevatorPitch || '',
+                voicePersona: messaging.voicePersona || '',
+            },
+            merch: normalizeMerchBrief(campaign.name, raw.merch),
+        };
+    }
+
+    // ── Music/festival Pass 1 enforcement block (injected when campaign type matches).
+    const musicFestivalPass1Block: string = isMusicFestivalCampaign(campaign)
+        ? [
+            '',
+            'MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PASS 1 HARD REQUIREMENTS:',
+            'This campaign is a music, festival, or open-deck community type.',
+            'The following rules apply to communityExpression.belongingSignals and the core aesthetic identity:',
+            '  - At least 3 of the belonging signals must be explicitly music-cue-bearing (e.g. guests dancing on deck, live performer adjacency, crowd energy at a sound system, vinyl or earbuds as carry props, DJ booth atmosphere).',
+            '  - Banned belonging signal families for this campaign type: hosted listening room energy, public-playback control fantasy, collector-prestige salon language, generic luxury leisure with no music proof, managed event infrastructure.',
+            '  - The heroSlogan and subSlogan must anchor to music culture — they must NOT be interchangeable with generic premium cruise slogans.',
+            '  - communityExpression.socialGravity must name music-specific gravity: shared taste, recognizable fan culture, song-sharing, visible listening energy.',
+        ].join('\n')
+        : '';
+
     let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
     const pass1Start = Date.now();
     let attempts = 0;
     while (attempts < 3) {
         attempts++;
-        console.log(`[aesthetic-engine] Pass 1 core aesthetic attempt ${attempts} for ${campaign.id}`);
+        const attemptStart = Date.now();
+        console.log(`[aesthetic-engine:pass1-attempt] START attempt=${attempts} campaign=${campaign.id}`);
         const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
 
-        const { object } = await callGlobalGenerateObject({
-            modelName: ModelName.GPT_5_HIGH,
-            schema: Pass1Schema,
-            system: systemPromptPass1 + feedbackOpt + instructionSuffix + correctionSuffix,
-            prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
-            maxOutputTokens: 9000,
-            operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
-        });
+        let attemptObject: z.infer<typeof Pass1Schema> | undefined;
+        try {
+            const attemptTimeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(
+                    () => reject(new Error(`[aesthetic-engine:pass1-timeout] Attempt ${attempts} for ${campaign.id} exceeded ${PASS1_ATTEMPT_TIMEOUT_MS / 1000}s`)),
+                    PASS1_ATTEMPT_TIMEOUT_MS,
+                );
+            });
+            const { object } = await Promise.race([
+                callGlobalGenerateObject({
+                    modelName: ModelName.GPT_5_HIGH,
+                    schema: Pass1Schema,
+                    system: systemPromptPass1 + musicFestivalPass1Block + feedbackOpt + instructionSuffix + correctionSuffix,
+                    prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
+                    maxOutputTokens: 9000,
+                    operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
+                }),
+                attemptTimeoutPromise,
+            ]);
+            attemptObject = object;
+        } catch (attemptError) {
+            const attemptElapsedMs = Date.now() - attemptStart;
+            const attemptMessage = attemptError instanceof Error ? attemptError.message : String(attemptError);
+            const isTimeout = attemptMessage.includes('[aesthetic-engine:pass1-timeout]');
+            console.warn(`[aesthetic-engine:pass1-attempt] ${isTimeout ? 'TIMEOUT' : 'ERROR'} attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs} msg=${attemptMessage}`);
+            options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}-error`, attemptElapsedMs);
+            if (isTimeout && pass1Result) {
+                // Already have a good prior result; break with it rather than burning more budget.
+                console.log(`[aesthetic-engine:pass1-attempt] Using prior accepted result after timeout on attempt ${attempts}`);
+                break;
+            }
+            // No prior good result: rethrow and let outer error handling surface this
+            throw attemptError;
+        }
 
-        const normalizedObject: z.infer<typeof Pass1Schema> = {
-            ...object,
-            visual: {
-                ...object.visual,
-                plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
-                humanRepresentation: normalizeHumanRepresentationGuidance(object.visual.humanRepresentation),
-            },
-            merch: normalizeMerchBrief(campaign.name, object.merch),
-        };
+        const attemptElapsedMs = Date.now() - attemptStart;
+        const normalizedObject = normalizePass1Output(attemptObject);
+        options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}`, attemptElapsedMs);
+        console.log(`[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`);
 
         const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan, campaign.targetingKeywords);
         if (sloganFailures.length < 2) {

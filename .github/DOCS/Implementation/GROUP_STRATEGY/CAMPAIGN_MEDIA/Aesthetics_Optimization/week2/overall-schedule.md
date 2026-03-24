@@ -14,29 +14,64 @@ The rule for week 2 is simple:
 
 ## Priority Order
 
-### Priority 1: Restore bounded regeneration reliability
+## Verified Progress
 
-Why this comes first:
+The following work appears to be implemented already and should be treated as landed pending live verification:
 
-1. both live test campaigns timed out at five minutes
-2. no completed stage was returned before timeout
-3. campaign tuning is wasted if the transport path cannot finish
+1. the brief route now acts as enqueue plus status instead of full synchronous generation
+2. Brief Studio now polls job status instead of waiting on one long blocking request
+3. failure diagnostics can now be attached to failed jobs
 
-Primary outputs:
+Live verification also established one new blocker:
 
-1. attempt-level Pass 1 timing data
-2. bounded Pass 1 failure behavior
-3. clear success or failure state for each regeneration run
+1. jobs enqueue successfully
+2. polling works
+3. jobs remain stuck in `queued`
+4. no worker step starts running
+
+Because of that, the schedule changes here again: worker consumption must be fixed before further reruns are meaningful.
 
 ---
 
-### Priority 2: Fix schema/runtime structured-output churn
+### Priority 1: Make queued worker-backed brief jobs actually execute
+
+Why this comes first:
+
+1. live verification showed the route and UI can enqueue and poll, but execution never starts
+2. no amount of rerunning will help until queued jobs are consumed
+3. campaign tuning is still wasted if the worker path is inert
+
+Primary outputs:
+
+1. queued jobs transition to `running`
+2. worker steps advance beyond `pending`
+3. terminal success or failure becomes reachable
+
+---
+
+### Priority 2: Verify the worker-backed regeneration flow live after queue consumption is fixed
 
 Why this comes second:
 
-1. current evidence points to Pass 1 churn as the main wall-clock consumer
-2. missing nested fields and wrong array shapes are forcing repair loops
-3. this directly affects route completion and worker cost
+1. the route and UI implementation have changed materially since the original timeout tests
+2. we need a fresh control-case and problem-case run through the now-executing worker flow
+3. only then can we see whether the remaining blocker is Pass 1 churn or something else
+
+Primary outputs:
+
+1. quick enqueue response from POST
+2. terminal job status through polling
+3. persisted success or actionable failed-job diagnostics
+
+---
+
+### Priority 3: Fix Pass 1 observability and schema/runtime churn if reruns still fail
+
+Why this comes second:
+
+1. prior evidence points to Pass 1 churn as the main wall-clock consumer
+2. `WORK2.txt` identifies nested missing-field failures and object-array mismatches as likely root causes
+3. if the worker path still fails, this is the highest-value technical fix area
 
 Primary outputs:
 
@@ -47,24 +82,24 @@ Primary outputs:
 
 ---
 
-### Priority 3: Move regeneration onto the headless worker path
+### Priority 4: Harden the worker-backed status and diagnostics path
 
 Why this comes third:
 
-1. even with better schemas, regeneration remains too large to trust as a synchronous page-bound request
-2. Brief Studio needs recoverable job semantics
-3. `WORK2.txt` identifies the direct TypeScript/Node worker as the correct runtime for long-running generation loops
+1. the worker-backed path appears to be implemented already
+2. if reruns fail, the next leverage point is better persisted diagnostics and clearer terminal states
+3. the route should remain a thin status surface, not drift back toward synchronous execution
 
 Primary outputs:
 
-1. headless worker execution for full regeneration
-2. thin route layer for enqueue and status
-3. pollable status
-4. persisted diagnostics for failures
+1. reliable failed-job diagnostics
+2. clearer worker step reporting
+3. route remains enqueue plus status only
+4. Brief Studio stays recoverable under failure
 
 ---
 
-### Priority 4: Re-run workflow validation campaigns
+### Priority 5: Re-run workflow validation campaigns after technical fixes
 
 Why this comes fourth:
 
@@ -80,7 +115,7 @@ Primary outputs:
 
 ---
 
-### Priority 5: Fix music/festival aesthetics issue class
+### Priority 6: Fix music/festival aesthetics issue class
 
 Why this comes fifth:
 
@@ -99,35 +134,34 @@ Primary outputs:
 
 ### Day 1
 
-1. instrument Pass 1 attempts and fallback transitions
-2. identify exact time sink inside Pass 1
-3. document provider, validation, and retry behavior from a single failed run
+1. identify why queued brief jobs are not being consumed
+2. verify whether the worker process or worker subscription is missing
+3. confirm that a queued brief job can transition to `running`
 
 ### Day 2
 
-1. flatten generation-time schema shape where validation churn is worst
-2. reduce nested missing-field failures
-3. move fallback/default population into post-generation TypeScript normalization
-4. verify that Pass 1 can complete within a bounded window
+1. rerun `drift-festival-icon-2026` through the executing worker-backed brief flow
+2. rerun `bp-opendeck-icon-2027-7n-caribbean` through the executing worker-backed brief flow
+3. capture job completion or failed-job diagnostics from those runs
 
 ### Day 3
 
-1. move regeneration onto the headless worker path
-2. return job IDs from the route
-3. expose resumable status in Brief Studio
-4. ensure route lifetime no longer governs full regeneration runtime
+1. if reruns still fail, instrument Pass 1 attempts and fallback transitions
+2. flatten generation-time schema shape where validation churn is worst
+3. reduce nested missing-field failures
+4. move fallback/default population into post-generation TypeScript normalization
 
 ### Day 4
 
-1. rerun `drift-festival-icon-2026`
-2. rerun `bp-opendeck-icon-2027-7n-caribbean`
-3. confirm route reliability and capture stable timing telemetry
+1. harden worker diagnostics persistence and job-state reporting
+2. verify that route lifetime no longer governs regeneration runtime
+3. close any Brief Studio polling or recovery gaps exposed by reruns
 
 ### Day 5
 
-1. tune the music/festival issue class
-2. reduce explicit blocker recurrence on open-deck
-3. validate that fixes are reusable and not slug-specific hacks
+1. rerun the same two campaigns after queue-consumption and Pass 1 fixes
+2. confirm worker-backed reliability and stable telemetry
+3. only then move to music/festival issue-class tuning if workflow is truly unblocked
 
 ---
 

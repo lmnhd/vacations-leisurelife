@@ -84,6 +84,34 @@ interface HistoryEntry {
     details: string;
 }
 
+interface AgentJobStepStatus {
+    stepId: string;
+    label: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked' | 'skipped';
+    message?: string;
+}
+
+interface AgentJobSummary {
+    message: string;
+    readiness?: string;
+    blockerCount?: number;
+    warningCount?: number;
+    persisted?: boolean;
+}
+
+interface BriefJobPollState {
+    jobId: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | 'blocked' | 'cancelled';
+    steps: AgentJobStepStatus[];
+    summary?: AgentJobSummary;
+    error?: string;
+    failureDiagnostics?: {
+        failedAt: string;
+        errorMessage: string;
+        timings: Array<{ passLabel: string; totalElapsedMs: number | null; stages: Array<{ stageName: string; elapsedMs: number }> }>;
+    } | null;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Sub-components
 // ────────────────────────────────────────────────────────────────────────────
@@ -210,7 +238,7 @@ export default function BriefStudioPage() {
     const [slug, setSlug] = useState('');
     const [loading, setLoading] = useState(false);
     const [action, setAction] = useState<string | null>(null);
-    const [timedOut, setTimedOut] = useState(false);
+    const [activeJob, setActiveJob] = useState<BriefJobPollState | null>(null);
     const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
     const [lastResult, setLastResult] = useState<BriefEngineResult | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -245,12 +273,22 @@ export default function BriefStudioPage() {
         }
     }, [normalizedSlug]);
 
-    // ── Generate / refresh brief ──────────────────────────────────────
-    // Client timeout: 6 minutes. The server enforces its own 5-minute deadline;
-    // the extra 60 seconds gives the server time to respond with its timeout error
-    // before the client aborts. On timeout the user sees an explicit message and
-    // a Reload Saved State recovery button.
-    const CLIENT_TIMEOUT_MS = 6 * 60 * 1000;
+    // ── Load history ────────────────────────────────────────────────
+    const loadHistory = useCallback(async () => {
+        if (!normalizedSlug) return;
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/brief/history`);
+            const data = await res.json() as { entries: HistoryEntry[] };
+            setHistory(data.entries ?? []);
+        } catch {
+            setHistory([]);
+        }
+    }, [normalizedSlug]);
+
+    // ── Generate / refresh brief (async job path) ─────────────────────────────
+    // POST enqueues a job and returns { jobId }. We then poll GET ?jobId= every 5s.
+    // On completion we reload readiness so fresh brief state appears.
+    const POLL_INTERVAL_MS = 5_000;
 
     const generateBrief = useCallback(async () => {
         if (!normalizedSlug) return;
@@ -263,38 +301,51 @@ export default function BriefStudioPage() {
         setLoading(true);
         setAction('generating');
         setError(null);
-        setTimedOut(false);
-
-        const controller = new AbortController();
-        const clientTimeoutId = setTimeout(() => {
-            controller.abort();
-        }, CLIENT_TIMEOUT_MS);
+        setActiveJob(null);
 
         try {
-            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/brief`, {
+            // Step 1: enqueue
+            const enqueueRes = await fetch(`/api/groups/campaign/${normalizedSlug}/brief`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
-                signal: controller.signal,
             });
-            const data = await res.json() as (BriefEngineResult & { error?: string });
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-            setLastResult(data);
-            setReadiness({ readiness: data.readiness, brief: data.brief, issues: data.issues, summary: data.summary, campaignName: null });
-        } catch (err) {
-            const isAbort = err instanceof DOMException && err.name === 'AbortError';
-            if (isAbort) {
-                setTimedOut(true);
-                setError(`Generation timed out after ${CLIENT_TIMEOUT_MS / 60000} minutes. The server pipeline is still running in the background — click "Reload Saved State" in a moment to check if the brief was persisted.`);
-            } else {
-                setError(err instanceof Error ? err.message : 'Failed to generate brief');
+            const enqueueData = await enqueueRes.json() as { jobId?: string; error?: string };
+            if (!enqueueRes.ok || !enqueueData.jobId) {
+                throw new Error(enqueueData.error ?? `HTTP ${enqueueRes.status}`);
             }
+
+            const jobId = enqueueData.jobId;
+            setActiveJob({ jobId, status: 'queued', steps: [] });
+
+            // Step 2: poll until terminal
+            const terminalStatuses = new Set(['completed', 'failed', 'blocked', 'cancelled']);
+            let pollingActive = true;
+            while (pollingActive) {
+                await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+                const pollRes = await fetch(`/api/groups/campaign/${normalizedSlug}/brief?jobId=${encodeURIComponent(jobId)}`);
+                const pollData = await pollRes.json() as BriefJobPollState & { error?: string };
+                if (!pollRes.ok) {
+                    throw new Error(pollData.error ?? `Poll failed: HTTP ${pollRes.status}`);
+                }
+                setActiveJob(pollData);
+                if (terminalStatuses.has(pollData.status)) {
+                    pollingActive = false;
+                    if (pollData.status === 'completed') {
+                        await loadReadiness();
+                        await loadHistory();
+                    } else {
+                        setError(pollData.error ?? `Job ended with status: ${pollData.status}`);
+                    }
+                }
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to generate brief');
         } finally {
-            clearTimeout(clientTimeoutId);
             setLoading(false);
             setAction(null);
         }
-    }, [hasStoredBrief, normalizedSlug]);
+    }, [hasStoredBrief, normalizedSlug, loadReadiness, loadHistory]);
 
     // ── Approve for media ─────────────────────────────────────────────
     const approve = useCallback(async () => {
@@ -316,17 +367,6 @@ export default function BriefStudioPage() {
         }
     }, [normalizedSlug]);
 
-    // ── Load history ──────────────────────────────────────────────────
-    const loadHistory = useCallback(async () => {
-        if (!normalizedSlug) return;
-        try {
-            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/brief/history`);
-            const data = await res.json() as { entries: HistoryEntry[] };
-            setHistory(data.entries ?? []);
-        } catch {
-            setHistory([]);
-        }
-    }, [normalizedSlug]);
 
     const handleLoadCampaign = useCallback(async () => {
         await loadReadiness();
@@ -398,28 +438,63 @@ export default function BriefStudioPage() {
                 </div>
 
                 {/* ── Error ──────────────────────────────────────────── */}
-                {error && !timedOut && (
+                {error && (
                     <div className="p-4 text-sm border rounded-lg bg-red-500/10 border-red-500/20 text-red-400">
                         <strong>Error:</strong> {error}
                     </div>
                 )}
 
-                {/* ── Timeout recovery ──────────────────────────────── */}
-                {timedOut && (
-                    <div className="p-4 space-y-3 border rounded-lg bg-amber-500/10 border-amber-500/20">
-                        <p className="text-sm font-semibold text-amber-300">Generation timed out on the client</p>
-                        <p className="text-xs text-amber-200">
-                            The server pipeline may still be running. Wait a moment, then reload the saved state to check if the brief was persisted.
-                        </p>
-                        <button
-                            onClick={handleLoadCampaign}
-                            disabled={loading || !normalizedSlug}
-                            className="px-4 py-2 text-xs font-semibold border rounded-lg bg-amber-500/20 border-amber-500/30 text-amber-200 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                        >
-                            Reload Saved State
-                        </button>
+                {/* ── Active Job Status Panel ─────────────────────── */}
+                {activeJob && (
+                    <div className={`p-4 space-y-3 border rounded-lg ${
+                        activeJob.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20'
+                        : activeJob.status === 'failed' || activeJob.status === 'blocked' ? 'bg-red-500/10 border-red-500/20'
+                        : 'bg-slate-800/50 border-white/10'
+                    }`}>
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-slate-200">
+                                Job <span className="font-mono text-cyan-400">{activeJob.jobId}</span>
+                            </p>
+                            <span className={`text-[10px] uppercase tracking-widest font-semibold ${
+                                activeJob.status === 'completed' ? 'text-emerald-400'
+                                : activeJob.status === 'failed' ? 'text-rose-400'
+                                : activeJob.status === 'running' ? 'text-cyan-400'
+                                : 'text-slate-400'
+                            }`}>{activeJob.status}</span>
+                        </div>
+                        {activeJob.steps.length > 0 && (
+                            <div className="space-y-1">
+                                {activeJob.steps.map((step) => (
+                                    <div key={step.stepId} className="flex items-center gap-2 text-xs">
+                                        <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                            step.status === 'completed' ? 'bg-emerald-400'
+                                            : step.status === 'running' ? 'bg-cyan-400 animate-pulse'
+                                            : step.status === 'failed' ? 'bg-rose-400'
+                                            : 'bg-slate-600'
+                                        }`} />
+                                        <span className="text-slate-300">{step.label}</span>
+                                        {step.message && <span className="text-slate-500 truncate">{step.message}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {activeJob.status === 'failed' && activeJob.failureDiagnostics && (
+                            <div className="space-y-2 pt-1 border-t border-white/5">
+                                <p className="text-[10px] uppercase tracking-widest text-rose-400">Failure diagnostics</p>
+                                <p className="text-xs text-slate-400">{activeJob.failureDiagnostics.errorMessage}</p>
+                                {activeJob.failureDiagnostics.timings.map((pass) => (
+                                    <div key={pass.passLabel} className="text-xs text-slate-500">
+                                        <p className="font-semibold text-slate-400">{pass.passLabel} — {pass.totalElapsedMs !== null ? `${(pass.totalElapsedMs / 1000).toFixed(1)}s` : 'incomplete'}</p>
+                                        {pass.stages.map((stage) => (
+                                            <p key={stage.stageName} className="pl-3">{stage.stageName}: {(stage.elapsedMs / 1000).toFixed(1)}s</p>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
+
 
                 {/* ── Readiness State ────────────────────────────────── */}
                 {readiness && (
