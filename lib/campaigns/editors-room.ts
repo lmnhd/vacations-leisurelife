@@ -117,11 +117,14 @@ const LenientStoryboardSchema = z.object({
     editingStyle: z.string().default(''),
 });
 
+const coerceToArray = (val: unknown): unknown[] =>
+    Array.isArray(val) ? val : (val !== null && typeof val === 'object' ? Object.values(val as object) : []);
+
 const LenientProductionBibleSchema = z.object({
-    sceneLibrary: z.array(LenientSceneSpecSchema).default([]),
-    storyboards: z.array(LenientStoryboardSchema).default([]),
+    sceneLibrary: z.preprocess(coerceToArray, z.array(LenientSceneSpecSchema).default([])),
+    storyboards: z.preprocess(coerceToArray, z.array(LenientStoryboardSchema).default([])),
     globalDirectionNotes: z.string().default(''),
-    avoidDirectives: z.array(z.string()).default([]),
+    avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
 });
 
 type ActionAnchorSet = z.infer<typeof ActionAnchorSetSchema>;
