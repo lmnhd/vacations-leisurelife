@@ -36,6 +36,8 @@ export async function callGlobalGenerateObject<T>(options: {
     timeoutMs?: number;
     maxOutputTokens?: number;
     operationName?: string;
+    maxCandidates?: number;
+    skipRepair?: boolean;
 }) {
     const targetModel = options.modelName ?? MODEL_FAST;
     const apiId = resolveModelApiId(targetModel);
@@ -43,14 +45,16 @@ export async function callGlobalGenerateObject<T>(options: {
     const timeoutMs = options.timeoutMs ?? 120000;
     const baseMaxOutputTokens = options.maxOutputTokens ?? 4000;
     const fallbackApiId = process.env.OPENAI_FALLBACK_MODEL?.trim();
-    const candidateModels = [
+    const maxCandidates = options.maxCandidates ?? 3;
+    const allCandidates = [
         apiId,
         apiId, // retry once on the same model for transient empty responses
         ...(fallbackApiId && fallbackApiId !== apiId ? [fallbackApiId] : []),
     ];
+    const candidateModels = allCandidates.slice(0, maxCandidates);
     const attemptTokenLimits = candidateModels.map((_, index) => {
         const multiplier = index === 0 ? 1 : index === 1 ? 2 : 4;
-        return Math.min(baseMaxOutputTokens * multiplier, 16000);
+        return Math.min(baseMaxOutputTokens * multiplier, 32000);
     });
     
     console.log(`[${operationName}] Starting structured generation with ${apiId}...`);
@@ -122,6 +126,12 @@ export async function callGlobalGenerateObject<T>(options: {
                     }
 
                     const issuePreview = JSON.stringify(error.issues.slice(0, 25), null, 2);
+
+                    if (options.skipRepair) {
+                        console.warn(`[${operationName}] Schema validation failed for model ${activeModel}; skipRepair=true, throwing immediately.`);
+                        throw new Error(`Schema validation failed for model ${activeModel}. Issues: ${issuePreview}`);
+                    }
+
                     console.warn(`[${operationName}] Schema validation failed for model ${activeModel}; attempting JSON repair.`);
                     const repairedRawJson = await requestJson([
                         'Repair the JSON below so it strictly satisfies the target schema.',

@@ -11,7 +11,7 @@
 import { z } from 'zod';
 import type { Campaign } from './types';
 import type { CampaignAestheticBrief, LandingStillBible, LandingStillSpec, ProductionBuildLintIssue } from './schema';
-import { LandingStillBibleSchema, LandingStillSlotRoleEnum, LandingStillSpecSchema, ProductionBibleSchema } from './schema';
+import { LandingStillUsageEnum, LandingStillSlotRoleEnum, ProductionBibleSchema } from './schema';
 import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
@@ -26,43 +26,102 @@ import {
 import { getReferencePack, formatReferencePackForGeneration, formatReferenceBundleForPrompt, getSlotReferenceBundle } from './reference-packs';
 import { CameraDistanceEnum, FramingModeEnum } from './reference-pack-types';
 
-// ── Generation-only schemas: audit fields required (OpenAI structured output rejects .optional fields) ──
-// These are used ONLY for generateObject calls. schema.ts keeps .optional() for backward-compat reading
-// of persisted stills that pre-date the audit fields.
+// ── Lenient generation schemas: .default() on all fields so Zod fills gaps instead of triggering repair loops ──
+// These are used ONLY for generateObject calls. schema.ts keeps strict schemas for downstream persistence.
 
-const StillSpecForGenerationSchema = LandingStillSpecSchema.extend({
-    anchorId: z.string(),
-    slotRole: LandingStillSlotRoleEnum,
-    nicheCarryThrough: z.string(),
-    // ── Shot-intent underlayer (required in generation) ──
-    shotIntent: z.string(),
-    cameraDistance: CameraDistanceEnum,
-    framingMode: FramingModeEnum,
-    heroSubject: z.string(),
-    nicheCue: z.string(),
-    antiFallbackNote: z.string(),
-    referencePackId: z.string(),
+const LenientStillSpecSchema = z.object({
+    stillId: z.string().default(''),
+    usage: LandingStillUsageEnum.default('hero_primary' as const),
+    location: z.string().default(''),
+    timeOfDay: z.string().default(''),
+    lighting: z.string().default(''),
+    composition: z.string().default(''),
+    subjectAction: z.string().default(''),
+    environmentDetails: z.string().default(''),
+    mood: z.string().default(''),
+    imagePrompt: z.string().default(''),
+    referenceCategory: z.string().default(''),
+    anchorId: z.string().default(''),
+    slotRole: LandingStillSlotRoleEnum.default('HERO_PRIMARY' as const),
+    nicheCarryThrough: z.string().default(''),
+    shotIntent: z.string().default(''),
+    cameraDistance: CameraDistanceEnum.default('medium'),
+    framingMode: FramingModeEnum.default('single_subject' as const),
+    heroSubject: z.string().default(''),
+    nicheCue: z.string().default(''),
+    antiFallbackNote: z.string().default(''),
+    referencePackId: z.string().default(''),
 });
 
-const BibleForGenerationSchema = LandingStillBibleSchema.extend({
-    stillLibrary: z.array(StillSpecForGenerationSchema),
+const StillSpecForGenerationSchema = LenientStillSpecSchema;
+
+const BibleForGenerationSchema = z.object({
+    stillLibrary: z.array(LenientStillSpecSchema).default([]),
+    globalDirectionNotes: z.string().default(''),
+    avoidDirectives: z.array(z.string()).default([]),
 });
 
-const RepairResultSchema = z.object({ stills: z.array(StillSpecForGenerationSchema) });
+const RepairResultSchema = z.object({ stills: z.array(LenientStillSpecSchema).default([]) });
 
 // ── Internal: anchor schema (intermediate only — not exported as a named type) ──
 
 const ActionAnchorSchema = z.object({
-    anchorId: z.string(),
-    communityAction: z.string(),
-    locationFamily: z.string(),
-    nicheSignal: z.string(),
-    socialUnit: z.enum(['solo', 'pair']),
-    emotionalRegister: z.string(),
+    anchorId: z.string().default(''),
+    communityAction: z.string().default(''),
+    locationFamily: z.string().default(''),
+    nicheSignal: z.string().default(''),
+    socialUnit: z.enum(['solo', 'pair']).default('pair'),
+    emotionalRegister: z.string().default(''),
 });
 
 const ActionAnchorSetSchema = z.object({
-    anchors: z.array(ActionAnchorSchema).min(6).max(8),
+    anchors: z.array(ActionAnchorSchema).default([]),
+});
+
+// ── Lenient ProductionBible override for generation (strict ProductionBibleSchema used downstream) ──
+
+const LenientSceneSpecSchema = z.object({
+    sceneId: z.string().default(''),
+    location: z.string().default(''),
+    timeOfDay: z.string().default(''),
+    lighting: z.string().default(''),
+    cameraAngle: z.string().default(''),
+    subjectAction: z.string().default(''),
+    environmentDetails: z.string().default(''),
+    mood: z.string().default(''),
+    imagePrompt: z.string().default(''),
+    referenceCategory: z.string().default(''),
+});
+
+const LenientShotSpecSchema = z.object({
+    shotNumber: z.number().default(1),
+    sceneId: z.string().default(''),
+    durationSeconds: z.number().default(3),
+    cameraMovement: z.string().default(''),
+    subjectMotion: z.string().default(''),
+    environmentMotion: z.string().default(''),
+    transitionIn: z.string().default(''),
+    transitionOut: z.string().default(''),
+    emotionalBeat: z.string().default(''),
+    narrationSegment: z.string().default(''),
+    musicCue: z.string().default(''),
+});
+
+const LenientStoryboardSchema = z.object({
+    deliverableId: z.string().default(''),
+    title: z.string().default(''),
+    totalDurationSeconds: z.number().default(30),
+    shotSequence: z.array(LenientShotSpecSchema).default([]),
+    narrationScript: z.string().default(''),
+    musicDirection: z.string().default(''),
+    editingStyle: z.string().default(''),
+});
+
+const LenientProductionBibleSchema = z.object({
+    sceneLibrary: z.array(LenientSceneSpecSchema).default([]),
+    storyboards: z.array(LenientStoryboardSchema).default([]),
+    globalDirectionNotes: z.string().default(''),
+    avoidDirectives: z.array(z.string()).default([]),
 });
 
 type ActionAnchorSet = z.infer<typeof ActionAnchorSetSchema>;
@@ -110,11 +169,12 @@ ${options.instructions}` : ''}
         schema: ActionAnchorSetSchema,
         system,
         prompt: `Campaign: ${campaign.name}\nShip: ${getCanonicalShipName(campaign)}\nDestination: ${campaign.targetDestination ?? 'TBD'}`,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 8000,
+        skipRepair: true,
         operationName: `editors-room:anchors:${campaign.id}`,
     });
 
-    return object;
+    return object as z.output<typeof ActionAnchorSetSchema>;
 }
 
 // ── Step 2: Generate landing still bible from locked anchors ──────────────────
@@ -197,11 +257,12 @@ Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrincipl
         schema: BibleForGenerationSchema,
         system,
         prompt: ctx,
-        maxOutputTokens: 9000,
+        maxOutputTokens: 16000,
+        skipRepair: true,
         operationName: `editors-room:landing-stills:${campaign.id}`,
     });
 
-    return object;
+    return object as z.output<typeof BibleForGenerationSchema>;
 }
 
 // ── Step 3.1: Deterministic editorial composition normalizer ──────────────────
@@ -364,10 +425,11 @@ ${failingContext}
         schema: RepairResultSchema,
         system,
         prompt,
-        maxOutputTokens: 7000,
+        maxOutputTokens: 12000,
+        skipRepair: true,
         operationName: `editors-room:repair-stills:${campaign.id}`,
     });
-    return object.stills;
+    return (object as z.output<typeof RepairResultSchema>).stills;
 }
 
 // ── Step 4: Generate production bible from validated stills ───────────────────
@@ -443,14 +505,16 @@ ${VIDEO_DELIVERABLE_SPECS.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds
     console.log(`[editors-room] generateProductionBibleFromStills for ${campaign.id}`);
     const { object } = await callGlobalGenerateObject({
         modelName: ModelName.GPT_5_HIGH,
-        schema: ProductionBibleSchema,
+        schema: LenientProductionBibleSchema,
         system,
         prompt: ctx,
-        maxOutputTokens: 12000,
+        maxOutputTokens: 16000,
+        timeoutMs: 240_000,
+        skipRepair: true,
         operationName: `editors-room:production-bible:${campaign.id}`,
     });
 
-    return object;
+    return object as z.output<typeof ProductionBibleSchema>;
 }
 
 // ── Anchor compliance types ────────────────────────────────────────────────────

@@ -203,17 +203,40 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Agent job execution failed';
-        
-        // Provide diagnostics safely if we happen to fail during brief generation
-        let failureDiagnostics = undefined;
+        const failedAt = new Date().toISOString();
+
+        // ── Fix 3: Finalize step-level status on failure ─────────────────
+        // Mark whichever step was running as failed, skip remaining pending steps.
+        const now = failedAt;
+        currentRecord = {
+            ...currentRecord,
+            steps: currentRecord.steps.map((step) => {
+                if (step.status === 'running') {
+                    return { ...step, status: 'failed' as const, completedAt: now, message };
+                }
+                if (step.status === 'pending') {
+                    return { ...step, status: 'skipped' as const, completedAt: now, message: 'Skipped due to prior step failure' };
+                }
+                return step;
+            }),
+        };
+
+        // ── Fix 2: Build durable failureDiagnostics from error + timing ──
+        let failureDiagnostics: Record<string, unknown> | undefined;
         if (record.input.workflowId === 'campaign_brief_generate') {
-            failureDiagnostics = getBriefJobDiagnostics(record.campaignSlug) || undefined;
+            const orchestratorSnapshot = getBriefJobDiagnostics(record.campaignSlug);
+            failureDiagnostics = {
+                slug: record.campaignSlug,
+                failedAt,
+                errorMessage: message,
+                timings: orchestratorSnapshot?.timings ?? [],
+            };
         }
 
         currentRecord = {
             ...currentRecord,
             status: 'failed',
-            completedAt: new Date().toISOString(),
+            completedAt: failedAt,
             error: message,
             summary: {
                 message,

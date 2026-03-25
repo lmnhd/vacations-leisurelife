@@ -89,101 +89,197 @@ const Pass1Schema = CampaignAestheticBriefSchema.omit({
 });
 
 // Flat schema for Pass 1 Generation to avoid Zod omission/repair loops
-const GenerationPass1Schema = z.object({
-    visual: z.object({
-        aestheticLabel: z.string(),
-        primaryColor: z.string(),
-        secondaryColor: z.string(),
-        accentColor: z.string(),
-        backgroundColor: z.string(),
-        textOnDarkColor: z.string(),
-        textOnLightColor: z.string(),
-        headlineStyle: z.string(),
-        bodyStyle: z.string(),
-        suggestedFonts: z.array(z.string()),
-        imageryMood: z.string(),
-        lightingStyle: z.string(),
-        compositionNotes: z.string(),
-        avoidList: z.array(z.string()),
-        referenceMoodboard: z.array(z.string()),
-        plausibilityGoverningPrinciple: z.string(),
-        cruiseNativeMoments: z.array(z.string()),
-        nicheEnhancedMoments: z.array(z.string()),
-        implausibleLiteralizations: z.array(z.string()),
-        allowedProps: z.array(z.string()),
-        discouragedProps: z.array(z.string()),
-        castingGoal: z.string(),
-        ageRangeGuidance: z.string(),
-        diversityIntent: z.string(),
-        pairingGuidance: z.string(),
-        stylingGuidance: z.string(),
-        antiStereotypeRules: z.array(z.string()),
-    }),
-    messaging: z.object({
-        heroSlogan: z.string(),
-        subSlogan: z.string(),
-        ctaWaitlist: z.string(),
-        ctaBookNow: z.string(),
-        ctaMerch: z.string(),
-        ctaShare: z.string(),
-        elevatorPitch: z.string(),
-        toneKeywords: z.array(z.string()),
-        voicePersona: z.string(),
-    }),
-    communityExpression: z.object({
-        corePromise: z.string(),
-        participationStyle: z.string(),
-        socialGravity: z.string(),
-        optionalGatherings: z.array(z.string()),
-        belongingSignals: z.array(z.string()),
-        solitudeAntiPatterns: z.array(z.string()),
-        visualTogethernessNotes: z.string(),
-        copyFramingRule: z.string(),
-    }),
-    merch: z.object({
-        conceptStatement: z.string(),
-        logoConceptDescription: z.string(),
-        tagline: z.string(),
-        printStyle: z.string(),
-        coreProductType: z.string(),
-        coreDesignDescription: z.string(),
-        coreColorway: z.string(),
-        practicalProductType: z.string(),
-        practicalDesignDescription: z.string(),
-        practicalColorway: z.string(),
-        nicheSpecificItems: z.array(z.object({
-            productType: z.string(),
-            designDescription: z.string(),
-            colorway: z.string()
-        })).describe('Array of merch objects (not strings) that fit the niche.'),
-    }),
-    audio: z.object({
-        ambientNarrationScript: z.string(),
-        hypeClipScript: z.string(),
-        voiceProfile: z.string(),
-        musicMood: z.string(),
-    }),
+const GenerationPass1VisualSchema = z.object({
+    aestheticLabel: z.string().default(''),
+    primaryColor: z.string().default(''),
+    secondaryColor: z.string().default(''),
+    accentColor: z.string().default(''),
+    backgroundColor: z.string().default(''),
+    textOnDarkColor: z.string().default(''),
+    textOnLightColor: z.string().default(''),
+    headlineStyle: z.string().default(''),
+    bodyStyle: z.string().default(''),
+    suggestedFonts: z.array(z.string()).default([]),
+    imageryMood: z.string().default(''),
+    lightingStyle: z.string().default(''),
+    compositionNotes: z.string().default(''),
+    avoidList: z.array(z.string()).default([]),
+    referenceMoodboard: z.array(z.string()).default([]),
+    plausibilityGoverningPrinciple: z.string().default(''),
+    cruiseNativeMoments: z.array(z.string()).default([]),
+    nicheEnhancedMoments: z.array(z.string()).default([]),
+    implausibleLiteralizations: z.array(z.string()).default([]),
+    allowedProps: z.array(z.string()).default([]),
+    discouragedProps: z.array(z.string()).default([]),
+    castingGoal: z.string().default(''),
+    ageRangeGuidance: z.string().default(''),
+    diversityIntent: z.string().default(''),
+    pairingGuidance: z.string().default(''),
+    stylingGuidance: z.string().default(''),
+    antiStereotypeRules: z.array(z.string()).default([]),
 });
 
-// Helper Schema for Pass 2 (Only heavy platform concepts)
+const GenerationPass1MessagingSchema = z.object({
+    heroSlogan: z.string().default(''),
+    subSlogan: z.string().default(''),
+    ctaWaitlist: z.string().default(''),
+    ctaBookNow: z.string().default(''),
+    ctaMerch: z.string().default(''),
+    ctaShare: z.string().default(''),
+    elevatorPitch: z.string().default(''),
+    toneKeywords: z.array(z.string()).default([]),
+    voicePersona: z.string().default(''),
+});
+
+const GenerationPass1CommunitySchema = z.object({
+    corePromise: z.string().default(''),
+    participationStyle: z.string().default(''),
+    socialGravity: z.string().default(''),
+    optionalGatherings: z.array(z.string()).default([]),
+    belongingSignals: z.array(z.string()).default([]),
+    solitudeAntiPatterns: z.array(z.string()).default([]),
+    visualTogethernessNotes: z.string().default(''),
+    copyFramingRule: z.string().default(''),
+});
+
+const GenerationPass1MerchSchema = z.object({
+    conceptStatement: z.string().default(''),
+    logoConceptDescription: z.string().default(''),
+    tagline: z.string().default(''),
+    printStyle: z.string().default(''),
+    coreProductType: z.string().default(''),
+    coreDesignDescription: z.string().default(''),
+    coreColorway: z.string().default(''),
+    practicalProductType: z.string().default(''),
+    practicalDesignDescription: z.string().default(''),
+    practicalColorway: z.string().default(''),
+    nicheSpecificItems: z.array(z.object({
+        productType: z.string().default(''),
+        designDescription: z.string().default(''),
+        colorway: z.string().default('')
+    })).default([]).describe('Array of merch objects (not strings) that fit the niche.'),
+});
+
+const GenerationPass1AudioSchema = z.object({
+    ambientNarrationScript: z.string().default(''),
+    hypeClipScript: z.string().default(''),
+    voiceProfile: z.string().default(''),
+    musicMood: z.string().default(''),
+});
+
+const GenerationPass1Schema = z.object({
+    visual: GenerationPass1VisualSchema.default({}),
+    messaging: GenerationPass1MessagingSchema.default({}),
+    communityExpression: GenerationPass1CommunitySchema.default({}),
+    merch: GenerationPass1MerchSchema.default({}),
+    audio: GenerationPass1AudioSchema.default({}),
+});
+
+// ── Lenient Pass 2 generation schemas (defaults on all leaves to avoid repair loops) ──
+const LenientVideoBriefSchema = z.object({
+    title: z.string().default(''),
+    durationSeconds: z.number().default(30),
+    tool: z.enum(['heygen', 'runwayml', 'kling', 'composite']).default('runwayml'),
+    scriptOrNarration: z.string().default(''),
+    visualDirectionNotes: z.string().default(''),
+    avatarRequired: z.boolean().default(false),
+    backgroundDescription: z.string().default(''),
+    musicMood: z.string().default(''),
+});
+
+const LenientTikTokSchema = z.object({
+    hook: z.string().default(''),
+    narrative: LenientVideoBriefSchema.default({}),
+    caption: z.string().default(''),
+    hashtags: z.array(z.string()).default([]),
+    callToAction: z.string().default(''),
+});
+
+const LenientReelSchema = z.object({
+    visualConcept: z.string().default(''),
+    audioTrackType: z.string().default(''),
+    caption: z.string().default(''),
+    hashtags: z.array(z.string()).default([]),
+});
+
+const LenientCarouselSlideSchema = z.object({
+    slideNumber: z.number().default(1),
+    headline: z.string().default(''),
+    bodyText: z.string().default(''),
+    visualDescription: z.string().default(''),
+});
+
+const LenientFeedSchema = z.object({
+    carouselSlides: z.array(LenientCarouselSlideSchema).default([]),
+    singlePostConcept: z.string().default(''),
+    caption: z.string().default(''),
+});
+
+const LenientAdSchema = z.object({
+    headline: z.string().default(''),
+    primaryText: z.string().default(''),
+    description: z.string().default(''),
+    cta: z.string().default(''),
+    visualDescription: z.string().default(''),
+});
+
+const LenientYouTubeSchema = z.object({
+    title: z.string().default(''),
+    visualConcept: z.string().default(''),
+    description: z.string().default(''),
+    hashtags: z.array(z.string()).default([]),
+});
+
+const LenientPinterestSchema = z.object({
+    pinTitle: z.string().default(''),
+    pinDescription: z.string().default(''),
+    visualConcept: z.string().default(''),
+});
+
+const LenientEmailSchema = z.object({
+    subjectLine: z.string().default(''),
+    preheader: z.string().default(''),
+    bodyDirection: z.string().default(''),
+    visualDirection: z.string().default(''),
+});
+
+const LenientDiscordSchema = z.object({
+    serverBannerDescription: z.string().default(''),
+    welcomeMessageDirection: z.string().default(''),
+});
+
+const Pass2SocialSchema = z.object({
+    tiktokOrganic: LenientTikTokSchema.default({}),
+    instagramReels: LenientReelSchema.default({}),
+    instagramFeed: LenientFeedSchema.default({}),
+    facebookAd: LenientAdSchema.default({}),
+    youtubeShort: LenientYouTubeSchema.default({}),
+    pinterest: LenientPinterestSchema.default({}),
+    emailHeader: LenientEmailSchema.default({}),
+    discordBanner: LenientDiscordSchema.default({}),
+});
+
+const Pass2VideoSchema = z.object({
+    heroExplainer: LenientVideoBriefSchema.default({}),
+    tiktokSeed: LenientVideoBriefSchema.default({}),
+    thresholdAnnouncement: LenientVideoBriefSchema.default({}),
+    merchReveal: LenientVideoBriefSchema.default({}),
+    countdownSeries: z.array(LenientVideoBriefSchema).default([]),
+});
+
+// Combined type used downstream
 const Pass2Schema = z.object({
-    socialConcepts: z.object({
-        tiktokOrganic: TikTokConceptSetSchema,
-        instagramReels: ReelConceptSetSchema,
-        instagramFeed: FeedConceptSetSchema,
-        facebookAd: AdConceptSetSchema,
-        youtubeShort: YouTubeConceptSetSchema,
-        pinterest: PinterestConceptSetSchema,
-        emailHeader: EmailConceptSetSchema,
-        discordBanner: DiscordConceptSetSchema,
-    }),
-    videoConcepts: z.object({
-        heroExplainer: VideoBriefSchema,
-        tiktokSeed: VideoBriefSchema,
-        thresholdAnnouncement: VideoBriefSchema,
-        merchReveal: VideoBriefSchema,
-        countdownSeries: z.array(VideoBriefSchema),
-    })
+    socialConcepts: Pass2SocialSchema,
+    videoConcepts: Pass2VideoSchema,
+});
+
+// Lenient merch item for refinement parsing (dallePrompt/printfulProductId often missing from model output)
+const LenientMerchItemForRefinement = z.object({
+    productType: z.string().default(''),
+    designDescription: z.string().default(''),
+    colorway: z.string().default(''),
+    dallePrompt: z.string().default(''),
+    printfulProductId: z.string().default(''),
 });
 
 const RefinementSchema = CampaignAestheticBriefSchema.omit({
@@ -202,6 +298,21 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     humanReviewStatus: true,
     revisionNotes: true,
     redTeamReview: true,
+    // Pass 2 platform concepts are generated separately and carried forward unchanged
+    socialConcepts: true,
+    videoConcepts: true,
+    // Override merch to use lenient item schema with defaults
+    merch: true,
+}).extend({
+    merch: z.object({
+        conceptStatement: z.string().default(''),
+        coreItem: LenientMerchItemForRefinement.default({}),
+        practicalItem: LenientMerchItemForRefinement.default({}),
+        nicheSpecificItems: z.array(LenientMerchItemForRefinement).default([]),
+        logoConceptDescription: z.string().default(''),
+        tagline: z.string().default(''),
+        printStyle: z.string().default(''),
+    }).default({}),
 });
 
 function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords: string[] = []): string[] {
@@ -444,11 +555,13 @@ OUTPUT RULES:
         schema: RefinementSchema,
         system: refinementPrompt + instructionBlock,
         prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
-        maxOutputTokens: 7000,
+        maxOutputTokens: 14000,
+        maxCandidates: 2,
+        skipRepair: true,
         operationName: `aesthetic-refinement:${campaign.id}`,
     });
 
-    const refinedMerch = normalizeMerchBrief(campaign.name, object.merch);
+    const refinedMerch = normalizeMerchBrief(campaign.name, object.merch as z.output<typeof RefinementSchema>['merch']);
     const refinedBrief: CampaignAestheticBrief = {
         ...draftBrief,
         ...object,
@@ -598,11 +711,11 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 // ── PASS1_TIMEOUT_MS: per-attempt wall-clock cap (ms).
     // If a single callGlobalGenerateObject call exceeds this, we abort the attempt and
     // break with the last accepted result (or use the partial if no attempt passed).
-    const PASS1_ATTEMPT_TIMEOUT_MS = 90_000;
+    const PASS1_ATTEMPT_TIMEOUT_MS = 180_000;
 
     // ── normalizePass1Output: maps flat LLM generation to full nested Pass1 shape.
     // Keeps the live structured-output contract strict while absorbing model gaps in TS.
-    function normalizePass1Output(raw: z.infer<typeof GenerationPass1Schema>): z.infer<typeof Pass1Schema> {
+    function normalizePass1Output(raw: z.output<typeof GenerationPass1Schema>): z.infer<typeof Pass1Schema> {
         return {
             visual: {
                 aestheticLabel: raw.visual.aestheticLabel,
@@ -718,7 +831,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         console.log(`[aesthetic-engine:pass1-attempt] START attempt=${attempts} campaign=${campaign.id}`);
         const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
 
-        let attemptObject: z.infer<typeof GenerationPass1Schema> | undefined;
+        let attemptObject: z.output<typeof GenerationPass1Schema> | undefined;
         try {
             const attemptTimeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(
@@ -734,10 +847,13 @@ CRITICAL MESSAGING AND SOCIAL RULES:
                     prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
                     maxOutputTokens: 9000,
                     operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
+                    maxCandidates: 2,
+                    timeoutMs: PASS1_ATTEMPT_TIMEOUT_MS - 20_000,
+                    skipRepair: true,
                 }),
                 attemptTimeoutPromise,
             ]);
-            attemptObject = object;
+            attemptObject = object as z.output<typeof GenerationPass1Schema>;
         } catch (attemptError) {
             const attemptElapsedMs = Date.now() - attemptStart;
             const attemptMessage = attemptError instanceof Error ? attemptError.message : String(attemptError);
@@ -754,7 +870,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         }
 
         const attemptElapsedMs = Date.now() - attemptStart;
-        const normalizedObject = normalizePass1Output(attemptObject);
+        const normalizedObject = normalizePass1Output(attemptObject!);
         options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}`, attemptElapsedMs);
         console.log(`[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`);
 
@@ -804,14 +920,36 @@ PASS 2 GUARDRAILS:
     console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
     const pass2Start = Date.now();
-    const { object: platformConcepts } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: Pass2Schema,
-        system: systemPromptPass2 + instructionSuffix + correctionSuffix,
-        prompt: `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`,
-        maxOutputTokens: 7000,
-        operationName: `aesthetic-pass2:${campaign.id}`,
-    });
+    const pass2Prompt = `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`;
+    const pass2System = systemPromptPass2 + instructionSuffix + correctionSuffix;
+
+    const [{ object: socialConcepts }, { object: videoConcepts }] = await Promise.all([
+        callGlobalGenerateObject({
+            modelName: ModelName.GPT_5_HIGH,
+            schema: Pass2SocialSchema,
+            system: pass2System,
+            prompt: pass2Prompt,
+            maxOutputTokens: 16000,
+            maxCandidates: 2,
+            skipRepair: true,
+            operationName: `aesthetic-pass2-social:${campaign.id}`,
+        }),
+        callGlobalGenerateObject({
+            modelName: ModelName.GPT_5_HIGH,
+            schema: Pass2VideoSchema,
+            system: pass2System,
+            prompt: pass2Prompt,
+            maxOutputTokens: 16000,
+            maxCandidates: 2,
+            skipRepair: true,
+            operationName: `aesthetic-pass2-video:${campaign.id}`,
+        }),
+    ]);
+
+    const platformConcepts = {
+        socialConcepts: socialConcepts as z.output<typeof Pass2SocialSchema>,
+        videoConcepts: videoConcepts as z.output<typeof Pass2VideoSchema>,
+    };
     options?.recordStageTiming?.('aesthetic-pass2-platform', Date.now() - pass2Start);
 
     // Assemble the core brief. The default generate route now immediately follows
