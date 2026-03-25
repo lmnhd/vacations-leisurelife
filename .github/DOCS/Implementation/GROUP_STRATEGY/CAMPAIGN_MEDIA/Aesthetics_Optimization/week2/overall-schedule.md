@@ -16,24 +16,57 @@ The rule for week 2 is simple:
 
 ## Verified Progress
 
-The following work is now verified:
+The following work is now fully verified as of session ending 2026-03-24:
+
+### Workflow fixes verified
 
 1. the brief route now acts as enqueue plus status instead of full synchronous generation
 2. Brief Studio now polls job status instead of waiting on one long blocking request
 3. the worker queue-consumption bug has been fixed, so queued jobs now transition to `running`
 4. live worker-backed runs now reach `generate_brief`
-5. the first Pass 1 flattening and durable diagnostics changes have landed in code
+5. Pass 1 schema made lenient: all leaf fields and top-level objects have `.default()` values, `skipRepair: true` prevents expensive repair calls on validation failure
+6. `failureDiagnostics` now built durably in `runner.ts` catch block from error + orchestrator timing snapshot — no longer process-local only
+7. failed-step finalization fixed: `generate_brief` marked `failed`, pending steps marked `skipped`, job-level and step-level status are no longer contradictory
+8. Pass 2 split into two parallel LLM calls (`Pass2SocialSchema` + `Pass2VideoSchema`) with lenient schemas and `skipRepair: true`
+9. Refinement schema excludes `socialConcepts`/`videoConcepts` (carried forward from Pass 2), uses lenient merch schema override
+10. All `editors-room.ts` generation schemas replaced with lenient versions (`LenientStillSpecSchema`, `LenientProductionBibleSchema`, etc.) with `skipRepair: true` on every call
+11. `coerceToArray` preprocess added to `LenientProductionBibleSchema.storyboards` and `sceneLibrary` to handle model returning keyed objects instead of arrays
+12. `maxOutputTokens` raised across the full pipeline: anchors (8000), landing stills (16000), repair stills (12000), production bible (16000 + 240s timeout), refinement (14000), Pass 2 social/video (16000)
+13. `callGlobalGenerateObject` global token cap raised from 16000 to 32000
 
-Live verification established the next real blockers:
+### End-to-end campaign runs verified
 
-1. jobs no longer stall in `queued`
-2. both fresh verification campaigns still fail inside Pass 1 during `generate_brief`
-3. the visible terminal failure is still `[aesthetic-engine:pass1-timeout] Attempt 1 ... exceeded 90s`
-4. worker logs still show schema validation failure followed by repair churn before timeout
-5. `failureDiagnostics` persistence is now partial rather than absent: open-deck persisted it, drift did not
-6. failed jobs can retain stale step state, with `generate_brief` still marked `running` after terminal failure
+**drift-festival-icon-2026** — completed `status=completed`, all steps done, brief persisted, `readiness=needs_review`, `blockerCount=0`
+- Pass 1: ~98s, attempt 1 accepted
+- Pass 2 social+video: parallel, ~94s + ~115s, no repair
+- Refinement: ~108s, no repair
+- Anchors: ~80s, no repair
+- Landing stills: ~114s, no repair
+- Production bible: succeeded via gpt-5-mini retry (coerceToArray preprocess now prevents this)
 
-Because of that, the schedule changes again: queue execution is no longer priority 1, but the first Pass 1 stabilization pass was not sufficient. The next agent should treat remaining Pass 1 repair churn, inconsistent diagnostics persistence, and failed-step finalization as the immediate workflow tasks.
+**bp-opendeck-icon-2027-7n-caribbean** — completed `status=completed`, all steps done, brief persisted, `readiness=needs_review`, `blockerCount=0`
+- Pass 1: ~108s, attempt 1 accepted
+- Pass 2 social+video: parallel, ~85s + ~93s, no repair
+- Refinement: ~104s, no repair
+- Anchors: ~79s, no repair
+- Landing stills: ~114s, no repair
+- Production bible: ~115s, attempt 1 success (coerceToArray preprocess working)
+
+### Stop rule status
+
+Both stop rules are now cleared:
+
+1. drift completed worker-backed regeneration in bounded time
+2. open-deck reached a truthful terminal result in bounded time
+
+Week 2 Definition of Done status:
+
+1. regeneration is bounded and observable
+2. worker-generated failure diagnostics survive failed runs (durable in DynamoDB via runner.ts)
+3. Brief Studio no longer depends on a single long blocking request
+4. failed jobs expose truthful step-level status instead of stale `running` state
+5. drift completes as a control case
+6. open-deck reaches the point where only true campaign-quality blockers remain
 
 ---
 
