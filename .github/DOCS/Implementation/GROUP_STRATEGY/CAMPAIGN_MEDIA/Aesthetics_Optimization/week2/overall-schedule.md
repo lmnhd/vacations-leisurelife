@@ -130,19 +130,51 @@ Primary outputs:
 
 ---
 
+## Quality Tuning Phase 1 — Completed (commit 7eaf7ef)
+
+### Changes implemented
+
+1. **`aesthetic-engine.ts`**
+   - Exported `isMusicFestivalCampaign` for shared use across modules
+   - Strengthened `musicFestivalPass1Block`: explicit belonging-signal count (4 minimum, 3 must be music-cue-bearing with observable behavior patterns), socialGravity and corePromise specificity requirements, visual imageryMood and nicheEnhancedMoments requirements, compositionNotes open-deck geometry requirement
+   - Added Check 5 to `checkSloganQuality`: music campaigns fail if slogans contain none of a curated music signal term list
+   - Updated `checkSloganQuality` call to pass `isMusicFestivalCampaign(campaign)` flag
+   - Added `musicFestivalRefinementBlock` to `refineAestheticBrief`: protects crowd energy, open-deck, dancing language from being stripped during refinement; strengthens vague belonging signals; enforces slogan music-anchor requirement at refinement stage
+   - Expanded `MUSIC_FESTIVAL_LINT_KEYWORDS` in `buildLintComplianceBlock` so music campaigns get a full 25-term vocabulary in the lint compliance prompt
+   - Strengthened `musicFestivalNicheBlock` with 5 named required signal families (DECK ENERGY, PERFORMANCE PROXIMITY, PERSONAL LISTENING, CROWD RECOGNITION, AUDIO ENVIRONMENT), added `generic pool lounging` to banned compositions, and added per-still field enforcement requirement
+
+2. **`editors-room.ts`**
+   - Imported `isMusicFestivalCampaign`
+   - `generateActionAnchors`: injects `musicAnchorBlock` for music campaigns — 4 required music anchor families with concrete communityAction, locationFamily, nicheSignal, and socialUnit patterns; banned anchor seeds list
+   - `generateProductionBibleFromStills`: injects `musicBibleBlock` — open-deck scene count requirement, direct music-response scene requirement, storyboard musicCue escalation arc requirement, 4 additional avoidDirectives
+
+3. **`reference-packs.ts`**
+   - `getExpandedNicheKeywords` now expands to `MUSIC_FESTIVAL_EXPANDED_KEYWORDS` (25 terms) when no reference pack exists and `isMusicFestivalCampaign` is true — this ensures the lint scanner uses the full music vocabulary when evaluating bp-opendeck
+
+### Next step
+
+Rerun `bp-opendeck-icon-2027-7n-caribbean` through Brief Studio and compare:
+- `readiness` should still be `needs_review` → `ready_for_media` after approval
+- `productionBuildStatus` should move from `fail` to `warn` or `pass`
+- `weak_niche_signal`, `identity_legibility_too_low`, `repeated_composition_family` blockers should clear
+- Use `drift-festival-icon-2026` as control to confirm no regression
+
+---
+
 ## Suggested Next Sequence
 
-### Day 1
+### Day 1 — DONE
 
-1. review completed week 2 workflow changes before editing prompts or campaign logic
-2. inspect open-deck output for generic or weak music/festival identity
-3. identify the reusable issue class to tune next
+1. review completed week 2 workflow changes before editing prompts or campaign logic 
+2. inspect open-deck output for generic or weak music/festival identity 
+3. identify the reusable issue class to tune 
+4. implement music/festival quality improvements across all pipeline stages 
 
 ### Day 2
 
-1. implement music/festival quality improvements
-2. rerun open-deck and compare against the latest successful baseline
-3. use drift as a control if any change risks broader regressions
+1. rerun open-deck and compare against latest successful baseline
+2. check lint verdict and blocker count
+3. use drift as control if any change risks broader regressions
 
 ### Day 3
 
