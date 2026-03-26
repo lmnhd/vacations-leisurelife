@@ -4,40 +4,35 @@
 
 Stabilize Pass 1 brief generation so the worker can complete `generate_brief` without falling into long schema-repair and timeout loops.
 
-This task is complete for week 2 and should now be treated as reference documentation unless a new regression appears.
+This task is active again because recent verification exposed remaining schema-contract failures.
 
 ---
 
-## Final Verified State
+## Updated Verified State
 
-The workflow stabilization pass established the following:
+The latest verification changed the conclusion:
 
-1. Pass 1 now uses lenient defaults across the generation schema
-2. `skipRepair: true` prevents expensive repair loops in Pass 1
-3. Pass 1 token budget was raised to 9000
-4. the same lenient-generation pattern was extended across later pipeline stages where strict schemas had the same truncation behavior
-5. both `drift-festival-icon-2026` and `bp-opendeck-icon-2027-7n-caribbean` now complete through the worker-backed flow
+1. the lenient-schema and token-budget work improved the pipeline substantially
+2. the music/festival tuning pass is verified and operational
+3. open-deck still shows nested schema weakness through empty storyboard `shotSequence` arrays
+4. drift still hits a Pass 1 schema validation failure at `communityExpression.visualTogethernessNotes`
 
-This means Pass 1 is no longer the active workflow blocker.
+This means schema architecture is still an active blocker even though the original truncation/repair-loop failure pattern was reduced.
 
 ---
 
-## Root Cause That Was Fixed
+## Root Cause That Remains
 
-The repeated failure pattern was:
+The remaining failure pattern is now narrower and more specific:
 
-1. strict generation schema
-2. insufficient output budget
-3. truncation
-4. validation failure
-5. repair loop
-6. timeout
+1. nested schema branches still collapse or type-shift under generation
+2. `.default()` and deep object structure are still likely weakening the prompt contract for complex nested outputs
+3. arrays such as storyboard `shotSequence` can still come back structurally empty
+4. fields such as `communityExpression.visualTogethernessNotes` can still arrive with the wrong type
 
-The fix was applied systematically by:
+The earlier fixes helped, but they did not fully remove the schema contract problem.
 
-1. making the generation schema lenient enough to accept incomplete-but-usable output
-2. raising output budgets to avoid truncation
-3. skipping repair where repair churn was more expensive than direct acceptance plus normalization
+The next fix should target the remaining nested-schema architecture directly.
 
 ---
 
@@ -72,22 +67,21 @@ Primary pattern used:
 
 ---
 
-## Completed Changes
+## Active Fix Targets
 
-1. Pass 1 lenient generation contract
-2. Pass 1 `skipRepair: true`
-3. Pass 1 token budget raised to 9000
-4. same anti-truncation strategy extended to Pass 2, refinement, anchors, landing stills, and production bible
+1. `communityExpression.visualTogethernessNotes`
+2. storyboard `shotSequence`
+3. any remaining nested array/object generation contracts that still depend on fragile defaults
 
 ---
 
-## Outcome
+## Verified Good News
 
-Verified successful outcomes:
+What is working:
 
-1. drift completed with persisted brief, `readiness=needs_review`, `blockerCount=0`
-2. open-deck completed with persisted brief, `readiness=needs_review`, `blockerCount=0`
-3. Pass 1 no longer blocks the pipeline
+1. open-deck quality tuning worked and cleared the core music/festival identity blockers
+2. the workflow is far closer to stable than it was earlier in week 2
+3. the remaining work is now isolated to specific schema trouble spots rather than the whole pipeline
 
 ---
 
@@ -95,13 +89,19 @@ Verified successful outcomes:
 
 Do not reopen this task unless one of these regresses:
 
-1. Pass 1 timeouts return
+1. Pass 1 timeouts return broadly across campaigns
 2. repair loops reappear as a dominant cost center
 3. later stage changes reintroduce truncation through stricter schemas or lower token budgets
+
+But do keep this task active until the remaining nested schema failures are fixed.
 
 ---
 
 ## Done Signal
 
-This task is complete for week 2. Treat it as solved reference material.
+This task is complete only when:
+
+1. drift no longer fails on `communityExpression.visualTogethernessNotes`
+2. open-deck no longer returns empty storyboard `shotSequence` arrays
+3. schema-side blockers stop preventing the tuned campaign output from clearing production-build validation
 

@@ -4,11 +4,11 @@
 
 Make failed worker-backed brief runs leave behind diagnostics that the polling route and Brief Studio can actually read.
 
-This task is complete for week 2 and should now be treated as reference documentation unless a new regression appears.
+This task remains substantially improved, but it should not be treated as the current primary blocker.
 
 ---
 
-## Final Verified State
+## Current Verified State
 
 The workflow stabilization pass established the following:
 
@@ -17,7 +17,7 @@ The workflow stabilization pass established the following:
 3. failed-step finalization is truthful, so step state and job state do not contradict each other
 4. diagnostics are no longer dependent on the original worker process remaining alive
 
-This means worker-backed failure observability is no longer the active blocker.
+This means worker-backed failure observability is not the active blocker right now. The active blocker has shifted back to remaining schema-contract failures.
 
 ---
 
@@ -87,5 +87,5 @@ Do not reopen this task unless one of these regresses:
 
 ## Done Signal
 
-This task is complete for week 2. Treat it as solved reference material.
+Treat this as stable unless a regression appears. The next agent should prioritize schema remediation before revisiting diagnostics.
 

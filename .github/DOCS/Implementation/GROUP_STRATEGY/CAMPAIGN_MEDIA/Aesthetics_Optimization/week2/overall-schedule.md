@@ -16,7 +16,7 @@ The rule for week 2 is simple:
 
 ## Verified Progress
 
-The following work is now fully verified as of session ending 2026-03-24:
+The following workflow improvements are verified:
 
 ### Workflow fixes verified
 
@@ -34,103 +34,113 @@ The following work is now fully verified as of session ending 2026-03-24:
 12. `maxOutputTokens` raised across the full pipeline: anchors (8000), landing stills (16000), repair stills (12000), production bible (16000 + 240s timeout), refinement (14000), Pass 2 social/video (16000)
 13. `callGlobalGenerateObject` global token cap raised from 16000 to 32000
 
-### End-to-end campaign runs verified
+### Tuning verification status
 
-**drift-festival-icon-2026** — completed `status=completed`, all steps done, brief persisted, `readiness=needs_review`, `blockerCount=0`
-- Pass 1: ~98s, attempt 1 accepted
-- Pass 2 social+video: parallel, ~94s + ~115s, no repair
-- Refinement: ~108s, no repair
-- Anchors: ~80s, no repair
-- Landing stills: ~114s, no repair
-- Production bible: succeeded via gpt-5-mini retry (coerceToArray preprocess now prevents this)
+Recent worker-backed verification changed the conclusion:
 
-**bp-opendeck-icon-2027-7n-caribbean** — completed `status=completed`, all steps done, brief persisted, `readiness=needs_review`, `blockerCount=0`
-- Pass 1: ~108s, attempt 1 accepted
-- Pass 2 social+video: parallel, ~85s + ~93s, no repair
-- Refinement: ~104s, no repair
-- Anchors: ~79s, no repair
-- Landing stills: ~114s, no repair
-- Production bible: ~115s, attempt 1 success (coerceToArray preprocess working)
+**bp-opendeck-icon-2027-7n-caribbean**
+1. music/festival identity tuning clearly worked
+2. `weak_niche_signal` and `identity_legibility_too_low` cleared
+3. slogans and belonging signals now carry concrete music/open-deck proof
+4. production build still fails, but now for an isolated schema/output issue: `avoid_directives_too_weak`
+5. storyboard `shotSequence` arrays returned empty, which points back to the nested schema/default problem documented in `WORK2.txt`
+
+**drift-festival-icon-2026**
+1. should not be treated as a clean control yet
+2. a native async run crashed in Pass 1 with Zod validation on `communityExpression.visualTogethernessNotes`
+3. this confirms the remaining blocker is still schema architecture, not campaign-quality tuning
 
 ### Stop rule status
 
-Both stop rules are now cleared:
+The stop rules are not fully cleared:
 
-1. drift completed worker-backed regeneration in bounded time
-2. open-deck reached a truthful terminal result in bounded time
+1. open-deck proved the tuning layer works, but not the full production-build pipeline
+2. drift still fails on a known schema wall
 
 Week 2 Definition of Done status:
 
-1. regeneration is bounded and observable
-2. worker-generated failure diagnostics survive failed runs (durable in DynamoDB via runner.ts)
-3. Brief Studio no longer depends on a single long blocking request
-4. failed jobs expose truthful step-level status instead of stale `running` state
-5. drift completes as a control case
-6. open-deck reaches the point where only true campaign-quality blockers remain
+1. workflow reliability improvements are real
+2. the music/festival issue-class tuning is verified
+3. the remaining failures are still schema-contract failures
+4. week 2 is not complete until those schema failures are resolved
 
 ---
 
 ## Outcome
 
-Week 2 workflow stabilization is complete.
+The music/festival tuning work is validated, but workflow/schema stabilization is not yet complete.
 
-The next agent should not spend time reopening queue, timeout, repair-loop, or worker-diagnostics architecture unless a new regression appears.
-
-The active focus now moves to campaign-quality tuning, with music/festival identity strength as the next issue class.
+The next agent should treat the remaining blockers as architecture work in the generation schemas, not as prompt-quality work.
 
 ---
 
 ## Next Priority
 
-### Priority 1: Fix the music/festival aesthetics issue class
+### Priority 1: Fix remaining schema architecture blockers
 
 Why this comes first now:
 
-1. workflow reliability is now proven end to end
-2. both control and problem campaigns complete successfully through the worker path
-3. the remaining problems are campaign-quality problems, not pipeline blockers
+1. open-deck quality tuning succeeded, so the next failures are not aesthetic misses
+2. storyboard `shotSequence` arrays still collapse to empty output
+3. drift still fails at Pass 1 on `communityExpression.visualTogethernessNotes`
 
 Primary outputs:
 
-1. stronger explicit music/festival cue coverage
-2. lower generic fallback usage in open-deck identity and concepts
-3. reusable guidance for music/listening/open-deck campaigns
+1. flatten or de-default the remaining nested schema trouble spots
+2. fix storyboard generation so `shotSequence` does not come back empty
+3. stabilize `communityExpression` generation so drift can run as control again
 
 ---
 
-### Priority 2: Re-run open-deck only as needed for campaign-quality tuning
+### Priority 2: Make avoid-list carry-through deterministic
 
 Why this comes second:
 
-1. open-deck is now a valid campaign-quality test case because the workflow is stable
-2. reruns should now evaluate aesthetic identity quality, not pipeline survival
-3. drift can remain the control whenever a tuning change risks regressing general quality
+1. open-deck now fails on one isolated rule: `avoid_directives_too_weak`
+2. the miss is deterministic enough that it should not be left to weak schema compliance
+3. avoid-list to avoid-directives mapping is now the clearest remaining production-build blocker on open-deck
 
 Primary outputs:
 
-1. verified improvements in open-deck campaign specificity
-2. no regression in control-campaign output quality
-3. only true aesthetic blockers remain
+1. `productionBible.avoidDirectives` reflects the brief `avoidList` strongly enough to satisfy validation
+2. open-deck can move from `fail` toward `warn` or `pass`
+3. this rule no longer depends on lucky LLM wording
 
 ---
 
-### Priority 3: Preserve the stabilized worker-backed architecture
+### Priority 3: Re-run open-deck through the worker-backed path
 
 Why this comes third:
 
-1. the workflow layer is now good enough and should not be destabilized casually
-2. future tuning work should reuse the lenient-generation plus skip-repair pattern where appropriate
-3. any new regressions should be treated as exceptions, not as a reason to reopen completed week 2 work
+1. open-deck is the best active proof case
+2. the music/festival tuning is already validated, so reruns should now confirm schema-side remediation
+3. successful rerun should remove the remaining production-build blocker
 
 Primary outputs:
 
-1. keep the route thin: enqueue plus status only
-2. keep diagnostics durable at the job level
-3. keep large generation stages lenient enough to avoid repair-loop regressions
+1. `productionBuildStatus` improves from `fail`
+2. `avoid_directives_too_weak` clears
+3. no regression in the music/festival identity improvements from commit `7eaf7ef`
 
 ---
 
-## Quality Tuning Phase 1 — Completed (commit 7eaf7ef)
+### Priority 4: Re-run drift only after schema fixes land
+
+Why this comes fourth:
+
+1. drift is currently failing on a known schema problem, so it is not yet a useful control
+2. once the schema issue is fixed, drift becomes the correct regression check again
+3. using it too early only reconfirms the same architectural blocker
+
+Primary outputs:
+
+1. drift completes through Pass 1 without the `visualTogethernessNotes` type failure
+2. drift can be used again as the control campaign
+3. schema fixes prove reusable across campaign types
+
+---
+
+## Quality Tuning Phase 1 — Verified (commit 7eaf7ef)
 
 ### Changes implemented
 
@@ -151,50 +161,56 @@ Primary outputs:
 3. **`reference-packs.ts`**
    - `getExpandedNicheKeywords` now expands to `MUSIC_FESTIVAL_EXPANDED_KEYWORDS` (25 terms) when no reference pack exists and `isMusicFestivalCampaign` is true — this ensures the lint scanner uses the full music vocabulary when evaluating bp-opendeck
 
+### Verified effect
+
+The quality tuning itself worked:
+
+1. hero slogan: `Sail first, chase the drop.`
+2. sub slogan: `Icon of the Seas. 7 nights. Your soundtrack, your pace.`
+3. belonging signals now describe concrete observable music behaviors
+4. anchors and scene planning now carry open-deck crowd and sound-system context
+
 ### Next step
 
-Rerun `bp-opendeck-icon-2027-7n-caribbean` through Brief Studio and compare:
-- `readiness` should still be `needs_review` → `ready_for_media` after approval
-- `productionBuildStatus` should move from `fail` to `warn` or `pass`
-- `weak_niche_signal`, `identity_legibility_too_low`, `repeated_composition_family` blockers should clear
-- Use `drift-festival-icon-2026` as control to confirm no regression
+1. fix the schema-side blockers
+2. rerun `bp-opendeck-icon-2027-7n-caribbean`
+3. use `drift-festival-icon-2026` as control only after the schema crash is fixed
 
 ---
 
 ## Suggested Next Sequence
 
-### Day 1 — DONE
+### Day 1
 
-1. review completed week 2 workflow changes before editing prompts or campaign logic 
-2. inspect open-deck output for generic or weak music/festival identity 
-3. identify the reusable issue class to tune 
-4. implement music/festival quality improvements across all pipeline stages 
+1. inspect the remaining nested schema/default trouble spots
+2. fix `communityExpression.visualTogethernessNotes` generation contract
+3. fix storyboard `shotSequence` generation contract
 
 ### Day 2
 
-1. rerun open-deck and compare against latest successful baseline
-2. check lint verdict and blocker count
-3. use drift as control if any change risks broader regressions
+1. make avoid-list to avoid-directives carry-through deterministic
+2. rerun open-deck through the worker-backed path
+3. confirm the music/festival improvements remain intact while the production-build blocker clears
 
 ### Day 3
 
-1. document which quality issues remain after tuning
-2. promote reusable quality rules into the campaign guidance system
-3. avoid reopening week 2 workflow work unless a concrete regression is observed
+1. rerun drift after the schema fixes land
+2. confirm drift is usable again as control
+3. only then return to campaign-quality tuning work
 
 ---
 
 ## Stop Rules
 
-Stop campaign-quality tuning and re-open workflow only if either of these becomes true again:
+Stop campaign-quality tuning and return to schema remediation if either of these is still true:
 
-1. drift or open-deck stops completing through the worker-backed path in bounded time
-2. durable job diagnostics regress or step state becomes untruthful again
+1. drift still fails on the `communityExpression.visualTogethernessNotes` schema wall
+2. open-deck still returns empty storyboard `shotSequence` arrays or `avoid_directives_too_weak`
 
-Stay in campaign-quality tuning when both are true:
+Move back to campaign-quality tuning only when both are true:
 
-1. drift can regenerate successfully in bounded time
-2. open-deck can reach a truthful terminal result in bounded time, even if it still fails lint or campaign-quality checks afterward
+1. drift can regenerate successfully through the worker-backed path again
+2. open-deck can clear the remaining schema-driven production-build blocker
 
 ---
 
@@ -209,4 +225,4 @@ Week 2 is successful when all of the following are true:
 5. drift completes as a control case
 6. open-deck reaches the point where only true campaign-quality blockers remain
 
-This definition of done is now met. Week 2 should be treated as complete unless a new workflow regression appears.
+This definition of done is not yet met. The music/festival tuning is good, but the remaining blockers are still architectural schema issues.
