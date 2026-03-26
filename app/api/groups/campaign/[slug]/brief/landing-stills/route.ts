@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { regenerateProductionBible } from '@/lib/campaigns/brief-engine/orchestrator';
+import { regenerateLandingStills } from '@/lib/campaigns/brief-engine/orchestrator';
 import { submitAgentJob } from '@/lib/agent-api/runner';
 import { getAgentJob } from '@/lib/agent-api/store';
 
-// Keep hobby-plan deployments valid; production access is blocked by middleware unless explicitly enabled.
-export const maxDuration = 60;
-
-// GET ?jobId= — poll async job status
+// GET /api/groups/campaign/[slug]/brief/landing-stills?jobId=<id>
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
@@ -36,15 +33,15 @@ export async function GET(
             startedAt: job.startedAt,
             completedAt: job.completedAt,
         }, { status: 200 });
-    } catch (error: unknown) {
+    } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[production-bible:GET]', error);
+        console.error('[landing-stills:GET]', error);
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
-// POST — regenerate production bible from saved stills.
-// Supports sync mode (body.sync=true) for existing callers or async job queue.
+// POST /api/groups/campaign/[slug]/brief/landing-stills
+// Enqueues async landing-stills regeneration. Returns 202 + { jobId }.
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
@@ -53,35 +50,14 @@ export async function POST(
         const { slug } = await params;
         const body = await req.json().catch(() => ({})) as { instructions?: string; sync?: boolean };
 
-        if (body.sync !== false) {
-            const result = await regenerateProductionBible(slug, { instructions: body.instructions });
-
-            if (result.lintVerdict === 'fail') {
-                return NextResponse.json(
-                    {
-                        error: 'Production build failed pre-spend quality checks — do not proceed to image generation.',
-                        lintVerdict: result.lintVerdict,
-                        blockingIssues: result.brief.productionBuildLint?.blockingIssues ?? [],
-                        warnings: result.brief.productionBuildLint?.warnings ?? [],
-                        brief: result.brief,
-                    },
-                    { status: 422 },
-                );
-            }
-
-            return NextResponse.json(
-                {
-                    brief: result.brief,
-                    lintVerdict: result.lintVerdict,
-                    lintReport: result.brief.productionBuildLint,
-                },
-                { status: 200 },
-            );
+        if (body.sync) {
+            const result = await regenerateLandingStills(slug, { instructions: body.instructions });
+            return NextResponse.json(result, { status: 200 });
         }
 
         const job = await submitAgentJob(
             {
-                workflowId: 'campaign_production_bible_generate',
+                workflowId: 'campaign_landing_stills_generate',
                 campaignSlug: slug,
                 ...(body.instructions ? { instructions: body.instructions } : {}),
             },
@@ -90,12 +66,9 @@ export async function POST(
         );
 
         return NextResponse.json({ jobId: job.jobId, status: job.status }, { status: 202 });
-    } catch (error: unknown) {
+    } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[production-bible:POST]', error);
-        return NextResponse.json(
-            { error: 'Failed to generate production bible', details: message },
-            { status: 500 },
-        );
+        console.error('[landing-stills:POST]', error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

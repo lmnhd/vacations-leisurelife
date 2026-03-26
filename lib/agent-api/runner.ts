@@ -1,5 +1,13 @@
 import { randomUUID } from 'crypto';
-import { approveForMedia, createOrRefreshBrief, getReadiness, getBriefJobDiagnostics } from '@/lib/campaigns/brief-engine/orchestrator';
+import {
+    approveForMedia,
+    createOrRefreshBrief,
+    getReadiness,
+    getBriefJobDiagnostics,
+    regenerateLandingStills,
+    regenerateProductionBible,
+    resyncProductionLint,
+} from '@/lib/campaigns/brief-engine/orchestrator';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import {
     AgentJobRecordSchema,
@@ -22,6 +30,26 @@ function createPendingSteps(input: AgentWorkflowInput): AgentJobRecord['steps'] 
         return [
             { stepId: 'approve_brief', label: 'Approve brief for media', status: 'pending' },
             { stepId: 'load_readiness', label: 'Load stored readiness', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_landing_stills_generate') {
+        return [
+            { stepId: 'regenerate_stills', label: 'Regenerate landing stills', status: 'pending' },
+            { stepId: 'confirm_persistence', label: 'Confirm persisted stills', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_production_bible_generate') {
+        return [
+            { stepId: 'regenerate_bible', label: 'Regenerate production bible', status: 'pending' },
+            { stepId: 'confirm_persistence', label: 'Confirm persisted bible', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_production_lint_resync') {
+        return [
+            { stepId: 'resync_lint', label: 'Resync production lint', status: 'pending' },
         ];
     }
 
@@ -193,6 +221,66 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
                         approvalAttempted: true,
                         approvalSucceeded: true,
                     },
+                };
+                break;
+            }
+
+            case 'campaign_landing_stills_generate': {
+                currentRecord = markStep(currentRecord, 'regenerate_stills', 'running');
+                await saveAgentJob(currentRecord);
+
+                const stillsResult = await regenerateLandingStills(record.campaignSlug, {
+                    instructions: record.input.instructions,
+                });
+
+                currentRecord = markStep(currentRecord, 'regenerate_stills', 'completed', stillsResult.summary);
+                currentRecord = markStep(currentRecord, 'confirm_persistence', 'running');
+                await saveAgentJob(currentRecord);
+
+                currentRecord = markStep(currentRecord, 'confirm_persistence', 'completed', 'Landing stills persisted');
+                currentRecord = {
+                    ...currentRecord,
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: { message: stillsResult.summary, readiness: stillsResult.readiness, persisted: true, approvalAttempted: false, approvalSucceeded: false },
+                };
+                break;
+            }
+
+            case 'campaign_production_bible_generate': {
+                currentRecord = markStep(currentRecord, 'regenerate_bible', 'running');
+                await saveAgentJob(currentRecord);
+
+                const bibleResult = await regenerateProductionBible(record.campaignSlug, {
+                    instructions: record.input.instructions,
+                });
+
+                currentRecord = markStep(currentRecord, 'regenerate_bible', 'completed', bibleResult.summary);
+                currentRecord = markStep(currentRecord, 'confirm_persistence', 'running');
+                await saveAgentJob(currentRecord);
+
+                currentRecord = markStep(currentRecord, 'confirm_persistence', 'completed', 'Production bible persisted');
+                currentRecord = {
+                    ...currentRecord,
+                    status: bibleResult.lintVerdict === 'fail' ? 'blocked' : 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: { message: bibleResult.summary, readiness: bibleResult.readiness, persisted: true, approvalAttempted: false, approvalSucceeded: false },
+                };
+                break;
+            }
+
+            case 'campaign_production_lint_resync': {
+                currentRecord = markStep(currentRecord, 'resync_lint', 'running');
+                await saveAgentJob(currentRecord);
+
+                const lintResult = await resyncProductionLint(record.campaignSlug);
+
+                currentRecord = markStep(currentRecord, 'resync_lint', 'completed', lintResult.summary);
+                currentRecord = {
+                    ...currentRecord,
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: { message: lintResult.summary, readiness: lintResult.readiness, persisted: true, approvalAttempted: false, approvalSucceeded: false },
                 };
                 break;
             }

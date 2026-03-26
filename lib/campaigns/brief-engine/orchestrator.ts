@@ -135,25 +135,23 @@ export function shouldUseWholeSetRegeneration(failingStillIds: string[], totalSt
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Internal: generate full brief bundle (aesthetic + visual planning + lint)
+// Layer 1: Core brief bundle — aesthetic brief + action anchors only.
+// Does NOT produce stills or production bible.
 // ────────────────────────────────────────────────────────────────────────────
 
-async function generateFullBriefBundle(
+interface CoreBriefBundleResult {
+    coreBrief: CampaignAestheticBrief;
+    anchors: Awaited<ReturnType<typeof generateActionAnchors>>;
+}
+
+async function generateCoreBriefBundle(
     campaign: Campaign,
     timingPass: BriefTimingPass,
     options?: { correctionContext?: string; instructions?: string },
-): Promise<CampaignAestheticBrief & {
-    isolatedStillRevisionUsed: boolean;
-    wholeSetRegenerationUsed: boolean;
-}> {
-    const bundleStart = Date.now();
-    timingPass.stages.length = 0;
-    timingPass.totalElapsedMs = null;
-    console.log(`[brief-engine:bundle] START full bundle (${campaign.id})`);
-
+): Promise<CoreBriefBundleResult> {
     // ── Step 1: Core aesthetic brief (pass 1 + pass 2 + refinement) ──────
     const endAesthetic = stageTimer('aesthetic-bundle-total', campaign.id, timingPass.stages);
-    const brief = await generateAestheticBrief(campaign, {
+    const coreBrief = await generateAestheticBrief(campaign, {
         ...options,
         recordStageTiming: (stageName, elapsedMs) => {
             timingPass.stages.push({ stageName, elapsedMs });
@@ -163,8 +161,31 @@ async function generateFullBriefBundle(
 
     // ── Step 2: Community-native action anchors ───────────────────────────
     const endAnchors = stageTimer('anchor-generation', campaign.id, timingPass.stages);
-    const anchors = await generateActionAnchors(campaign, brief, { instructions: options?.instructions });
+    const anchors = await generateActionAnchors(campaign, coreBrief, { instructions: options?.instructions });
     endAnchors();
+
+    return { coreBrief, anchors };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Layer 2: Landing still artifact — generates, normalises, repairs stills.
+// Input: persisted core brief + anchors. Output: validated landingStillBible.
+// ────────────────────────────────────────────────────────────────────────────
+
+interface LandingStillArtifactResult {
+    landingStillBible: CampaignAestheticBrief['landingStillBible'] & object;
+    isolatedStillRevisionUsed: boolean;
+    wholeSetRegenerationUsed: boolean;
+}
+
+async function generateLandingStillArtifact(
+    campaign: Campaign,
+    brief: CampaignAestheticBrief,
+    anchors: CoreBriefBundleResult['anchors'],
+    timingPass: BriefTimingPass,
+    options?: { instructions?: string },
+): Promise<LandingStillArtifactResult> {
+    const expandedNicheKeywords = getExpandedNicheKeywords(campaign);
 
     // ── Step 3: Landing still bible from locked anchors ───────────────
     const endStillBible = stageTimer('landing-still-bible', campaign.id, timingPass.stages);
@@ -172,13 +193,9 @@ async function generateFullBriefBundle(
     endStillBible();
 
     // ── Step 3.1: Deterministic editorial composition normalizer ──────────────
-    // Replaces intimate/close/tight/detail keywords in EDITORIAL_WIDE compositions
-    // so lint's extractShotRole counts them as editorial, not intimate.
     landingStillBible = normalizeEditorialCompositions(landingStillBible);
 
     // ── Step 3.2: Deterministic editorial usage normalizer ───────────────────
-    // Fixes invalid usage values on EDITORIAL_WIDE stills (e.g. model writes
-    // 'medium_wide' instead of 'concept') before anchor compliance runs.
     landingStillBible = normalizeEditorialUsage(landingStillBible);
 
     // ── Step 3.5: Deterministic anchor-compliance gate ───────────────
@@ -189,7 +206,6 @@ async function generateFullBriefBundle(
     }
 
     // ── Step 4: Lint stills only — identify specific failures ─────────
-    const expandedNicheKeywords = getExpandedNicheKeywords(campaign);
     let stillsLint = lintProductionBuild({
         landingStillBible,
         themeName: campaign.name,
@@ -207,7 +223,6 @@ async function generateFullBriefBundle(
     if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
 
-        // Save pre-repair state so we can revert if repair makes things worse
         const preRepairBible = landingStillBible;
         const preRepairAnchorCompliance = anchorCompliance;
         const preRepairViolationsBlock = anchorViolationsBlock;
@@ -220,7 +235,6 @@ async function generateFullBriefBundle(
         endRepair();
         landingStillBible = mergeRepairedStills(landingStillBible, repairedStills);
 
-        // Re-validate both gates after repair
         anchorCompliance = validateAnchorCompliance(anchors.anchors, landingStillBible);
         anchorViolationsBlock = formatViolationsForRepair(anchorCompliance.violations);
         stillsLint = lintProductionBuild({
@@ -243,10 +257,6 @@ async function generateFullBriefBundle(
             console.log(`[brief-engine] post-repair anchor violations remain: ${anchorCompliance.violations.length}`);
         }
     } else if (shouldUseWholeSetRegeneration(allFailingIds, landingStillBible.stillLibrary.length)) {
-        // ── Whole-set failure path: every still failed both gates ──────────────
-        // Isolated repair cannot preserve uniqueness when the full set collapses.
-        // One-strike: regenerate the full still set with the failure profile as
-        // hard-failure correction context, then re-validate. Do not retry further.
         const anchorFailureSummary = anchorViolationsBlock
             ? `Anchor contract violations:\n${anchorViolationsBlock}`
             : '';
@@ -290,15 +300,34 @@ async function generateFullBriefBundle(
         }
     }
 
+    return { landingStillBible, isolatedStillRevisionUsed, wholeSetRegenerationUsed };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Layer 3: Production bible artifact — generates bible from validated stills.
+// Input: persisted brief + validated landingStillBible. Output: productionBible + lint.
+// ────────────────────────────────────────────────────────────────────────────
+
+interface ProductionBibleArtifactResult {
+    productionBible: ProductionBible;
+    finalLint: ReturnType<typeof lintProductionBuild>;
+}
+
+async function generateProductionBibleArtifact(
+    campaign: Campaign,
+    brief: CampaignAestheticBrief,
+    landingStillBible: NonNullable<CampaignAestheticBrief['landingStillBible']>,
+    timingPass: BriefTimingPass,
+    options?: { instructions?: string },
+): Promise<ProductionBibleArtifactResult> {
+    const expandedNicheKeywords = getExpandedNicheKeywords(campaign);
+
     // ── Step 6: Production bible from validated stills ────────────────────
     const endProdBible = stageTimer('production-bible-generation', campaign.id, timingPass.stages);
     let productionBible: ProductionBible = await generateProductionBibleFromStills(campaign, brief, landingStillBible, { instructions: options?.instructions });
     endProdBible();
 
     // ── Step 6.5: Deterministic avoidList → avoidDirectives carry-through ──
-    // validation.ts checkAvoidDirectiveCoverage requires at least one
-    // brief.visual.avoidList term (≥4 chars) to appear in avoidDirectives.
-    // Inject any missing terms so the check always passes regardless of LLM output.
     const briefAvoidList = brief.visual?.avoidList ?? [];
     if (briefAvoidList.length > 0) {
         const existingDirectivesText = (productionBible.avoidDirectives ?? []).join(' ').toLowerCase();
@@ -325,19 +354,46 @@ async function generateFullBriefBundle(
         nicheKeywords: expandedNicheKeywords,
     });
 
+    return { productionBible, finalLint };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Internal: generate full brief bundle (compatibility wrapper).
+// Calls generateCoreBriefBundle → generateLandingStillArtifact → generateProductionBibleArtifact.
+// ────────────────────────────────────────────────────────────────────────────
+
+async function generateFullBriefBundle(
+    campaign: Campaign,
+    timingPass: BriefTimingPass,
+    options?: { correctionContext?: string; instructions?: string },
+): Promise<CampaignAestheticBrief & {
+    isolatedStillRevisionUsed: boolean;
+    wholeSetRegenerationUsed: boolean;
+}> {
+    const bundleStart = Date.now();
+    timingPass.stages.length = 0;
+    timingPass.totalElapsedMs = null;
+    console.log(`[brief-engine:bundle] START full bundle (${campaign.id})`);
+
+    const { coreBrief, anchors } = await generateCoreBriefBundle(campaign, timingPass, options);
+
+    const stillResult = await generateLandingStillArtifact(campaign, coreBrief, anchors, timingPass, { instructions: options?.instructions });
+
+    const bibleResult = await generateProductionBibleArtifact(campaign, coreBrief, stillResult.landingStillBible, timingPass, { instructions: options?.instructions });
+
     const totalSec = ((Date.now() - bundleStart) / 1000).toFixed(1);
     timingPass.totalElapsedMs = Date.now() - bundleStart;
-    console.log(`[brief-engine:bundle] END   full bundle (${campaign.id}) — total ${totalSec}s | lint=${finalLint.verdict}`);
+    console.log(`[brief-engine:bundle] END   full bundle (${campaign.id}) — total ${totalSec}s | lint=${bibleResult.finalLint.verdict}`);
 
     return {
-        ...brief,
-        landingStillBible,
-        productionBible,
-        productionBuildLint: finalLint,
-        productionBuildStatus: finalLint.verdict,
-        productionBuildEvaluatedAt: finalLint.evaluatedAt,
-        isolatedStillRevisionUsed,
-        wholeSetRegenerationUsed,
+        ...coreBrief,
+        landingStillBible: stillResult.landingStillBible,
+        productionBible: bibleResult.productionBible,
+        productionBuildLint: bibleResult.finalLint,
+        productionBuildStatus: bibleResult.finalLint.verdict,
+        productionBuildEvaluatedAt: bibleResult.finalLint.evaluatedAt,
+        isolatedStillRevisionUsed: stillResult.isolatedStillRevisionUsed,
+        wholeSetRegenerationUsed: stillResult.wholeSetRegenerationUsed,
     };
 }
 
@@ -775,6 +831,153 @@ export async function getHistory(slug: string): Promise<{ entries: HistoryEntry[
 
     entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     return { entries, briefExists: true };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 6. regenerate_landing_stills (Layer 2 artifact — isolated regeneration)
+//    Reads persisted brief + anchors, regenerates stills only, persists result.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ArtifactRegenerateResult {
+    readiness: ReadinessState;
+    brief: CampaignAestheticBrief;
+    summary: string;
+    isolatedStillRevisionUsed: boolean;
+    wholeSetRegenerationUsed: boolean;
+}
+
+export async function regenerateLandingStills(slug: string, options?: { instructions?: string }): Promise<ArtifactRegenerateResult> {
+    const campaign = await getCampaignBlueprint(slug);
+    if (!campaign) throw new Error(`Campaign not found: ${slug}`);
+
+    const storedBrief = await getAestheticBrief(slug);
+    if (!storedBrief) throw new Error(`No brief exists for ${slug}. Generate the core brief first.`);
+
+    console.log(`[brief-engine] regenerate_landing_stills for ${slug}`);
+
+    const timingPass: BriefTimingPass = { passLabel: 'initial', totalElapsedMs: null, stages: [] };
+
+    const endAnchors = stageTimer('anchor-generation', campaign.id, timingPass.stages);
+    const anchors = await generateActionAnchors(campaign, storedBrief, { instructions: options?.instructions });
+    endAnchors();
+
+    const stillResult = await generateLandingStillArtifact(campaign, storedBrief, anchors, timingPass, { instructions: options?.instructions });
+
+    const updatedBrief: CampaignAestheticBrief = {
+        ...storedBrief,
+        landingStillBible: stillResult.landingStillBible,
+        productionBuildStatus: undefined,
+        productionBuildLint: undefined,
+        productionBuildEvaluatedAt: undefined,
+    };
+
+    await saveAestheticBrief(updatedBrief);
+
+    timingPass.totalElapsedMs = timingPass.stages.reduce((sum, s) => sum + s.elapsedMs, 0);
+    console.log(`[brief-engine] landing stills regenerated for ${slug}: ${stillResult.landingStillBible.stillLibrary.length} stills`);
+
+    return {
+        readiness: 'needs_review',
+        brief: updatedBrief,
+        summary: `Landing stills regenerated (${stillResult.landingStillBible.stillLibrary.length} stills). Production bible is now stale — regenerate it next.`,
+        isolatedStillRevisionUsed: stillResult.isolatedStillRevisionUsed,
+        wholeSetRegenerationUsed: stillResult.wholeSetRegenerationUsed,
+    };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 7. regenerate_production_bible (Layer 3 artifact — isolated regeneration)
+//    Reads persisted brief + landingStillBible, regenerates bible only, persists result.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ProductionBibleRegenerateResult {
+    readiness: ReadinessState;
+    brief: CampaignAestheticBrief;
+    summary: string;
+    lintVerdict: CampaignAestheticBrief['productionBuildStatus'];
+}
+
+export async function regenerateProductionBible(slug: string, options?: { instructions?: string }): Promise<ProductionBibleRegenerateResult> {
+    const campaign = await getCampaignBlueprint(slug);
+    if (!campaign) throw new Error(`Campaign not found: ${slug}`);
+
+    const storedBrief = await getAestheticBrief(slug);
+    if (!storedBrief) throw new Error(`No brief exists for ${slug}. Generate the core brief first.`);
+
+    if (!storedBrief.landingStillBible) {
+        throw new Error(`No landingStillBible found for ${slug}. Regenerate landing stills first.`);
+    }
+
+    console.log(`[brief-engine] regenerate_production_bible for ${slug}`);
+
+    const timingPass: BriefTimingPass = { passLabel: 'initial', totalElapsedMs: null, stages: [] };
+
+    const bibleResult = await generateProductionBibleArtifact(campaign, storedBrief, storedBrief.landingStillBible, timingPass, { instructions: options?.instructions });
+
+    const nextHumanReviewStatus = storedBrief.humanReviewStatus === 'approved' || storedBrief.humanReviewStatus === 'revised'
+        ? 'revised' as const
+        : 'pending' as const;
+
+    const updatedBrief: CampaignAestheticBrief = {
+        ...storedBrief,
+        productionBible: bibleResult.productionBible,
+        productionBuildLint: bibleResult.finalLint,
+        productionBuildStatus: bibleResult.finalLint.verdict,
+        productionBuildEvaluatedAt: bibleResult.finalLint.evaluatedAt,
+        humanReviewStatus: nextHumanReviewStatus,
+    };
+
+    await saveAestheticBrief(updatedBrief);
+
+    timingPass.totalElapsedMs = timingPass.stages.reduce((sum, s) => sum + s.elapsedMs, 0);
+    console.log(`[brief-engine] production bible regenerated for ${slug}: lint=${bibleResult.finalLint.verdict}`);
+
+    const lintVerdict = bibleResult.finalLint.verdict;
+    return {
+        readiness: lintVerdict === 'pass' || lintVerdict === 'warn' ? 'needs_review' : 'needs_review',
+        brief: updatedBrief,
+        summary: `Production bible regenerated. Lint: ${lintVerdict}. ${lintVerdict === 'fail' ? `${bibleResult.finalLint.blockingIssues.length} blocker(s) remain.` : 'Ready for approval.'}`,
+        lintVerdict,
+    };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 8. resync_production_lint (Layer 4 — lint-only recompute, no LLM calls)
+//    Reads persisted artifacts, reruns lint rules, persists fresh verdict.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface LintResyncPublicResult {
+    readiness: ReadinessState;
+    brief: CampaignAestheticBrief;
+    summary: string;
+    drifted: boolean;
+    lintVerdict: CampaignAestheticBrief['productionBuildStatus'];
+}
+
+export async function resyncProductionLint(slug: string): Promise<LintResyncPublicResult> {
+    const campaign = await getCampaignBlueprint(slug);
+    if (!campaign) throw new Error(`Campaign not found: ${slug}`);
+
+    const storedBrief = await getAestheticBrief(slug);
+    if (!storedBrief) throw new Error(`No brief exists for ${slug}.`);
+
+    if (!storedBrief.landingStillBible) {
+        throw new Error(`No landingStillBible for ${slug}. Cannot recompute lint without stills.`);
+    }
+
+    console.log(`[brief-engine] resync_production_lint for ${slug}`);
+
+    const { resolvedBrief, drifted, freshStatus } = await recomputeAndResyncLint(storedBrief, campaign);
+
+    return {
+        readiness: 'needs_review',
+        brief: resolvedBrief,
+        summary: drifted
+            ? `Lint resynced: stored verdict was stale, now ${freshStatus}.`
+            : `Lint already current: ${freshStatus}.`,
+        drifted,
+        lintVerdict: freshStatus,
+    };
 }
 
 export type { BriefEngineResult, ApprovalResult, ReadinessResult, ReadinessState, HistoryEntry, RevisionInput };

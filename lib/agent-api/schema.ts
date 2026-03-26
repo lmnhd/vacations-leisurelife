@@ -4,6 +4,9 @@ import { DistributionCallerEnum, DistributionPlatformEnum } from '@/lib/campaign
 export const AgentWorkflowIdEnum = z.enum([
     'campaign_brief_generate',
     'campaign_brief_approve',
+    'campaign_landing_stills_generate',
+    'campaign_production_bible_generate',
+    'campaign_production_lint_resync',
     'campaign_distribution_plan',
     'campaign_distribution_dispatch',
     'campaign_media_generate',
@@ -29,6 +32,7 @@ export type AgentExecutionSurface = z.infer<typeof AgentExecutionSurfaceEnum>;
 
 export const AgentWorkflowCategoryEnum = z.enum([
     'brief',
+    'artifact',
     'distribution',
     'media',
     'marketing',
@@ -96,6 +100,23 @@ const AgentDistributionDispatchInputSchema = z.object({
     forceDispatch: z.boolean().default(false),
 });
 
+const AgentLandingStillsGenerateInputSchema = z.object({
+    workflowId: z.literal('campaign_landing_stills_generate'),
+    campaignSlug: z.string().min(1),
+    instructions: z.string().min(1).optional(),
+});
+
+const AgentProductionBibleGenerateInputSchema = z.object({
+    workflowId: z.literal('campaign_production_bible_generate'),
+    campaignSlug: z.string().min(1),
+    instructions: z.string().min(1).optional(),
+});
+
+const AgentProductionLintResyncInputSchema = z.object({
+    workflowId: z.literal('campaign_production_lint_resync'),
+    campaignSlug: z.string().min(1),
+});
+
 const AgentMediaGenerateInputSchema = z.object({
     workflowId: z.literal('campaign_media_generate'),
     campaignSlug: z.string().min(1),
@@ -110,6 +131,9 @@ const AgentMarketingDispatchInputSchema = z.object({
 export const AgentWorkflowInputSchema = z.discriminatedUnion('workflowId', [
     AgentBriefGenerateInputSchema,
     AgentBriefApproveInputSchema,
+    AgentLandingStillsGenerateInputSchema,
+    AgentProductionBibleGenerateInputSchema,
+    AgentProductionLintResyncInputSchema,
     AgentDistributionPlanInputSchema,
     AgentDistributionDispatchInputSchema,
     AgentMediaGenerateInputSchema,
