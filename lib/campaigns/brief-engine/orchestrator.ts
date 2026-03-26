@@ -206,6 +206,13 @@ async function generateFullBriefBundle(
 
     if (canUseIsolatedRepair) {
         console.log(`[brief-engine] unified repair for ${campaign.id}: ${allFailingIds.join(', ')} (lint=${lintFailingIds.length}, anchor=${anchorFailingIds.length})`);
+
+        // Save pre-repair state so we can revert if repair makes things worse
+        const preRepairBible = landingStillBible;
+        const preRepairAnchorCompliance = anchorCompliance;
+        const preRepairViolationsBlock = anchorViolationsBlock;
+        const preRepairLint = stillsLint;
+
         const endRepair = stageTimer('isolated-still-repair', campaign.id, timingPass.stages);
         const repairedStills = await repairFailingStills(
             campaign, brief, landingStillBible, allFailingIds, stillsLint.blockingIssues, anchorViolationsBlock, { instructions: options?.instructions },
@@ -223,7 +230,16 @@ async function generateFullBriefBundle(
         });
         isolatedStillRevisionUsed = true;
 
-        if (!anchorCompliance.passed) {
+        // ── Keep-best: if repair introduced MORE violations, revert ──────────
+        const preRepairCount = preRepairAnchorCompliance.violations.length;
+        const postRepairCount = anchorCompliance.violations.length;
+        if (postRepairCount > preRepairCount) {
+            console.log(`[brief-engine] repair made things worse (${preRepairCount} → ${postRepairCount}), reverting to pre-repair state for ${campaign.id}`);
+            landingStillBible = preRepairBible;
+            anchorCompliance = preRepairAnchorCompliance;
+            anchorViolationsBlock = preRepairViolationsBlock;
+            stillsLint = preRepairLint;
+        } else if (!anchorCompliance.passed) {
             console.log(`[brief-engine] post-repair anchor violations remain: ${anchorCompliance.violations.length}`);
         }
     } else if (shouldUseWholeSetRegeneration(allFailingIds, landingStillBible.stillLibrary.length)) {
