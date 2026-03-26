@@ -131,15 +131,23 @@ const GenerationPass1MessagingSchema = z.object({
     voicePersona: z.string().default(''),
 });
 
+// Coerce array → string for string fields the model might return as a list.
+const coerceToStr = (val: unknown): unknown =>
+    Array.isArray(val) ? (val as string[]).join(' ') : val;
+
+// Coerce string → single-item array for array fields the model might return as a string.
+const coerceToStrArr = (val: unknown): unknown =>
+    typeof val === 'string' ? [val] : val;
+
 const GenerationPass1CommunitySchema = z.object({
-    corePromise: z.string().default(''),
-    participationStyle: z.string().default(''),
-    socialGravity: z.string().default(''),
-    optionalGatherings: z.array(z.string()).default([]),
-    belongingSignals: z.array(z.string()).default([]),
-    solitudeAntiPatterns: z.array(z.string()).default([]),
-    visualTogethernessNotes: z.string().default(''),
-    copyFramingRule: z.string().default(''),
+    corePromise: z.preprocess(coerceToStr, z.string().default('')),
+    participationStyle: z.preprocess(coerceToStr, z.string().default('')),
+    socialGravity: z.preprocess(coerceToStr, z.string().default('')),
+    optionalGatherings: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
+    belongingSignals: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
+    solitudeAntiPatterns: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
+    visualTogethernessNotes: z.preprocess(coerceToStr, z.string().default('')),
+    copyFramingRule: z.preprocess(coerceToStr, z.string().default('')),
 });
 
 const GenerationPass1MerchSchema = z.object({

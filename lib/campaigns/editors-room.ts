@@ -30,6 +30,10 @@ import { CameraDistanceEnum, FramingModeEnum } from './reference-pack-types';
 // ── Lenient generation schemas: .default() on all fields so Zod fills gaps instead of triggering repair loops ──
 // These are used ONLY for generateObject calls. schema.ts keeps strict schemas for downstream persistence.
 
+// Coerce keyed-object responses (model returns {"1":{...}, "2":{...}} instead of [{...}, {...}]) to arrays.
+const coerceToArray = (val: unknown): unknown[] =>
+    Array.isArray(val) ? val : (val !== null && typeof val === 'object' ? Object.values(val as object) : []);
+
 const LenientStillSpecSchema = z.object({
     stillId: z.string().default(''),
     usage: LandingStillUsageEnum.default('hero_primary' as const),
@@ -57,12 +61,12 @@ const LenientStillSpecSchema = z.object({
 const StillSpecForGenerationSchema = LenientStillSpecSchema;
 
 const BibleForGenerationSchema = z.object({
-    stillLibrary: z.array(LenientStillSpecSchema).default([]),
+    stillLibrary: z.preprocess(coerceToArray, z.array(LenientStillSpecSchema).default([])),
     globalDirectionNotes: z.string().default(''),
-    avoidDirectives: z.array(z.string()).default([]),
+    avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
 });
 
-const RepairResultSchema = z.object({ stills: z.array(LenientStillSpecSchema).default([]) });
+const RepairResultSchema = z.object({ stills: z.preprocess(coerceToArray, z.array(LenientStillSpecSchema).default([])) });
 
 // ── Internal: anchor schema (intermediate only — not exported as a named type) ──
 
@@ -76,7 +80,7 @@ const ActionAnchorSchema = z.object({
 });
 
 const ActionAnchorSetSchema = z.object({
-    anchors: z.array(ActionAnchorSchema).default([]),
+    anchors: z.preprocess(coerceToArray, z.array(ActionAnchorSchema).default([])),
 });
 
 // ── Lenient ProductionBible override for generation (strict ProductionBibleSchema used downstream) ──
@@ -95,9 +99,9 @@ const LenientSceneSpecSchema = z.object({
 });
 
 const LenientShotSpecSchema = z.object({
-    shotNumber: z.number().default(1),
     sceneId: z.string().default(''),
-    durationSeconds: z.number().default(3),
+    durationSeconds: z.number().default(0),
+    shotNumber: z.number().default(1),
     cameraMovement: z.string().default(''),
     subjectMotion: z.string().default(''),
     environmentMotion: z.string().default(''),
@@ -112,14 +116,11 @@ const LenientStoryboardSchema = z.object({
     deliverableId: z.string().default(''),
     title: z.string().default(''),
     totalDurationSeconds: z.number().default(30),
-    shotSequence: z.array(LenientShotSpecSchema).default([]),
+    shotSequence: z.preprocess(coerceToArray, z.array(LenientShotSpecSchema).default([])),
     narrationScript: z.string().default(''),
     musicDirection: z.string().default(''),
     editingStyle: z.string().default(''),
 });
-
-const coerceToArray = (val: unknown): unknown[] =>
-    Array.isArray(val) ? val : (val !== null && typeof val === 'object' ? Object.values(val as object) : []);
 
 const LenientProductionBibleSchema = z.object({
     sceneLibrary: z.preprocess(coerceToArray, z.array(LenientSceneSpecSchema).default([])),
@@ -186,6 +187,7 @@ You are a community strategist seeding a landing still set for a niche cruise ca
 Generate 6-8 community-native action anchors. Each anchor seeds one specific landing still.
 
 RULES:
+- anchorId: REQUIRED — set to "anchor-01", "anchor-02", etc. (unique sequential ID for each anchor)
 - communityAction: describe a concrete, observable scene a member of THIS community would naturally create on a cruise. Vacation tone only — no study, no workshops, no work.
 - locationFamily: name the ship zone (promenade, pool deck, library, spa solarium, dining lounge, cabin balcony, embarkation pier, ship atrium, etc.). No two anchors may share a location family.
 - nicheSignal: one specific term from the campaign niche vocabulary that will be embedded in the still description to satisfy the niche scanner.
@@ -242,8 +244,9 @@ export async function generateLandingStillBible(
     const system = `
 You are a visual director translating community action anchors into 6 landing still specs for a niche cruise campaign.
 
-SLOT ASSIGNMENT — for each still, populate the audit and shot-intent fields:
-  anchorId: copy the anchorId value from the anchor that seeded this still
+SLOT ASSIGNMENT — for each still, populate ALL of these fields:
+  stillId: REQUIRED — set to "still-01" for Slot 1, "still-02" for Slot 2, "still-03", "still-04", "still-05", "still-06"
+  anchorId: REQUIRED — copy the EXACT anchorId string from the anchor that seeded this still
   slotRole: set to the enum value for this slot (HERO_PRIMARY, HERO_ALT, EDITORIAL_WIDE_A, EDITORIAL_WIDE_B, INTIMATE, or FLEX)
   nicheCarryThrough: write the exact niche keyword or phrase you embedded in BOTH imagePrompt AND subjectAction
   shotIntent: one sentence describing what this still must communicate
@@ -264,12 +267,20 @@ SLOT ASSIGNMENT — for each still, populate the audit and shot-intent fields:
 LOCATION CONTRACT — each still's 'location' field MUST match the locationFamily declared in its anchor seed:
   If anchor locationFamily is "balcony" → still location field MUST contain the word "balcony" — do not write only "railing" or "rail" without balcony present
   If anchor locationFamily is "deck" → still location must be on an open deck area — do not write "railing" or "balcony" as the primary descriptor
+  If anchor locationFamily contains "pool" or "pool deck" or "pool_deck" or "lido" → still location field MUST contain the word "pool" or "lido" (e.g., "main pool deck", "lido deck", "pool bar area")
   If anchor locationFamily is "dining" → still location must be in a dining venue
   If anchor locationFamily is "library" → still location must be in the ship library or reading room — do not use pool, deck, or railing locations
   If anchor locationFamily is "spa" or "solarium" → still location must be in a spa, solarium, or thermal area
   If anchor locationFamily is "atrium" → still location must be in the ship atrium or grand lobby
+  If anchor locationFamily is "lounge" or "bar" → still location must contain "lounge" or "bar"
+  If anchor locationFamily is "promenade" → still location must contain "promenade", "bow", or "stern"
   Do not substitute a different location family even if the scene idea is more compelling.
   The location field must contain at least one concrete keyword from the anchor's declared locationFamily.
+
+NICHE SIGNAL EMBEDDING — for each still, the anchor's nicheSignal must appear VERBATIM (exact characters, not inflected) in BOTH imagePrompt AND subjectAction:
+  If anchor nicheSignal is "deck dance" → imagePrompt and subjectAction must contain the exact string "deck dance" (not "deck dancing", not "dance on deck")
+  If anchor nicheSignal is "live set" → both fields must contain "live set" exactly
+  Copy the anchor's nicheSignal as-is into both fields — do not rephrase, inflect, or paraphrase it.
 
 ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
@@ -280,6 +291,22 @@ OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
 ${options.instructions}` : ''}
 ${options?.correctionContext ? `\nHARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following in this regeneration:\n${options.correctionContext}\n` : ''}
+REQUIRED JSON OUTPUT STRUCTURE — use these EXACT field names. Each still MUST have a unique stillId, slotRole, and location family:
+{
+  "stillLibrary": [
+    { "stillId": "still-01", "slotRole": "HERO_PRIMARY",      "usage": "hero_primary",  "anchorId": "anchor-01", ... },
+    { "stillId": "still-02", "slotRole": "HERO_ALT",          "usage": "hero_alt",       "anchorId": "anchor-02", ... },
+    { "stillId": "still-03", "slotRole": "EDITORIAL_WIDE_A",  "usage": "concept",        "anchorId": "anchor-03", ... },
+    { "stillId": "still-04", "slotRole": "EDITORIAL_WIDE_B",  "usage": "email_header",   "anchorId": "anchor-04", ... },
+    { "stillId": "still-05", "slotRole": "INTIMATE",          "usage": "concept",        "anchorId": "anchor-05", ... },
+    { "stillId": "still-06", "slotRole": "FLEX",              "usage": "social_square",  "anchorId": "anchor-06", ... }
+  ],
+  "globalDirectionNotes": "...",
+  "avoidDirectives": [ "...", "..." ]
+}
+Each still object also requires: location, timeOfDay, lighting, composition, subjectAction, environmentDetails, mood, imagePrompt, referenceCategory, nicheCarryThrough, shotIntent, cameraDistance, framingMode, heroSubject, nicheCue, antiFallbackNote, referencePackId.
+NEVER name the stills array field anything other than "stillLibrary".
+
 FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location field contains a concrete keyword from its anchor's declared locationFamily — for a balcony anchor the word "balcony" must appear in the location field, not just "railing".
 `.trim();
 
@@ -447,7 +474,10 @@ Honor these user-supplied instructions unless they conflict with schema validity
 ${options.instructions}` : ''}
 
 For each repaired still:
-- Embed a niche term in BOTH imagePrompt AND subjectAction.
+- CRITICAL: For niche_signal_dropped violations — copy the EXACT string from the "expected" field of the violation into BOTH imagePrompt AND subjectAction verbatim. Do NOT use inflected forms, synonyms, or paraphrases.
+- CRITICAL: For anchor_location_mismatch violations — use a location that contains the exact keyword from the anchor's expected location family (e.g., if expected is "pool_deck", your location must contain "pool" or "lido").
+- CRITICAL: For duplicate_location_family violations — use a completely different ship location than all OTHER stills in the set (check the passing stills list).
+- Embed the anchor's nicheSignal verbatim in BOTH imagePrompt AND subjectAction. Set nicheCarryThrough to that exact same string.
 - The location field MUST contain at least one concrete keyword from the anchor's declared locationFamily. If the anchor locationFamily is "balcony", the word "balcony" must appear in the location field.
 - Use a location family not already claimed by ANY other still (passing or failing — each still in this repair batch must use a DIFFERENT location family).
 - Avoid every generic fallback family.
@@ -492,6 +522,10 @@ export async function generateProductionBibleFromStills(
     const casting = visual?.humanRepresentation;
     const plausibility = visual?.plausibilityFramework;
     const communityExpression = brief.communityExpression;
+    const avoidList = brief.visual?.avoidList ?? [];
+    const avoidListBlock = avoidList.length > 0
+        ? `\n\nCAMPAIGN AVOID LIST — each of these MUST appear explicitly as a directive in the avoidDirectives array:\n${avoidList.map(item => `- ${item}`).join('\n')}`
+        : '';
 
     const musicBibleBlock = isMusicFestivalCampaign(campaign)
         ? `
@@ -530,7 +564,12 @@ SCENE LIBRARY (10 scenes) + STORYBOARD RULES:
 - subjectMotion: default to no human motion — frozen human presence in a living environment
 - cameraMovement and environmentMotion carry all sensation of life
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty scenes", "No corporate body language"
-${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
+${avoidListBlock}${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
+STORYBOARD JSON STRUCTURE — use these EXACT field names (parser reads only these keys):
+Each storyboard object: { "deliverableId": str, "title": str, "totalDurationSeconds": num, "shotSequence": [ /* shots array — NEVER name this field "shots", "shotList", or anything else */ ], "narrationScript": str, "musicDirection": str, "editingStyle": str }
+Each shot object inside shotSequence: { "sceneId": str, "durationSeconds": num, "cameraMovement": str, "subjectMotion": str, "environmentMotion": str, "transitionIn": str, "transitionOut": str, "emotionalBeat": str, "narrationSegment": str, "musicCue": str }
+Shot durationSeconds values must sum exactly to the storyboard totalDurationSeconds.
+
 STORYBOARD RULES:
 - Each storyboard: intrigue/hook → building desire → peak euphoria → "this could be you" CTA arc
 - No two CONSECUTIVE shots may use the same sceneId
