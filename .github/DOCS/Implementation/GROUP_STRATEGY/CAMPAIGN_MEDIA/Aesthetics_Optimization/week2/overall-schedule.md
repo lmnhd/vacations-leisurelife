@@ -70,153 +70,99 @@ Week 2 Definition of Done status:
 
 ---
 
-### Priority 1: Stabilize the Pass 1 schema contract
+## Outcome
 
-Why this comes first:
+Week 2 workflow stabilization is complete.
 
-1. live verification already proved the worker path executes
-2. the first flattening pass landed, but both verification campaigns still timed out in Pass 1
-3. campaign tuning is still wasted until Pass 1 can return a valid structured payload without repair spirals
+The next agent should not spend time reopening queue, timeout, repair-loop, or worker-diagnostics architecture unless a new regression appears.
 
-Primary outputs:
-
-1. identify which fields in the new flat schema are still driving validation and repair churn
-2. reduce remaining schema-repair loops enough that drift completes inside bounded runtime
-3. keep fallback/default population in post-generation normalization
-4. avoid expanding the contract again while debugging the remaining failure families
+The active focus now moves to campaign-quality tuning, with music/festival identity strength as the next issue class.
 
 ---
 
-### Priority 2: Persist worker-visible failure diagnostics durably
+## Next Priority
+
+### Priority 1: Fix the music/festival aesthetics issue class
+
+Why this comes first now:
+
+1. workflow reliability is now proven end to end
+2. both control and problem campaigns complete successfully through the worker path
+3. the remaining problems are campaign-quality problems, not pipeline blockers
+
+Primary outputs:
+
+1. stronger explicit music/festival cue coverage
+2. lower generic fallback usage in open-deck identity and concepts
+3. reusable guidance for music/listening/open-deck campaigns
+
+---
+
+### Priority 2: Re-run open-deck only as needed for campaign-quality tuning
 
 Why this comes second:
 
-1. failures are now happening in the worker, not at enqueue time
-2. runtime verification proved diagnostics persistence is inconsistent across campaigns
-3. paid reruns should not be required just to recover the last real failure context
+1. open-deck is now a valid campaign-quality test case because the workflow is stable
+2. reruns should now evaluate aesthetic identity quality, not pipeline survival
+3. drift can remain the control whenever a tuning change risks regressing general quality
 
 Primary outputs:
 
-1. both drift and open-deck persist non-null `failureDiagnostics` on failure
-2. route responses reflect worker-generated failure context consistently
-3. Brief Studio can display actionable diagnostics after refresh or reconnect for every failed job
+1. verified improvements in open-deck campaign specificity
+2. no regression in control-campaign output quality
+3. only true aesthetic blockers remain
 
 ---
 
-### Priority 3: Finalize failed-step state truthfully
+### Priority 3: Preserve the stabilized worker-backed architecture
 
 Why this comes third:
 
-1. failed jobs currently leave `generate_brief` marked `running`
-2. stale step state makes polling output less trustworthy for both users and the next engineer
-3. this is a small but important correctness fix before more reruns
+1. the workflow layer is now good enough and should not be destabilized casually
+2. future tuning work should reuse the lenient-generation plus skip-repair pattern where appropriate
+3. any new regressions should be treated as exceptions, not as a reason to reopen completed week 2 work
 
 Primary outputs:
 
-1. failed jobs mark the active step as `failed`
-2. step messages explain the terminal failure reason
-3. job-level and step-level status no longer contradict each other
+1. keep the route thin: enqueue plus status only
+2. keep diagnostics durable at the job level
+3. keep large generation stages lenient enough to avoid repair-loop regressions
 
 ---
 
-### Priority 4: Re-run the control and problem campaigns after the technical fixes
-
-Why this comes fourth:
-
-1. `drift-festival-icon-2026` remains the control case
-2. `bp-opendeck-icon-2027-7n-caribbean` remains the known difficult case
-3. the same pair should validate the remaining Pass 1 fixes, diagnostics consistency, and step-state truthfulness
-
-Primary outputs:
-
-1. drift completes through the worker-backed flow inside bounded runtime
-2. open-deck reaches a real terminal outcome with durable diagnostics
-3. the team can distinguish workflow failure from campaign-quality failure cleanly
-4. failed-step state is truthful if either campaign still fails
-
----
-
-### Priority 5: Harden Pass 1 observability and bounding
-
-Why this comes fifth:
-
-1. even after schema cleanup, attempt-level timing should remain inspectable
-2. bounded failures are cheaper and easier to reason about than opaque long retries
-3. observability must survive failure, not only success
-
-Primary outputs:
-
-1. attempt-level Pass 1 timing remains visible
-2. failure payloads explain whether the miss was timeout, schema repair, or provider latency
-3. no single invisible retry loop dominates wall-clock time
-
----
-
-### Priority 6: Fix the music/festival aesthetics issue class
-
-Why this comes sixth:
-
-1. this is the main campaign-content problem after workflow is unblocked
-2. open-deck is the best active test case
-
-Primary outputs:
-
-1. stronger explicit cue coverage
-2. lower generic fallback usage
-3. reusable music/festival guidance improvements
-
----
-
-## Suggested Week 2 Sequence
+## Suggested Next Sequence
 
 ### Day 1
 
-1. inspect the remaining validation and repair churn against the new flat Pass 1 schema
-2. identify the exact fields still triggering repair before timeout
-3. tighten or simplify those fields without reintroducing nested schema burden
+1. review completed week 2 workflow changes before editing prompts or campaign logic
+2. inspect open-deck output for generic or weak music/festival identity
+3. identify the reusable issue class to tune next
 
 ### Day 2
 
-1. make `failureDiagnostics` persistence consistent across both drift and open-deck failure paths
-2. fix failed-step finalization so `generate_brief` does not remain `running` after terminal failure
-3. verify that Brief Studio still renders the diagnostics contract cleanly
+1. implement music/festival quality improvements
+2. rerun open-deck and compare against the latest successful baseline
+3. use drift as a control if any change risks broader regressions
 
 ### Day 3
 
-1. rerun `drift-festival-icon-2026` through the worker-backed brief flow
-2. rerun `bp-opendeck-icon-2027-7n-caribbean` through the worker-backed brief flow
-3. capture either successful completion or durable failed-job diagnostics with truthful step state
-
-### Day 4
-
-1. harden Pass 1 attempt telemetry and timeout visibility
-2. verify that route lifetime no longer governs regeneration runtime
-3. close any residual worker-state or polling gaps exposed by reruns
-
-### Day 5
-
-1. only after workflow is stable, move to music/festival issue-class tuning
-2. use open-deck as the first campaign-quality test case
-3. keep drift as a control whenever new prompt or issue-class guidance is introduced
+1. document which quality issues remain after tuning
+2. promote reusable quality rules into the campaign guidance system
+3. avoid reopening week 2 workflow work unless a concrete regression is observed
 
 ---
 
 ## Stop Rules
 
-Stop campaign-tuning work if either of these is still true:
+Stop campaign-quality tuning and re-open workflow only if either of these becomes true again:
 
-1. drift still cannot complete worker-backed regeneration in bounded time
-2. failed jobs still do not preserve the real Pass 1 failure detail durably and consistently
+1. drift or open-deck stops completing through the worker-backed path in bounded time
+2. durable job diagnostics regress or step state becomes untruthful again
 
-Stop workflow refactoring and move to campaign tuning only when both are true:
+Stay in campaign-quality tuning when both are true:
 
 1. drift can regenerate successfully in bounded time
 2. open-deck can reach a truthful terminal result in bounded time, even if it still fails lint or campaign-quality checks afterward
-
-Do not treat the diagnostics task as complete while either of these is still true:
-
-1. one failed campaign persists `failureDiagnostics` while another returns `null`
-2. a failed job still leaves its active step marked `running`
 
 ---
 
@@ -230,3 +176,5 @@ Week 2 is successful when all of the following are true:
 4. failed jobs expose truthful step-level status instead of stale `running` state
 5. drift completes as a control case
 6. open-deck reaches the point where only true campaign-quality blockers remain
+
+This definition of done is now met. Week 2 should be treated as complete unless a new workflow regression appears.
