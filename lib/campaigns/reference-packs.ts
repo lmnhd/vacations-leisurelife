@@ -16,6 +16,7 @@ import type {
     ToxicExample,
 } from './reference-pack-types';
 import type { LandingStillSlotRole } from './schema';
+import { isMusicFestivalCampaign } from './aesthetic-engine';
 
 // ── Niche family inference from campaign ─────────────────────────────────────
 
@@ -445,14 +446,29 @@ export function getSlotReferenceBundle(
     };
 }
 
+// ── Music/festival niche keyword expansion — applied when no reference pack exists ──
+
+const MUSIC_FESTIVAL_EXPANDED_KEYWORDS = [
+    'dancing', 'live music', 'open deck', 'deck party', 'sound system', 'festival',
+    'dj', 'bass', 'crowd energy', 'earbuds', 'playlist', 'performer', 'stage',
+    'music', 'beat', 'groove', 'rhythm', 'band', 'crowd', 'dancing on deck',
+    'live set', 'acoustic', 'deck dancing', 'album art', 'headphones',
+];
+
 // ── Public API: expand niche keywords with reference pack signals ────────────
 
 export function getExpandedNicheKeywords(campaign: Campaign): string[] {
     const base = campaign.targetingKeywords ?? [];
     const pack = getReferencePack(campaign);
-    if (!pack) return base;
-    const merged = new Set([...base.map(k => k.toLowerCase()), ...pack.requiredNicheSignals.map(k => k.toLowerCase())]);
-    return [...merged];
+    if (pack) {
+        const merged = new Set([...base.map(k => k.toLowerCase()), ...pack.requiredNicheSignals.map(k => k.toLowerCase())]);
+        return [...merged];
+    }
+    if (isMusicFestivalCampaign(campaign)) {
+        const merged = new Set([...base.map(k => k.toLowerCase()), ...MUSIC_FESTIVAL_EXPANDED_KEYWORDS]);
+        return [...merged];
+    }
+    return base;
 }
 
 // ── Public API: format reference bundle as prompt text ──────────────────────

@@ -22,6 +22,7 @@ import {
     buildEventFramingGuidance,
     joinCampaignList,
     sanitizePromptList,
+    isMusicFestivalCampaign,
 } from './aesthetic-engine';
 import { getReferencePack, formatReferencePackForGeneration, formatReferenceBundleForPrompt, getSlotReferenceBundle } from './reference-packs';
 import { CameraDistanceEnum, FramingModeEnum } from './reference-pack-types';
@@ -140,6 +141,46 @@ export async function generateActionAnchors(
     const belonging = brief.communityExpression?.belongingSignals?.join('; ') ?? 'None';
     const solitudeAnti = brief.communityExpression?.solitudeAntiPatterns?.join('; ') ?? 'None';
 
+    const musicAnchorBlock = isMusicFestivalCampaign(campaign)
+        ? `
+MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ANCHOR HARD REQUIREMENTS:
+This campaign requires strong on-image music identity across the still set. Generic cruise anchor seeds are not acceptable.
+
+REQUIRED MUSIC ANCHOR FAMILIES — at least 3 of your 6-8 anchors MUST come from these families:
+
+FAMILY A — DECK ENERGY:
+  communityAction: guests visibly responding to live music or a sound system on an open deck — dancing, swaying, arms raised, crowd gathered near speakers
+  locationFamily: pool deck / open deck / lido deck / stern deck
+  nicheSignal: must be a music-energy term (e.g. "deck dancing", "live set", "outdoor DJ", "sound system crowd", "open air music")
+  socialUnit: pair or solo permitted
+
+FAMILY B — PERFORMANCE PROXIMITY:
+  communityAction: guests standing, watching, or reacting close to a live performer, acoustic musician, band, or DJ setup on deck
+  locationFamily: pool deck stage area / stern bar / outdoor deck near speakers
+  nicheSignal: must reference performance context (e.g. "live performer", "acoustic set", "stage adjacency", "DJ deck", "band on deck")
+  socialUnit: pair preferred
+
+FAMILY C — PERSONAL LISTENING CULTURE:
+  communityAction: one or two guests sharing earbuds, showing album art on a phone screen, or wearing headphones half-off in mid-recommendation
+  locationFamily: lounge / atrium / bar / balcony / library
+  nicheSignal: must reference personal music behavior (e.g. "earbuds", "album art", "playlist share", "headphones", "track recommendation")
+  socialUnit: pair strongly preferred
+
+FAMILY D — MUSIC SOCIAL RECOGNITION:
+  communityAction: two guests connecting over music identity — band tee recognition, festival wristband comparison, discussing a favorite set
+  locationFamily: bar / promenade / dining lounge / pool deck
+  nicheSignal: must name a social music behavior or visual marker (e.g. "band tee", "festival wristband", "set discussion", "music talk")
+  socialUnit: pair
+
+BANNED anchor seeds for this campaign:
+  × solo guest watching sunset with no music element in frame
+  × couple at railing with no sound, music, or crowd context
+  × dining or spa scene with no observable music identity
+  × interior scene where music is entirely absent and interchangeable with any luxury cruise
+
+The remaining anchors (outside the 3 required families) may use any location family BUT must still carry a music signal in their nicheSignal field.`.trim()
+        : '';
+
     const system = `
 You are a community strategist seeding a landing still set for a niche cruise campaign.
 Generate 6-8 community-native action anchors. Each anchor seeds one specific landing still.
@@ -156,7 +197,7 @@ BANNED FALLBACK ANCHORS (do not generate these):
 - solo guest gazing contemplatively at the ocean
 - couple facing the horizon at wide distance
 - candlelit dining intimacy with no niche context
-
+${musicAnchorBlock ? `\n${musicAnchorBlock}` : ''}
 Niche vocabulary: ${nicheKw}
 Belonging signals: ${belonging}
 Solitude anti-patterns to avoid as anchor seeds: ${solitudeAnti}
@@ -452,6 +493,29 @@ export async function generateProductionBibleFromStills(
     const plausibility = visual?.plausibilityFramework;
     const communityExpression = brief.communityExpression;
 
+    const musicBibleBlock = isMusicFestivalCampaign(campaign)
+        ? `
+MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PRODUCTION BIBLE HARD REQUIREMENTS:
+This campaign requires sustained music identity across all scenes and storyboards.
+
+SCENE LIBRARY:
+  - At least 2 of the 10 scenes MUST be set on an open deck with visible crowd energy, sound system context, or live performance adjacency. These scenes must show guests physically responding to music — not just standing near water.
+  - At least 1 scene must show guests in direct physical response to music: swaying, dancing, bodies moving — on deck, not in a lounge.
+  - At least 1 scene may use a personal listening moment (earbuds, phone music, recommendation exchange) as an intimate complement to the energy scenes.
+  - No scene should read as quiet luxury with no music atmosphere. Every interior scene must carry a music-culture cue in subjectAction or environmentDetails.
+
+STORYBOARDS:
+  - musicCue fields MUST escalate across the emotional arc. Do not default all shots to "ambient bed".
+  - Required arc: ambient opening → recognizable beat builds → crowd energy peak → intimate personal close.
+  - At least 1 shot per storyboard must use a high-energy musicCue: "full crowd energy", "bass drop moment", "stage peak", "crowd swell", or "festival atmosphere peak".
+
+ADDITIONAL avoidDirectives REQUIRED for this campaign:
+  - "No scenes where all music context is absent"
+  - "No open-deck wide shots that ignore sound system or crowd energy"
+  - "No interior scenes that read as quiet luxury with zero music atmosphere"
+  - "No storyboard where musicCue stays at ambient bed for all shots"`.trim()
+        : '';
+
     const system = `
 You are the Creative Director generating a Production Bible for a niche cruise campaign.
 The landing still set is already validated. Use it as the community identity reference.
@@ -466,7 +530,7 @@ SCENE LIBRARY (10 scenes) + STORYBOARD RULES:
 - subjectMotion: default to no human motion — frozen human presence in a living environment
 - cameraMovement and environmentMotion carry all sensation of life
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty scenes", "No corporate body language"
-
+${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
 STORYBOARD RULES:
 - Each storyboard: intrigue/hook → building desire → peak euphoria → "this could be you" CTA arc
 - No two CONSECUTIVE shots may use the same sceneId

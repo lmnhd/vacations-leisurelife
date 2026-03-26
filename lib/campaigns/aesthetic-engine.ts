@@ -315,7 +315,7 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     }).default({}),
 });
 
-function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords: string[] = []): string[] {
+function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords: string[] = [], isMusicFestival: boolean = false): string[] {
     const failures: string[] = [];
     const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
     const cliches = ["paradise", "perfect vacation", "dream getaway", "sail away", "unforgettable", "memories"];
@@ -349,6 +349,15 @@ function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords
         const hasNicheAnchor = lowerKeywords.some(keyword => lowerSlogans.includes(keyword));
         if (!hasNicheAnchor) {
             failures.push(`Slogan does not anchor to niche identity — expected at least one of: ${lowerKeywords.slice(0, 5).join(', ')}`);
+        }
+    }
+
+    // Check 5: Music/festival identity anchor — slogans must contain at least one explicit music signal
+    if (isMusicFestival) {
+        const MUSIC_SIGNAL_TERMS = ['danc', 'beat', 'sound', 'track', 'bass', 'groove', 'rhythm', 'stage', 'festival', 'playlist', 'music', 'open deck', 'performer', 'band', 'dj ', ' dj', 'crowd', 'set ', ' set', 'drop', 'vibe'];
+        const hasMusicSignal = MUSIC_SIGNAL_TERMS.some(term => lowerSlogans.includes(term));
+        if (!hasMusicSignal) {
+            failures.push('Music/festival campaign slogans must contain at least one explicit music signal (beat, sound, deck, festival, music, crowd, stage, band, drop, etc.) — slogans are not distinguishable from generic cruise marketing');
         }
     }
 
@@ -550,10 +559,14 @@ OUTPUT RULES:
         ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${instructions}`
         : '';
 
+    const musicFestivalRefinementBlock: string = isMusicFestivalCampaign(campaign)
+        ? `\n\nMUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — REFINEMENT PROTECTION RULES:\nThis is a music, festival, or open-deck community campaign. The refinement pass must protect its energy identity, not sand it down.\nDO NOT remove or soften: open-deck crowd energy language, dancing-on-deck descriptions, stage or sound-system adjacency references, festival atmosphere, or crowd response to live music. These are the campaign's core identity, not program language to be stripped.\nDO NOT replace "crowd dancing on deck" with "guests enjoying the deck". DO NOT replace "guests responding to the music" with "guests relaxing outdoors". The physical, social, crowd-energy dimension of this campaign must survive refinement intact.\nDO strengthen: any belonging signal that lacks a specific observable music cue should be sharpened to name the concrete behavior. Vague signals like "shared love of music" must be replaced with observable scene descriptions.\nDO ensure heroSlogan and subSlogan both contain at least one explicit music signal term (beat, sound, music, deck, stage, festival, crowd, bass, groove, band, drop). If they do not, rewrite them to pass this test.\nDO ensure communityExpression.socialGravity names music-specific recognition, not generic shared-taste language.`
+        : '';
+
     const { object } = await callGlobalGenerateObject({
         modelName: ModelName.GPT_5_HIGH,
         schema: RefinementSchema,
-        system: refinementPrompt + instructionBlock,
+        system: refinementPrompt + musicFestivalRefinementBlock + instructionBlock,
         prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
         maxOutputTokens: 14000,
         maxCandidates: 2,
@@ -813,12 +826,29 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         ? [
             '',
             'MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PASS 1 HARD REQUIREMENTS:',
-            'This campaign is a music, festival, or open-deck community type.',
-            'The following rules apply to communityExpression.belongingSignals and the core aesthetic identity:',
-            '  - At least 3 of the belonging signals must be explicitly music-cue-bearing (e.g. guests dancing on deck, live performer adjacency, crowd energy at a sound system, vinyl or earbuds as carry props, DJ booth atmosphere).',
-            '  - Banned belonging signal families for this campaign type: hosted listening room energy, public-playback control fantasy, collector-prestige salon language, generic luxury leisure with no music proof, managed event infrastructure.',
-            '  - The heroSlogan and subSlogan must anchor to music culture — they must NOT be interchangeable with generic premium cruise slogans.',
-            '  - communityExpression.socialGravity must name music-specific gravity: shared taste, recognizable fan culture, song-sharing, visible listening energy.',
+            'This campaign is a music, festival, or open-deck community type. Generic cruise identity is not acceptable — the output must be specific to music/festival culture at sea.',
+            '',
+            'communityExpression REQUIRED STANDARDS:',
+            '  - belongingSignals: must include at least 4 signals. At least 3 MUST be explicitly music-cue-bearing, naming a specific observable behavior — not a feeling. Required pattern: describe what a guest does or sees that proves the music community is present. Acceptable: "guests dancing together on the open deck when a live set starts", "a pair sharing earbuds showing each other album art on their phones", "crowd gathering near the stage on the stern deck for an afternoon DJ set", "guests in band tees striking up a conversation about the set list at the bar". NOT acceptable: "shared love of music", "music brings people together", "vibrant festival energy".',
+            '  - socialGravity MUST name music-specific recognition dynamics: shared setlist anticipation, recognizable fan subculture markers, spontaneous track recommendation exchange, visible dancing energy on deck. Generic "shared taste creates easy conversation" is NOT acceptable for this campaign type.',
+            '  - corePromise MUST name what the open-deck or live-music experience specifically delivers: shared crowd energy, acoustic sea air, dancing under open sky. Generic "vacation with your kind of people" fails this test.',
+            '  - optionalGatherings MUST include at least 2 music-specific gatherings: sailaway DJ set on deck, afternoon live performance atmosphere, acoustic session at the stern bar, poolside sound-system crowd. Generic "pre-dinner meetup" alone is insufficient.',
+            '',
+            'visual REQUIRED STANDARDS:',
+            '  - imageryMood MUST name music atmosphere elements specifically: crowd warmth, golden-hour stage glow, open-air energy, festival-social ease. NOT just "warm and inviting" or "vibrant and joyful".',
+            '  - plausibilityFramework.nicheEnhancedMoments MUST include at least 2 explicitly music-enhanced moments: guests naturally gathering on deck when an outdoor set starts, crowd swaying together at sailaway, a friend group dancing barefoot on the pool deck at dusk.',
+            '  - compositionNotes MUST reference open-deck visual geometry: wide sky, crowd in motion, stage or speaker visible at distance, sea horizon as backdrop.',
+            '',
+            'messaging REQUIRED STANDARDS:',
+            '  - heroSlogan MUST contain at least one of: dancing, beat, sound, music, deck, stage, festival, crowd, bass, groove, rhythm, track, band, drop, vibe. A slogan containing none of these terms is interchangeable with generic cruise marketing and WILL FAIL the quality gate.',
+            '  - subSlogan MUST describe the social experience of music at sea, not generic "your kind of cruise" equivalents.',
+            '',
+            'BANNED for this campaign type in ALL output fields:',
+            '  - hosted listening room energy or collector-prestige salon language',
+            '  - public-playback control fantasy',
+            '  - generic luxury leisure with no observable music proof',
+            '  - managed event infrastructure',
+            '  - any belonging signal that could describe a non-music community unchanged',
         ].join('\n')
         : '';
 
@@ -874,7 +904,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}`, attemptElapsedMs);
         console.log(`[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`);
 
-        const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan, campaign.targetingKeywords);
+        const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan, campaign.targetingKeywords, isMusicFestivalCampaign(campaign));
         if (sloganFailures.length < 2) {
             console.log(`[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`);
             pass1Result = { object: normalizedObject };
@@ -1071,7 +1101,7 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
 
 // Detect music/festival/open-deck campaign types from keywords or name so we can
 // inject hard niche-identity rules that ban the known generic fallback patterns.
-function isMusicFestivalCampaign(campaign: Campaign): boolean {
+export function isMusicFestivalCampaign(campaign: Campaign): boolean {
     const haystack = [
         campaign.name,
         ...(campaign.targetingKeywords ?? []),
@@ -1082,10 +1112,20 @@ function isMusicFestivalCampaign(campaign: Campaign): boolean {
     );
 }
 
+const MUSIC_FESTIVAL_LINT_KEYWORDS = [
+    'dancing', 'live music', 'open deck', 'deck party', 'sound system', 'festival',
+    'dj', 'bass', 'crowd energy', 'earbuds', 'playlist', 'performer', 'stage',
+    'music', 'beat', 'groove', 'rhythm', 'band', 'crowd', 'dancing on deck',
+    'live set', 'acoustic', 'deck dancing', 'album art', 'headphones',
+];
+
 export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
     const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
-    const kwDisplay = nicheKw.length > 0
-        ? nicheKw.join(', ')
+    const effectiveNicheKw = isMusicFestivalCampaign(campaign)
+        ? [...new Set([...nicheKw, ...MUSIC_FESTIVAL_LINT_KEYWORDS])]
+        : nicheKw;
+    const kwDisplay = effectiveNicheKw.length > 0
+        ? effectiveNicheKw.join(', ')
         : campaign.name.toLowerCase().split(/\s+/).filter(t => t.length > 3).join(', ');
 
     const vocabularyLines: string[] = belongingSignals && belongingSignals.length > 0
@@ -1111,15 +1151,22 @@ export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: 
             '4. MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ADDITIONAL HARD RULES (niche identity must be visible on sight):',
             '   This campaign is flagged as a music, festival, or open-deck community. Generic cruise visuals are not sufficient.',
             '   HARD RULES:',
-            '   - At least 3 of the 6 stills must show an observable on-image signal of live-music, festival culture, or open-deck community identity.',
-            '     Acceptable signals: a guest dancing on deck, a live performer or stage visible in background, guests gathered around a sound system, vinyl records or earbuds as props, crowd energy at an outdoor deck event, a DJ booth visible in scene.',
+            '   - At least 3 of the 6 stills MUST show an observable on-image music signal that is immediately legible from the image alone — a viewer who cannot read captions must recognize music culture.',
+            '   - REQUIRED SIGNAL FAMILIES — each of the 3 required stills must carry one of:',
+            '     × DECK ENERGY: guests dancing, swaying, or physically reacting to music on an open deck — arms loosely raised, bodies in motion, crowd gathered near speakers.',
+            '     × PERFORMANCE PROXIMITY: a live performer, band, stage, speaker stack, or DJ booth visible in the scene — guests close enough to feel the energy.',
+            '     × PERSONAL LISTENING: earbuds shared between two guests, phone showing album art, headphones half-off in mid-recommendation — intimate music identity cue.',
+            '     × CROWD RECOGNITION: festival wristbands, band tees, or recognizable music-subculture wardrobe worn by multiple guests — visible community identity in clothing.',
+            '     × AUDIO ENVIRONMENT: outdoor speakers, sound-system rigging, or stage lighting visible as part of the ship environment while guests react.',
             '   - The following compositions are BANNED for music/festival campaigns (do not use even as one of 6):',
-            '     × deck_sea_wide (couple facing horizon/sunset at wide distance with no music cue)',
-            '     × quiet_window_solo (solo guest gazing out porthole or cabin window with no music cue)',
-            '     × port_shore_laughing (guests on shore or pier laughing with no music cue in frame)',
-            '     × cabin_window_other (any cabin or window setup with no music identity in frame)',
-            '   - cueStrength must be "explicit" (not "subtle", not "absent") for at least 3 stills — meaning the niche is immediately legible from the image alone without reading the caption.',
+            '     × deck_sea_wide (couple facing horizon/sunset at wide distance with no music cue present)',
+            '     × quiet_window_solo (solo guest gazing out porthole or cabin window with no music cue in frame)',
+            '     × port_shore_laughing (guests on shore or pier laughing with no music context in scene)',
+            '     × cabin_window_other (any cabin or window setup with no music identity present)',
+            '     × generic pool lounging (guests reclining by the pool with no music awareness visible)',
+            '   - cueStrength must be "explicit" (not "subtle", not "absent") for at least 3 stills — meaning the niche is immediately legible from the image alone.',
             '   - Do NOT use slogan copy or caption text to carry the music identity — it must be visible in the scene itself.',
+            '   - For each music-signal still: the specific signal MUST appear in BOTH imagePrompt AND subjectAction. Embedding it only in environmentDetails or composition is insufficient.',
         ]
         : [];
 
