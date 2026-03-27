@@ -863,12 +863,18 @@ export async function regenerateLandingStills(slug: string, options?: { instruct
 
     const stillResult = await generateLandingStillArtifact(campaign, storedBrief, anchors, timingPass, { instructions: options?.instructions });
 
+    const nextHumanReviewStatus = storedBrief.humanReviewStatus === 'approved' || storedBrief.humanReviewStatus === 'revised'
+        ? 'revised' as const
+        : 'pending' as const;
+
     const updatedBrief: CampaignAestheticBrief = {
         ...storedBrief,
         landingStillBible: stillResult.landingStillBible,
+        productionBible: undefined,
         productionBuildStatus: undefined,
         productionBuildLint: undefined,
         productionBuildEvaluatedAt: undefined,
+        humanReviewStatus: nextHumanReviewStatus,
     };
 
     await saveAestheticBrief(updatedBrief);
@@ -963,6 +969,9 @@ export async function resyncProductionLint(slug: string): Promise<LintResyncPubl
 
     if (!storedBrief.landingStillBible) {
         throw new Error(`No landingStillBible for ${slug}. Cannot recompute lint without stills.`);
+    }
+    if (!storedBrief.productionBible) {
+        throw new Error(`No productionBible for ${slug}. Regenerate the production bible before resyncing lint.`);
     }
 
     console.log(`[brief-engine] resync_production_lint for ${slug}`);

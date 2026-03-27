@@ -16,9 +16,10 @@ These issues should be worked only after the regeneration path becomes reliable 
 
 Current saved state:
 
-1. readiness is `ready_for_media`
-2. production build status is `warn`
-3. no approval-blocking issues are currently active
+1. `productionBuildStatus` was previously saved as `fail`, but a March 26 lint resync proved that state was stale
+2. current resynced production build status is `warn`
+3. current issues are warnings, not blockers
+4. `humanReviewStatus` is `pending`, so this should not be described as `ready_for_media`
 
 Use this campaign as a workflow control.
 
@@ -29,90 +30,91 @@ Use this campaign as a workflow control.
 Current saved state:
 
 1. readiness is `needs_review`
-2. production build status is `fail`
-3. blocking issue family is still active
+2. production build status is now `warn`
+3. no approval-blocking issues are currently active
+4. the remaining issue is a warning about repeated `music_deck_activity`, not a failure state
 
-This is the primary campaign-content target once the workflow path is stable.
+This is no longer the primary architecture-debug target. It is now a validated music/festival proof case with a non-blocking warning state.
 
 ---
 
-## Campaign Issue 1: Music/festival identity is not visually legible enough
+## Campaign Issue 1: Open-deck proof case has improved from failure to warning
 
-### Current Blockers
+### Current State
 
-The current saved open-deck brief still surfaces these issue codes:
+The earlier open-deck blockers are no longer active:
 
-1. `weak_niche_signal`
-2. `identity_legibility_too_low`
-3. `repeated_composition_family`
+1. `weak_niche_signal` cleared
+2. `identity_legibility_too_low` cleared
+3. the old `repeated_composition_family` fail state was downgraded to a warning for `music_deck_activity`
 
 ### Meaning
 
-The still set is reading too much like generic cruise leisure and not enough like an open-deck live-music or festival-social campaign.
+The still set is now reading as a real open-deck live-music campaign.
 
-The identity is not consistently visible in the image itself.
+The remaining issue is policy-level repetition tolerance, not missing identity.
 
-### Required Fix
+### What Was Fixed
 
-1. Force more explicit music/festival cue presence in the still set.
-2. Make at least 2 to 3 stills carry unmistakable on-image identity rather than relying on slogans or captions.
-3. Strengthen generation guidance around crowd energy, stage adjacency, sound-system context, dancing, visible performance atmosphere, or personal listening cues where appropriate.
+1. music/festival cue presence became explicit across the still set
+2. the deterministic classifier in `production-build-lint.ts` now routes festival deck scenes into `music_deck_activity` instead of collapsing them into generic `deck_sea_wide`
+3. the result is `warn` instead of `fail`
 
-### Acceptance Criteria
+### Current Acceptance Read
 
 1. Open-deck clears `weak_niche_signal`.
 2. Open-deck clears `identity_legibility_too_low`.
 3. The campaign reads as music-community-first at a glance.
+4. Remaining status is non-blocking.
 
 ---
 
-## Campaign Issue 2: Composition families are collapsing into generic fallback reads
+## Campaign Issue 2: Control campaign state must be treated as resynced, not blindly trusted
 
 ### Evidence
 
-Previously surfaced affected reads include generic fallback families such as:
+The `drift-festival-icon-2026` saved state had drifted:
 
-1. rail-couple-laugh
-2. cabin-window-laughing
-3. quiet-window-solo
-4. generic deck-wide vacation framing
+1. stored verdict was `fail`
+2. cheap deterministic resync moved it to `warn`
+3. the drift was in saved lint state, not in generation architecture
 
 ### Meaning
 
-The system is preserving cruise plausibility, but over-correcting into stock cruise imagery.
+Week-2 follow-up work now needs to distinguish stale persisted state from real new failures.
 
-That lowers campaign specificity.
+Otherwise the team will keep reopening already-solved backend work.
 
 ### Required Fix
 
-1. Increase location, social-unit, and framing diversity.
-2. Prevent multiple stills from solving the brief with the same generic cruise visual shorthand.
-3. Push niche identity into subject action, environment detail, and visual relationship structure instead of defaulting to rail and cabin-window scenes.
+1. resync persisted lint before drawing new conclusions from an older campaign
+2. treat `warn` versus `fail` as the source-of-truth distinction for what still blocks media generation
+3. keep control-campaign notes aligned with current saved state
 
 ### Acceptance Criteria
 
-1. Open-deck no longer repeats the same composition family enough to trigger lint issues.
-2. The still set feels distinct across hero, editorial, intimate, and flex roles.
+1. control-campaign notes reflect current resynced state
+2. week-2 docs stop describing stale failure states as active blockers
 
 ---
 
-## Campaign Issue 3: Cruise-first guidance is working, but it can still wash out niche-specificity
+## Campaign Issue 3: Remaining campaign work is now optional quality improvement, not blocker removal
 
 ### Meaning
 
-The system correctly avoids fake hosted-program visuals and staged thematic infrastructure.
+The system correctly avoids fake hosted-program visuals and staged thematic infrastructure, and the major week-2 blockers are no longer preventing progress.
 
-The failure mode now is different:
+The remaining work, if any, is different:
 
 1. cruise-first remains intact
 2. realism remains intact
-3. niche identity becomes too faint
+3. any next iteration is now about improving quality or reducing warnings, not restoring broken architecture
 
 ### Required Fix
 
 1. Keep the no-programming rule.
-2. Increase visible niche cues without reintroducing fake hosted operations.
-3. Prefer guest-carried, scene-native signals over infrastructure-based signals.
+2. Only spend more time here if the warning state materially blocks the transition to media generation.
+3. Prefer reusable improvements over another long aesthetic-debug loop.
 
 ### Acceptance Criteria
 
@@ -121,11 +123,11 @@ The failure mode now is different:
 
 ---
 
-## Campaign Issue 4: Music-specific cue policy needs a tighter success definition
+## Campaign Issue 4: Music-specific cue policy is now good enough to move forward
 
-### What Needs To Be True
+### What Is Now True
 
-For music, listening, festival, and open-deck campaigns, success should require a stronger visual proof standard than generic community campaigns.
+For music, listening, festival, and open-deck campaigns, the current open-deck proof case now meets a stronger visual proof standard than generic community campaigns.
 
 Examples of acceptable cue families:
 
@@ -142,22 +144,23 @@ Examples of acceptable cue families:
 3. collector-prestige salon language
 4. generic luxury leisure scenes with no on-image music proof
 
-### Acceptance Criteria
+### Current Read
 
 1. The music identity survives even when captions are removed.
 2. The campaign does not drift into hosted-event fiction.
+3. The remaining warning is about thematic consistency, not generic collapse.
 
 ---
 
-## Campaign Issue 5: Validation should focus on reusable issue classes, not campaign-specific hacks
+## Campaign Issue 5: Validation should continue focusing on reusable issue classes, not campaign-specific hacks
 
 ### Meaning
 
-The current open-deck failure is a concrete case, but the underlying issue class is broader:
+The open-deck fix is a good example of the right pattern:
 
-1. community-niche not legible enough
-2. generic fallback compositions overused
-3. explicit cue coverage too low
+1. the problem was identified as a deterministic issue class
+2. the fix was implemented in `production-build-lint.ts`
+3. the campaign outcome improved without a slug-specific hardcode
 
 ### Required Fix
 
@@ -174,7 +177,6 @@ The current open-deck failure is a concrete case, but the underlying issue class
 
 ## Campaign Priority
 
-1. Open-deck music/festival legibility blockers.
-2. Generic fallback overuse in still composition.
-3. Reusable prompt/rule improvements for music-community campaigns.
-4. Re-test drift only as a control after workflow fixes land.
+1. re-confirm saved control-campaign state before making new planning claims
+2. only pursue additional campaign tuning if a remaining warning materially blocks media generation
+3. prefer reusable improvements over another broad aesthetic-debug cycle

@@ -380,6 +380,7 @@ export default function BriefStudioPage() {
     const productionWarnings = productionBuildLint?.warnings ?? [];
     const productionDiagnostics = productionBuildLint?.stillDiagnostics ?? [];
     const hasProductionLintIssues = productionBlockingIssues.length > 0 || productionWarnings.length > 0;
+    const isReadyForMedia = readiness?.readiness === 'ready_for_media';
     const productionApprovalBlockReason = (() => {
         if (!activeBrief) return null;
         if (!hasLandingStillBible || !productionBuildStatus) {
@@ -394,9 +395,12 @@ export default function BriefStudioPage() {
         return null;
     })();
     const canApprove = readiness?.readiness === 'needs_review' && blockers.length === 0 && !productionApprovalBlockReason;
+    const mediaGenerationHref = normalizedSlug
+        ? `/tests/media-generation?slug=${encodeURIComponent(normalizedSlug)}&from=brief-studio`
+        : '/tests/media-generation';
     const approvalBlockedReason = (() => {
         if (!readiness) return 'Load a brief first.';
-        if (readiness.readiness === 'ready_for_media') return 'This brief is already approved and ready for media generation.';
+        if (isReadyForMedia) return 'This brief is already approved and ready for media generation. Continue in the media-generation handoff link below.';
         if (blockers.length > 0) return blockers[0]?.message ?? 'Resolve blocker issues before approving.';
         if (productionApprovalBlockReason) return productionApprovalBlockReason;
         if (readiness.readiness !== 'needs_review') return 'This brief is not in an approval-ready review state yet.';
@@ -516,6 +520,12 @@ export default function BriefStudioPage() {
                             </div>
                         )}
 
+                        {isReadyForMedia && (
+                            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-200">
+                                <strong>Approved for media.</strong> This brief already passed approval and can move to <span className="text-emerald-100">/tests/media-generation</span>. Any remaining pre-media lint items below are non-blocking diagnostics unless they are reintroduced as blockers by a later regeneration. <a href={mediaGenerationHref} className="ml-1 underline decoration-emerald-300/40 underline-offset-2 hover:text-emerald-100">Open media generation for this campaign</a>.
+                            </div>
+                        )}
+
                         {readiness.brief && (
                             <div className="p-3 text-xs border rounded-lg bg-amber-500/10 border-amber-500/20 text-amber-200">
                                 <strong>Reload is separate from regeneration.</strong> <span className="text-amber-100">Load Selected Brief</span> only fetches the stored record. <span className="text-amber-100">Regenerate Brief</span> runs fresh LLM generation, overwrites the saved brief bundle, and may incur provider cost.
@@ -591,7 +601,11 @@ export default function BriefStudioPage() {
                             <div className="space-y-3">
                                 <div>
                                     <p className="text-[10px] uppercase tracking-widest text-slate-500">Production build issues</p>
-                                    <p className="mt-1 text-xs text-slate-400">These are the specific pre-media blockers and warnings stopping approval. They are diagnostic output for the automated regeneration path, not a request for manual still editing.</p>
+                                    <p className="mt-1 text-xs text-slate-400">
+                                        {isReadyForMedia
+                                            ? 'These are the current pre-media warnings and diagnostics on the saved landing still pack. Approval already succeeded, so this section is informational unless a future regeneration reintroduces blockers.'
+                                            : 'These are the specific pre-media blockers and warnings stopping approval. They are diagnostic output for the automated regeneration path, not a request for manual still editing.'}
+                                    </p>
                                 </div>
 
                                 {productionBlockingIssues.map((issue) => (

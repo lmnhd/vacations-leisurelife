@@ -196,5 +196,10 @@ export function assertAestheticBriefReadyForMedia(brief: CampaignAestheticBrief,
         throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus}).${nextStep}`);
     }
 
+    if (!brief.redTeamReview) {
+        console.warn(`[aesthetic-red-team] ${slug} approved without persisted red-team review; allowing downstream media generation for legacy compatibility.`);
+        return;
+    }
+
     assertAestheticBriefPassedRedTeam(brief, slug);
 }

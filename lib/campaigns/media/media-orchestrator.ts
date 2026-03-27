@@ -91,6 +91,13 @@ function getApprovedReferenceCandidates(records: readonly AssetRecord[]): ShipRe
         .filter((candidate): candidate is ShipReferenceCandidate => candidate !== null);
 }
 
+function getAvailableReferenceCandidates(records: readonly AssetRecord[]): ShipReferenceCandidate[] {
+    return records
+        .filter((record) => record.assetType === 'ship_reference_image' && record.active)
+        .map((record) => assetRecordToShipReferenceCandidate(record))
+        .filter((candidate): candidate is ShipReferenceCandidate => candidate !== null);
+}
+
 function shouldRunAsset(
     assetType: AssetType,
     assetTypes?: AssetType[]
@@ -309,17 +316,37 @@ export async function runMediaGeneration(
             throw new Error(`Campaign not found: ${slug}`);
         }
         const brief = await getAestheticBrief(slug);
-        if (!brief) {
+        const requiresApprovedBrief = shouldRunAny([
+            'hero_image',
+            'aesthetic_concept',
+            'scene_image',
+            'platform_crop',
+            'tiktok_seed_video',
+            'hero_explainer_video',
+            'threshold_video',
+            'countdown_video',
+            'broll_clip',
+            'ambient_narration',
+            'hype_clip',
+            'theme_music',
+            'ad_creative',
+            'carousel_slide',
+            'email_header',
+            'merch_design',
+        ], resolvedOptions.assetTypes);
+        if (requiresApprovedBrief && !brief) {
             throw new Error(`No approved aesthetic brief found for campaign: ${slug}`);
         }
-        assertAestheticBriefReadyForMedia(brief, slug);
+        if (requiresApprovedBrief) {
+            assertAestheticBriefReadyForMedia(brief!, slug);
+        }
 
         // ── Production build lint gate ────────────────────────────────────
         const spendGatedTypes: AssetType[] = ['hero_image', 'aesthetic_concept', 'scene_image'];
         const requestingSpendGatedTypes = spendGatedTypes.some(t => shouldRunAsset(t, resolvedOptions.assetTypes));
 
         if (requestingSpendGatedTypes) {
-            const existingLintVerdict = brief.productionBuildStatus;
+            const existingLintVerdict = brief!.productionBuildStatus;
 
             if (existingLintVerdict === 'fail') {
                 throw new ProductionBuildLintError(
@@ -328,7 +355,7 @@ export async function runMediaGeneration(
                 );
             }
 
-            if (!brief.landingStillBible || !brief.productionBuildStatus) {
+            if (!brief!.landingStillBible || !brief!.productionBuildStatus) {
                 throw new ProductionBuildLintError(
                     `Production build for ${slug} has not been evaluated. ` +
                     `Generate the production bible first to run pre-spend lint before generating hero or concept images.`
@@ -347,7 +374,7 @@ export async function runMediaGeneration(
         const conceptRecords: AssetRecord[] = [];
         const cropRecords: AssetRecord[] = [];
         const merchRecords: AssetRecord[] = [];
-        const hasProductionBible = brief.productionBible !== undefined && brief.productionBible !== null;
+        const hasProductionBible = brief?.productionBible !== undefined && brief?.productionBible !== null;
         let copyCarouselSlides: string[] = [];
         let copyAdVariants: GeneratedCopy['adVariants'] = [];
         let copyCaptions: GeneratedCopy['captions'] | null = null;
@@ -407,10 +434,18 @@ export async function runMediaGeneration(
                         ...shipReferenceRecords,
                     ];
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
-                    if (approvedReferenceCandidates.length === 0) {
-                        throw new Error(`No approved ship reference images found for ${slug}. Import references first, then approve them in Review Assets before generating heroes.`);
+                    const availableReferenceCandidates = getAvailableReferenceCandidates(manifestReferenceRecords);
+
+                    if (approvedReferenceCandidates.length === 0 && availableReferenceCandidates.length > 0) {
+                        warnings.push(`Hero generation for ${slug} is using non-approved ship reference assets as fallback because no human-approved references are available yet.`);
                     }
-                    const selectedHeroRecords = await importHeroAssetsFromReferences(slug, campaign, brief, approvedReferenceCandidates, 5);
+
+                    const selectedHeroRecords = approvedReferenceCandidates.length > 0
+                        ? await importHeroAssetsFromReferences(slug, campaign, brief!, approvedReferenceCandidates, 5)
+                        : availableReferenceCandidates.length > 0
+                            ? await importHeroAssetsFromReferences(slug, campaign, brief!, availableReferenceCandidates, 5)
+                            : await importHeroAssetsFromReferences(slug, campaign, brief!, [], 5);
+
                     heroRecords.push(...selectedHeroRecords);
                     return selectedHeroRecords;
                 }, errors)
@@ -420,7 +455,7 @@ export async function runMediaGeneration(
         if (shouldRunAsset('aesthetic_concept', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'aesthetic_concept', getMediaImageGeneratorService(), 'concept art', async () => {
-                    const images = await generateAestheticConcepts(brief);
+                    const images = await generateAestheticConcepts(brief!);
                     const records: AssetRecord[] = [];
                     for (const img of images) {
                         const rec = await uploadAndRecord(
@@ -439,7 +474,7 @@ export async function runMediaGeneration(
         if (shouldRunAsset('merch_design', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'merch_design', getMediaImageGeneratorService(), 'merch designs', async () => {
-                    const designs = await generateMerchDesigns(brief);
+                    const designs = await generateMerchDesigns(brief!);
                     const records: AssetRecord[] = [];
                     for (const img of designs) {
                         const rec = await uploadAndRecord(
@@ -458,7 +493,7 @@ export async function runMediaGeneration(
         if (shouldRunAny(['ad_creative', 'carousel_slide', 'email_header'], resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'ad_creative', 'gpt4o', 'platform copy', async () => {
-                    const generatedCopy = await generatePlatformCopy(brief);
+                    const generatedCopy = await generatePlatformCopy(brief!);
                     copyCarouselSlides = generatedCopy.carouselSlides;
                     copyAdVariants = generatedCopy.adVariants;
                     copyCaptions = generatedCopy.captions;
@@ -480,7 +515,7 @@ export async function runMediaGeneration(
             // Ambient narration
             group1Promises.push(
                 runWithJob(slug, 'ambient_narration', 'elevenlabs', 'ambient narration', async () => {
-                    const audio = await generateAmbientNarration(brief);
+                    const audio = await generateAmbientNarration(brief!);
                     const rec = await uploadAndRecord(
                         slug, audio.assetId, 'ambient_narration', 'elevenlabs',
                         audio.script, audio.buffer, audio.fileName, 'audio/mpeg',
@@ -497,7 +532,7 @@ export async function runMediaGeneration(
             // Hype clip
             group1Promises.push(
                 runWithJob(slug, 'hype_clip', 'elevenlabs', 'hype clip', async () => {
-                    const audio = await generateHypeClip(brief);
+                    const audio = await generateHypeClip(brief!);
                     const rec = await uploadAndRecord(
                         slug, audio.assetId, 'hype_clip', 'elevenlabs',
                         audio.script, audio.buffer, audio.fileName, 'audio/mpeg',
@@ -515,19 +550,19 @@ export async function runMediaGeneration(
             group1Promises.push(
                 runWithJob(slug, 'theme_music', resolvedOptions.themeMusicSource === 'default' ? 'default_library' : 'replicate', 'theme music', async () => {
                     if (resolvedOptions.themeMusicSource === 'default') {
-                        const selectedTrack = await selectDefaultThemeMusicTrack(brief);
+                        const selectedTrack = await selectDefaultThemeMusicTrack(brief!);
                         if (!selectedTrack) {
                             throw new Error('No default theme music tracks are available in the shared library');
                         }
 
-                        const selectionReason = buildThemeMusicSelectionReason(brief, selectedTrack);
+                        const selectionReason = buildThemeMusicSelectionReason(brief!, selectedTrack);
                         const record = buildDefaultThemeMusicRecord(slug, selectedTrack, selectionReason);
                         await saveAssetRecord(slug, record);
                         audioRecords.themeMusic = record;
                         return [record];
                     }
 
-                    const audio = await generateThemeMusic(brief);
+                    const audio = await generateThemeMusic(brief!);
                     const rec = await uploadAndRecord(
                         slug, audio.assetId, 'theme_music', 'replicate',
                         audio.script, audio.buffer, audio.fileName, 'audio/mpeg',
@@ -606,11 +641,20 @@ export async function runMediaGeneration(
                         ...shipReferenceRecords,
                     ];
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
-                    if (approvedReferenceCandidates.length === 0) {
-                        throw new Error(`No approved ship reference images found for ${slug}. Import references first, then approve them in Review Assets before generating scene images.`);
+                    const availableReferenceCandidates = getAvailableReferenceCandidates(manifestReferenceRecords);
+                    const sceneReferenceCandidates = approvedReferenceCandidates.length > 0
+                        ? approvedReferenceCandidates
+                        : availableReferenceCandidates;
+
+                    if (approvedReferenceCandidates.length === 0 && sceneReferenceCandidates.length > 0) {
+                        warnings.push(`Scene generation for ${slug} is using non-approved ship reference assets as fallback because no human-approved references are available yet.`);
                     }
 
-                    const sceneLibrary = brief.productionBible!.sceneLibrary;
+                    if (sceneReferenceCandidates.length === 0) {
+                        throw new Error(`No ship reference images found for ${slug}. Import references first before generating scene images.`);
+                    }
+
+                    const sceneLibrary = brief!.productionBible!.sceneLibrary;
                     const sceneImageMode = resolveSceneImageMode(resolvedOptions);
                     const scenesToGenerate = sceneImageMode === 'missing_only'
                         ? sceneLibrary.filter((scene) => {
@@ -629,7 +673,7 @@ export async function runMediaGeneration(
 
                     const sceneImages = await generateSceneImages(
                         scenesToGenerate,
-                        approvedReferenceCandidates,
+                        sceneReferenceCandidates,
                         campaign.shipTarget || 'TBD'
                     );
                     const records: AssetRecord[] = [];
@@ -651,8 +695,8 @@ export async function runMediaGeneration(
         let videoCreditsOk = false;
         if (shouldRunAny(['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'], resolvedOptions.assetTypes)) {
             // Credit pre-check: verify RunwayML balance before burning any credits
-            const sceneCount = brief.productionBible?.sceneLibrary.length ?? 10;
-            const elevenLabsCreditsRequired = calculateRequestedElevenLabsCredits(brief, resolvedOptions, hasProductionBible);
+            const sceneCount = brief!.productionBible?.sceneLibrary.length ?? 10;
+            const elevenLabsCreditsRequired = calculateRequestedElevenLabsCredits(brief!, resolvedOptions, hasProductionBible);
             const creditCheck = await checkMediaCredits(
                 sceneCount,
                 resolvedOptions.storyboardDeliverableIds,
@@ -669,7 +713,7 @@ export async function runMediaGeneration(
                 if (shouldRunAsset('tiktok_seed_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'tiktok_seed_video', activeVideoGeneratorService, 'tiktok seed', async () => {
-                            const video = await generateTikTokSeed(brief, firstHeroUrl, themeMusicBuffer, resolvedOptions.videoModelPresetId, slug);
+                            const video = await generateTikTokSeed(brief!, firstHeroUrl, themeMusicBuffer, resolvedOptions.videoModelPresetId, slug);
                             const rec = await uploadAndRecord(
                                 slug, video.assetId, 'tiktok_seed_video', activeVideoGeneratorService,
                                 `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
@@ -684,7 +728,7 @@ export async function runMediaGeneration(
                 if (shouldRunAsset('hero_explainer_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'hero_explainer_video', 'heygen', 'hero explainer', async () => {
-                            const video = await generateHeroExplainer(brief, firstHeroUrl);
+                            const video = await generateHeroExplainer(brief!, firstHeroUrl);
                             const rec = await uploadAndRecord(
                                 slug, video.assetId, 'hero_explainer_video', 'heygen',
                                 video.script, video.buffer, video.fileName, 'video/mp4',
@@ -699,7 +743,7 @@ export async function runMediaGeneration(
                 if (shouldRunAsset('threshold_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'threshold_video', 'heygen', 'threshold announcement', async () => {
-                            const video = await generateThresholdAnnouncement(brief, firstHeroUrl);
+                            const video = await generateThresholdAnnouncement(brief!, firstHeroUrl);
                             const rec = await uploadAndRecord(
                                 slug, video.assetId, 'threshold_video', 'heygen',
                                 video.script, video.buffer, video.fileName, 'video/mp4',
@@ -714,7 +758,7 @@ export async function runMediaGeneration(
                 if (shouldRunAsset('countdown_video', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'countdown_video', activeVideoGeneratorService, 'countdown videos', async () => {
-                            const videos = await generateCountdownVideos(brief, firstHeroUrl, resolvedOptions.videoModelPresetId);
+                            const videos = await generateCountdownVideos(brief!, firstHeroUrl, resolvedOptions.videoModelPresetId);
                             const records: AssetRecord[] = [];
                             for (const vid of videos) {
                                 const rec = await uploadAndRecord(
@@ -733,7 +777,7 @@ export async function runMediaGeneration(
                 if (heroImageUrls.length > 0 && shouldRunAsset('broll_clip', resolvedOptions.assetTypes)) {
                     group2Promises.push(
                         runWithJob(slug, 'broll_clip', activeVideoGeneratorService, 'broll clips', async () => {
-                            const videos = await generateBrollClips(brief, heroImageUrls, resolvedOptions.videoModelPresetId);
+                            const videos = await generateBrollClips(brief!, heroImageUrls, resolvedOptions.videoModelPresetId);
                             const records: AssetRecord[] = [];
                             for (const vid of videos) {
                                 const rec = await uploadAndRecord(
@@ -756,7 +800,7 @@ export async function runMediaGeneration(
 
         // ── GROUP 3: Storyboard-driven video assembly (Production Bible path) ────────
         // Must run AFTER group2 so sceneImageRecords is fully populated.
-        if (videoCreditsOk && hasProductionBible && brief.productionBible!.storyboards.length > 0) {
+        if (videoCreditsOk && hasProductionBible && brief!.productionBible!.storyboards.length > 0) {
             // Prefer freshly-generated scene image records; fall back to existing manifest
             const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
             const sceneImageMap = new Map<string, string>();
@@ -767,7 +811,7 @@ export async function runMediaGeneration(
             const fallbackUrl = firstHeroUrl;
 
             // Sequential — each storyboard video calls ElevenLabs; parallel runs hit the concurrent cap
-            for (const storyboard of brief.productionBible!.storyboards) {
+            for (const storyboard of brief!.productionBible!.storyboards) {
                 const delivId = storyboard.deliverableId;
                 const assetType: AssetType = delivId.startsWith('tiktok') ? 'tiktok_seed_video'
                     : delivId.startsWith('hero') ? 'hero_explainer_video'
@@ -790,7 +834,7 @@ export async function runMediaGeneration(
                 await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
                     const video = await generateStoryboardVideo(
                         // Signature kept for compatibility, but missing scene images now fail fast inside the generator.
-                        brief, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug
+                        brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug
                     );
                     const rec = await uploadAndRecord(
                         slug, video.assetId, assetType, activeVideoGeneratorService,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { VoicePreferencePanel } from "@/components/voice-preference-panel";
 import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
@@ -107,8 +108,10 @@ const LS_SLUG_KEY = "mediaGen_slug";
 const getManifestStorageKey = (targetSlug: string) => `mediaGen_manifest_${targetSlug}`;
 
 export default function MediaGenerationTestPage() {
+    const searchParams = useSearchParams();
     const { presetId, presets } = useVideoModelPreference();
     const [slug, setSlug] = useState("");
+    const [initialSlugHydrated, setInitialSlugHydrated] = useState(false);
     const [themeMusicSource, setThemeMusicSource] = useState<'replicate' | 'default'>('default');
     const [preflightEnabled, setPreflightEnabled] = useState(false);
     const [preflightLoading, setPreflightLoading] = useState(false);
@@ -120,6 +123,8 @@ export default function MediaGenerationTestPage() {
     const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
     const [campaign, setCampaign] = useState<DiscoveryCampaignSnapshot | null>(null);
     const [error, setError] = useState("");
+    const requestedSlug = searchParams.get("slug")?.trim() ?? "";
+    const handoffSource = searchParams.get("from")?.trim() ?? "";
 
     const isBusy = pageState !== "idle";
 
@@ -169,19 +174,24 @@ export default function MediaGenerationTestPage() {
     }, []);
 
     useEffect(() => {
-        const savedSlug = localStorage.getItem(LS_SLUG_KEY);
-        if (savedSlug) {
-            setSlug(savedSlug);
-            const savedManifest = localStorage.getItem(getManifestStorageKey(savedSlug));
-            if (savedManifest) {
-                try {
-                    setManifest(JSON.parse(savedManifest) as CampaignMediaManifest);
-                } catch { /* ignore malformed cache */ }
-            }
-            void handleLoadManifestRef(savedSlug);
+        if (initialSlugHydrated) return;
+
+        const initialSlug = requestedSlug || localStorage.getItem(LS_SLUG_KEY) || "";
+        if (!initialSlug) {
+            setInitialSlugHydrated(true);
+            return;
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+
+        setSlug(initialSlug);
+        const savedManifest = localStorage.getItem(getManifestStorageKey(initialSlug));
+        if (savedManifest) {
+            try {
+                setManifest(JSON.parse(savedManifest) as CampaignMediaManifest);
+            } catch { /* ignore malformed cache */ }
+        }
+        void handleLoadManifestRef(initialSlug);
+        setInitialSlugHydrated(true);
+    }, [handleLoadManifestRef, initialSlugHydrated, requestedSlug]);
 
     useEffect(() => {
         const trimmedSlug = slug.trim();
@@ -316,6 +326,8 @@ export default function MediaGenerationTestPage() {
     const discoveryFactsReady = campaign !== null;
     const creativeReady = brief !== null;
     const outputsReady = manifest !== null;
+    const briefApproved = brief?.humanReviewStatus === 'approved';
+    const showBriefStudioHandoff = handoffSource === 'brief-studio' && briefApproved && slug.trim().length > 0;
 
     return (
         <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
@@ -400,6 +412,15 @@ export default function MediaGenerationTestPage() {
                         </div>
                     )}
                 </div>
+
+                {showBriefStudioHandoff && (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-xs text-emerald-200">
+                        <div className="text-[10px] uppercase tracking-widest text-emerald-300">Brief Studio Handoff</div>
+                        <p className="mt-2">
+                            Approved brief loaded for <span className="text-emerald-100">{slug.trim()}</span>. This is the next step after Brief Studio. Generate by category or run <span className="text-emerald-100">Generate All Media</span> when you are ready.
+                        </p>
+                    </div>
+                )}
 
                 <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
                     <div className="flex flex-wrap items-center justify-between gap-3">

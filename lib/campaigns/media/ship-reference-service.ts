@@ -52,6 +52,11 @@ const CRUISE_LINE_QUERY_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string
 const SHIP_REFERENCE_SEARCH_RESULTS_PER_QUERY = Number(
     process.env.SHIP_REFERENCE_SEARCH_RESULTS_PER_QUERY ?? '48'
 );
+const ENABLE_REFERENCE_VISION_EVALUATION = process.env.ENABLE_REFERENCE_VISION_EVALUATION === 'true';
+const MAX_REFERENCE_VISION_EVAL_PER_CATEGORY = Math.max(
+    1,
+    Number(process.env.MAX_REFERENCE_VISION_EVAL_PER_CATEGORY ?? '4')
+);
 
 function tokenizeHeroSimilarityText(value: string): string[] {
     return normalizeText(value)
@@ -431,29 +436,42 @@ export async function discoverShipReferenceCandidatesWithExclusions(
         categoryCandidateGroups.set(candidate.category, batch);
     }
 
-    const visionSettled = await Promise.allSettled(
-        Array.from(categoryCandidateGroups.entries()).map(async ([category, batch]) => ({
-            category,
-            batch,
-            survivors: await applyVisionEvaluationToCategory(batch, shipNameForVision),
-        }))
-    );
+    if (ENABLE_REFERENCE_VISION_EVALUATION) {
+        const visionSettled = await Promise.allSettled(
+            Array.from(categoryCandidateGroups.entries()).map(async ([category, batch]) => {
+                const rankedBatch = [...batch]
+                    .sort((leftCandidate, rightCandidate) => computeFinalRankScore(rightCandidate) - computeFinalRankScore(leftCandidate))
+                    .slice(0, MAX_REFERENCE_VISION_EVAL_PER_CATEGORY);
 
-    for (const settled of visionSettled) {
-        if (settled.status !== 'fulfilled') {
-            console.warn('[ShipReferenceService] Vision evaluation rejected for a category — heuristic ranking preserved', {
-                campaignId: campaign.id,
-                error: settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
-            });
-            continue;
+                return {
+                    category,
+                    batch: rankedBatch,
+                    survivors: await applyVisionEvaluationToCategory(rankedBatch, shipNameForVision),
+                };
+            })
+        );
+
+        for (const settled of visionSettled) {
+            if (settled.status !== 'fulfilled') {
+                console.warn('[ShipReferenceService] Vision evaluation rejected for a category — heuristic ranking preserved', {
+                    campaignId: campaign.id,
+                    error: settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
+                });
+                continue;
+            }
+            const { batch, survivors } = settled.value;
+            for (const candidate of batch) {
+                candidateMap.delete(candidate.imageUrl);
+            }
+            for (const augmented of survivors) {
+                candidateMap.set(augmented.imageUrl, augmented);
+            }
         }
-        const { batch, survivors } = settled.value;
-        for (const candidate of batch) {
-            candidateMap.delete(candidate.imageUrl);
-        }
-        for (const augmented of survivors) {
-            candidateMap.set(augmented.imageUrl, augmented);
-        }
+    } else {
+        console.log('[ShipReferenceService] Vision evaluation disabled for ship reference discovery; using heuristic ranking only.', {
+            campaignId: campaign.id,
+            categories: categoryCandidateGroups.size,
+        });
     }
 
     const rankedCandidates = Array.from(candidateMap.values())

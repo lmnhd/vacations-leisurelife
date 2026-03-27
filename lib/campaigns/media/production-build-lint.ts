@@ -136,6 +136,8 @@ const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
     // night_sky_deck must come before deck_sea_wide — stargazing scenes have 'deck' location and
     // 'view/horizon/sea' action, so without this earlier cluster they collapse into deck_sea_wide.
     [['deck', 'outdoor', 'bow', 'stern'], ['star', 'night sky', 'telescope', 'constellation', 'milky', 'astro', 'lunar', 'moon', 'stargazing', 'celestial'], 'night_sky_deck'],
+    // music_deck_activity prevents festival/music scenes from collapsing into deck_sea_wide
+    [['deck', 'outdoor', 'pool', 'solarium', 'balcony', 'bow', 'stern'], ['music', 'beat', 'dance', 'dancing', 'dj', 'speaker', 'stage', 'drop', 'track', 'audio', 'turntable', 'foam', 'bass'], 'music_deck_activity'],
     [['deck', 'outdoor', 'bow', 'stern'], ['couple', 'sea', 'sunset', 'horizon', 'distance', 'wide', 'far', 'view'], 'deck_sea_wide'],
     [['pool', 'lido'], ['relax', 'lounge', 'float', 'swim', 'splash'], 'poolside_relax'],
     [['lounge', 'bar'], ['drink', 'sip', 'cocktail', 'chat', 'talk'], 'lounge_social'],

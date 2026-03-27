@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/*/media/aesthetic/)"
+    ]
+  }
+}
