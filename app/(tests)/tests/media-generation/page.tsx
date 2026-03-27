@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { VoicePreferencePanel } from "@/components/voice-preference-panel";
-import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest } from "@/lib/campaigns/schema";
+import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest, ProbeRunRecord } from "@/lib/campaigns/schema";
+import { ProbeResultsPanel } from "./probe-results-panel";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
@@ -122,6 +123,8 @@ export default function MediaGenerationTestPage() {
     const [manifest, setManifest] = useState<CampaignMediaManifest | null>(null);
     const [brief, setBrief] = useState<CampaignAestheticBrief | null>(null);
     const [campaign, setCampaign] = useState<DiscoveryCampaignSnapshot | null>(null);
+    const [probeResult, setProbeResult] = useState<ProbeRunRecord | null>(null);
+    const [probeLoading, setProbeLoading] = useState(false);
     const [error, setError] = useState("");
     const requestedSlug = searchParams.get("slug")?.trim() ?? "";
     const handoffSource = searchParams.get("from")?.trim() ?? "";
@@ -166,12 +169,40 @@ export default function MediaGenerationTestPage() {
             } else {
                 setCampaign(null);
             }
+            // ── Hydrate last probe run (404 is expected if none exists yet) ──
+            const probeRes = await fetch(`/api/groups/campaign/${targetSlug}/media/probe`, { cache: 'no-store' });
+            if (probeRes.ok) {
+                setProbeResult(await probeRes.json() as ProbeRunRecord);
+            } else {
+                setProbeResult(null);
+            }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setPageState("idle");
         }
     }, []);
+
+    const handleRunProbes = async () => {
+        const trimmedSlug = slug.trim();
+        if (!trimmedSlug) return;
+        const confirmed = window.confirm(
+            `Run probe renders for "${trimmedSlug}"?\n\nEstimated cost: 6 × Gemini Flash Image (cheap preview renders).`
+        );
+        if (!confirmed) return;
+        setProbeLoading(true);
+        setError("");
+        try {
+            const res = await fetch(`/api/groups/campaign/${trimmedSlug}/media/probe`, { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error((data as { error?: string }).error ?? `Probe failed (${res.status})`);
+            setProbeResult(data as ProbeRunRecord);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Probe run failed");
+        } finally {
+            setProbeLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (initialSlugHydrated) return;
@@ -706,6 +737,37 @@ export default function MediaGenerationTestPage() {
 
                 {manifest && (
                     <MediaReviewPanel slug={slug.trim()} manifest={manifest} onManifestRefresh={handleLoadManifestRef} />
+                )}
+
+                {/* Probe Renders — gated on landingStillBible existence */}
+                {brief?.landingStillBible && (
+                    <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                            <span className="text-xs tracking-widest uppercase text-slate-400">Probe Renders</span>
+                            <button
+                                onClick={handleRunProbes}
+                                disabled={probeLoading || isBusy}
+                                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white transition rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {probeLoading ? (
+                                    <><Loader2 className="w-3 h-3 animate-spin" /> Running…</>
+                                ) : (
+                                    <><Eye className="w-3 h-3" /> Run Probes</>
+                                )}
+                            </button>
+                        </div>
+                        <div className="px-4 pb-2">
+                            <p className="mt-2 text-[11px] text-slate-500">
+                                Generates one cheap preview image per still spec, scores each with Claude vision, and returns a direction verdict before full production.
+                                Run this before generating hero or scene images to catch weak directions early.
+                            </p>
+                            {probeResult ? (
+                                <ProbeResultsPanel record={probeResult} />
+                            ) : (
+                                <p className="py-4 text-xs text-center text-slate-600">No probe run yet. Click Run Probes to validate still directions.</p>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {manifest?.copy && (

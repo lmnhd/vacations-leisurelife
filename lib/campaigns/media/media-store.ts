@@ -10,6 +10,7 @@ import {
     AssetType,
     ReviewStatus,
     ImageFormat,
+    ProbeRunRecord,
 } from '../schema';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -526,4 +527,33 @@ export async function updateCampaignMediaStatus(
         UpdateExpression: `SET ${updateParts.join(', ')}`,
         ExpressionAttributeValues: exprValues,
     }));
+}
+
+// ── Probe Run Records ──────────────────────────────────────────────────────
+// SK: PROBE#RUN#{ranAt_ISO}#{probeRunId} — ISO prefix guarantees time-ordering.
+
+export async function saveProbeRunRecord(slug: string, record: ProbeRunRecord): Promise<void> {
+    await chatDynamoDocumentClient.send(new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+            PK: `CAMPAIGN#${slug}`,
+            SK: `PROBE#RUN#${record.ranAt}#${record.probeRunId}`,
+            ...record,
+        },
+    }));
+}
+
+export async function getLatestProbeRunRecord(slug: string): Promise<ProbeRunRecord | null> {
+    const result = await chatDynamoDocumentClient.send(new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+        ExpressionAttributeValues: {
+            ':pk': `CAMPAIGN#${slug}`,
+            ':prefix': 'PROBE#RUN#',
+        },
+        ScanIndexForward: false,
+        Limit: 1,
+    }));
+    const item = result.Items?.[0];
+    return item ? (item as ProbeRunRecord) : null;
 }

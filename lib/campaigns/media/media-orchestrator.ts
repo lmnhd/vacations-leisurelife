@@ -38,10 +38,12 @@ import {
 } from './ship-reference-service';
 import { randomUUID } from 'crypto';
 import { getMediaImageGeneratorService } from './media-pipeline-config';
+import { assertProbeGateReady } from './probe-gate';
 import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video-models';
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
 
+export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
 
 export class ProductionBuildLintError extends Error {
@@ -68,6 +70,12 @@ export interface GenerationOptions {
     sceneImageMode?: 'all' | 'missing_only';
     storyboardDeliverableIds?: string[];
     videoModelPresetId?: VideoModelPresetId;
+    /**
+     * Optional probe gate. Defaults to 'ignore' (existing pipeline unaffected).
+     * 'require_approved' — blocks spend-gated generation if the latest probe run is blocked or missing.
+     * 'warn_only'        — logs a warning but does not block.
+     */
+    probeGate?: 'require_approved' | 'warn_only' | 'ignore';
 }
 
 export interface GenerationResult {
@@ -360,6 +368,20 @@ export async function runMediaGeneration(
                     `Production build for ${slug} has not been evaluated. ` +
                     `Generate the production bible first to run pre-spend lint before generating hero or concept images.`
                 );
+            }
+
+            // ── Optional probe gate ──────────────────────────────────────────
+            if (resolvedOptions.probeGate === 'require_approved') {
+                await assertProbeGateReady(slug);
+            } else if (resolvedOptions.probeGate === 'warn_only') {
+                const { getLatestProbeRunRecord } = await import('./media-store');
+                const lastRun = await getLatestProbeRunRecord(slug);
+                if (!lastRun || lastRun.verdict === 'blocked') {
+                    console.warn(
+                        `[media-orchestrator] Probe gate warning: no approved probe run for ${slug}. ` +
+                        `Run /media/probe first for early direction validation.`,
+                    );
+                }
             }
         }
 

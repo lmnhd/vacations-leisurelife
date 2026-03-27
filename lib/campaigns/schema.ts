@@ -856,6 +856,7 @@ export const AssetTypeEnum = z.enum([
     'ambient_narration', 'hype_clip', 'theme_music',
     'merch_design', 'email_header', 'ad_creative',
     'carousel_slide', 'copy_batch',
+    'probe_image',
 ]);
 export type AssetType = z.infer<typeof AssetTypeEnum>;
 
@@ -997,6 +998,56 @@ export type ShipReferenceCandidate = z.infer<typeof ShipReferenceCandidateSchema
 export const MediaJobStatusEnum = z.enum([
     'queued', 'in_progress', 'complete', 'failed', 'needs_review',
 ]);
+
+// ── Probe Loop Types ──────────────────────────────────────────────────────────
+
+export const ProbeImageStatusEnum = z.enum(['probe_pass', 'probe_warn', 'probe_fail']);
+export type ProbeImageStatus = z.infer<typeof ProbeImageStatusEnum>;
+
+export const ProbeImageReasonCodeEnum = z.enum([
+    'niche_signal_absent',
+    'niche_signal_weak',
+    'role_mismatch_hero_scale',
+    'role_mismatch_intimate_scale',
+    'generic_fallback_detected',
+    'subject_clarity_low',
+    'composition_off_role',
+    'generation_error',
+]);
+export type ProbeImageReasonCode = z.infer<typeof ProbeImageReasonCodeEnum>;
+
+export const ProbeImageResultSchema = z.object({
+    stillId: z.string(),
+    slotRole: LandingStillSlotRoleEnum.optional(),
+    probeStatus: ProbeImageStatusEnum,
+    aiScore: z.number().int().min(0).max(100),
+    aiReasoning: z.string(),
+    nicheSignalPresent: z.boolean(),
+    roleMatchScore: z.number().int().min(0).max(100),
+    genericFallbackDetected: z.boolean(),
+    reasonCodes: z.array(ProbeImageReasonCodeEnum),
+    imageUrl: z.string(),
+    promptUsed: z.string(),
+    evaluatedAt: z.string(),
+});
+export type ProbeImageResult = z.infer<typeof ProbeImageResultSchema>;
+
+export const ProbeRunVerdictEnum = z.enum(['approved', 'warn', 'blocked']);
+export type ProbeRunVerdict = z.infer<typeof ProbeRunVerdictEnum>;
+
+export const ProbeRunRecordSchema = z.object({
+    probeRunId: z.string(),
+    slug: z.string(),
+    ranAt: z.string(),
+    totalProbed: z.number().int(),
+    passCount: z.number().int(),
+    warnCount: z.number().int(),
+    failCount: z.number().int(),
+    verdict: ProbeRunVerdictEnum,
+    verdictReason: z.string(),
+    results: z.array(ProbeImageResultSchema),
+});
+export type ProbeRunRecord = z.infer<typeof ProbeRunRecordSchema>;
 
 export const MediaGenerationJobSchema = z.object({
     jobId: z.string(),

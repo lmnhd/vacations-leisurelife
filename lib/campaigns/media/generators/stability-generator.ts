@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { CampaignAestheticBrief, LandingStillSpec, ShipReferenceCandidate, SceneSpec } from '../../schema';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 import sharp from 'sharp';
@@ -903,6 +904,25 @@ export async function generateAestheticConcepts(
     }
 
     return results;
+}
+
+/**
+ * Generates a single probe image from a still spec's imagePrompt.
+ * Uses concept dimensions (1:1, 2K) — cheaper than hero scale, sufficient for direction validation.
+ */
+export async function generateProbeImage(prompt: string): Promise<GeneratedImage> {
+    const id = randomUUID().slice(0, 8);
+    const buffer = await generateNanoBananaImage(
+        prompt,
+        NANO_BANANA_CONFIG.conceptAspectRatio,
+        NANO_BANANA_CONFIG.conceptImageSize
+    );
+    return {
+        buffer,
+        prompt,
+        assetId: `probe_${id}`,
+        fileName: `images/probes/probe_${id}.png`,
+    };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
