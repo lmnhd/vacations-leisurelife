@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { SimStreamEvent, SimulationResult, TurnRecord, EndStateResult, GateResult, ToolCallEntry } from '@/tests/simulator-core';
+import type { SimStreamEvent, SimulationResult, TurnRecord, EndStateResult, GateResult, ToolCallEntry } from '@/lib/testing/simulator-core';
 
 // ─── Models ───────────────────────────────────────────────────────────────────
 

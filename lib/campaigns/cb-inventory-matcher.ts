@@ -8,7 +8,7 @@
  */
 
 import { Campaign } from './types';
-import { CbGroupInventoryItem } from '../../scripts/cb-inventory-scraper';
+import { CbGroupInventoryItem } from './cb-inventory-types';
 import { getLaunchWindowAssessment } from './launch-window';
 
 const CB_AGENT_SIID = process.env.CB_AGENT_SIID ?? '1049337';

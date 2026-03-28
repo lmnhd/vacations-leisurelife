@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { runSimulationStreamed, listScenarios } from '@/tests/simulator-core';
-import type { SimStreamEvent } from '@/tests/simulator-core';
+import { runSimulationStreamed, listScenarios } from '@/lib/testing/simulator-core';
+import type { SimStreamEvent } from '@/lib/testing/simulator-core';
 import { ModelName } from '@/lib/ai/llm-gateway';
 
 export const maxDuration = 300;

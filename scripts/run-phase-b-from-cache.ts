@@ -8,8 +8,8 @@ import {
     getCampaignBlueprint,
     upsertCampaignPricingMatch,
 } from '../lib/campaigns/campaign-store';
+import type { CbGroupInventoryItem } from '../lib/campaigns/cb-inventory-types';
 import type { Campaign } from '../lib/campaigns/types';
-import type { CbGroupInventoryItem } from './cb-inventory-scraper';
 
 loadEnvConfig(process.cwd());
 

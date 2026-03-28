@@ -12,27 +12,11 @@
 import { chromium } from 'playwright';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { CbGroupInventoryItem } from '../lib/campaigns/cb-inventory-types';
 
 const CB_BASE_URL = 'https://www.cbagenttools.com';
 const PRICE_ADVANTAGES_URL = `${CB_BASE_URL}/groups/view_groups/?price_advantage=on`;
 const STATE_FILE = path.join(process.cwd(), '.playwright-state.json');
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export type CbGroupInventoryItem = {
-    groupId: string;
-    shipName: string;
-    vendor: string;
-    itinerary: string;
-    sailDate: string;
-    startingPrice: string;      // Raw string from CB, e.g. "$899"
-    startingPriceNumber: number; // Parsed numeric value
-    priceAdvantage: string;     // Raw string, e.g. "$305"
-    priceAdvantageNumber: number;
-    departurePort?: string;
-    nights?: string;
-    sourceUrl: string;
-};
 
 // ─── Auth (shared pattern with OdysseusEngine) ───────────────────────────────
 
@@ -108,6 +92,7 @@ export async function scrapeGroupInventory(): Promise<CbGroupInventoryItem[]> {
                 groupId: string;
                 shipName: string;
                 vendor: string;
+                itinerary: string;
                 sailDate: string;
                 startingPrice: string;
                 priceAdvantage: string;
