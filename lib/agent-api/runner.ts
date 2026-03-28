@@ -9,6 +9,7 @@ import {
     resyncProductionLint,
 } from '@/lib/campaigns/brief-engine/orchestrator';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { runCampaignDistributionForAgent, updateCampaignStatusForAgent } from './campaign-actions';
 import {
     AgentJobRecordSchema,
     type AgentJobRecord,
@@ -50,6 +51,24 @@ function createPendingSteps(input: AgentWorkflowInput): AgentJobRecord['steps'] 
     if (input.workflowId === 'campaign_production_lint_resync') {
         return [
             { stepId: 'resync_lint', label: 'Resync production lint', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_status_update') {
+        return [
+            { stepId: 'update_status', label: 'Update campaign status', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_distribution_plan') {
+        return [
+            { stepId: 'plan_distribution', label: 'Build distribution schedule', status: 'pending' },
+        ];
+    }
+
+    if (input.workflowId === 'campaign_distribution_dispatch') {
+        return [
+            { stepId: 'dispatch_distribution', label: 'Dispatch distribution schedule', status: 'pending' },
         ];
     }
 
@@ -281,6 +300,102 @@ export async function runAgentJob(record: AgentJobRecord): Promise<AgentJobRecor
                     status: 'completed',
                     completedAt: new Date().toISOString(),
                     summary: { message: lintResult.summary, readiness: lintResult.readiness, persisted: true, approvalAttempted: false, approvalSucceeded: false },
+                };
+                break;
+            }
+
+            case 'campaign_status_update': {
+                currentRecord = markStep(currentRecord, 'update_status', 'running');
+                await saveAgentJob(currentRecord);
+
+                const result = await updateCampaignStatusForAgent(
+                    record.campaignSlug,
+                    record.input.targetStatus,
+                );
+
+                currentRecord = markStep(currentRecord, 'update_status', 'completed', result.message);
+                currentRecord = {
+                    ...currentRecord,
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: {
+                        message: result.message,
+                        persisted: true,
+                        approvalAttempted: false,
+                        approvalSucceeded: false,
+                    },
+                };
+                break;
+            }
+
+            case 'campaign_distribution_plan': {
+                currentRecord = markStep(currentRecord, 'plan_distribution', 'running');
+                await saveAgentJob(currentRecord);
+
+                const result = await runCampaignDistributionForAgent({
+                    slug: record.campaignSlug,
+                    mode: 'plan',
+                    dryRun: record.input.dryRun,
+                    caller: record.input.caller,
+                    platforms: record.input.platforms,
+                    stages: record.input.stages,
+                    timezone: record.input.timezone,
+                });
+
+                currentRecord = markStep(currentRecord, 'plan_distribution', 'completed', result.message);
+                currentRecord = {
+                    ...currentRecord,
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: {
+                        message: result.message,
+                        persisted: !record.input.dryRun,
+                        approvalAttempted: false,
+                        approvalSucceeded: false,
+                    },
+                    failureDiagnostics: {
+                        executionId: result.executionId,
+                        schedule: result.schedule,
+                        summary: result.summary,
+                        warnings: result.warnings,
+                    },
+                };
+                break;
+            }
+
+            case 'campaign_distribution_dispatch': {
+                currentRecord = markStep(currentRecord, 'dispatch_distribution', 'running');
+                await saveAgentJob(currentRecord);
+
+                const result = await runCampaignDistributionForAgent({
+                    slug: record.campaignSlug,
+                    mode: 'dispatch',
+                    dryRun: record.input.dryRun,
+                    caller: record.input.caller,
+                    platforms: record.input.platforms,
+                    stages: record.input.stages,
+                    providerMode: record.input.providerMode,
+                    forceDispatch: record.input.forceDispatch,
+                });
+
+                currentRecord = markStep(currentRecord, 'dispatch_distribution', 'completed', result.message);
+                currentRecord = {
+                    ...currentRecord,
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    summary: {
+                        message: result.message,
+                        persisted: !record.input.dryRun,
+                        approvalAttempted: false,
+                        approvalSucceeded: false,
+                    },
+                    failureDiagnostics: {
+                        executionId: result.executionId,
+                        schedule: result.schedule,
+                        summary: result.summary,
+                        warnings: result.warnings,
+                        previews: result.previews,
+                    },
                 };
                 break;
             }

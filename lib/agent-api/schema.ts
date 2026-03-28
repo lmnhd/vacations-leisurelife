@@ -7,6 +7,7 @@ export const AgentWorkflowIdEnum = z.enum([
     'campaign_landing_stills_generate',
     'campaign_production_bible_generate',
     'campaign_production_lint_resync',
+    'campaign_status_update',
     'campaign_distribution_plan',
     'campaign_distribution_dispatch',
     'campaign_media_generate',
@@ -31,6 +32,7 @@ export const AgentExecutionSurfaceEnum = z.enum([
 export type AgentExecutionSurface = z.infer<typeof AgentExecutionSurfaceEnum>;
 
 export const AgentWorkflowCategoryEnum = z.enum([
+    'campaign',
     'brief',
     'artifact',
     'distribution',
@@ -89,6 +91,12 @@ const AgentDistributionPlanInputSchema = z.object({
     timezone: z.string().min(1).optional(),
 });
 
+const AgentStatusUpdateInputSchema = z.object({
+    workflowId: z.literal('campaign_status_update'),
+    campaignSlug: z.string().min(1),
+    targetStatus: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']),
+});
+
 const AgentDistributionDispatchInputSchema = z.object({
     workflowId: z.literal('campaign_distribution_dispatch'),
     campaignSlug: z.string().min(1),
@@ -134,6 +142,7 @@ export const AgentWorkflowInputSchema = z.discriminatedUnion('workflowId', [
     AgentLandingStillsGenerateInputSchema,
     AgentProductionBibleGenerateInputSchema,
     AgentProductionLintResyncInputSchema,
+    AgentStatusUpdateInputSchema,
     AgentDistributionPlanInputSchema,
     AgentDistributionDispatchInputSchema,
     AgentMediaGenerateInputSchema,

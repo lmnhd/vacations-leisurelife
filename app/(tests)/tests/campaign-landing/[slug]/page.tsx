@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { CampaignLandingPage } from '@/components/campaign-landing/landing-page';
 import { getCampaignLandingBySlug } from '@/lib/campaigns/landing/view-model';
-import { Card, CardContent } from '@/components/ui/card';
+import { ReviewControls } from './review-controls';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,16 +21,9 @@ export default async function CampaignLandingPreviewPage(
 
     return (
         <div className="flex min-h-screen flex-col bg-slate-100">
-            {/* Developer/Reviewer Toolbar */}
-            <div className="sticky top-0 z-50 border-b border-amber-300 bg-amber-50 px-6 py-3 text-amber-950 shadow-sm">
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.18em]">Review Mode Route</p>
-                        <p className="text-sm">Viewing <span className="font-semibold">{result.landing.title}</span> • State: {result.landing.state}</p>
-                    </div>
-                    <p className="text-xs max-w-sm text-amber-800">
-                        This view is not public. Any structural layout notes or instructions have been removed from the public component to prevent guest confusion.
-                    </p>
+            <div className="sticky top-0 z-50 border-b border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm md:px-6">
+                <div className="mx-auto w-full max-w-7xl">
+                    <ReviewControls slug={slug} title={result.landing.title} state={result.landing.state} />
                 </div>
             </div>
 

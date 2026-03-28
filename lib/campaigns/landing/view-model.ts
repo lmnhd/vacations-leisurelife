@@ -1,6 +1,7 @@
 import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import type { Campaign } from '@/lib/campaigns/types';
 import { getCampaignWaitlistSummary, type CampaignWaitlistSummary } from '@/lib/campaigns/waitlist-store';
 
@@ -234,14 +235,6 @@ function buildGalleryImages(
     return gallery;
 }
 
-function getPercentOfThreshold(requiredCabins: number, joinedEntries: number): number {
-    if (requiredCabins <= 0) {
-        return 100;
-    }
-
-    return Math.max(0, Math.min(100, Math.round((joinedEntries / requiredCabins) * 100)));
-}
-
 function getPricingDetail(campaign: Campaign): { sourceLabel: string; detail: string } {
     if (campaign.pricingStatus === 'CB_MATCHED') {
         return {
@@ -266,6 +259,7 @@ function getPricingDetail(campaign: Campaign): { sourceLabel: string; detail: st
 function getThresholdCopy(
     campaign: Campaign,
     waitlistSummary: CampaignWaitlistSummary,
+    targetCabins: number,
 ): { headline: string; detail: string } {
     if (campaign.status === 'THRESHOLD_MET' || campaign.status === 'CONVERTED') {
         return {
@@ -290,7 +284,7 @@ function getThresholdCopy(
 
     return {
         headline: 'The group is taking shape.',
-        detail: 'Each cabin request moves this sailing closer to launch. You can either join the group list or tell us you want the earliest booking handoff.',
+        detail: `Each cabin request moves this sailing closer to the ${targetCabins}-cabin launch target. You can either join the group list or tell us you want the earliest booking handoff.`,
     };
 }
 
@@ -465,9 +459,11 @@ function buildWhatItIs(campaign: Campaign, brief: CampaignAestheticBrief | null)
 }
 
 function buildTrustBullets(campaign: Campaign): string[] {
+    const targetCabins = getPublicGroupCabinTarget(campaign);
+
     return [
         'You are not paying on this page. This step only saves your interest, party size, and cabin preference.',
-        `The sailing opens fully once ${campaign.minCabinsRequired} cabins are represented, which helps support the group energy and shared perks.`,
+        `The sailing opens fully once ${targetCabins} cabins are represented, which helps support the group energy and shared perks.`,
         campaign.expiresAt
             ? `If the cabin target is not reached by ${campaign.expiresAt}, this version of the sailing can close instead of drifting without a clear answer.`
             : 'If the cabin target is not reached in time, this version of the sailing can close instead of drifting without a clear answer.',
@@ -494,11 +490,13 @@ function buildFaq(campaign: Campaign): LandingFaqItem[] {
 }
 
 function buildFacts(campaign: Campaign, waitlistSummary: CampaignWaitlistSummary): LandingFact[] {
+    const targetCabins = getPublicGroupCabinTarget(campaign);
+
     return [
         { label: 'Sailing', value: campaign.targetDates },
         { label: 'Ship', value: campaign.shipTarget ?? campaign.targetDestination ?? campaign.name },
-        { label: 'Cabins needed', value: `${campaign.minCabinsRequired}` },
-        { label: 'Groups interested', value: `${waitlistSummary.totalEntries}` },
+        { label: 'Cabins needed', value: `${targetCabins}` },
+        { label: 'People on the waitlist', value: `${waitlistSummary.totalPassengers}` },
     ];
 }
 
@@ -509,12 +507,13 @@ function buildLandingViewModel(
     waitlistSummary: CampaignWaitlistSummary,
     preview: boolean,
 ): CampaignLandingViewModel {
+    const targetCabins = getPublicGroupCabinTarget(campaign);
     const pricing = getPricingDetail(campaign);
-    const thresholdCopy = getThresholdCopy(campaign, waitlistSummary);
+    const thresholdCopy = getThresholdCopy(campaign, waitlistSummary, targetCabins);
     const ctas = getCtas(campaign, brief);
     const heroImage = resolveHeroImage(campaign, brief, manifest);
     const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
-    const percentOfThreshold = getPercentOfThreshold(campaign.minCabinsRequired, waitlistSummary.totalEntries);
+    const percentOfThreshold = getPublicThresholdPercent(targetCabins, waitlistSummary.totalEntries);
 
     return {
         slug: campaign.id,
@@ -538,7 +537,7 @@ function buildLandingViewModel(
             howItWorks: buildHowItWorks(campaign, brief),
         },
         threshold: {
-            requiredCabins: campaign.minCabinsRequired,
+            requiredCabins: targetCabins,
             joinedEntries: waitlistSummary.totalEntries,
             joinedPassengers: waitlistSummary.totalPassengers,
             convertedEntries: waitlistSummary.convertedEntries,

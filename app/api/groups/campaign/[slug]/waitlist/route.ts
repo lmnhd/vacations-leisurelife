@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,7 @@ export async function POST(
     });
 
     const summary = await getCampaignWaitlistSummary(slug);
+    const requiredCabins = getPublicGroupCabinTarget(campaign);
     const nextStep = buildNextStep(campaign.status, parsed.data.bookingMode, campaign.cbagenttoolsBookingLink);
 
     return NextResponse.json({
@@ -111,10 +113,8 @@ export async function POST(
         progress: {
             joinedEntries: summary.totalEntries,
             joinedPassengers: summary.totalPassengers,
-            requiredCabins: campaign.minCabinsRequired,
-            percentOfThreshold: campaign.minCabinsRequired > 0
-                ? Math.max(0, Math.min(100, Math.round((summary.totalEntries / campaign.minCabinsRequired) * 100)))
-                : 100,
+            requiredCabins,
+            percentOfThreshold: getPublicThresholdPercent(requiredCabins, summary.totalEntries),
         },
         nextStep,
     });

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCampaignBlueprint, deleteCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { z } from 'zod';
+import { getCampaignBlueprint, deleteCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
+
+const CampaignStatusPatchSchema = z.object({
+    status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']),
+});
 
 export async function GET(
     _req: NextRequest,
@@ -65,6 +70,65 @@ export async function GET(
             createdAt: campaign.createdAt,
             updatedAt: campaign.updatedAt,
         },
+    });
+}
+
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: Promise<{ slug: string }> }
+) {
+    const { slug } = await params;
+
+    if (!slug) {
+        return NextResponse.json(
+            { success: false, error: 'Campaign slug is required.' },
+            { status: 400 }
+        );
+    }
+
+    let rawBody: unknown = {};
+    try {
+        rawBody = await req.json();
+    } catch {
+        rawBody = {};
+    }
+
+    const parsed = CampaignStatusPatchSchema.safeParse(rawBody);
+    if (!parsed.success) {
+        return NextResponse.json(
+            { success: false, error: 'Invalid status payload.', issues: parsed.error.issues },
+            { status: 400 }
+        );
+    }
+
+    const campaign = await getCampaignBlueprint(slug);
+    if (!campaign) {
+        return NextResponse.json(
+            { success: false, error: `No campaign found with slug: "${slug}"` },
+            { status: 404 }
+        );
+    }
+
+    if (campaign.status === parsed.data.status) {
+        return NextResponse.json({
+            success: true,
+            campaign,
+            message: `Campaign already in status ${campaign.status}.`,
+        });
+    }
+
+    const updatedCampaign = {
+        ...campaign,
+        status: parsed.data.status,
+        updatedAt: new Date().toISOString(),
+    };
+
+    await saveCampaignBlueprint(updatedCampaign);
+
+    return NextResponse.json({
+        success: true,
+        campaign: updatedCampaign,
+        message: `Campaign status updated from ${campaign.status} to ${updatedCampaign.status}.`,
     });
 }
 

@@ -240,16 +240,16 @@ export function CampaignWaitlistForm({
                                     <p className="font-semibold text-slate-950">Current pulse</p>
                                     <div className="grid gap-2 md:grid-cols-2">
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Groups</p>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cabin Requests</p>
                                             <p className="text-lg font-semibold text-slate-950">{result.progress.joinedEntries}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Guests</p>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">People on the waitlist</p>
                                             <p className="text-lg font-semibold text-slate-950">{result.progress.joinedPassengers}</p>
                                         </div>
                                     </div>
                                     <p>
-                                        {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin target is currently represented by saved entries.
+                                        {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin target is currently represented by saved cabin requests.
                                     </p>
                                 </div>
                             ) : null}

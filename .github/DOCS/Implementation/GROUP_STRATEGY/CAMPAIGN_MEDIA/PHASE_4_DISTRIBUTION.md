@@ -5,6 +5,43 @@
 **Output:** All assets deployed to their target channels, scheduled or live  
 **Endpoint:** `POST /api/campaigns/[slug]/media/distribute`
 
+## Current Direction For The Ad Phase
+
+This document now distinguishes between:
+
+- organic social publishing
+- paid ad creation
+- native platform review
+- final activation
+
+The immediate goal of the ad phase is no longer "send ads everywhere from one button." The goal is to create real native-platform drafts that can be inspected inside each advertising platform before anything is activated.
+
+### Primary Objectives
+
+1. Create real connections to Meta, Google, and TikTok at the account level.
+2. Validate those connections in the app before any draft creation is attempted.
+3. Create paused native drafts in the target ad platform rather than treating simulated dispatch as completion.
+4. Return external IDs and native review links so the operator can inspect ads in-platform.
+5. Separate draft creation from activation. Creation is safe; activation is explicit.
+
+### Operating Principles
+
+- `Plan Ads` should mean internal schedule planning only.
+- `Create Native Drafts` should mean creating real paused drafts in ad platforms.
+- `Preview Dispatch` remains useful for payload inspection, but it is not a substitute for native review.
+- `Activate Ads` must be a separate action from draft creation.
+- Distribution status must distinguish `simulated`, `draft_created`, `awaiting_review`, `approved`, and `active`.
+
+### Implementation Order
+
+1. Meta Ads first. This path already exists partially and should be hardened into the first real native draft workflow.
+2. Google Ads second. This requires a new adapter and a concrete product choice, likely Responsive Display or Demand Gen.
+3. TikTok third. A product decision is required first: organic Content Posting API versus true TikTok Ads Manager integration.
+
+### Explicit Non-Goal For This Pass
+
+Discord is not part of the immediate paid-ad implementation focus and should be ignored while building the native ad review workflow.
+
 ---
 
 ## The Distribution Map
@@ -16,7 +53,7 @@ Every asset generated in Phase 2 has a defined destination. Distribution is trig
 | Campaign Status | Assets Deployed | Channels |
 |----------------|----------------|---------|
 | `DRAFT` → pre-launch setup | OG image, landing page hero, email header | Landing page live preview, internal dashboard |
-| `GATHERING_INTEREST` activated | TikTok seed video, hero images, ad creatives | TikTok organic post, Meta Ads, Google Display |
+| `GATHERING_INTEREST` activated | TikTok seed video, hero images, ad creatives | Native draft creation for Meta Ads, Google ads, and the selected TikTok path |
 | Day 3 (nurture) | Carousel slides, countdown video (3 cabins remaining) | Instagram feed, email Stage 2 |
 | Day 7 (nurture) | Countdown video (2 remaining), social proof image | TikTok re-post, email Stage 3, SMS nudge |
 | Day 14 (nurture) | Countdown video (1 remaining) | TikTok re-post, Instagram Story, SMS |
@@ -29,7 +66,44 @@ Every asset generated in Phase 2 has a defined destination. Distribution is trig
 
 ## Platform Integration Architecture
 
+## Ad-Phase Scope Clarification
+
+The existing distribution map mixes organic posting, paid ads, lifecycle messaging, and community dispatch. For the next implementation pass, the priority is the paid-ad path only.
+
+That means the core workflow is:
+
+1. build or load the internal `DistributionSchedule`
+2. validate provider connection status
+3. create paused native drafts in supported ad platforms
+4. persist native IDs and review URLs
+5. review inside the native platform
+6. explicitly approve and activate
+
+This is the authoritative direction for the ad phase going forward.
+
 ### 1. TikTok
+**Status:** Product decision required before implementation  
+
+TikTok currently has an architectural ambiguity that must be resolved before coding continues.
+
+Two distinct paths exist:
+
+1. **Organic posting path** via TikTok Content Posting API (v2)
+2. **Paid ads path** via TikTok Ads Manager / Marketing APIs
+
+These are not interchangeable and should not be treated as one connector.
+
+If the objective is to view ad drafts inside TikTok before launch, the paid ads path is the correct target, not the Content Posting API.
+
+**Decision required:** choose one of the following as the primary TikTok objective.
+
+- `organic_only`
+- `paid_ads_only`
+- `organic_and_paid` as separate adapters
+
+Until that decision is made, TikTok implementation should stop at preview-payload generation only.
+
+**If organic is chosen:**  
 **Mechanism:** TikTok Content Posting API (v2)  
 **Auth:** OAuth 2.0 user token scoped to the campaign creator account  
 
@@ -53,6 +127,13 @@ interface TikTokPostRequest {
 4. Store TikTok `post_id` in DynamoDB `MEDIA#DISTRIBUTION` record for tracking
 
 **Rate limit:** 2 posts/day per account. The 3 countdown videos are pre-scheduled 7 days apart.
+
+**If paid ads are chosen:**
+
+- create campaign/ad group/ad drafts inside TikTok Ads Manager
+- default all created ads to paused or review state
+- persist TikTok ad IDs and review URLs in `MEDIA#DISTRIBUTION`
+- never auto-activate as part of draft creation
 
 ---
 
@@ -90,11 +171,105 @@ POST /{ig-user-id}/media_publish
 
 **Scheduling:** Use `published: false` + `scheduled_publish_time` on media container creation. Instagram supports scheduling up to 75 days in advance.
 
+This organic Instagram publishing path is separate from Meta paid ads. It should remain separate in code and UI.
+
 ---
 
 ### 3. Meta Ads (Facebook / Instagram Ads)
 **Mechanism:** Meta Marketing API  
 **Auth:** System User token scoped to Ad Account  
+
+**Implementation priority:** First paid-ad connector to complete.
+
+## Meta Connection Completion Plan
+
+Meta is the first provider that should be finished end-to-end because it is the closest to working already and it gives the cleanest path to native draft review.
+
+This setup has to be completed jointly:
+
+- the operator completes account and permission steps inside Meta Business Manager / Ads Manager
+- the implementation agent completes validation, draft creation, persistence, and review-link handling in the app
+
+### Meta End State
+
+When Meta is fully connected, the system should be able to:
+
+1. verify the Meta business connection from inside the app
+2. confirm the ad account, page, and optional Instagram actor are readable
+3. create paused native ad drafts for campaign creatives
+4. persist Meta IDs and review links back to the distribution records
+5. let the operator open the native Meta draft before activation
+
+### Operator Tasks In Meta Dashboard
+
+These are the expected manual tasks to complete in Meta before the app-side live connector will be reliable.
+
+1. Confirm the business account is fully established in Business Manager.
+2. Confirm the Facebook Page that will own the ads is present and assigned to the business.
+3. Confirm the Ad Account exists, is active, and is assigned to the business.
+4. Confirm the user account you will use has admin-level access to the business, page, and ad account.
+5. If Instagram ads are in scope, link the Instagram Business account to the Facebook Page and confirm it appears as an Instagram actor.
+6. Confirm billing and payment setup are complete in Ads Manager so paused draft creation does not fail for account-readiness reasons.
+7. Confirm the app or system user that will create drafts has the required ad permissions on the target ad account.
+8. Generate the access token that the app will use and confirm its permissions are sufficient for ad creative and ad creation.
+
+### App / Agent Tasks
+
+These are the implementation tasks that should happen in code and UI.
+
+1. Add a Meta connection status check before any live draft-creation action.
+2. Validate all required env vars are present before attempting Meta API calls.
+3. Add a lightweight Meta verification call to confirm the token can read the ad account and page.
+4. Expose the verified account label, ad account ID, page ID, and Instagram actor ID in the review UI.
+5. Persist `campaignId`, `adSetId`, `adCreativeId`, `adId`, and a native review URL where available.
+6. Keep draft creation paused by default.
+7. Add a separate activation step after native review.
+
+### Current Runtime Env Contract
+
+The current runtime code expects the following env vars for live Meta draft creation:
+
+- `META_ACCESS_TOKEN`
+- `META_AD_ACCOUNT_ID`
+- `META_AD_SET_ID`
+- `META_PAGE_ID`
+- `META_INSTAGRAM_ACTOR_ID` (optional)
+
+Important: some older reference docs use names like `META_LONG_LIVED_TOKEN`, `META_APP_ID`, `META_APP_SECRET`, and `META_IG_USER_ID`. Those may still be useful for setup and token management, but the current live dispatch code path is keyed to the env names above. The implementing agent should normalize documentation and runtime naming so one authoritative env contract exists.
+
+### Recommended Verification Sequence
+
+Use this exact order when finishing the Meta connection.
+
+1. Confirm the business, page, ad account, and optional Instagram business account are all linked correctly in Meta.
+2. Place the runtime env vars into the local environment.
+3. Add or run a Meta connection check from the app before trying draft creation.
+4. Run a single-platform live request for `facebook_ad` only.
+5. Confirm the result appears in Ads Manager as a paused draft or paused ad.
+6. Persist the returned native IDs and verify the review link opens the correct object.
+
+### What We Should Validate In-App
+
+The Meta connection check should return enough information to tell the operator what is wrong without reading raw API errors.
+
+Recommended validation outputs:
+
+- token present / missing
+- ad account reachable / unreachable
+- page reachable / unreachable
+- Instagram actor reachable / optional / missing
+- permission denied versus configuration missing
+- native account labels for confirmation
+
+### Success Criteria For Meta
+
+Meta is considered complete for this phase only when all of the following are true:
+
+1. the app can verify the Meta connection before draft creation
+2. a campaign can create paused Meta drafts from generated assets
+3. the distribution record stores real Meta object IDs
+4. the operator can open the draft inside Meta Ads Manager
+5. activation is separate from draft creation
 
 Ad creative lifecycle:
 1. Upload image/video assets to Ad Account's creative library
@@ -116,9 +291,46 @@ interface MetaAdCreative {
 }
 ```
 
+**Required next-step hardening:**
+
+1. Add account connection validation before draft creation.
+2. Create paused native drafts only.
+3. Persist `campaignId`, `adSetId`, `adCreativeId`, and `adId` where available.
+4. Persist a native review URL back to Ads Manager.
+5. Add a separate activation step after manual review.
+
+Meta is the reference implementation for the full ad-phase workflow.
+
 ---
 
-### 4. Email (Klaviyo)
+### 4. Google Ads
+**Mechanism:** Google Ads API  
+**Auth:** Google Ads OAuth + manager/customer account configuration  
+
+**Implementation priority:** Second paid-ad connector to complete.
+
+Google is currently named in the campaign strategy but has no real runtime adapter yet. That gap must be closed with a concrete product decision before implementation.
+
+**Decision required:** choose the first supported Google ad product.
+
+Recommended default:
+
+- Responsive Display Ads, or
+- Demand Gen if the asset mix and targeting model fit better
+
+**Target behavior:**
+
+1. create paused native drafts in Google Ads
+2. attach generated campaign assets and copy variants
+3. persist Google campaign/ad group/ad IDs
+4. persist native review links where possible
+5. require explicit activation after review
+
+Google should follow the same contract shape as Meta even if the provider API details differ.
+
+---
+
+### 5. Email (Klaviyo)
 **Mechanism:** Klaviyo API v2 — Template + Campaign creation  
 **Auth:** Private API key  
 
@@ -152,9 +364,11 @@ All campaign emails are created via Klaviyo API as `DRAFT` with the assets pre-l
 
 ---
 
-### 5. Discord (Community Channel)
+### 6. Discord (Community Channel)
 **Mechanism:** Discord Webhook API + Bot API  
 **Auth:** Webhook URL (per channel) stored in `campaign.communityChannelUrl`  
+
+This remains part of broader distribution but is not part of the immediate ad-platform implementation scope.
 
 Phase 4 pre-generates the Discord pinned message package:
 
@@ -178,7 +392,7 @@ Sent via Discord webhook at Stage 2.6 (community channel activation). Merch laun
 
 ---
 
-### 6. SMS (Twilio)
+### 7. SMS (Twilio)
 **Mechanism:** Twilio Messaging API  
 **Auth:** Account SID + Auth Token  
 **Trigger:** `THRESHOLD_MET` status transition  
@@ -197,7 +411,7 @@ interface SMSBlastRequest {
 
 ---
 
-### 7. Merch Store (Printful / Printify)
+### 8. Merch Store (Printful / Printify)
 **Mechanism:** Printful API  
 **Trigger:** `THRESHOLD_MET`
 
@@ -210,7 +424,7 @@ Order window enforced by a scheduled Lambda that fires 21 days before sail date:
 
 ---
 
-### 8. Pinterest
+### 9. Pinterest
 **Mechanism:** Pinterest API v5  
 **Auth:** OAuth 2.0  
 **Schedule:** Queue board pins at campaign activation, post weekly through Seed Phase  
@@ -239,12 +453,46 @@ interface ScheduledPost {
   copyVariant: string;         // References copy.captions entry
   scheduledAt: string | 'ON_THRESHOLD' | 'ON_MANIFEST_SUBMIT' | 'ON_EXPIRY';
   campaignStage: string;       // 'seed_day_0' | 'seed_day_3' | etc.
-  status: 'scheduled' | 'posted' | 'cancelled' | 'failed';
+  status: 'scheduled' | 'simulated' | 'draft_created' | 'awaiting_review' | 'approved' | 'posted' | 'active' | 'cancelled' | 'failed';
   externalPostId?: string;     // Platform-returned post ID after publishing
+  externalReviewUrl?: string;  // Native platform deep link for operator review
+  providerDraftType?: 'organic_post' | 'paid_ad';
 }
 ```
 
 The Distribution Schedule is the single source of truth for what has been posted, what is queued, and what needs human review. It's surfaced in the Campaign Media Studio UI.
+
+## Provider Connection Layer
+
+Before any ad draft is created, the system should validate provider connectivity.
+
+Each provider should expose a connection status object like:
+
+```typescript
+interface ProviderConnectionStatus {
+  provider: 'meta' | 'google' | 'tiktok';
+  status: 'connected' | 'misconfigured' | 'unauthorized' | 'unverified';
+  accountLabel?: string;
+  accountId?: string;
+  lastValidatedAt?: string;
+  warnings?: string[];
+}
+```
+
+The landing review surface and distribution dashboard should display this status before showing any live draft-creation controls.
+
+## Review And Activation Workflow
+
+The ad phase should follow this explicit workflow:
+
+1. `Plan Ads`
+2. `Validate Provider Connections`
+3. `Create Native Drafts`
+4. `Open Native Review`
+5. `Approve Drafts`
+6. `Activate Ads`
+
+The current `Dispatch Ads` terminology is too broad for this workflow and should be replaced in the UI with explicit actions that match the real platform behavior.
 
 ---
 
@@ -259,6 +507,14 @@ Displays:
 - Manual post triggers for each asset (override schedule, post immediately)
 - Asset swap UI — replace a scheduled asset with a regenerated version before it posts
 - "Kill switch" — halt all distribution for a campaign immediately
+
+Additional ad-phase requirements:
+
+- Provider connection status for Meta, Google, and TikTok
+- Native draft IDs and native review links
+- Draft review state (`draft_created`, `awaiting_review`, `approved`)
+- Separate controls for `Create Native Drafts` and `Activate Ads`
+- Clear distinction between simulated payload preview and real provider draft creation
 
 ---
 
@@ -311,6 +567,39 @@ Behavior:
 - Creates a Meta Ad Creative from Phase 2 manifest media URL + generated copy.
 - Creates an Ad in **PAUSED** status for safety.
 - Persists `externalPostId` onto the distribution schedule post.
+
+## Implementation Plan For The Next Agent
+
+The next implementation agent should treat the ad phase as a native-draft system, not a one-click final publisher.
+
+### Phase A: Meta Hardening
+
+1. rename UI/actions so `Dispatch Ads` no longer implies cross-platform live launch
+2. add provider connection validation for Meta
+3. persist draft metadata and native review URLs
+4. separate draft creation from activation
+
+### Phase B: Google Ads Integration
+
+1. choose the initial Google ad product
+2. add Google provider connection validation
+3. create paused native drafts and persist IDs
+4. expose native review links in the review UI and dashboard
+
+### Phase C: TikTok Decision + Implementation
+
+1. decide between organic posting, paid ads, or both as separate adapters
+2. implement only the selected path(s)
+3. preserve the same draft-review-activate workflow shape
+
+### Definition Of Done For The Ad Phase
+
+- the app can verify platform connectivity before draft creation
+- the operator can create real paused drafts in supported platforms
+- the operator can open those drafts inside the native platform UI
+- the system persists native IDs and review links
+- activation is separate and explicit
+- simulated payload preview remains available for debugging but is no longer mistaken for live ad deployment
 
 ### 5) Verify status and executions
 
