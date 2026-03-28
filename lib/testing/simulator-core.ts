@@ -299,11 +299,24 @@ export async function runSimulationStreamed(input: {
         });
     }
 
-    const snapshot = await chatStorageService.getState(sessionId);
-    const endStateResults = scenario.assertions.end_state.map((assertion) => ({
-        field: assertion.field,
-        ...evaluateEndStateAssertion(assertion, snapshot ?? {}),
-    }));
+    const snapshot = await chatStorageService.getFullSnapshot({
+        userId,
+        conversationLimit: scenario.max_turns * 2,
+    });
+
+    const guestInfoSnapshot: Record<string, unknown> = {
+        guestInfo: snapshot.profile && typeof snapshot.profile.guestInfo === 'object'
+            ? (snapshot.profile.guestInfo as Record<string, unknown>)
+            : {},
+        activeContextPath: snapshot.sessions[0]
+            ? (snapshot.sessions[0] as Record<string, unknown>).activeContextPath
+            : undefined,
+    };
+
+    const endStateResults = scenario.assertions.end_state.map((assertion) => {
+        const { passed, actual } = evaluateEndStateAssertion(assertion, guestInfoSnapshot);
+        return { field: assertion.field, passed, actual };
+    });
     input.onEvent({ type: 'end_state', results: endStateResults });
 
     const passed = gateFailures.length === 0 && endStateResults.every((result) => result.passed);
