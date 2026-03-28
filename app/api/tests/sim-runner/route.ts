@@ -3,7 +3,7 @@ import { runSimulationStreamed, listScenarios } from '@/lib/testing/simulator-co
 import type { SimStreamEvent } from '@/lib/testing/simulator-core';
 import { ModelName } from '@/lib/ai/llm-gateway';
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function GET(): Promise<Response> {
     const scenarios = await listScenarios();
