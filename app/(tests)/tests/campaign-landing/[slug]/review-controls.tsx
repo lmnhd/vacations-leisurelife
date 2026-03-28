@@ -39,6 +39,8 @@ interface DistributionStatusResponse {
     error?: string;
 }
 
+type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
+
 interface StatusFlipResponse {
     message?: string;
     campaign?: {
@@ -60,7 +62,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [reviewing, setReviewing] = useState(false);
     const [previewing, setPreviewing] = useState(false);
     const [dispatching, setDispatching] = useState(false);
-    const [plannedPosts, setPlannedPosts] = useState<DistributionStatusResponse['schedule']['posts']>([]);
+    const [plannedPosts, setPlannedPosts] = useState<PlannedPost[]>([]);
     const [dispatchPreviews, setDispatchPreviews] = useState<Array<{ postId: string; platform: string; payload: Record<string, unknown> }>>([]);
 
     const publicPreviewHref = useMemo(() => `/groups/${slug}?preview=1`, [slug]);
