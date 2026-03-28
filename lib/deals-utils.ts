@@ -1,7 +1,7 @@
 import { cbPick, cbPicks, pickID } from "@/app/(dashboard)/(routes)/destinationdeal/[id]/index.js";
 import { aiAssistBackOff } from "@/app/utils/api";
 import { CleanText } from "@/app/utils/CleanText.js";
-import { CBPickData } from "@/components/cb/cbdestinationpickstile";
+import { CBPickData } from "@/lib/cb/cb-deal-types";
 
 export interface gptTask {
   task: string;
@@ -54,12 +54,15 @@ export const gptTasks: gptTask[] = [
   },
 ];
 
-export async function generateDealContent(id: string): Promise<{ data: Record<string, string>, pick: CBPickData } | null> {
+export async function generateDealContent(
+  id: string,
+  pickOverride?: CBPickData
+): Promise<{ data: Record<string, string>, pick: CBPickData } | null> {
   const decodedURI = decodeURIComponent(
     id.replaceAll("%C3%82%C2%A0", "%C2%A0").replaceAll("%C4%80%C2%A0", "%C2%A0")
   );
   
-  let pick = (await cbPick(decodedURI)) as CBPickData | null;
+  let pick = pickOverride ?? ((await cbPick(decodedURI)) as CBPickData | null);
 
   if (!pick) {
     const picks = (await cbPicks()) as CBPickData[];

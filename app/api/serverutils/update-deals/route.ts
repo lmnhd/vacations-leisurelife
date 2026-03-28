@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { cbPicks } from "@/app/(dashboard)/(routes)/destinationdeal/[id]/index.js";
 import { generateDealContent } from "@/lib/deals-utils";
-import { CBPickData } from "@/components/cb/cbdestinationpickstile";
+import { CBPickData } from "@/lib/cb/cb-deal-types";
+import { buildStoredCbDealsPayload } from "@/lib/cb/cb-deals-refresh";
+import { storeCbDeals } from "@/lib/cb/cb-deals-store";
 
 export async function GET(req: Request) {
   try {
@@ -14,15 +16,19 @@ export async function GET(req: Request) {
     }
 
     console.log("Starting background deal update...");
-    const picks = (await cbPicks()) as CBPickData[];
+    const picks = (await cbPicks({ source: "live" })) as CBPickData[];
     console.log(`Found ${picks.length} deals to process.`);
+
+    const storedPayload = await buildStoredCbDealsPayload(picks);
+    await storeCbDeals(storedPayload);
+    console.log(`Stored ${storedPayload.homepageDeals.length} homepage deals in Dynamo.`);
 
     const results = [];
 
     for (const pick of picks) {
       console.log(`Processing deal: ${pick.id} - ${pick.what}`);
       try {
-        const result = await generateDealContent(pick.id);
+        const result = await generateDealContent(pick.id, pick);
         results.push({
           id: pick.id,
           status: result ? "success" : "failed",
@@ -41,6 +47,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       message: "Deals updated successfully",
       processed: picks.length,
+      homepageDealsStored: storedPayload.homepageDeals.length,
+      generatedAtIso: storedPayload.generatedAtIso,
       details: results
     });
   } catch (error: any) {

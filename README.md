@@ -18,6 +18,14 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
+## Cruise Deals Refresh
+
+Cruise Brothers homepage deals and destination deal content are refreshed in the background and stored in Dynamo for production reads.
+
+- Run `npm run update-deals` to fetch live deals, build homepage tile data, and prewarm destination deal content.
+- Production reads the stored payload from the app cache table instead of scraping or calling AI providers during homepage render.
+- Operational details live in `.github/DOCS/automated-deal-updates.md`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

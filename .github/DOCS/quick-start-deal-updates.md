@@ -1,126 +1,56 @@
 # Quick Start: Automated Deal Updates
 
-This guide will get you up and running with automated deal updates in 5 minutes.
+## Goal
 
-## Prerequisites
+Refresh Cruise Brothers deals in the background and make production read the stored Dynamo payload.
 
-- OpenAI API key configured (`OPENAI_API_KEY`)
-- Database connected (Prisma)
-- Node.js installed
-
-## Step 1: Configure Environment Variables
-
-Add to your `.env.local` file:
+## Step 1: Set Environment Variables
 
 ```env
-# Enable AI in production
-ALLOW_AI_IN_PRODUCTION=true
-
-# Create a secure random key
-CRON_SECRET=your_random_secret_key_here
-
-# Your site URL
+CRON_SECRET=your_random_secret_here
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+APP_CACHE_TABLE_NAME=lll-app-cache
+OPENAI_API_KEY=sk-...
+PEXELS_API_KEY=your_pexels_key
+ALLOW_AI_IN_PRODUCTION=true
 ```
 
-**Generate a secure key** (PowerShell):
-```powershell
--join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | ForEach-Object {[char]$_})
-```
+## Step 2: Run the Refresh
 
-## Step 2: Test Manually
-
-Run the update script:
 ```powershell
 npm run update-deals
 ```
 
-You should see:
-```
+Expected output:
+
+```text
 --- Starting Deal Update Trigger ---
 Target URL: http://localhost:3000/api/serverutils/update-deals
 Success!
 Summary: Deals updated successfully
 Processed: 7
+Homepage Deals Stored: 6
+Generated At: 2026-03-28T00:00:00.000Z
 ```
 
-## Step 3: Set Up Weekly Automation
+## Step 3: Verify
 
-### For Vercel (Recommended)
+1. Open the homepage and confirm the deals section renders.
+2. Open a destination deal page and confirm the content is already cached.
+3. If production has no homepage deals, run the refresh job again.
 
-Create `vercel.json` in your project root:
+## Production Rule
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/serverutils/update-deals?key=your_random_secret_key",
-      "schedule": "0 0 * * 0"
-    }
-  ]
-}
+- Background refresh writes the data.
+- Production reads the data.
+- Production should not rebuild homepage deal tiles during request handling.
+
+## Route Used By Schedulers
+
+```text
+/api/serverutils/update-deals?key=YOUR_CRON_SECRET
 ```
 
-Replace `your_random_secret_key` with your actual `CRON_SECRET`.
+## More Detail
 
-### For GitHub Actions
-
-Create `.github/workflows/update-deals.yml`:
-
-```yaml
-name: Update Cruise Deals
-
-on:
-  schedule:
-    - cron: '0 0 * * 0' # Every Sunday at midnight UTC
-  workflow_dispatch: # Allow manual triggers
-
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Deal Update
-        run: |
-          curl -f "${{ secrets.APP_URL }}/api/serverutils/update-deals?key=${{ secrets.CRON_SECRET }}"
-```
-
-Add these secrets to your GitHub repository:
-- `APP_URL`: `https://your-site.com`
-- `CRON_SECRET`: Your secret key
-
-## Step 4: Verify It Works
-
-1. Visit a deal page: `/destinationdeal/11`
-2. Check load time (should be 2-3 seconds after first update)
-3. View database: `SELECT * FROM AIAssist WHERE componentId LIKE 'destinationdeal%'`
-
-## That's It!
-
-Your deals will now update automatically every week. Users will experience fast load times on all deal pages.
-
----
-
-## Need Help?
-
-See the full documentation: [automated-deal-updates.md](./automated-deal-updates.md)
-
-## Common Commands
-
-```powershell
-# Manual update
-npm run update-deals
-
-# Check database
-npx prisma studio
-
-# View logs (if running dev server)
-# Check terminal for update progress
-```
-
-## Troubleshooting
-
-**401 Unauthorized**: Check your `CRON_SECRET` matches in both `.env` and cron URL
-
-**No updates**: Verify `ALLOW_AI_IN_PRODUCTION=true` is set
-
-**Slow updates**: Normal - takes ~3 minutes for 7 deals with OpenAI API calls
+See `.github/DOCS/automated-deal-updates.md`.

@@ -1,22 +1,86 @@
+// "use client";
+
+import { Card, CardContent, CardTitle } from "./ui/card";
+import PromotionTile, {PromotionTileProps} from '@/components/promotion-tile'
 import CBDestinationPicksTiles from "./cb/cbdestinationpickstile";
-const shouldRenderLiveDestinationTiles =
-  process.env.NODE_ENV !== "production" ||
-  process.env.ENABLE_CB_DESTINATION_TILES_IN_PRODUCTION === "true";
+
+
+
+const promotionsTest:PromotionTileProps[] = [
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 1",
+    port: "Port of Galveston",
+    header1: "Western Caribbean",
+    header2: "Carnival Vista",
+    description: "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco",
+    price:{perPerson:"1000"},
+    detailsLink: "/cruises/1",
+    bookButton:true,
+    toolTips:{freeDrinks:true,onboardCredits:true,freeWifi:true,freeDining:true}
+
+  },
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 2",
+    port: 'Cozumel, Mexico',
+    header1: "Western Caribbean",
+    description: "Depart from the Port of Galveston, Texas",
+    price:{perPerson:"1000"},
+    detailsLink: "/cruises/2",
+    // bookButton:true
+    toolTips:{freeWifi:true}
+  },
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 8",
+    port: 'Cozumel, Mexico',
+    header1: "Western Caribbean",
+    description: "Depart from the Port of Galveston, Texas",
+    price:{perPerson:"1000"},
+    detailsLink: "/cruises/2",
+    // bookButton:true
+    toolTips:{freeWifi:true}
+  },
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 3",
+    port: "Port of Galveston",
+    header1: "Western Caribbean",
+    description: "Explore the islands of the Western Caribbean with free dining and $200 onbooard credit",
+    price:{perPerson:"800"},
+    bookButton:true,
+    toolTips:{freeDrinks:true},
+    detailsLink: "/cruises/1"
+  },
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 4",
+    port: "Port of Galveston",
+    header1: "Western Caribbean",
+    description: "live it up on the high seas of the pacific with free dining and $200 onbooard credit",
+    detailsLink: "/cruises/1",
+    toolTips:{freeDrinks:true,onboardCredits:true}
+  },
+  {
+    imageSrc: "https://images.unsplash.com/photo-1515377905703-ecb22b01fbeb?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y3J1aXNlJTIwc2hpcHxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+    alt: "Cruise Ship",
+    day: "Day 5",
+    port: "Port of Galveston",
+    header1: "Western Caribbean",
+    description: "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    detailsLink: "/cruises/1"
+  },
+
+];
 
 export const LandingContent = async () => {
-  if (!shouldRenderLiveDestinationTiles) {
-    return (
-      <section className="relative overflow-hidden px-6 py-12">
-        <div className="relative space-y-4 rounded-[32px] border border-white/10 bg-slate-950/70 px-8 py-10 text-white shadow-xl">
-          <p className="text-[10px] uppercase tracking-[0.7em] text-cyan-300">Featured Cruise Picks</p>
-          <h2 className="text-3xl font-semibold">Hand-picked destination deals are available inside search.</h2>
-          <p className="max-w-3xl text-sm text-slate-300 md:text-base">
-            Live CB destination tiles are disabled for production requests by default so the homepage stays fast and reliable on Vercel.
-          </p>
-        </div>
-      </section>
-    );
-  }
+
 
   return (
   <>

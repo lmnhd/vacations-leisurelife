@@ -23,6 +23,8 @@ async function runUpdate() {
     console.log('Success!');
     console.log('Summary:', response.data.message);
     console.log('Processed:', response.data.processed);
+    console.log('Homepage Deals Stored:', response.data.homepageDealsStored);
+    console.log('Generated At:', response.data.generatedAtIso);
     console.log('Details:', JSON.stringify(response.data.details, null, 2));
   } catch (error) {
     if (error.response) {

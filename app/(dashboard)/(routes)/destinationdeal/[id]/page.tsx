@@ -7,7 +7,7 @@ import { shipLogos } from "@/app/utils/shiplogos.ts";
 import pexelmachine from "@/app/utils/CommonObjects/pexelmachine";
 import { getGoogleImage } from "@/app/utils/CommonObjects/googleimage";
 import { Container1Header } from "@/components/containers/container1";
-import { CBPickData } from "@/components/cb/cbdestinationpickstile.jsx";
+import { CBPickData } from "@/lib/cb/cb-deal-types";
 import { generateDealContent } from "@/lib/deals-utils";
 
 import Link from "next/link.js";

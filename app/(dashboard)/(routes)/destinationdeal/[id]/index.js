@@ -1,4 +1,5 @@
 import { load } from "cheerio";
+import { getStoredCbDeals } from "@/lib/cb/cb-deals-store";
 
 const CB_PICKS_REVALIDATE_SECONDS = 60 * 60 * 24 * 30;
 const CB_PICKS_REVALIDATE_MS = CB_PICKS_REVALIDATE_SECONDS * 1000;
@@ -8,9 +9,106 @@ let cbPicksMemoryCache = {
   expiresAt: 0,
 };
 
-export async function cbPicks() {
-  const url = "https://www.cruisebrothers.com/cb/brothers_picks/";
+function shouldUseStoredCbDeals(source = "auto") {
+  if (source === "live") {
+    return false;
+  }
+
+  return true;
+}
+
+async function getStoredCbPicks() {
+  const storedDeals = await getStoredCbDeals();
+  if (!storedDeals || !Array.isArray(storedDeals.picks)) {
+    return [];
+  }
+
+  return storedDeals.picks;
+}
+
+function absoluteCbUrl(path, baseURL) {
+  if (!path) {
+    return "";
+  }
+
+  try {
+    return new URL(path, baseURL).toString();
+  } catch {
+    return path;
+  }
+}
+
+function normalizeNightLabel(nights) {
+  const trimmed = String(nights || "").trim();
+  if (!trimmed) {
+    return "Cruise";
+  }
+
+  const normalized = trimmed.replace(/\s+Nights?/i, "-nights");
+  return normalized;
+}
+
+function parseCurrentBrothersPicks($, baseURL) {
+  const parsedPicks = [];
+
+  $(".carousel-cell").each((index, element) => {
+    const card = $(element);
+    const href = card.find("a[href*='/cb/brothers_pick/']").attr("href") || "";
+    const imgSrc = card.find("img").attr("src") || "";
+    const headline = card
+      .find(".bp_icon_text_container_headline p")
+      .first()
+      .text()
+      .trim();
+    const cardFields = card
+      .find(".bp_icon_text_container .bp_text_container_2 p")
+      .map((fieldIndex, fieldElement) => $(fieldElement).text().trim())
+      .get();
+    const ship = cardFields[0] || "Cruise package";
+    const destination = cardFields[1] || "Cruise destination";
+    const nights = cardFields[2] || "Check availability";
+    const priceValue = card.find(".ctp_line_2").first().text().trim();
+
+    if (!href || !destination || !priceValue) {
+      return;
+    }
+
+    const obj = {
+      img: absoluteCbUrl(imgSrc, baseURL),
+      destination: `Destination: ${destination}`,
+      what: `What: ${normalizeNightLabel(nights)} ${ship}`,
+      when: `When: ${nights}`,
+      price: `Prices: ${priceValue}`,
+      elsepay: "What else you will have to pay: Taxes, fees, and optional air vary by sailing.",
+      go: `Where you go: ${destination}`,
+      why: `Why this is a deal: ${headline || "Featured Brothers' Pick savings."}`,
+      other: `Other details: ${headline || "View details for more information."}`,
+      destination_url: absoluteCbUrl(href, baseURL),
+    };
+
+    obj.id = pickID(obj);
+    parsedPicks.push(obj);
+  });
+
+  return parsedPicks;
+}
+
+export async function cbPicks(options = {}) {
+  const source = options?.source ?? "auto";
+  const urls = ["https://www.cruisebrothers.com/cb/brothers_picks/"];
   const baseURL = "https://www.cruisebrothers.com";
+
+  if (shouldUseStoredCbDeals(source)) {
+    const storedPicks = await getStoredCbPicks();
+    if (storedPicks.length > 0) {
+      return storedPicks;
+    }
+
+    if (source === "store" || process.env.NODE_ENV === "production") {
+      console.warn("CB deals store is empty; production read path will return no deals until background refresh runs.");
+      return [];
+    }
+  }
 
   if (cbPicksMemoryCache.data.length > 0 && cbPicksMemoryCache.expiresAt > Date.now()) {
     console.log("Using cached CB picks from memory");
@@ -18,128 +116,23 @@ export async function cbPicks() {
   }
   
   try {
-    const data = await fetch(url, {
-      next: { revalidate: CB_PICKS_REVALIDATE_SECONDS },
-    });
-    const resultData = await data.text();
-    const $ = load(resultData);
-    
-    const arr = [];
-    
-    // Debug: Log what we find
-    console.log('=== CB Picks Scraper Debug ===');
-    
-    // Try multiple selectors to find pick containers
-    const pickLinks = $('a[href*="/cb/brothers_pick/"]');
-    console.log('Found pick links:', pickLinks.length);
-    
-    if (pickLinks.length === 0) {
-      console.log('No direct links found, trying alternative selectors');
-      
-      // Try to find any elements with "View Details" or similar
-      const viewDetailsLinks = $('a:contains("View Details")');
-      console.log('View Details links found:', viewDetailsLinks.length);
+    let arr = [];
+
+    for (const url of urls) {
+      const data = await fetch(url, {
+        next: { revalidate: CB_PICKS_REVALIDATE_SECONDS },
+      });
+      const resultData = await data.text();
+      const $ = load(resultData);
+      const parsedPicks = parseCurrentBrothersPicks($, baseURL);
+
+      if (parsedPicks.length > 0) {
+        arr = parsedPicks;
+        console.log(`Using CB picks parsed from ${url}: ${arr.length}`);
+        break;
+      }
     }
-    
-    pickLinks.each((index, element) => {
-      const $link = $(element);
-      const href = $link.attr('href');
-      
-      if (!href || !href.includes('/cb/brothers_pick/')) return;
-      
-      const pickID = href.split('/').filter(Boolean).pop();
-      
-      // Navigate up to find the container with all info
-      let $container = $link;
-      for (let i = 0; i < 5; i++) {
-        $container = $container.parent();
-        if (!$container.length) break;
-      }
-      
-      // Get all text content from container
-      const fullText = $container.text();
-      const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
-      
-      // Extract cruise information with all required fields
-      const obj = {
-        id: pickID,
-        img: '',
-        destination: '',
-        what: '',
-        when: '',
-        price: '',
-        elsepay: '',
-        go: '',
-        why: '',
-        other: 'View details for more information',
-        destination_url: `${baseURL}${href}`
-      };
-      
-      // Find image - look for img tags within or near the link
-      let $img = $link.find('img');
-      if (!$img.length) {
-        $img = $container.find('img').first();
-      }
-      
-      if ($img.length) {
-        let src = $img.attr('src');
-        if (src) {
-          if (!src.startsWith('http')) {
-            obj.img = `${baseURL}${src}`;
-          } else {
-            obj.img = src;
-          }
-        }
-      }
-      
-      // Parse text content - look for patterns
-      let shipName = '';
-      let destination = '';
-      let nights = '';
-      let price = '';
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
-        // Look for price pattern ($ followed by digits)
-        if (line.includes('$') && /\$[\d,]+/.test(line)) {
-          price = line.replace(/^[^$]*/, '').split(' ')[0];
-        }
-        
-        // Look for night pattern
-        if (line.match(/\d+\s+Nights?/)) {
-          nights = line.trim();
-        }
-        
-        // Ship name often comes before a known destination pattern
-        if (line.match(/Princess|Navigator|Carnival|Viking|Celebrity|Queen|Utopia|Ruby|Venezia|Beyond|Mary/i)) {
-          shipName = line;
-        }
-        
-        // Destination often follows after ship name or is a known region
-        if (line.match(/Alaska|Caribbean|Mexico|Europe|Bahamas|TransAtlantic|Alaska|Thailand|Mediterranean|Bermuda/i)) {
-          destination = line;
-        }
-      }
-      
-      // Build the fields with proper formatting
-      obj.what = shipName ? `${nights || '7-nights'} ${shipName}` : 'Cruise package';
-      obj.destination = destination ? `Destination: ${destination}` : 'Destination: Caribbean';
-      obj.when = nights ? `When: ${nights} available` : 'When: Check availability';
-      obj.price = price ? `Prices: from ${price} per person` : 'Prices: Contact for quote';
-      obj.why = 'Why this is a deal: Great cruise value with excellent amenities!';
-      obj.elsepay = 'Rate includes port charges. Taxes and air additional.';
-      obj.go = 'Visit amazing cruise destinations on this exciting voyage.';
-      obj.other = 'onboard credit package available on select sailing dates';
-      
-      // Only add if we have an ID and some meaningful data
-      if (obj.id && (shipName || destination || price)) {
-        arr.push(obj);
-        console.log(`Pick ${index + 1}: ID=${obj.id}, Ship=${shipName}, Dest=${destination}, Price=${price}`);
-      }
-    });
-    
-    console.log('=== Total picks found:', arr.length, '===');
+
     cbPicksMemoryCache = {
       data: arr,
       expiresAt: Date.now() + CB_PICKS_REVALIDATE_MS,
@@ -151,12 +144,12 @@ export async function cbPicks() {
   }
 }
 
-export async function cbPick(pickID) {
+export async function cbPick(pickID, options = {}) {
   console.log('cbPick', pickID);
   
   return new Promise(async (resolve, reject) => {
     try {
-      const picks = await cbPicks();
+      const picks = await cbPicks(options);
       console.log('loaded picks =>', picks.length, 'items');
       let result = picks.find((pick) => {
         return pick.id == pickID;
