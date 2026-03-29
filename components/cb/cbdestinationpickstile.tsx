@@ -9,11 +9,13 @@ import {
 } from "@/lib/cb/cb-deal-types";
 import { getStoredCbDeals } from "@/lib/cb/cb-deals-store";
 
+export const dynamic = "force-dynamic";
+
 export default async function CBDestinationPicksTiles() {
   const storedDeals = await getStoredCbDeals();
   let homepageDeals: StoredCbHomepageDeal[] = storedDeals?.homepageDeals ?? [];
 
-  if (homepageDeals.length === 0 && process.env.NODE_ENV !== "production") {
+  if (homepageDeals.length === 0 && process.env.NODE_ENV === "development") {
     const livePicks = (await cbPicks({ source: "live" })) as CBPickData[];
     homepageDeals = await buildHomepageDealsFromPicks(livePicks);
   }

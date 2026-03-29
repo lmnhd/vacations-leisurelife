@@ -3,7 +3,7 @@ import { cbPicks } from "@/app/(dashboard)/(routes)/destinationdeal/[id]/index.j
 import { generateDealContent } from "@/lib/deals-utils";
 import { CBPickData } from "@/lib/cb/cb-deal-types";
 import { buildStoredCbDealsPayload } from "@/lib/cb/cb-deals-refresh";
-import { storeCbDeals } from "@/lib/cb/cb-deals-store";
+import { getStoredCbDeals, storeCbDeals } from "@/lib/cb/cb-deals-store";
 
 export async function GET(req: Request) {
   try {
@@ -21,6 +21,18 @@ export async function GET(req: Request) {
 
     const storedPayload = await buildStoredCbDealsPayload(picks);
     await storeCbDeals(storedPayload);
+    const persistedPayload = await getStoredCbDeals({ skipLocalCache: true });
+
+    if (
+      !persistedPayload ||
+      persistedPayload.generatedAtIso !== storedPayload.generatedAtIso ||
+      persistedPayload.homepageDeals.length !== storedPayload.homepageDeals.length
+    ) {
+      throw new Error(
+        "CB deals payload was not persisted to Dynamo. Check APP_CACHE_TABLE_NAME, AWS region, and Dynamo permissions."
+      );
+    }
+
     console.log(`Stored ${storedPayload.homepageDeals.length} homepage deals in Dynamo.`);
 
     const results = [];
@@ -53,6 +65,12 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error("[DEALS_UPDATE_ERROR]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json(
+      {
+        message: "Deals update failed",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }

@@ -71,10 +71,12 @@ function isStoredCbDealsPayload(value: unknown): value is StoredCbDealsPayload {
   );
 }
 
-export async function getStoredCbDeals(): Promise<StoredCbDealsPayload | null> {
-  const localPayload = getLocalCbDealsCache();
-  if (localPayload) {
-    return localPayload;
+export async function getStoredCbDeals(options: { skipLocalCache?: boolean } = {}): Promise<StoredCbDealsPayload | null> {
+  if (!options.skipLocalCache) {
+    const localPayload = getLocalCbDealsCache();
+    if (localPayload) {
+      return localPayload;
+    }
   }
 
   if (shouldSkipCbDealsDbAccess()) {
@@ -105,10 +107,10 @@ export async function getStoredCbDeals(): Promise<StoredCbDealsPayload | null> {
 }
 
 export async function storeCbDeals(payload: StoredCbDealsPayload): Promise<void> {
-  setLocalCbDealsCache(payload);
-
   if (shouldSkipCbDealsDbAccess()) {
-    return;
+    throw new Error(
+      `CB deals cache backend is unavailable. Unable to persist payload to table ${APP_CACHE_TABLE_NAME}.`
+    );
   }
 
   try {
@@ -134,7 +136,9 @@ export async function storeCbDeals(payload: StoredCbDealsPayload): Promise<void>
         },
       })
     );
+    setLocalCbDealsCache(payload);
   } catch (error) {
     disableCbDealsDbAccess(error);
+    throw error;
   }
 }

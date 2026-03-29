@@ -8,6 +8,10 @@ export interface gptTask {
   instruction: string;
 }
 
+interface GenerateDealContentOptions {
+  source?: "auto" | "store" | "live";
+}
+
 export const gptTasks: gptTask[] = [
   {
     task: "title",
@@ -56,16 +60,18 @@ export const gptTasks: gptTask[] = [
 
 export async function generateDealContent(
   id: string,
-  pickOverride?: CBPickData
+  pickOverride?: CBPickData,
+  options: GenerateDealContentOptions = {}
 ): Promise<{ data: Record<string, string>, pick: CBPickData } | null> {
   const decodedURI = decodeURIComponent(
     id.replaceAll("%C3%82%C2%A0", "%C2%A0").replaceAll("%C4%80%C2%A0", "%C2%A0")
   );
+  const source = options.source ?? "store";
   
-  let pick = pickOverride ?? ((await cbPick(decodedURI)) as CBPickData | null);
+  let pick = pickOverride ?? ((await cbPick(decodedURI, { source })) as CBPickData | null);
 
   if (!pick) {
-    const picks = (await cbPicks()) as CBPickData[];
+    const picks = (await cbPicks({ source })) as CBPickData[];
     const normalizedTarget = decodedURI.replaceAll(/[^a-zA-Z0-9]/g, "").toLowerCase();
     pick =
       picks.find((candidate: CBPickData) => {

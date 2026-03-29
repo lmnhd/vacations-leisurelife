@@ -7,6 +7,8 @@ import {getRandomNumberBetween} from '@/app/utils/CommonObjects/imagemachine.mjs
 import Image from "next/image";
 import heroImage from '@/public/two-2413470_1920.jpg'
 
+export const dynamic = 'force-dynamic'
+
 
 //https://www.istockphoto.com/photo/tropical-paradise-gm155375632-19833254
 

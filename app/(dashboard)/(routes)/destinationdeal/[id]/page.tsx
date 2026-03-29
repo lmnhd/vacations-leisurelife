@@ -12,6 +12,8 @@ import { generateDealContent } from "@/lib/deals-utils";
 
 import Link from "next/link.js";
 
+export const dynamic = "force-dynamic";
+
 interface ItineraryItem {
   day: string;
   port: string;
@@ -33,7 +35,7 @@ export interface gptTask {
 }
 
 async function getData(id: string) {
-  const res = await generateDealContent(id);
+  const res = await generateDealContent(id, undefined, { source: "store" });
   console.log("res = ", res);
   return res;
 }
@@ -59,7 +61,7 @@ export default async function DestinationDealPage({
 
   const { data, pick } = result;
 
-  const allPicks = await cbPicks();
+  const allPicks = await cbPicks({ source: "store" });
   console.log("allPicks = ", allPicks);
 
   if (pick.img !== "") {
