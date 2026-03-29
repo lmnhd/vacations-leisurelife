@@ -11,9 +11,70 @@ import { getStoredCbDeals } from "@/lib/cb/cb-deals-store";
 
 export const dynamic = "force-dynamic";
 
+function cleanLabel(value: string, prefix: string): string {
+  return value.replace(prefix, "").trim();
+}
+
+function buildHomepageFallbackDeals(picks: CBPickData[]): StoredCbHomepageDeal[] {
+  const seenDestinations = new Set<string>();
+  const fallbackDeals: StoredCbHomepageDeal[] = [];
+
+  for (const pick of picks) {
+    const destination = cleanLabel(pick.destination, "Destination:")
+      .split(" - ")[0]
+      .trim();
+
+    if (seenDestinations.has(destination)) {
+      continue;
+    }
+
+    seenDestinations.add(destination);
+
+    const otherDetails = cleanLabel(pick.other, "Other details:");
+    const priceLabel = cleanLabel(pick.price, "Prices:");
+    const firstPriceMatch = priceLabel.match(/\$[\d,]+/);
+
+    fallbackDeals.push({
+      id: pick.id,
+      destination,
+      imageSrc: pick.img,
+      alt: pick.destination,
+      day: cleanLabel(pick.when, "When:"),
+      port: cleanLabel(pick.go, "Where you go:").slice(0, 60),
+      header1: destination,
+      header2: cleanLabel(pick.what, "What:"),
+      description: otherDetails.slice(0, 120),
+      pricePerPerson: `${firstPriceMatch?.[0] ?? "See rates"}(*starting)`,
+      detailsLink: `/destinationdeal/${pick.id}`,
+      toolTips:
+        pick.other.includes("onboard credit") ||
+        pick.other.includes("dining") ||
+        pick.other.includes("beverage") ||
+        pick.other.includes("WIFI")
+          ? {
+              freeDining: pick.other.includes("dining"),
+              freeDrinks: pick.other.includes("beverage"),
+              freeWifi: pick.other.includes("WIFI"),
+              onboardCredits: pick.other.includes("onboard credit"),
+            }
+          : undefined,
+    });
+
+    if (fallbackDeals.length === 6) {
+      break;
+    }
+  }
+
+  return fallbackDeals;
+}
+
 export default async function CBDestinationPicksTiles() {
   const storedDeals = await getStoredCbDeals();
   let homepageDeals: StoredCbHomepageDeal[] = storedDeals?.homepageDeals ?? [];
+
+  if (homepageDeals.length === 0 && (storedDeals?.picks?.length ?? 0) > 0) {
+    homepageDeals = buildHomepageFallbackDeals(storedDeals!.picks);
+  }
 
   if (homepageDeals.length === 0 && process.env.NODE_ENV === "development") {
     const livePicks = (await cbPicks({ source: "live" })) as CBPickData[];
