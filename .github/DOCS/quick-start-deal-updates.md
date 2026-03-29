@@ -2,7 +2,7 @@
 
 ## Goal
 
-Refresh Cruise Brothers deals in the background and make production read the stored Dynamo payload.
+Refresh Cruise Brothers deals from your local dev server and make production read the stored Dynamo payload.
 
 ## Step 1: Set Environment Variables
 
@@ -16,6 +16,8 @@ ALLOW_AI_IN_PRODUCTION=true
 ```
 
 ## Step 2: Run the Refresh
+
+Start your local dev server first, then run:
 
 ```powershell
 npm run update-deals
@@ -44,6 +46,11 @@ Generated At: 2026-03-28T00:00:00.000Z
 - Background refresh writes the data.
 - Production reads the data.
 - Production should not rebuild homepage deal tiles during request handling.
+
+## Default Behavior
+
+- `npm run update-deals` targets `http://localhost:3000`.
+- It does not use your Vercel URL unless you explicitly opt into remote mode.
 
 ## Route Used By Schedulers
 

@@ -2,9 +2,11 @@
 
 ## Overview
 
-The Cruise Brothers deal update flow now works like this:
+The intended routine is local and simple:
 
-1. A background job pulls the live Cruise Brothers deals.
+1. You run your local dev server.
+2. You run `npm run update-deals` from your machine.
+3. The local update route pulls the live Cruise Brothers deals.
 2. The job builds the homepage tile data ahead of time.
 3. The job stores both the raw picks and the homepage tile payload in Dynamo.
 4. The job prewarms the destination deal page content cache.
@@ -94,6 +96,11 @@ Run:
 npm run update-deals
 ```
 
+Important:
+- This command now defaults to `http://localhost:3000`.
+- It is meant to be run against your local dev server.
+- It will only target a remote deployment if you explicitly set `UPDATE_DEALS_TARGET=remote` and provide a valid remote base URL.
+
 Expected output includes:
 - processed deal count
 - homepage deals stored count
@@ -109,17 +116,9 @@ If the stored payload is empty, production will not fall back to live scraping f
 
 ## Scheduling
 
-Use any scheduler that can call the protected update route:
-- Vercel Cron
-- GitHub Actions
-- Windows Task Scheduler
-- external cron service
+You do not need Vercel cron for this setup.
 
-Target route:
-
-```text
-/api/serverutils/update-deals?key=YOUR_CRON_SECRET
-```
+If you want automation later, schedule the same local command on your machine or another environment you control. For now, the supported simple workflow is manual local refresh.
 
 ## Operational Checklist
 

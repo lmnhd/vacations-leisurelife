@@ -20,10 +20,11 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 
 ## Cruise Deals Refresh
 
-Cruise Brothers homepage deals and destination deal content are refreshed in the background and stored in Dynamo for production reads.
+Cruise Brothers homepage deals and destination deal content are refreshed from your local dev server and then stored in Dynamo for production reads.
 
-- Run `npm run update-deals` to fetch live deals, build homepage tile data, and prewarm destination deal content.
+- Run `npm run update-deals` while your local dev server is running on `http://localhost:3000`.
 - Production reads the stored payload from the app cache table instead of scraping or calling AI providers during homepage render.
+- The update script defaults to local mode. It will not target Vercel unless you explicitly set `UPDATE_DEALS_TARGET=remote`.
 - Operational details live in `.github/DOCS/automated-deal-updates.md`.
 
 ## Learn More
