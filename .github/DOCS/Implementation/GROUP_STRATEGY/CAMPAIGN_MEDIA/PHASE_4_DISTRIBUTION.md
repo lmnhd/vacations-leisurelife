@@ -36,7 +36,7 @@ The immediate goal of the ad phase is no longer "send ads everywhere from one bu
 
 1. Meta Ads first. This path already exists partially and should be hardened into the first real native draft workflow.
 2. Google Ads second. This requires a new adapter and a concrete product choice, likely Responsive Display or Demand Gen.
-3. TikTok third. A product decision is required first: organic Content Posting API versus true TikTok Ads Manager integration.
+3. TikTok third. The selected first implementation path is TikTok organic posting through the Content Posting API.
 
 ### Explicit Non-Goal For This Pass
 
@@ -82,28 +82,23 @@ That means the core workflow is:
 This is the authoritative direction for the ad phase going forward.
 
 ### 1. TikTok
-**Status:** Product decision required before implementation  
+**Status:** `organic_only` selected for first implementation pass  
 
-TikTok currently has an architectural ambiguity that must be resolved before coding continues.
+TikTok is no longer undecided for the immediate roadmap.
 
-Two distinct paths exist:
+The selected first implementation path is:
 
 1. **Organic posting path** via TikTok Content Posting API (v2)
-2. **Paid ads path** via TikTok Ads Manager / Marketing APIs
 
-These are not interchangeable and should not be treated as one connector.
+TikTok paid ads remain a separate future path and should not be mixed into the first implementation pass.
 
-If the objective is to view ad drafts inside TikTok before launch, the paid ads path is the correct target, not the Content Posting API.
+For this phase, the goal is to publish and track real organic TikTok posts using generated campaign video assets and captions.
 
-**Decision required:** choose one of the following as the primary TikTok objective.
+**Selected objective:** `organic_only`
 
-- `organic_only`
-- `paid_ads_only`
-- `organic_and_paid` as separate adapters
+**Deferred objective:** TikTok Ads Manager / paid ads integration
 
-Until that decision is made, TikTok implementation should stop at preview-payload generation only.
-
-**If organic is chosen:**  
+**Mechanism:** TikTok Content Posting API (v2)  
 **Mechanism:** TikTok Content Posting API (v2)  
 **Auth:** OAuth 2.0 user token scoped to the campaign creator account  
 
@@ -128,12 +123,109 @@ interface TikTokPostRequest {
 
 **Rate limit:** 2 posts/day per account. The 3 countdown videos are pre-scheduled 7 days apart.
 
-**If paid ads are chosen:**
+**First-pass implementation requirements:**
 
-- create campaign/ad group/ad drafts inside TikTok Ads Manager
-- default all created ads to paused or review state
-- persist TikTok ad IDs and review URLs in `MEDIA#DISTRIBUTION`
-- never auto-activate as part of draft creation
+1. Add TikTok provider connection validation in the app.
+2. Store TikTok OAuth credentials and user token securely.
+3. Publish generated TikTok seed videos through the Content Posting API.
+4. Persist returned TikTok `post_id` values and any review URLs or publish metadata.
+5. Distinguish simulated payload preview from real organic posting.
+
+**Deferred TikTok paid-ads work:**
+
+1. TikTok Ads Manager / Marketing API integration
+2. Draft ad creation inside TikTok Ads Manager
+3. Paid-ad review and activation flow
+
+## TikTok Organic Connection Completion Plan
+
+TikTok is now the primary external platform target because it aligns with the existing asset pipeline and avoids the current Meta business-access deadlock.
+
+The immediate goal is to publish real organic TikTok posts from generated campaign seed videos, not to create paid TikTok ads.
+
+### TikTok End State
+
+When TikTok organic is fully connected, the system should be able to:
+
+1. verify TikTok creator/app connectivity from inside the app
+2. upload the generated TikTok seed video asset
+3. publish the post with generated caption and hashtags
+4. persist the returned TikTok `post_id` and any publish metadata
+5. distinguish simulated preview from real organic publish
+
+### Current Code Status
+
+The repository already contains most of the upstream campaign pieces needed for TikTok organic.
+
+Already present:
+
+1. TikTok seed video generation
+2. TikTok caption and hashtag generation in the media manifest
+3. TikTok scheduling in the distribution planner
+4. Preview payload generation for TikTok in distribution preview mode
+
+Currently missing:
+
+1. real TikTok OAuth/token validation in the app
+2. real TikTok upload + publish implementation
+3. persistence of real TikTok `post_id` values from the live API
+4. provider-status reporting for TikTok connection health
+
+### Operator Tasks In TikTok Developer Setup
+
+These are the manual setup tasks required outside the app.
+
+1. Create or confirm a TikTok developer app for Leisure Life Interactive.
+2. Ensure the TikTok account you plan to publish from is the correct creator or business account.
+3. Enable access for the TikTok Content Posting API if TikTok requires product/use-case selection for the app.
+4. Configure the app's redirect URI(s) for OAuth.
+5. Capture the TikTok client key and client secret.
+6. Complete the OAuth flow with the publishing account to obtain the user access token.
+7. Capture the TikTok account identifier or `open_id` returned by TikTok.
+
+### App / Agent Tasks
+
+These are the implementation tasks that should happen in code and UI.
+
+1. Add TikTok connection-status validation before any live publish action.
+2. Validate required TikTok env vars before attempting API calls.
+3. Replace the current TikTok placeholder adapter with a real Content Posting API implementation.
+4. Fetch the actual campaign video asset bytes instead of returning a simulated external ID.
+5. Persist returned TikTok post IDs and publish metadata into the distribution records.
+6. Add a review/status display for TikTok organic posts in the review UI and distribution dashboard.
+
+### Current Runtime Env Contract
+
+The expected TikTok env contract for the first implementation pass is:
+
+- `TIKTOK_CLIENT_KEY`
+- `TIKTOK_CLIENT_SECRET`
+- `TIKTOK_ACCESS_TOKEN`
+- `TIKTOK_OPEN_ID`
+
+If TikTok requires additional token refresh or account metadata fields during implementation, extend this contract in one place and update the docs at the same time.
+
+### Recommended Verification Sequence
+
+Use this order when finishing TikTok setup.
+
+1. Confirm the TikTok developer app exists.
+2. Confirm the correct TikTok publishing account is being used.
+3. Complete OAuth and store the initial access token.
+4. Place the TikTok env vars into the local environment.
+5. Add or run TikTok provider connection validation from the app.
+6. Run a single live TikTok publish for one generated seed video.
+7. Confirm the returned TikTok post ID is stored in the distribution record.
+
+### Success Criteria For TikTok Organic
+
+TikTok organic is considered complete for this phase only when all of the following are true:
+
+1. the app can verify the TikTok connection before publish
+2. a generated seed video can be uploaded and published through TikTok's real API
+3. the distribution record stores a real TikTok post ID
+4. simulated payload preview remains available for debugging
+5. organic TikTok posting works without depending on the future paid-ads path
 
 ---
 
