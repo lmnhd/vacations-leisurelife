@@ -1,0 +1,6 @@
+- main [ref=e2]:
+  - heading "Missing TikTok authorization code" [level=1] [ref=e3]
+  - paragraph [ref=e4]:
+    - text: "No"
+    - code [ref=e5]: code
+    - text: query parameter was returned by TikTok.

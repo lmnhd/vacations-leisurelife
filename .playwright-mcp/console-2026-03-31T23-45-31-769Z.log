@@ -1,0 +1,17 @@
+[    3726ms] [WARNING] Reflect is already polyfilled. @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:0
+[    3933ms] [WARNING] InvalidCharacterError: Failed to execute 'atob' on 'Window': The string to be decoded is not correctly encoded.
+    at i (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:1:319937)
+    at Object.init (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:68:76401)
+    at yb (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:68:77599)
+    at JE (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:174:1775)
+    at ll (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:106140)
+    at Bl (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:115622)
+    at $l (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:114962)
+    at Ul (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:114623)
+    at Qi (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:161236)
+    at Nu (https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/npm-b3a903c8.f6411f6226b1b04298bc.js:2:145349) @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:0
+[    3943ms] [WARNING] [i18n] missing key [en] WebApp_Login Log in or sign up for an account on TikTok. Start watching to discover real people and real videos that will make your day. Log in or sign up for an account on TikTok. Start watching to discover real people and real videos that will make your day. @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/webapp-login-page.09412b36c86ec5563ea5.js:0
+[    4191ms] [INFO] . @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/webmssdk/2.0.0.460/webmssdk.js:0
+[    6965ms] [LOG] Error @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/zti.9502baa3a394b0472ec0.js:0
+[    6967ms] [LOG] Error @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/zti.9502baa3a394b0472ec0.js:0
+[    6967ms] [LOG] Error @ https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/tiktok/webapp/login/webapp-login-page/zti.9502baa3a394b0472ec0.js:0

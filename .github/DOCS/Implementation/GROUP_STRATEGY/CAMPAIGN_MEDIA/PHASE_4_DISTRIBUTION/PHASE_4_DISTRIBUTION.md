@@ -7,6 +7,12 @@
 
 ## Current Direction For The Ad Phase
 
+Supporting execution docs in this directory:
+
+- `IMPLEMENTATION_AGENT_PLAN.md`
+- `PHASE_4_EXECUTION_PLAN.md`
+- `NEXT_STEPS.md`
+
 This document now distinguishes between:
 
 - organic social publishing
