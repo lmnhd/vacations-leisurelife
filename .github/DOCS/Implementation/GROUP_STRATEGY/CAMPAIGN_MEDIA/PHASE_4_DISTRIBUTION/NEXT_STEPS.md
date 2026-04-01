@@ -2,25 +2,21 @@
 
 ## Immediate Priority
 
-Finish TikTok in Sandbox before spending more time on Production review or Meta recovery.
+Close the TikTok autonomy gap with a durable token store and run the first real local draft-upload test using the successful business-account authorization.
 
 ## Next Operator Actions
 
-1. switch the TikTok app from `Production` to `Sandbox`
-2. create a Sandbox for the existing app
-3. configure Login Kit Web redirect URIs in Sandbox
-4. add both of these redirect URIs if TikTok allows both:
-   - `https://leisurelifevacations.net/api/integrations/tiktok/callback`
-   - `https://www.leisurelifevacations.net/api/integrations/tiktok/callback`
-5. add the intended TikTok publishing account as a Sandbox target user
-6. retry the deployed auth flow from `/api/integrations/tiktok/connect`
+1. place the successful Leisure Life Interactive business-account TikTok token set into the chosen bootstrap env source
+2. set `TIKTOK_ACCOUNT_LABEL=business`
+3. set the access-token and refresh-token expiry timestamps from the callback success page
+4. keep the redirect URI pinned to `https://leisurelifevacations.net/api/integrations/tiktok/callback` unless the auth endpoint is intentionally moved
 
 ## Next App Tasks
 
-1. confirm which callback domain TikTok actually accepts in Sandbox
-2. persist TikTok token values securely after successful callback
-3. add refresh-token support
-4. replace the TikTok placeholder adapter with a real `FILE_UPLOAD` implementation
+1. add a durable local-first TikTok token store instead of relying on static env vars as the long-term source of truth
+2. persist refreshed TikTok token values automatically
+3. load TikTok provider credentials from the durable store during local dispatch
+4. run one real local `FILE_UPLOAD` TikTok draft-upload test
 5. write the returned TikTok publish metadata into the distribution record
 
 ## Next UI Tasks
@@ -30,16 +26,18 @@ Finish TikTok in Sandbox before spending more time on Production review or Meta 
 3. show provider readiness state for TikTok and Meta in the review UI
 4. show native IDs and review metadata once live draft creation succeeds
 
-## Deferred Until After TikTok Sandbox Works
+## Deferred Until After The Local TikTok Path Is Autonomous
 
 1. TikTok Production review submission and demo-video packaging
 2. Meta business verification recovery work
 3. Google Ads adapter implementation
+4. callback-hosting simplification or tunnel-based local OAuth bootstrap improvements
 
 ## Success Checkpoint
 
-The next meaningful checkpoint is not "TikTok app saved in Production." The next meaningful checkpoint is:
+The next meaningful checkpoint is not "business account auth succeeded." The next meaningful checkpoint is:
 
-1. TikTok Sandbox authorizes successfully
-2. the callback exchanges a real code for tokens
-3. one campaign seed video reaches TikTok as a real draft upload
+1. the business-account token set is available to the local environment
+2. the app refreshes TikTok tokens without manual env edits
+3. one campaign seed video reaches TikTok as a real draft upload from the local environment
+4. the local process can be restarted without losing TikTok dispatch capability

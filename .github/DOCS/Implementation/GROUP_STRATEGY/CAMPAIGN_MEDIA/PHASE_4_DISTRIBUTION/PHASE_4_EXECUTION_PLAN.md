@@ -15,52 +15,53 @@ The codebase already supports:
 3. preview payload generation for TikTok and Meta paths
 4. partial live Meta ad creation
 5. a deployed TikTok OAuth start route and callback route
+6. successful TikTok OAuth completion for the Leisure Life Interactive business account
 
 The codebase does not yet support:
 
-1. TikTok token persistence and refresh
-2. real TikTok draft upload via the Content Posting API
-3. in-app provider connection health reporting
+1. durable TikTok token persistence beyond static env vars
+2. automatic persistence of refreshed TikTok token values
+3. a fully verified local-first TikTok draft-upload run
 4. consistent native review links and external ID persistence across providers
 5. explicit activation controls separate from draft creation
 
 ## Primary Delivery Sequence
 
-### Phase 4A: TikTok Sandbox And Auth Completion
+### Phase 4A: Local-First TikTok Token Persistence
 
-Goal: prove the full TikTok OAuth roundtrip in a supported test environment.
+Goal: remove the daily-manual-maintenance risk by moving TikTok credentials out of static env-only storage.
 
 Tasks:
 
-1. create a TikTok Sandbox for the Leisure Life Interactive app
-2. configure Login Kit Web redirect URIs in Sandbox
-3. add the publishing TikTok account as a Sandbox target user
-4. validate the OAuth roundtrip against the deployed `connect` and `callback` routes
-5. capture the resulting `access_token`, `refresh_token`, and `open_id`
+1. choose the first durable store for TikTok credentials
+2. bootstrap it with the successful Leisure Life Interactive business-account token set
+3. load TikTok credentials from that durable store for local dispatch
+4. write refreshed token values back to that store automatically
+5. keep env vars as bootstrap or fallback input, not the long-term rotating store
 
 Exit criteria:
 
-1. TikTok redirects back to the deployed callback with a real authorization code
-2. token exchange succeeds
-3. returned token values are visible and can be stored securely
+1. local runs can load current TikTok credentials without manual daily env edits
+2. token refresh updates the durable store automatically
+3. restarting the local process does not break TikTok provider readiness
 
-### Phase 4B: TikTok Runtime Completion
+### Phase 4B: TikTok Local Draft Upload Completion
 
 Goal: replace the TikTok placeholder adapter with a real organic draft-upload flow.
 
 Tasks:
 
-1. add secure storage for TikTok access token, refresh token, and open ID
-2. add token refresh handling against `POST /v2/oauth/token/`
-3. replace the placeholder TikTok adapter in `lib/campaigns/distribution/platforms/tiktok.ts`
-4. fetch the actual generated video asset bytes from the campaign asset URL
-5. initialize a TikTok upload using `source=FILE_UPLOAD`
-6. upload the video bytes to TikTok's `upload_url`
-7. persist `publish_id`, post status, and returned metadata into the distribution record
+1. verify the adapter uses the business-account token set, not the temporary personal test tokens
+2. replace the placeholder TikTok adapter in `lib/campaigns/distribution/platforms/tiktok.ts`
+3. fetch the actual generated video asset bytes from the campaign asset URL
+4. initialize a TikTok upload using `source=FILE_UPLOAD`
+5. upload the video bytes to TikTok's `upload_url`
+6. persist `publish_id`, post status, and returned metadata into the distribution record
+7. confirm the flow is runnable from the local environment
 
 Exit criteria:
 
-1. one generated campaign seed video is uploaded as a TikTok draft
+1. one generated campaign seed video is uploaded as a TikTok draft from the local environment
 2. the distribution record stores a real TikTok publish identifier
 3. the operator can see a truthful status in the review surface
 

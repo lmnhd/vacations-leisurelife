@@ -10,6 +10,12 @@ The implementation agent should treat this as a provider-integration hardening t
 2. real TikTok draft upload via Content Posting API
 3. truthful provider and distribution status reporting in the app
 
+The operating model for this provider should now be treated as local-first:
+
+1. campaign generation remains local
+2. provider dispatch should run locally by default
+3. hosted callbacks are acceptable as a bootstrap path, but they are not the desired long-term execution environment
+
 ## Current Verified State
 
 The following points are already verified and should be treated as fact unless the platform behavior changes again.
@@ -19,25 +25,27 @@ The following points are already verified and should be treated as fact unless t
 3. TikTok accepted the current sandbox client key and returned a real authorization code
 4. the token exchange succeeded end to end
 5. the app can now obtain `access_token`, `refresh_token`, and `open_id`
+6. the Leisure Life Interactive business TikTok account has now completed a successful authorization flow
 
 ## Important Constraint
 
-The currently successful authorization was completed with the user's personal TikTok account, not the Leisure Life Interactive TikTok account.
+The OAuth plumbing was first proven with the user's personal TikTok account, but the Leisure Life Interactive business TikTok account has now also completed authorization.
 
 That means:
 
 1. the integration plumbing is proven
-2. any upload performed with the currently issued tokens will target the personal TikTok account that authorized the app
-3. those tokens must not be treated as the final production business-account credential set
+2. the current target credential set should now be the Leisure Life Interactive business account tokens
+3. the temporary personal-account token set must not remain the authoritative provider credential set
 
-Use the current successful tokens only as a temporary non-production integration proof path if the user agrees. The Leisure Life Interactive TikTok account still needs its own successful authorization before this can be treated as a real business publishing path.
+The remaining architecture flaw is not account authorization. The remaining flaw is token persistence. Static env vars are still being used as the credential store, which prevents fully autonomous long-running operation.
 
 ## Security Rules
 
 1. never commit TikTok tokens to the repository
 2. do not store raw access or refresh tokens in docs, fixtures, or test files
-3. assume the already-shared personal-account tokens may need to be rotated after testing
+3. rotate or discard any temporary personal-account tokens that were used during integration proofing
 4. centralize TikTok env and token handling in one implementation path
+5. treat `.env.local` as bootstrap configuration, not as the final rotating token store
 
 ## Existing Relevant Files
 
@@ -71,12 +79,64 @@ Recommended persisted metadata:
 2. refresh token expiry timestamp
 3. granted scope string
 4. account label if it can be safely resolved
+5. provider account mode such as `business` versus temporary `personal_test`
 
 Implementation requirements:
 
 1. define one normalized server-side shape for TikTok credentials
 2. do not scatter refresh logic across routes and adapters
 3. make it obvious whether the token set belongs to a personal test account or the real business account
+4. stop treating static env vars as the final durable source of truth for rotating credentials
+
+### Step 1A: Durable Local-First Token Store
+
+Close the autonomy gap by introducing a durable token store that local campaign generation and local dispatch can use without manual daily maintenance.
+
+Recommended implementation choice:
+
+1. use a Prisma-backed Postgres table as the primary token store
+2. treat this as the default path, not one option among many
+3. only fall back to other storage approaches if Prisma-backed persistence is blocked for a concrete technical reason
+
+Requirements:
+
+1. local runs must be able to load the current TikTok token set without relying on manual env updates after each refresh
+2. refreshed token values must be written back to the durable store automatically
+3. the same code path should support a hosted store later, but local development is the primary target
+4. the store must clearly identify which TikTok account owns the token set
+
+Recommended Prisma model shape:
+
+1. one row per provider + account label combination
+2. provider value such as `tiktok`
+3. account label such as `business` or `personal_test`
+4. encrypted or otherwise protected token fields for `accessToken` and `refreshToken`
+5. `openId`
+6. `scope`
+7. `accessTokenExpiresAt`
+8. `refreshTokenExpiresAt`
+9. `lastRefreshedAt`
+10. timestamps for auditability
+
+Bootstrap flow:
+
+1. on first run, if no Prisma token row exists, read the initial TikTok values from `.env.local`
+2. write that initial token set into the Prisma store
+3. after bootstrap, prefer Prisma as the source of truth for local dispatch
+4. on refresh, update the Prisma row automatically
+5. keep env vars as bootstrap/fallback input only
+
+Fallback options only if Prisma is blocked:
+
+1. DynamoDB record keyed by provider + account label
+2. encrypted local file reserved for dev-only credential storage
+
+Preferred outcome:
+
+1. Prisma/Postgres becomes the authoritative local token store
+2. `.env.local` performs the initial bootstrap only
+3. subsequent refresh cycles update the Prisma row automatically
+4. local dispatch continues working across process restarts without manual token rewriting
 
 ### Step 2: Refresh Token Support
 
@@ -89,6 +149,8 @@ Requirements:
 3. fail with a provider-status error that is readable by operators
 
 Do not rely on the short-lived access token remaining valid between planning and live publish.
+
+This step is incomplete until refreshed values are written back to the durable token store automatically.
 
 ### Step 3: Replace The TikTok Placeholder Adapter
 
@@ -157,12 +219,14 @@ Priority label changes:
 
 Use this order after implementation.
 
-1. validate TikTok provider status using the current successful token set
-2. refresh token if necessary
-3. perform one live draft upload with a generated campaign seed video
-4. confirm the real TikTok `publish_id` is stored
-5. confirm the UI reports a truthful status
-6. confirm simulation mode still works independently of live upload
+1. bootstrap the durable token store with the successful Leisure Life Interactive business-account token set
+2. validate TikTok provider status using the durable token source rather than raw env vars
+3. refresh token if necessary and confirm the refreshed values are persisted automatically
+4. perform one live draft upload with a generated campaign seed video from the local environment
+5. confirm the real TikTok `publish_id` is stored
+6. confirm the UI reports a truthful status
+7. restart the local process and confirm the provider still works without manual env edits
+8. confirm simulation mode still works independently of live upload
 
 ## Definition Of Done
 
@@ -170,11 +234,44 @@ This implementation pass is done only when all of the following are true.
 
 1. the app can securely use TikTok OAuth credentials without manual copy-paste on every run
 2. the app can refresh TikTok access tokens when needed
-3. the TikTok adapter creates a real draft upload instead of returning a placeholder ID
-4. the distribution record stores real TikTok metadata
-5. the review surface reports truthful TikTok provider and publish state
-6. the code path remains usable later with the proper Leisure Life Interactive TikTok account tokens
+3. refreshed token values are automatically persisted to a durable store
+4. the TikTok adapter creates a real draft upload instead of returning a placeholder ID
+5. the distribution record stores real TikTok metadata
+6. the review surface reports truthful TikTok provider and publish state
+7. local campaign generation and local dispatch remain the primary working path
+8. the code path remains usable with the proper Leisure Life Interactive business-account tokens
 
 ## Handoff Note
 
-If the implementation agent needs a temporary live test identity, it may use the currently successful personal-account token set only with explicit user awareness. That is a temporary integration proof, not the final business-account setup.
+The business-account authorization has now succeeded. The next agent should stop treating sandbox auth as the blocker and instead focus on closing the autonomy gap: durable token persistence, automatic refresh persistence, and a local-first live draft upload test.
+
+Implementation Summary
+Step 1+2 — lib/integrations/tiktok-auth.ts
+Added TikTokCredentials interface (all 5 required env vars + expiry timestamps, scope, accountLabel)
+loadTikTokCredentials() — reads env vars, throws with actionable message when missing, defaults accountLabel to personal_test until TIKTOK_ACCOUNT_LABEL=business is set
+isTokenNearExpiry(expiresAt) — 5-minute buffer check
+refreshTikTokAccessToken(refreshToken) — calls TikTok token endpoint with grant_type=refresh_token, returns TikTokTokenExchangeResult
+getTikTokProviderStatus() — returns a discriminated union: missing_credentials, token_expired (with canRefresh), or ready (with openId, accountLabel, isPersonalTestAccount)
+Step 3 — lib/campaigns/distribution/platforms/tiktok.ts
+Replaced stub with real TikTok Content Posting API FILE_UPLOAD flow
+uploadTikTokVideoDraft(accessToken, videoUrl, title) — fetches video bytes → POST init → PUT upload → returns TikTokUploadResult with publishId
+executeTikTokPost(campaignSlug, post) — dispatcher entry point; resolves asset URL from manifest, auto-refreshes token if near expiry, returns real publish_id
+Uses SELF_ONLY privacy level — safe for personal-account testing, no accidental public posts
+Step 4 — lib/campaigns/distribution-marketing.ts
+Added dispatchTikTokLive() alongside existing dispatchMetaAdsLive()
+dispatchMarketingPost now handles tiktok platform in live mode, returning the real publish_id as externalPostId
+Step 4b — lib/campaigns/distribution-store.ts + dispatcher.ts
+updateScheduledPostStatus now accepts optional metadataNotes[] which are appended to post.notes
+Dispatcher passes draftType=organic_post, publish_id=…, dispatched_at=… as notes for TikTok posts
+Step 5 — app/api/integrations/tiktok/status/route.ts
+New GET route — returns TikTokProviderStatus JSON; 200 when ready, 503 when not
+Step 6 — app/(tests)/tests/campaign-landing/[slug]/review-controls.tsx
+"Dispatch Ads" → "Create Drafts"
+Added "Validate Provider Connections" button — calls /api/integrations/tiktok/status, displays account identity and expiry
+Post status column now shows simulate / draft_created / posted derived from externalPostId prefix and notes
+Added TikTokProviderStatusResponse type; externalPostId and notes added to PlannedPost
+New env vars to set after the next OAuth flow:
+
+TIKTOK_ACCESS_TOKEN_EXPIRES_AT — ISO timestamp from callback page
+TIKTOK_REFRESH_TOKEN_EXPIRES_AT — ISO timestamp from callback page
+TIKTOK_ACCOUNT_LABEL=business — set this once the LLI TikTok account completes its own authorization

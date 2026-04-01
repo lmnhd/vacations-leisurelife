@@ -70,6 +70,7 @@ export async function updateScheduledPostStatus(
     postId: string,
     status: DistributionPostStatus,
     externalPostId?: string,
+    metadataNotes?: string[],
 ): Promise<void> {
     const schedule = await getDistributionSchedule(slug);
     if (!schedule) {
@@ -83,10 +84,15 @@ export async function updateScheduledPostStatus(
                 return post;
             }
 
+            const mergedNotes = metadataNotes && metadataNotes.length > 0
+                ? [...(post.notes ?? []), ...metadataNotes]
+                : post.notes;
+
             return {
                 ...post,
                 status,
                 ...(externalPostId ? { externalPostId } : {}),
+                notes: mergedNotes,
             };
         }),
     };

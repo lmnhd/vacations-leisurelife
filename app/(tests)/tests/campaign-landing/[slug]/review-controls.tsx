@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,12 +31,27 @@ interface DistributionStatusResponse {
             scheduledAt: string;
             campaignStage: string;
             status: string;
+            externalPostId?: string;
+            notes?: string[];
         }>;
     };
     summary?: {
         totalPosts: number;
     };
     error?: string;
+}
+
+interface TikTokProviderStatusResponse {
+    ready: boolean;
+    reason?: string;
+    detail?: string;
+    expiredAt?: string;
+    canRefresh?: boolean;
+    openId?: string;
+    accountLabel?: string;
+    isPersonalTestAccount?: boolean;
+    accessTokenExpiresAt?: string | null;
+    scope?: string | null;
 }
 
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
@@ -62,11 +77,20 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [reviewing, setReviewing] = useState(false);
     const [previewing, setPreviewing] = useState(false);
     const [dispatching, setDispatching] = useState(false);
+    const [validating, setValidating] = useState(false);
+    const [validateMessage, setValidateMessage] = useState<string>('');
     const [plannedPosts, setPlannedPosts] = useState<PlannedPost[]>([]);
     const [dispatchPreviews, setDispatchPreviews] = useState<Array<{ postId: string; platform: string; payload: Record<string, unknown> }>>([]);
 
     const publicPreviewHref = useMemo(() => `/groups/${slug}?preview=1`, [slug]);
     const publicHref = useMemo(() => `/groups/${slug}`, [slug]);
+
+    const resolvePostDisplayStatus = useCallback((post: PlannedPost): string => {
+        if (post.externalPostId?.startsWith('sim_')) return 'simulate';
+        if (post.notes?.some((n) => n.startsWith('draftType=organic_post'))) return 'draft_created';
+        if (post.status === 'posted') return 'posted';
+        return post.status;
+    }, []);
 
     async function loadAdPlan() {
         setReviewing(true);
@@ -117,6 +141,31 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             setStatusMessage(error instanceof Error ? error.message : 'Failed to publish campaign.');
         } finally {
             setPublishing(false);
+        }
+    }
+
+    async function handleValidateProviders() {
+        setValidating(true);
+        setValidateMessage('');
+
+        try {
+            const response = await fetch('/api/integrations/tiktok/status', { cache: 'no-store' });
+            const data = await response.json() as TikTokProviderStatusResponse;
+
+            if (data.ready) {
+                const accountType = data.isPersonalTestAccount ? 'personal test account' : 'business account';
+                const expiry = data.accessTokenExpiresAt ? ` · expires ${data.accessTokenExpiresAt}` : '';
+                setValidateMessage(`TikTok: ready — ${accountType} (${data.openId ?? ''})${expiry}`);
+            } else if (data.reason === 'token_expired') {
+                const refresh = data.canRefresh ? ' · refresh token available' : ' · refresh token also expired';
+                setValidateMessage(`TikTok: token expired at ${data.expiredAt ?? 'unknown'}${refresh}`);
+            } else {
+                setValidateMessage(`TikTok: not configured — ${data.detail ?? data.reason ?? 'unknown'}`);
+            }
+        } catch (error) {
+            setValidateMessage(error instanceof Error ? error.message : 'Provider validation failed.');
+        } finally {
+            setValidating(false);
         }
     }
 
@@ -237,14 +286,18 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             <Button onClick={loadAdPlan} disabled={reviewing} variant="outline" className="border-amber-300 bg-white">
                                 {reviewing ? 'Loading Plan...' : 'Review Ad Plan'}
                             </Button>
+                            <Button onClick={handleValidateProviders} disabled={validating} variant="outline" className="border-amber-300 bg-white">
+                                {validating ? 'Validating...' : 'Validate Provider Connections'}
+                            </Button>
                             <Button onClick={handlePreviewDispatch} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
                                 {previewing ? 'Previewing...' : 'Preview Dispatch'}
                             </Button>
                             <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
-                                {dispatching ? 'Dispatching...' : 'Dispatch Ads'}
+                                {dispatching ? 'Creating Drafts...' : 'Create Drafts'}
                             </Button>
                         </div>
                         {statusMessage ? <p className="text-sm text-amber-950">{statusMessage}</p> : null}
+                        {validateMessage ? <p className="text-sm text-slate-700">{validateMessage}</p> : null}
                         {planMessage ? <p className="text-sm text-slate-700">{planMessage}</p> : null}
                         {reviewMessage ? <p className="text-sm text-slate-700">{reviewMessage}</p> : null}
                         {dispatchMessage ? <p className="text-sm text-slate-700">{dispatchMessage}</p> : null}
@@ -256,7 +309,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                         <span>{post.platform}</span>
                                         <span>{post.campaignStage}</span>
                                         <span>{post.copyVariant}</span>
-                                        <span>{post.status}</span>
+                                        <span>{resolvePostDisplayStatus(post)}</span>
                                     </div>
                                 ))}
                             </div>

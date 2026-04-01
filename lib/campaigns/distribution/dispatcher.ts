@@ -36,10 +36,16 @@ export async function dispatchPost(
         console.log(`[DISPATCHER] Executing post ${postId} on platform ${post.platform} for campaign ${campaignSlug}`);
         
         let externalPostId: string | undefined;
+        let metadataNotes: string[] | undefined;
 
         switch (post.platform) {
             case 'tiktok':
                 externalPostId = await executeTikTokPost(campaignSlug, post);
+                metadataNotes = [
+                    `draftType=organic_post`,
+                    `publish_id=${externalPostId}`,
+                    `dispatched_at=${new Date().toISOString()}`,
+                ];
                 break;
             case 'instagram_feed':
             case 'instagram_reels':
@@ -54,7 +60,7 @@ export async function dispatchPost(
                 throw new Error(`Platform ${post.platform} connector not yet implemented in dispatcher.`);
         }
 
-        await updateScheduledPostStatus(campaignSlug, postId, 'posted', externalPostId);
+        await updateScheduledPostStatus(campaignSlug, postId, 'posted', externalPostId, metadataNotes);
 
         return { success: true, externalPostId };
     } catch (error: any) {

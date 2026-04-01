@@ -310,6 +310,34 @@ async function dispatchMetaAdsLive(
     };
 }
 
+async function dispatchTikTokLive(
+    campaign: Campaign,
+    manifest: CampaignMediaManifest,
+    post: ScheduledPost,
+    assetUrl: string,
+): Promise<{ externalPostId: string }> {
+    const { loadTikTokCredentials, refreshTikTokAccessToken, isTokenNearExpiry } = await import('@/lib/integrations/tiktok-auth');
+    const { uploadTikTokVideoDraft } = await import('@/lib/campaigns/distribution/platforms/tiktok');
+
+    const credentials = loadTikTokCredentials();
+    let accessToken = credentials.accessToken;
+
+    if (isTokenNearExpiry(credentials.accessTokenExpiresAt)) {
+        if (!credentials.refreshToken || isTokenNearExpiry(credentials.refreshTokenExpiresAt)) {
+            throw new Error(
+                'TikTok access token is expired and cannot be refreshed. ' +
+                'Re-authorize via /api/integrations/tiktok/connect.',
+            );
+        }
+        const refreshed = await refreshTikTokAccessToken(credentials.refreshToken);
+        accessToken = refreshed.accessToken;
+    }
+
+    const caption = getTikTokCaption(manifest, campaign.description, post.copyVariant);
+    const result = await uploadTikTokVideoDraft(accessToken, assetUrl, caption);
+    return { externalPostId: result.publishId };
+}
+
 export async function dispatchMarketingPost(
     campaign: Campaign,
     manifest: CampaignMediaManifest,
@@ -334,6 +362,28 @@ export async function dispatchMarketingPost(
     const preview = buildPreviewPayload(campaign, manifest, post, assetUrl);
 
     if (mode === 'live') {
+        if (post.platform === 'tiktok') {
+            try {
+                const liveResult = await dispatchTikTokLive(campaign, manifest, post, assetUrl);
+                return {
+                    postId: post.postId,
+                    platform: post.platform,
+                    status: 'posted',
+                    externalPostId: liveResult.externalPostId,
+                    preview,
+                };
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : 'Unknown TikTok live dispatch error';
+                return {
+                    postId: post.postId,
+                    platform: post.platform,
+                    status: 'failed',
+                    warning: `TikTok live dispatch failed: ${message}`,
+                    preview,
+                };
+            }
+        }
+
         if (post.platform === 'facebook_ad') {
             try {
                 const liveResult = await dispatchMetaAdsLive(campaign, post, preview);
