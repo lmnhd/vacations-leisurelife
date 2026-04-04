@@ -2,19 +2,35 @@
 
 ## Mission
 
-Complete the first real TikTok organic publishing path for Phase 4 without mixing it with TikTok paid ads, Meta recovery work, or Production review packaging.
+Realign Phase 4 with the master campaign strategy by treating TikTok paid acquisition as the primary implementation target and TikTok organic as a supporting proof-of-concept adapter.
 
-The implementation agent should treat this as a provider-integration hardening task with three outputs:
+The implementation agent should treat this as a strategy-correction and provider-integration design task with four outputs:
 
-1. secure TikTok token handling
-2. real TikTok draft upload via Content Posting API
-3. truthful provider and distribution status reporting in the app
+1. a TikTok Ads / Lead Gen architecture that maps directly to the Shadow Group waitlist model
+2. a clean provider contract for advertiser connection, native draft creation, and lead webhook ingestion
+3. preservation of the existing TikTok organic path as a supporting proof signal rather than the primary acquisition layer
+4. truthful provider and distribution status reporting in the app
+
+The next hard requirement beyond that is optional supporting-organic autonomy:
+
+5. keep the existing organic adapter compatible with `video.publish` if the team still wants zero-manual organic posting as a secondary feature
 
 The operating model for this provider should now be treated as local-first:
 
 1. campaign generation remains local
 2. provider dispatch should run locally by default
 3. hosted callbacks are acceptable as a bootstrap path, but they are not the desired long-term execution environment
+
+## Strategy Reconciliation
+
+The master campaign strategy and the V2 campaign strategy already define the intended TikTok role.
+
+1. TikTok organic is a zero-cost proof signal and early creative-validation surface.
+2. TikTok Lead Gen Ads are the scaled post-validation path.
+3. The full downstream validation target is the media, ad, and landing-page formula one campaign at a time.
+4. The recent organic-only TikTok push proved useful implementation details, but it drifted away from the primary acquisition architecture.
+
+The implementation agent should therefore not continue extending organic TikTok as if it were the main funnel.
 
 ## Current Verified State
 
@@ -39,6 +55,13 @@ That means:
 
 The remaining architecture flaw is not account authorization. The remaining flaw is token persistence. Static env vars are still being used as the credential store, which prevents fully autonomous long-running operation.
 
+That constraint has now narrowed further:
+
+1. durable token persistence is in place
+2. real upload-to-TikTok is in place
+3. the remaining gap for supporting-organic zero-manual posting is TikTok Direct Post approval plus a direct-post adapter using `video.publish`
+4. the larger unresolved gap is still TikTok paid acquisition, which is the strategy-consistent primary path
+
 ## Security Rules
 
 1. never commit TikTok tokens to the repository
@@ -58,123 +81,114 @@ The implementation agent should start from these files.
 5. `lib/campaigns/distribution/dispatcher.ts`
 6. `lib/campaigns/distribution-marketing.ts`
 7. `lib/utils.ts`
+8. `app/api/groups/campaign/[slug]/waitlist/route.ts`
+9. `lib/campaigns/waitlist-store.ts`
+10. the distribution dashboard and review surfaces already used for native draft review
 
 ## Build Order
 
-### Step 1: Token Persistence Contract
+### Step 0: Re-scope TikTok In The Architecture
 
-Add a single authoritative TikTok token contract.
+Before writing code, the implementation agent should treat TikTok as two separate adapters:
 
-Required values:
+1. `tiktok_organic` — supporting proof-of-concept, creator-facing posting, and creative validation
+2. `tiktok_paid` — primary paid acquisition path for campaign growth
 
-1. `TIKTOK_CLIENT_KEY`
-2. `TIKTOK_CLIENT_SECRET`
-3. `TIKTOK_ACCESS_TOKEN`
-4. `TIKTOK_REFRESH_TOKEN`
-5. `TIKTOK_OPEN_ID`
+The agent should preserve the existing organic work, but it must not keep evolving that path as the primary answer to multi-campaign acquisition, unique destination routing, or scalable CTA behavior.
 
-Recommended persisted metadata:
+### Step 1: Advertiser + Lead-Gen Contract
 
-1. access token expiry timestamp
-2. refresh token expiry timestamp
-3. granted scope string
-4. account label if it can be safely resolved
-5. provider account mode such as `business` versus temporary `personal_test`
+Define the primary TikTok paid contract around advertiser-side campaign creation and lead ingestion.
+
+Required outcomes:
+
+1. one normalized server-side shape for TikTok advertiser connection state
+2. one normalized request shape for creating paused TikTok lead-gen drafts per campaign
+3. one normalized webhook-ingestion contract for mapping TikTok leads into the existing DynamoDB waitlist model
+4. clear separation between advertiser credentials and supporting-organic publishing credentials
+
+Minimum data that should be represented in the contract:
+
+1. advertiser account identifier
+2. campaign slug
+3. creative asset identifier
+4. lead form identifier or reusable form template mapping
+5. targeting preset or targeting summary derived from campaign identity keywords
+6. native campaign, ad-group, and ad identifiers once created
+7. activation state such as `draft`, `paused`, `active`, `error`
+
+### Step 2: Lead Ingestion Mapping
+
+Map TikTok leads into the existing Shadow Group pipeline instead of inventing a separate TikTok-only funnel.
+
+Requirements:
+
+1. TikTok lead submissions must write into the same `USER#` waitlist contract already used by other lead sources
+2. source attribution should preserve provider and native IDs for reporting
+3. successful lead writes should trigger the same nurture path used elsewhere
+4. the mapping should support campaign-specific slugs cleanly so multiple campaigns can run simultaneously
+
+### Step 3: Paid Draft Creation Path
+
+Create paused TikTok paid drafts rather than immediate-live campaigns.
+
+Requirements:
+
+1. build or load internal distribution intent for the campaign
+2. create paused native TikTok lead-gen entities in the advertiser account
+3. persist native IDs and review metadata into distribution records
+4. surface review/activation status in the same operator-facing review model used for other platforms
+
+### Step 4: Preserve Organic As A Supporting Adapter
+
+Retain the existing TikTok organic work, but demote it to the proper strategic role.
+
+Requirements:
+
+1. keep the current organic upload path functional for proof-of-concept and creative validation
+2. do not use organic as the answer to multi-campaign click-through or primary acquisition routing
+3. label organic UI and docs as supporting validation, not the main paid funnel
+4. keep `video.publish` work explicitly secondary to the paid acquisition path
+
+### Step 5: Status And Review Reporting
+
+The UI and persisted records must expose the difference between organic proofing and paid acquisition.
+
+Requirements:
+
+1. provider status should distinguish advertiser readiness from organic-publishing readiness
+2. distribution records should distinguish `organic_post` from `paid_lead_gen_ad`
+3. review surfaces should show native paid IDs, form IDs, and activation state
+4. operator messaging should stop implying that organic TikTok is the main campaign-routing mechanism
+
+### Step 6: Supporting Organic Direct Post Upgrade Path
+
+The system now needs an explicit second TikTok mode, not just inbox-share upload.
+
+Required outcome:
+
+1. support `video.publish` as a separate readiness gate from `video.upload`
+2. treat zero-manual posting as unavailable until a token is granted `video.publish`
+3. once TikTok approves Direct Post, re-authorize the business account and persist the upgraded scope set
+4. add a direct-post adapter path that can publish to the account page without manual inbox action
 
 Implementation requirements:
 
-1. define one normalized server-side shape for TikTok credentials
-2. do not scatter refresh logic across routes and adapters
-3. make it obvious whether the token set belongs to a personal test account or the real business account
-4. stop treating static env vars as the final durable source of truth for rotating credentials
+1. auth scope requests must be configurable so the app can request `video.publish` without hardcoding a permanent assumption before approval lands
+2. provider status must explicitly report whether zero-manual posting is available
+3. the review UI must distinguish upload-only mode from direct-post-ready mode
+4. direct-post code must fail closed if `video.publish` is missing from the granted scope set
 
-### Step 1A: Durable Local-First Token Store
+TikTok approval work that must happen outside the repo:
 
-Close the autonomy gap by introducing a durable token store that local campaign generation and local dispatch can use without manual daily maintenance.
+1. request TikTok approval for `video.publish`
+2. provide the platform with a clear zero-manual posting use case and demo path
+3. once approved, re-run the OAuth flow so the stored business-account token includes `video.publish`
+4. confirm provider status reports `zeroManualPostingReady=true`
 
-Recommended implementation choice:
+### Step 7: Distribution Record Persistence
 
-1. use a Prisma-backed Postgres table as the primary token store
-2. treat this as the default path, not one option among many
-3. only fall back to other storage approaches if Prisma-backed persistence is blocked for a concrete technical reason
-
-Requirements:
-
-1. local runs must be able to load the current TikTok token set without relying on manual env updates after each refresh
-2. refreshed token values must be written back to the durable store automatically
-3. the same code path should support a hosted store later, but local development is the primary target
-4. the store must clearly identify which TikTok account owns the token set
-
-Recommended Prisma model shape:
-
-1. one row per provider + account label combination
-2. provider value such as `tiktok`
-3. account label such as `business` or `personal_test`
-4. encrypted or otherwise protected token fields for `accessToken` and `refreshToken`
-5. `openId`
-6. `scope`
-7. `accessTokenExpiresAt`
-8. `refreshTokenExpiresAt`
-9. `lastRefreshedAt`
-10. timestamps for auditability
-
-Bootstrap flow:
-
-1. on first run, if no Prisma token row exists, read the initial TikTok values from `.env.local`
-2. write that initial token set into the Prisma store
-3. after bootstrap, prefer Prisma as the source of truth for local dispatch
-4. on refresh, update the Prisma row automatically
-5. keep env vars as bootstrap/fallback input only
-
-Fallback options only if Prisma is blocked:
-
-1. DynamoDB record keyed by provider + account label
-2. encrypted local file reserved for dev-only credential storage
-
-Preferred outcome:
-
-1. Prisma/Postgres becomes the authoritative local token store
-2. `.env.local` performs the initial bootstrap only
-3. subsequent refresh cycles update the Prisma row automatically
-4. local dispatch continues working across process restarts without manual token rewriting
-
-### Step 2: Refresh Token Support
-
-Add refresh handling against TikTok's OAuth token endpoint.
-
-Requirements:
-
-1. refresh before live publish when the access token is expired or near expiry
-2. persist the newly returned refresh token if TikTok rotates it
-3. fail with a provider-status error that is readable by operators
-
-Do not rely on the short-lived access token remaining valid between planning and live publish.
-
-This step is incomplete until refreshed values are written back to the durable token store automatically.
-
-### Step 3: Replace The TikTok Placeholder Adapter
-
-Replace the current stub in `lib/campaigns/distribution/platforms/tiktok.ts` with a real upload path.
-
-Use the TikTok Content Posting API draft-upload flow and prefer `FILE_UPLOAD` for the first implementation pass.
-
-Required flow:
-
-1. fetch the generated campaign video bytes from the stored asset URL
-2. call TikTok video init with `source=FILE_UPLOAD`
-3. upload the bytes to TikTok's returned `upload_url`
-4. persist the returned `publish_id`
-5. fetch status from TikTok as needed
-
-First-pass target behavior:
-
-1. upload the video as a TikTok draft
-2. do not build full paid-ad behavior here
-3. keep the implementation compatible with later business-account authorization
-
-### Step 4: Distribution Record Persistence
-
-The distribution record must stop pretending a placeholder ID is a real publish result.
+The distribution record must stop pretending a supporting-organic result is the same thing as a paid-acquisition result.
 
 Persist at minimum:
 
@@ -195,6 +209,7 @@ The app should report at least:
 2. expired or invalid token
 3. authorized account identity if known
 4. whether the current token set is a temporary personal-account test token or the intended business-account token
+5. whether the current token set includes `video.publish` and therefore supports zero-manual posting
 
 This should be visible before a live TikTok publish action is attempted.
 
@@ -227,6 +242,8 @@ Use this order after implementation.
 6. confirm the UI reports a truthful status
 7. restart the local process and confirm the provider still works without manual env edits
 8. confirm simulation mode still works independently of live upload
+9. after TikTok approval, re-authorize and confirm `video.publish` is present in the stored scope string
+10. confirm provider status reports zero-manual readiness separately from upload readiness
 
 ## Definition Of Done
 
@@ -240,6 +257,7 @@ This implementation pass is done only when all of the following are true.
 6. the review surface reports truthful TikTok provider and publish state
 7. local campaign generation and local dispatch remain the primary working path
 8. the code path remains usable with the proper Leisure Life Interactive business-account tokens
+9. once TikTok approves Direct Post, the provider contract can distinguish upload-only mode from direct-post-ready mode without ambiguous operator messaging
 
 ## Handoff Note
 
@@ -275,3 +293,4 @@ New env vars to set after the next OAuth flow:
 TIKTOK_ACCESS_TOKEN_EXPIRES_AT — ISO timestamp from callback page
 TIKTOK_REFRESH_TOKEN_EXPIRES_AT — ISO timestamp from callback page
 TIKTOK_ACCOUNT_LABEL=business — set this once the LLI TikTok account completes its own authorization
+TIKTOK_REQUEST_VIDEO_PUBLISH=true — set this before re-authorizing once TikTok approves `video.publish`

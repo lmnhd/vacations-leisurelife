@@ -2,42 +2,42 @@
 
 ## Immediate Priority
 
-Close the TikTok autonomy gap with a durable token store and run the first real local draft-upload test using the successful business-account authorization.
+Realign TikTok Phase 4 with the master campaign strategy: preserve the existing organic adapter, but move the next implementation pass to TikTok paid acquisition and lead ingestion.
 
 ## Next Operator Actions
 
-1. place the successful Leisure Life Interactive business-account TikTok token set into the chosen bootstrap env source
-2. set `TIKTOK_ACCOUNT_LABEL=business`
-3. set the access-token and refresh-token expiry timestamps from the callback success page
-4. keep the redirect URI pinned to `https://leisurelifevacations.net/api/integrations/tiktok/callback` unless the auth endpoint is intentionally moved
+1. confirm the correct TikTok advertiser / business account is the one that should own paid campaign creation
+2. confirm access to TikTok Ads / Marketing API and lead generation capabilities
+3. identify the advertiser IDs, app credentials, and webhook requirements needed for lead-gen integration
+4. keep the existing publishing-account OAuth setup only for the supporting organic adapter
 
 ## Next App Tasks
 
-1. add a durable local-first TikTok token store instead of relying on static env vars as the long-term source of truth
-2. persist refreshed TikTok token values automatically
-3. load TikTok provider credentials from the durable store during local dispatch
-4. run one real local `FILE_UPLOAD` TikTok draft-upload test
-5. write the returned TikTok publish metadata into the distribution record
+1. define a TikTok paid lead-gen contract that maps campaign slug, creative asset, targeting preset, and native lead form into one request shape
+2. create paused TikTok paid drafts and persist native IDs plus review metadata
+3. ingest TikTok lead submissions into the existing DynamoDB waitlist contract
+4. expose advertiser readiness separately from organic-publishing readiness in provider status
+5. keep the organic adapter intact, but relabel it as supporting validation rather than the main acquisition engine
 
 ## Next UI Tasks
 
-1. replace `Dispatch Ads` naming with lifecycle-accurate labels
-2. add a `Validate Provider Connections` action
-3. show provider readiness state for TikTok and Meta in the review UI
-4. show native IDs and review metadata once live draft creation succeeds
+1. show separate TikTok sections for `Paid Acquisition` and `Organic Proofing`
+2. add advertiser-connection validation in the review UI
+3. show native paid IDs, form IDs, and activation state once paused drafts are created
+4. keep organic-status reporting visible, but secondary
 
 ## Deferred Until After The Local TikTok Path Is Autonomous
 
-1. TikTok Production review submission and demo-video packaging
-2. Meta business verification recovery work
-3. Google Ads adapter implementation
-4. callback-hosting simplification or tunnel-based local OAuth bootstrap improvements
+1. direct website-click TikTok traffic campaigns beyond native lead-gen
+2. `video.publish` direct-post hardening for the supporting organic adapter
+3. Meta business verification recovery work
+4. Google Ads adapter implementation
 
 ## Success Checkpoint
 
-The next meaningful checkpoint is not "business account auth succeeded." The next meaningful checkpoint is:
+The next meaningful checkpoint is not another organic TikTok milestone. The next meaningful checkpoint is:
 
-1. the business-account token set is available to the local environment
-2. the app refreshes TikTok tokens without manual env edits
-3. one campaign seed video reaches TikTok as a real draft upload from the local environment
-4. the local process can be restarted without losing TikTok dispatch capability
+1. the app can validate TikTok advertiser readiness for paid acquisition
+2. one campaign can create paused TikTok lead-gen drafts with native IDs persisted
+3. TikTok lead submissions can enter the existing DynamoDB waitlist and nurture path cleanly
+4. the organic adapter remains available as a supporting proof signal without steering the acquisition architecture

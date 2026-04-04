@@ -5,7 +5,15 @@ import {
     isTokenNearExpiry,
 } from '@/lib/integrations/tiktok-auth';
 
-const TIKTOK_POST_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
+const TIKTOK_POST_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/';
+const TIKTOK_POST_STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
+
+export type TikTokPublishLifecycleStatus =
+    | 'PROCESSING_UPLOAD'
+    | 'PROCESSING_DOWNLOAD'
+    | 'SEND_TO_USER_INBOX'
+    | 'PUBLISH_COMPLETE'
+    | 'FAILED';
 
 interface TikTokPostInfo {
     title: string;
@@ -39,6 +47,22 @@ interface TikTokInitResponse {
     };
 }
 
+interface TikTokFetchStatusResponse {
+    data?: {
+        status?: TikTokPublishLifecycleStatus;
+        fail_reason?: string;
+        publicaly_available_post_id?: Array<string | number>;
+        publicly_available_post_id?: Array<string | number>;
+        uploaded_bytes?: number;
+        downloaded_bytes?: number;
+    };
+    error?: {
+        code: string;
+        message: string;
+        log_id?: string;
+    };
+}
+
 export interface TikTokUploadResult {
     publishId: string;
     draftType: 'organic_post';
@@ -46,12 +70,20 @@ export interface TikTokUploadResult {
     statusDetail: string;
 }
 
+export interface TikTokPublishStatusResult {
+    publishId: string;
+    status: TikTokPublishLifecycleStatus;
+    failReason: string | null;
+    publiclyAvailablePostId: string | null;
+    uploadedBytes: number | null;
+}
+
 /**
  * Resolves the active TikTok access token, refreshing if near expiry.
  * Throws a provider-status error when credentials are missing or unrefreshable.
  */
 async function resolveAccessToken(): Promise<string> {
-    const credentials = loadTikTokCredentials();
+    const credentials = await loadTikTokCredentials();
 
     if (!isTokenNearExpiry(credentials.accessTokenExpiresAt)) {
         return credentials.accessToken;
@@ -60,20 +92,25 @@ async function resolveAccessToken(): Promise<string> {
     if (!credentials.refreshToken || isTokenNearExpiry(credentials.refreshTokenExpiresAt)) {
         throw new Error(
             'TikTok access token is expired and the refresh token is also expired or missing. ' +
-            'Re-authorize via /api/integrations/tiktok/connect and update TIKTOK_ACCESS_TOKEN, ' +
-            'TIKTOK_REFRESH_TOKEN, TIKTOK_ACCESS_TOKEN_EXPIRES_AT, TIKTOK_REFRESH_TOKEN_EXPIRES_AT.',
+            'Re-authorize via /api/integrations/tiktok/connect.',
         );
     }
 
     const refreshed = await refreshTikTokAccessToken(credentials.refreshToken);
-    // Caller is responsible for persisting the new tokens back to the env/secret store.
-    console.warn(
-        '[TikTok] Access token was refreshed. Update env vars:\n' +
-        `  TIKTOK_ACCESS_TOKEN=${refreshed.accessToken}\n` +
-        `  TIKTOK_ACCESS_TOKEN_EXPIRES_AT=${refreshed.accessTokenExpiresAt}\n` +
-        `  TIKTOK_REFRESH_TOKEN=${refreshed.refreshToken}\n` +
-        `  TIKTOK_REFRESH_TOKEN_EXPIRES_AT=${refreshed.refreshTokenExpiresAt}`,
-    );
+
+    // Persist refreshed tokens to the durable store — no manual env edits needed
+    const { upsertProviderToken } = await import('@/lib/integrations/provider-token-store');
+    await upsertProviderToken('tiktok', credentials.accountLabel, {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        openId: refreshed.openId,
+        scope: refreshed.scope,
+        accessTokenExpiresAt: new Date(refreshed.accessTokenExpiresAt),
+        refreshTokenExpiresAt: new Date(refreshed.refreshTokenExpiresAt),
+        lastRefreshedAt: new Date(),
+    });
+
+    console.log('[TikTok] Access token refreshed and persisted to ProviderToken store.');
     return refreshed.accessToken;
 }
 
@@ -163,6 +200,51 @@ export async function uploadTikTokVideoDraft(
         uploadStatus: 'upload_complete',
         statusDetail: `TikTok draft created. publish_id=${publishId}`,
     };
+}
+
+export async function fetchTikTokPublishStatus(
+    accessToken: string,
+    publishId: string,
+): Promise<TikTokPublishStatusResult> {
+    const response = await fetch(TIKTOK_POST_STATUS_URL, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: JSON.stringify({ publish_id: publishId }),
+    });
+
+    const payload = await response.json() as TikTokFetchStatusResponse;
+    const error = payload.error;
+    if (!response.ok || (error && error.code !== 'ok')) {
+        const detail = error
+            ? `${error.code}: ${error.message}`
+            : `HTTP ${response.status}`;
+        throw new Error(`TikTok publish status fetch failed — ${detail}`);
+    }
+
+    const status = payload.data?.status;
+    if (!status) {
+        throw new Error(`TikTok publish status fetch returned no status for publish_id=${publishId}`);
+    }
+
+    const publicPostIds = payload.data?.publicly_available_post_id ?? payload.data?.publicaly_available_post_id ?? [];
+
+    return {
+        publishId,
+        status,
+        failReason: payload.data?.fail_reason ?? null,
+        publiclyAvailablePostId: publicPostIds.length > 0 ? String(publicPostIds[0]) : null,
+        uploadedBytes: payload.data?.uploaded_bytes ?? null,
+    };
+}
+
+export async function resolveTikTokPublishStatus(
+    publishId: string,
+): Promise<TikTokPublishStatusResult> {
+    const accessToken = await resolveAccessToken();
+    return fetchTikTokPublishStatus(accessToken, publishId);
 }
 
 /**

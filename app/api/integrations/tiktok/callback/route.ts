@@ -6,6 +6,15 @@ import {
     getTikTokStateCookieName,
 } from '@/lib/integrations/tiktok-auth';
 
+function getScopeNotice(scope: string): string {
+    const grantedScopes = scope.split(',').map((entry) => entry.trim()).filter(Boolean);
+    if (grantedScopes.includes('video.publish')) {
+        return '<p><strong>Direct Post capability:</strong> ready. This token set includes <code>video.publish</code>, so the app can move toward zero-manual TikTok posting once the direct-post adapter is enabled.</p>';
+    }
+
+    return '<p><strong>Direct Post capability:</strong> not yet approved. This token set does not include <code>video.publish</code>, so TikTok can only support inbox-share uploads right now. After TikTok approves <code>video.publish</code>, re-run <code>/api/integrations/tiktok/connect</code> to upgrade the stored token scopes.</p>';
+}
+
 function renderHtml(title: string, body: string): string {
     return `<!doctype html>
 <html lang="en">
@@ -67,6 +76,22 @@ export async function GET(request: NextRequest) {
     try {
         const config = getTikTokAuthConfig();
         const tokenData = await exchangeTikTokAuthCode(code);
+
+        // Persist the new token set to the durable store so local dispatch
+        // works immediately without manual env edits.
+        const { upsertProviderToken } = await import('@/lib/integrations/provider-token-store');
+        const rawLabel = process.env.TIKTOK_ACCOUNT_LABEL?.trim().toLowerCase();
+        const accountLabel = rawLabel === 'business' ? 'business' : 'personal_test';
+        await upsertProviderToken('tiktok', accountLabel, {
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            openId: tokenData.openId,
+            scope: tokenData.scope,
+            accessTokenExpiresAt: new Date(tokenData.accessTokenExpiresAt),
+            refreshTokenExpiresAt: new Date(tokenData.refreshTokenExpiresAt),
+            lastRefreshedAt: null,
+        });
+
         const envBlock = [
             `TIKTOK_CLIENT_KEY=${config.clientKey}`,
             'TIKTOK_CLIENT_SECRET=REDACTED_ALREADY_IN_ENV',
@@ -78,12 +103,14 @@ export async function GET(request: NextRequest) {
         const html = renderHtml(
             'TikTok Connected',
             `<h1>TikTok authorization succeeded</h1>
-             <p>Copy the values below into your local environment or secure token store. The access token is short lived; the refresh token is what you will use to renew it on the server.</p>
+               <p>The new TikTok token set has already been persisted to the provider token store for this account label. The values below are for bootstrap, verification, or disaster recovery only; they do not need to be manually copied on every authorization.</p>
              <pre><code>${envBlock}</code></pre>
              <p><strong>Access token expires at:</strong> ${tokenData.accessTokenExpiresAt}</p>
              <p><strong>Refresh token expires at:</strong> ${tokenData.refreshTokenExpiresAt}</p>
              <p><strong>Granted scope:</strong> ${tokenData.scope}</p>
-             <p><strong>Redirect URI to register in TikTok:</strong> ${config.redirectUri}</p>`,
+                             ${getScopeNotice(tokenData.scope)}
+               <p><strong>Redirect URI to register in TikTok:</strong> ${config.redirectUri}</p>
+               <p><strong>Stored account label:</strong> ${accountLabel}</p>`,
         );
 
         const response = new NextResponse(html, {

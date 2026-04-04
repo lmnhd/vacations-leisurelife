@@ -23,10 +23,11 @@ export async function GET(
             return NextResponse.json({ error: `Distribution schedule not found for ${slug}` }, { status: 404 });
         }
 
-        const perPlatform = schedule.posts.reduce<Record<string, { total: number; posted: number; scheduled: number; failed: number }>>((accumulator, post) => {
-            const current = accumulator[post.platform] ?? { total: 0, posted: 0, scheduled: 0, failed: 0 };
+        const perPlatform = schedule.posts.reduce<Record<string, { total: number; posted: number; draftCreated: number; scheduled: number; failed: number }>>((accumulator, post) => {
+            const current = accumulator[post.platform] ?? { total: 0, posted: 0, draftCreated: 0, scheduled: 0, failed: 0 };
             current.total += 1;
             if (post.status === 'posted') current.posted += 1;
+            if (post.status === 'draft_created') current.draftCreated += 1;
             if (post.status === 'scheduled') current.scheduled += 1;
             if (post.status === 'failed') current.failed += 1;
             accumulator[post.platform] = current;

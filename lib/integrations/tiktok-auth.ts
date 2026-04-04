@@ -8,6 +8,28 @@ const TOKEN_EXPIRY_BUFFER_SECONDS = 300;
 const TIKTOK_STATE_COOKIE = 'tiktok_oauth_state';
 const TIKTOK_DEFAULT_SCOPES = ['user.info.basic', 'video.upload'] as const;
 
+function getRequestedTikTokScopes(): string[] {
+    const envOverride = process.env.TIKTOK_AUTH_SCOPES?.trim();
+    if (envOverride) {
+        return Array.from(new Set(envOverride.split(',').map((scope) => scope.trim()).filter(Boolean)));
+    }
+
+    const scopes = [...TIKTOK_DEFAULT_SCOPES];
+    if (process.env.TIKTOK_REQUEST_VIDEO_PUBLISH?.trim().toLowerCase() === 'true') {
+        scopes.push('video.publish');
+    }
+
+    return Array.from(new Set(scopes));
+}
+
+function parseTikTokScopeString(scope: string | null | undefined): string[] {
+    if (!scope) {
+        return [];
+    }
+
+    return Array.from(new Set(scope.split(',').map((entry) => entry.trim()).filter(Boolean)));
+}
+
 interface TikTokTokenSuccessResponse {
     access_token: string;
     expires_in: number;
@@ -89,9 +111,10 @@ export function createTikTokAuthState(): string {
 
 export function buildTikTokAuthorizeUrl(state: string): string {
     const { clientKey, redirectUri } = getTikTokAuthConfig();
+    const requestedScopes = getRequestedTikTokScopes();
     const params = new URLSearchParams({
         client_key: clientKey,
-        scope: TIKTOK_DEFAULT_SCOPES.join(','),
+        scope: requestedScopes.join(','),
         response_type: 'code',
         redirect_uri: redirectUri,
         state,
@@ -163,25 +186,70 @@ export interface TikTokCredentials {
 }
 
 /**
- * Reads TikTok credentials from environment variables.
- * Throws if any required credential is missing.
+ * Loads TikTok credentials using a local-first strategy:
+ * 1. Try the DynamoDB provider token store for the matching provider + accountLabel record.
+ * 2. If no row exists, bootstrap from .env.local values and persist them to the store.
+ * 3. On every subsequent run the store row is used — no manual env edits required after refresh.
+ *
+ * Throws if client key/secret are missing or if no token set can be resolved.
  */
-export function loadTikTokCredentials(): TikTokCredentials {
+export async function loadTikTokCredentials(): Promise<TikTokCredentials> {
     const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim();
     const clientSecret = process.env.TIKTOK_CLIENT_SECRET?.trim();
-    const accessToken = process.env.TIKTOK_ACCESS_TOKEN?.trim();
-    const refreshToken = process.env.TIKTOK_REFRESH_TOKEN?.trim();
-    const openId = process.env.TIKTOK_OPEN_ID?.trim();
 
     if (!clientKey || !clientSecret) {
         throw new Error('Missing TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET');
     }
-    if (!accessToken || !refreshToken || !openId) {
-        throw new Error('Missing TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN, or TIKTOK_OPEN_ID — run /api/integrations/tiktok/connect to authorize');
-    }
 
     const rawLabel = process.env.TIKTOK_ACCOUNT_LABEL?.trim().toLowerCase();
     const accountLabel: TikTokCredentials['accountLabel'] = rawLabel === 'business' ? 'business' : 'personal_test';
+
+    const { loadProviderToken, upsertProviderToken } = await import('./provider-token-store');
+
+    // Prefer the durable store over env vars.
+    const stored = await loadProviderToken('tiktok', accountLabel);
+    if (stored) {
+        return {
+            clientKey,
+            clientSecret,
+            accessToken: stored.accessToken,
+            refreshToken: stored.refreshToken,
+            openId: stored.openId,
+            accessTokenExpiresAt: stored.accessTokenExpiresAt?.toISOString() ?? null,
+            refreshTokenExpiresAt: stored.refreshTokenExpiresAt?.toISOString() ?? null,
+            scope: stored.scope,
+            accountLabel,
+        };
+    }
+
+    // Bootstrap: read from env vars, persist to store so future runs skip this path
+    const accessToken = process.env.TIKTOK_ACCESS_TOKEN?.trim();
+    const refreshToken = process.env.TIKTOK_REFRESH_TOKEN?.trim();
+    const openId = process.env.TIKTOK_OPEN_ID?.trim();
+
+    if (!accessToken || !refreshToken || !openId) {
+        throw new Error(
+            'No token row found in ProviderToken store and env bootstrap vars are missing ' +
+            '(TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN, TIKTOK_OPEN_ID). ' +
+            'Run /api/integrations/tiktok/connect to authorize.',
+        );
+    }
+
+    const accessTokenExpiresAtRaw = process.env.TIKTOK_ACCESS_TOKEN_EXPIRES_AT?.trim() ?? null;
+    const refreshTokenExpiresAtRaw = process.env.TIKTOK_REFRESH_TOKEN_EXPIRES_AT?.trim() ?? null;
+    const scope = process.env.TIKTOK_SCOPE?.trim() ?? null;
+
+    await upsertProviderToken('tiktok', accountLabel, {
+        accessToken,
+        refreshToken,
+        openId,
+        scope,
+        accessTokenExpiresAt: accessTokenExpiresAtRaw ? new Date(accessTokenExpiresAtRaw) : null,
+        refreshTokenExpiresAt: refreshTokenExpiresAtRaw ? new Date(refreshTokenExpiresAtRaw) : null,
+        lastRefreshedAt: null,
+    });
+
+    console.log(`[TikTok] Bootstrapped ProviderToken store from env vars (accountLabel=${accountLabel})`);
 
     return {
         clientKey,
@@ -189,9 +257,9 @@ export function loadTikTokCredentials(): TikTokCredentials {
         accessToken,
         refreshToken,
         openId,
-        accessTokenExpiresAt: process.env.TIKTOK_ACCESS_TOKEN_EXPIRES_AT?.trim() ?? null,
-        refreshTokenExpiresAt: process.env.TIKTOK_REFRESH_TOKEN_EXPIRES_AT?.trim() ?? null,
-        scope: process.env.TIKTOK_SCOPE?.trim() ?? null,
+        accessTokenExpiresAt: accessTokenExpiresAtRaw,
+        refreshTokenExpiresAt: refreshTokenExpiresAtRaw,
+        scope,
         accountLabel,
     };
 }
@@ -256,6 +324,41 @@ export async function refreshTikTokAccessToken(refreshToken: string): Promise<Ti
     };
 }
 
+export async function refreshStoredTikTokCredentials(): Promise<TikTokCredentials> {
+    const credentials = await loadTikTokCredentials();
+
+    if (!credentials.refreshToken) {
+        throw new Error('TikTok refresh token is missing. Re-authorize via /api/integrations/tiktok/connect.');
+    }
+
+    if (isTokenNearExpiry(credentials.refreshTokenExpiresAt)) {
+        throw new Error('TikTok refresh token is expired or near expiry. Re-authorize via /api/integrations/tiktok/connect.');
+    }
+
+    const refreshed = await refreshTikTokAccessToken(credentials.refreshToken);
+    const { upsertProviderToken } = await import('./provider-token-store');
+
+    await upsertProviderToken('tiktok', credentials.accountLabel, {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        openId: refreshed.openId,
+        scope: refreshed.scope,
+        accessTokenExpiresAt: new Date(refreshed.accessTokenExpiresAt),
+        refreshTokenExpiresAt: new Date(refreshed.refreshTokenExpiresAt),
+        lastRefreshedAt: new Date(),
+    });
+
+    return {
+        ...credentials,
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        openId: refreshed.openId,
+        accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
+        refreshTokenExpiresAt: refreshed.refreshTokenExpiresAt,
+        scope: refreshed.scope,
+    };
+}
+
 // ---------------------------------------------------------------------------
 // Provider status
 // ---------------------------------------------------------------------------
@@ -270,16 +373,67 @@ export type TikTokProviderStatus =
         isPersonalTestAccount: boolean;
         accessTokenExpiresAt: string | null;
         scope: string | null;
+                requestedScopes: string[];
+                grantedScopes: string[];
+                hasVideoUploadScope: boolean;
+                hasVideoPublishScope: boolean;
+                zeroManualPostingReady: boolean;
       };
+
+// ---------------------------------------------------------------------------
+// Advertiser / paid-path status (separate from organic publishing status)
+// ---------------------------------------------------------------------------
+
+/**
+ * Required env vars for TikTok Marketing API (paid acquisition path).
+ * These are distinct from the Content Posting API credentials used by the organic adapter.
+ */
+const TIKTOK_PAID_REQUIRED_VARS = [
+    'TIKTOK_ADVERTISER_ID',
+    'TIKTOK_MARKETING_API_APP_ID',
+    'TIKTOK_MARKETING_API_SECRET',
+] as const;
+
+export type TikTokAdvertiserStatus =
+    | { ready: false; reason: 'missing_advertiser_credentials'; requiredVars: string[] }
+    | { ready: true; advertiserAccountId: string; appId: string };
+
+/**
+ * Returns advertiser readiness for the TikTok paid acquisition path.
+ * Does NOT check organic publishing credentials.
+ * Call this before attempting any Marketing API (lead-gen) operations.
+ */
+export function getTikTokAdvertiserStatus(): TikTokAdvertiserStatus {
+    const advertiserId = process.env.TIKTOK_ADVERTISER_ID?.trim();
+    const appId = process.env.TIKTOK_MARKETING_API_APP_ID?.trim();
+    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET?.trim();
+
+    const missingVars = TIKTOK_PAID_REQUIRED_VARS.filter((varName) => !process.env[varName]?.trim());
+
+    if (missingVars.length > 0 || !advertiserId || !appId || !appSecret) {
+        return {
+            ready: false,
+            reason: 'missing_advertiser_credentials',
+            requiredVars: missingVars,
+        };
+    }
+
+    return {
+        ready: true,
+        advertiserAccountId: advertiserId,
+        appId,
+    };
+}
 
 /**
  * Returns a structured readiness report for the TikTok provider.
+ * Loads credentials from the durable store (or bootstraps from env on first run).
  * Call this before attempting a live TikTok publish action.
  */
-export function getTikTokProviderStatus(): TikTokProviderStatus {
+export async function getTikTokProviderStatus(): Promise<TikTokProviderStatus> {
     let credentials: TikTokCredentials;
     try {
-        credentials = loadTikTokCredentials();
+        credentials = await loadTikTokCredentials();
     } catch (error) {
         return {
             ready: false,
@@ -297,6 +451,11 @@ export function getTikTokProviderStatus(): TikTokProviderStatus {
         };
     }
 
+    const requestedScopes = getRequestedTikTokScopes();
+    const grantedScopes = parseTikTokScopeString(credentials.scope);
+    const hasVideoUploadScope = grantedScopes.includes('video.upload');
+    const hasVideoPublishScope = grantedScopes.includes('video.publish');
+
     return {
         ready: true,
         openId: credentials.openId,
@@ -304,5 +463,10 @@ export function getTikTokProviderStatus(): TikTokProviderStatus {
         isPersonalTestAccount: credentials.accountLabel === 'personal_test',
         accessTokenExpiresAt: credentials.accessTokenExpiresAt,
         scope: credentials.scope,
+        requestedScopes,
+        grantedScopes,
+        hasVideoUploadScope,
+        hasVideoPublishScope,
+        zeroManualPostingReady: hasVideoPublishScope,
     };
 }

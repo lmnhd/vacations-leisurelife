@@ -16,14 +16,15 @@ The codebase already supports:
 4. partial live Meta ad creation
 5. a deployed TikTok OAuth start route and callback route
 6. successful TikTok OAuth completion for the Leisure Life Interactive business account
+7. durable TikTok token persistence and automatic refresh persistence in DynamoDB
+8. a verified local TikTok draft-upload run from the business account
 
 The codebase does not yet support:
 
-1. durable TikTok token persistence beyond static env vars
-2. automatic persistence of refreshed TikTok token values
-3. a fully verified local-first TikTok draft-upload run
-4. consistent native review links and external ID persistence across providers
-5. explicit activation controls separate from draft creation
+1. truthful lifecycle tracking from `publish_id` to creator inbox delivery to real publication
+2. a fully automated direct-post path to a profile-visible TikTok post
+3. consistent native review links and external ID persistence across providers
+4. explicit activation controls separate from draft creation
 
 ## Primary Delivery Sequence
 
@@ -47,23 +48,25 @@ Exit criteria:
 
 ### Phase 4B: TikTok Local Draft Upload Completion
 
-Goal: replace the TikTok placeholder adapter with a real organic draft-upload flow.
+Goal: keep the real organic draft-upload flow truthful and operator-visible through publication.
 
 Tasks:
 
 1. verify the adapter uses the business-account token set, not the temporary personal test tokens
-2. replace the placeholder TikTok adapter in `lib/campaigns/distribution/platforms/tiktok.ts`
+2. keep the TikTok adapter on the real `FILE_UPLOAD` inbox-share flow
 3. fetch the actual generated video asset bytes from the campaign asset URL
 4. initialize a TikTok upload using `source=FILE_UPLOAD`
 5. upload the video bytes to TikTok's `upload_url`
 6. persist `publish_id`, post status, and returned metadata into the distribution record
-7. confirm the flow is runnable from the local environment
+7. poll TikTok status so `draft_created` and `posted` are not conflated
+8. confirm the flow is runnable from the local environment
 
 Exit criteria:
 
 1. one generated campaign seed video is uploaded as a TikTok draft from the local environment
-2. the distribution record stores a real TikTok publish identifier
+2. the distribution record stores a real TikTok `publish_id`
 3. the operator can see a truthful status in the review surface
+4. the system can distinguish `draft_created` from `posted`
 
 ### Phase 4C: Provider Status Layer
 

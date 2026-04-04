@@ -1136,6 +1136,7 @@ export type CampaignMediaManifest = z.infer<typeof CampaignMediaManifestSchema>;
 
 export const DistributionPlatformEnum = z.enum([
     'tiktok',
+    'tiktok_paid',
     'instagram_feed',
     'instagram_reels',
     'instagram_story',
@@ -1150,6 +1151,7 @@ export type DistributionPlatform = z.infer<typeof DistributionPlatformEnum>;
 
 export const DistributionPostStatusEnum = z.enum([
     'scheduled',
+    'draft_created',
     'posted',
     'cancelled',
     'failed',
@@ -1180,6 +1182,8 @@ export const ScheduledPostSchema = z.object({
     campaignStage: z.string(),
     status: DistributionPostStatusEnum,
     externalPostId: z.string().optional(),
+    externalReviewUrl: z.string().optional(),
+    providerDraftType: z.enum(['organic_post', 'paid_lead_gen_ad']).optional(),
     notes: z.array(z.string()).default([]),
 });
 export type ScheduledPost = z.infer<typeof ScheduledPostSchema>;
@@ -1193,6 +1197,25 @@ export const DistributionScheduleSchema = z.object({
     posts: z.array(ScheduledPostSchema),
 });
 export type DistributionSchedule = z.infer<typeof DistributionScheduleSchema>;
+
+export const TikTokPaidLeadGenContractSchema = z.object({
+    campaignSlug: z.string(),
+    advertiserAccountId: z.string(),
+    adAssetId: z.string(),
+    targetingPresetId: z.string().optional(),
+    leadFormTemplateId: z.string().optional(),
+    nativeCampaignId: z.string().optional(),
+    nativeAdGroupId: z.string().optional(),
+    nativeAdId: z.string().optional(),
+    nativeFormId: z.string().optional(),
+    activationState: z.enum(['draft', 'paused', 'active', 'error']),
+    dailyBudget: z.number().optional(),
+    startAt: z.string().optional(),
+    endAt: z.string().optional(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+});
+export type TikTokPaidLeadGenContract = z.infer<typeof TikTokPaidLeadGenContractSchema>;
 
 export const DistributionExecutionRecordSchema = z.object({
     executionId: z.string(),

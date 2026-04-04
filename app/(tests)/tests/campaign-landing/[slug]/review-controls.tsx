@@ -52,6 +52,11 @@ interface TikTokProviderStatusResponse {
     isPersonalTestAccount?: boolean;
     accessTokenExpiresAt?: string | null;
     scope?: string | null;
+    requestedScopes?: string[];
+    grantedScopes?: string[];
+    hasVideoUploadScope?: boolean;
+    hasVideoPublishScope?: boolean;
+    zeroManualPostingReady?: boolean;
 }
 
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
@@ -78,6 +83,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [previewing, setPreviewing] = useState(false);
     const [dispatching, setDispatching] = useState(false);
     const [validating, setValidating] = useState(false);
+    const [syncingTikTok, setSyncingTikTok] = useState(false);
     const [validateMessage, setValidateMessage] = useState<string>('');
     const [plannedPosts, setPlannedPosts] = useState<PlannedPost[]>([]);
     const [dispatchPreviews, setDispatchPreviews] = useState<Array<{ postId: string; platform: string; payload: Record<string, unknown> }>>([]);
@@ -87,10 +93,40 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
 
     const resolvePostDisplayStatus = useCallback((post: PlannedPost): string => {
         if (post.externalPostId?.startsWith('sim_')) return 'simulate';
-        if (post.notes?.some((n) => n.startsWith('draftType=organic_post'))) return 'draft_created';
         if (post.status === 'posted') return 'posted';
+        if (post.status === 'draft_created') return 'draft_created';
         return post.status;
     }, []);
+
+    async function handleSyncTikTokStatus() {
+        setSyncingTikTok(true);
+        setDispatchMessage('');
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribution/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: 'tiktok' }),
+            });
+
+            const data = await response.json() as { message?: string; error?: string; summary?: { checked: number; posted: number; draftCreated: number; failed: number } };
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to sync TikTok publish status.');
+            }
+
+            const summary = data.summary;
+            setDispatchMessage(
+                summary
+                    ? `TikTok sync complete: checked ${summary.checked}, posted ${summary.posted}, drafts ${summary.draftCreated}, failed ${summary.failed}.`
+                    : (data.message ?? 'TikTok sync complete.'),
+            );
+            await loadAdPlan();
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to sync TikTok publish status.');
+        } finally {
+            setSyncingTikTok(false);
+        }
+    }
 
     async function loadAdPlan() {
         setReviewing(true);
@@ -155,7 +191,10 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             if (data.ready) {
                 const accountType = data.isPersonalTestAccount ? 'personal test account' : 'business account';
                 const expiry = data.accessTokenExpiresAt ? ` · expires ${data.accessTokenExpiresAt}` : '';
-                setValidateMessage(`TikTok: ready — ${accountType} (${data.openId ?? ''})${expiry}`);
+                const directPost = data.zeroManualPostingReady
+                    ? ' · direct post ready'
+                    : ' · upload-only, video.publish not granted yet';
+                setValidateMessage(`TikTok: ready — ${accountType} (${data.openId ?? ''})${expiry}${directPost}`);
             } else if (data.reason === 'token_expired') {
                 const refresh = data.canRefresh ? ' · refresh token available' : ' · refresh token also expired';
                 setValidateMessage(`TikTok: token expired at ${data.expiredAt ?? 'unknown'}${refresh}`);
@@ -295,6 +334,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
                                 {dispatching ? 'Creating Drafts...' : 'Create Drafts'}
                             </Button>
+                            <Button onClick={handleSyncTikTokStatus} disabled={syncingTikTok} variant="outline" className="border-amber-300 bg-white">
+                                {syncingTikTok ? 'Syncing TikTok...' : 'Sync TikTok Status'}
+                            </Button>
                         </div>
                         {statusMessage ? <p className="text-sm text-amber-950">{statusMessage}</p> : null}
                         {validateMessage ? <p className="text-sm text-slate-700">{validateMessage}</p> : null}
@@ -305,11 +347,15 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             <div className="grid gap-2 border border-stone-200 bg-stone-50 p-3">
                                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Saved Ad Plan</p>
                                 {plannedPosts.map((post) => (
-                                    <div key={post.postId} className="grid gap-1 border border-stone-200 bg-white p-3 text-sm text-slate-700 md:grid-cols-[1fr_1fr_1fr_1fr]">
+                                    <div key={post.postId} className="grid gap-2 border border-stone-200 bg-white p-3 text-sm text-slate-700">
+                                        <div className="grid gap-1 md:grid-cols-[1fr_1fr_1fr_1fr]">
                                         <span>{post.platform}</span>
                                         <span>{post.campaignStage}</span>
                                         <span>{post.copyVariant}</span>
                                         <span>{resolvePostDisplayStatus(post)}</span>
+                                        </div>
+                                        {post.externalPostId ? <p className="text-xs text-slate-500">externalId: {post.externalPostId}</p> : null}
+                                        {post.notes && post.notes.length > 0 ? <p className="text-xs text-slate-500">notes: {post.notes.join(' | ')}</p> : null}
                                     </div>
                                 ))}
                             </div>

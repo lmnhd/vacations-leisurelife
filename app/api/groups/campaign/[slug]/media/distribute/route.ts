@@ -80,6 +80,7 @@ async function dispatchSupportedPlatforms(
 
         if (
             post.platform === 'tiktok'
+            || post.platform === 'tiktok_paid'
             || post.platform === 'instagram_feed'
             || post.platform === 'instagram_reels'
             || post.platform === 'instagram_story'
@@ -96,14 +97,14 @@ async function dispatchSupportedPlatforms(
                 warnings.push(result.warning);
             }
 
-            if (result.status === 'posted') {
+            if (result.status !== 'failed') {
                 if (persistStatusUpdates) {
-                    await updateScheduledPostStatus(campaign.id, post.postId, 'posted', result.externalPostId);
+                    await updateScheduledPostStatus(campaign.id, post.postId, result.status, result.externalPostId, result.metadataNotes);
                 }
                 dispatchedPosts += 1;
             } else {
                 if (persistStatusUpdates) {
-                    await updateScheduledPostStatus(campaign.id, post.postId, 'failed');
+                    await updateScheduledPostStatus(campaign.id, post.postId, 'failed', result.externalPostId, result.metadataNotes);
                 }
                 skippedPosts += 1;
             }
@@ -234,6 +235,10 @@ export async function POST(
             await updateDistributionExecution(record);
         }
 
+        const responseSchedule = !dryRun && mode === 'dispatch'
+            ? (await getDistributionSchedule(slug)) ?? schedule
+            : schedule;
+
         return NextResponse.json({
             message: dryRun
                 ? `Distribution plan generated for ${slug}`
@@ -246,7 +251,7 @@ export async function POST(
             providerMode,
             forceDispatch,
             caller,
-            schedule,
+            schedule: responseSchedule,
             summary: record.summary,
             warnings,
             previews,

@@ -1,13 +1,14 @@
 import type { Campaign } from './types';
-import type { AssetRecord, CampaignMediaManifest, ScheduledPost } from './schema';
+import type { AssetRecord, CampaignMediaManifest, DistributionPostStatus, ScheduledPost } from './schema';
 
 export type MarketingProviderMode = 'simulate' | 'live';
 
 export interface MarketingDispatchResult {
     postId: string;
     platform: ScheduledPost['platform'];
-    status: 'posted' | 'failed';
+    status: DistributionPostStatus;
     externalPostId?: string;
+    metadataNotes?: string[];
     warning?: string;
     preview: Record<string, unknown>;
 }
@@ -133,10 +134,12 @@ function buildPreviewPayload(
 ): Record<string, unknown> {
     if (post.platform === 'tiktok') {
         return {
-            endpoint: '/v2/post/publish/video/complete/',
+            endpoint: '/v2/post/publish/inbox/video/init/',
             caption: getTikTokCaption(manifest, campaign.description, post.copyVariant),
             mediaUrl: assetUrl,
-            privacyLevel: 'PUBLIC_TO_EVERYONE',
+            deliveryMode: 'INBOX_SHARE_DRAFT',
+            privacyLevel: 'SELF_ONLY',
+            publishVisibility: 'User must complete the TikTok inbox review flow before the video appears on the profile page.',
             campaignStage: post.campaignStage,
         };
     }
@@ -315,11 +318,12 @@ async function dispatchTikTokLive(
     manifest: CampaignMediaManifest,
     post: ScheduledPost,
     assetUrl: string,
-): Promise<{ externalPostId: string }> {
+): Promise<{ externalPostId: string; status: DistributionPostStatus; metadataNotes: string[] }> {
     const { loadTikTokCredentials, refreshTikTokAccessToken, isTokenNearExpiry } = await import('@/lib/integrations/tiktok-auth');
-    const { uploadTikTokVideoDraft } = await import('@/lib/campaigns/distribution/platforms/tiktok');
+    const { uploadTikTokVideoDraft, fetchTikTokPublishStatus } = await import('@/lib/campaigns/distribution/platforms/tiktok');
+    const { upsertProviderToken } = await import('@/lib/integrations/provider-token-store');
 
-    const credentials = loadTikTokCredentials();
+    const credentials = await loadTikTokCredentials();
     let accessToken = credentials.accessToken;
 
     if (isTokenNearExpiry(credentials.accessTokenExpiresAt)) {
@@ -330,12 +334,42 @@ async function dispatchTikTokLive(
             );
         }
         const refreshed = await refreshTikTokAccessToken(credentials.refreshToken);
+        await upsertProviderToken('tiktok', credentials.accountLabel, {
+            accessToken: refreshed.accessToken,
+            refreshToken: refreshed.refreshToken,
+            openId: refreshed.openId,
+            scope: refreshed.scope,
+            accessTokenExpiresAt: new Date(refreshed.accessTokenExpiresAt),
+            refreshTokenExpiresAt: new Date(refreshed.refreshTokenExpiresAt),
+            lastRefreshedAt: new Date(),
+        });
         accessToken = refreshed.accessToken;
     }
 
     const caption = getTikTokCaption(manifest, campaign.description, post.copyVariant);
     const result = await uploadTikTokVideoDraft(accessToken, assetUrl, caption);
-    return { externalPostId: result.publishId };
+    const publishStatus = await fetchTikTokPublishStatus(accessToken, result.publishId);
+
+    const metadataNotes = [
+        `draftType=${result.draftType}`,
+        `publish_id=${result.publishId}`,
+        `tiktok_publish_status=${publishStatus.status}`,
+        `dispatched_at=${new Date().toISOString()}`,
+    ];
+
+    if (publishStatus.failReason) {
+        metadataNotes.push(`tiktok_fail_reason=${publishStatus.failReason}`);
+    }
+
+    if (publishStatus.publiclyAvailablePostId) {
+        metadataNotes.push(`tiktok_public_post_id=${publishStatus.publiclyAvailablePostId}`);
+    }
+
+    return {
+        externalPostId: result.publishId,
+        status: publishStatus.status === 'PUBLISH_COMPLETE' ? 'posted' : publishStatus.status === 'FAILED' ? 'failed' : 'draft_created',
+        metadataNotes,
+    };
 }
 
 export async function dispatchMarketingPost(
@@ -368,8 +402,9 @@ export async function dispatchMarketingPost(
                 return {
                     postId: post.postId,
                     platform: post.platform,
-                    status: 'posted',
+                    status: liveResult.status,
                     externalPostId: liveResult.externalPostId,
+                    metadataNotes: liveResult.metadataNotes,
                     preview,
                 };
             } catch (error: unknown) {

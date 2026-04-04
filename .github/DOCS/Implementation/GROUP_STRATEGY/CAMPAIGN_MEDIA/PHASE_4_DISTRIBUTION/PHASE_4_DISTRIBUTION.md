@@ -76,6 +76,13 @@ Every asset generated in Phase 2 has a defined destination. Distribution is trig
 
 The existing distribution map mixes organic posting, paid ads, lifecycle messaging, and community dispatch. For the next implementation pass, the priority is the paid-ad path only.
 
+Strategy reconciliation note:
+
+1. TikTok organic remains useful as a zero-cost proof signal, creative validation surface, and supporting social layer.
+2. TikTok organic is not the correct primary acquisition architecture for the Shadow Group campaign system.
+3. The master campaign strategy treats TikTok Lead Gen Ads as the scaled post-validation path.
+4. This Phase 4 document therefore treats TikTok paid acquisition as the primary implementation target and TikTok organic as a supporting adapter.
+
 That means the core workflow is:
 
 1. build or load the internal `DistributionSchedule`
@@ -88,80 +95,92 @@ That means the core workflow is:
 This is the authoritative direction for the ad phase going forward.
 
 ### 1. TikTok
-**Status:** `organic_only` selected for first implementation pass  
+**Status:** `ads_first_with_organic_support`  
 
-TikTok is no longer undecided for the immediate roadmap.
+TikTok is no longer undecided for the immediate roadmap, but the roadmap is now aligned back to the master campaign strategy.
 
 The selected first implementation path is:
 
-1. **Organic posting path** via TikTok Content Posting API (v2)
+1. **Paid lead-acquisition path** via TikTok Lead Gen Ads / Marketing API
+2. **Supporting organic path** via TikTok Content Posting API (v2)
 
-TikTok paid ads remain a separate future path and should not be mixed into the first implementation pass.
+Organic and paid should remain separate adapters in code and UI, but paid is no longer deferred as the strategic target.
 
-For this phase, the goal is to publish and track real organic TikTok posts using generated campaign video assets and captions.
+For this phase, the goal is to acquire campaign leads through TikTok-native paid flows that map directly into the waitlist and nurture system, while preserving the existing organic adapter as a proof-of-concept and creative-validation layer.
 
-**Selected objective:** `organic_only`
+**Selected objective:** `lead_gen_ads_first`
 
-**Deferred objective:** TikTok Ads Manager / paid ads integration
+**Supporting objective:** TikTok organic seeding and optional organic reposts
 
-**Mechanism:** TikTok Content Posting API (v2)  
-**Mechanism:** TikTok Content Posting API (v2)  
-**Auth:** OAuth 2.0 user token scoped to the campaign creator account  
+**Deferred objective:** direct website-click traffic campaigns as a second paid TikTok mode after lead-gen is working
+
+**Primary mechanism:** TikTok Ads Manager / Marketing API with Lead Generation campaign type  
+**Supporting mechanism:** TikTok Content Posting API (v2)  
+**Primary auth:** advertiser / marketing API credentials for the Leisure Life Interactive ad account  
+**Supporting auth:** OAuth 2.0 user token scoped to the publishing account for organic seeding  
 
 ```typescript
-// POST /api/distribution/tiktok/post
-interface TikTokPostRequest {
+// POST /api/distribution/tiktok/lead-gen
+interface TikTokLeadGenRequest {
   campaignSlug: string;
-  videoAssetId: string;          // References AssetRecord in DynamoDB
-  caption: string;               // From generated captions — 150 char limit
-  hashtags: string[];
-  coverImageAssetId?: string;
-  privacyLevel: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS';
-  scheduledAt?: string;          // ISO — if omitted, posts immediately
+  adAssetId: string;             // References campaign video/image creative
+  leadFormTemplateId?: string;   // Optional reusable TikTok lead form mapping
+  targetingPresetId?: string;    // Niche audience definition derived from campaign targeting
+  dailyBudget?: number;
+  startAt?: string;
+  endAt?: string;
 }
 ```
 
-**Flow:**
-1. Upload video to TikTok via `POST /v2/post/publish/video/init/` → get `upload_url`
-2. PUT video binary to `upload_url`
-3. `POST /v2/post/publish/video/complete/` with caption, hashtags, cover
-4. Store TikTok `post_id` in DynamoDB `MEDIA#DISTRIBUTION` record for tracking
+**Primary paid flow:**
+1. Build or load the campaign's niche-targeted TikTok creative from Phase 2 assets.
+2. Create or reuse a TikTok-native lead form that captures the minimum required waitlist fields.
+3. Create paused TikTok lead-gen campaign, ad group, and ad records in the advertiser account.
+4. Persist native ad identifiers, review metadata, and targeting summary in the distribution records.
+5. On lead submission, receive the webhook and map the lead into the same DynamoDB `USER#` waitlist contract used by other channels.
+6. Trigger the existing nurture path after the lead write succeeds.
 
-**Rate limit:** 2 posts/day per account. The 3 countdown videos are pre-scheduled 7 days apart.
+**Supporting organic flow:**
+1. Upload video to TikTok via `POST /v2/post/publish/inbox/video/init/` → get `upload_url`
+2. PUT video binary to `upload_url`
+3. Poll `POST /v2/post/publish/status/fetch/` with the returned `publish_id`
+4. Treat `SEND_TO_USER_INBOX` as a truthful draft-created state, not a published post
+5. Only mark the post as published after TikTok reports `PUBLISH_COMPLETE`
 
 **First-pass implementation requirements:**
 
-1. Add TikTok provider connection validation in the app.
-2. Store TikTok OAuth credentials and user token securely.
-3. Publish generated TikTok seed videos through the Content Posting API.
-4. Persist returned TikTok `post_id` values and any review URLs or publish metadata.
-5. Distinguish simulated payload preview from real organic posting.
+1. Add TikTok advertiser-connection validation in the app.
+2. Define a TikTok lead-gen campaign contract that maps cleanly to campaign slug, audience preset, creative asset, and waitlist ingestion.
+3. Create paused native TikTok lead-gen drafts rather than forcing immediate launch.
+4. Persist native ad IDs, form IDs, review metadata, and activation state.
+5. Add webhook ingestion from TikTok leads into the existing DynamoDB waitlist contract.
+6. Keep TikTok organic as a separate supporting adapter for proof signals and creative reuse.
 
-**Deferred TikTok paid-ads work:**
+**Deferred TikTok paid work:**
 
-1. TikTok Ads Manager / Marketing API integration
-2. Draft ad creation inside TikTok Ads Manager
-3. Paid-ad review and activation flow
+1. direct website-click traffic campaigns that bypass native lead capture
+2. automated spend scaling and bid optimization
+3. advanced audience sync and lookalike automation
 
-## TikTok Organic Connection Completion Plan
+## TikTok Paid Acquisition Completion Plan
 
-TikTok is now the primary external platform target because it aligns with the existing asset pipeline and avoids the current Meta business-access deadlock.
+TikTok remains a primary external platform target, but the correct acquisition architecture is now restored: organic validates and paid scales.
 
-The immediate goal is to publish real organic TikTok posts from generated campaign seed videos, not to create paid TikTok ads.
+The immediate goal is to create real TikTok paid lead-acquisition drafts from generated campaign assets and feed resulting leads into the existing Shadow Group waitlist pipeline.
 
 ### TikTok End State
 
-When TikTok organic is fully connected, the system should be able to:
+When TikTok paid acquisition is fully connected, the system should be able to:
 
-1. verify TikTok creator/app connectivity from inside the app
-2. upload the generated TikTok seed video asset
-3. publish the post with generated caption and hashtags
-4. persist the returned TikTok `post_id` and any publish metadata
-5. distinguish simulated preview from real organic publish
+1. verify TikTok advertiser/app connectivity from inside the app
+2. create paused native lead-gen drafts for a specific campaign slug
+3. persist campaign, ad-group, ad, and form identifiers plus review metadata
+4. ingest TikTok lead submissions into the same waitlist and nurture contract used elsewhere
+5. distinguish supporting organic proof posts from paid acquisition assets and records
 
 ### Current Code Status
 
-The repository already contains most of the upstream campaign pieces needed for TikTok organic.
+The repository already contains most of the upstream campaign pieces needed for TikTok creative generation and landing-page conversion, but not the paid TikTok acquisition layer.
 
 Already present:
 
@@ -169,24 +188,28 @@ Already present:
 2. TikTok caption and hashtag generation in the media manifest
 3. TikTok scheduling in the distribution planner
 4. Preview payload generation for TikTok in distribution preview mode
+5. campaign-specific public landing pages
+6. DynamoDB waitlist and nurture-oriented campaign contracts
 
 Currently missing:
 
-1. real TikTok OAuth/token validation in the app
-2. real TikTok upload + publish implementation
-3. persistence of real TikTok `post_id` values from the live API
-4. provider-status reporting for TikTok connection health
+1. advertiser-side TikTok Marketing API integration
+2. lead-form creation or mapping into a reusable contract
+3. webhook ingestion from TikTok lead submissions into DynamoDB
+4. persistence of native paid-ad identifiers and review metadata
+5. provider-status reporting for TikTok advertiser connection health
+6. a strategy-consistent split between organic proofing and paid acquisition
 
 ### Operator Tasks In TikTok Developer Setup
 
 These are the manual setup tasks required outside the app.
 
 1. Create or confirm a TikTok developer app for Leisure Life Interactive.
-2. Ensure the TikTok account you plan to publish from is the correct creator or business account.
-3. Enable access for the TikTok Content Posting API if TikTok requires product/use-case selection for the app.
-4. Configure the app's redirect URI(s) for OAuth.
-5. Capture the TikTok client key and client secret.
-6. Complete the OAuth flow with the publishing account to obtain the user access token.
+2. Ensure the advertiser / business account is the correct production account for paid campaign creation.
+3. Enable access for TikTok Ads / Marketing API products and lead generation use cases.
+4. Configure the required redirect URI(s), webhook callback URLs, and advertiser permissions.
+5. Capture the TikTok client key, client secret, advertiser identifiers, and any required business account IDs.
+6. Keep the existing OAuth publishing-account setup only for the supporting organic adapter.
 7. Capture the TikTok account identifier or `open_id` returned by TikTok.
 
 ### App / Agent Tasks

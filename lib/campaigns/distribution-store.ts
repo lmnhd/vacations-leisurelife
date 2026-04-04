@@ -4,6 +4,34 @@ import type { DistributionExecutionRecord, DistributionPostStatus, DistributionS
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
+function mergeMetadataNotes(existing: string[] | undefined, incoming: string[] | undefined): string[] | undefined {
+    if (!incoming || incoming.length === 0) {
+        return existing;
+    }
+
+    const next = [...(existing ?? [])];
+
+    for (const note of incoming) {
+        const separatorIndex = note.indexOf('=');
+        if (separatorIndex === -1) {
+            if (!next.includes(note)) {
+                next.push(note);
+            }
+            continue;
+        }
+
+        const key = note.slice(0, separatorIndex);
+        const existingIndex = next.findIndex((entry) => entry.startsWith(`${key}=`));
+        if (existingIndex === -1) {
+            next.push(note);
+        } else {
+            next[existingIndex] = note;
+        }
+    }
+
+    return next;
+}
+
 export async function saveDistributionSchedule(schedule: DistributionSchedule): Promise<void> {
     await chatDynamoDocumentClient.send(new PutCommand({
         TableName: TABLE_NAME,
@@ -84,9 +112,7 @@ export async function updateScheduledPostStatus(
                 return post;
             }
 
-            const mergedNotes = metadataNotes && metadataNotes.length > 0
-                ? [...(post.notes ?? []), ...metadataNotes]
-                : post.notes;
+            const mergedNotes = mergeMetadataNotes(post.notes, metadataNotes);
 
             return {
                 ...post,
