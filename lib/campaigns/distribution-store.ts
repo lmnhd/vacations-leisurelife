@@ -113,11 +113,17 @@ export async function updateScheduledPostStatus(
             }
 
             const mergedNotes = mergeMetadataNotes(post.notes, metadataNotes);
+            const draftTypeNote = mergedNotes?.find((entry) => entry.startsWith('draftType='));
+            const providerDraftType = draftTypeNote?.split('=')[1];
+            const normalizedProviderDraftType = providerDraftType === 'organic_post' || providerDraftType === 'paid_lead_gen_ad'
+                ? providerDraftType
+                : post.providerDraftType;
 
             return {
                 ...post,
                 status,
                 ...(externalPostId ? { externalPostId } : {}),
+                ...(normalizedProviderDraftType ? { providerDraftType: normalizedProviderDraftType } : {}),
                 notes: mergedNotes,
             };
         }),

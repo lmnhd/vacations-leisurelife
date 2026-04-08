@@ -42,6 +42,21 @@ export async function POST(
     }
 
     const tikTokPosts = schedule.posts.filter((post) => post.platform === 'tiktok' && post.externalPostId);
+    if (tikTokPosts.length === 0) {
+        return NextResponse.json({
+            message: `No organic TikTok upload drafts found for ${slug}. Paid TikTok lead-gen drafts do not use this sync route.`,
+            summary: {
+                checked: 0,
+                posted: 0,
+                draftCreated: 0,
+                failed: 0,
+            },
+            warnings: [],
+        }, {
+            headers: { 'Cache-Control': 'no-store' },
+        });
+    }
+
     const warnings: string[] = [];
     let posted = 0;
     let draftCreated = 0;

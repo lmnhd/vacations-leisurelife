@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { CampaignLandingPage } from '@/components/campaign-landing/landing-page';
 import { getCampaignLandingBySlug } from '@/lib/campaigns/landing/view-model';
 import { ReviewControls } from './review-controls';
+import { CampaignLandingPageClaude } from '@/components/campaign-landing/CampaignLandingPageClaude';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export default async function CampaignLandingPreviewPage(
                 
                 {/* The Public Render */}
                 <div className="h-full overflow-y-auto">
-                    <CampaignLandingPage landing={result.landing} />
+                    <CampaignLandingPageClaude landing={result.landing} />
                 </div>
             </div>
             <div className="h-16" />

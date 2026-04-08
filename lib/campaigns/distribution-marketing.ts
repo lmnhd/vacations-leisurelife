@@ -94,6 +94,15 @@ function getInstagramCaption(manifest: CampaignMediaManifest, campaign: Campaign
     return campaign.description;
 }
 
+function getCampaignLandingUrl(campaign: Campaign): string {
+    const configuredBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+        || process.env.NEXT_PUBLIC_APP_URL?.trim()
+        || process.env.APP_URL?.trim()
+        || 'https://www.leisurelifeinteractive.com';
+
+    return `${configuredBaseUrl.replace(/\/$/, '')}/groups/${campaign.id}`;
+}
+
 function getMetaAdCopy(manifest: CampaignMediaManifest, campaign: Campaign, copyVariant: string): {
     headline: string;
     primaryText: string;
@@ -140,6 +149,23 @@ function buildPreviewPayload(
             deliveryMode: 'INBOX_SHARE_DRAFT',
             privacyLevel: 'SELF_ONLY',
             publishVisibility: 'User must complete the TikTok inbox review flow before the video appears on the profile page.',
+            campaignStage: post.campaignStage,
+        };
+    }
+
+    if (post.platform === 'tiktok_paid') {
+        const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant);
+        return {
+            endpoint: '/campaign/create + /adgroup/create + /ad/create + /lead/form/create',
+            workflow: 'TIKTOK_PAID_LEAD_GEN_DRAFT',
+            providerDraftType: 'paid_lead_gen_ad',
+            mediaUrl: assetUrl,
+            headline: adCopy.headline,
+            primaryText: adCopy.primaryText,
+            description: adCopy.description,
+            cta: adCopy.cta,
+            landingUrl: getCampaignLandingUrl(campaign),
+            activationState: 'paused',
             campaignStage: post.campaignStage,
         };
     }
@@ -372,6 +398,49 @@ async function dispatchTikTokLive(
     };
 }
 
+async function dispatchTikTokPaidLive(
+    campaign: Campaign,
+    post: ScheduledPost,
+): Promise<{ externalPostId: string; status: DistributionPostStatus; metadataNotes: string[] }> {
+    const { getTikTokAdvertiserStatus } = await import('@/lib/integrations/tiktok-auth');
+    const { createTikTokLeadForm, createTikTokPaidLeadGenDraft } = await import('@/lib/campaigns/distribution/platforms/tiktok-paid');
+
+    const advertiserStatus = getTikTokAdvertiserStatus();
+    if (!advertiserStatus.ready) {
+        throw new Error(
+            'TikTok paid dispatch blocked: advertiser credentials are not configured. '
+            + `Missing env vars: ${advertiserStatus.requiredVars.join(', ')}.`,
+        );
+    }
+
+    const landingUrl = getCampaignLandingUrl(campaign);
+    const leadFormId = await createTikTokLeadForm(campaign.id, landingUrl);
+    const contract = await createTikTokPaidLeadGenDraft({
+        campaignSlug: campaign.id,
+        advertiserAccountId: advertiserStatus.advertiserAccountId,
+        adAssetId: post.assetId,
+        leadFormTemplateId: leadFormId,
+        dailyBudget: 20,
+    });
+
+    const metadataNotes = [
+        'draftType=paid_lead_gen_ad',
+        `native_campaign_id=${contract.nativeCampaignId ?? ''}`,
+        `native_adgroup_id=${contract.nativeAdGroupId ?? ''}`,
+        `native_ad_id=${contract.nativeAdId ?? ''}`,
+        `native_form_id=${contract.nativeFormId ?? leadFormId}`,
+        `activation_state=${contract.activationState}`,
+        `landing_url=${landingUrl}`,
+        `dispatched_at=${new Date().toISOString()}`,
+    ];
+
+    return {
+        externalPostId: contract.nativeAdId ?? `tiktok_paid_${Date.now()}`,
+        status: 'draft_created',
+        metadataNotes,
+    };
+}
+
 export async function dispatchMarketingPost(
     campaign: Campaign,
     manifest: CampaignMediaManifest,
@@ -419,6 +488,29 @@ export async function dispatchMarketingPost(
             }
         }
 
+        if (post.platform === 'tiktok_paid') {
+            try {
+                const liveResult = await dispatchTikTokPaidLive(campaign, post);
+                return {
+                    postId: post.postId,
+                    platform: post.platform,
+                    status: liveResult.status,
+                    externalPostId: liveResult.externalPostId,
+                    metadataNotes: liveResult.metadataNotes,
+                    preview,
+                };
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : 'Unknown TikTok paid live dispatch error';
+                return {
+                    postId: post.postId,
+                    platform: post.platform,
+                    status: 'failed',
+                    warning: `TikTok paid dispatch failed: ${message}`,
+                    preview,
+                };
+            }
+        }
+
         if (post.platform === 'facebook_ad') {
             try {
                 const liveResult = await dispatchMetaAdsLive(campaign, post, preview);
@@ -454,8 +546,13 @@ export async function dispatchMarketingPost(
     return {
         postId: post.postId,
         platform: post.platform,
-        status: 'posted',
+        status: 'draft_created',
         externalPostId,
+        metadataNotes: [
+            post.platform === 'tiktok_paid' ? 'draftType=paid_lead_gen_ad' : post.platform === 'tiktok' ? 'draftType=organic_post' : 'simulation_only=true',
+            'simulation_only=true',
+            `simulated_at=${new Date().toISOString()}`,
+        ],
         warning: `Simulated dispatch only. No live API call was sent to ${post.platform}.`,
         preview,
     };

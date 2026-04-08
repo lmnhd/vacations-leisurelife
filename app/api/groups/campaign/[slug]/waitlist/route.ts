@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 
@@ -101,10 +101,29 @@ export async function POST(
 
     const summary = await getCampaignWaitlistSummary(slug);
     const requiredCabins = getPublicGroupCabinTarget(campaign);
-    const nextStep = buildNextStep(campaign.status, parsed.data.bookingMode, campaign.cbagenttoolsBookingLink);
+    const shouldAutoPromote = !previewCaller
+        && campaign.status === 'GATHERING_INTEREST'
+        && summary.totalEntries >= requiredCabins;
+
+    const effectiveStatus = shouldAutoPromote ? 'THRESHOLD_MET' : campaign.status;
+
+    if (shouldAutoPromote) {
+        await saveCampaignBlueprint({
+            ...campaign,
+            status: effectiveStatus,
+            updatedAt: new Date().toISOString(),
+        });
+    }
+
+    const nextStep = buildNextStep(effectiveStatus, parsed.data.bookingMode, campaign.cbagenttoolsBookingLink);
 
     return NextResponse.json({
         success: true,
+        campaign: {
+            slug,
+            status: effectiveStatus,
+            autoPromotedToThreshold: shouldAutoPromote,
+        },
         waitlist: {
             email: entry.email,
             bookingMode: entry.bookingMode,

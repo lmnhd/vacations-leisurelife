@@ -46,7 +46,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
 
     return (
         <div className={`${prompt.className} min-h-screen bg-stone-50 text-slate-950`}>
-            <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 lg:px-8">
+            <div className="relative flex flex-col w-full gap-8 px-4 py-8 mx-auto max-w-7xl md:px-6 lg:px-8">
                 <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
                     <Card className="overflow-hidden border-stone-300 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.10)]">
                         <CardContent className="grid gap-0 p-0 lg:grid-cols-[1.05fr_0.95fr]">
@@ -56,14 +56,14 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                     <h1 className={`${alfa_slab_one.className} mt-4 text-4xl leading-tight text-slate-950 md:text-5xl`}>
                                         {landing.heroSlogan}
                                     </h1>
-                                    <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-700">
+                                    <p className="max-w-2xl mt-4 text-lg leading-8 text-slate-700">
                                         {landing.subSlogan}
                                     </p>
                                 </div>
 
                                 <div className="grid gap-4 md:grid-cols-2">
                                     {landing.facts.map((fact) => (
-                                        <div key={fact.label} className="border border-stone-200 bg-stone-50 p-4">
+                                        <div key={fact.label} className="p-4 border border-stone-200 bg-stone-50">
                                             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{fact.label}</p>
                                             <p className="mt-2 text-base font-semibold leading-6 text-slate-950">{fact.value}</p>
                                         </div>
@@ -109,7 +109,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                         style={{ backgroundImage: `url(${getGalleryImage(1)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                     />
                                 )}
-                                <div className="flex relative z-20 h-full flex-col justify-start gap-4 p-8 pb-40 text-white md:p-10 md:pb-44">
+                                <div className="relative z-20 flex flex-col justify-start h-full gap-4 p-8 pb-40 text-white md:p-10 md:pb-44">
                                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/70">{landing.title}</p>
                                     <p className="max-w-xl text-base leading-7 text-white/88">
                                         {landing.elevatorPitch}
@@ -126,7 +126,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                 <CardDescription className="text-slate-300">{landing.threshold.headline}</CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-5">
-                                <div className="grid gap-3 border border-white/10 bg-white/5 p-4">
+                                <div className="grid gap-3 p-4 border border-white/10 bg-white/5">
                                     <div className="flex items-center justify-between text-sm text-slate-300">
                                         <span>{landing.threshold.joinedEntries} groups interested</span>
                                         <span>{landing.threshold.requiredCabins} cabins needed</span>
@@ -135,11 +135,11 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                     <p className="text-sm text-slate-300">{landing.threshold.detail}</p>
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="border border-white/10 bg-white/5 p-4">
+                                    <div className="p-4 border border-white/10 bg-white/5">
                                         <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Guests represented</p>
                                         <p className="mt-2 text-3xl font-semibold text-white">{landing.threshold.joinedPassengers}</p>
                                     </div>
-                                    <div className="border border-white/10 bg-white/5 p-4">
+                                    <div className="p-4 border border-white/10 bg-white/5">
                                         <p className="text-xs uppercase tracking-[0.22em] text-slate-400">What this means</p>
                                         <p className="mt-2 text-sm leading-7 text-white/90">Join now, and we will send the correct next step when your path opens.</p>
                                     </div>
@@ -147,23 +147,23 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200 bg-white">
+                        <Card className="bg-white border-slate-200">
                             <CardHeader>
                                 <CardTitle className="text-2xl">Current Pricing</CardTitle>
                                 <CardDescription>{landing.pricing.sourceLabel}</CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-4">
                                 <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="border border-slate-200 bg-slate-50 p-4">
+                                    <div className="p-4 border border-slate-200 bg-slate-50">
                                         <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Starting from</p>
                                         <p className="mt-2 text-3xl font-semibold text-slate-950">{landing.pricing.startingPriceLabel}</p>
                                     </div>
-                                    <div className="border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+                                    <div className="p-4 text-sm leading-7 border border-slate-200 bg-slate-50 text-slate-700">
                                         {landing.pricing.detail}
                                     </div>
                                 </div>
                                 {getGalleryImage(3) && (
-                                    <div className="relative mt-2 h-32 w-full overflow-hidden border border-slate-200 bg-slate-100">
+                                    <div className="relative w-full h-32 mt-2 overflow-hidden border border-slate-200 bg-slate-100">
                                         <div
                                             className="absolute inset-0 bg-cover bg-center opacity-90 saturate-[0.8]"
                                             style={{ backgroundImage: `url(${getGalleryImage(3)?.url})` }}
@@ -178,13 +178,13 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
 
                 <section className="relative grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
                     <div className="grid gap-6 lg:sticky lg:top-6">
-                        <Card className="border-slate-200 bg-white">
+                        <Card className="bg-white border-slate-200">
                             <CardHeader>
                                 <CardTitle className="text-2xl">Why Join Now</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-4">
                                 {landing.story.whyJoinNow.map((reason) => (
-                                    <div key={reason} className="border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+                                    <div key={reason} className="p-4 text-sm leading-7 border border-slate-200 bg-slate-50 text-slate-700">
                                         {reason}
                                     </div>
                                 ))}
@@ -192,7 +192,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                         </Card>
 
                         {galleryImages.length > 0 && (
-                            <div className="hidden lg:flex w-full flex-col items-center justify-center pt-8 pointer-events-none">
+                            <div className="flex-col items-center justify-center hidden w-full pt-8 pointer-events-none lg:flex">
                                 {getGalleryImage(1) && (
                                     <div
                                         className="h-36 w-44 -rotate-6 rounded-sm border-[6px] border-white shadow-xl"
@@ -215,7 +215,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                         </CardHeader>
                         <CardContent>
                             <Tabs defaultValue="what-it-is" className="grid gap-6">
-                                <TabsList className="grid h-auto grid-cols-1 gap-2 bg-stone-100 p-2 md:grid-cols-3">
+                                <TabsList className="grid h-auto grid-cols-1 gap-2 p-2 bg-stone-100 md:grid-cols-3">
                                     <TabsTrigger value="what-it-is" className="h-11 rounded-sm border border-transparent data-[state=active]:border-stone-200 data-[state=active]:bg-white">What It Is</TabsTrigger>
                                     <TabsTrigger value="expect" className="h-11 rounded-sm border border-transparent data-[state=active]:border-stone-200 data-[state=active]:bg-white">What To Expect</TabsTrigger>
                                     <TabsTrigger value="join" className="h-11 rounded-sm border border-transparent data-[state=active]:border-stone-200 data-[state=active]:bg-white">How Joining Works</TabsTrigger>
@@ -227,7 +227,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             <div>
                                                 <h2 className="text-xl font-semibold text-slate-950">{landing.story.whatItIs.title}</h2>
                                             </div>
-                                            <div className="border border-slate-200 bg-slate-50 p-5 text-sm leading-8 text-slate-700">
+                                            <div className="p-5 text-sm leading-8 border border-slate-200 bg-slate-50 text-slate-700">
                                                 {landing.story.whatItIs.body}
                                             </div>
                                         </div>
@@ -239,14 +239,14 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             {getGalleryImage(4) && (
                                                 <div className="relative h-40 overflow-hidden border border-slate-200 bg-slate-100">
                                                     <div
-                                                        className="absolute inset-0 bg-cover bg-center"
+                                                        className="absolute inset-0 bg-center bg-cover"
                                                         style={{ backgroundImage: `url(${getGalleryImage(4)?.url})` }}
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent" />
                                                 </div>
                                             )}
                                             {landing.experienceBullets.map((bullet) => (
-                                                <div key={bullet} className="border border-slate-200 bg-stone-50 p-4 text-sm leading-7 text-slate-700">
+                                                <div key={bullet} className="p-4 text-sm leading-7 border border-slate-200 bg-stone-50 text-slate-700">
                                                     {bullet}
                                                 </div>
                                             ))}
@@ -282,14 +282,14 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                             {getGalleryImage(7) && (
                                                 <div className="relative h-40 overflow-hidden border border-slate-200 bg-slate-100">
                                                     <div
-                                                        className="absolute inset-0 bg-cover bg-center"
+                                                        className="absolute inset-0 bg-center bg-cover"
                                                         style={{ backgroundImage: `url(${getGalleryImage(7)?.url})` }}
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-transparent to-slate-950/20" />
                                                 </div>
                                             )}
                                             {landing.trustBullets.map((bullet) => (
-                                                <div key={bullet} className="border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+                                                <div key={bullet} className="p-4 text-sm leading-7 border border-slate-200 bg-slate-50 text-slate-700">
                                                     {bullet}
                                                 </div>
                                             ))}
@@ -304,7 +304,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                                 <h2 className="text-xl font-semibold text-slate-950">How Joining Works</h2>
                                             </div>
                                             {landing.story.howItWorks.map((step) => (
-                                                <div key={step.title} className="border border-slate-200 bg-slate-50 p-4">
+                                                <div key={step.title} className="p-4 border border-slate-200 bg-slate-50">
                                                     <p className="font-semibold text-slate-950">{step.title}</p>
                                                     <p className="mt-2 text-sm leading-7 text-slate-700">{step.body}</p>
                                                 </div>
@@ -316,13 +316,13 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                                                 <h2 className="text-xl font-semibold text-slate-950">Questions Before You Decide</h2>
                                             </div>
                                             {landing.faq.map((item) => (
-                                                <div key={item.question} className="border border-slate-200 bg-stone-50 p-4">
+                                                <div key={item.question} className="p-4 border border-slate-200 bg-stone-50">
                                                     <p className="font-semibold text-slate-950">{item.question}</p>
                                                     <p className="mt-2 text-sm leading-7 text-slate-700">{item.answer}</p>
                                                 </div>
                                             ))}
                                             {(landing.links.community || landing.links.merch) ? (
-                                                <div className="border border-slate-200 bg-stone-50 p-4 text-sm leading-7 text-slate-700">
+                                                <div className="p-4 text-sm leading-7 border border-slate-200 bg-stone-50 text-slate-700">
                                                     {extrasDescription}
                                                 </div>
                                             ) : null}

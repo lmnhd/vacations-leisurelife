@@ -183,12 +183,13 @@ export async function POST(
         }
 
         const existingSchedule = dryRun ? null : await getDistributionSchedule(slug);
-        const baseSchedule = existingSchedule ?? buildDistributionSchedule(campaign, manifest, {
+        const shouldRegenerateSchedule = mode === 'plan';
+        const baseSchedule = shouldRegenerateSchedule || !existingSchedule ? buildDistributionSchedule(campaign, manifest, {
             caller,
             platforms: parsed.data.platforms,
             stages: parsed.data.stages,
             timezone: parsed.data.timezone,
-        });
+        }) : existingSchedule;
         const schedule = filterSchedule(baseSchedule, parsed.data.platforms, parsed.data.stages);
 
         const record: DistributionExecutionRecord = {
@@ -214,7 +215,7 @@ export async function POST(
         const previews: Array<{ postId: string; platform: string; payload: Record<string, unknown> }> = [];
 
         if (!dryRun) {
-            if (!existingSchedule) {
+            if (shouldRegenerateSchedule || !existingSchedule) {
                 await saveDistributionSchedule(baseSchedule);
             }
             await updateCampaignDistributionStatus(slug, 'scheduled');
@@ -241,9 +242,13 @@ export async function POST(
 
         return NextResponse.json({
             message: dryRun
-                ? `Distribution plan generated for ${slug}`
+                ? mode === 'dispatch'
+                    ? `Simulated dispatch preview generated for ${slug}. No live provider APIs were called.`
+                    : `Distribution plan generated for ${slug}`
                 : mode === 'dispatch'
-                    ? `Distribution dispatch processed for ${slug}`
+                    ? providerMode === 'simulate'
+                        ? `Simulated distribution dispatch saved for ${slug}. No live provider APIs were called.`
+                        : `Live distribution dispatch processed for ${slug}`
                     : `Distribution schedule persisted for ${slug}`,
             executionId,
             mode,

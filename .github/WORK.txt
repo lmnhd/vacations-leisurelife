@@ -1,264 +1,276 @@
-# Current Blocking Problems And Recommended Fixes
+Claude,
 
-This file is the immediate handoff for agents working on aesthetic brief regeneration and approval.
+The next thing to build is not more provider-side ad plumbing. Build the post-click conversion layer that starts when a user lands on a campaign page, signs up, and then moves through nurture, threshold, manifest, and booking states.
 
-It is not a design memo.
-It is a practical execution list based on live failures observed in Brief Studio on March 24, 2026.
+This should follow the original vision and the current strategy:
 
-## Primary Goal
+1. Distribution creates drafts, publishes, or activates campaign assets.
+2. The missing system is the conversion spine after click-through.
+3. We already have a waitlist entry path and partial lead ingestion, but not a truthful operator-facing lifecycle system.
+4. We need the data model and dashboard that make later optimization possible.
 
-Get Brief Studio to reliably do this:
+What exists already
 
-1. load a saved brief
-2. regenerate it through `/api/groups/campaign/[slug]/brief`
-3. return a completed response in a sane amount of time
-4. persist the updated brief
-5. surface either:
-	- approval-ready state, or
-	- a real post-generation lint failure
+1. Public waitlist submission route at app/api/groups/campaign/[slug]/waitlist/route.ts.
+2. Waitlist persistence and summary logic at lib/campaigns/waitlist-store.ts.
+3. Campaign landing pages already submit to the waitlist endpoint.
+4. TikTok lead webhook ingestion already writes into the same waitlist contract at app/api/integrations/tiktok/lead-webhook/route.ts.
+5. Distribution dashboard already exists at app/dashboard/campaigns/[slug]/media/distribution/page.tsx.
 
-Right now, generation is not reliably returning a response.
+What is missing
 
----
+1. First-class attribution and lead-source storage.
+2. An append-only lifecycle event ledger.
+3. A campaign conversion dashboard for operators.
+4. Nurture-state visibility.
+5. Truthful progression from lead captured -> nurtured -> threshold -> manifest -> booking -> converted.
 
-## Problem 1: Brief regeneration route hangs for 10 to 15+ minutes with no completion
+Build objective
 
-### Symptom
+Implement the first version of a campaign Conversion Ops system that is campaign-scoped, DynamoDB-backed, operator-visible, and compatible with future Meta/TikTok/Google attribution adapters.
 
-Using the live UI in `/tests/brief-studio`:
+Do not build autonomous bid optimization, live budget tuning, or ad-platform automation loops in this pass.
 
-1. load a campaign
-2. click `Regenerate Brief`
-3. confirm the dialog
-4. button changes to `Regenerating...`
-5. UI remains stuck there for 10 to 15+ minutes
-6. no error appears
-7. no updated brief appears after page reload
+Primary deliverables
 
-This happened on:
+1. A canonical lead attribution and lifecycle schema.
+2. Event persistence for signup and downstream lifecycle transitions.
+3. A new campaign dashboard page for post-click tracking.
+4. Minimal API surface for listing leads, listing lifecycle events, and summarizing funnel state.
+5. Instrumentation of the waitlist path so landing-page signup writes attribution and an initial lifecycle event.
 
-1. `bp-opendeck-icon-2027-7n-caribbean`
-2. `drift-festival-icon-2026`
+Recommended route to add
 
-That means this is not only a campaign-quality problem.
-It is a regeneration-path reliability problem.
+1. app/dashboard/campaigns/[slug]/conversion/page.tsx
 
-### Files involved
+This page should be separate from media/distribution. Do not overload the distribution dashboard with conversion concerns.
 
-1. `app/api/groups/campaign/[slug]/brief/route.ts`
-2. `app/(tests)/tests/brief-studio/page.tsx`
-3. `lib/campaigns/brief-engine/orchestrator.ts`
-4. `lib/chat/llm-call.ts`
-5. `lib/campaigns/aesthetic-engine.ts`
-6. `lib/campaigns/editors-room.ts`
+Suggested information architecture
 
-### Likely root causes
+Section 1: Funnel Summary
 
-1. generation path is still too long and serial for a single blocking HTTP request
-2. large structured calls can still take multiple retries and consume the whole request window
-3. client has no request timeout, abort path, or job-status polling model
-4. server may finish too late or never resolve cleanly back to the UI
+Show:
 
-### Fix recommendation
+1. total leads
+2. total passengers represented
+3. threshold progress
+4. group-wait vs book-now split
+5. manifest submitted count
+6. booking-ready count
+7. converted count
+8. recent failures or stuck records
 
-Short-term fix:
+Section 2: Source Breakdown
 
-1. add a hard server-side timeout boundary around `createOrRefreshBrief`
-2. return a clear error when the route exceeds that boundary
-3. do not leave the UI hanging forever on a pending fetch
+Show grouped counts by:
 
-Better fix:
+1. source channel
+2. provider
+3. provider draft type if present
+4. campaign asset or ad identifier when available
+5. direct landing-page signup vs provider webhook signup
 
-1. move brief regeneration to an async job model
-2. POST should enqueue work and return a job ID immediately
-3. UI should poll status
-4. completion should update the persisted brief and return job outcome separately from the long-running request
+Section 3: Lead Table
 
-### Acceptance criteria
+Each row should show:
 
-1. clicking `Regenerate Brief` never leaves the page stuck indefinitely
-2. within a bounded time, the UI shows either success or explicit failure
-3. reloading the page shows consistent persisted state
+1. name
+2. email
+3. createdAt
+4. passengerCount
+5. bookingMode
+6. manifestStatus
+7. converted
+8. latest lifecycle stage
+9. attribution summary
 
----
+Section 4: Lead Detail / Event Timeline
 
-## Problem 2: Structured generation still enters very long retry spirals
+For a selected lead, show an ordered event history such as:
 
-### Symptom
+1. landing_viewed
+2. waitlist_submitted
+3. nurture_queued
+4. nurture_sent_day_0
+5. threshold_met_notified
+6. manifest_started
+7. manifest_submitted
+8. booking_link_sent
+9. converted
 
-Observed server logs during regeneration showed this pattern:
+Data model requirements
 
-1. first pass on `gpt-5` hit finish_reason=`length`
-2. retry timed out
-3. fallback model produced schema-invalid JSON
-4. route spent ~10+ minutes before failing
+Keep DynamoDB as the storage model. Do not move this into Prisma/Postgres.
 
-The fake `queued repair attempt` failure in `llm-call.ts` has already been fixed.
-Token budgets for major generation steps were also increased.
+Add a new lead event model alongside the existing waitlist record model.
 
-Even so, the full flow still behaves as if total wall-clock time is too high for the current synchronous route model.
+The waitlist record remains the current-state snapshot.
+The new event ledger becomes the truthful history.
 
-### Files involved
+Recommended shapes
+
+1. Current-state lead record
+	Keep using the existing USER# record as the stable per-lead snapshot.
+
+2. Event ledger records
+	Add append-only records under the same campaign partition.
 
-1. `lib/chat/llm-call.ts`
-2. `lib/campaigns/aesthetic-engine.ts`
-3. `lib/campaigns/editors-room.ts`
+Recommended key shape:
 
-### What has already been fixed
+1. PK = CAMPAIGN#{slug}
+2. SK = EVENT#{timestamp}#{eventId}
+
+Every event should include at minimum:
+
+1. eventId
+2. campaignSlug
+3. email
+4. eventType
+5. occurredAt
+6. sourceChannel
+7. provider
+8. providerDraftType
+9. providerCampaignId
+10. providerAdGroupId
+11. providerAdId
+12. providerLeadId
+13. landingPath
+14. referrer
+15. utmSource
+16. utmMedium
+17. utmCampaign
+18. utmContent
+19. utmTerm
+20. notes or metadata object
 
-1. schema-invalid JSON now triggers a real repair attempt in `callGlobalGenerateObject`
-2. max output token budgets were raised on the largest structured generation steps
+You do not need every provider field to be populated immediately. The schema should support them cleanly.
 
-### Remaining recommendation
+Implementation guidance
 
-1. instrument total duration per generation stage
-2. log stage start and completion for:
-	- pass 1
-	- pass 2
-	- refinement
-	- anchor generation
-	- landing still generation
-	- repair path
-	- production bible generation
-3. identify which step is consuming most of the wall-clock time
-4. consider splitting the most expensive stage out of the synchronous request
+1. Do not break the existing waitlist route contract.
+2. Extend it carefully so signup can accept optional attribution payload fields.
+3. Normalize attribution in one place.
+4. Persist both:
+	a. updated current-state lead snapshot
+	b. append-only initial lifecycle event
 
-### Acceptance criteria
+Suggested attribution payload accepted by the waitlist route
 
-1. logs clearly show which generation stage is slow
-2. no single stage silently burns 10+ minutes without a surfaced boundary
+1. sourceChannel
+2. provider
+3. providerDraftType
+4. providerCampaignId
+5. providerAdGroupId
+6. providerAdId
+7. providerLeadId
+8. landingPath
+9. referrer
+10. utmSource
+11. utmMedium
+12. utmCampaign
+13. utmContent
+14. utmTerm
+15. sessionId or clickId if available
 
----
+Landing-page implementation guidance
 
-## Problem 3: Brief Studio assumes synchronous request completion and gets stuck in loading state
+Update the campaign waitlist form path so it can capture first-party attribution from the URL and browser context before submitting.
 
-### Symptom
+At minimum capture:
 
-In `app/(tests)/tests/brief-studio/page.tsx`, `generateBrief()`:
+1. current pathname
+2. document.referrer if available client-side
+3. utm_* query params
 
-1. sets `loading=true`
-2. waits on `fetch('/api/groups/campaign/[slug]/brief')`
-3. only clears loading in `finally`
+Do not overbuild client tracking. This pass is about first-party signup attribution, not a full browser analytics SDK.
 
-If the route never returns, the page stays on `Regenerating...` forever.
+Backend API guidance
 
-### Files involved
+Add lightweight read APIs for the new dashboard.
 
-1. `app/(tests)/tests/brief-studio/page.tsx`
+Recommended endpoints or server-side loaders:
 
-### Fix recommendation
+1. list campaign leads
+2. get campaign funnel summary
+3. list campaign lifecycle events
+4. list events for a specific lead email
 
-If keeping synchronous route temporarily:
+Keep agent and human callers on the same backend contract where practical.
 
-1. wrap fetch with `AbortController`
-2. show explicit timeout message after a sane client deadline
-3. add a `Reload saved state` action after timeout so user can check whether persistence completed
+Suggested lifecycle event types for first pass
 
-Preferred fix with async jobs:
+1. waitlist_submitted
+2. provider_lead_ingested
+3. nurture_queued
+4. nurture_sent
+5. threshold_met
+6. threshold_met_notified
+7. manifest_started
+8. manifest_submitted
+9. booking_link_sent
+10. converted
+11. expired
+12. lead_error
 
-1. switch page from blocking fetch to job polling
-2. show stages and progress text
-3. allow the page to recover from navigation and resume polling
+Only implement what you can truthfully emit now. Do not fake downstream events. If only the first two or three are currently available, wire those and make the schema ready for the rest.
 
-### Acceptance criteria
+Dashboard behavior requirements
 
-1. Brief Studio never stays in permanent `Regenerating...`
-2. user can always recover to a known state without refreshing the whole app blindly
+1. Must load safely even if a campaign has zero leads.
+2. Must clearly distinguish missing data from zero values.
+3. Must expose enough detail to diagnose why a campaign is or is not moving toward threshold.
+4. Must be operator-focused, not customer-facing.
+5. Must stay campaign-scoped for this pass.
 
----
+Recommended file targets
 
-## Problem 4: Open-deck campaign still has a real content-quality failure class after transport issues are fixed
+Likely new or modified files:
 
-### Symptom
+1. lib/campaigns/waitlist-store.ts
+2. lib/campaigns/types.ts
+3. app/api/groups/campaign/[slug]/waitlist/route.ts
+4. app/api/integrations/tiktok/lead-webhook/route.ts
+5. components/campaign-landing/waitlist-form.tsx
+6. app/dashboard/campaigns/[slug]/conversion/page.tsx
 
-Saved brief for `bp-opendeck-icon-2027-7n-caribbean` is blocked by real pre-media lint failures:
+You may also create focused helper modules if needed, for example:
 
-1. `weak_niche_signal`
-2. `identity_legibility_too_low`
-3. warning-level `repeated_composition_family`
+1. lib/campaigns/conversion-store.ts
+2. lib/campaigns/conversion-summary.ts
+3. lib/campaigns/lead-attribution.ts
 
-The affected stills are reading like generic cruise life instead of live-music / open-deck festival identity.
+Keep files under 500 lines.
+Keep types explicit.
+Do not use any.
 
-Examples from diagnostics:
+Out-of-scope for this pass
 
-1. `still_02_hero_alt_cobalt_pool` → `deck_sea_wide`, cue absent
-2. `still_04_concept_sunrise_solo` → `deck_sea_wide`, cue absent
-3. `still_05_email_port_wave` → `port_shore_laughing`, cue absent
-4. `still_06_square_phone_share` → `cabin_window_other`, cue absent
+1. autonomous budget optimization
+2. live ad bid tuning
+3. automatic creative rotation
+4. global all-campaign executive dashboard
+5. full Klaviyo or Twilio execution if the event model is not ready yet
+6. fake nurture execution records without actual trigger logic
 
-### Files involved
+Success criteria
 
-1. `lib/campaigns/editors-room.ts`
-2. `lib/campaigns/aesthetic-engine.ts`
-3. `lib/campaigns/media/production-build-lint.ts`
+This work is successful when:
 
-### Fix recommendation
+1. a landing-page signup stores attribution and a lifecycle event
+2. a TikTok webhook lead can write compatible attribution into the same model
+3. a campaign conversion dashboard shows truthful funnel state and lead history
+4. operators can inspect current-state leads and event history without touching raw DynamoDB rows
+5. the system is structurally ready for later nurture automation and server-side ad attribution adapters
 
-After route reliability is fixed, address the music/festival failure class directly:
+Implementation style
 
-1. strengthen campaign-type-specific cue guidance for music/community cruises
-2. require more explicit on-image signals of live-music or festival culture in still generation
-3. reduce fallback to generic deck-wide, rail, port-wave, and cabin-window scenes when the campaign type is music/festival themed
-4. ensure at least 2 to 3 stills visibly prove the community without relying on slogan copy
+1. Build the smallest truthful version first.
+2. Prefer root-cause schema and contract improvements over UI-only patches.
+3. Preserve the existing waitlist flow for current campaigns.
+4. If a downstream event cannot yet be emitted truthfully, add the schema and UI placeholder state but do not fabricate records.
 
-### Acceptance criteria
+When done
 
-1. regenerated `bp-opendeck-icon-2027-7n-caribbean` clears blocker-level niche-legibility failures
-2. any remaining issues are warnings only
-
----
-
-## Problem 5: Approval messaging is now better, but route-state truth must remain aligned
-
-### Current status
-
-These UX fixes are already in place and should be preserved:
-
-1. Brief Studio now exposes real production-build issues
-2. readiness now returns resynced brief state instead of stale stored state
-3. page explains that user is not expected to manually fix stills
-
-### Files involved
-
-1. `app/(tests)/tests/brief-studio/page.tsx`
-2. `lib/campaigns/brief-engine/orchestrator.ts`
-
-### Recommendation
-
-Do not regress these fixes while addressing the route hang.
-
-### Acceptance criteria
-
-1. real blockers remain visible
-2. resynced readiness remains the source of truth
-3. page copy continues to distinguish:
-	- load
-	- regenerate
-	- approve
-
----
-
-## Execution Order For Agents
-
-Agents should work in this order:
-
-1. Fix regeneration route reliability and bounded completion behavior
-2. Fix Brief Studio client handling for long-running generations
-3. Add stage-level duration instrumentation to identify the worst step
-4. Re-test with `drift-festival-icon-2026`
-5. Re-test with `bp-opendeck-icon-2027-7n-caribbean`
-6. Only after route reliability is fixed, attack the music/festival niche-legibility failure class
-
----
-
-## Do Not Waste Time Reinvestigating
-
-These points are already known:
-
-1. production-lint blockers were previously hidden; that has been fixed
-2. readiness previously returned stale brief state; that has been fixed
-3. `callGlobalGenerateObject` previously lied about a queued schema repair attempt; that has been fixed
-4. large structured generation calls previously used too-small output budgets; that has been partially mitigated
-
-The main unresolved problem now is not visibility.
-It is route completion and generation-path reliability under real load.
+1. Summarize the schema changes.
+2. Summarize the new route(s) and dashboard.
+3. Call out any follow-up needed for Klaviyo, Twilio, Meta CAPI, or future provider adapters.

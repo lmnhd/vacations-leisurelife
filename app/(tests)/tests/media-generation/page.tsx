@@ -291,6 +291,17 @@ export default function MediaGenerationTestPage() {
             return;
         }
 
+        const VIDEO_ASSET_TYPES: readonly AssetType[] = ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'];
+        const willGenerateVideo = !assetTypes || assetTypes.some(t => VIDEO_ASSET_TYPES.includes(t));
+        const hasMusicTrack = !!(manifest?.audio?.themeMusic);
+
+        if (willGenerateVideo && !hasMusicTrack) {
+            const proceedWithoutMusic = window.confirm(
+                `⚠️ No music track in manifest\n\nVideos will be generated without music.\n\nTo add music first, cancel and generate the Audio category.\n\nProceed without music?`
+            );
+            if (!proceedWithoutMusic) return;
+        }
+
         const categoryLabel = assetTypes ? CATEGORIES.find(c => c.types.some(t => assetTypes.includes(t)))?.key || "targeted" : "all";
         const costStr = COST_ESTIMATES[categoryLabel] || COST_ESTIMATES["all"];
 

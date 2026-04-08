@@ -32,6 +32,7 @@ interface DistributionStatusResponse {
             campaignStage: string;
             status: string;
             externalPostId?: string;
+            providerDraftType?: 'organic_post' | 'paid_lead_gen_ad';
             notes?: string[];
         }>;
     };
@@ -57,6 +58,13 @@ interface TikTokProviderStatusResponse {
     hasVideoUploadScope?: boolean;
     hasVideoPublishScope?: boolean;
     zeroManualPostingReady?: boolean;
+}
+
+interface TikTokAdvertiserStatusResponse {
+    ready: boolean;
+    reason?: string;
+    requiredVars?: string[];
+    advertiserAccountId?: string;
 }
 
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
@@ -92,7 +100,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const publicHref = useMemo(() => `/groups/${slug}`, [slug]);
 
     const resolvePostDisplayStatus = useCallback((post: PlannedPost): string => {
-        if (post.externalPostId?.startsWith('sim_')) return 'simulate';
+        if (post.externalPostId?.startsWith('sim_')) return 'simulated';
+        if (post.providerDraftType === 'paid_lead_gen_ad' && post.status === 'draft_created') return 'paid_draft_created';
+        if (post.providerDraftType === 'organic_post' && post.status === 'draft_created') return 'organic_draft_created';
         if (post.status === 'posted') return 'posted';
         if (post.status === 'draft_created') return 'draft_created';
         return post.status;
@@ -117,7 +127,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             const summary = data.summary;
             setDispatchMessage(
                 summary
-                    ? `TikTok sync complete: checked ${summary.checked}, posted ${summary.posted}, drafts ${summary.draftCreated}, failed ${summary.failed}.`
+                    ? `Organic TikTok sync complete: checked ${summary.checked}, posted ${summary.posted}, drafts ${summary.draftCreated}, failed ${summary.failed}.`
                     : (data.message ?? 'TikTok sync complete.'),
             );
             await loadAdPlan();
@@ -185,22 +195,34 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setValidateMessage('');
 
         try {
-            const response = await fetch('/api/integrations/tiktok/status', { cache: 'no-store' });
-            const data = await response.json() as TikTokProviderStatusResponse;
+            const [organicResponse, paidResponse] = await Promise.all([
+                fetch('/api/integrations/tiktok/status', { cache: 'no-store' }),
+                fetch('/api/integrations/tiktok/advertiser-status', { cache: 'no-store' }),
+            ]);
 
-            if (data.ready) {
-                const accountType = data.isPersonalTestAccount ? 'personal test account' : 'business account';
-                const expiry = data.accessTokenExpiresAt ? ` · expires ${data.accessTokenExpiresAt}` : '';
-                const directPost = data.zeroManualPostingReady
+            const organic = await organicResponse.json() as TikTokProviderStatusResponse;
+            const paid = await paidResponse.json() as TikTokAdvertiserStatusResponse;
+
+            let organicMessage: string;
+            if (organic.ready) {
+                const accountType = organic.isPersonalTestAccount ? 'personal test account' : 'business account';
+                const expiry = organic.accessTokenExpiresAt ? ` · expires ${organic.accessTokenExpiresAt}` : '';
+                const directPost = organic.zeroManualPostingReady
                     ? ' · direct post ready'
                     : ' · upload-only, video.publish not granted yet';
-                setValidateMessage(`TikTok: ready — ${accountType} (${data.openId ?? ''})${expiry}${directPost}`);
-            } else if (data.reason === 'token_expired') {
-                const refresh = data.canRefresh ? ' · refresh token available' : ' · refresh token also expired';
-                setValidateMessage(`TikTok: token expired at ${data.expiredAt ?? 'unknown'}${refresh}`);
+                organicMessage = `Organic TikTok: ready — ${accountType} (${organic.openId ?? ''})${expiry}${directPost}`;
+            } else if (organic.reason === 'token_expired') {
+                const refresh = organic.canRefresh ? ' · refresh token available' : ' · refresh token also expired';
+                organicMessage = `Organic TikTok: token expired at ${organic.expiredAt ?? 'unknown'}${refresh}`;
             } else {
-                setValidateMessage(`TikTok: not configured — ${data.detail ?? data.reason ?? 'unknown'}`);
+                organicMessage = `Organic TikTok: not configured — ${organic.detail ?? organic.reason ?? 'unknown'}`;
             }
+
+            const paidMessage = paid.ready
+                ? `Paid TikTok: advertiser ready — ${paid.advertiserAccountId}`
+                : `Paid TikTok: advertiser not ready — ${(paid.requiredVars ?? []).join(', ') || paid.reason || 'unknown'}`;
+
+            setValidateMessage(`${organicMessage} | ${paidMessage}`);
         } catch (error) {
             setValidateMessage(error instanceof Error ? error.message : 'Provider validation failed.');
         } finally {
@@ -251,7 +273,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             }
 
             setDispatchPreviews(data.previews ?? []);
-            setDispatchMessage(`Preview ready: ${(data.previews ?? []).length} dispatch payloads.`);
+            setDispatchMessage(`Simulation preview ready: ${(data.previews ?? []).length} payloads. No live TikTok upload or paid-ad API call was sent.`);
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview ad dispatch.');
         } finally {
@@ -276,7 +298,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             }
 
             setDispatchPreviews(data.previews ?? []);
-            setDispatchMessage(data.message ?? 'Dispatch completed.');
+            setDispatchMessage(data.message ?? 'Simulated dispatch completed. No live provider API was called.');
             await loadAdPlan();
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to dispatch ads.');
@@ -320,22 +342,22 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                 {publishing ? 'Publishing...' : 'Publish Landing'}
                             </Button>
                             <Button onClick={handlePlanAds} disabled={planning} variant="secondary">
-                                {planning ? 'Planning Ads...' : 'Plan Ads'}
+                                {planning ? 'Planning Distribution...' : 'Plan Distribution'}
                             </Button>
                             <Button onClick={loadAdPlan} disabled={reviewing} variant="outline" className="border-amber-300 bg-white">
-                                {reviewing ? 'Loading Plan...' : 'Review Ad Plan'}
+                                {reviewing ? 'Loading Schedule...' : 'Review Schedule'}
                             </Button>
                             <Button onClick={handleValidateProviders} disabled={validating} variant="outline" className="border-amber-300 bg-white">
-                                {validating ? 'Validating...' : 'Validate Provider Connections'}
+                                {validating ? 'Validating...' : 'Validate TikTok Paths'}
                             </Button>
                             <Button onClick={handlePreviewDispatch} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
-                                {previewing ? 'Previewing...' : 'Preview Dispatch'}
+                                {previewing ? 'Previewing...' : 'Preview Simulated Dispatch'}
                             </Button>
                             <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
-                                {dispatching ? 'Creating Drafts...' : 'Create Drafts'}
+                                {dispatching ? 'Simulating...' : 'Run Simulated Dispatch'}
                             </Button>
                             <Button onClick={handleSyncTikTokStatus} disabled={syncingTikTok} variant="outline" className="border-amber-300 bg-white">
-                                {syncingTikTok ? 'Syncing TikTok...' : 'Sync TikTok Status'}
+                                {syncingTikTok ? 'Syncing Organic TikTok...' : 'Sync Organic TikTok Status'}
                             </Button>
                         </div>
                         {statusMessage ? <p className="text-sm text-amber-950">{statusMessage}</p> : null}
@@ -345,7 +367,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                         {dispatchMessage ? <p className="text-sm text-slate-700">{dispatchMessage}</p> : null}
                         {plannedPosts.length > 0 ? (
                             <div className="grid gap-2 border border-stone-200 bg-stone-50 p-3">
-                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Saved Ad Plan</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Saved Distribution Schedule</p>
                                 {plannedPosts.map((post) => (
                                     <div key={post.postId} className="grid gap-2 border border-stone-200 bg-white p-3 text-sm text-slate-700">
                                         <div className="grid gap-1 md:grid-cols-[1fr_1fr_1fr_1fr]">
@@ -355,6 +377,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                         <span>{resolvePostDisplayStatus(post)}</span>
                                         </div>
                                         {post.externalPostId ? <p className="text-xs text-slate-500">externalId: {post.externalPostId}</p> : null}
+                                        {post.providerDraftType ? <p className="text-xs text-slate-500">providerDraftType: {post.providerDraftType}</p> : null}
                                         {post.notes && post.notes.length > 0 ? <p className="text-xs text-slate-500">notes: {post.notes.join(' | ')}</p> : null}
                                     </div>
                                 ))}
@@ -362,7 +385,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                         ) : null}
                         {dispatchPreviews.length > 0 ? (
                             <div className="grid gap-2 border border-stone-200 bg-stone-50 p-3">
-                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Dispatch Preview</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Simulated Dispatch Preview</p>
                                 {dispatchPreviews.map((preview) => (
                                     <div key={preview.postId} className="grid gap-1 border border-stone-200 bg-white p-3 text-sm text-slate-700">
                                         <p><span className="font-semibold">{preview.platform}</span> • {preview.postId}</p>

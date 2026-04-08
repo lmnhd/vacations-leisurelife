@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAestheticBrief, getCampaignBlueprint, saveAestheticBrief } from "@/lib/campaigns/campaign-store";
+import { getAestheticBrief, getCampaignBlueprint, saveAestheticBrief, saveCampaignBlueprint } from "@/lib/campaigns/campaign-store";
 import { assertAestheticBriefPassedRedTeam } from '@/lib/campaigns/aesthetic-red-team';
 import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '@/lib/campaigns/launch-window';
 
@@ -44,7 +44,29 @@ export async function POST(
 
         await saveAestheticBrief(approvedBrief);
 
-        return NextResponse.json({ success: true, brief: approvedBrief }, { status: 200 });
+        const shouldAutoPublish = campaign.status === 'DRAFT';
+        const updatedCampaign = shouldAutoPublish
+            ? {
+                ...campaign,
+                status: 'GATHERING_INTEREST' as const,
+                updatedAt: new Date().toISOString(),
+            }
+            : campaign;
+
+        if (shouldAutoPublish) {
+            await saveCampaignBlueprint(updatedCampaign);
+        }
+
+        return NextResponse.json({
+            success: true,
+            brief: approvedBrief,
+            campaign: {
+                status: updatedCampaign.status,
+            },
+            message: shouldAutoPublish
+                ? 'Aesthetic brief approved. Campaign auto-published to GATHERING_INTEREST.'
+                : 'Aesthetic brief approved.',
+        }, { status: 200 });
 
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";

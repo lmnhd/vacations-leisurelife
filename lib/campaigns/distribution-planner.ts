@@ -55,6 +55,23 @@ function getOgImageAssetId(manifest: CampaignMediaManifest): string | null {
     return manifest.images.platformCrops.og_image?.[0]?.assetId ?? null;
 }
 
+function resolveDefaultTikTokPlatform(options: PlannerOptions): DistributionPlatform {
+    if (!options.platforms || options.platforms.length === 0) {
+        return 'tiktok_paid';
+    }
+
+    const requestedPlatforms = new Set(options.platforms);
+    if (requestedPlatforms.has('tiktok_paid')) {
+        return 'tiktok_paid';
+    }
+
+    if (requestedPlatforms.has('tiktok')) {
+        return 'tiktok';
+    }
+
+    return 'tiktok_paid';
+}
+
 export function buildDistributionSchedule(
     campaign: Campaign,
     manifest: CampaignMediaManifest,
@@ -71,6 +88,7 @@ export function buildDistributionSchedule(
     const merchMockupId = manifest.merch.mockups[0]?.assetId ?? null;
     const pinterestAssetId = manifest.images.aestheticConcepts[0]?.assetId ?? primaryHeroAssetId;
     const squareFeedAssetId = manifest.images.platformCrops.square_1x1?.[0]?.assetId ?? null;
+    const defaultTikTokPlatform = resolveDefaultTikTokPlatform(options);
 
     addIfPresent(drafts, ogImageAssetId ? {
         platform: 'email',
@@ -91,11 +109,16 @@ export function buildDistributionSchedule(
     } : null);
 
     addIfPresent(drafts, tiktokSeedId ? {
-        platform: 'tiktok',
+        platform: defaultTikTokPlatform,
         assetId: tiktokSeedId,
         copyVariant: 'tiktok_caption_0',
         scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
         campaignStage: 'seed_day_0',
+        notes: [
+            defaultTikTokPlatform === 'tiktok_paid'
+                ? 'TikTok defaults to paused paid lead-gen drafts until business-account activation is complete.'
+                : 'Legacy organic TikTok draft path selected explicitly.',
+        ],
     } : null);
 
     addIfPresent(drafts, emailHeaderAssetId ? {

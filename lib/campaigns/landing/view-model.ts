@@ -1,6 +1,7 @@
 import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import { formatDeparturePort } from '@/lib/campaigns/cruise-ports';
 import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import type { Campaign } from '@/lib/campaigns/types';
 import { getCampaignWaitlistSummary, type CampaignWaitlistSummary } from '@/lib/campaigns/waitlist-store';
@@ -492,12 +493,29 @@ function buildFaq(campaign: Campaign): LandingFaqItem[] {
 function buildFacts(campaign: Campaign, waitlistSummary: CampaignWaitlistSummary): LandingFact[] {
     const targetCabins = getPublicGroupCabinTarget(campaign);
 
-    return [
+    const facts: LandingFact[] = [
         { label: 'Sailing', value: campaign.targetDates },
-        { label: 'Ship', value: campaign.shipTarget ?? campaign.targetDestination ?? campaign.name },
+        { label: 'Ship', value: campaign.matchedShipName ?? campaign.shipTarget ?? campaign.targetDestination ?? campaign.name },
+    ];
+
+    if (campaign.matchedDeparturePort) {
+        facts.push({ label: 'Departure Port', value: formatDeparturePort(campaign.matchedDeparturePort) });
+    }
+
+    if (campaign.targetDestination) {
+        facts.push({ label: 'Destination', value: campaign.targetDestination });
+    }
+
+    if (campaign.matchedNights) {
+        facts.push({ label: 'Duration', value: `${campaign.matchedNights} nights` });
+    }
+
+    facts.push(
         { label: 'Cabins needed', value: `${targetCabins}` },
         { label: 'People on the waitlist', value: `${waitlistSummary.totalPassengers}` },
-    ];
+    );
+
+    return facts;
 }
 
 function buildLandingViewModel(
