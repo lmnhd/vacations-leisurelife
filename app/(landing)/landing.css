@@ -61,11 +61,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    
-    color: white; /* Text color */
-    /* display: flex;
-    align-items: start; 
-    justify-content: center;  */
+    display: flex;
+    color: white;
 }
 .video-container{
     width: 150vw;

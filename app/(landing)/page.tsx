@@ -1,31 +1,21 @@
 import { LandingContent } from "@/components/landing-content";
 import { LandingHero } from "@/components/landing-hero";
 import { LandingNavbar } from "@/components/landing-navbar";
-//import { checkPixaBay } from "@/app/utils/CommonObjects/imagemachine.mjs"
-import {createClient} from 'pexels'
-import {getRandomNumberBetween} from '@/app/utils/CommonObjects/imagemachine.mjs'
-import Image from "next/image";
-import heroImage from '@/public/two-2413470_1920.jpg'
-
+import { LandingValueProps } from "@/components/landing-value-props";
+import { LandingFooter } from "@/components/landing-footer";
 export const dynamic = 'force-dynamic'
 
-
-//https://www.istockphoto.com/photo/tropical-paradise-gm155375632-19833254
-
-
-
-
 export default async function LandingPage(){
-   
-
-
-   
     return (
-    <div className="" >
+    <div className="flex flex-col min-h-screen">
         <LandingNavbar />
         
         <LandingHero />
-        <LandingContent/>
+        <LandingValueProps />
+        <div id="deals" className="scroll-mt-20">
+          <LandingContent/>
+        </div>
+        <LandingFooter />
     </div>
     )
 }

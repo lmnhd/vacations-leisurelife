@@ -14,90 +14,75 @@ export interface PromotionTileProps {
   price?: PriceProps;
   bookButton?: boolean;
   detailsLink?: string;
-    toolTips?: ToolTipsProps;
+  toolTips?: ToolTipsProps;
 }
 
 export interface PriceProps {
   perPerson?: string;
   perCabin?: string;
 }
+
 const PromotionTile = ({ promotion }: { promotion: PromotionTileProps }) => {
+  const priceLabel = promotion.price?.perPerson ?? promotion.price?.perCabin;
+  const priceSuffix = promotion.price?.perPerson ? "/ person" : "/ cabin";
+  const cleanPrice = priceLabel?.replace("$", "");
+
   return (
-    <div className="flex flex-col duration-300 ease-linear bg-white rounded-lg shadow-lg w-80 justify-stretch hover:-translate-y-1 hover:transition-all hover:scale-y-100 border-primary-foreground hover:shadow-xl ">
-      <div className="relative ">
-        {/* Image Slider */}
-        <div className="image-container">
-          {/* Single Slide */}
-          <div className="relative h-56">
-            <img
-              src={promotion.imageSrc}
-              alt={promotion.alt}
-              className="object-cover w-full h-full shadow"
-            />
-            {(promotion.day || promotion.port) && (
-              <div className="absolute bottom-0 left-0 w-full p-1 text-white duration-200 ease-in-out bg-gray-700/30 hover:bg-gradient-to-r hover:from-primary/30 hover:via-violet-600/30 hover:to-primary-foreground/30 hover:transition-all ">
-                <div>{promotion.day ? promotion.day : <br />}</div>
-                <div>{promotion.port ? promotion.port : <br />}</div>
-              </div>
-            )}
+    <div className="flex flex-col bg-white rounded-xl shadow-md w-80 border border-gray-100 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
+
+      {/* Image area */}
+      <div className="relative h-64 overflow-hidden">
+        <img
+          src={promotion.imageSrc}
+          alt={promotion.alt}
+          className="object-cover w-full h-full"
+        />
+
+        {/* Bottom image overlay with day/port */}
+        {(promotion.day || promotion.port) && (
+          <div className="absolute bottom-0 left-0 w-full px-3 py-2 text-white text-xs bg-gradient-to-t from-black/70 to-transparent">
+            {promotion.day && <div className="font-semibold">{promotion.day}</div>}
+            {promotion.port && <div className="opacity-90">{promotion.port}</div>}
           </div>
-          {/* Add more slides as needed */}
-        </div>
-        {/* Pagination, Navigation, etc. */}
+        )}
+
+        {/* Price badge — top right */}
+        {cleanPrice && (
+          <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md leading-tight text-center">
+            <div>${cleanPrice}</div>
+            <div className="font-normal opacity-80">{priceSuffix}</div>
+          </div>
+        )}
       </div>
 
-      <div className="p-4">
-        {/* Content goes here */}
-        <h3 className="mb-1 font-bold">{promotion.header1}</h3>
-        {promotion.header2 ? (
-          <h5 className="w-full h-10 overflow-hidden text-sm font-extralight bg-gray-50">
+      {/* Card body */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="font-bold text-gray-900 text-base mb-0.5">{promotion.header1}</h3>
+        {promotion.header2 && (
+          <p className="text-xs font-medium text-primary/80 mb-2 line-clamp-1">
             {promotion.header2}
-          </h5>
-        ) : (
-          <br />
+          </p>
         )}
-        <p className="h-24 overflow-hidden">{promotion.description}</p>
-        <div className="flex items-center justify-between mt-4">
-          {/* {promotion.price && ( */}
-          <div>
-            {promotion.price?.perPerson && (
-              <div>
-                <span className="text-lg font-bold">
-                  ${promotion.price?.perPerson.replace('$', "")}
-                </span>{" "}
-                per person
-              </div>
-            )}
-            {promotion.price?.perCabin && (
-              <div>
-                <span className="text-lg font-bold">
-                  ${promotion.price?.perCabin.replace('$', "")}
-                </span>{" "}
-                per cabin
-              </div>
-            )}
-          </div>
-          {/* )} */}
-          {promotion.bookButton ? (
-            <button className="flex flex-col items-center justify-center w-24 px-4 py-2 text-center text-white bg-blue-500 rounded h-14 hover:bg-blue-600">
-              Book Now
-            </button>
-          ) : (
-            <div className="w-24 opacity-0 h-14">---</div>
-          )}
-        </div>
+        <p className="text-sm text-gray-600 line-clamp-3 flex-1">{promotion.description}</p>
+
+        {promotion.bookButton && (
+          <button className="mt-4 w-full py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors">
+            Book Now
+          </button>
+        )}
       </div>
-      
-      {(promotion.detailsLink || promotion.toolTips ) && (
-        <div className="h-20 bg-gray-100 border-t ">
-            
-          {/* Footer Content */}
-          {promotion.toolTips ? <FeaturesToolTip options={promotion.toolTips}  /> : <br />}
-         {(promotion.detailsLink) && <Link href={promotion.detailsLink}>
-           <button className="h-10 text-blue-500 hover:underline">
-              More Details
-            </button>
-         </Link>}
+
+      {/* Footer */}
+      {(promotion.detailsLink || promotion.toolTips) && (
+        <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex flex-col gap-2">
+          {promotion.toolTips && <FeaturesToolTip options={promotion.toolTips} />}
+          {promotion.detailsLink && (
+            <Link href={promotion.detailsLink} className="w-full">
+              <button className="w-full py-2 text-sm font-semibold text-primary border border-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors">
+                More Details
+              </button>
+            </Link>
+          )}
         </div>
       )}
     </div>
