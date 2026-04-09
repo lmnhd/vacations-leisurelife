@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,29 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+
+interface FirstPartyAttribution {
+    landingPath: string;
+    referrer: string;
+    utmSource: string;
+    utmMedium: string;
+    utmCampaign: string;
+    utmContent: string;
+    utmTerm: string;
+}
+
+function captureFirstPartyAttribution(): FirstPartyAttribution {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        landingPath: window.location.pathname,
+        referrer: document.referrer,
+        utmSource: params.get('utm_source') ?? '',
+        utmMedium: params.get('utm_medium') ?? '',
+        utmCampaign: params.get('utm_campaign') ?? '',
+        utmContent: params.get('utm_content') ?? '',
+        utmTerm: params.get('utm_term') ?? '',
+    };
+}
 
 interface CampaignWaitlistFormProps {
     campaignName: string;
@@ -53,6 +76,11 @@ export function CampaignWaitlistForm({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<WaitlistResponse | null>(null);
+    const attributionRef = useRef<FirstPartyAttribution | null>(null);
+
+    useEffect(() => {
+        attributionRef.current = captureFirstPartyAttribution();
+    }, []);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -61,6 +89,7 @@ export function CampaignWaitlistForm({
         setError(null);
 
         try {
+            const attribution = attributionRef.current ?? captureFirstPartyAttribution();
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -73,6 +102,16 @@ export function CampaignWaitlistForm({
                     specialRequests: specialRequests.trim() || undefined,
                     bookingMode,
                     caller: 'human',
+                    attribution: {
+                        sourceChannel: attribution.utmMedium || 'organic',
+                        landingPath: attribution.landingPath || undefined,
+                        referrer: attribution.referrer || undefined,
+                        utmSource: attribution.utmSource || undefined,
+                        utmMedium: attribution.utmMedium || undefined,
+                        utmCampaign: attribution.utmCampaign || undefined,
+                        utmContent: attribution.utmContent || undefined,
+                        utmTerm: attribution.utmTerm || undefined,
+                    },
                 }),
             });
 

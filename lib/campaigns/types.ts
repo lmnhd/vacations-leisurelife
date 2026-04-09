@@ -312,6 +312,73 @@ export interface CampaignWaitlistEntry {
      */
     converted: boolean;
 
+    /**
+     * First-party attribution captured at the moment of signup.
+     */
+    attribution?: LeadAttribution;
+
+    /**
+     * Top-level source channel for quick filtering. e.g. 'organic', 'tiktok_paid', 'meta_paid', 'direct'
+     */
+    sourceChannel?: string;
+
     createdAt: string;
     updatedAt: string;
+}
+
+// ─── Conversion Ops: Attribution + Event Ledger ────────────────────────────────
+
+/**
+ * First-party attribution payload captured at lead signup time.
+ * All fields are optional — populate what is available from the source.
+ */
+export interface LeadAttribution {
+    sourceChannel?: string;
+    provider?: string;
+    providerDraftType?: string;
+    providerCampaignId?: string;
+    providerAdGroupId?: string;
+    providerAdId?: string;
+    providerLeadId?: string;
+    landingPath?: string;
+    referrer?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    utmContent?: string;
+    utmTerm?: string;
+    sessionId?: string;
+}
+
+export type LeadEventType =
+    | 'waitlist_submitted'
+    | 'provider_lead_ingested'
+    | 'nurture_queued'
+    | 'nurture_sent'
+    | 'threshold_met'
+    | 'threshold_met_notified'
+    | 'manifest_started'
+    | 'manifest_submitted'
+    | 'booking_link_sent'
+    | 'converted'
+    | 'expired'
+    | 'lead_error';
+
+/**
+ * Append-only lifecycle event record stored under the campaign partition.
+ * PK = CAMPAIGN#${slug}, SK = EVENT#${timestamp}#${eventId}
+ */
+export interface CampaignLeadEvent {
+    /** DynamoDB Partition Key: `CAMPAIGN#${slug}` */
+    PK: string;
+    /** DynamoDB Sort Key: `EVENT#${occurredAt}#${eventId}` */
+    SK: string;
+    eventId: string;
+    campaignSlug: string;
+    email: string;
+    eventType: LeadEventType;
+    occurredAt: string;
+    attribution: LeadAttribution;
+    notes?: string;
+    metadata?: Record<string, string>;
 }

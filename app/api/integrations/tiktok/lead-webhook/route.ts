@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
+import { appendLeadEvent } from '@/lib/campaigns/conversion-store';
+import { buildTikTokAttribution } from '@/lib/campaigns/lead-attribution';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,15 +63,6 @@ function extractField(
         (f) => f.name.toLowerCase() === key.toLowerCase(),
     );
     return entry?.value?.trim() || entry?.string_value?.trim() || null;
-}
-
-function buildAttributionNote(leadEvent: z.infer<typeof TikTokLeadEventSchema>): string {
-    const parts: string[] = ['leadSource=tiktok_paid'];
-    if (leadEvent.ad_id) parts.push(`tiktok_ad_id=${leadEvent.ad_id}`);
-    if (leadEvent.form_id) parts.push(`tiktok_form_id=${leadEvent.form_id}`);
-    if (leadEvent.campaign_id) parts.push(`tiktok_campaign_id=${leadEvent.campaign_id}`);
-    if (leadEvent.lead_id) parts.push(`tiktok_lead_id=${leadEvent.lead_id}`);
-    return parts.join(' | ');
 }
 
 export async function POST(request: NextRequest) {
@@ -138,7 +131,12 @@ export async function POST(request: NextRequest) {
 
     const preferredCabinType = extractField(allFields, 'preferred_cabin') ?? 'Inside';
 
-    const attributionNote = buildAttributionNote(leadEvent);
+    const attribution = buildTikTokAttribution({
+        adId: leadEvent.ad_id,
+        formId: leadEvent.form_id,
+        campaignId: leadEvent.campaign_id,
+        leadId: leadEvent.lead_id,
+    });
 
     try {
         await upsertCampaignWaitlistEntry({
@@ -148,8 +146,23 @@ export async function POST(request: NextRequest) {
             lastName,
             passengerCount,
             preferredCabinType,
-            specialRequests: attributionNote,
             bookingMode: 'GROUP_WAIT',
+            attribution,
+            sourceChannel: 'tiktok_paid',
+        });
+
+        await appendLeadEvent({
+            campaignSlug,
+            email,
+            eventType: 'provider_lead_ingested',
+            attribution,
+            notes: `TikTok lead webhook ingestion`,
+            metadata: {
+                provider: 'tiktok',
+                ...(leadEvent.lead_id ? { providerLeadId: leadEvent.lead_id } : {}),
+                ...(leadEvent.ad_id ? { providerAdId: leadEvent.ad_id } : {}),
+                ...(leadEvent.campaign_id ? { providerCampaignId: leadEvent.campaign_id } : {}),
+            },
         });
 
         console.log(`[TikTok-Webhook] Lead written to waitlist: campaign=${campaignSlug} email=${email}`);

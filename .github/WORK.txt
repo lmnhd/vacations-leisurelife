@@ -274,3 +274,582 @@ When done
 1. Summarize the schema changes.
 2. Summarize the new route(s) and dashboard.
 3. Call out any follow-up needed for Klaviyo, Twilio, Meta CAPI, or future provider adapters.
+
+---
+
+Next Agent Implementation Plan
+
+The first conversion slice now exists. The next agent should not rebuild attribution or the basic dashboard from scratch.
+
+Current verified state
+
+1. Waitlist signup accepts attribution payloads.
+2. Landing-page form captures first-party UTM/referrer/path data.
+3. TikTok webhook ingestion writes provider attribution into the same lead model.
+4. Append-only lead events are stored.
+5. Campaign conversion dashboard exists.
+6. Leads API now includes latest lifecycle stage per lead.
+
+The next work is to harden the conversion layer so it becomes operationally useful rather than just structurally present.
+
+Primary objective for the next agent
+
+Turn the current first-pass Conversion Ops system into a more truthful operator tool by improving:
+
+1. lead detail visibility
+2. event query shape
+3. nurture readiness
+4. attribution semantics
+
+Do not pivot back to provider-side ad work in this pass.
+
+Priority 1: Lead Detail Panel Upgrade
+
+The current dashboard shows a table and timeline, but the selected lead panel is still too thin.
+
+Upgrade the selected-lead view so it shows:
+
+1. full name
+2. email
+3. createdAt
+4. passenger count
+5. booking mode
+6. manifest status
+7. notified
+8. converted
+9. latest lifecycle stage
+10. source channel
+11. provider
+12. provider draft type
+13. provider campaign ID
+14. provider ad ID
+15. provider lead ID
+16. landing path
+17. referrer
+18. UTM source
+19. UTM medium
+20. UTM campaign
+21. UTM content
+22. UTM term
+
+This should be visible without needing to inspect raw JSON.
+
+Priority 2: Event Query Hardening
+
+The current lead-events lookup loads all campaign events and filters in memory.
+That is acceptable for a first slice but is not the intended long-term shape.
+
+Improve this.
+
+Preferred direction:
+
+1. add a second access pattern for lead-specific events
+2. keep the existing campaign-partition event ledger intact
+3. avoid rewriting old event records destructively
+
+Possible approach:
+
+1. keep canonical event records under PK = CAMPAIGN#{slug}
+2. add mirrored lead-index records or a queryable secondary access pattern for email-level lookup
+3. expose listLeadEvents without loading the entire campaign history first
+
+If you choose a mirrored-record strategy, keep the code explicit and documented.
+
+Priority 3: Attribution Semantics Cleanup
+
+The current landing-page form sets sourceChannel from utmMedium or falls back to organic.
+That is acceptable for now, but it is too lossy.
+
+Improve normalization so direct and first-party traffic is more honest.
+
+Target behavior:
+
+1. if no UTM and no referrer: sourceChannel should read as direct
+2. if referrer exists but no UTM: sourceChannel should read as referral
+3. if provider webhook: preserve explicit paid source channel
+4. if UTM is present: preserve both utmSource and utmMedium and derive sourceChannel consistently
+
+Do not create a sprawling attribution taxonomy. Keep it simple and truthful.
+
+Priority 4: Nurture Readiness Layer
+
+Do not fake nurture execution, but make the system ready for it.
+
+Add the minimal building blocks for future nurture automation:
+
+1. define a small nurture status helper or summary layer
+2. derive which leads are eligible for day-0, day-3, and day-7 communication
+3. expose this in the dashboard as upcoming or pending lifecycle work
+
+This can be read-only derived state for now if no real sender is wired yet.
+
+Example derived buckets:
+
+1. needs_confirmation
+2. eligible_day_3
+3. eligible_day_7
+4. threshold_notification_due
+5. manifest_reminder_due
+
+Only compute what can be derived truthfully from existing timestamps and statuses.
+
+Priority 5: Conversion Dashboard Usability Pass
+
+Refine the dashboard so it is more operationally legible.
+
+Add or improve:
+
+1. selected-lead summary card
+2. empty-state messaging
+3. visible distinction between direct, referral, organic, and provider-paid leads
+4. more obvious stuck-state indicators
+5. simple pending-work indicators for nurture and manifest follow-up
+
+If practical, keep this page under app/dashboard/campaigns/[slug]/conversion/page.tsx.
+Do not create a parallel duplicate dashboard.
+
+Suggested files to inspect first
+
+1. app/dashboard/campaigns/[slug]/conversion/page.tsx
+2. app/api/groups/campaign/[slug]/leads/route.ts
+3. app/api/groups/campaign/[slug]/events/route.ts
+4. lib/campaigns/conversion-store.ts
+5. lib/campaigns/lead-attribution.ts
+6. lib/campaigns/waitlist-store.ts
+7. lib/campaigns/types.ts
+
+---
+
+Updated Priority Shift
+
+New instruction based on latest product direction:
+
+The next practical build is Klaviyo + Twilio nurture wiring.
+
+The conversion/event model is now far enough along that the next agent should stop treating nurture as a later placeholder and instead implement the first real nurture dispatch layer.
+
+Important current reality
+
+1. The repo has strategy/docs and env references for Klaviyo and Twilio.
+2. The repo does not yet appear to have actual campaign nurture integration code for Klaviyo or Twilio in the current app paths.
+3. The event schema already includes `nurture_queued`, `nurture_sent`, and `threshold_met_notified`.
+4. This means the next implementation pass should build the first real delivery wiring, not just more dashboard derivations.
+
+New primary objective
+
+Build the first truthful nurture orchestration path using:
+
+1. Klaviyo for email-stage nurture
+2. Twilio for SMS urgency / threshold notifications
+3. the existing campaign lead + lifecycle event model as the source of truth
+
+Do not build a giant workflow engine.
+Build the smallest real send path that can emit truthful lifecycle events.
+
+Scope of this pass
+
+Implement the first real nurture triggers for:
+
+1. waitlist confirmation email
+2. day-3 nurture email
+3. day-7 nurture email
+4. threshold-met SMS notification
+
+If threshold-met email is easy to include cleanly, it is acceptable to include it too.
+
+Do not fake sends.
+Only write `nurture_sent` and `threshold_met_notified` when a real provider call succeeds or when a clearly marked dry-run/test mode is intentionally used.
+
+Recommended implementation shape
+
+1. Add a small Klaviyo client helper module.
+2. Add a small Twilio client helper module.
+3. Add a nurture orchestration module that:
+	a. decides which message should fire
+	b. calls the provider helper
+	c. appends lifecycle events
+4. Add one or more API routes or server-side actions for controlled triggering.
+5. Keep campaign logic separate from raw provider SDK code.
+
+Suggested modules
+
+1. lib/campaigns/nurture-orchestrator.ts
+2. lib/integrations/klaviyo.ts
+3. lib/integrations/twilio.ts
+
+Suggested route(s)
+
+One reasonable shape:
+
+1. app/api/groups/campaign/[slug]/nurture/route.ts
+
+Possible supported actions:
+
+1. queue lead nurture
+2. send waitlist confirmation
+3. send day-3 nurture
+4. send day-7 nurture
+5. send threshold-met SMS
+
+You may also split routes if that is cleaner, but avoid scattering provider logic across many files.
+
+Provider expectations
+
+Klaviyo
+
+Use Klaviyo for outbound campaign nurture email.
+
+Minimum viable behavior:
+
+1. identify or upsert the contact/profile
+2. attach campaign context as profile properties or event properties
+3. trigger a campaign-specific email event or flow-compatible event
+4. emit lifecycle events after successful provider acceptance
+
+If the exact Klaviyo API shape requires a choice between template-driven flows and event-triggered sends, prefer event-triggered flow compatibility rather than hardcoded one-off email composition in app code.
+
+Twilio
+
+Use Twilio for threshold urgency messaging.
+
+Minimum viable behavior:
+
+1. send SMS only when threshold is met or when explicitly testing that path
+2. require a valid phone number in the lead/contact data before attempting send
+3. if phone number is missing, do not fake success; record a truthful failure or skip state
+
+Important constraint
+
+The current waitlist schema does not appear to include phone number capture yet.
+
+Therefore the next agent must decide one of these two honest paths:
+
+1. extend the waitlist capture path to include optional phone number now
+2. implement Twilio wiring but keep threshold SMS gated behind phone-number availability
+
+Do not invent a phone number source that does not exist.
+
+Required event behavior
+
+Use the existing append-only event ledger.
+
+Add truthful lifecycle writes such as:
+
+1. `nurture_queued`
+2. `nurture_sent`
+3. `threshold_met_notified`
+4. `lead_error`
+
+Suggested event notes / metadata should include:
+
+1. stage name such as `waitlist_confirmation`, `nurture_day3`, `nurture_day7`, `threshold_sms`
+2. provider name
+3. provider message or event ID if available
+4. dryRun flag if a safe test mode is used
+
+Recommended triggering model
+
+First pass does not need a background worker.
+
+A practical first version is:
+
+1. trigger waitlist confirmation immediately after successful waitlist submission
+2. expose explicit API-triggered sending for day-3 and day-7 testing
+3. trigger threshold SMS from the same state transition that promotes campaign status to `THRESHOLD_MET`
+
+If you need to avoid automatic live sends during testing, add a clear `dryRun` or `providerMode` control and keep statuses honest.
+
+Suggested sequence
+
+Step 1: Inspect current env + dependency state
+
+Check whether the app already has:
+
+1. Klaviyo SDK or fetch-wrapper usage
+2. Twilio SDK or helper code
+3. env variables for Klaviyo and Twilio in docs or runtime config
+
+Step 2: Add provider helpers
+
+Implement minimal provider modules with:
+
+1. env validation
+2. typed request/response shapes
+3. one function per needed action
+
+Step 3: Add nurture orchestrator
+
+It should:
+
+1. take campaign slug + lead identity + stage
+2. resolve campaign context
+3. resolve contact context
+4. call provider
+5. append success/failure events
+
+Step 4: Wire waitlist confirmation
+
+After successful waitlist submission, queue or send the waitlist confirmation email path.
+If live sending is unsafe without full env readiness, support an explicit dry-run and still emit `nurture_queued` truthfully.
+
+Step 5: Wire threshold notification
+
+When the waitlist route auto-promotes a campaign to `THRESHOLD_MET`, attempt the threshold notification path.
+Email and/or SMS is acceptable depending on available data, but SMS must not be marked sent if no phone number exists.
+
+Step 6: Add operator-facing visibility
+
+Update the conversion dashboard as needed so the operator can see:
+
+1. which nurture stages have been sent
+2. which are pending
+3. which failed
+4. provider response identifiers when available
+
+Data-model guidance
+
+If needed, extend the waitlist entry conservatively to support nurture delivery.
+
+Reasonable additions if you need them:
+
+1. optional phoneNumber
+2. nurture stage markers or derived fields only if they simplify truthful reporting
+
+Avoid storing excessive duplicated provider payloads on the lead snapshot. Prefer the event ledger for send history.
+
+Out of scope for this nurture pass
+
+1. full Klaviyo template management UI
+2. full SMS conversation system
+3. Meta CAPI
+4. automated budget optimization
+5. manifest and booking events unless directly needed for the same flow
+6. broad workflow engine or queue infrastructure unless absolutely required
+
+Success criteria for this pass
+
+1. a successful waitlist signup can trigger a real or clearly marked dry-run nurture path
+2. a truthful `nurture_queued` or `nurture_sent` event is persisted
+3. threshold transition can trigger a real or clearly marked notification path
+4. Twilio is only used when required data exists
+5. operator can inspect nurture status from the dashboard/event history
+6. no fake provider success states are introduced
+
+When done
+
+1. summarize the Klaviyo integration shape
+2. summarize the Twilio integration shape
+3. call out whether phone number capture was added or deferred
+4. list remaining work for manifest, booking-link, and conversion event wiring
+
+Out of scope for the next agent
+
+1. real Klaviyo sending
+2. real Twilio sending
+3. Meta CAPI implementation
+4. autonomous optimization logic
+5. spend tuning or bid control
+6. global all-campaign executive reporting
+
+Success criteria for the next pass
+
+1. selected lead detail is genuinely useful to an operator
+2. lead-specific event queries no longer depend on loading the full campaign event list first
+3. attribution labels are more truthful for direct vs referral vs UTM-driven traffic
+4. dashboard exposes at least a first derived nurture-readiness view
+5. no fake lifecycle events are introduced
+
+When done
+
+1. summarize the query-shape improvement for lead events
+2. summarize attribution-normalization changes
+3. summarize the dashboard usability upgrades
+4. call out what remains before real Klaviyo, Twilio, or Meta CAPI integration
+
+---
+
+Implementation Clarification For Next Agent
+
+This section overrides any ambiguity in the notes above.
+
+The next agent should implement all three of these in the same pass:
+
+1. provider helpers + nurture orchestration layer
+2. optional phone capture in the waitlist flow
+3. direct vs referral attribution cleanup before source buckets are used for nurture logic
+
+Do not stop at dashboard prep.
+Do not leave provider wiring as a placeholder if the codebase is otherwise ready.
+
+Current verified blockers to address
+
+1. There is no actual Klaviyo helper module in the current app/lib code.
+2. There is no actual Twilio helper module in the current app/lib code.
+3. The package currently does not appear to include Twilio or Klaviyo SDK dependencies.
+4. The public waitlist form currently does not collect phone number.
+5. The waitlist API schema currently does not accept phone number.
+6. Landing-page attribution currently collapses too much first-party traffic into `organic`.
+
+Required deliverable 1: Provider helpers
+
+Implement concrete provider helper modules.
+
+Target files:
+
+1. lib/integrations/klaviyo.ts
+2. lib/integrations/twilio.ts
+
+Requirements:
+
+1. validate env at call time with explicit error messages
+2. use typed request/response shapes
+3. keep provider-specific payload formatting inside these modules
+4. return normalized success/failure payloads that the campaign layer can consume
+5. include provider IDs from accepted sends when available
+
+Dependency guidance:
+
+1. if the repo does not already have the needed SDKs, add them cleanly
+2. if fetch-based wrappers are simpler and stable for the required endpoints, that is acceptable
+3. keep the implementation minimal; do not add a broad provider abstraction layer
+
+Klaviyo expectations:
+
+1. upsert or identify contact/profile
+2. attach campaign and lead context
+3. trigger flow-compatible event delivery for `waitlist_confirmation`, `nurture_day3`, and `nurture_day7`
+
+Twilio expectations:
+
+1. send threshold SMS only through the helper
+2. require normalized E.164-capable input or reject clearly
+3. do not mark a send as successful if Twilio rejects it
+
+Required deliverable 2: Nurture orchestration layer
+
+Implement a campaign-owned orchestration module.
+
+Target file:
+
+1. lib/campaigns/nurture-orchestrator.ts
+
+Required responsibilities:
+
+1. resolve campaign by slug
+2. resolve lead by email
+3. choose the proper provider and stage
+4. append truthful lifecycle events before/after delivery where appropriate
+5. centralize stage naming so the same strings are used everywhere
+
+Suggested public methods:
+
+1. sendWaitlistConfirmation(...)
+2. sendDay3Nurture(...)
+3. sendDay7Nurture(...)
+4. sendThresholdSms(...)
+5. dispatchNurtureStage(...)
+
+Event rules:
+
+1. write `nurture_queued` only when there is a real queued/attempted path or an explicitly marked dry run
+2. write `nurture_sent` only when provider acceptance succeeds
+3. write `threshold_met_notified` only when the threshold notification actually succeeds
+4. write `lead_error` when provider execution fails or required data is missing for an explicitly requested send
+
+Required deliverable 3: Optional phone capture
+
+Add optional phone capture to the public waitlist path so Twilio is not permanently blocked.
+
+Files to update:
+
+1. components/campaign-landing/waitlist-form.tsx
+2. app/api/groups/campaign/[slug]/waitlist/route.ts
+3. lib/campaigns/waitlist-store.ts
+4. lib/campaigns/types.ts
+5. app/api/integrations/tiktok/lead-webhook/route.ts if that path can provide phone values
+
+Requirements:
+
+1. phone number must be optional, not required
+2. validate and normalize before storage where practical
+3. store only the normalized durable form you actually need
+4. if a phone number is absent, Twilio paths must skip honestly rather than invent fallback behavior
+
+UI guidance:
+
+1. keep the field simple and clearly optional
+2. explain briefly why it helps, e.g. threshold text alerts
+3. do not degrade the current landing conversion flow with excessive friction
+
+Data guidance:
+
+1. add `phoneNumber?: string` to the waitlist entry type if that is the chosen field name
+2. preserve backward compatibility for existing records with no phone number
+3. do not create a second duplicate phone field elsewhere in the campaign models
+
+Required deliverable 4: Attribution cleanup before nurture bucketing
+
+Fix attribution semantics before the next agent relies on source buckets for nurture reporting or targeting.
+
+Files to inspect/update:
+
+1. components/campaign-landing/waitlist-form.tsx
+2. lib/campaigns/lead-attribution.ts
+3. any dashboard or funnel logic that assumes current `sourceChannel` values are already truthful
+
+Target behavior:
+
+1. if no UTM and no referrer: `sourceChannel = direct`
+2. if referrer exists and no UTM: `sourceChannel = referral`
+3. if UTM exists: preserve `utmSource` and `utmMedium`, and derive `sourceChannel` consistently without collapsing everything into `organic`
+4. if provider/webhook path is explicit paid traffic: preserve paid source labels exactly
+
+Important correction:
+
+The current landing-page client payload should stop defaulting `sourceChannel` to `organic` merely because `utm_medium` is absent.
+
+It is acceptable for client code to omit `sourceChannel` entirely and let server normalization decide.
+
+Required deliverable 5: Wiring points
+
+Wire the orchestration layer into the existing lifecycle transitions.
+
+Minimum required wiring:
+
+1. after successful waitlist submission, trigger waitlist confirmation path
+2. when campaign status auto-promotes to `THRESHOLD_MET`, trigger threshold notification path
+3. expose explicit trigger access for day-3 and day-7 nurture testing
+
+Possible route shape:
+
+1. app/api/groups/campaign/[slug]/nurture/route.ts
+
+That route can support controlled stage triggering for testing and operations.
+
+Verification requirements
+
+Before declaring the pass complete, verify all of the following:
+
+1. waitlist submission still works without phone number
+2. waitlist submission accepts and persists phone number when provided
+3. attribution for direct traffic is no longer mislabeled as `organic`
+4. attribution for referral traffic is distinguishable from direct traffic
+5. nurture orchestration can produce truthful success/failure event writes
+6. threshold SMS path does not execute when no phone number exists
+7. dashboard/event history reflects the resulting nurture events clearly enough for an operator
+
+What the user will need to provide later
+
+The next agent should implement the code so these are the only remaining intervention points for the user:
+
+1. Klaviyo credentials and final flow/event mapping
+2. Twilio credentials and sender number configuration
+3. any compliance or sender-verification work required by Twilio for live SMS traffic
+
+When done
+
+1. summarize the helper modules that were added
+2. summarize the orchestration entry points that were added
+3. state whether phone capture was added and how it is normalized
+4. state exactly how direct vs referral vs UTM traffic is now classified
+5. state precisely what user intervention is still required in Klaviyo or Twilio consoles

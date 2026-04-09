@@ -3,8 +3,28 @@ import { z } from 'zod';
 import { getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
+import { appendLeadEvent } from '@/lib/campaigns/conversion-store';
+import { normalizeAttribution } from '@/lib/campaigns/lead-attribution';
 
 export const dynamic = 'force-dynamic';
+
+const AttributionSchema = z.object({
+    sourceChannel: z.string().trim().optional(),
+    provider: z.string().trim().optional(),
+    providerDraftType: z.string().trim().optional(),
+    providerCampaignId: z.string().trim().optional(),
+    providerAdGroupId: z.string().trim().optional(),
+    providerAdId: z.string().trim().optional(),
+    providerLeadId: z.string().trim().optional(),
+    landingPath: z.string().trim().optional(),
+    referrer: z.string().trim().optional(),
+    utmSource: z.string().trim().optional(),
+    utmMedium: z.string().trim().optional(),
+    utmCampaign: z.string().trim().optional(),
+    utmContent: z.string().trim().optional(),
+    utmTerm: z.string().trim().optional(),
+    sessionId: z.string().trim().optional(),
+}).optional();
 
 const WaitlistRequestSchema = z.object({
     firstName: z.string().trim().min(1),
@@ -16,6 +36,7 @@ const WaitlistRequestSchema = z.object({
     proposedEvents: z.string().trim().max(500).optional(),
     bookingMode: z.enum(['GROUP_WAIT', 'BOOK_NOW']),
     caller: z.enum(['human', 'agent', 'preview']).optional(),
+    attribution: AttributionSchema,
 });
 
 type WaitlistNextStep = {
@@ -87,6 +108,8 @@ export async function POST(
         return NextResponse.json({ success: false, error: 'This campaign has expired and is not accepting new entries.' }, { status: 409 });
     }
 
+    const attribution = normalizeAttribution(parsed.data.attribution ?? {});
+
     const entry = await upsertCampaignWaitlistEntry({
         slug,
         email: parsed.data.email,
@@ -97,6 +120,16 @@ export async function POST(
         specialRequests: parsed.data.specialRequests,
         proposedEvents: parsed.data.proposedEvents,
         bookingMode: parsed.data.bookingMode,
+        attribution,
+        sourceChannel: attribution.sourceChannel,
+    });
+
+    await appendLeadEvent({
+        campaignSlug: slug,
+        email: entry.email,
+        eventType: 'waitlist_submitted',
+        attribution,
+        notes: `bookingMode=${parsed.data.bookingMode} passengers=${parsed.data.passengerCount}`,
     });
 
     const summary = await getCampaignWaitlistSummary(slug);
@@ -112,6 +145,14 @@ export async function POST(
             ...campaign,
             status: effectiveStatus,
             updatedAt: new Date().toISOString(),
+        });
+
+        await appendLeadEvent({
+            campaignSlug: slug,
+            email: entry.email,
+            eventType: 'threshold_met',
+            attribution,
+            notes: `Auto-promoted after entry ${summary.totalEntries} of ${requiredCabins} required`,
         });
     }
 

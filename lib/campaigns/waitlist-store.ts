@@ -1,6 +1,6 @@
 import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
-import type { CampaignWaitlistEntry } from './types';
+import type { CampaignWaitlistEntry, LeadAttribution } from './types';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
@@ -24,6 +24,8 @@ export interface UpsertCampaignWaitlistEntryInput {
     specialRequests?: string;
     proposedEvents?: string;
     bookingMode: 'GROUP_WAIT' | 'BOOK_NOW';
+    attribution?: LeadAttribution;
+    sourceChannel?: string;
 }
 
 function normalizeEmail(email: string): string {
@@ -80,6 +82,8 @@ export async function upsertCampaignWaitlistEntry(
         manifestStatus: existing?.manifestStatus ?? 'PENDING',
         notified: existing?.notified ?? false,
         converted: existing?.converted ?? false,
+        attribution: input.attribution ?? existing?.attribution,
+        sourceChannel: input.sourceChannel ?? input.attribution?.sourceChannel ?? existing?.sourceChannel,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
     };
