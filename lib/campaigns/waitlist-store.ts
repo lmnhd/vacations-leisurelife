@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import type { CampaignWaitlistEntry, LeadAttribution } from './types';
 
@@ -26,6 +26,8 @@ export interface UpsertCampaignWaitlistEntryInput {
     bookingMode: 'GROUP_WAIT' | 'BOOK_NOW';
     attribution?: LeadAttribution;
     sourceChannel?: string;
+    /** Optional E.164-normalized phone number for SMS nurture. */
+    phoneNumber?: string;
 }
 
 function normalizeEmail(email: string): string {
@@ -84,6 +86,7 @@ export async function upsertCampaignWaitlistEntry(
         converted: existing?.converted ?? false,
         attribution: input.attribution ?? existing?.attribution,
         sourceChannel: input.sourceChannel ?? input.attribution?.sourceChannel ?? existing?.sourceChannel,
+        phoneNumber: input.phoneNumber ?? existing?.phoneNumber,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
     };
@@ -107,6 +110,22 @@ export async function listCampaignWaitlistEntries(slug: string): Promise<Campaig
     }));
 
     return (response.Items as CampaignWaitlistEntry[] | undefined) ?? [];
+}
+
+export async function clearCampaignWaitlistEntries(slug: string): Promise<number> {
+    const entries = await listCampaignWaitlistEntries(slug);
+
+    await Promise.all(entries.map((entry) =>
+        chatDynamoDocumentClient.send(new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+                PK: entry.PK,
+                SK: entry.SK,
+            },
+        })),
+    ));
+
+    return entries.length;
 }
 
 export async function getCampaignWaitlistSummary(slug: string): Promise<CampaignWaitlistSummary> {

@@ -69,6 +69,7 @@ export function CampaignWaitlistForm({
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [passengerCount, setPassengerCount] = useState('2');
     const [preferredCabinType, setPreferredCabinType] = useState('Balcony');
     const [bookingMode, setBookingMode] = useState<'GROUP_WAIT' | 'BOOK_NOW'>(defaultMode);
@@ -97,13 +98,14 @@ export function CampaignWaitlistForm({
                     firstName,
                     lastName,
                     email,
+                    phoneNumber: phoneNumber.trim() || undefined,
                     passengerCount: Number(passengerCount),
                     preferredCabinType,
                     specialRequests: specialRequests.trim() || undefined,
                     bookingMode,
                     caller: 'human',
                     attribution: {
-                        sourceChannel: attribution.utmMedium || 'organic',
+                        // sourceChannel intentionally omitted — server normalizes from UTM/referrer
                         landingPath: attribution.landingPath || undefined,
                         referrer: attribution.referrer || undefined,
                         utmSource: attribution.utmSource || undefined,
@@ -194,6 +196,21 @@ export function CampaignWaitlistForm({
                                     required
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="phoneNumber" className="text-slate-100">
+                                Phone <span className="text-slate-400 font-normal">(optional — for threshold text alerts)</span>
+                            </Label>
+                            <Input
+                                id="phoneNumber"
+                                type="tel"
+                                value={phoneNumber}
+                                onChange={(event) => setPhoneNumber(event.target.value)}
+                                className="border-white/15 bg-slate-900 text-slate-50"
+                                disabled={!enabled || submitting}
+                                placeholder="+1 555 000 0000"
+                            />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">

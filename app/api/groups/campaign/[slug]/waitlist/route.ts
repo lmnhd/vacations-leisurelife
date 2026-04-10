@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
-import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
+import { getCampaignWaitlistSummary, upsertCampaignWaitlistEntry, listCampaignWaitlistEntries } from '@/lib/campaigns/waitlist-store';
 import { appendLeadEvent } from '@/lib/campaigns/conversion-store';
 import { normalizeAttribution } from '@/lib/campaigns/lead-attribution';
+import { sendWaitlistConfirmation, sendThresholdSms } from '@/lib/campaigns/nurture-orchestrator';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,8 @@ const WaitlistRequestSchema = z.object({
     bookingMode: z.enum(['GROUP_WAIT', 'BOOK_NOW']),
     caller: z.enum(['human', 'agent', 'preview']).optional(),
     attribution: AttributionSchema,
+    /** Optional phone for SMS nurture. Accepted as-is; normalized before storage in the orchestrator. */
+    phoneNumber: z.string().trim().max(20).optional(),
 });
 
 type WaitlistNextStep = {
@@ -122,6 +125,7 @@ export async function POST(
         bookingMode: parsed.data.bookingMode,
         attribution,
         sourceChannel: attribution.sourceChannel,
+        phoneNumber: parsed.data.phoneNumber || undefined,
     });
 
     await appendLeadEvent({
@@ -153,6 +157,25 @@ export async function POST(
             eventType: 'threshold_met',
             attribution,
             notes: `Auto-promoted after entry ${summary.totalEntries} of ${requiredCabins} required`,
+        });
+
+        // Fire threshold SMS for all leads with phone numbers — non-fatal
+        void listCampaignWaitlistEntries(slug).then((allLeads) => {
+            const leadsWithPhone = allLeads.filter((l) => !!l.phoneNumber);
+            for (const lead of leadsWithPhone) {
+                void sendThresholdSms(slug, lead.email).catch((err) => {
+                    console.error(`[Waitlist] threshold SMS failed for ${lead.email}:`, err);
+                });
+            }
+        }).catch((err) => {
+            console.error('[Waitlist] Failed to load leads for threshold SMS:', err);
+        });
+    }
+
+    // Fire waitlist confirmation email — non-fatal to the signup response
+    if (!previewCaller) {
+        void sendWaitlistConfirmation(slug, entry.email).catch((err) => {
+            console.error(`[Waitlist] Confirmation email failed for ${entry.email}:`, err);
         });
     }
 

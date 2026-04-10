@@ -24,8 +24,12 @@ export interface RawAttributionInput {
 
 /**
  * Normalize a raw attribution input into a clean LeadAttribution record.
- * Trims strings, drops empty values, and coerces sourceChannel from utm_medium
- * when not explicitly provided.
+ * Trims strings, drops empty values, and derives sourceChannel truthfully:
+ *
+ * - Explicit sourceChannel (e.g. from provider webhook): preserved as-is
+ * - UTM present: use utmMedium if set, else `utm:${utmSource}`
+ * - Referrer present but no UTM: `referral`
+ * - No UTM and no referrer: `direct`
  */
 export function normalizeAttribution(raw: RawAttributionInput): LeadAttribution {
     function trimOrUndefined(value: string | undefined): string | undefined {
@@ -35,14 +39,20 @@ export function normalizeAttribution(raw: RawAttributionInput): LeadAttribution 
 
     const utmMedium = trimOrUndefined(raw.utmMedium);
     const utmSource = trimOrUndefined(raw.utmSource);
+    const referrer = trimOrUndefined(raw.referrer);
 
-    // Infer sourceChannel from UTM medium when not explicitly set
+    // Derive sourceChannel truthfully — do not collapse everything into organic.
     let sourceChannel = trimOrUndefined(raw.sourceChannel);
-    if (!sourceChannel && utmMedium) {
-        sourceChannel = utmMedium;
-    }
-    if (!sourceChannel && utmSource) {
-        sourceChannel = `utm:${utmSource}`;
+    if (!sourceChannel) {
+        if (utmMedium) {
+            sourceChannel = utmMedium;
+        } else if (utmSource) {
+            sourceChannel = `utm:${utmSource}`;
+        } else if (referrer) {
+            sourceChannel = 'referral';
+        } else {
+            sourceChannel = 'direct';
+        }
     }
 
     const attribution: LeadAttribution = {};
@@ -55,7 +65,7 @@ export function normalizeAttribution(raw: RawAttributionInput): LeadAttribution 
     if (raw.providerAdId) attribution.providerAdId = trimOrUndefined(raw.providerAdId);
     if (raw.providerLeadId) attribution.providerLeadId = trimOrUndefined(raw.providerLeadId);
     if (raw.landingPath) attribution.landingPath = trimOrUndefined(raw.landingPath);
-    if (raw.referrer) attribution.referrer = trimOrUndefined(raw.referrer);
+    if (referrer) attribution.referrer = referrer;
     if (utmSource) attribution.utmSource = utmSource;
     if (utmMedium) attribution.utmMedium = utmMedium;
     if (raw.utmCampaign) attribution.utmCampaign = trimOrUndefined(raw.utmCampaign);

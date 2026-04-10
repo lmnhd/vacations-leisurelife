@@ -1,4 +1,4 @@
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'crypto';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import type { CampaignLeadEvent, CampaignWaitlistEntry, LeadAttribution, LeadEventType } from './types';
@@ -57,6 +57,22 @@ export async function listLeadEvents(slug: string, email: string): Promise<Campa
     const normalizedEmail = email.trim().toLowerCase();
     const all = await listCampaignLeadEvents(slug);
     return all.filter((event) => event.email === normalizedEmail);
+}
+
+export async function clearCampaignLeadEvents(slug: string): Promise<number> {
+    const events = await listCampaignLeadEvents(slug);
+
+    await Promise.all(events.map((event) =>
+        chatDynamoDocumentClient.send(new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+                PK: event.PK,
+                SK: event.SK,
+            },
+        })),
+    ));
+
+    return events.length;
 }
 
 export interface FunnelSummary {

@@ -91,7 +91,6 @@ export default function Quicksignup() {
   //   console.log(schema.safeParse(form.getValues()));
   return (
     <form
-      {...form}
       // className={cn(
       //   "relative text-blue-600 body-font bg-gradient-to-br bg-violet-400? w-full from-violet-200/30 via-violet-400/30 to-black rounded-sm",
       //   prompt.className

@@ -126,6 +126,123 @@ function EventTimeline({ events, loading }: { events: CampaignLeadEvent[]; loadi
     );
 }
 
+function Field({ label, value }: { label: string; value?: string | number | boolean | null }) {
+    if (value === undefined || value === null || value === '') return null;
+    return (
+        <div className="min-w-0">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">{label}</p>
+            <p className="text-sm font-medium text-slate-800 break-words">{String(value)}</p>
+        </div>
+    );
+}
+
+type NurtureStatus = 'sent' | 'queued' | 'eligible' | 'pending' | 'not_yet' | 'not_triggered' | 'no_phone';
+
+function NurtureStatusBadge({ label, status }: { label: string; status: NurtureStatus }) {
+    const cls = status === 'sent' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+        : status === 'queued' ? 'text-amber-700 bg-amber-50 border-amber-200'
+        : status === 'eligible' ? 'text-blue-700 bg-blue-50 border-blue-200'
+        : status === 'no_phone' ? 'text-rose-600 bg-rose-50 border-rose-200'
+        : 'text-slate-400 bg-white border-slate-100';
+    return (
+        <div className={`rounded border px-2 py-1 text-xs font-medium ${cls}`}>
+            <span className="block text-[10px] uppercase tracking-wider opacity-70">{label}</span>
+            {status.replace(/_/g, ' ')}
+        </div>
+    );
+}
+
+function deriveNurtureReadiness(
+    lead: LeadDashboardRow,
+    events: CampaignLeadEvent[],
+): { confirmation: NurtureStatus; day3: NurtureStatus; day7: NurtureStatus; thresholdSms: NurtureStatus } {
+    const daysSince = Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+
+    const hasSentStage = (stage: string) =>
+        events.some((e) =>
+            (e.eventType === 'nurture_sent' || e.eventType === 'threshold_met_notified') &&
+            e.metadata?.stage === stage,
+        );
+
+    const hasQueued = (stage: string) =>
+        events.some((e) => e.eventType === 'nurture_queued' && e.metadata?.stage === stage);
+
+    const confirmationStatus: NurtureStatus = hasSentStage('waitlist_confirmation')
+        ? 'sent'
+        : hasQueued('waitlist_confirmation')
+            ? 'queued'
+            : 'pending';
+
+    const day3Status: NurtureStatus = hasSentStage('nurture_day3')
+        ? 'sent'
+        : daysSince >= 3
+            ? 'eligible'
+            : 'not_yet';
+
+    const day7Status: NurtureStatus = hasSentStage('nurture_day7')
+        ? 'sent'
+        : daysSince >= 7
+            ? 'eligible'
+            : 'not_yet';
+
+    const thresholdSmsStatus: NurtureStatus = hasSentStage('threshold_sms')
+        ? 'sent'
+        : !lead.phoneNumber
+            ? 'no_phone'
+            : 'not_triggered';
+
+    return { confirmation: confirmationStatus, day3: day3Status, day7: day7Status, thresholdSms: thresholdSmsStatus };
+}
+
+function LeadDetailPanel({ lead, events }: { lead: LeadDashboardRow; events: CampaignLeadEvent[] }) {
+    const nurture = deriveNurtureReadiness(lead, events);
+    const attr = lead.attribution;
+
+    return (
+        <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <Field label="Name" value={`${lead.firstName} ${lead.lastName}`} />
+                <Field label="Email" value={lead.email} />
+                <Field label="Signed up" value={new Date(lead.createdAt).toLocaleDateString()} />
+                <Field label="Passengers" value={lead.passengerCount} />
+                <Field label="Path" value={lead.bookingMode === 'BOOK_NOW' ? 'Book Now' : 'Group Wait'} />
+                <Field label="Manifest" value={lead.manifestStatus ?? 'PENDING'} />
+                <Field label="Notified" value={lead.notified ? 'Yes' : 'No'} />
+                <Field label="Converted" value={lead.converted ? 'Yes' : 'No'} />
+                <Field label="Latest stage" value={lead.latestLifecycleStage ?? '—'} />
+                <Field label="Phone" value={lead.phoneNumber ?? '—'} />
+            </div>
+            <div>
+                <p className="text-xs uppercase tracking-wider text-slate-500 mb-2">Attribution</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <Field label="Channel" value={attr?.sourceChannel ?? lead.sourceChannel} />
+                    <Field label="Provider" value={attr?.provider} />
+                    <Field label="Draft type" value={attr?.providerDraftType} />
+                    <Field label="Provider campaign" value={attr?.providerCampaignId} />
+                    <Field label="Provider ad" value={attr?.providerAdId} />
+                    <Field label="Provider lead" value={attr?.providerLeadId} />
+                    <Field label="Landing path" value={attr?.landingPath} />
+                    <Field label="Referrer" value={attr?.referrer} />
+                    <Field label="UTM source" value={attr?.utmSource} />
+                    <Field label="UTM medium" value={attr?.utmMedium} />
+                    <Field label="UTM campaign" value={attr?.utmCampaign} />
+                    <Field label="UTM content" value={attr?.utmContent} />
+                    <Field label="UTM term" value={attr?.utmTerm} />
+                </div>
+            </div>
+            <div>
+                <p className="text-xs uppercase tracking-wider text-slate-500 mb-2">Nurture readiness</p>
+                <div className="grid grid-cols-2 gap-2">
+                    <NurtureStatusBadge label="Confirmation" status={nurture.confirmation} />
+                    <NurtureStatusBadge label="Day 3" status={nurture.day3} />
+                    <NurtureStatusBadge label="Day 7" status={nurture.day7} />
+                    <NurtureStatusBadge label="Threshold SMS" status={nurture.thresholdSms} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function LeadRow({
     lead,
     selected,
@@ -175,6 +292,7 @@ export default function ConversionPage() {
     const [leadsData, setLeadsData] = useState<LeadsResponse | null>(null);
     const [leadsError, setLeadsError] = useState<string | null>(null);
     const [leadsLoading, setLeadsLoading] = useState(true);
+    const [resetting, setResetting] = useState(false);
 
     const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
     const [leadEvents, setLeadEvents] = useState<CampaignLeadEvent[]>([]);
@@ -215,6 +333,43 @@ export default function ConversionPage() {
         void loadLeads();
     }, [loadLeads]);
 
+    async function handleResetCampaign() {
+        if (!campaign) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Remove all waitlist sign-ups and lifecycle events for ${campaign.name}? This is intended for testing and cannot be undone.`,
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setResetting(true);
+        setLeadsError(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/reset`, {
+                method: 'POST',
+            });
+            const payload = await response.json() as { success?: boolean; error?: string };
+
+            if (!response.ok || !payload.success) {
+                setLeadsError(payload.error ?? 'Failed to reset campaign sign-ups.');
+                return;
+            }
+
+            setSelectedEmail(null);
+            setLeadEvents([]);
+            await loadLeads();
+        } catch {
+            setLeadsError('Failed to reset campaign sign-ups.');
+        } finally {
+            setResetting(false);
+        }
+    }
+
     function handleSelectLead(email: string) {
         if (selectedEmail === email) {
             setSelectedEmail(null);
@@ -245,9 +400,14 @@ export default function ConversionPage() {
                             </p>
                         ) : null}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => void loadLeads()}>
-                        Refresh
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => void loadLeads()} disabled={leadsLoading || resetting}>
+                            Refresh
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => void handleResetCampaign()} disabled={!campaign || leadsLoading || resetting}>
+                            {resetting ? 'Resetting…' : 'Reset Sign-Ups'}
+                        </Button>
+                    </div>
                 </div>
 
                 {leadsError ? (
@@ -340,21 +500,40 @@ export default function ConversionPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Event Timeline</CardTitle>
-                                <CardDescription>
-                                    {selectedEmail ? selectedEmail : 'Select a lead to view their lifecycle history'}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {selectedEmail ? (
-                                    <EventTimeline events={leadEvents} loading={eventsLoading} />
-                                ) : (
-                                    <p className="text-sm text-slate-400 italic">No lead selected.</p>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <div className="grid gap-4">
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-base">Lead Detail</CardTitle>
+                                    <CardDescription>
+                                        {selectedEmail ?? 'Select a lead to inspect'}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {selectedEmail && !eventsLoading ? (
+                                        <LeadDetailPanel
+                                            lead={leads.find((l) => l.email === selectedEmail)!}
+                                            events={leadEvents}
+                                        />
+                                    ) : selectedEmail ? (
+                                        <p className="text-sm text-slate-400">Loading…</p>
+                                    ) : (
+                                        <p className="text-sm text-slate-400 italic">No lead selected.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-base">Event Timeline</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {selectedEmail ? (
+                                        <EventTimeline events={leadEvents} loading={eventsLoading} />
+                                    ) : (
+                                        <p className="text-sm text-slate-400 italic">No lead selected.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 ) : null}
             </div>

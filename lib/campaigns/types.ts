@@ -303,6 +303,12 @@ export interface CampaignWaitlistEntry {
     manifestStatus?: 'PENDING' | 'SUBMITTED';
 
     /**
+     * Optional phone number for SMS nurture (threshold alerts).
+     * Stored in normalized E.164 form when provided.
+     */
+    phoneNumber?: string;
+
+    /**
      * Indicates whether the user has been emailed the final CB Booking Link
      */
     notified: boolean;
