@@ -14,7 +14,7 @@ function getRequestedTikTokScopes(): string[] {
         return Array.from(new Set(envOverride.split(',').map((scope) => scope.trim()).filter(Boolean)));
     }
 
-    const scopes = [...TIKTOK_DEFAULT_SCOPES];
+    const scopes: string[] = [...TIKTOK_DEFAULT_SCOPES];
     if (process.env.TIKTOK_REQUEST_VIDEO_PUBLISH?.trim().toLowerCase() === 'true') {
         scopes.push('video.publish');
     }

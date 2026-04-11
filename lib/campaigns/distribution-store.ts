@@ -124,7 +124,7 @@ export async function updateScheduledPostStatus(
                 status,
                 ...(externalPostId ? { externalPostId } : {}),
                 ...(normalizedProviderDraftType ? { providerDraftType: normalizedProviderDraftType } : {}),
-                notes: mergedNotes,
+                notes: mergedNotes ?? post.notes,
             };
         }),
     };
