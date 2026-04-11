@@ -5,6 +5,8 @@ import { prompt, alfa_slab_one } from '@/lib/fonts';
 interface LegalSection {
     heading: string;
     body: string[];
+    imageUrl?: string;
+    imageAlt?: string;
 }
 
 interface LegalPageProps {
@@ -35,6 +37,12 @@ export function LegalPage({ eyebrow, title, intro, sections, updatedAt }: LegalP
                         {sections.map((section) => (
                             <section key={section.heading} className="grid gap-3 border-b border-stone-200 pb-8 last:border-b-0 last:pb-0">
                                 <h2 className="text-2xl font-semibold text-slate-950">{section.heading}</h2>
+                                {section.imageUrl && (
+                                    <div className="my-4 overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={section.imageUrl} alt={section.imageAlt || "Section illustration"} className="w-full object-cover" />
+                                    </div>
+                                )}
                                 {section.body.map((paragraph) => (
                                     <p key={paragraph} className="text-sm leading-8 text-slate-700 md:text-base">
                                         {paragraph}

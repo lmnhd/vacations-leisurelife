@@ -3,24 +3,33 @@
  *
  * Uses the Twilio REST API directly (fetch-based, no SDK dependency).
  * Required env vars:
- *   TWILIO_ACCOUNT_SID  — account SID (AC...)
- *   TWILIO_AUTH_TOKEN   — auth token
- *   TWILIO_FROM_NUMBER  — E.164 sender number or messaging service SID
+ *   TWILIO_ACCOUNT_SID            — account SID (AC...)
+ *   TWILIO_AUTH_TOKEN             — auth token
+ *   TWILIO_MESSAGING_SERVICE_SID  — preferred Messaging Service SID (MG...)
+ *   TWILIO_FROM_NUMBER            — fallback E.164 sender number
  *
  * SMS is only sent when a valid phone number is available.
  * Callers must gate on phone number presence before calling sendSms.
  */
 
-function getCredentials(): { accountSid: string; authToken: string; fromNumber: string } {
+function getCredentials(): {
+    accountSid: string;
+    authToken: string;
+    messagingServiceSid: string | null;
+    fromNumber: string | null;
+} {
     const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
     const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
-    const fromNumber = process.env.TWILIO_FROM_NUMBER?.trim();
+    const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim() || null;
+    const fromNumber = process.env.TWILIO_FROM_NUMBER?.trim() || process.env.TWILIO_PHONE_NUMBER?.trim() || null;
 
     if (!accountSid) throw new Error('[Twilio] TWILIO_ACCOUNT_SID is not configured.');
     if (!authToken) throw new Error('[Twilio] TWILIO_AUTH_TOKEN is not configured.');
-    if (!fromNumber) throw new Error('[Twilio] TWILIO_FROM_NUMBER is not configured.');
+    if (!messagingServiceSid && !fromNumber) {
+        throw new Error('[Twilio] TWILIO_MESSAGING_SERVICE_SID or TWILIO_FROM_NUMBER/TWILIO_PHONE_NUMBER must be configured.');
+    }
 
-    return { accountSid, authToken, fromNumber };
+    return { accountSid, authToken, messagingServiceSid, fromNumber };
 }
 
 /**
@@ -84,13 +93,18 @@ export async function sendSms(
         return { sent: false, reason: 'invalid_phone' };
     }
 
-    const { accountSid, authToken, fromNumber } = getCredentials();
+    const { accountSid, authToken, messagingServiceSid, fromNumber } = getCredentials();
 
     const params = new URLSearchParams({
         To: normalized,
-        From: fromNumber,
         Body: input.body,
     });
+
+    if (messagingServiceSid) {
+        params.set('MessagingServiceSid', messagingServiceSid);
+    } else if (fromNumber) {
+        params.set('From', fromNumber);
+    }
 
     const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,

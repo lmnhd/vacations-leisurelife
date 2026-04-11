@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +71,7 @@ export function CampaignWaitlistForm({
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [smsConsent, setSmsConsent] = useState(false);
     const [passengerCount, setPassengerCount] = useState('2');
     const [preferredCabinType, setPreferredCabinType] = useState('Balcony');
     const [bookingMode, setBookingMode] = useState<'GROUP_WAIT' | 'BOOK_NOW'>(defaultMode);
@@ -86,6 +88,12 @@ export function CampaignWaitlistForm({
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
+        if (phoneNumber.trim() && !smsConsent) {
+            setError('Please confirm SMS consent before saving a phone number for threshold alerts.');
+            setResult(null);
+            return;
+        }
+
         setSubmitting(true);
         setError(null);
 
@@ -99,6 +107,7 @@ export function CampaignWaitlistForm({
                     lastName,
                     email,
                     phoneNumber: phoneNumber.trim() || undefined,
+                    smsConsent: phoneNumber.trim() ? smsConsent : undefined,
                     passengerCount: Number(passengerCount),
                     preferredCabinType,
                     specialRequests: specialRequests.trim() || undefined,
@@ -213,6 +222,24 @@ export function CampaignWaitlistForm({
                             />
                         </div>
 
+                        <label className="grid gap-3 rounded-lg border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                            <span className="flex items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={smsConsent}
+                                    onChange={(event) => setSmsConsent(event.target.checked)}
+                                    disabled={!enabled || submitting || !phoneNumber.trim()}
+                                    className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950"
+                                />
+                                <span>
+                                    By providing a mobile number, you agree to receive variable informational SMS alerts from Leisure Life Interactive about this selected cruise campaign, including threshold and next-step updates. Message and data rates may apply. Reply STOP to opt out and HELP for help.
+                                </span>
+                            </span>
+                            <span>
+                                See our <Link href="/privacy" className="underline underline-offset-4 hover:text-white">Privacy Policy</Link> and <Link href="/terms" className="underline underline-offset-4 hover:text-white">Terms of Service</Link>.
+                            </span>
+                        </label>
+
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label className="text-slate-100">Cabin preference</Label>
@@ -259,7 +286,7 @@ export function CampaignWaitlistForm({
                                 {submitting ? 'Saving...' : 'Save my spot'}
                             </Button>
                             <div className="px-4 py-3 text-sm border rounded-lg border-white/10 bg-slate-900/80 text-slate-300">
-                                We will use your selection to send the right next step for this sailing.
+                                We will use your selection to send the right next step for this sailing. SMS alerts are optional and only used when you provide a phone number and consent.
                             </div>
                         </div>
 

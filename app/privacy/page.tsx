@@ -32,7 +32,15 @@ export default function PrivacyPage() {
                     heading: 'Sharing And Storage',
                     body: [
                         'We do not sell personal information. We may use service providers that help us operate the site and related services, such as hosting, analytics, communications, payments, and customer support tooling.',
+                        'Mobile opt-in data and consent records are not shared with third parties or affiliates for their own marketing or promotional purposes.',
                         'Information is stored only as long as reasonably needed for business, legal, operational, or security purposes.',
+                    ],
+                },
+                {
+                    heading: 'Mobile Messaging Privacy',
+                    body: [
+                        'If you choose to provide a mobile phone number for campaign text alerts, we use that number only to deliver the informational SMS updates you requested, such as threshold alerts or the next booking step for a selected campaign.',
+                        'You may opt out of SMS messages at any time by replying STOP. For help, reply HELP or contact leisurelifeinteractive@gmail.com.',
                     ],
                 },
                 {

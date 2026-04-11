@@ -40,6 +40,7 @@ const WaitlistRequestSchema = z.object({
     attribution: AttributionSchema,
     /** Optional phone for SMS nurture. Accepted as-is; normalized before storage in the orchestrator. */
     phoneNumber: z.string().trim().max(20).optional(),
+    smsConsent: z.boolean().optional(),
 });
 
 type WaitlistNextStep = {
@@ -105,6 +106,13 @@ export async function POST(
     const previewCaller = parsed.data.caller === 'preview';
     if (campaign.status === 'DRAFT' && !previewCaller) {
         return NextResponse.json({ success: false, error: 'This campaign is not accepting public interest yet.' }, { status: 409 });
+    }
+
+    if (parsed.data.phoneNumber && !parsed.data.smsConsent) {
+        return NextResponse.json({
+            success: false,
+            error: 'SMS consent is required before we can save a phone number for threshold alerts.',
+        }, { status: 400 });
     }
 
     if (campaign.status === 'EXPIRED') {
