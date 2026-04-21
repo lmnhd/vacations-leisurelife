@@ -60,7 +60,7 @@ export async function dispatchPost(
                 throw new Error(`Platform ${post.platform} connector not yet implemented in dispatcher.`);
         }
 
-        await updateScheduledPostStatus(campaignSlug, postId, 'posted', externalPostId, metadataNotes);
+        await updateScheduledPostStatus(campaignSlug, postId, 'posted', externalPostId, undefined, metadataNotes);
 
         return { success: true, externalPostId };
     } catch (error: any) {
