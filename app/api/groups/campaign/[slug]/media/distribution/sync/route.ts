@@ -79,7 +79,7 @@ export async function POST(
                 metadataNotes.push(`tiktok_public_post_id=${publishStatus.publiclyAvailablePostId}`);
             }
 
-            await updateScheduledPostStatus(slug, post.postId, nextStatus, post.externalPostId, metadataNotes);
+            await updateScheduledPostStatus(slug, post.postId, nextStatus, post.externalPostId, undefined, metadataNotes);
 
             if (nextStatus === 'posted') {
                 posted += 1;
