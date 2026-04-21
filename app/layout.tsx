@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Leisure Life Vacations",
   description: "Your first stop on a fantastic voyage",
+  alternates: {
+    canonical: "https://leisurelifeinteractive.net",
+  },
 };
 
 export default function RootLayout({

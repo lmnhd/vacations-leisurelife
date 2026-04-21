@@ -99,12 +99,12 @@ async function dispatchSupportedPlatforms(
 
             if (result.status !== 'failed') {
                 if (persistStatusUpdates) {
-                    await updateScheduledPostStatus(campaign.id, post.postId, result.status, result.externalPostId, result.metadataNotes);
+                    await updateScheduledPostStatus(campaign.id, post.postId, result.status, result.externalPostId, result.externalReviewUrl, result.metadataNotes);
                 }
                 dispatchedPosts += 1;
             } else {
                 if (persistStatusUpdates) {
-                    await updateScheduledPostStatus(campaign.id, post.postId, 'failed', result.externalPostId, result.metadataNotes);
+                    await updateScheduledPostStatus(campaign.id, post.postId, 'failed', result.externalPostId, result.externalReviewUrl, result.metadataNotes);
                 }
                 skippedPosts += 1;
             }

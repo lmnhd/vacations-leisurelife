@@ -1,5 +1,6 @@
 import type { Campaign } from './types';
 import type { AssetRecord, CampaignMediaManifest, DistributionPostStatus, ScheduledPost } from './schema';
+import { buildMetaAdsReviewUrl, getMetaAdsConfig } from '@/lib/integrations/meta-ads';
 
 export type MarketingProviderMode = 'simulate' | 'live';
 
@@ -8,17 +9,10 @@ export interface MarketingDispatchResult {
     platform: ScheduledPost['platform'];
     status: DistributionPostStatus;
     externalPostId?: string;
+    externalReviewUrl?: string;
     metadataNotes?: string[];
     warning?: string;
     preview: Record<string, unknown>;
-}
-
-interface MetaAdsConfig {
-    accessToken: string;
-    adAccountId: string;
-    adSetId: string;
-    pageId: string;
-    instagramActorId?: string;
 }
 
 interface MetaCreativeCreateResponse {
@@ -188,28 +182,8 @@ function buildPreviewPayload(
         primaryText: adCopy.primaryText,
         description: adCopy.description,
         cta: adCopy.cta,
-        destinationUrl: `/campaigns/${campaign.id}`,
+        destinationUrl: getCampaignLandingUrl(campaign),
         campaignStage: post.campaignStage,
-    };
-}
-
-function getMetaAdsConfig(): MetaAdsConfig | null {
-    const accessToken = process.env.META_ACCESS_TOKEN?.trim();
-    const adAccountId = process.env.META_AD_ACCOUNT_ID?.trim();
-    const adSetId = process.env.META_AD_SET_ID?.trim();
-    const pageId = process.env.META_PAGE_ID?.trim();
-    const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID?.trim();
-
-    if (!accessToken || !adAccountId || !adSetId || !pageId) {
-        return null;
-    }
-
-    return {
-        accessToken,
-        adAccountId,
-        adSetId,
-        pageId,
-        ...(instagramActorId ? { instagramActorId } : {}),
     };
 }
 
@@ -274,7 +248,7 @@ async function dispatchMetaAdsLive(
     campaign: Campaign,
     post: ScheduledPost,
     preview: Record<string, unknown>,
-): Promise<{ externalPostId: string }> {
+): Promise<{ externalPostId: string; status: DistributionPostStatus; externalReviewUrl: string; metadataNotes: string[] }> {
     const config = getMetaAdsConfig();
     if (!config) {
         throw new Error('Missing META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, META_AD_SET_ID, or META_PAGE_ID');
@@ -285,7 +259,7 @@ async function dispatchMetaAdsLive(
     const description = typeof preview.description === 'string' ? preview.description : campaign.description;
     const destinationUrl = typeof preview.destinationUrl === 'string'
         ? preview.destinationUrl
-        : `https://www.leisurelifeinteractive.com/campaigns/${campaign.id}`;
+        : getCampaignLandingUrl(campaign);
     const imageUrl = typeof preview.mediaUrl === 'string' ? preview.mediaUrl : '';
     const ctaType = mapCtaType(typeof preview.cta === 'string' ? preview.cta : 'LEARN_MORE');
 
@@ -334,8 +308,21 @@ async function dispatchMetaAdsLive(
         },
     );
 
+    const externalReviewUrl = buildMetaAdsReviewUrl(config.adAccountId, adResponse.id);
+
     return {
         externalPostId: adResponse.id,
+        status: 'draft_created',
+        externalReviewUrl,
+        metadataNotes: [
+            `meta_ad_account_id=${config.adAccountId}`,
+            `meta_ad_set_id=${config.adSetId}`,
+            `meta_ad_creative_id=${creativeResponse.id}`,
+            `meta_ad_id=${adResponse.id}`,
+            `meta_review_url=${externalReviewUrl}`,
+            `meta_destination_url=${destinationUrl}`,
+            `meta_dispatched_at=${new Date().toISOString()}`,
+        ],
     };
 }
 
@@ -517,8 +504,10 @@ export async function dispatchMarketingPost(
                 return {
                     postId: post.postId,
                     platform: post.platform,
-                    status: 'posted',
+                    status: liveResult.status,
                     externalPostId: liveResult.externalPostId,
+                    externalReviewUrl: liveResult.externalReviewUrl,
+                    metadataNotes: liveResult.metadataNotes,
                     preview,
                 };
             } catch (error: unknown) {

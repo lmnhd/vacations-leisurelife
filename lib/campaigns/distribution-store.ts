@@ -98,6 +98,7 @@ export async function updateScheduledPostStatus(
     postId: string,
     status: DistributionPostStatus,
     externalPostId?: string,
+    externalReviewUrl?: string,
     metadataNotes?: string[],
 ): Promise<void> {
     const schedule = await getDistributionSchedule(slug);
@@ -123,6 +124,7 @@ export async function updateScheduledPostStatus(
                 ...post,
                 status,
                 ...(externalPostId ? { externalPostId } : {}),
+                ...(externalReviewUrl ? { externalReviewUrl } : {}),
                 ...(normalizedProviderDraftType ? { providerDraftType: normalizedProviderDraftType } : {}),
                 notes: mergedNotes ?? post.notes,
             };

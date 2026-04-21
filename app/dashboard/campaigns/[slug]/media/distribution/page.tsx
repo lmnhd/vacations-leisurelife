@@ -26,6 +26,7 @@ type ScheduledPost = {
     campaignStage: string;
     status: string;
     externalPostId?: string;
+    externalReviewUrl?: string;
     notes?: string[];
 };
 
@@ -65,7 +66,7 @@ type DistributionStatusResponse = {
     executions: DistributionExecution[];
     summary: {
         totalPosts: number;
-        perPlatform: Record<string, { total: number; posted: number; scheduled: number; failed: number }>;
+        perPlatform: Record<string, { total: number; posted: number; draftCreated: number; scheduled: number; failed: number }>;
     };
 };
 
@@ -400,10 +401,14 @@ export default function CampaignDistributionPage() {
                                         <div className="text-sm font-medium text-neutral-100">{PLATFORM_LABELS[platform] ?? platform}</div>
                                         <Badge variant="outline" className="border-neutral-700 text-neutral-300">{stats.total} total</Badge>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 text-xs text-neutral-400">
+                                    <div className="grid grid-cols-4 gap-2 text-xs text-neutral-400">
                                         <div className="rounded-md bg-neutral-900 p-2">
                                             <div className="text-neutral-500">Posted</div>
                                             <div className="mt-1 text-base font-semibold text-neutral-50">{stats.posted}</div>
+                                        </div>
+                                        <div className="rounded-md bg-neutral-900 p-2">
+                                            <div className="text-neutral-500">Drafts</div>
+                                            <div className="mt-1 text-base font-semibold text-neutral-50">{stats.draftCreated}</div>
                                         </div>
                                         <div className="rounded-md bg-neutral-900 p-2">
                                             <div className="text-neutral-500">Queued</div>
@@ -472,6 +477,23 @@ export default function CampaignDistributionPage() {
                                                     <div className="rounded-md bg-neutral-950 p-2">Copy {post.copyVariant}</div>
                                                     <div className="rounded-md bg-neutral-950 p-2">{formatTimestamp(post.scheduledAt)}</div>
                                                 </div>
+                                                {(post.externalPostId || post.externalReviewUrl) ? (
+                                                    <div className="mt-3 grid gap-2 text-xs text-neutral-400">
+                                                        {post.externalPostId ? (
+                                                            <div className="rounded-md bg-neutral-950 p-2">Native ID {post.externalPostId}</div>
+                                                        ) : null}
+                                                        {post.externalReviewUrl ? (
+                                                            <a
+                                                                href={post.externalReviewUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="rounded-md bg-neutral-950 p-2 text-cyan-300 hover:text-cyan-200"
+                                                            >
+                                                                Open native review
+                                                            </a>
+                                                        ) : null}
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         ))}
                                     </div>
@@ -535,7 +557,7 @@ export default function CampaignDistributionPage() {
                             <CardDescription className="text-neutral-400">What still needs to be added below this dashboard.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-3 sm:grid-cols-2 text-sm text-neutral-300">
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Email, SMS, TikTok, Meta, and Pinterest adapters</div>
+                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Provider validation layer for Meta, TikTok, and Google</div>
                             <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Manifest-submission and expiry trigger handling</div>
                             <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Kill switch and halt controls</div>
                             <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Asset swap and per-post manual override tools</div>
