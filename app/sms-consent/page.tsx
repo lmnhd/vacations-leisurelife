@@ -41,8 +41,8 @@ export default function SmsConsentPage() {
                 {
                     heading: 'Policy Links',
                     body: [
-                        'Privacy Policy: https://leisurelifevacations.net/privacy',
-                        'Terms of Service: https://leisurelifevacations.net/terms',
+                        'Privacy Policy: https://leisurelifeinteractive.net/privacy',
+                        'Terms of Service: https://leisurelifeinteractive.net/terms',
                     ],
                 },
             ]}

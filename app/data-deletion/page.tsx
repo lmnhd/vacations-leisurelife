@@ -17,7 +17,7 @@ export default function DataDeletionPage() {
                 {
                     heading: 'How To Request Deletion',
                     body: [
-                        'Send an email to leisurelifeinteractive@gmail.com with the subject line Data Deletion Request.',
+                        'Send an email to nathaniel@leisurelifeinteractive.net with the subject line Data Deletion Request.',
                         'Include the name, email address, phone number, or other contact details you used when interacting with us so we can identify the relevant records.',
                     ],
                 },
@@ -37,7 +37,7 @@ export default function DataDeletionPage() {
                 {
                     heading: 'Contact',
                     body: [
-                        'For deletion requests or questions about this process, contact leisurelifeinteractive@gmail.com.',
+                        'For deletion requests or questions about this process, contact nathaniel@leisurelifeinteractive.net.',
                     ],
                 },
             ]}

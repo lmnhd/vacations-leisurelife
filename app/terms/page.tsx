@@ -40,7 +40,7 @@ export default function TermsPage() {
                     body: [
                         'Leisure Life Interactive Campaign SMS Alerts is an optional informational messaging program for users who choose to provide a mobile number on a campaign landing page and consent to receive text alerts related to that selected cruise campaign.',
                         'Message frequency varies. Messages may include threshold alerts, booking-readiness updates, or other requested campaign status notifications. Message and data rates may apply.',
-                        'For help, reply HELP or contact leisurelifeinteractive@gmail.com. To stop receiving messages, reply STOP at any time.',
+                        'For help, reply HELP or contact nathaniel@leisurelifeinteractive.net. To stop receiving messages, reply STOP at any time.',
                     ],
                 },
                 {
@@ -52,7 +52,7 @@ export default function TermsPage() {
                 {
                     heading: 'Contact',
                     body: [
-                        'Questions about these terms may be directed to leisurelifeinteractive@gmail.com.',
+                        'Questions about these terms may be directed to nathaniel@leisurelifeinteractive.net.',
                     ],
                 },
             ]}

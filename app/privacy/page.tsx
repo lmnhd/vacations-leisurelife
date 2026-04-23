@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                     heading: 'Mobile Messaging Privacy',
                     body: [
                         'If you choose to provide a mobile phone number for campaign text alerts, we use that number only to deliver the informational SMS updates you requested, such as threshold alerts or the next booking step for a selected campaign.',
-                        'You may opt out of SMS messages at any time by replying STOP. For help, reply HELP or contact leisurelifeinteractive@gmail.com.',
+                        'You may opt out of SMS messages at any time by replying STOP. For help, reply HELP or contact nathaniel@leisurelifeinteractive.net.',
                     ],
                 },
                 {
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
                 {
                     heading: 'Contact',
                     body: [
-                        'For privacy questions or requests, contact Leisure Life Interactive at leisurelifeinteractive@gmail.com.',
+                        'For privacy questions or requests, contact Leisure Life Interactive at nathaniel@leisurelifeinteractive.net.',
                     ],
                 },
             ]}
