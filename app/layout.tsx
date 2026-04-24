@@ -11,13 +11,13 @@ export const metadata: Metadata = {
   title: "Leisure Life Interactive",
   description:
     "Leisure Life Interactive (a trade name of HALIMEDE LLC) builds interactive group cruise campaigns.",
-  metadataBase: new URL("https://leisurelifeinteractive.net"),
+  metadataBase: new URL("https://www.leisurelifeinteractive.net"),
   alternates: {
-    canonical: "https://leisurelifeinteractive.net",
+    canonical: "https://www.leisurelifeinteractive.net",
   },
   openGraph: {
     siteName: "Leisure Life Interactive",
-    url: "https://leisurelifeinteractive.net",
+    url: "https://www.leisurelifeinteractive.net",
     type: "website",
   },
   verification: {
