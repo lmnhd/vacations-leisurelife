@@ -267,6 +267,8 @@ async function dispatchMetaAdsLive(
         throw new Error('Meta Ads requires an image or video URL in preview.mediaUrl');
     }
 
+    const imageHash = await uploadMetaImageHash(imageUrl, config.adAccountId, config.accessToken);
+
     const objectStorySpec: Record<string, unknown> = {
         page_id: config.pageId,
         link_data: {
@@ -274,7 +276,7 @@ async function dispatchMetaAdsLive(
             link: destinationUrl,
             name: headline,
             description,
-            image_url: imageUrl,
+            image_hash: imageHash,
             call_to_action: {
                 type: ctaType,
                 value: {
@@ -426,6 +428,39 @@ async function dispatchTikTokPaidLive(
         status: 'draft_created',
         metadataNotes,
     };
+}
+
+async function uploadMetaImageHash(
+    imageUrl: string,
+    adAccountId: string,
+    accessToken: string,
+): Promise<string> {
+    const fetchResponse = await fetch(imageUrl);
+    if (!fetchResponse.ok) {
+        throw new Error(`Failed to download image for Meta upload: ${fetchResponse.statusText}`);
+    }
+
+    const blob = await fetchResponse.blob();
+    const formData = new FormData();
+    formData.append('access_token', accessToken);
+    formData.append('filename', blob, 'ad_image.jpg');
+
+    const response = await fetch(`https://graph.facebook.com/v22.0/act_${adAccountId}/adimages`, {
+        method: 'POST',
+        body: formData as any,
+    });
+
+    const payload = (await response.json()) as any;
+    if (!response.ok) {
+        throw new Error(`Meta Image Upload Error: ${JSON.stringify(payload)}`);
+    }
+
+    const imageHash = payload.images?.['ad_image.jpg']?.hash;
+    if (!imageHash) {
+        throw new Error('Meta API did not return an image hash');
+    }
+
+    return imageHash;
 }
 
 export async function dispatchMarketingPost(
