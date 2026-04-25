@@ -85,6 +85,7 @@ async function dispatchSupportedPlatforms(
             || post.platform === 'instagram_reels'
             || post.platform === 'instagram_story'
             || post.platform === 'facebook_ad'
+            || post.platform === 'google_display'
         ) {
             const result = await dispatchMarketingPost(campaign, manifest, post, providerMode);
             previews.push({

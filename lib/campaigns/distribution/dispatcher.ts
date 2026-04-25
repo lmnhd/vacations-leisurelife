@@ -6,6 +6,7 @@ import { updateScheduledPostStatus } from '../distribution-store';
 import { executeTikTokPost } from './platforms/tiktok';
 import { executeMetaGraphPost } from './platforms/meta-graph';
 import { executeMetaAdsUpdate } from './platforms/meta-ads';
+import { createGoogleDisplayDraft } from './platforms/google-ads/campaign';
 
 /**
  * Dispatcher handles routing a scheduled post to the appropriate platform connector.
@@ -36,6 +37,7 @@ export async function dispatchPost(
         console.log(`[DISPATCHER] Executing post ${postId} on platform ${post.platform} for campaign ${campaignSlug}`);
         
         let externalPostId: string | undefined;
+        let externalReviewUrl: string | undefined;
         let metadataNotes: string[] | undefined;
 
         switch (post.platform) {
@@ -55,12 +57,39 @@ export async function dispatchPost(
             case 'facebook_ad':
                 externalPostId = await executeMetaAdsUpdate(campaignSlug, post);
                 break;
+            case 'google_display': {
+                const { getMediaManifest } = await import('../media/media-store');
+                const manifest = await getMediaManifest(campaignSlug);
+                if (!manifest) throw new Error(`Manifest not found for ${campaignSlug}`);
+                
+                // Blueprint summary is required for targeting generation. For now, use a generic fallback.
+                const blueprintSummary = 'A themed group cruise vacation.';
+                const googleResult = await createGoogleDisplayDraft(campaignSlug, post, manifest, blueprintSummary);
+                
+                externalPostId = googleResult.campaignId;
+                externalReviewUrl = `https://ads.google.com/aw/campaigns?campaignId=${googleResult.campaignId}`;
+                metadataNotes = [
+                    `draftType=paid_lead_gen_ad`,
+                    `campaign_id=${googleResult.campaignId}`,
+                    `ad_group_id=${googleResult.adGroupId}`,
+                    `ad_id=${googleResult.adId}`,
+                    `status=PAUSED`,
+                ];
+                break;
+            }
             // Additional platforms e.g., email, discord, sms would go here
             default:
                 throw new Error(`Platform ${post.platform} connector not yet implemented in dispatcher.`);
         }
 
-        await updateScheduledPostStatus(campaignSlug, postId, 'posted', externalPostId, undefined, metadataNotes);
+        await updateScheduledPostStatus(
+            campaignSlug, 
+            postId, 
+            'posted', 
+            externalPostId, 
+            externalReviewUrl, 
+            metadataNotes
+        );
 
         return { success: true, externalPostId };
     } catch (error: any) {

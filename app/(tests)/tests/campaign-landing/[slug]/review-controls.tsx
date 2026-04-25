@@ -67,6 +67,18 @@ interface TikTokAdvertiserStatusResponse {
     advertiserAccountId?: string;
 }
 
+interface GoogleAdsStatusResponse {
+    ready: boolean;
+    reason?: string;
+    detail?: string;
+    expiredAt?: string;
+    canRefresh?: boolean;
+    accountLabel?: string;
+    accessTokenExpiresAt?: string | null;
+    scope?: string | null;
+    hasAdWordsScope?: boolean;
+}
+
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
 
 interface StatusFlipResponse {
@@ -195,13 +207,15 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setValidateMessage('');
 
         try {
-            const [organicResponse, paidResponse] = await Promise.all([
+            const [organicResponse, paidResponse, googleResponse] = await Promise.all([
                 fetch('/api/integrations/tiktok/status', { cache: 'no-store' }),
                 fetch('/api/integrations/tiktok/advertiser-status', { cache: 'no-store' }),
+                fetch('/api/integrations/google/status', { cache: 'no-store' }),
             ]);
 
             const organic = await organicResponse.json() as TikTokProviderStatusResponse;
             const paid = await paidResponse.json() as TikTokAdvertiserStatusResponse;
+            const google = await googleResponse.json() as GoogleAdsStatusResponse;
 
             let organicMessage: string;
             if (organic.ready) {
@@ -222,7 +236,17 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                 ? `Paid TikTok: advertiser ready — ${paid.advertiserAccountId}`
                 : `Paid TikTok: advertiser not ready — ${(paid.requiredVars ?? []).join(', ') || paid.reason || 'unknown'}`;
 
-            setValidateMessage(`${organicMessage} | ${paidMessage}`);
+            let googleMessage: string;
+            if (google.ready) {
+                googleMessage = `Google Ads: ready — ${google.accountLabel}`;
+            } else if (google.reason === 'token_expired') {
+                const refresh = google.canRefresh ? ' · refresh token available' : ' · refresh token also expired';
+                googleMessage = `Google Ads: token expired at ${google.expiredAt ?? 'unknown'}${refresh}`;
+            } else {
+                googleMessage = `Google Ads: not configured — ${google.detail ?? google.reason ?? 'unknown'}`;
+            }
+
+            setValidateMessage(`${organicMessage} | ${paidMessage} | ${googleMessage}`);
         } catch (error) {
             setValidateMessage(error instanceof Error ? error.message : 'Provider validation failed.');
         } finally {

@@ -108,6 +108,15 @@ export function buildDistributionSchedule(
         notes: ['Creates ad-ready placeholder schedule entry. Platform adapter not implemented yet.'],
     } : null);
 
+    addIfPresent(drafts, primaryHeroAssetId ? {
+        platform: 'google_display',
+        assetId: primaryHeroAssetId,
+        copyVariant: 'google_display_0',
+        scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
+        campaignStage: 'seed_day_0',
+        notes: ['Creates paused Google Ads Display draft targeted at custom intent audiences.'],
+    } : null);
+
     addIfPresent(drafts, tiktokSeedId ? {
         platform: defaultTikTokPlatform,
         assetId: tiktokSeedId,

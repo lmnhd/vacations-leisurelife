@@ -1141,6 +1141,7 @@ export const DistributionPlatformEnum = z.enum([
     'instagram_reels',
     'instagram_story',
     'facebook_ad',
+    'google_display',
     'youtube',
     'pinterest',
     'discord',

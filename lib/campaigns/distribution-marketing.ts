@@ -657,6 +657,39 @@ export async function dispatchMarketingPost(
       }
     }
 
+    if (post.platform === "google_display") {
+      try {
+        const { createGoogleDisplayDraft } = await import("./distribution/platforms/google-ads/campaign");
+        const blueprintSummary = "A themed group cruise vacation."; // Fallback summary
+        const googleResult = await createGoogleDisplayDraft(campaign.id, post, manifest, blueprintSummary);
+        
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: "draft_created",
+          externalPostId: googleResult.campaignId,
+          externalReviewUrl: `https://ads.google.com/aw/campaigns?campaignId=${googleResult.campaignId}`,
+          metadataNotes: [
+            `draftType=paid_lead_gen_ad`,
+            `campaign_id=${googleResult.campaignId}`,
+            `ad_group_id=${googleResult.adGroupId}`,
+            `ad_id=${googleResult.adId}`,
+            `status=PAUSED`,
+          ],
+          preview,
+        };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown Google Ads live dispatch error";
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: "failed",
+          warning: `Google Ads dispatch failed: ${message}`,
+          preview,
+        };
+      }
+    }
+
     if (post.platform === "facebook_ad") {
       try {
         const liveResult = await dispatchMetaAdsLive(campaign, post, preview);
