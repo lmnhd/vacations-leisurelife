@@ -37,5 +37,5 @@ export default clerkMiddleware(async (auth, req) => {
 export const config = {
   // Exclude the root home page and static files so Clerk's dev handshake
   // doesn't block the Facebook crawler or other bots.
-  matcher: ['/((?!.*\\..*|_next).+)', '/(api|trpc)(.*)'],
+  matcher: ["/((?!.*\\..*|_next).+)", "/(api|trpc)(.*)"],
 };

@@ -4,13 +4,13 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: '/',
+        userAgent: "*",
+        allow: "/",
       },
       {
-        userAgent: 'facebookexternalhit',
-        allow: '/',
-      }
-    ]
+        userAgent: "facebookexternalhit",
+        allow: "/",
+      },
+    ],
   };
 }
