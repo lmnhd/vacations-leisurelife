@@ -372,7 +372,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                 {reviewing ? 'Loading Schedule...' : 'Review Schedule'}
                             </Button>
                             <Button onClick={handleValidateProviders} disabled={validating} variant="outline" className="border-amber-300 bg-white">
-                                {validating ? 'Validating...' : 'Validate TikTok Paths'}
+                                {validating ? 'Validating...' : 'Validate Providers'}
                             </Button>
                             <Button onClick={handlePreviewDispatch} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
                                 {previewing ? 'Previewing...' : 'Preview Simulated Dispatch'}
