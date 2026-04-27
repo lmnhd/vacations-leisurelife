@@ -4,9 +4,6 @@ import { useReducer, useState, createContext, useEffect } from "react";
 import { useRouter } from 'next/navigation'
 import searchParams from "@/components/vtg/searchParams.json";
 import { Passenger } from "../utils/BookingInfo2";
-import { SignIn, useAuth, useUser } from "@clerk/nextjs";
-import { resolve } from "path";
-import { set } from "zod";
 
 
 
@@ -342,9 +339,6 @@ export const BookingProvider = ({ children }) => {
     }
   };
   let pass = new Passenger();
-  const { isLoaded, isSignedIn, user } = useUser();
-  
-  
   const [passengerIndex, setPassengerIndex] = useState(0);
   const [searchResults, setSearchResults] = useState([]);
   const [currentTrip, setCurrentTrip] = useState(null);
@@ -373,18 +367,6 @@ export const BookingProvider = ({ children }) => {
   const [buttonVisible, setButtonVisible] = useState(false);
   
 
-  
-  if(!isLoaded){return null}else{
-    if(user){
-      // pass.email = user.emailAddresses[0].emailAddress;
-      // pass.firstName = user.firstName;
-      // pass.lastName = user.lastName;
-    }
-    
-      
-  }
-  
-  console.log('isLoaded = ',isLoaded)
   
   const params = searchParams;
   //console.log(curPassenger);
