@@ -1,6 +1,5 @@
 "use client";
 import TypewriterComponent from "typewriter-effect";
-import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import "@/app/(landing)/landing.css";
@@ -10,7 +9,6 @@ const HERO_IMAGE_URL =
   "https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=2070&q=80";
 
 export const LandingHero = () => {
-  const { isSignedIn } = useAuth();
   return (
     <div>
       <div className="image-container max-h-[800px] overflow-hidden">

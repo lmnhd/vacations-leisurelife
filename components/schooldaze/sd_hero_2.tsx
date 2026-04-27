@@ -1,6 +1,5 @@
 "use client";
 // import TypewriterComponent from "typewriter-effect";
-import { useAuth } from "@clerk/nextjs";
 // import Link from "next/link";
 // import { Button } from "@/components/ui/button";
 // import heroImage from "@/public/lead-image-64879d5609c5d.jpg";
@@ -31,7 +30,6 @@ import logo from '@/public/DD (1).png'
 import Sd_hero_text from "./sd_hero_text";
 
 export const SDLandingHero2 = ({ icon }: { icon: any }) => {
-  const { isSignedIn } = useAuth();
   return (
     <div
     //className="flex flex-col justify-start space-y-5 font-bold text-center h-[900px] text-white -mt-9 mx-auto "

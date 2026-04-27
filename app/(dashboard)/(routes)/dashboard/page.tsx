@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
 import LLVCard from "../../../../public/leisure_life_card.png"
 import {ArrowRight,Music4, LayoutDashboard,MessageSquare,ImageIcon, Home, BadgeDollarSign, Newspaper,Search, PartyPopper } from "lucide-react";
 import Image from "next/image";

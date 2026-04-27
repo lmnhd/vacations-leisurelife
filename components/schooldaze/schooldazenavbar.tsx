@@ -3,7 +3,6 @@
 //import { Montserrat } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
 import logo from '@/public/school-cover.jpg'
 import llvLogo from '@/public/llv logo_color_sept23-4.png'
 import { 
@@ -23,8 +22,6 @@ import { Button } from "@/components/ui/button";
 //const font = Montserrat({ weight: "600", subsets: ["latin"] });
 const orbitron = Orbitron({ weight: "400", subsets: ["latin"] });
 export const Schooldazenavbar = () => {
-  const { isSignedIn } = useAuth();
-
   return (
     <nav className={cn("flex flex-row justify-between p-0 text-black  md:p-4 bg-gradient-to-bl? bg-white from-red-950 via-black to-red-950",orbitron.className)}>
       <p>School Daze</p>

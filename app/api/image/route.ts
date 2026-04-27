@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server"
 import Configuration, { ClientOptions, OpenAI} from "openai"
 import { resourceLimits } from "worker_threads";
@@ -14,13 +13,9 @@ export async function POST(
     req: Request,
 ) {
     try {
-        const { userId } = await auth();
         const body = await req.json();
         const { prompt, amount = 1, resolution = "512x512"} = body;
         console.log(body);
-        if (!userId) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
 
         if (!configuration.apiKey) {
             return new NextResponse("OpenAI key not configured", { status: 500 });

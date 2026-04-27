@@ -3,7 +3,6 @@
 import { Montserrat } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import logo from '@/public/llv logo_color_sept23-3.png'
 
@@ -19,7 +18,6 @@ const NAV_LINKS = [
 ];
 
 export const LandingNavbar = () => {
-  const { isSignedIn } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -66,7 +64,7 @@ export const LandingNavbar = () => {
             </a>
           ))}
         </div>
-        <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
+        <Link href="/dashboard">
           <Button variant="premium" className="rounded-full font-semibold px-5">
             Let&apos;s Go!
           </Button>

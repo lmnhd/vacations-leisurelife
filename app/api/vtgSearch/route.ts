@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { search } from "./vtg.mjs";
 
 import { NextResponse } from "next/server";
@@ -6,7 +5,6 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
   try {
     const body = await req.json();
   const { data } = body;

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { callLLM, ModelName } from "@/lib/ai/llm-gateway";
 
@@ -12,13 +11,9 @@ export async function POST(
     req: Request,
 ) {
     try {
-        const { userId } = await auth();
         const body = await req.json();
         const {messages} = body;
         console.log(messages);
-        if (!userId) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
 
         if (!messages) {
             return new NextResponse("Messages are required", { status: 400 });
