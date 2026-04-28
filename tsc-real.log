@@ -1,0 +1,38 @@
+﻿lib/campaigns/__tests__/reference-packs.test.ts(235,5): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/aesthetic-engine.ts(585,61): error TS18046: 'object' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(588,9): error TS2698: Spread types may only be created from object types.
+lib/campaigns/aesthetic-engine.ts(592,16): error TS18046: 'object' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(593,73): error TS18046: 'object' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(594,71): error TS18046: 'object' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1088,33): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1088,84): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1089,30): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1089,66): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1090,42): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1090,61): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/aesthetic-engine.ts(1090,79): error TS18046: 'issue' is of type 'unknown'.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(33,34): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(34,27): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(35,23): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(39,12): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(125,13): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(141,24): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(251,24): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/generators/tiktok-seed-generator.ts(254,22): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(6,31): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(12,14): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(13,14): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(34,49): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(53,85): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(53,117): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(53,134): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(92,71): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(92,101): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(92,118): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(96,89): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(96,121): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(96,138): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(170,34): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(171,27): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(172,23): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+lib/campaigns/media/video-composer.ts(174,12): error TS2580: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.

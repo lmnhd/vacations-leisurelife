@@ -1,26 +1,50 @@
-# Log Analysis & Solutions: LLM Validation & Timeout Errors
+# Instructions for Claude: Implement Direct Retail Booking Path
 
-## 1. Primary Issue: Missing Required Fields
-The logs show massive Zod schema validation failures because the LLM is entirely omitting large chunks of required nested fields. Examples include missing keys across:
-- `visual.colorPalette` (missing secondary, accent, background, etc.)
-- `visual.typographyDirection` (missing headlineStyle, suggestedFonts)
-- `messaging` (missing heroSlogan, ctaVariants, toneKeywords)
-- `merch.coreItem` and `merch.practicalItem` (missing productType, designDescription, dallePrompt)
+We need to bridge the Odysseus booking engine prototype to the front-end so that users who want to bypass the group waiting period can book the retail inventory immediately. 
 
-## 2. Type Mismatches
-The model is failing on `merch.nicheSpecificItems`. The schema requires an array of **objects**, but the LLM is returning an array of **strings**.
+Since running Playwright on the fly during a form submission takes too long, we must pre-generate the Odysseus retail checkout link during the Phase B inventory matching step and store it in DynamoDB.
 
-## 3. The Root Cause (Strict Schema Constraints)
-Based on your workspace patterns (`patterns.md`), OpenAI's Structured Output strict JSON generation heavily dislikes Zod schemas that use `.default()` values or complex optional nesting. When the schema contains these modifiers, the derived JSON schema given to the LLM may silently omit those keys, causing the model to skip generating them entirely.
+Please implement the following changes:
 
-## 4. Cascading Failure (504 Timeouts)
-Because the initial payload fails validation, the system enters a lengthy JSON-repair and fallback retry loop (switching between `gpt-5` and `gpt-5-mini`). Exhausting these retries takes too long, causing the Next.js API route to hit its 300-second deadline (`[brief-engine:timeout]`) and resulting in a 504 error.
+## 1. Update the Campaign Type Definitions
+**File:** `lib/campaigns/types.ts`
+- Add an optional `odysseusRetailBookingLink?: string;` property to the `Campaign` interface.
 
-## 5. Recommended Actions
-1. **Flatten & Strictify the Zod Schema**: 
-   - Remove ALL `.default()` and `.optional()` modifiers from the Zod schema you pass to the LLM. 
-   - Make fields strictly required for the generation step, and handle fallback/default population in your TypeScript standardization logic *after* the LLM returns the payload.
-2. **Clarify Array Objects**: 
-   - Add a strict `.describe("An array of objects containing...")` to `nicheSpecificItems` to prevent the LLM from trying to pass strings instead of objects.
-3. **Use the Headless Worker**: 
-   - The 300s timeout proves that these long-running generation loops should remain natively in your direct TypeScript/Node background worker, fully bypassing the Next.js API route constraints.
+## 2. Update the Inventory Matcher to Pre-Generate the Link
+**Files:** `lib/campaigns/cb-inventory-matcher.ts` and/or `scripts/cb-inventory-scraper.ts`
+- When a successful Cruise Brothers group inventory match is found (which gives us `cbGroupId` and `cbPersonalLink`), we need to instantiate the `OdysseusEngine` to generate the retail equivalent link.
+- Instantiate the engine, log in, and call `searchCruises()` using the matched ship, sail date, and vendor ID.
+- Call `selectItinerary(0)` on the first result to get past the search page.
+- Call `bypassGuestInfoAndContinue()` to extract the `pid`, `brn`, etc., and construct the final `details.aspx` or `category.aspx` URL.
+- Add `odysseusRetailBookingLink: string` to the `CbInventoryMatch` interface and populate it with the generated URL.
+- **Note:** Ensure proper try/catch and fallback logic so that if the Odysseus engine fails or times out, the overall group inventory match doesn't fail (just leave the retail link null).
+
+## 3. Update the Database Write Operation
+**File:** `lib/campaigns/campaign-store.ts`
+- Update `upsertCampaignPricingMatch()` to accept and write the `odysseusRetailBookingLink` to the DynamoDB `METADATA` record alongside `cbagenttoolsBookingLink`.
+- Add it to the `UpdateExpression` and `ExpressionAttributeValues`.
+
+## 4. Update the View Model to Expose the Link
+**File:** `lib/campaigns/landing/view-model.ts`
+- Add `retailBookingLink: string | null` to the `CampaignLandingViewModel` (specifically inside the `links` object).
+- Map `campaign.odysseusRetailBookingLink` to `retailBookingLink` in `buildLandingViewModel()`.
+
+## 5. Update the Waitlist API Route
+**File:** `app/api/groups/campaign/[slug]/waitlist/route.ts`
+- Update `WaitlistNextStep` to accept the retail link.
+- Update `buildNextStep()`: If the campaign is in `GATHERING_INTEREST`, the user selected `BOOK_NOW`, AND we have the `odysseusRetailBookingLink`, return a new state like:
+  ```ts
+  {
+      kind: 'retail_booking_ready',
+      title: 'Book as an Independent Traveler',
+      detail: 'You chose the early booking path. The group is still forming, but you can book the exact same cruise right now using the live retail inventory. Please note: booking independently means you will not be officially part of the group block and may not receive group-specific amenities or locked-in group pricing. If you prefer the full group experience, you can change your path above to join the waitlist instead.',
+      bookingLink: odysseusRetailBookingLink,
+  }
+  ```
+- Ensure the API response passes this new `nextStep` structure back to the client.
+
+## 6. Update the Waitlist Form UI
+**File:** `components/campaign-landing/waitlist-form.tsx`
+- Ensure the `WaitlistResponse['nextStep']['kind']` union type includes the new `'retail_booking_ready'` state.
+- Update the rendering block in the "What Happens Next" card to handle this state. If `kind === 'retail_booking_ready'`, display the title, description, and the "Open booking link" button pointing to the retail link.
+- In the "Path" dropdown selection descriptions or in the form's helper text (e.g. the text box below the submit button or next to the dropdown), explicitly add a disclaimer when the user selects "BOOK_NOW" during the `GATHERING_INTEREST` phase. The disclaimer should read something like: *"Booking independently now means you will secure your cabin immediately, but you may forfeit group-specific pricing and amenities. To guarantee the group experience, choose 'Join the group list' instead."* This ensures the user is informed *before* they click submit.

@@ -1,0 +1,200 @@
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: "50mb"
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 33.3s
+  Running TypeScript ...
+  Collecting page data using 13 workers ...
+  Generating static pages using 13 workers (0/95) ...
+  Generating static pages using 13 workers (23/95) 
+Royal Caribbean
+Carnival
+Norwegian
+Top Stories
+Celebrity
+Disney
+Costa
+Seabourn
+Silversea
+Oceania
+Regent Seven Seas
+Crystal
+Viking
+  Generating static pages using 13 workers (47/95) 
+  Generating static pages using 13 workers (71/95) 
+✓ Generating static pages using 13 workers (95/95) in 2.7s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/agent/jobs
+├ ƒ /api/agent/jobs/[campaignSlug]/[jobId]
+├ ƒ /api/agent/workflows
+├ ƒ /api/chat
+├ ƒ /api/code
+├ ƒ /api/contact
+├ ƒ /api/conversation
+├ ƒ /api/dev/prompt-preview
+├ ƒ /api/distribution/[slug]/[postId]
+├ ƒ /api/distribution/cron
+├ ƒ /api/distribution/event
+├ ƒ /api/groups/campaign/[slug]
+├ ƒ /api/groups/campaign/[slug]/brief
+├ ƒ /api/groups/campaign/[slug]/brief/approve
+├ ƒ /api/groups/campaign/[slug]/brief/history
+├ ƒ /api/groups/campaign/[slug]/brief/landing-stills
+├ ƒ /api/groups/campaign/[slug]/brief/production-lint
+├ ƒ /api/groups/campaign/[slug]/brief/readiness
+├ ƒ /api/groups/campaign/[slug]/events
+├ ƒ /api/groups/campaign/[slug]/landing
+├ ƒ /api/groups/campaign/[slug]/leads
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/approve
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/modify
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/production-bible
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/red-team
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/remediate
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/revise
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/trinity
+├ ƒ /api/groups/campaign/[slug]/media/aesthetic/validate
+├ ƒ /api/groups/campaign/[slug]/media/asset-data/[assetId]
+├ ƒ /api/groups/campaign/[slug]/media/assets
+├ ƒ /api/groups/campaign/[slug]/media/credit-check
+├ ƒ /api/groups/campaign/[slug]/media/curation
+├ ƒ /api/groups/campaign/[slug]/media/distribute
+├ ƒ /api/groups/campaign/[slug]/media/distribution
+├ ƒ /api/groups/campaign/[slug]/media/distribution/sync
+├ ƒ /api/groups/campaign/[slug]/media/generate
+├ ƒ /api/groups/campaign/[slug]/media/generate-plan
+├ ƒ /api/groups/campaign/[slug]/media/manifest
+├ ƒ /api/groups/campaign/[slug]/media/manifest/image-artifact
+├ ƒ /api/groups/campaign/[slug]/media/manifest/scene-image-artifact
+├ ƒ /api/groups/campaign/[slug]/media/manifest/video-artifact
+├ ƒ /api/groups/campaign/[slug]/media/probe
+├ ƒ /api/groups/campaign/[slug]/media/regenerate
+├ ƒ /api/groups/campaign/[slug]/media/regenerate-with-revision
+├ ƒ /api/groups/campaign/[slug]/media/review
+├ ƒ /api/groups/campaign/[slug]/media/runway-test
+├ ƒ /api/groups/campaign/[slug]/media/runway-test/promote
+├ ƒ /api/groups/campaign/[slug]/media/store
+├ ƒ /api/groups/campaign/[slug]/media/test/audio
+├ ƒ /api/groups/campaign/[slug]/media/test/copy
+├ ƒ /api/groups/campaign/[slug]/media/test/images
+├ ƒ /api/groups/campaign/[slug]/media/test/merch
+├ ƒ /api/groups/campaign/[slug]/media/test/storyboard-shot
+├ ƒ /api/groups/campaign/[slug]/media/test/video
+├ ƒ /api/groups/campaign/[slug]/nurture
+├ ƒ /api/groups/campaign/[slug]/reset
+├ ƒ /api/groups/campaign/[slug]/waitlist
+├ ƒ /api/groups/campaign/media/aesthetic/red-team/bulk
+├ ƒ /api/groups/discovery
+├ ƒ /api/groups/discovery/clear
+├ ƒ /api/groups/discovery/phase-b
+├ ƒ /api/groups/discovery/red-team/[slug]
+├ ƒ /api/groups/discovery/red-team/bulk
+├ ƒ /api/groups/discovery/revise
+├ ƒ /api/groups/discovery/revise/bulk
+├ ƒ /api/groups/media/env-check
+├ ƒ /api/groups/theme-music-library
+├ ƒ /api/groups/theme-music-library/[assetId]
+├ ƒ /api/hello
+├ ƒ /api/image
+├ ƒ /api/integrations/google/callback
+├ ƒ /api/integrations/google/connect
+├ ƒ /api/integrations/google/refresh
+├ ƒ /api/integrations/google/status
+├ ƒ /api/integrations/meta/status
+├ ƒ /api/integrations/tiktok/advertiser-status
+├ ƒ /api/integrations/tiktok/callback
+├ ƒ /api/integrations/tiktok/connect
+├ ƒ /api/integrations/tiktok/lead-webhook
+├ ƒ /api/integrations/tiktok/refresh
+├ ƒ /api/integrations/tiktok/status
+├ ƒ /api/media/video-model-preference
+├ ƒ /api/media/voice-preference
+├ ƒ /api/music
+├ ƒ /api/preregister
+├ ƒ /api/serverutils/[message]
+├ ƒ /api/serverutils/refresh-cb-cache
+├ ƒ /api/serverutils/update-deals
+├ ƒ /api/tests/cruise-brothers-scraper
+├ ƒ /api/tests/cruise-groups-manager
+├ ƒ /api/tests/excursion-finder
+├ ƒ /api/tests/image-search
+├ ƒ /api/tests/memory-extractor
+├ ƒ /api/tests/musicgen
+├ ƒ /api/tests/odysseus-search
+├ ƒ /api/tests/onboarding-guidance
+├ ƒ /api/tests/package-builder
+├ ƒ /api/tests/pricing-comparator
+├ ƒ /api/tests/sim-runner
+├ ƒ /api/tests/tool-dispatcher
+├ ƒ /api/voice/hybrid-session
+├ ƒ /api/voice/odysseus-warmup
+├ ƒ /api/voice/session
+├ ƒ /api/voice/tool-dispatch
+├ ƒ /api/voice/tts
+├ ƒ /api/vtgSearch
+├ ƒ /api/vtgTrip
+├ ○ /code
+├ ○ /contact
+├ ○ /conversation
+├ ○ /dashboard
+├ ƒ /dashboard/campaigns/[slug]/conversion
+├ ƒ /dashboard/campaigns/[slug]/media/aesthetic
+├ ƒ /dashboard/campaigns/[slug]/media/distribution
+├ ○ /data-deletion
+├ ƒ /destinationdeal
+├ ƒ /destinationdeal/[id]
+├ ƒ /groups/[slug]
+├ ƒ /hub
+├ ○ /image
+├ ○ /music
+├ ○ /news
+├ ƒ /news/[line]
+├ ƒ /news/[line]/[url]
+├ ○ /privacy
+├ ƒ /promotions
+├ ƒ /promotions/[promotion]/[id]
+├ ○ /robots.txt
+├ ○ /schooldazecruise
+├ ○ /search
+├ ƒ /sign-in/[[...sign-in]]
+├ ƒ /sign-up/[[...sign-up]]
+├ ○ /sms-consent
+├ ○ /terms
+├ ○ /tests
+├ ○ /tests/aesthetic-devising
+├ ○ /tests/brief-studio
+├ ƒ /tests/campaign-landing/[slug]
+├ ○ /tests/chat-pipeline
+├ ○ /tests/distribution
+├ ○ /tests/groups/discovery
+├ ○ /tests/hero-chat
+├ ○ /tests/media-generation
+├ ○ /tests/media-generation/test
+├ ○ /tests/musicgen
+├ ○ /tests/package-builder
+├ ○ /tests/production-bible
+├ ○ /tests/prompt-preview
+├ ○ /tests/runway-test
+├ ○ /tests/sim-viewer
+├ ○ /tests/theme-music-library
+├ ○ /tests/tiktok-submission
+├ ○ /tests/trinity
+├ ○ /tests/video-model-lab
+├ ○ /tests/voice-hybrid
+├ ○ /tests/voice-pipeline
+├ ○ /tests/voice-simulator
+├ ○ /themes
+└ ƒ /tripresult/[num]/[ship]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

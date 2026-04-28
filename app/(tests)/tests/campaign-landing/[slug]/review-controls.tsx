@@ -102,6 +102,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [reviewing, setReviewing] = useState(false);
     const [previewing, setPreviewing] = useState(false);
     const [dispatching, setDispatching] = useState(false);
+    const [liveDispatching, setLiveDispatching] = useState(false);
     const [validating, setValidating] = useState(false);
     const [syncingTikTok, setSyncingTikTok] = useState(false);
     const [validateMessage, setValidateMessage] = useState<string>('');
@@ -331,6 +332,32 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
+    async function handleLiveDispatchAds() {
+        setLiveDispatching(true);
+        setDispatchMessage('');
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'dispatch', dryRun: false, providerMode: 'live', forceDispatch: true }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to dispatch LIVE ads.');
+            }
+
+            setDispatchPreviews(data.previews ?? []);
+            setDispatchMessage(data.message ?? 'LIVE dispatch completed.');
+            await loadAdPlan();
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to dispatch LIVE ads.');
+        } finally {
+            setLiveDispatching(false);
+        }
+    }
+
     return (
         <Card className="border-amber-300 bg-white/80 shadow-sm">
             <CardContent className="flex flex-col gap-4 p-4">
@@ -379,6 +406,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             </Button>
                             <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
                                 {dispatching ? 'Simulating...' : 'Run Simulated Dispatch'}
+                            </Button>
+                            <Button onClick={handleLiveDispatchAds} disabled={liveDispatching} variant="default" className="bg-red-600 text-white hover:bg-red-700">
+                                {liveDispatching ? 'Dispatching LIVE...' : 'Run LIVE Dispatch'}
                             </Button>
                             <Button onClick={handleSyncTikTokStatus} disabled={syncingTikTok} variant="outline" className="border-amber-300 bg-white">
                                 {syncingTikTok ? 'Syncing Organic TikTok...' : 'Sync Organic TikTok Status'}

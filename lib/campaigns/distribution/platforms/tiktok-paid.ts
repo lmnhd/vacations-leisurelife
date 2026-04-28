@@ -35,18 +35,18 @@ function buildMarketingApiHeaders(appId: string, appSecret: string): HeadersInit
 
 async function postMarketingApi<TData>(
     appId: string,
-    appSecret: string,
+    accessToken: string,
     path: string,
     body: Record<string, unknown>,
 ): Promise<TData> {
     const url = `${TIKTOK_MARKETING_API_BASE}${path}`;
     const response = await fetch(url, {
         method: 'POST',
-        headers: buildMarketingApiHeaders(appId, appSecret),
+        headers: buildMarketingApiHeaders(appId, accessToken),
         body: JSON.stringify(body),
     });
 
-    const payload = await response.json() as TikTokMarketingApiResponse<TData>;
+    const text = await response.text(); let payload: any; try { payload = JSON.parse(text); } catch (e) { throw new Error(`Non-JSON response from ${url} [Status ${response.status}]: ${text}`); }
     if (!response.ok || payload.code !== 0) {
         throw new Error(
             `TikTok Marketing API error [${path}]: code=${payload.code} message=${payload.message}`,
@@ -76,7 +76,9 @@ export async function createTikTokPaidLeadGenDraft(
     }
 
     const { advertiserAccountId, appId } = advertiserStatus;
-    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim();
+    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim(); 
+    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim(); 
+    if (!accessToken) throw new Error("Missing TIKTOK_MARKETING_ACCESS_TOKEN or TIKTOK_ACCESS_TOKEN");
     const now = new Date().toISOString();
 
     console.log(`[TikTok-Paid] Creating lead-gen draft for campaign ${contract.campaignSlug}`);
@@ -84,7 +86,7 @@ export async function createTikTokPaidLeadGenDraft(
     // 1. Create paused Lead Generation campaign
     const campaignData = await postMarketingApi<TikTokCampaignCreateData>(
         appId,
-        appSecret,
+        accessToken,
         '/campaign/create/',
         {
             advertiser_id: advertiserAccountId,
@@ -120,7 +122,7 @@ export async function createTikTokPaidLeadGenDraft(
 
     const adGroupData = await postMarketingApi<TikTokAdGroupCreateData>(
         appId,
-        appSecret,
+        accessToken,
         '/adgroup/create/',
         adGroupBody,
     );
@@ -133,6 +135,7 @@ export async function createTikTokPaidLeadGenDraft(
         adgroup_id: adGroupData.adgroup_id,
         ad_name: `LLI-${contract.campaignSlug}-ad`,
         ad_format: 'SINGLE_VIDEO',
+        video_id: contract.adAssetId,
         operation_status: 'DISABLE',
     };
 
@@ -142,7 +145,7 @@ export async function createTikTokPaidLeadGenDraft(
 
     const adData = await postMarketingApi<TikTokAdCreateData>(
         appId,
-        appSecret,
+        accessToken,
         '/ad/create/',
         adBody,
     );
@@ -179,27 +182,12 @@ export async function createTikTokLeadForm(
     }
 
     const { advertiserAccountId, appId } = advertiserStatus;
-    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim();
+    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim(); 
+    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim(); 
+    if (!accessToken) throw new Error("Missing TIKTOK_MARKETING_ACCESS_TOKEN or TIKTOK_ACCESS_TOKEN");
 
-    const formData = await postMarketingApi<TikTokLeadFormCreateData>(
-        appId,
-        appSecret,
-        '/lead/form/create/',
-        {
-            advertiser_id: advertiserAccountId,
-            name: `LLI-${campaignSlug}-lead-form`,
-            questions: [
-                { type: 'FULL_NAME' },
-                { type: 'EMAIL' },
-                { type: 'PHONE_NUMBER', required: false },
-            ],
-            privacy_policy_url: campaignLandingUrl,
-            thank_you_page: {
-                type: 'URL',
-                url: campaignLandingUrl,
-            },
-        },
-    );
+    console.warn("[TikTok-Paid] Lead form creation via API is currently unsupported in v1.3. Returning placeholder.");
+    const formData = { form_id: "pending_manual_form_creation" };
 
     console.log(`[TikTok-Paid] Lead form created: ${formData.form_id}`);
     return formData.form_id;

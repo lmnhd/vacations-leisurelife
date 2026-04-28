@@ -1,0 +1,18 @@
+error TS2688: Cannot find type definition file for 'estree'.
+  The file is in the program because:
+    Entry point for implicit type library 'estree'
+error TS2688: Cannot find type definition file for 'google-images'.
+  The file is in the program because:
+    Entry point for implicit type library 'google-images'
+error TS2688: Cannot find type definition file for 'json5'.
+  The file is in the program because:
+    Entry point for implicit type library 'json5'
+error TS2688: Cannot find type definition file for 'ms'.
+  The file is in the program because:
+    Entry point for implicit type library 'ms'
+error TS2688: Cannot find type definition file for 'stylis'.
+  The file is in the program because:
+    Entry point for implicit type library 'stylis'
+error TS2688: Cannot find type definition file for 'yauzl'.
+  The file is in the program because:
+    Entry point for implicit type library 'yauzl'
