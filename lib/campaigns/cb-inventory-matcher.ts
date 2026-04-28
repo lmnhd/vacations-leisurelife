@@ -42,6 +42,7 @@ export interface CbInventoryMatch {
     matchedDeparturePort?: string;
     matchedNights?: string;
     matchScore: number;              // 0–100 confidence of the match
+    odysseusRetailBookingLink: string | null;
 }
 
 function normalizeComparableText(value: string): string {
@@ -157,7 +158,7 @@ function getDatePreferenceScore(campaign: Campaign, item: CbGroupInventoryItem):
  * Scores a CB inventory item against a campaign using keyword overlap.
  * Returns 0–100.
  */
-function scoreMatch(campaign: Campaign, item: CbGroupInventoryItem): number {
+function scoreMatch(campaign: Campaign, item: CbGroupInventoryItem, exactShipRequired: boolean): number {
     let score = 0;
 
     const itemText = buildItemText(item);
@@ -165,8 +166,9 @@ function scoreMatch(campaign: Campaign, item: CbGroupInventoryItem): number {
     const requiredShipName = getSpecificShipName(campaign.shipTarget);
     const itemShipName = getSpecificShipName(item.shipName);
 
-    // When the campaign names a concrete vessel, do not match across sister ships.
-    if (requiredShipName && itemShipName && requiredShipName !== itemShipName) {
+    // When the campaign names a concrete vessel that EXISTS in inventory, do not match across sister ships.
+    // If the required ship is not found in inventory at all, treat it as a soft preference (fallback to destination + dates).
+    if (exactShipRequired && requiredShipName && itemShipName && requiredShipName !== itemShipName) {
         return 0;
     }
 
@@ -228,6 +230,9 @@ export function matchGroupInventoryToCampaign(
         return assessment.meetsMinimumLeadTime !== false;
     });
 
+    // If campaign names a specific ship but NO inventory item has it, treat as soft preference (fallback to destination + dates).
+    const exactShipRequired = exactShipCandidates.length > 0;
+
     let bestItem: CbGroupInventoryItem | null = null;
     let bestScore = 0;
     let bestDatePreferenceScore = Number.NEGATIVE_INFINITY;
@@ -241,7 +246,7 @@ export function matchGroupInventoryToCampaign(
             continue;
         }
 
-        const score = scoreMatch(campaign, item);
+        const score = scoreMatch(campaign, item, exactShipRequired);
         const datePreferenceScore = getDatePreferenceScore(campaign, item);
 
         if (score > bestScore || (score === bestScore && datePreferenceScore > bestDatePreferenceScore)) {
@@ -289,5 +294,6 @@ export function matchGroupInventoryToCampaign(
         matchedDeparturePort: bestItem.departurePort,
         matchedNights: bestItem.nights,
         matchScore: bestScore,
+        odysseusRetailBookingLink: null,
     };
 }

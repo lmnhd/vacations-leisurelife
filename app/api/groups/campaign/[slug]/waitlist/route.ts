@@ -44,7 +44,7 @@ const WaitlistRequestSchema = z.object({
 });
 
 type WaitlistNextStep = {
-    kind: 'wait_for_threshold' | 'booking_link_ready' | 'campaign_closed';
+    kind: 'wait_for_threshold' | 'booking_link_ready' | 'retail_booking_ready' | 'campaign_closed';
     title: string;
     detail: string;
     bookingLink: string | null;
@@ -54,6 +54,7 @@ function buildNextStep(
     status: 'DRAFT' | 'GATHERING_INTEREST' | 'THRESHOLD_MET' | 'CONVERTED' | 'EXPIRED',
     bookingMode: 'GROUP_WAIT' | 'BOOK_NOW',
     bookingLink?: string,
+    odysseusRetailBookingLink?: string,
 ): WaitlistNextStep {
     if (status === 'EXPIRED') {
         return {
@@ -70,6 +71,15 @@ function buildNextStep(
             title: 'Booking is ready for this sailing.',
             detail: 'The group threshold has been met, so you can move directly to the live booking path now.',
             bookingLink,
+        };
+    }
+
+    if (status === 'GATHERING_INTEREST' && bookingMode === 'BOOK_NOW' && odysseusRetailBookingLink) {
+        return {
+            kind: 'retail_booking_ready',
+            title: 'Book as an Independent Traveler',
+            detail: 'You chose the early booking path. The group is still forming, but you can book the exact same cruise right now using the live retail inventory. Please note: booking independently means you will not be officially part of the group block and may not receive group-specific amenities or locked-in group pricing. If you prefer the full group experience, you can change your path above to join the waitlist instead.',
+            bookingLink: odysseusRetailBookingLink,
         };
     }
 
@@ -187,7 +197,7 @@ export async function POST(
         });
     }
 
-    const nextStep = buildNextStep(effectiveStatus, parsed.data.bookingMode, campaign.cbagenttoolsBookingLink);
+    const nextStep = buildNextStep(effectiveStatus, parsed.data.bookingMode, campaign.cbagenttoolsBookingLink, campaign.odysseusRetailBookingLink);
 
     return NextResponse.json({
         success: true,

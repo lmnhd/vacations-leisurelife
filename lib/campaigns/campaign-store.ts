@@ -158,6 +158,7 @@ export async function upsertCampaignPricingMatch(
     slug: string,
     match: CbInventoryMatch
 ): Promise<void> {
+    const retailLinkExpr = match.odysseusRetailBookingLink ? ', odysseusRetailBookingLink = :retailLink' : '';
     const params = {
         TableName: TABLE_NAME,
         Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
@@ -173,7 +174,7 @@ export async function upsertCampaignPricingMatch(
             'matchedDeparturePort = :matchedDeparturePort',
             'matchedNights = :matchedNights',
             'updatedAt = :now',
-        ].join(', '),
+        ].join(', ') + retailLinkExpr,
         ExpressionAttributeValues: {
             ':groupId': match.cbGroupId,
             ':link': match.cbPersonalLink,
@@ -186,6 +187,7 @@ export async function upsertCampaignPricingMatch(
             ':matchedDeparturePort': match.matchedDeparturePort ?? '',
             ':matchedNights': match.matchedNights ?? '',
             ':now': new Date().toISOString(),
+            ...(match.odysseusRetailBookingLink ? { ':retailLink': match.odysseusRetailBookingLink } : {}),
         },
     };
 

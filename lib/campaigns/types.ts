@@ -109,6 +109,14 @@ export interface Campaign {
     cbagenttoolsBookingLink?: string;
 
     /**
+     * Pre-generated Odysseus retail checkout link for the matched sailing.
+     * Populated during Phase B by navigating the Odysseus engine to the equivalent
+     * retail inventory so guests who choose BOOK_NOW during GATHERING_INTEREST
+     * can book the same cruise immediately without waiting for the group to form.
+     */
+    odysseusRetailBookingLink?: string;
+
+    /**
      * The unique internal CB Group ID from view_groups.
      */
     cbagenttoolsGroupId?: string;

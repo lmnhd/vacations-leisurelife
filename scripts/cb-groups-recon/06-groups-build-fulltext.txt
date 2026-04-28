@@ -1,3 +1,4 @@
-Not Found
+Logout
+Negative, ghostrider...
 
-The requested resource was not found on this server.
+That's a 404 and the pattern is full...That means you tried to go to a URL that doesn't exist.

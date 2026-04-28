@@ -42,6 +42,7 @@ interface CampaignWaitlistFormProps {
     endpoint: string;
     enabled: boolean;
     defaultMode: 'GROUP_WAIT' | 'BOOK_NOW';
+    isGatheringInterest?: boolean;
 }
 
 interface WaitlistResponse {
@@ -54,7 +55,7 @@ interface WaitlistResponse {
         percentOfThreshold: number;
     };
     nextStep?: {
-        kind: 'wait_for_threshold' | 'booking_link_ready' | 'campaign_closed';
+        kind: 'wait_for_threshold' | 'booking_link_ready' | 'retail_booking_ready' | 'campaign_closed';
         title: string;
         detail: string;
         bookingLink: string | null;
@@ -66,6 +67,7 @@ export function CampaignWaitlistForm({
     endpoint,
     enabled,
     defaultMode,
+    isGatheringInterest = false,
 }: CampaignWaitlistFormProps) {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -281,6 +283,12 @@ export function CampaignWaitlistForm({
                             />
                         </div>
 
+                        {isGatheringInterest && bookingMode === 'BOOK_NOW' && (
+                            <div className="px-4 py-3 text-sm border rounded-lg border-amber-400/30 bg-amber-500/10 text-amber-100">
+                                Booking independently now means you will secure your cabin immediately, but you may forfeit group-specific pricing and amenities. To guarantee the group experience, choose &ldquo;Join the group list&rdquo; instead.
+                            </div>
+                        )}
+
                         <div className="grid gap-4 md:grid-cols-2">
                             <Button type="submit" size="lg" className="bg-slate-50 text-slate-950 hover:bg-white" disabled={!enabled || submitting}>
                                 {submitting ? 'Saving...' : 'Save my spot'}
@@ -309,12 +317,12 @@ export function CampaignWaitlistForm({
                 <CardContent className="grid gap-4 text-sm text-slate-700">
                     {result?.nextStep ? (
                         <>
-                            <div className="px-4 py-3 border rounded-lg border-slate-200 bg-slate-50">
+                            <div className={`px-4 py-3 border rounded-lg ${result.nextStep.kind === 'retail_booking_ready' ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
                                 <p className="font-semibold text-slate-950">{result.nextStep.title}</p>
                                 <p className="mt-2">{result.nextStep.detail}</p>
                             </div>
                             {result.nextStep.bookingLink ? (
-                                <Button asChild className="bg-slate-950 text-slate-50 hover:bg-slate-800">
+                                <Button asChild className={result.nextStep.kind === 'retail_booking_ready' ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-slate-950 text-slate-50 hover:bg-slate-800'}>
                                     <a href={result.nextStep.bookingLink} target="_blank" rel="noreferrer">Open booking link</a>
                                 </Button>
                             ) : null}

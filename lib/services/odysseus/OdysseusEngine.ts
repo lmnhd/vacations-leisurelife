@@ -283,11 +283,14 @@ export class OdysseusEngine {
     }
 
     /**
-     * Bypasses the Guest Information form by constructing the details.aspx URL 
-     * and navigating directly to it. This avoids the flaky Angular form validation 
+     * Bypasses the Guest Information form by constructing the details.aspx URL
+     * and navigating directly to it. This avoids the flaky Angular form validation
      * and anti-bot detection on the Continue button.
+     *
+     * Returns the final landed URL (category.aspx or equivalent) on success, or
+     * null if extraction or navigation fails.
      */
-    async bypassGuestInfoAndContinue(guestAges: number[] = [35, 35], guestState: string = 'FL'): Promise<boolean> {
+    async bypassGuestInfoAndContinue(guestAges: number[] = [35, 35], guestState: string = 'FL'): Promise<string | null> {
         if (!this.odysseusPage) throw new Error("Odysseus page not initialized.");
         const page = this.odysseusPage;
 
@@ -306,7 +309,7 @@ export class OdysseusEngine {
 
         if (!pid) {
             console.log(`[OdysseusEngine] Failed to extract PID from URL: ${currentUrl}`);
-            return false;
+            return null;
         }
 
         console.log(`[OdysseusEngine] Extracted PID: ${pid}, SIID: ${siid}`);
@@ -338,12 +341,12 @@ export class OdysseusEngine {
 
             console.log(`[OdysseusEngine] Final URL: ${finalUrl}`);
             await page.screenshot({ path: 'post-bypass-state.png', fullPage: true });
-            return finalUrl.includes('category.aspx');
+            return finalUrl.includes('category.aspx') ? finalUrl : null;
 
         } catch (e) {
             console.log(`[OdysseusEngine] Navigation to details.aspx failed:`, e);
             await page.screenshot({ path: 'post-bypass-error.png', fullPage: true });
-            return false;
+            return null;
         }
     }
 

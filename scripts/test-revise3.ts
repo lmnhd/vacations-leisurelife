@@ -1,0 +1,1 @@
+import { reviseDiscoveryBlueprint } from '../lib/campaigns/discovery-revision'; reviseDiscoveryBlueprint('night-sky-sea-2026').then(res => { console.log('Revised:', res.campaign.id); process.exit(0); }).catch(e => { console.error('Caught:', e.message); process.exit(1); });

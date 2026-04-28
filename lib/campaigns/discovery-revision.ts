@@ -195,7 +195,17 @@ Discovery review to satisfy:
 ${JSON.stringify(review, null, 2)}
 
 Current iteration state:
-${JSON.stringify(revisionCandidate.discoveryIteration ?? null, null, 2)}${siblingContext}`;
+${JSON.stringify(revisionCandidate.discoveryIteration ?? null, null, 2)}${siblingContext}
+
+REQUIRED JSON STRUCTURE:
+{
+  "blueprint": { /* Full DiscoveryBlueprint */ },
+  "closurePlan": {
+    "targetedIssues": ["..."],
+    "changesMade": ["..."],
+    "successHypothesis": "..."
+  }
+}`;
 
     let selectedCandidate: z.infer<typeof DiscoveryRevisionCandidateSchema>;
     let effectiveRevisionMode: DiscoveryRevisionMode = 'single';
@@ -229,13 +239,32 @@ Requirements for all 3 candidates:
 - Begin each candidate's successHypothesis with the format label in brackets, e.g. [AMBIENT-DRIFT], [TIME-WINDOWED-CLUSTER], or [SHIP-ACTIVITY-LAYER].
 - No candidate may reference any BANNED PATTERN listed above.
 - Every candidate must satisfy all SHIP AUTHORITY rules above.
-- Set preferredCandidateIndex to the candidate most likely to clear the next review while staying distinct from sibling campaigns.`;
+- Set preferredCandidateIndex to the candidate most likely to clear the next review while staying distinct from sibling campaigns.
+
+REQUIRED JSON STRUCTURE:
+{
+  "preferredCandidateIndex": 0 | 1 | 2,
+  "selectionRationale": "string",
+  "candidates": [
+    {
+      "blueprint": { /* Full DiscoveryBlueprint */ },
+      "closurePlan": {
+        "targetedIssues": ["..."],
+        "changesMade": ["..."],
+        "successHypothesis": "..."
+      }
+    },
+    ... (must have exactly 3 candidates)
+  ]
+}`;
 
         const { object } = await callGlobalGenerateObject({
             system,
             prompt: branchPrompt,
             schema: DiscoveryBranchRevisionSchema,
             modelName: ModelName.GPT_5_HIGH,
+            timeoutMs: 300000,
+            maxOutputTokens: 12000,
         });
 
         selectedCandidate = object.candidates[object.preferredCandidateIndex];
@@ -248,6 +277,8 @@ Requirements for all 3 candidates:
             prompt,
             schema: DiscoveryRevisionCandidateSchema,
             modelName: ModelName.GPT_5_HIGH,
+            timeoutMs: 300000,
+            maxOutputTokens: 8000,
         });
         selectedCandidate = object;
     }

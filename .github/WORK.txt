@@ -1,42 +1,111 @@
-# Conversation Summary: Leisure Life Interactive Meta Ads Integration
+# Work Plan: Move CB Inventory Matching Into Blueprint Creation
 
-## 1. Conversation Overview
-- **Primary Objectives**: Confirm Facebook domain verification; set up Meta Ads API integration for creating paused ad drafts; test ad generation without spending.
-- **Session Context**: Began with domain verification (meta-tag, redirects, robots.txt, DNS), progressed to Meta API setup (tokens, IDs, connection validation), and focused on debugging ad dispatch failures.
-- **User Intent Evolution**: From verification troubleshooting to full Meta Ads integration and testing for campaign 'bp-opendeck-icon-2027-7n-caribbean'.
+## Problem
 
-## 2. Technical Foundation
-- **Next.js**: Framework with app router and metadata API for SEO tags.
-- **Clerk**: Authentication bypassed for public routes to allow crawlers.
-- **Vercel**: Hosting with domain redirects and env vars.
-- **Meta Graph API**: For ad account validation, image uploads, and ad creation.
-- **PowerShell/Node.js**: For API testing and script execution.
+Discovery pipeline generates 5 campaigns first, then Phase B tries to match them to CB inventory.
+Result: 4/5 campaigns failed because they target destinations/ships that do not exist in CB's 105 available group blocks.
 
-## 3. Codebase Status
-- **app/layout.tsx**: Facebook meta-tag in metadata.verification; canonical/og:url updated to www.
-- **proxy.ts**: Clerk middleware excluding root/static files from auth.
-- **app/robots.ts**: Allows all user agents, including facebookexternalhit.
-- **lib/integrations/meta-ads.ts**: Config loading and connection validation.
-- **lib/campaigns/distribution-marketing.ts**: Ad dispatch with image_hash upload and paused ad creation.
-- **.env.local**: META_ACCESS_TOKEN, META_AD_ACCOUNT_ID (1612907296491359), META_AD_SET_ID (120242532769050142), META_PAGE_ID (1071836329342347), META_INSTAGRAM_ACTOR_ID (commented out).
+The root cause is that the GPT blueprint generation step (Step 3 in `core-logic.ts`) does not receive CB inventory constraints. It receives:
+- Perplexity aesthetic research (Step 2 gets `cbInventoryContext`)
+- Launch window guidance
+- Deduplication blocks
 
-## 4. Problem Resolution
-- **Issues**: Domain verification blocked by Clerk; Meta API errors (Instagram actor ID, Ad Set ID, objective mismatch subcode 1885183).
-- **Solutions**: Bypassed Clerk on public routes; added robots.txt; used DNS verification; generated User Access Token; updated code for image_hash; switched Meta App to Live Mode to fix 1885183.
-- **Lessons**: Meta requires image_hash over image_url; Ad Set objectives must match ad types; User tokens for testing; Meta Developer App MUST be in Live/Public mode to create real ad drafts.
+But the structured JSON generation by GPT has no guardrail saying "only target ships/dates/destinations that exist in this list." So it invents plausible-sounding but unmatchable requirements.
 
-## 5. Progress Tracking
-- **Completed**: Domain verified via DNS TXT; Meta connection validated; Paused ad draft successfully created via API.
-- **Validated**: Meta API connection test passes; image handling implemented; end-to-end local distribution test succeeded.
+## Goal
 
-## 6. Active Work State
-- **Current Focus**: Validate the ad draft in the Meta Ads Manager UI.
-- **Working Code**: distribution-marketing.ts with uploadMetaImageHash and ad payload.
+Shift inventory matching from a post-hoc Phase B validation into a pre-save constraint within the blueprint generation pipeline.
+The pipeline should only output and persist campaigns that are provably matchable to CB inventory.
 
-## 7. Recent Operations
-- **Last Commands**: Tested ad creation script after App was set to Live mode. Ad successfully created with ID `120242535112250142`. Ran the local `/api/groups/campaign/[slug]/media/distribute` endpoint, which dispatched correctly.
-- **Results**: Success. The 1885183 error is resolved.
+## Current Architecture
 
-## 8. Continuation Plan
-- **Verify Ad Draft**: Confirm the paused ad draft appears correctly in Meta Ads Manager.
-- **Wrap Up**: Mark Meta integration as complete and move to the next distribution platform or media generation task.
+1. `scripts/scrape-cb-deals.ts` → writes `.github/data/cb-deals-cache.json`
+2. `core-logic.ts` Step 2 (Perplexity aesthetic) → reads cache via `buildCbInventoryContext()`
+3. `core-logic.ts` Step 3 (GPT blueprints) → does NOT read cache; generates JSON freeform
+4. `scripts/run-phase-b.ts` → scrapes live CB inventory, runs matcher, writes match or UNMATCHED
+5. Campaign saved to DynamoDB at Step 3, regardless of inventory matchability
+
+## Required Changes
+
+### 1. Inject CB Inventory Into GPT Blueprint Prompt (core-logic.ts)
+
+In Step 3 (GPT blueprint generation), add `buildCbInventoryContext()` to the prompt.
+The prompt must explicitly instruct GPT:
+- "Your shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list below."
+- "Your targetDestination MUST match one of the destination families in the inventory."
+- "Your targetDates MUST be within ±60 days of a sailing date in the inventory."
+- "If you cannot find a niche that fits the available inventory, return fewer than 5 blueprints rather than invent unmatchable ones."
+
+This turns inventory from a "helpful context" (Perplexity Step 2) into a "hard schema constraint" (GPT Step 3).
+
+### 2. Add Inventory Match Gate Before DynamoDB Save (core-logic.ts)
+
+After GPT returns the 5 blueprints and before `mapDiscoveryBlueprintToCampaign` + `saveCampaignBlueprint`:
+
+- Load the live or cached CB inventory (105 items from `cb-deals-cache.json` or a lightweight in-memory scrape)
+- Run `matchGroupInventoryToCampaign()` on each blueprint in-memory
+- Discard any blueprint with score < MIN_MATCH_SCORE (25)
+- Only pass matchable blueprints to Red Team review
+- Log discarded blueprints with reason (e.g., "ship 'Ascent' not in inventory", "destination 'Scandinavia' not in inventory")
+
+This means the pipeline outputs 0-5 campaigns, not always 5.
+
+### 3. Update Red Team To Skip Unmatched Campaigns
+
+Since unmatched campaigns are filtered before saving, Red Team only runs on campaigns that already passed the inventory gate.
+The Red Team review can then validate vacation fit, but does not need to catch inventory mismatch (because that was already enforced).
+
+### 4. Remove or Simplify Phase B
+
+Phase B (`run-phase-b.ts`) becomes a confirmation/re-scrape step rather than a primary matcher:
+- It re-scrapes live CB inventory to confirm the match still exists (prices/dates may have shifted)
+- It generates the Odysseus retail booking link
+- It writes the final `cbGroupId`, `cbPersonalLink`, and `odysseusRetailBookingLink` to the campaign record
+- If the live scrape now shows the match is gone (rare), the campaign is flagged for operator review
+
+Phase B should never see a campaign that failed matching — that failure is now caught upstream.
+
+### 5. Update Cache Cadence
+
+`cb-deals-cache.json` is already populated by `scripts/scrape-cb-deals.ts`. Ensure:
+- The discovery pipeline checks cache age (e.g., >24h = stale)
+- If stale, either auto-scrape or warn and require manual scrape
+- The in-memory match gate in Step 3 uses the same cache to avoid double-scraping
+
+### 6. Update SKILL.md
+
+Document the new pipeline order:
+1. Scrape CB inventory → cache
+2. Perplexity psychographic research
+3. Perplexity aesthetic analysis (with inventory context)
+4. GPT blueprint generation (with inventory HARD CONSTRAINTS)
+5. In-memory inventory match gate (discard unmatched)
+6. Red Team review (only on matched blueprints)
+7. Save to DynamoDB
+8. Phase B: confirm match + generate retail links
+
+## Implementation Order
+
+1. **Modify `core-logic.ts` Step 3 prompt** — add `cbInventoryContext` and hard constraint language
+2. **Add in-memory match gate** — import `matchGroupInventoryToCampaign`, run before save, log discards
+3. **Test** — run discovery pipeline, verify output campaigns all have `matchedShipName` pre-populated
+4. **Update `SKILL.md`** — reflect inventory-gated discovery
+5. **Simplify `run-phase-b.ts`** — remove matching logic, keep only live confirmation + Odysseus link generation
+6. **Update HANDOFF.md** — mark Phase B as "confirmation only", not primary matching
+
+## Risk: Fewer Than 5 Campaigns
+
+With hard inventory constraints, the pipeline may return 2-3 campaigns instead of 5.
+This is acceptable — better 2 matchable campaigns than 5 unmatchable ones.
+If <2 campaigns pass the gate, the pipeline should:
+- Log the constraint bottleneck (e.g., "no inventory in Mediterranean, all blueprints discarded")
+- Suggest a re-spin with relaxed destination constraints or different niche families
+- Optionally flag to the operator that CB inventory is too narrow for the requested niche space
+
+## Files to Touch
+
+- `app/api/groups/discovery/core-logic.ts` — add inventory constraints to Step 3, add match gate before save
+- `lib/campaigns/cb-inventory-matcher.ts` — ensure it can run on blueprint objects (not just saved Campaigns)
+- `scripts/run-phase-b.ts` — simplify to confirmation + retail links only
+- `.github/skills/campaign-generation/SKILL.md` — update pipeline order
+- `.github/HANDOFF.md` — update Phase B description

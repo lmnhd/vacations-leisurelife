@@ -91,6 +91,7 @@ export interface CampaignLandingViewModel {
         booking: string | null;
         community: string | null;
         merch: string | null;
+        retailBooking: string | null;
     };
     form: {
         enabled: boolean;
@@ -577,6 +578,7 @@ function buildLandingViewModel(
             booking: campaign.cbagenttoolsBookingLink ?? null,
             community: campaign.communityChannelUrl ?? null,
             merch: campaign.merchandiseStoreUrl ?? null,
+            retailBooking: campaign.odysseusRetailBookingLink ?? null,
         },
         form: {
             enabled: campaign.status !== 'EXPIRED' && campaign.status !== 'DRAFT',

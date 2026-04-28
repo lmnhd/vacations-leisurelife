@@ -352,6 +352,7 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
                         endpoint={landing.form.endpoint}
                         enabled={landing.form.enabled}
                         defaultMode={landing.form.defaultMode}
+                        isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
                     />
                 </section>
             </div>

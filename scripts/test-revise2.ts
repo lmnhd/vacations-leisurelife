@@ -1,0 +1,1 @@
+import { reviseDiscoveryBlueprint } from '../lib/campaigns/discovery-revision'; reviseDiscoveryBlueprint('cartridge-and-sunrise-retro-deck-nights').catch(e => { console.error('Caught:', e.message); process.exit(1); });

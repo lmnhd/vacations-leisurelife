@@ -15,15 +15,73 @@
 
 import { loadEnvConfig } from '@next/env';
 import { scrapeGroupInventory } from './cb-inventory-scraper';
-import { matchGroupInventoryToCampaign } from '../lib/campaigns/cb-inventory-matcher';
+import { matchGroupInventoryToCampaign, CbInventoryMatch } from '../lib/campaigns/cb-inventory-matcher';
 import {
     scanUnmatchedCampaigns,
     getCampaignBlueprint,
     upsertCampaignPricingMatch,
     markCampaignUnmatched,
 } from '../lib/campaigns/campaign-store';
+import { OdysseusEngine } from '../lib/services/odysseus/OdysseusEngine';
 
 loadEnvConfig(process.cwd());
+
+// ─── Odysseus retail link generation ─────────────────────────────────────────
+
+function parseSailDateToMmDdYyyy(rawDate: string): string | null {
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return null;
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd}/${d.getFullYear()}`;
+}
+
+function shiftDateByDays(mmDdYyyy: string, days: number): string {
+    const [mm, dd, yyyy] = mmDdYyyy.split('/').map(Number);
+    const d = new Date(yyyy, mm - 1, dd + days);
+    const newMm = String(d.getMonth() + 1).padStart(2, '0');
+    const newDd = String(d.getDate()).padStart(2, '0');
+    return `${newMm}/${newDd}/${d.getFullYear()}`;
+}
+
+async function generateOdysseusRetailLink(match: CbInventoryMatch): Promise<string | null> {
+    const engine = new OdysseusEngine();
+    try {
+        await engine.init(true);
+        await engine.login();
+
+        const startDate = parseSailDateToMmDdYyyy(match.matchedSailDate);
+        const endDate = startDate ? shiftDateByDays(startDate, 30) : undefined;
+
+        const results = await engine.searchCruises({
+            passengers: 2,
+            guestAges: [35, 35],
+            ...(startDate && endDate ? { startDate, endDate } : {}),
+        });
+
+        if (results.length === 0) {
+            console.log(`[run-phase-b] Odysseus returned no results for "${match.matchedShipName}" — skipping retail link.`);
+            return null;
+        }
+
+        await engine.selectItinerary(0);
+        const retailLink = await engine.bypassGuestInfoAndContinue();
+
+        if (!retailLink) {
+            console.log(`[run-phase-b] Odysseus guest-info bypass failed for "${match.matchedShipName}" — skipping retail link.`);
+            return null;
+        }
+
+        console.log(`[run-phase-b] ✅ Odysseus retail link: ${retailLink}`);
+        return retailLink;
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn(`[run-phase-b] Odysseus retail link generation failed for "${match.matchedShipName}": ${msg}`);
+        return null;
+    } finally {
+        await engine.close();
+    }
+}
 
 // ─── CLI argument parsing ────────────────────────────────────────────────────
 
@@ -78,11 +136,14 @@ async function runPhaseB(): Promise<void> {
         const match = matchGroupInventoryToCampaign(campaign, inventory);
 
         if (match) {
+            console.log(`[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`);
+            match.odysseusRetailBookingLink = await generateOdysseusRetailLink(match);
+
             await upsertCampaignPricingMatch(campaign.id, match);
             results.push({
                 slug: campaign.id,
                 status: 'MATCHED',
-                detail: `${match.matchedShipName} — $${match.computedStartingPrice}/pp (score: ${match.matchScore})`,
+                detail: `${match.matchedShipName} — $${match.computedStartingPrice}/pp (score: ${match.matchScore})${match.odysseusRetailBookingLink ? ' + retail link' : ''}`,
             });
         } else {
             await markCampaignUnmatched(campaign.id);

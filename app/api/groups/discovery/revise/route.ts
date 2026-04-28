@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { reviseDiscoveryBlueprint } from '@/lib/campaigns/discovery-revision';
 
+export const maxDuration = 300; // 5 minutes
+
 const ReviseDiscoveryBlueprintRequestSchema = z.object({
     slug: z.string().min(1),
 });
