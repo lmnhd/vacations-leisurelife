@@ -24,6 +24,11 @@ The following issues have been encountered repeatedly across campaigns. Agents m
   - If HTTP is required, set `-TimeoutSec 600` minimum on PowerShell `Invoke-RestMethod`.
   - Never attempt bulk revision of more than 1 campaign per HTTP call; batching causes cumulative timeout.
 
+### Niche-Heavy Drift (The "Seasoning, Not the Meal" Rule)
+- **Symptom:** Red Team flags campaigns for `solitude_drift`, `cruise_implausibility`, or `stereotype_risk` because the concept reads like a convention, workshop, or clinic on a ship.
+- **Root Cause:** Approaching discovery "niche-first" causes the AI to over-index on the niche's activities, forgetting that the primary product is a relaxing cruise vacation.
+- **Mitigation:** Discovery prompts must enforce that the **vacation experience comes first**. The niche community is just the social "seasoning" that makes the group self-select. A non-enthusiast must still rate the trip as a great vacation even if they ignore the niche entirely. If a concept relies on mandatory workshops, gear-heavy activities, or isolating solo-rituals, it will be blocked. This framing is now hardcoded into the `core-logic.ts` Step 1, 2, and 3 prompts.
+
 ### Inventory Match Gate (replaces Discovery-First vs Inventory-First problem)
 - **Resolution:** The pipeline now enforces CB inventory constraints at two levels:
   1. **Step 3 Prompt (GPT hard constraints):** The AVAILABLE CB GROUP INVENTORY list is injected as hard constraints. GPT is instructed to only name ships and destinations from the inventory.
@@ -69,6 +74,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 6. **User Intervention Checkpoint:**
    - Direct the user to view the blueprints at `http://localhost:3000/tests/groups/discovery`.
    - Present the `pass/warn/block` status to the user. Ask for approval to proceed to Phase 2.
+   - **Agent must explicitly tell user to open their browser and navigate to this URL to review campaigns visually before proceeding.**
 
 ### Phase 2: Inventory Confirmation & Retail Link
 
@@ -84,6 +90,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 3. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
+   - **Agent must explicitly tell user to open their browser and navigate to this URL to review the brief visually before proceeding to media generation.**
 
 ### Phase 4: Media & Landing Asset Production
 

@@ -1,7 +1,11 @@
 import { getCampaignBlueprint } from '../lib/campaigns/campaign-store';
 
 async function inspect() {
-    const slugs = ['mystical-seas','cosplay-at-sea','sci-fi-adventure','fantasy-literary-cruise'];
+    const slugs = process.argv.slice(2);
+    if (slugs.length === 0) {
+        console.log('Provide slugs as arguments.');
+        return;
+    }
     for (const slug of slugs) {
         const c = await getCampaignBlueprint(slug);
         const r = c?.discoveryRedTeamReview;
