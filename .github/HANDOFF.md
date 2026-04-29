@@ -94,54 +94,22 @@ Invoke-RestMethod -Method POST -Uri "http://localhost:3000/api/groups/discovery/
 
 ---
 
-### 🔴 BLOCKER #2: Phase B Inventory Matching - 0/2 Campaigns Matched
+### ✅ RESOLVED: Inventory Matching Now Gated in Discovery Pipeline
 
-**Symptom**: Both campaigns fail to find matching CB cruise blocks  
-**Last Execution**:
+**Resolution**: Inventory matching has been moved upstream — it now runs as a hard gate during discovery (Step 3) before any campaign is saved to DynamoDB.
 
-```powershell
-npx tsx scripts/run-phase-b.ts --slug cartridge-and-sunrise-retro-deck-nights --slug aesthetic-scandinavia-2026
-```
+**Changes Made**:
+- `core-logic.ts`: Injects CB inventory as HARD CONSTRAINTS into the GPT Step 3 prompt, then runs `matchGroupInventoryToCampaign()` on each generated blueprint before save. Blueprints scoring < 25 are discarded with a log message.
+- `campaign-store.ts`: Added `scanMatchedCampaigns()` for Phase B to scan campaigns already confirmed matchable.
+- `run-phase-b.ts`: Simplified to **confirmation-only** — re-scrapes live CB inventory to confirm the pre-matched block still exists, then generates the Odysseus retail booking link. Never again used for primary matching.
 
-**Results**:
+**Phase B is now confirmation-only**:
+- Phase B operates on `CB_MATCHED` campaigns (not unmatched)
+- If a match is gone in live inventory, it logs `MATCH_EXPIRED` for operator review (campaign record unchanged)
+- Phase B adds/updates `odysseusRetailBookingLink` after confirming
 
-```
-⚠️ [UNMATCHED] cartridge-and-sunrise-retro-deck-nights: No qualifying CB group found
-⚠️ [UNMATCHED] aesthetic-scandinavia-2026: No qualifying CB group found
-[run-phase-b] Done. 0/2 campaigns matched.
-```
-
-**Root Cause Analysis**:
-
-- **Cartridge**: Requires "ships with arcades pubs flexible tvs in lounges ample outlets and card rooms"
-  - CB Inventory: 105 items scraped but none match this exact specification
-- **Scandinavia**: Requires "eclipse" ship specifically
-  - CB Inventory: "eclipse" not found in available group offerings
-
-**Fundamental Issue**: Discovery-First Approach
-
-- We generated campaigns _before_ checking inventory availability
-- Real constraint: Campaign themes must fit available CB cruise blocks
-- Recommended: Switch to **Inventory-First Approach**
-  1. Scan CB's 105 available groups
-  2. Identify ships with best price advantages
-  3. Inject those ship names into discovery Phase A prompts
-  4. Generate themes that _guarantee_ inventory matches
-
-**Investigation Needed**:
-
-1. Review CB inventory scraper results in [scripts/run-phase-b.ts](../scripts/run-phase-b.ts)
-2. Check matching algorithm in [lib/campaigns/inventory-matcher.ts](../lib/campaigns/) (if exists)
-3. Decide: Relax matching criteria OR pivot to inventory-first workflow
-
-**Alternative Action**:
-Try Phase B on the other 3 campaigns first:
-
-- `sea-sillage-indie-fragrance-social` (Fragrance Social)
-- `bookish-mediterranean-2026` (Bookish Mediterranean)
-- `night-sky-sea-2026` (Stargazing - though has BLOCK verdict)
-
-These may have less specific ship requirements and find matches in CB's 105 items.
+**Current Impact on Existing Campaigns**:
+The 5 existing campaigns (`cartridge-and-sunrise-retro-deck-nights`, `aesthetic-scandinavia-2026`, etc.) were generated before the match gate existed — they may still be unmatched in DynamoDB. Run Phase B selectively or delete/re-discover those campaigns.
 
 ---
 
@@ -226,32 +194,19 @@ npx tsx --env-file=.env.local scripts/test-verdict.ts
      -Body '{"slugs": ["cartridge-and-sunrise-retro-deck-nights"]}' -TimeoutSec 600
    ```
 
-### Priority 2: Resolve Inventory Matching (BLOCKING)
+### Priority 2: Run Fresh Discovery With Match Gate ✅ (now unblocked)
 
-**Why**: Phase 2 is currently 0/2 successful  
-**Options** (Pick One):
+**Why**: The inventory match gate is now built into the pipeline — new discovery runs will only save campaigns that are provably matchable.
 
-**Option A**: Inventory-First Pivot (Recommended)
+**Steps**:
+1. Ensure `cb-deals-cache.json` is fresh: `npx tsx scripts/scrape-cb-deals.ts`
+2. Run a fresh discovery (respin or new): `GET /api/groups/discovery` or discovery UI button
+3. Campaigns will be auto-filtered by the match gate — only inventory-backed campaigns save to DynamoDB
+4. Then run Phase B for confirmation + retail links: `npx tsx scripts/run-phase-b.ts`
 
-1. Review CB inventory (105 items available)
-2. Identify 3-5 ships with best margins/availability
-3. Create new discovery prompt that injects these ships as constraints
-4. Re-run Phase A discovery with `shipConstraints` parameter
-5. This guarantees Phase B will find matches
-
-**Option B**: Relax Matching Criteria
-
-1. Review matching algorithm in inventory-matcher.ts
-2. Reduce scoring threshold or make ship requirements optional
-3. Retry Phase B on same campaigns with looser criteria
-
-**Option C**: Test Other Campaigns
-
-1. Try Phase B on campaigns with less specific requirements:
-   - `sea-sillage-indie-fragrance-social` (Fragrance Social)
-   - `bookish-mediterranean-2026` (Bookish Mediterranean)
-2. If these succeed, confirms issue is campaign-specific (not systemic)
-3. Then debug Cartridge & Scandinavia separately
+**Existing unmatched campaigns** (`cartridge-and-sunrise-retro-deck-nights`, `aesthetic-scandinavia-2026`, etc.) were generated before the gate. Options:
+- Leave them (they are in DRAFT/WARN state and won't be processed by Phase B)
+- Delete and regenerate via a fresh discovery run with the new inventory-first pipeline
 
 ### Priority 3: Once Revision + Inventory Fixed
 

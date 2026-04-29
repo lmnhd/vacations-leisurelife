@@ -262,6 +262,42 @@ export async function scanUnmatchedCampaigns(): Promise<Campaign[]> {
 }
 
 /**
+ * Scans campaign METADATA records where pricingStatus is 'CB_MATCHED'.
+ * Used by run-phase-b.ts to find campaigns needing live confirmation + Odysseus retail link generation.
+ */
+export async function scanMatchedCampaigns(): Promise<Campaign[]> {
+    const params = {
+        TableName: TABLE_NAME,
+        FilterExpression: 'SK = :sk AND #ps = :matched',
+        ExpressionAttributeNames: { '#ps': 'pricingStatus' },
+        ExpressionAttributeValues: {
+            ':sk': 'METADATA',
+            ':matched': 'CB_MATCHED',
+        },
+    };
+
+    try {
+        const campaigns: Campaign[] = [];
+        let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+        do {
+            const response = await chatDynamoDocumentClient.send(new ScanCommand({
+                ...params,
+                ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+            }));
+
+            campaigns.push(...((response.Items as Campaign[]) ?? []));
+            lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+        } while (lastEvaluatedKey);
+
+        return campaigns;
+    } catch (error) {
+        console.error('[campaign-store] Failed to scan matched campaigns:', error);
+        throw error;
+    }
+}
+
+/**
  * Scans ALL campaign METADATA records regardless of pricingStatus or campaign status.
  * Used by the discovery pipeline to build an exclusion list for Perplexity prompts.
  */

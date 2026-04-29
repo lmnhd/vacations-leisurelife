@@ -1,14 +1,15 @@
 /**
- * Phase B Runner — CB Group Inventory Matching
+ * Phase B Runner — CB Inventory Confirmation + Retail Link Generation
  *
- * Scrapes live CB view_groups inventory, then matches each unmatched campaign
- * to a group block and writes the result to DynamoDB.
+ * Campaigns now arrive at Phase B already matched (inventory gate runs during discovery).
+ * Phase B re-scrapes live CB inventory to confirm the match still holds, then generates
+ * the Odysseus retail booking link and writes the final result to DynamoDB.
  *
- * This must run as a standalone Node process (not inside Next.js) because
- * Playwright requires real system Chrome.
+ * If the live scrape shows the match is gone (inventory sold/expired), the campaign is
+ * logged for operator review but left in CB_MATCHED state.
  *
  * Usage:
- *   npx tsx scripts/run-phase-b.ts                           # all unmatched campaigns
+ *   npx tsx scripts/run-phase-b.ts                           # all CB_MATCHED campaigns
  *   npx tsx scripts/run-phase-b.ts --slug retro-gaming-2026  # single campaign
  *   npx tsx scripts/run-phase-b.ts --slug retro-gaming-2026 --slug houseplant-botanical-caribbean-2026
  */
@@ -17,10 +18,9 @@ import { loadEnvConfig } from '@next/env';
 import { scrapeGroupInventory } from './cb-inventory-scraper';
 import { matchGroupInventoryToCampaign, CbInventoryMatch } from '../lib/campaigns/cb-inventory-matcher';
 import {
-    scanUnmatchedCampaigns,
+    scanMatchedCampaigns,
     getCampaignBlueprint,
     upsertCampaignPricingMatch,
-    markCampaignUnmatched,
 } from '../lib/campaigns/campaign-store';
 import { OdysseusEngine } from '../lib/services/odysseus/OdysseusEngine';
 
@@ -99,10 +99,10 @@ const targetSlugs = args.reduce<string[]>((collected, value, index) => {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function runPhaseB(): Promise<void> {
-    console.log('\n─── Phase B: CB Inventory Matching ───\n');
+    console.log('\n─── Phase B: CB Inventory Confirmation + Retail Link Generation ───\n');
 
     // 1. Scrape live CB group inventory (opens Playwright → requires saved session)
-    console.log('[run-phase-b] Scraping CB view_groups...');
+    console.log('[run-phase-b] Scraping live CB view_groups for match confirmation...');
     const inventory = await scrapeGroupInventory();
     console.log(`[run-phase-b] ${inventory.length} inventory items scraped.\n`);
 
@@ -111,8 +111,8 @@ async function runPhaseB(): Promise<void> {
         return;
     }
 
-    // 2. Get campaigns to process
-    let campaigns = await scanUnmatchedCampaigns();
+    // 2. Get campaigns to process (only CB_MATCHED campaigns — matching was done during discovery)
+    let campaigns = await scanMatchedCampaigns();
 
     if (targetSlugs.length > 0) {
         const requestedCampaigns = await Promise.all(targetSlugs.map((slug) => getCampaignBlueprint(slug)));
@@ -127,30 +127,32 @@ async function runPhaseB(): Promise<void> {
         campaigns = requestedCampaigns.filter((campaign) => campaign !== null);
     }
 
-    console.log(`[run-phase-b] Processing ${campaigns.length} campaign(s)...\n`);
+    console.log(`[run-phase-b] Confirming ${campaigns.length} pre-matched campaign(s)...\n`);
 
-    // 3. Match + write results
-    const results: Array<{ slug: string; status: 'MATCHED' | 'UNMATCHED'; detail: string }> = [];
+    // 3. Confirm match against live inventory + write Odysseus retail link
+    const results: Array<{ slug: string; status: 'CONFIRMED' | 'MATCH_EXPIRED'; detail: string }> = [];
 
     for (const campaign of campaigns) {
-        const match = matchGroupInventoryToCampaign(campaign, inventory);
+        const confirmation = matchGroupInventoryToCampaign(campaign, inventory);
 
-        if (match) {
+        if (confirmation) {
+            console.log(`[run-phase-b] ✅ Match confirmed for "${campaign.id}" → ${confirmation.matchedShipName} (score: ${confirmation.matchScore})`);
             console.log(`[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`);
-            match.odysseusRetailBookingLink = await generateOdysseusRetailLink(match);
+            confirmation.odysseusRetailBookingLink = await generateOdysseusRetailLink(confirmation);
 
-            await upsertCampaignPricingMatch(campaign.id, match);
+            await upsertCampaignPricingMatch(campaign.id, confirmation);
             results.push({
                 slug: campaign.id,
-                status: 'MATCHED',
-                detail: `${match.matchedShipName} — $${match.computedStartingPrice}/pp (score: ${match.matchScore})${match.odysseusRetailBookingLink ? ' + retail link' : ''}`,
+                status: 'CONFIRMED',
+                detail: `${confirmation.matchedShipName} — $${confirmation.computedStartingPrice}/pp (score: ${confirmation.matchScore})${confirmation.odysseusRetailBookingLink ? ' + retail link' : ''}`,
             });
         } else {
-            await markCampaignUnmatched(campaign.id);
+            // Match existed at discovery time but is no longer in live inventory — flag for review
+            console.warn(`[run-phase-b] ⚠️ Match EXPIRED for "${campaign.id}" — was matched to "${campaign.matchedShipName ?? 'unknown'}" but not found in current live inventory. Manual operator review needed.`);
             results.push({
                 slug: campaign.id,
-                status: 'UNMATCHED',
-                detail: 'No qualifying CB group found',
+                status: 'MATCH_EXPIRED',
+                detail: `Previously matched to "${campaign.matchedShipName ?? 'unknown'}" — no longer in live CB inventory`,
             });
         }
     }
@@ -158,12 +160,13 @@ async function runPhaseB(): Promise<void> {
     // 4. Summary
     console.log('\n─── Results ───');
     for (const r of results) {
-        const icon = r.status === 'MATCHED' ? '✅' : '⚠️';
+        const icon = r.status === 'CONFIRMED' ? '✅' : '⚠️';
         console.log(`${icon} [${r.status}] ${r.slug}: ${r.detail}`);
     }
 
-    const matchedCount = results.filter(r => r.status === 'MATCHED').length;
-    console.log(`\n[run-phase-b] Done. ${matchedCount}/${results.length} campaigns matched.\n`);
+    const confirmedCount = results.filter(r => r.status === 'CONFIRMED').length;
+    const expiredCount = results.filter(r => r.status === 'MATCH_EXPIRED').length;
+    console.log(`\n[run-phase-b] Done. ${confirmedCount}/${results.length} confirmed, ${expiredCount} need operator review.\n`);
 }
 
 runPhaseB().catch((error: unknown) => {

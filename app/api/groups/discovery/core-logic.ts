@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
-import { ModelName } from '@/lib/ai/llm-gateway';
+import { ModelName, callLLM } from '@/lib/ai/llm-gateway';
 import { Campaign } from '@/lib/campaigns/types';
 import { getAestheticBrief, saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { DiscoveryBlueprintBatchSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
@@ -11,6 +11,8 @@ import {
     getLaunchWindowViolations,
     getLaunchWindowPolicy,
 } from '@/lib/campaigns/launch-window';
+import { CbGroupInventoryItem } from '@/lib/campaigns/cb-inventory-types';
+import { matchGroupInventoryToCampaign } from '@/lib/campaigns/cb-inventory-matcher';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
@@ -38,9 +40,58 @@ type CbDealsCache = {
         groupId: string;
         shipName: string;
         vendor: string;
-        sailDate: string;
+        sailDate: string;      // actually itinerary text, e.g. "7 Night Alaska Inside Passage Cruise"
+        startingPrice?: string; // actually departure port code, e.g. "YVR"
+        priceAdvantage?: string;
+        sourceUrl?: string;
     }>;
 };
+
+const CB_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function warnIfCbCacheStale(now: Date = new Date()): void {
+    if (!existsSync(CB_DEALS_CACHE_FILE)) {
+        console.warn('[discovery] CB deals cache not found — run scrape-cb-deals.ts first.');
+        return;
+    }
+    try {
+        const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
+        const cache = JSON.parse(raw) as CbDealsCache;
+        const generatedAt = new Date(cache.generatedAtIso);
+        const ageMs = now.getTime() - generatedAt.getTime();
+        if (ageMs > CB_CACHE_MAX_AGE_MS) {
+            const ageHours = Math.round(ageMs / (60 * 60 * 1000));
+            console.warn(`[discovery] CB deals cache is ${ageHours}h old (>24h). Run scrape-cb-deals.ts to refresh inventory before discovery.`);
+        }
+    } catch {
+        console.warn('[discovery] Failed to read CB deals cache for staleness check.');
+    }
+}
+
+function loadCbInventoryFromCache(): CbGroupInventoryItem[] {
+    if (!existsSync(CB_DEALS_CACHE_FILE)) return [];
+    try {
+        const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
+        const cache = JSON.parse(raw) as CbDealsCache;
+        return cache.priceAdvantages
+            .filter((item) => item.groupId && item.shipName)
+            .map((item) => ({
+                groupId: item.groupId,
+                shipName: item.shipName,
+                vendor: item.vendor ?? '',
+                itinerary: item.sailDate ?? '',    // sailDate column holds itinerary text
+                sailDate: '',                      // actual sail date not captured in this cache
+                startingPrice: '',
+                startingPriceNumber: 0,
+                priceAdvantage: item.priceAdvantage ?? '',
+                priceAdvantageNumber: Number(item.priceAdvantage) || 0,
+                departurePort: item.startingPrice, // startingPrice column holds departure port code
+                sourceUrl: item.sourceUrl ?? '',
+            }));
+    } catch {
+        return [];
+    }
+}
 
 function readResearchCache(): ResearchCache {
     const today = new Date().toISOString().slice(0, 10);
@@ -109,76 +160,41 @@ function buildCbInventoryContext(now: Date = new Date()): string {
 
 const CRUISE_REALISM_GOVERNING_PRINCIPLE = 'A valid group cruise theme must feel like a desirable vacation first, and only secondarily like a niche identity expression.';
 
-const PerplexityResponseSchema = z.object({
-    choices: z.array(
-        z.object({
-            message: z.object({
-                content: z.string(),
-            }),
-        })
-    ),
-});
-
-async function callPerplexity(prompt: string, attempt: number = 1): Promise<string> {
-    const apiKey = process.env.PERPLEXITY_API_KEY;
-    if (!apiKey) {
-        throw new Error('Missing PERPLEXITY_API_KEY environment variable.');
-    }
-
+async function callGeminiResearch(prompt: string, attempt: number = 1): Promise<string> {
     const MAX_ATTEMPTS = 3;
-    const controller = new AbortController();
-    // Hard cap: 10 minutes per call (sonar-deep-research is slow)
-    const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000);
-
+    
     try {
-        console.log(`[callPerplexity] Attempt ${attempt}/${MAX_ATTEMPTS}...`);
-        const response = await fetch('https://api.perplexity.ai/chat/completions', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'Connection': 'keep-alive',
-            },
-            body: JSON.stringify({
-                model: 'sonar-deep-research',
-                messages: [{ role: 'user', content: prompt }],
-                temperature: 0.2,
-            }),
-            signal: controller.signal,
+        console.log(`[callGeminiResearch] Starting Gemini 3.1 Deep Research (Attempt ${attempt}/${MAX_ATTEMPTS})...`);
+        const { content } = await callLLM(ModelName.GEMINI_3_PRO, prompt, {
+            systemPrompt: "You are an expert Cruise Campaign Strategist conducting exhaustive deep research. You must identify specific, concrete, niche communities and operationalize them into highly actionable campaign insights. Provide free-form, comprehensive markdown output. Do not output structured JSON.",
+            maxTokens: 16000,
+            temperature: 0.2,
         });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Perplexity request failed (${response.status}): ${errorBody}`);
+        
+        if (!content || !content.trim()) {
+            throw new Error('Gemini Deep Research returned an empty research response.');
         }
-
-        const parsedResponse = PerplexityResponseSchema.parse(await response.json());
-        const result = parsedResponse.choices[0]?.message.content?.trim();
-        if (!result) {
-            throw new Error('Perplexity returned an empty research response.');
-        }
-
-        console.log(`[callPerplexity] ✅ Response received (attempt ${attempt}).`);
-        return result;
+        
+        console.log(`[callGeminiResearch] ✅ Response received (attempt ${attempt}).`);
+        return content.trim();
 
     } catch (error) {
         const isRetryable = error instanceof Error && (
             error.message.includes('ECONNRESET') ||
             error.message.includes('ECONNREFUSED') ||
             error.message.includes('fetch failed') ||
+            error.message.includes('timeout') ||
             error.name === 'AbortError'
         );
 
         if (isRetryable && attempt < MAX_ATTEMPTS) {
             const delayMs = attempt * 5000; // 5s, 10s backoff
-            console.warn(`[callPerplexity] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
+            console.warn(`[callGeminiResearch] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
             await new Promise(resolve => setTimeout(resolve, delayMs));
-            return callPerplexity(prompt, attempt + 1);
+            return callGeminiResearch(prompt, attempt + 1);
         }
 
         throw error;
-    } finally {
-        clearTimeout(timeoutId);
     }
 }
 
@@ -313,6 +329,17 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
     const now = new Date();
     const cache = respin ? { date: new Date().toISOString().slice(0, 10), promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
 
+    // Pre-load CB inventory for both Step 2 (context) and Step 3 (hard constraints + match gate)
+    warnIfCbCacheStale(now);
+    const cbInventoryContext = buildCbInventoryContext(now);
+    const cachedInventory = loadCbInventoryFromCache();
+    const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
+    if (cbInventoryContext) {
+        console.log(`[runGroupDiscoveryPipeline] CB inventory context loaded: ${cachedInventory.length} item(s) available for match gate.`);
+    } else {
+        console.warn('[runGroupDiscoveryPipeline] No CB inventory cache — hard constraints disabled. Run scrape-cb-deals.ts first.');
+    }
+
     // Pre-load existing campaigns to build the deduplication exclusion list
     const existingCampaigns = await scanAllCampaigns();
     const priorCampaignContext = respin ? await loadPriorCampaignContext(existingCampaigns) : [];
@@ -366,7 +393,7 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
 
     Do not optimize for the most intense or industrial niche. Optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, ambient community potential, and ownable aesthetic.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        psychographicData = await callPerplexity(psychographicPrompt);
+        psychographicData = await callGeminiResearch(psychographicPrompt);
         cache.psychographicData = psychographicData;
         writeResearchCache(cache);
         console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Saved to cache.');
@@ -378,14 +405,6 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
         aestheticData = cache.aestheticData;
     } else {
-        const cbInventoryContext = buildCbInventoryContext(now);
-        const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
-        if (cbInventoryContext) {
-            console.log('[runGroupDiscoveryPipeline] Step 2: CB inventory context loaded from cb-deals-cache.json');
-        } else {
-            console.warn('[runGroupDiscoveryPipeline] Step 2: No CB deals cache found — run scrape-cb-deals.ts first for inventory-first theming.');
-        }
-
         console.log('[runGroupDiscoveryPipeline] Step 2: Aesthetic Gap Follow-up');
         const aestheticPrompt = `
 Based on the following subcultures we identified:
@@ -433,14 +452,16 @@ ${psychographicData}
     - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
     - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${launchWindowPromptGuidance}${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        aestheticData = await callPerplexity(aestheticPrompt);
+        aestheticData = await callGeminiResearch(aestheticPrompt);
         cache.aestheticData = aestheticData;
         writeResearchCache(cache);
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Saved to cache.');
     }
 
     console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
-    const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
+    const cbInventoryHardConstraintBlock = cbInventoryContext
+        ? `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.`
+        : '';
     const { object } = await callGlobalGenerateObject({
         schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
@@ -501,7 +522,36 @@ ${launchWindowPromptGuidance}
 - targetDates must be copied as a real, parseable sailing date when the research references eligible CB inventory.
 - Never choose a sailing that is merely thematic; it must remain compatible with the launch-window rule.
 
-Ensure each blueprint is highly specific, aspirational, and contains all required fields.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
+Ensure each blueprint is highly specific, aspirational, and contains all required fields.
+
+REQUIRED JSON FIELDS for every blueprint — the parser will reject any missing fields:
+- id (string): url-friendly slug
+- name (string)
+- description (string)
+- aesthetic (string)
+- targetDates (string): exact sailing date copied from inventory, e.g. "2026-11-07"
+- targetDestination (string)
+- shipTarget (string): ship name from inventory
+- highlightEvents (array of strings, 3-5)
+- targetingKeywords (array of strings, 3-5)
+- minCabinsRequired (number): default 8
+- startingPrice (number): default 1000 if unknown
+- priceSource (string): "AI Estimate" if unknown
+- researchRationale (string)
+- successLogic (string)
+- audienceSignals (array of strings, 2-4)
+- vacationFitRationale (string)
+- cruiseNativeMoments (array of strings, 3-5)
+- nicheExpressionMode (string)
+- implausibleLiteralizations (array of strings, 3-5)
+- allowedThemeSignals (array of strings, 3-6)
+- discouragedThemeSignals (array of strings, 3-6)
+- communityFitRationale (string)
+- optionalGatheringMoments (array of strings, 3-5)
+- optionalityStyle (string)
+- solitudeRisks (array of strings, 3-5)
+
+Output must be a single JSON object with a top-level "blueprints" array containing exactly 5 objects, each with ALL fields above populated. Do not omit any numeric or string field.${cbInventoryHardConstraintBlock}${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim(),
     });
 
@@ -529,11 +579,47 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
         now,
     );
 
-    console.log('[runGroupDiscoveryPipeline] Step 4: Saving Blueprints to DynamoDB (with idempotency check)');
-    const campaigns: Campaign[] = object.blueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
+    // ── Inventory Match Gate ──────────────────────────────────────────────────
+    // Discard any blueprint that cannot be matched to CB inventory before saving.
+    const allCampaigns: Campaign[] = object.blueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
+    const matchedCampaigns: Campaign[] = [];
 
+    if (cachedInventory.length === 0) {
+        console.warn('[runGroupDiscoveryPipeline] Inventory Match Gate: no cached inventory — bypassing gate, all blueprints proceed.');
+        matchedCampaigns.push(...allCampaigns);
+    } else {
+        for (const campaign of allCampaigns) {
+            const match = matchGroupInventoryToCampaign(campaign, cachedInventory);
+            if (match) {
+                console.log(`[runGroupDiscoveryPipeline] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
+                matchedCampaigns.push(campaign);
+            } else {
+                console.warn(`[runGroupDiscoveryPipeline] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
+            }
+        }
+        const discardedCount = allCampaigns.length - matchedCampaigns.length;
+        if (discardedCount > 0) {
+            console.log(`[runGroupDiscoveryPipeline] Inventory Match Gate: ${matchedCampaigns.length}/${allCampaigns.length} blueprints passed (${discardedCount} discarded).`);
+        }
+    }
+
+    if (matchedCampaigns.length === 0) {
+        const ships = allCampaigns.map(c => `"${c.shipTarget ?? 'unknown'}"`).join(', ');
+        throw new Error(
+            `All ${allCampaigns.length} generated blueprints failed the inventory match gate. ` +
+            `CB inventory may be too narrow for the requested niche space. ` +
+            `Requested ships: ${ships}. ` +
+            `Suggest: re-scrape CB inventory or re-spin with relaxed destination constraints.`
+        );
+    }
+
+    if (matchedCampaigns.length < 2) {
+        console.warn(`[runGroupDiscoveryPipeline] Only ${matchedCampaigns.length} blueprint(s) passed the inventory gate — consider a re-spin with relaxed constraints.`);
+    }
+
+    console.log('[runGroupDiscoveryPipeline] Step 4: Saving Matched Blueprints to DynamoDB (with idempotency check)');
     let skippedCount = 0;
-    for (const campaign of campaigns) {
+    for (const campaign of matchedCampaigns) {
         const existing = await getCampaignBlueprint(campaign.id);
         if (existing) {
             console.warn(`[runGroupDiscoveryPipeline] Campaign "${campaign.id}" already exists — skipping.`);
@@ -544,7 +630,7 @@ Ensure each blueprint is highly specific, aspirational, and contains all require
     }
 
     return {
-        campaigns,
+        campaigns: matchedCampaigns,
         skippedCount,
         sonarResearch: {
             psychographic: psychographicData,
