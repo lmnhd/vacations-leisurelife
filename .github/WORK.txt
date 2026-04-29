@@ -1,166 +1,146 @@
-# Work Plan: Gemini Deep Research Agent Integration
+# Discovery Pipeline: Niche-Heavy Blueprint Problem — 2026-04-28
 
-## Objective
+## Situation
 
-Replace the `callPerplexity()` deep-research helper in `app/api/groups/discovery/core-logic.ts` with a proper Gemini Deep Research Agent call via the Google Interactions API. This enables true multi-step autonomous research rather than a single LLM completion call.
+Gemini Deep Research integration is working (Interactions API, `store: true`, polling completes successfully). The discovery pipeline generated 5 campaigns, all passed the inventory match gate.
 
-## Context
+However, Red Team review results were poor:
 
-The discovery pipeline currently uses a single-shot `callLLM(ModelName.GEMINI_3_PRO, ...)` to simulate deep research. This works as a heavy-reasoning model but does not leverage Gemini's actual Deep Research capabilities (iterative search, reading, synthesis). Google exposes this through a separate `interactions` API, not `generateContent`.
+| Campaign | Verdict | Issues |
+|----------|---------|--------|
+| steampunk-voyage | **BLOCK** (retired) | Structural — too costume-driven |
+| mystical-seas | WARN | solitude_drift, cruise_implausibility |
+| cosplay-at-sea | WARN | solitude_drift, cruise_implausibility |
+| sci-fi-adventure | WARN | solitude_drift, cruise_implausibility, stereotype_risk |
+| fantasy-literary-cruise | WARN | cruise_implausibility, solitude_drift, stereotype_risk |
 
-The other agent attempted to swap Perplexity for `callLLM(GEMINI_3_PRO)`, which:
-1. Uses a non-existent model ID (`gemini-3.1-pro-latest` → 404)
-2. Routes through `generateContent` instead of the `interactions` API
-3. Loses the multi-step research benefit entirely
+After auto-revision, all 4 WARN campaigns remained WARN. The Red Team consistently flags the same pattern:
 
-This plan restores the intent: **true Deep Research via `interactions`**, while keeping the rest of the discovery pipeline untouched.
+1. **Too niche-first, vacation-second** — the concepts read like "a cosplay event on a ship" rather than "a cruise vacation that happens to attract cosplayers."
+2. **Workshop/program drift** — blueprints include costume-making workshops, fantasy worldbuilding workshops, structured sci-fi activities.
+3. **Stereotype risk / exclusion** — heavy niche focus alienates non-enthusiasts (e.g., guests who don't read fantasy literature).
+4. **Solitude drift** — over-indexed on solo activities (reading alone, quiet rituals) without enough ambient group energy.
 
-## Constraints (DO NOT BREAK)
+## Root Cause Analysis
 
-- **Output format:** `psychographicData` and `aestheticData` must remain free-form **markdown strings**. Step 3 GPT prompt reads them as unstructured text.
-- **cbInventoryContext injection:** Step 2 aesthetic prompt already has `cbInventoryContext` appended — preserve this.
-- **No changes to Step 3+:** The inventory match gate, Red Team, DynamoDB save, and all downstream phases are off-limits.
-- **No changes to model registry:** `models.ts` and `gateway.ts` map `GEMINI_3_PRO` to `generateContent`. Do not try to fix that. Add a **new** helper function, do not reuse `callLLM`.
+The problem is upstream in the **research prompt framing**, not in Step 3 GPT or the Red Team.
 
-## Requirements
+### 1. Step 1 (Psychographic Discovery) is Niche-First
 
-### 1. New Dependency
+Current prompt opens with:
 
-Install `@google/genai` (the newer SDK that supports interactions):
+> "Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation."
 
-```bash
-npm install @google/genai
+This frames the task as: **find a niche, then figure out how it fits on a cruise.**
+
+The output format then asks the research agent to deeply analyze each community:
+- Why the niche has market momentum
+- Why it feels natural on a ship
+- What cruise-native appeal is
+- What would make it feel too formal
+
+Gemini Deep Research, being a thorough research agent, does exactly what it's told: it researches the **niche community deeply**. The output is a community analysis document. This biases everything downstream.
+
+### 2. `CRUISE_REALISM_GOVERNING_PRINCIPLE` is Secondary
+
+The governing principle exists but is positioned as a filter/constraint applied AFTER the niche is chosen:
+
+```
+${CRUISE_REALISM_GOVERNING_PRINCIPLE}
 ```
 
-(Alternative: use the REST API directly with `fetch` if you prefer zero new deps.)
+It's not the PRIMARY framing of the research task. It's a guardrail.
 
-### 2. New Helper: `callGeminiDeepResearch(prompt, options)`
+### 3. Step 2 (Aesthetic) Reinforces the Niche-First Frame
 
-Create a new helper (e.g., in `lib/ai/gemini-deep-research.ts` or inline in `core-logic.ts` if the file is short). It must:
+> "For each promising theme, analyze it in this order: What are the most believable cruise-native expressions of this theme?"
 
-- Accept a research `prompt` string (the full Perplexity-style prompt we already have).
-- Call the Interactions API with `agent: 'deep-research-preview-04-2026'`.
-- Use `background: true` to start the task asynchronously.
-- Poll `client.interactions.get(id)` until `status === 'completed'` or `failed`.
-- Extract the final synthesized text from `result.outputs[result.outputs.length - 1].text`.
-- Return the text as a plain string.
-- Handle retries (up to 3 attempts) with exponential backoff on network failures.
-- Throw a descriptive error if the interaction fails.
+The input is already a niche analysis. Step 2 asks "how do we put this niche on a cruise?" rather than "what cruise experience would naturally attract this community?"
 
-**Example skeleton (JavaScript/TypeScript):**
+### 4. Step 3 GPT Has No Counterbalance
 
-```typescript
-import { GoogleGenAI } from '@google/genai';
+Step 3 receives niche-heavy research text and produces niche-heavy blueprints. The prompt includes:
+- `CRUISE_REALISM_GOVERNING_PRINCIPLE` (secondary)
+- "vacationFitRationale" field (one of many fields)
+- "nicheExpressionMode" field (explains niche as "flavor layer")
 
-const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
+But the research DATA is overwhelmingly niche-first. GPT follows the data.
 
-async function callGeminiDeepResearch(prompt: string, attempt = 1): Promise<string> {
-  const MAX_ATTEMPTS = 3;
+## Proposed Solutions
 
-  try {
-    console.log(`[callGeminiDeepResearch] Starting (attempt ${attempt}/${MAX_ATTEMPTS})...`);
+### Option A: Reframe Step 1 Prompt (Recommended)
 
-    const interaction = await client.interactions.create({
-      input: prompt,
-      agent: 'deep-research-preview-04-2026',
-      background: true,
-    });
+Rewrite the Step 1 prompt to be **vacation-first, niche-second**:
 
-    console.log(`[callGeminiDeepResearch] Interaction started: ${interaction.id}`);
+**Current:**
+> "Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation."
 
-    while (true) {
-      const result = await client.interactions.get(interaction.id);
+**Proposed:**
+> "Identify 5 distinctive cruise vacation experiences that use a niche community identity as a thin social flavoring layer. The cruise vacation must be desirable on its own — the niche community is the seasoning, not the meal."
 
-      if (result.status === 'completed') {
-        const text = result.outputs[result.outputs.length - 1].text;
-        if (!text || !text.trim()) {
-          throw new Error('Gemini Deep Research returned empty output.');
-        }
-        console.log(`[callGeminiDeepResearch] ✅ Completed.`);
-        return text.trim();
-      }
+And change the research output format:
 
-      if (result.status === 'failed') {
-        throw new Error(`Gemini Deep Research failed: ${result.error ?? 'unknown error'}`);
-      }
+**Current:**
+> "For each community, explain: 1. Why the niche has strong market momentum..."
 
-      await new Promise(resolve => setTimeout(resolve, 10000)); // 10s poll
-    }
-  } catch (error) {
-    const isRetryable = error instanceof Error && (
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('fetch failed') ||
-      error.message.includes('timeout') ||
-      error.message.includes('network') ||
-      error.name === 'AbortError'
-    );
+**Proposed:**
+> "For each experience, describe: 1. The cruise vacation experience first (destinations, shipboard moments, social energy) 2. Which niche community would naturally be drawn to THIS vacation (not the other way around) 3. How the niche identity acts as a thin social flavoring — ambient, optional, not programmatic..."
 
-    if (isRetryable && attempt < MAX_ATTEMPTS) {
-      const delayMs = attempt * 5000;
-      console.warn(`[callGeminiDeepResearch] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      return callGeminiDeepResearch(prompt, attempt + 1);
-    }
+### Option B: Add Step 2.5 — "Niche Dilution" Rewrite
 
-    throw error;
-  }
-}
-```
+After Step 2 aesthetic research completes, add a lightweight GPT call that rewrites the research output to explicitly reframe every theme as "vacation-first, niche-second." This acts as a prompt-engineering layer between research and blueprint generation.
 
-### 3. Replace `callPerplexity` / `callLLM` Usage in `core-logic.ts`
+**Pros:** No need to change Gemini Deep Research behavior.  
+**Cons:** Extra API call, extra latency, feels like a workaround.
 
-Two call sites in `runGroupDiscoveryPipeline`:
+### Option C: Strengthen Step 3 Prompt Counterweight
 
-1. **Step 1 (Psychographic Discovery):**
-   ```typescript
-   psychographicData = await callGeminiDeepResearch(psychographicPrompt);
-   ```
+Keep the research as-is but dramatically strengthen the Step 3 prompt to resist niche-heavy drift:
 
-2. **Step 2 (Aesthetic Analysis):**
-   ```typescript
-   aestheticData = await callGeminiDeepResearch(aestheticPrompt);
-   ```
+- Add explicit examples of what a "thin flavoring" looks like vs. a "programmatic center"
+- Add a scoring rubric: "If a non-enthusiast would feel excluded, reject the concept"
+- Add mandatory fields that force vacation-first thinking
+- Include the Red Team's actual failure patterns as negative examples
 
-Remove the old `callPerplexity` import and function definition. Remove the `callLLM` import if it was added by the other agent.
+**Pros:** Minimal upstream changes.  
+**Cons:** GPT is still working from niche-first data; it's fighting the current.
 
-### 4. Environment Variable
+### Option D: Re-Spin Feedback Loop
 
-Ensure `GOOGLE_GENERATIVE_AI_API_KEY` is set. The existing `callGoogle` provider already uses it, so it should already be in `.env.local`.
+The re-spin feedback (`buildDiscoveryRespinFeedback`) already includes prior campaign issues, but it doesn't explicitly instruct the research agent to avoid niche-heavy themes. Add explicit language:
 
-### 5. Error Handling & Timeouts
+> "The following prior campaigns were rejected for being too niche-heavy, workshop-like, or exclusionary. Avoid concepts where the niche becomes the operational center of the trip. Prioritize cruise-native social experiences where the niche is ambient and optional."
 
-- Deep Research interactions can take **several minutes** (Google docs say 2–10 min typical).
-- The 10-second polling loop above handles this gracefully.
-- Do **not** add an `AbortController` timeout inside the helper — the interaction is server-side and will complete or fail on its own. A client-side timeout would orphan the server job.
-- If all 3 retry attempts fail, let the error bubble up. `runGroupDiscoveryPipeline` will log it and abort.
+## Recommendation
 
-## Files to Touch
+Implement **Option A** (reframe Step 1 prompt) + **Option D** (re-spin feedback loop).
 
-- `app/api/groups/discovery/core-logic.ts` — replace `callPerplexity`/`callLLM` with `callGeminiDeepResearch`
-- `package.json` + `package-lock.json` — add `@google/genai` if using the SDK
-- (Optional) `lib/ai/gemini-deep-research.ts` — if you extract the helper to its own module
+These are the minimal, highest-leverage fixes. They don't add new API calls or processing steps — they just change how we ask for research.
 
-## Files NOT to Touch
+If Option A alone doesn't solve it after one discovery run, add Option C (Step 3 counterweight) as reinforcement.
 
-- `lib/ai/llm-gateway/models.ts` — do not change model registry
-- `lib/ai/llm-gateway/gateway.ts` — do not change routing
-- `lib/ai/llm-gateway/providers/google.ts` — do not change `callGoogle`
-- Any Step 3+ code (inventory gate, Red Team, DynamoDB, Phase B)
-- `SKILL.md` — the skill already documents the pipeline abstractly
+## Files to Modify
 
-## Testing
+1. `app/api/groups/discovery/core-logic.ts` — Step 1 prompt (psychographicPrompt)
+2. `app/api/groups/discovery/core-logic.ts` — Step 2 prompt (aestheticPrompt) — minor tweak to reinforce vacation-first
+3. `app/api/groups/discovery/core-logic.ts` — `buildDiscoveryRespinFeedback` — add explicit anti-niche-heavy guidance
+4. `lib/campaigns/discovery-red-team.ts` — Optionally add "niche_heavy_drift" as a Red Team category with deterministic detection
 
-1. Clear research cache: `Remove-Item .github/data/discovery-research-cache.json`
-2. Run: `npx tsx --env-file=.env.local -e "import { runGroupDiscoveryPipeline } from './app/api/groups/discovery/core-logic'; runGroupDiscoveryPipeline().then(r => console.log(r.campaigns.map(c => c.id)))"`
-3. Verify Step 1 and Step 2 logs show `[callGeminiDeepResearch]` rather than `[callPerplexity]` or `[callLLM]`.
-4. Verify the pipeline completes with 5 campaigns that pass the inventory match gate.
+## Next Steps
 
-## Known Risks
+1. Implement prompt reframes
+2. Clear discovery cache
+3. Re-run discovery pipeline
+4. Verify Red Team results show PASS or fewer WARNs
 
-- **Interactions API is in preview.** Google may change the endpoint or `agent` identifier.
-- **Slow:** Each Deep Research call takes minutes. The full discovery pipeline (Step 1 + Step 2 + Step 3 GPT) will now take ~5–15 minutes total.
-- **Quota:** Deep Research may have different rate limits than `generateContent`. Monitor for 429 errors.
+---
 
-## Reference
+## Appendix: Red Team Failure Patterns (from 2026-04-28 run)
 
-Google Deep Research Agent docs: https://ai.google.dev/gemini-api/docs/deep-research
+**mystical-seas:** solitude_drift ("insufficient group bonding activities"), cruise_implausibility ("quiet spaces not practical")
+
+**cosplay-at-sea:** solitude_drift ("overemphasis on competitive events"), cruise_implausibility ("technical costume-making workshops")
+
+**sci-fi-adventure:** solitude_drift ("high-tech activities exclude non-enthusiasts"), stereotype_risk ("alienating non-sci-fi enthusiasts"), cruise_implausibility ("interactive experiences don't align with ship capabilities")
+
+**fantasy-literary-cruise:** cruise_implausibility ("Fantasy Worldbuilding Workshop doesn't integrate"), solitude_drift ("over-focus on reading alone"), stereotype_risk ("excludes non-readers")

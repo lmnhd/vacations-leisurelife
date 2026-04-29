@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
-import { ModelName, callLLM } from '@/lib/ai/llm-gateway';
+import { ModelName } from '@/lib/ai/llm-gateway';
+import { callGeminiDeepResearch } from '@/lib/ai/gemini-deep-research';
 import { Campaign } from '@/lib/campaigns/types';
 import { getAestheticBrief, saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { DiscoveryBlueprintBatchSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
@@ -160,43 +161,6 @@ function buildCbInventoryContext(now: Date = new Date()): string {
 
 const CRUISE_REALISM_GOVERNING_PRINCIPLE = 'A valid group cruise theme must feel like a desirable vacation first, and only secondarily like a niche identity expression.';
 
-async function callGeminiResearch(prompt: string, attempt: number = 1): Promise<string> {
-    const MAX_ATTEMPTS = 3;
-    
-    try {
-        console.log(`[callGeminiResearch] Starting Gemini 3.1 Deep Research (Attempt ${attempt}/${MAX_ATTEMPTS})...`);
-        const { content } = await callLLM(ModelName.GEMINI_3_PRO, prompt, {
-            systemPrompt: "You are an expert Cruise Campaign Strategist conducting exhaustive deep research. You must identify specific, concrete, niche communities and operationalize them into highly actionable campaign insights. Provide free-form, comprehensive markdown output. Do not output structured JSON.",
-            maxTokens: 16000,
-            temperature: 0.2,
-        });
-        
-        if (!content || !content.trim()) {
-            throw new Error('Gemini Deep Research returned an empty research response.');
-        }
-        
-        console.log(`[callGeminiResearch] ✅ Response received (attempt ${attempt}).`);
-        return content.trim();
-
-    } catch (error) {
-        const isRetryable = error instanceof Error && (
-            error.message.includes('ECONNRESET') ||
-            error.message.includes('ECONNREFUSED') ||
-            error.message.includes('fetch failed') ||
-            error.message.includes('timeout') ||
-            error.name === 'AbortError'
-        );
-
-        if (isRetryable && attempt < MAX_ATTEMPTS) {
-            const delayMs = attempt * 5000; // 5s, 10s backoff
-            console.warn(`[callGeminiResearch] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
-            await new Promise(resolve => setTimeout(resolve, delayMs));
-            return callGeminiResearch(prompt, attempt + 1);
-        }
-
-        throw error;
-    }
-}
 
 interface DiscoveryPipelineResult {
     campaigns: Campaign[];
@@ -393,7 +357,7 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
 
     Do not optimize for the most intense or industrial niche. Optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, ambient community potential, and ownable aesthetic.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        psychographicData = await callGeminiResearch(psychographicPrompt);
+        psychographicData = await callGeminiDeepResearch(psychographicPrompt);
         cache.psychographicData = psychographicData;
         writeResearchCache(cache);
         console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Saved to cache.');
@@ -452,7 +416,7 @@ ${psychographicData}
     - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
     - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${launchWindowPromptGuidance}${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        aestheticData = await callGeminiResearch(aestheticPrompt);
+        aestheticData = await callGeminiDeepResearch(aestheticPrompt);
         cache.aestheticData = aestheticData;
         writeResearchCache(cache);
         console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Saved to cache.');
