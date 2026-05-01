@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { buildDesignedAdRenderSpecs } from "@/lib/campaigns/design-system/ad-templates";
 import type { NicheTokens } from "@/lib/campaigns/design-system/types";
 
@@ -118,84 +115,63 @@ function SpecCard({
   );
 }
 
-export default function VisualSystemSweepPage() {
-  const [activeSystem, setActiveSystem] = useState<NicheTokens["system"]>(
-    "system_1_editorial"
+function SystemSection({
+  system,
+  label,
+  desc,
+}: {
+  system: NicheTokens["system"];
+  label: string;
+  desc: string;
+}) {
+  const tokens: NicheTokens = { ...MOCK_BASE, system };
+  const specs = buildDesignedAdRenderSpecs(tokens, [], []);
+
+  return (
+    <div className="mb-12">
+      <div className="flex items-baseline gap-3 mb-2">
+        <h2 className="text-lg font-semibold text-slate-100">{label}</h2>
+        <span className="text-xs text-slate-500">
+          {specs.length} template(s)
+        </span>
+      </div>
+      <p className="text-sm text-slate-400 mb-4">{desc}</p>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {specs.map((spec) => (
+          <SpecCard
+            key={spec.assetId}
+            kind={spec.kind}
+            width={spec.width}
+            height={spec.height}
+            tags={spec.tags}
+            sourceImage={!!spec.sourceImage}
+          />
+        ))}
+      </div>
+    </div>
   );
-  const [specs, setSpecs] = useState<
-    ReturnType<typeof buildDesignedAdRenderSpecs>
-  >([]);
-  const [bias, setBias] = useState<string>("");
+}
 
-  useEffect(() => {
-    const tokens: NicheTokens = { ...MOCK_BASE, system: activeSystem };
-    const biasList = bias
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    setSpecs(buildDesignedAdRenderSpecs(tokens, biasList, []));
-  }, [activeSystem, bias]);
-
+export default function VisualSystemSweepPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-xl font-bold mb-1">
           Visual System Template Sweep
         </h1>
-        <p className="text-sm text-slate-400 mb-6">
-          Preview the template spec set generated for each visual system
-          family.
+        <p className="text-sm text-slate-400 mb-8">
+          Preview the template spec set generated for each visual system family.
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {SYSTEMS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setActiveSystem(s.key)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                activeSystem === s.key
-                  ? "bg-cyan-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="mb-4">
-          <input
-            type="text"
-            value={bias}
-            onChange={(e) => setBias(e.target.value)}
-            placeholder="adFormatBias filter (comma-separated, e.g. quote_card, type_hook)"
-            className="w-full max-w-md bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+        {SYSTEMS.map((s) => (
+          <SystemSection
+            key={s.key}
+            system={s.key}
+            label={s.label}
+            desc={s.desc}
           />
-        </div>
-
-        <div className="mb-2 text-sm text-slate-300">
-          {
-            SYSTEMS.find((s) => s.key === activeSystem)?.desc
-          }
-        </div>
-
-        <div className="text-xs text-slate-500 mb-4">
-          Generated {specs.length} template spec(s)
-          {bias ? ` (filtered by: ${bias})` : ""}
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {specs.map((spec) => (
-            <SpecCard
-              key={spec.assetId}
-              kind={spec.kind}
-              width={spec.width}
-              height={spec.height}
-              tags={spec.tags}
-              sourceImage={!!spec.sourceImage}
-            />
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
