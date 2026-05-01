@@ -1,8 +1,8 @@
-# Phase 3: Designed Media (Ad Artifact Pack)
+# Phase 2.3: Designed Media (Ad Artifact Pack)
 ### Ad-First, Code-Rendered Static Creative
 
-**Status:** Implemented (Phase 3 baseline)  
-**Primary outcome:** Static ad media now ships as a *designed artifact pack* (structured layouts rendered in code), instead of relying on full-scene AI images to look like ads.
+**Status:** Implemented (Phase 2.3 baseline + visual system expansion)  
+**Primary outcome:** Static ad media now ships as a *designed artifact pack* (structured layouts rendered in code), instead of relying on full-scene AI images to look like ads. Templates branch by `visualFlavor` from the campaign identity blueprint.
 
 ---
 
@@ -10,7 +10,7 @@
 
 Phase 2 largely treated static ad creative as "derived from hero images + copy". That produced images that were cleaner than earlier generations, but still felt like isolated scenes and often drifted into awkward staged moments.
 
-Phase 3 introduces an ad-first designed media system:
+Phase 2.3 introduces an ad-first designed media system:
 
 1. We generate a small set of **documentary detail image modules** (ingredient images).
 2. We render final static ads with **code-owned typography + layout** (no model-rendered text).
@@ -51,14 +51,18 @@ See: `lib/campaigns/schema.ts`
 
 ## Designed Ad Artifact Pack (What It Produces)
 
-Current Phase 3 pack produces:
+The pack is now **system-aware** — the template set branches on `identityBlueprint.visualFlavor`, mapped from `energyMode`:
 
-- `editorial_cover_ad` (4:5, 1080x1350) for IG/FB feed
-- `quote_card` (1:1, 1080x1080)
-- `itinerary_toc_card` (4:5, 1080x1350) for carousel card
-- `contributor_card` (1:1, 1080x1080)
-- `type_hook_card` (9:16, 1080x1920) for Stories/Reels/TikTok still
-- `image_detail_ad` (1.91:1, 1200x628) for FB/Google display
+| Visual System | Flavor | Templates produced |
+|---|---|---|
+| **System 1** — Editorial Magazine | `editorial_magazine` | `editorial_cover_ad`, `quote_card`, `itinerary_toc_card`, `contributor_card`, `type_hook_card`, `image_detail_ad` |
+| **System 2** — Travel Nostalgia | `travel_nostalgia` | `postcard_hero`, `quote_card`, `air_mail_social`, `boarding_pass`, `baggage_tag`, `image_detail_ad` |
+| **System 3** — Indie Zine | `indie_zine` | `zine_cover`, `scribble_social`, `sticker_sheet`, `quote_card`, `type_hook_card`, `image_detail_ad` |
+| **System 4** — Modern Brand | `none` | `type_hook_card`, `quote_card`, `itinerary_toc_card`, `image_detail_ad` |
+
+Aspect ratios and placements match platform requirements (IG feed 4:5, square 1:1, story 9:16, display 1.91:1, etc.).
+
+`adFormatBias` in the identity blueprint optionally filters and re-ranks the set by tag/kind affinity.
 
 See: `lib/campaigns/design-system/ad-templates.ts`
 
@@ -71,6 +75,18 @@ Templates render via:
 - `satori` to produce SVG from React elements
 - `sharp` to rasterize SVG -> PNG
 
+### Multi-Font Registry
+
+The renderer now loads a font family registry keyed by `VisualSystem`:
+
+- `Sans` — Geist / Inter (400, 700, 900)
+- `Serif` — Newsreader (400, 400 italic, 700)
+- `Mono` — JetBrains Mono (400)
+- `Hand` — Caveat / Kalam (400)
+- `Marker` — Permanent Marker (400)
+
+Each system declares which font families to load, so a System 2 render does not waste time registering `Marker`, and a System 3 render does not load `Serif` weights it will never use.
+
 This was selected to avoid route-module evaluation issues encountered with direct `@resvg/resvg-js` imports.
 
 See: `lib/campaigns/design-system/renderer/satori-renderer.ts`
@@ -79,7 +95,7 @@ See: `lib/campaigns/design-system/renderer/satori-renderer.ts`
 
 ## Image Prompt System: Documentary Detail Modules
 
-Phase 3 introduces a dedicated "image ingredient" prompt taxonomy. These prompts are designed to:
+Phase 2.3 introduces a dedicated "image ingredient" prompt taxonomy. These prompts are designed to:
 
 - Avoid staged niche events (no band-on-deck, no workshops, no conference energy)
 - Preserve cruise-native material truth (railings, teak, brass, marine light)
@@ -124,8 +140,12 @@ Tokens include:
 - section labels
 - accent color
 - "italic word" used as a consistent brand accent
+- `issueLabel` — "Issue 01" (Sys 1), "Voyage 01" (Sys 2), "Vol. 1" (Sys 3), "Campaign" (Sys 4)
+- `system` — the active `VisualSystem` derived from `visualFlavor`
 
-See: `lib/campaigns/design-system/niche-tokens.ts`
+The `energyMode` → `visualFlavor` → `VisualSystem` mapping lives in the identity blueprint, and the token extractor reads it to set `tokens.system`. `buildDesignedAdRenderSpecs` then branches on that value.
+
+See: `lib/campaigns/design-system/niche-tokens.ts`, `lib/campaigns/design-system/identity-blueprint.ts`
 
 ---
 
@@ -191,11 +211,12 @@ See: `app/(tests)/tests/media-generation/media-review-panel.tsx`
 
 Even when campaign identity text is identical across assets (it is campaign-level guidance), assets are differentiated downstream by:
 
-1. `assetId` (eg, `ad_editorial_cover_4x5`, `ad_type_hook_9x16`)
+1. `assetId` (eg, `ad_postcard_hero_5x3`, `ad_type_hook_9x16`)
 2. `assetType` (`designed_ad_artifact` vs `documentary_detail_image`)
-3. `tags` that encode placement intent (eg, `instagram_feed`, `tiktok`, `google_display`) and ad kind (eg, `quote`, `itinerary`)
+3. `tags` that encode placement intent (eg, `instagram_feed`, `tiktok`, `google_display`) and ad kind (eg, `postcard_hero`, `zine_cover`)
 4. `dimensions`
 5. optional `sourceImageUrl` (traceability from ad -> module)
+6. `tags` includes the active `VisualSystem` (`system_1_editorial`, `system_2_nostalgia`, etc.) for filtering
 
 The distribution schedule planner selects designed ad assets primarily using `tags` per platform preference, falling back to crops/heroes when needed.
 
@@ -203,9 +224,9 @@ See: `lib/campaigns/distribution-planner.ts`
 
 ---
 
-## Creative Alignment Fixes (Phase 3 Support Work)
+## Creative Alignment Fixes (Phase 2.3 Support Work)
 
-Several Phase 3 fixes were made to reduce "false keyword triggers" and downstream vibe drift:
+Several Phase 2.3 fixes were made to reduce "false keyword triggers" and downstream vibe drift:
 
 1. **Identity Blueprint false positives reduced**
    - Overbroad matches like `club`/`drop`/`rock` were tightened to music-specific phrases.
@@ -250,7 +271,7 @@ Several Phase 3 fixes were made to reduce "false keyword triggers" and downstrea
 
 ---
 
-## Phase 3 Acceptance Checks
+## Phase 2.3 Acceptance Checks
 
 1. **No AI-generated text**
    - Documentary modules: no readable labels/logos/signage.
@@ -260,20 +281,26 @@ Several Phase 3 fixes were made to reduce "false keyword triggers" and downstrea
    - Each output should feel like a real placement (feed, story, carousel, display).
    - Structure should carry theme without needing staged scenes.
 
-3. **Copy/imagery alignment**
+3. **System-aware branching**
+   - `editorial_magazine` campaigns produce masthead + serif cover layouts.
+   - `travel_nostalgia` campaigns produce postcard borders, stamps, and handwritten accents.
+   - `indie_zine` campaigns produce polaroid collages, torn banners, and sticker die-cuts.
+
+4. **Copy/imagery alignment**
    - Documentary modules should reflect the campaign energy directive (charged vs serene).
 
-4. **Traceability**
+5. **Traceability**
    - Each designed ad that uses a module should record `sourceImageUrl`.
 
-5. **Manifest + review**
+6. **Manifest + review**
    - Both `documentaryDetails` and `designedAdArtifacts` appear in the review UI.
+   - The visual-system-sweep page renders all 4 families side-by-side for regression testing.
 
 ---
 
 ## What Is Already Built (Not Future Work)
 
-The following items from the original Phase 3 roadmap are **implemented**:
+The following items from the original Phase 2.3 roadmap are **implemented**:
 
 - `CampaignIdentityBlueprint` — `energyMode`, `socialScale`, `propFamilies`, `forbiddenDefaults`, `lightBehavior`, `adFormatBias`, `emotionalPromise`, `evidenceOfBelonging` are all generated and stored.
   See: `lib/campaigns/design-system/identity-blueprint.ts`
@@ -281,14 +308,15 @@ The following items from the original Phase 3 roadmap are **implemented**:
   See: `lib/campaigns/design-system/documentary-prompts.ts`
 - Upstream discovery anchor signals strengthened — `cruiseNativeMoments`, `allowedThemeSignals`, `optionalGatheringMoments` now require renderable visual specificity at generation time.
   See: `app/api/groups/discovery/core-logic.ts`
+- **Template expansion** — System 2 (postcard, air-mail, boarding pass, baggage tag) and System 3 (zine cover, scribble social, sticker sheet) template families are live.
+  See: `lib/campaigns/design-system/ad-templates.ts`
+- **System-aware rendering** — `buildDesignedAdRenderSpecs` branches on `tokens.system` and respects `adFormatBias`. Per-system font families are loaded on demand.
+  See: `lib/campaigns/design-system/ad-templates.ts`, `lib/campaigns/design-system/renderer/satori-renderer.ts`
+- **Visual system sweep page** — `/tests/visual-system-sweep` renders all 4 template families side-by-side for regression testing.
 
 ---
 
-## Next (Phase 3.1 / Phase 4)
-
-**Template expansion**
-- Expand to System 2 (postcard / destination flavor) and System 3 (zine / liner-notes) template families.
-- Route default template family selection from `identityBlueprint.energyMode` — `after_hours_electric` and `nostalgic_kinetic` should default to type-heavy / poster formats; `calm_contemplative` and `refined_premium` to editorial-photo-led formats.
+## Next (Phase 2.3.1 / Phase 2.4)
 
 **Documentary prompt mode-splitting**
 - Split each documentary module kind (`trust_photo`, `artifact_still_life`, `motion_plate`, `human_glimpse`) into per-`energyMode` variants, not just per-kind.

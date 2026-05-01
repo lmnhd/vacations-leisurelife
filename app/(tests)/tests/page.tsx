@@ -93,6 +93,11 @@ const GROUPS: TestGroup[] = [
         href: '/tests/theme-music-library',
         description: 'Bulk upload, tag, and manage the shared theme music library for campaigns',
       },
+      {
+        label: 'Visual System Sweep',
+        href: '/tests/visual-system-sweep',
+        description: 'Preview all 4 visual system template families side-by-side for regression testing',
+      },
     ],
   },
   {
