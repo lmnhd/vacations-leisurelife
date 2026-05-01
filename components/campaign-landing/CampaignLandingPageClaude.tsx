@@ -39,14 +39,6 @@ export function CampaignLandingPageClaude({
 }: CampaignLandingPageClaudeProps) {
   const p = buildPalette(landing);
 
-  const galleryImages = landing.galleryImages.filter(
-    (img) => img.url.trim().length > 0,
-  );
-  const getGalleryImage = (index: number) =>
-    galleryImages.length > 0
-      ? galleryImages[index % galleryImages.length]
-      : null;
-
   const primaryHref =
     landing.links.booking &&
     landing.ctas.primary.mode === "BOOK_NOW" &&
@@ -495,13 +487,13 @@ export function CampaignLandingPageClaude({
                   </p>
                 </div>
               </div>
-              {getGalleryImage(0) && (
+              {landing.trustImages[0] && (
                 <div className="relative mt-5 h-28 overflow-hidden">
                   <div
                     className="absolute inset-0 bg-cover bg-center"
                     style={{
-                      backgroundImage: `url(${getGalleryImage(0)?.url})`,
-                      filter: "saturate(0.65)",
+                      backgroundImage: `url(${landing.trustImages[0].url})`,
+                      filter: "saturate(0.85)",
                     }}
                   />
                   <div

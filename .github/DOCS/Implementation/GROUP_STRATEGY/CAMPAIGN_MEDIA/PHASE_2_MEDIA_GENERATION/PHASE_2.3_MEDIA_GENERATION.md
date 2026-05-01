@@ -207,6 +207,23 @@ See: `app/(tests)/tests/media-generation/media-review-panel.tsx`
 
 ---
 
+## Landing Page Image Composition
+
+Campaign landing pages intentionally mix **two image styles** to balance creative expression with trust signals:
+
+| Pool | Source | Style | Used For |
+|---|---|---|---|
+| **Artistic** | `sceneImages`, `aestheticConcepts`, `hero` | Watercolor / sketched / themed | Gallery grid, scroll modules |
+| **Trust** | `shipReferences`, `documentaryDetails` | Photo-realistic ship/deck | Hero background, pricing inset |
+
+- **Hero** — prefers a photo-realistic ship reference (SerpAPI) for immediate trust; falls back to artistic if none available
+- **Gallery strip** — interleaves artistic + trust images (artistic, trust, artistic, trust…) so both styles appear
+- **Pricing card inset** — uses a trust image (ship/deck) at `saturate(0.85)` with overlay
+
+See: `lib/campaigns/landing/view-model.ts` (`resolveHeroImage`, `buildGalleryImages`, `buildTrustImages`)
+
+---
+
 ## Downstream Identification (Instagram/Facebook/etc)
 
 Even when campaign identity text is identical across assets (it is campaign-level guidance), assets are differentiated downstream by:

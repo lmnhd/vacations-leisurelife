@@ -55,6 +55,7 @@ export interface CampaignLandingViewModel {
     elevatorPitch: string;
     heroImage: LandingImageAsset | null;
     galleryImages: LandingImageAsset[];
+    trustImages: LandingImageAsset[];
     accentColor: string;
     surfaceColor: string;
     textColor: string;
@@ -174,11 +175,36 @@ function selectPreferredAsset(manifest: CampaignMediaManifest | null): AssetReco
     return approved ?? candidates[0] ?? null;
 }
 
+function selectTrustAsset(manifest: CampaignMediaManifest | null): AssetRecord | null {
+    if (!manifest) {
+        return null;
+    }
+
+    const candidates = [
+        ...manifest.images.shipReferences,
+        ...manifest.images.documentaryDetails,
+    ];
+
+    const approved = candidates.find((asset) =>
+        (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
+        (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
+    );
+    return approved ?? candidates[0] ?? null;
+}
+
 function resolveHeroImage(
     campaign: Campaign,
     brief: CampaignAestheticBrief | null,
     manifest: CampaignMediaManifest | null,
 ): LandingImageAsset | null {
+    const trustAsset = selectTrustAsset(manifest);
+    if (trustAsset) {
+        return {
+            url: trustAsset.url,
+            alt: brief?.messaging.heroSlogan ?? campaign.name,
+        };
+    }
+
     const asset = selectPreferredAsset(manifest);
     if (!asset) {
         return buildHeroFallback(campaign, brief);
@@ -201,40 +227,76 @@ function buildGalleryImages(
         return heroImage?.url ? [heroImage] : [];
     }
 
-    const candidates = [
+    const artisticCandidates = [
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
-        ...manifest.images.shipReferences,
         ...manifest.images.hero,
     ];
+    const trustCandidates = [
+        ...manifest.images.shipReferences,
+        ...manifest.images.documentaryDetails,
+    ];
+
+    function collectApproved(candidates: AssetRecord[]): LandingImageAsset[] {
+        const seen = new Set<string>();
+        const out: LandingImageAsset[] = [];
+        for (const asset of candidates) {
+            if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
+            if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') continue;
+            seen.add(asset.url);
+            out.push({ url: asset.url, alt: `${campaign.name} campaign image` });
+        }
+        return out;
+    }
+
+    const artistic = collectApproved(artisticCandidates);
+    const trust = collectApproved(trustCandidates);
+
+    const mixed: LandingImageAsset[] = [];
+    const maxEach = Math.ceil(maxGalleryImages / 2);
+    for (let i = 0; i < maxEach; i++) {
+        if (artistic[i]) mixed.push(artistic[i]);
+        if (trust[i]) mixed.push(trust[i]);
+        if (mixed.length >= maxGalleryImages) break;
+    }
+
+    if (mixed.length < maxGalleryImages) {
+        for (let i = Math.ceil(mixed.length / 2); i < artistic.length && mixed.length < maxGalleryImages; i++) {
+            if (!mixed.some((m) => m.url === artistic[i].url)) {
+                mixed.push(artistic[i]);
+            }
+        }
+    }
+
+    if (mixed.length === 0 && heroImage?.url) {
+        mixed.push(heroImage);
+    }
+
+    return mixed;
+}
+
+function buildTrustImages(
+    campaign: Campaign,
+    manifest: CampaignMediaManifest | null,
+    heroImage: LandingImageAsset | null,
+): LandingImageAsset[] {
+    if (!manifest) return heroImage?.url ? [heroImage] : [];
+
+    const candidates = [
+        ...manifest.images.shipReferences,
+        ...manifest.images.documentaryDetails,
+    ];
     const seen = new Set<string>();
-    const gallery: LandingImageAsset[] = [];
+    const out: LandingImageAsset[] = [];
 
     for (const asset of candidates) {
-        if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) {
-            continue;
-        }
-
-        if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') {
-            continue;
-        }
-
+        if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
+        if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') continue;
         seen.add(asset.url);
-        gallery.push({
-            url: asset.url,
-            alt: `${campaign.name} campaign image`,
-        });
-
-        if (gallery.length === maxGalleryImages) {
-            break;
-        }
+        out.push({ url: asset.url, alt: `${campaign.name} ship reference` });
     }
 
-    if (gallery.length === 0 && heroImage?.url) {
-        gallery.push(heroImage);
-    }
-
-    return gallery;
+    return out;
 }
 
 function getPricingDetail(campaign: Campaign): { sourceLabel: string; detail: string } {
@@ -532,6 +594,7 @@ function buildLandingViewModel(
     const ctas = getCtas(campaign, brief);
     const heroImage = resolveHeroImage(campaign, brief, manifest);
     const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
+    const trustImages = buildTrustImages(campaign, manifest, heroImage);
     const percentOfThreshold = getPublicThresholdPercent(targetCabins, waitlistSummary.totalEntries);
 
     return {
@@ -545,6 +608,7 @@ function buildLandingViewModel(
         elevatorPitch: brief?.messaging.elevatorPitch ?? campaign.description,
         heroImage,
         galleryImages,
+        trustImages,
         accentColor: normalizeColorToken(brief?.visual.colorPalette.accent, '#2962FF'),
         surfaceColor: normalizeColorToken(brief?.visual.colorPalette.background, '#0F172A'),
         textColor: normalizeColorToken(brief?.visual.colorPalette.textOnDark, '#F8FAFC'),
