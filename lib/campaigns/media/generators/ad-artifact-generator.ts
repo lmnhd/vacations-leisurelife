@@ -82,7 +82,8 @@ export async function generateDesignedAdArtifactPack(
     }
 
     const designedAds: AssetRecord[] = [];
-    for (const spec of buildDesignedAdRenderSpecs(documentaryDetails)) {
+    const adFormatBias = brief.identityBlueprint?.adFormatBias ?? [];
+    for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails)) {
         let sourceBuffer: Buffer | undefined;
         if (spec.sourceImage) {
             sourceBuffer = sourceBuffers.get(spec.sourceImage.assetId);

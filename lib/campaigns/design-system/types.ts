@@ -84,4 +84,13 @@ export interface DesignedAdRenderSpec {
     width: number;
     height: number;
     tags: string[];
-    sourc
+    sourceImage?: AssetRecord;
+}
+
+export interface AdArtifactGenerationResult {
+    documentaryDetails: AssetRecord[];
+    designedAds: AssetRecord[];
+    tokens: NicheTokens;
+}
+
+export type BriefLikeForTokens = Pick<CampaignAestheticBrief, 'themeName' | 'visual' | 'messaging' | 'socialConcepts' | 'merch'>;

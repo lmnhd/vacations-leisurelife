@@ -104,6 +104,13 @@ function visualFlavorToSystem(flavor: VisualFlavor | undefined): VisualSystem {
     return 'system_4_modular';
 }
 
+function issueLabelForSystem(system: VisualSystem): string {
+    if (system === 'system_1_editorial') return 'Issue 01';
+    if (system === 'system_2_nostalgia') return 'Voyage 01';
+    if (system === 'system_3_zine') return 'Vol. 1';
+    return 'Campaign';
+}
+
 function profileFromMode(mode: CampaignEnergyMode): CampaignEnergyProfile {
     if (mode === 'after_hours_electric' || mode === 'nostalgic_kinetic') return 'energetic';
     if (mode === 'refined_premium') return 'premium';
@@ -303,7 +310,7 @@ export function extractNicheTokens(
         vesselName,
         route,
         departure,
-        issueLabel: 'Voyage 01',
+        issueLabel: issueLabelForSystem(visualFlavorToSystem(brief.identityBlueprint?.visualFlavor)),
         sectionLabels: buildSectionLabels(brief, campaign, energyProfile),
         quote,
         quoteCite: brief.messaging.voicePersona || 'Campaign voice',

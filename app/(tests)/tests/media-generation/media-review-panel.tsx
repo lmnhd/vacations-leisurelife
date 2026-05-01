@@ -54,11 +54,18 @@ function getTabEntries(
         const tags = asset.tags.map((tag) => tag.toLowerCase());
         const has = (tag: string) => tags.includes(tag.toLowerCase());
         if (has('editorial_cover')) return 'IG Feed · Editorial Cover';
+        if (has('postcard_hero')) return 'IG Feed · Postcard Hero';
+        if (has('zine_cover')) return 'IG Feed · Zine Cover';
         if (has('quote')) return 'IG Square · Quote Card';
+        if (has('air_mail')) return 'IG Square · Air-Mail';
+        if (has('scribble')) return 'IG Square · Scribble Social';
+        if (has('sticker_sheet')) return 'IG Square · Sticker Sheet';
         if (has('itinerary')) return 'Carousel · Itinerary Card';
+        if (has('boarding_pass')) return 'Carousel · Boarding Pass';
         if (has('contributor')) return 'IG Square · Contributor Card';
         if (has('type_hook')) return 'Story/Reels · Type Hook';
         if (has('image_detail')) return 'FB/Google · Image Detail';
+        if (has('baggage_tag')) return 'Social · Baggage Tag';
         return `Designed Ad ${index + 1}`;
     };
 

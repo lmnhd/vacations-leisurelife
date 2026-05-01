@@ -142,8 +142,30 @@ async function main() {
     assert.match(vintageSpecs[0].prompt, /Avoid mood mismatch/i);
     assert.doesNotMatch(vintageSpecs[0].prompt, /A quiet real cruise ship deck/i);
 
-    const renderSpecs = buildDesignedAdRenderSpecs([]);
-    assert.equal(renderSpecs.length, 6);
+    // Default tokens map to system_4_modular (4 templates)
+    const renderSpecs = buildDesignedAdRenderSpecs(tokens, [], []);
+    assert.equal(renderSpecs.length, 4);
+
+    // Verify system-aware branching works for each visual system
+    const sys1Tokens = { ...tokens, system: 'system_1_editorial' as const };
+    const sys1Specs = buildDesignedAdRenderSpecs(sys1Tokens, [], []);
+    assert.equal(sys1Specs.length, 6);
+    assert.ok(sys1Specs.some((s) => s.kind === 'editorial_cover_ad'));
+
+    const sys2Tokens = { ...tokens, system: 'system_2_nostalgia' as const };
+    const sys2Specs = buildDesignedAdRenderSpecs(sys2Tokens, [], []);
+    assert.equal(sys2Specs.length, 6);
+    assert.ok(sys2Specs.some((s) => s.kind === 'postcard_hero'));
+
+    const sys3Tokens = { ...tokens, system: 'system_3_zine' as const };
+    const sys3Specs = buildDesignedAdRenderSpecs(sys3Tokens, [], []);
+    assert.equal(sys3Specs.length, 6);
+    assert.ok(sys3Specs.some((s) => s.kind === 'zine_cover'));
+
+    const sys4Tokens = { ...tokens, system: 'system_4_modular' as const };
+    const sys4Specs = buildDesignedAdRenderSpecs(sys4Tokens, [], []);
+    assert.equal(sys4Specs.length, 4);
+    assert.ok(sys4Specs.some((s) => s.kind === 'type_hook_card'));
 
     const buffer = await renderDesignedAdArtifact(renderSpecs[1], tokens);
     assert.ok(buffer.length > 1000);
