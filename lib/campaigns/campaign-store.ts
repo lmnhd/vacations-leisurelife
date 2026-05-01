@@ -2,7 +2,15 @@ import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } fro
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import { Campaign } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
-import { CampaignAestheticBrief, CampaignAestheticBriefSchema, normalizeCommunityExpression, normalizeHumanRepresentationGuidance, normalizeVisualPlausibilityFramework } from './schema';
+import {
+    CampaignAestheticBrief,
+    CampaignAestheticBriefSchema,
+    normalizeCampaignIdentityBlueprint,
+    normalizeCommunityExpression,
+    normalizeHumanRepresentationGuidance,
+    normalizeVisualPlausibilityFramework,
+} from './schema';
+import { buildCampaignIdentityBlueprintAsync } from './design-system/identity-blueprint';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
@@ -15,6 +23,9 @@ function normalizeStoredAestheticBriefShape(brief: CampaignAestheticBrief): Camp
             humanRepresentation: normalizeHumanRepresentationGuidance(brief.visual?.humanRepresentation),
         },
         communityExpression: normalizeCommunityExpression(brief.communityExpression),
+        identityBlueprint: brief.identityBlueprint
+            ? normalizeCampaignIdentityBlueprint(brief.identityBlueprint)
+            : undefined,
     };
 }
 
@@ -70,7 +81,11 @@ export async function getCampaignBlueprint(slug: string): Promise<Campaign | nul
 }
 
 export async function saveAestheticBrief(brief: CampaignAestheticBrief): Promise<void> {
-    const normalizedBrief = CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(brief));
+    const campaign = await getCampaignBlueprint(brief.slug);
+    const enrichedBrief = campaign
+        ? { ...brief, identityBlueprint: await buildCampaignIdentityBlueprintAsync(brief, campaign) }
+        : brief;
+    const normalizedBrief = CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(enrichedBrief));
     const params = {
         TableName: TABLE_NAME,
         Item: {
@@ -118,7 +133,20 @@ export async function getAestheticBrief(slug: string): Promise<CampaignAesthetic
         if (!response.Item) return null;
 
         const { PK, SK, ...briefData } = response.Item;
-        return CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(briefData as CampaignAestheticBrief));
+        const parsedBrief = CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape(briefData as CampaignAestheticBrief));
+        if (parsedBrief.identityBlueprint) {
+            return parsedBrief;
+        }
+
+        const campaign = await getCampaignBlueprint(slug);
+        if (!campaign) {
+            return parsedBrief;
+        }
+
+        return CampaignAestheticBriefSchema.parse(normalizeStoredAestheticBriefShape({
+            ...parsedBrief,
+            identityBlueprint: await buildCampaignIdentityBlueprintAsync(parsedBrief, campaign),
+        }));
     } catch (error) {
         console.error(`Failed to get aesthetic brief for ${slug}:`, error);
         throw error;

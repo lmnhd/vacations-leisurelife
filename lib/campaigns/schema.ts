@@ -271,6 +271,91 @@ export const CommunityExpressionSchema = z.object({
 });
 export type CommunityExpression = z.infer<typeof CommunityExpressionSchema>;
 
+export const CampaignEnergyModeEnum = z.enum([
+    'calm_contemplative',
+    'warm_social',
+    'nostalgic_kinetic',
+    'after_hours_electric',
+    'refined_premium',
+    'subcultural_intimate',
+    'playful_collective',
+]);
+export type CampaignEnergyMode = z.infer<typeof CampaignEnergyModeEnum>;
+
+export const CampaignSocialScaleEnum = z.enum([
+    'solo_pair',
+    'pair_small_group',
+    'mixed',
+    'crowd_ok',
+]);
+export type CampaignSocialScale = z.infer<typeof CampaignSocialScaleEnum>;
+
+/**
+ * Which Claude Design visual flavor overlays the System 4 (Modern Brand) foundation.
+ * System 4 is always the base. Flavors add an expressive layer for specific niche temperatures.
+ *
+ * - none              → System 4 only (calm, premium-neutral, or high-volume niches)
+ * - editorial_magazine → System 1 (premium, intellectual, literary, art, food, music prestige)
+ * - travel_nostalgia  → System 2 (warm, sentimental, nostalgic, family, heritage)
+ * - indie_zine        → System 3 (subcultural, fandom, indie, after-hours)
+ *
+ * See: .github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/VISUAL_SYSTEMS.md
+ */
+export const VisualFlavorEnum = z.enum([
+    'none',
+    'editorial_magazine',
+    'travel_nostalgia',
+    'indie_zine',
+]);
+export type VisualFlavor = z.infer<typeof VisualFlavorEnum>;
+
+export const CampaignIdentityBlueprintSchema = z.object({
+    energyMode: CampaignEnergyModeEnum,
+    emotionalPromise: z.string(),
+    socialScale: CampaignSocialScaleEnum,
+    imageBehavior: z.array(z.string()),
+    propFamilies: z.array(z.string()),
+    forbiddenDefaults: z.array(z.string()),
+    lightBehavior: z.array(z.string()),
+    adFormatBias: z.array(z.string()),
+    evidenceOfBelonging: z.array(z.string()),
+    visualFlavor: VisualFlavorEnum,
+    summary: z.string(),
+});
+export type CampaignIdentityBlueprint = z.infer<typeof CampaignIdentityBlueprintSchema>;
+
+export const DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT: CampaignIdentityBlueprint = {
+    energyMode: 'warm_social',
+    emotionalPromise: 'A real cruise that feels meaningfully tuned to a specific kind of guest.',
+    socialScale: 'pair_small_group',
+    imageBehavior: ['cruise-first', 'people belong in the world without staging it', 'specific but believable atmosphere'],
+    propFamilies: ['one small personal cue', 'cruise-native materials', 'paper or textile detail'],
+    forbiddenDefaults: ['generic stock travel', 'staged theme scene', 'props carrying the whole idea'],
+    lightBehavior: ['natural ship light', 'late-afternoon deck light', 'window-side sea light'],
+    adFormatBias: ['type_hook_card', 'quote_card', 'image_detail_ad'],
+    evidenceOfBelonging: ['recognizable shared taste', 'easy conversation openings', 'social cues that feel optional'],
+    visualFlavor: 'travel_nostalgia',
+    summary: 'Cruise-first campaign world with specific social identity and believable atmosphere.',
+};
+
+export function normalizeCampaignIdentityBlueprint(
+    input?: Partial<CampaignIdentityBlueprint> | null,
+): CampaignIdentityBlueprint {
+    return {
+        energyMode: input?.energyMode ?? DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.energyMode,
+        emotionalPromise: input?.emotionalPromise?.trim() || DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.emotionalPromise,
+        socialScale: input?.socialScale ?? DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.socialScale,
+        imageBehavior: input?.imageBehavior?.length ? input.imageBehavior : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.imageBehavior,
+        propFamilies: input?.propFamilies?.length ? input.propFamilies : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.propFamilies,
+        forbiddenDefaults: input?.forbiddenDefaults?.length ? input.forbiddenDefaults : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.forbiddenDefaults,
+        lightBehavior: input?.lightBehavior?.length ? input.lightBehavior : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.lightBehavior,
+        adFormatBias: input?.adFormatBias?.length ? input.adFormatBias : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.adFormatBias,
+        evidenceOfBelonging: input?.evidenceOfBelonging?.length ? input.evidenceOfBelonging : DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.evidenceOfBelonging,
+        visualFlavor: input?.visualFlavor ?? DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.visualFlavor,
+        summary: input?.summary?.trim() || DEFAULT_CAMPAIGN_IDENTITY_BLUEPRINT.summary,
+    };
+}
+
 export const RedTeamVerdictEnum = z.enum(['pass', 'warn', 'block']);
 export type RedTeamVerdict = z.infer<typeof RedTeamVerdictEnum>;
 
@@ -812,6 +897,8 @@ export const CampaignAestheticBriefSchema = z.object({
         musicMood: z.string(),
     }),
 
+    identityBlueprint: CampaignIdentityBlueprintSchema.optional(),
+
     productionBible: ProductionBibleSchema.optional(),
     landingStillBible: LandingStillBibleSchema.optional(),
 
@@ -851,6 +938,7 @@ export type CampaignAestheticBrief = z.infer<typeof CampaignAestheticBriefSchema
 
 export const AssetTypeEnum = z.enum([
     'ship_reference_image', 'hero_image', 'aesthetic_concept', 'scene_image', 'platform_crop',
+    'documentary_detail_image', 'designed_ad_artifact',
     'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
     'countdown_video', 'broll_clip',
     'ambient_narration', 'hype_clip', 'theme_music',
@@ -1102,6 +1190,8 @@ export const CampaignMediaManifestSchema = z.object({
         hero: z.array(AssetRecordSchema),
         sceneImages: z.array(AssetRecordSchema),
         aestheticConcepts: z.array(AssetRecordSchema),
+        documentaryDetails: z.array(AssetRecordSchema).default([]),
+        designedAdArtifacts: z.array(AssetRecordSchema).default([]),
         platformCrops: z.record(ImageFormatEnum, z.array(AssetRecordSchema)),
     }),
 

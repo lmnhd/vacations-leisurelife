@@ -1,0 +1,63 @@
+﻿Enqueuing and running brief generation for board-games-at-sea...
+[brief-engine] create_or_refresh for board-games-at-sea
+[brief-engine:bundle] START full bundle (board-games-at-sea)
+[brief-engine:stage] START  aesthetic-bundle-total (board-games-at-sea)
+[aesthetic-engine] Starting aesthetic brief generation for board-games-at-sea
+[aesthetic-engine] Structured generation helper selected for board-games-at-sea: model=gpt-5.2-high
+[aesthetic-engine:pass1-attempt] START attempt=1 campaign=board-games-at-sea
+[aesthetic-pass1:board-games-at-sea:attempt-1] Starting structured generation with gpt-4o...
+[aesthetic-pass1:board-games-at-sea:attempt-1] Γ£à Completed in 10232ms
+[aesthetic-engine:pass1-attempt] END attempt=1 campaign=board-games-at-sea elapsedMs=10233
+[aesthetic-engine] Pass 1 accepted for board-games-at-sea on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for board-games-at-sea
+[aesthetic-pass2-social:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-pass2-video:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-pass2-video:board-games-at-sea] Γ£à Completed in 5732ms
+[aesthetic-pass2-social:board-games-at-sea] Γ£à Completed in 6964ms
+[aesthetic-engine] Refinement pass for board-games-at-sea
+[aesthetic-refinement:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-refinement:board-games-at-sea] Γ£à Completed in 25703ms
+[brief-engine:stage] END    aesthetic-bundle-total (board-games-at-sea) ΓÇö 42.9s ΓÜá SLOW
+[brief-engine:stage] START  anchor-generation (board-games-at-sea)
+[editors-room] generateActionAnchors for board-games-at-sea
+[editors-room:anchors:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:anchors:board-games-at-sea] Γ£à Completed in 5216ms
+[brief-engine:stage] END    anchor-generation (board-games-at-sea) ΓÇö 5.2s
+[brief-engine:stage] START  landing-still-bible (board-games-at-sea)
+[editors-room] generateLandingStillBible for board-games-at-sea (refPack=ref-tabletop-v1)
+[editors-room:landing-stills:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:landing-stills:board-games-at-sea] Γ£à Completed in 14329ms
+[brief-engine:stage] END    landing-still-bible (board-games-at-sea) ΓÇö 14.3s
+[brief-engine] anchor compliance violations for board-games-at-sea: 2
+[brief-engine] unified repair for board-games-at-sea: still-02, still-03 (lint=0, anchor=2)
+[brief-engine:stage] START  isolated-still-repair (board-games-at-sea)
+[editors-room] repairFailingStills for board-games-at-sea: still-02, still-03 (refPack=ref-tabletop-v1)
+[editors-room:repair-stills:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:repair-stills:board-games-at-sea] Γ£à Completed in 1533ms
+[brief-engine:stage] END    isolated-still-repair (board-games-at-sea) ΓÇö 1.5s
+[brief-engine] post-repair anchor violations remain: 2
+[brief-engine] 2 content anchor violation(s) tolerated for board-games-at-sea ΓÇö production lint will catch downstream impact
+  [anchor-warn] still=still-02 type=duplicate_location_family expected="unique location family per still" actual="shared by: still-02, still-03"
+  [anchor-warn] still=still-03 type=duplicate_location_family expected="unique location family per still" actual="shared by: still-02, still-03"
+[brief-engine:stage] START  production-bible-generation (board-games-at-sea)
+[editors-room] generateProductionBibleFromStills for board-games-at-sea
+[editors-room:production-bible:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:production-bible:board-games-at-sea] Γ£à Completed in 22134ms
+[brief-engine:stage] END    production-bible-generation (board-games-at-sea) ΓÇö 22.1s
+[brief-engine:bundle] END   full bundle (board-games-at-sea) ΓÇö total 86.1s | lint=warn
+[brief-engine] auto-fix: 2 fixable issues
+
+Result: jobId=agent_job_64851a35-736 status=completed
+Steps:
+  generate_brief: completed ΓÇö Brief generated and passes all structural checks. Ready for approval.
+  load_readiness: completed ΓÇö Brief passes structural checks but needs human approval.
+  confirm_persistence: completed ΓÇö Persisted brief found in storage
+Summary: {
+  "message": "Brief generated and passes all structural checks. Ready for approval.",
+  "readiness": "needs_review",
+  "blockerCount": 0,
+  "warningCount": 0,
+  "persisted": true,
+  "approvalAttempted": false,
+  "approvalSucceeded": false
+}

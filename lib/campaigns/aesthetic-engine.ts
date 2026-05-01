@@ -22,6 +22,7 @@ import {
     normalizeVisualPlausibilityFramework,
     normalizeHumanRepresentationGuidance,
 } from './schema';
+import { buildCampaignIdentityBlueprintAsync } from './design-system/identity-blueprint';
 
 function buildMerchDallePrompt(productType: string, themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
     return [
@@ -599,6 +600,8 @@ OUTPUT RULES:
         humanReviewStatus: 'pending',
         revisionCycleCount: draftBrief.revisionCycleCount,
     };
+
+    refinedBrief.identityBlueprint = await buildCampaignIdentityBlueprintAsync(refinedBrief, campaign);
 
     return refinedBrief;
 }

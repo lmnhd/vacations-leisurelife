@@ -2,7 +2,7 @@
 
 import { KeyboardEvent, useEffect, useState } from 'react';
 import { getElevenLabsVoiceRoleLabel, parseElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
-import type { AssetApprovalState, AssetRecord, AssetType, ReviewStatus } from '@/lib/campaigns/schema';
+import type { AssetApprovalState, AssetRecord, AssetType, CampaignIdentityBlueprint, ReviewStatus } from '@/lib/campaigns/schema';
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { metadataContainsKnownShipLandscapeFeature } from '@/lib/campaigns/media/ship-environment-profile';
@@ -19,6 +19,7 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
 
 const IMAGE_ARTIFACT_TYPES = new Set<AssetType>([
     'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+    'documentary_detail_image', 'designed_ad_artifact',
 ]);
 
 const AUDIO_ARTIFACT_TYPES = new Set<AssetType>([
@@ -313,15 +314,41 @@ function renderVoiceContext(asset: AssetRecord) {
     );
 }
 
+function renderIdentityContext(asset: AssetRecord, identityBlueprint?: CampaignIdentityBlueprint) {
+    if (!identityBlueprint) {
+        return null;
+    }
+
+    if (asset.assetType !== 'designed_ad_artifact' && asset.assetType !== 'documentary_detail_image') {
+        return null;
+    }
+
+    return (
+        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1.5">
+            <div className="text-[10px] uppercase tracking-widest text-cyan-400">Campaign Identity</div>
+            <div className="text-[11px] text-slate-200">
+                {identityBlueprint.energyMode.replace(/_/g, ' ')} • {identityBlueprint.socialScale.replace(/_/g, ' ')}
+            </div>
+            <div className="text-[11px] text-slate-400">
+                {identityBlueprint.summary}
+            </div>
+            <div className="text-[11px] text-slate-500">
+                Avoid: {identityBlueprint.forbiddenDefaults.join(', ')}
+            </div>
+        </div>
+    );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // ReviewAssetCard
 // ────────────────────────────────────────────────────────────────────────────
 
-export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
+export function ReviewAssetCard({ slug, asset, title, entryKey, identityBlueprint, onRefresh }: {
     slug: string;
     asset: AssetRecord;
     title: string;
     entryKey: string;
+    identityBlueprint?: CampaignIdentityBlueprint;
     onRefresh: () => Promise<void>;
 }) {
     const initialCuration = normalizeAssetCuration(asset);
@@ -585,6 +612,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 <span>{new Date(asset.createdAt).toLocaleDateString()}</span>
             </div>
 
+            {renderIdentityContext(asset, identityBlueprint)}
             {renderReferenceContext(asset)}
             {renderVoiceContext(asset)}
 

@@ -1,6 +1,7 @@
 import type { CampaignAestheticBrief, ProductionBible } from '../schema';
 import type { Campaign } from '../types';
 import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '../launch-window';
+import { detectCampaignAlignmentDrift } from '../design-system/alignment-validator';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Consolidated validation — one pass, one result, one source of truth
@@ -142,7 +143,7 @@ export function validateBrief(brief: CampaignAestheticBrief, campaign: Campaign)
 
     // ── Optionality ───────────────────────────────────────────────────────
     const optText = [brief.communityExpression.participationStyle, brief.communityExpression.copyFramingRule, ...brief.communityExpression.optionalGatherings].join(' ');
-    if (!/optional|drop-in|drop out|drop-out|join or skip|low-pressure|welcome/i.test(optText)) {
+    if (!/\b(optional|drop[- ]in|drop[- ]out|join\s+or\s+skip|low[- ]pressure|welcome\s+to\s+(?:join|drop[- ]in))\b/i.test(optText)) {
         issues.push({ code: 'optionality_language_missing', message: 'communityExpression does not clearly signal optional, low-pressure participation.', severity: 'blocker', autoFixable: true });
     }
 
@@ -156,6 +157,8 @@ export function validateBrief(brief: CampaignAestheticBrief, campaign: Campaign)
     if (!/t-?shirt/i.test(brief.merch.coreItem.productType)) {
         issues.push({ code: 'merch_not_tshirt_first', message: 'Merch core item is not T-shirt-first.', severity: 'blocker', autoFixable: true });
     }
+
+    issues.push(...detectCampaignAlignmentDrift(brief, campaign));
 
     // ── Production artifacts ──────────────────────────────────────────────
     if (!brief.productionBible || !brief.landingStillBible) {

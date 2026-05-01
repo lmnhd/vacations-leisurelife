@@ -47,6 +47,8 @@ function getAllManifestAssets(manifest: CampaignMediaManifest): AssetRecord[] {
     ...manifest.images.hero,
     ...manifest.images.sceneImages,
     ...manifest.images.aestheticConcepts,
+    ...(manifest.images.documentaryDetails ?? []),
+    ...(manifest.images.designedAdArtifacts ?? []),
     ...Object.values(manifest.images.platformCrops).flat(),
     ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
     ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),

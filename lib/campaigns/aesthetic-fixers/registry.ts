@@ -188,7 +188,7 @@ function runPrependSentence(brief: CampaignAestheticBrief, op: AestheticModifica
     return appliedResult(updated, op.kind, op.targetPath, `Prepended sentence to ${op.targetPath}.`, [op.targetPath]);
 }
 
-const EXACT_TIME_RE = /\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:am|pm|AM|PM)?\b/g;
+const EXACT_TIME_RE = /\b(?:(?:0?[1-9]|1[0-2]):[0-5]\d\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d)\b/gi;
 const TIME_REPLACEMENT_PAIRS: Array<[RegExp, string]> = [
     [/\b([0-9]|1[0-2]):\d{2}\s*am\b/gi, 'morning'],
     [/\b([0-9]|1[0-2]):\d{2}\s*pm\b/gi, 'afternoon'],
@@ -470,13 +470,13 @@ export function runOperation(brief: CampaignAestheticBrief, op: AestheticModific
 
 const ISSUE_DETECTION_PATTERNS: Array<{ issueCode: AestheticIssueCode; patterns: RegExp[] }> = [
     { issueCode: 'countdown_series_hard_scarcity', patterns: [/countdown/i, /T-\d+/i, /cabin(s)?\s*(left|remain)/i, /scarcity/i] },
-    { issueCode: 'exact_time_strings',             patterns: [/\d{1,2}:\d{2}/] },
+    { issueCode: 'exact_time_strings',             patterns: [/\b(?:(?:0?[1-9]|1[0-2]):[0-5]\d\s*(?:am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d)\b/i] },
     { issueCode: 'queue_device_handling',          patterns: [/check.*?(app|phone|device)/i, /launch.*(app|website)/i] },
     { issueCode: 'non_generic_venue_naming',       patterns: [...Object.keys(BRANDED_VENUE_MAP).map(buildVenuePattern), /windjammer\s+caf[eé][^,.]{0,60}(open.?air terrace|window.?side)/i] },
     { issueCode: 'avatar_required_video',          patterns: [/avatar\s+required/i, /heygen.*required/i] },
     { issueCode: 'disallowed_video_tool',          patterns: [/\bheygen\b/i] },
     { issueCode: 'rail_safety_missing',            patterns: [/\blean(ing)?\s+over\s+(the\s+)?rail(ing)?\b/i, /\brail-side\b/i, /\bdeck\s+edge\b/i, /\bover\s+the\s+railing\b/i] },
-    { issueCode: 'privacy_line_missing',           patterns: [/\bphotos?\b/i, /\bfilming\b/i, /\brecord(ing)?\b/i] },
+    { issueCode: 'privacy_line_missing',           patterns: [/\b(?:photos?|photography|photo\s+ops?)\b/i, /\b(?:filming|videography|record(?:ing|ed)?)\b/i] },
     { issueCode: 'compliance_risk_scarcity_copy',  patterns: [/\bonly\s+\d+\b/i, /\blimited\s+spots?\b/i, /\bselling\s+out\b/i] },
     { issueCode: 'camera_move_feasibility',         patterns: [/\bcrane\b/i, /\bdolly\b/i, /\btrack(ing)?\s+shot\b/i, /\bslider\b/i, /\bcable\s+cam\b/i] },
     { issueCode: 'cabin_type_plausibility',         patterns: [/interior\s+stateroom[^.]{0,80}(window|ocean|sea\s+view)/i, /(window|ocean|sea\s+view)[^.]{0,80}interior\s+stateroom/i, /inside\s+cabin[^.]{0,80}(window|ocean|sea\s+view)/i, /oceanview.*contradiction/i] },

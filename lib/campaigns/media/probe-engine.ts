@@ -17,6 +17,7 @@ import { getExpandedNicheKeywords } from '../reference-packs';
 import { generateProbeImage } from './generators/stability-generator';
 import { storeAsset } from './storage-client';
 import { evaluateProbeImage } from './probe-evaluator';
+import { stillHasVisiblePeople } from './storyboard-motion-policy';
 import type { ProbeRunRecord, ProbeImageResult, ProbeRunVerdict } from '../schema';
 
 // ── Verdict logic — exported for unit testing ─────────────────────────────────
@@ -73,7 +74,14 @@ export async function runProbeLoop(slug: string): Promise<ProbeRunRecord> {
     for (const still of stills) {
         console.log(`[probe-engine] Probing ${still.stillId} (${still.slotRole ?? 'unknown role'})`);
         try {
-            const generated = await generateProbeImage(still.imagePrompt);
+            const generated = await generateProbeImage(
+                still.imagePrompt,
+                stillHasVisiblePeople(still) ? 'sketched' : 'realistic',
+                {
+                    seed: still.stillId,
+                    themeAnchorProps: brief.visual.plausibilityFramework.allowedProps.slice(0, 2),
+                },
+            );
             const imageBase64 = generated.buffer.toString('base64');
             const imageUrl = await storeAsset(
                 slug,
@@ -92,7 +100,7 @@ export async function runProbeLoop(slug: string): Promise<ProbeRunRecord> {
             results.push({
                 ...scored,
                 imageUrl,
-                promptUsed: still.imagePrompt,
+                promptUsed: generated.prompt,
                 evaluatedAt: new Date().toISOString(),
             });
             console.log(

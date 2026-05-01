@@ -453,12 +453,12 @@ CRITICAL REQUIREMENTS for each blueprint:
 2. successLogic: Explain the commercial + psychological case for why this niche will convert to bookings. Include spend willingness signals, the IRL pull factor, and what market gap this fills.
 3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available).
 4. vacationFitRationale: Prove that this concept feels like a desirable cruise vacation, not a retreat, class, residency, lab, or conference.
-5. cruiseNativeMoments: Name 3-5 believable shipboard moments that make the theme feel pleasurable and cruise-native.
+5. cruiseNativeMoments: Name 3-5 believable shipboard moments that make the theme feel pleasurable and cruise-native. Each moment MUST include at least one specific physical prop, texture, or environmental detail that a photographer could capture or an illustrator could draw. Avoid generic event names. Instead of "game night," write "a half-finished Azul game on a teak table with coffee cups and morning light through a lounge window." Instead of "poolside demo," write "a brightly illustrated game box propped open on a pool chair armrest, dice drying on a towel."
 6. nicheExpressionMode: Explain HOW the niche remains ambient and optional throughout the trip. Name specifically what a non-enthusiast guest does on day 1, day 3, and at a port stop — and why they are having a great time regardless of niche participation. If the answer is "they feel left out," reject this concept and choose a different one.
 7. implausibleLiteralizations: Name 3-5 ways this theme should not be interpreted because they would feel too workshop-like, industrial, clinical, or unrealistic on a ship.
-8. allowedThemeSignals and discouragedThemeSignals must clearly separate lightweight, vacation-friendly cues from overly formal or technical cues.
+8. allowedThemeSignals: 3-6 specific visual or tactile cues that will appear in the campaign imagery. Each must be a concrete object, texture, color, or piece of environmental set-dressing — something a viewer could point to in a photograph. Examples: "leather dice tray on a bar rail," "wooden meeples scattered on a deck chair armrest," "colorful game box spine visible on a café shelf." Avoid abstract concepts, event names, or category labels. discouragedThemeSignals must list cues that are overly formal, technical, or workshop-like.
 9. communityFitRationale: Prove that the group version matters socially; explain why people in this niche would naturally enjoy finding one another on a ship.
-10. optionalGatheringMoments: Name 3-5 low-pressure, drop-in/drop-out gatherings or rhythms that make the group feel real without turning it into a program schedule.
+10. optionalGatheringMoments: Name 3-5 low-pressure, drop-in/drop-out gatherings. Each must describe the physical scene — what guests see, touch, or hear when they arrive — not just the event name or schedule slot. Example: "a café table with a rotating library of open games, chips and drinks already poured, no host required."
 11. optionalityStyle: Explain how participation should be framed so the trip remains welcoming to introverts, casual participants, and guests who do not want a packed schedule.
 12. solitudeRisks: Name 3-5 ways the campaign could drift into loneliness, exclusivity theater, or socially hollow quiet-luxury framing if handled poorly.
 
@@ -516,13 +516,13 @@ REQUIRED JSON FIELDS for every blueprint — the parser will reject any missing 
 - successLogic (string)
 - audienceSignals (array of strings, 2-4)
 - vacationFitRationale (string)
-- cruiseNativeMoments (array of strings, 3-5)
+- cruiseNativeMoments (array of strings, 3-5): each entry must name a specific prop, texture, or environmental detail — renderable by a photographer or illustrator
 - nicheExpressionMode (string)
 - implausibleLiteralizations (array of strings, 3-5)
-- allowedThemeSignals (array of strings, 3-6)
+- allowedThemeSignals (array of strings, 3-6): each entry must be a concrete object, texture, color, or set-dressing element visible in a photo — no abstract concepts or event names
 - discouragedThemeSignals (array of strings, 3-6)
 - communityFitRationale (string)
-- optionalGatheringMoments (array of strings, 3-5)
+- optionalGatheringMoments (array of strings, 3-5): each entry must describe the physical scene — what guests see, touch, or hear — not just the event name
 - optionalityStyle (string)
 - solitudeRisks (array of strings, 3-5)
 

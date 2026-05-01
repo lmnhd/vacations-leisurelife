@@ -38,7 +38,7 @@ function hasOptionalityLanguage(context: TrinityAgentContext): boolean {
         ...context.brief.communityExpression.optionalGatherings,
     ].join(' ');
 
-    return /optional|drop-in|drop out|drop-out|join or skip|low-pressure|welcome/i.test(text);
+    return /\b(optional|drop[- ]in|drop[- ]out|join\s+or\s+skip|low[- ]pressure|welcome\s+to\s+(?:join|drop[- ]in))\b/i.test(text);
 }
 
 function hasHeroSloganIssue(context: TrinityAgentContext): boolean {

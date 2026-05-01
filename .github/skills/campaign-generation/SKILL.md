@@ -16,6 +16,15 @@ Based on V2 Campaign Strategy and previous iterations, agents using this skill M
 
 The following issues have been encountered repeatedly across campaigns. Agents must handle them proactively:
 
+### Dev Server Stability During Heavy Generation
+- **Symptom:** Next.js dev server becomes unresponsive or crashes during long-running media generation calls (image/video/audio).
+- **Root Cause:** The `POST /api/groups/campaign/[slug]/media/generate` endpoint is synchronous and can take 10–20+ minutes. The dev server may exhaust resources or hit memory limits during concurrent heavy calls.
+- **Mitigation:**
+  - Monitor server health before triggering media generation (`GET /api/groups/discovery` as a heartbeat).
+  - If the server is unresponsive, restart it manually (the agent cannot manage the dev server).
+  - Consider generating one asset type at a time (e.g., `assetTypes: ['hero_image','scene_image']` first) to reduce load.
+  - Use the agent job orchestrator (`campaign_media_generate` workflow) for async durability instead of direct HTTP calls when available.
+
 ### Revision API Timeout
 - **Symptom:** `POST /api/groups/discovery/revise` and `/revise/bulk` hang beyond 120s.
 - **Root Cause:** Structured generation with large prompt + JSON schema validation can exceed default API timeouts.
@@ -51,13 +60,39 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **BLOCK (>4 fixes or structural issues):** STOP. Do not auto-revise. Present the campaign to the user and ask whether to retire it or manually redesign.
 - **Stagnation:** If a campaign has been revised 3+ times and still carries warnings, consider retiring it regardless of fix count.
 
+### Campaign Identity Blueprint & Alignment (Phase 3 upstream)
+- **Purpose:** Prevent emotional drift between campaign copy and campaign imagery. The `CampaignIdentityBlueprint` layer (`lib/campaigns/design-system/identity-blueprint.ts`) sits between discovery and aesthetic execution to enforce campaign-specific energy modes, prop families, light behavior, and forbidden defaults.
+- **Energy mode inference:** Deterministically inferred from campaign text corpus via regex patterns. Modes include `calm_contemplative`, `warm_social`, `nostalgic_kinetic`, `after_hours_electric`, `refined_premium`, `subcultural_intimate`, `playful_collective`.
+- **Prop families & forbidden defaults:** Each mode carries specific allowed props (e.g., guitar pick, leather jacket for nostalgic_kinetic) and anti-defaults (e.g., "spa retreat", "breakfast balcony serenity" for after_hours_electric).
+- **Alignment validator (`alignment-validator.ts`):** Detects mismatches between campaign energy mode and actual brief output (e.g., energetic slogan + serene image language). Flags `warning` or `blocker` severity.
+- **Integration:** The blueprint is auto-generated during brief engine orchestration and stored on the campaign aesthetic brief under `identityBlueprint`. It feeds downstream into documentary prompt building (`documentary-prompts.ts`), niche token extraction (`niche-tokens.ts`), and ad format routing.
+- **Agent guidance:** When reviewing a campaign, always check that the `identityBlueprint.energyMode` matches the actual media outputs. If the brief says `playful_collective` but the images drift toward "quiet premium lounge," this is an alignment drift that should be flagged.
+
 ### Anchor Compliance Tolerance (Phase 3)
 - **Symptom:** Brief generation fails with "Anchor compliance unresolved".
 - **Rules:**
   - `missing_anchor_binding` (structural): **Hard fail** — brief generation aborts.
   - `niche_signal_dropped` / `niche_carry_mismatch` / `duplicate_location_family` (content): **Tolerated up to 4 violations** — brief generation continues, but downstream production lint will flag them.
   - If structural violations exist OR content violations exceed 4, the brief is rejected.
-- **Mitigation:** Ensure the campaign's `targetingKeywords` are specific and embedded in both `imagePrompt` and `subjectAction` for every landing still.
+- **Mitigation:** Ensure the campaign's `targetingKeywords` are specific and embedded in both `imagePrompt` and `subjectAction` for every landing still. If a campaign already exists in DynamoDB with weak signals, patch the anchor fields (`allowedThemeSignals`, `cruiseNativeMoments`, `optionalGatheringMoments`, `targetingKeywords`) directly via `campaign-store.ts` rather than re-running the expensive discovery pipeline.
+
+### Media Style Dualism ("Sketch = Feeling, Photo = Fact")
+- **Symptom:** AI-generated realistic images of people produce uncanny results (plastic skin, inconsistent hands, weird facial features) that undermine trust. Fully illustrated images of ships and cabins feel fake and reduce confidence in the actual product.
+- **Rule:** Campaign media must use **two distinct styles** depending on content, never a single uniform style:
+  - **SKETCHED / Illustrated** — Used for images **with people** (guests, couples, groups, characters). Applied to: hero images, aesthetic concept frames, merch designs, social ad creatives. Purpose: emotional hook, aspiration, first impression. The style is a lush watercolor-and-ink travel illustration with expressive linework, idealized figures, and saturated color washes.
+  - **REALISTIC / Photographic** — Used for images **without people** (ship structure, decks, pools, cabins, ports, sunsets, architecture). Applied to: scene images (storyboard source frames), reference-grounded ship transforms, landing page detail imagery. Purpose: trust, accuracy, "finish the sell." The style is documentary-grade cruise photography with sharp detail, natural marine lighting, and believable materials.
+- **Pipeline enforcement:** `stability-generator.ts` branches on `sceneHasVisiblePeople()` (from `storyboard-motion-policy.ts`) and a people detector for still specs to inject the correct style prompt string. Style prompt strings are centralized in `style-prompts.ts`. Reference-grounded heroes resolve style from the intended source still/scene or hero variant intent, not from vision-inspecting the SerpAPI reference photo.
+- **Narrative arc:** Ads and hero banners show the FEELING (illustrated people living the vibe) → landing page details show the REALITY (actual ship, actual cabin, actual deck). The sketch invites imagination; the photo closes the deal.
+- **Model assignment:** Nano-Banana (Gemini) handles both styles via prompt control. Do not split providers unless Nano-Banana produces soft ship renders — in that case, fall back to `gpt-image-2` or `dall-e-3` for the realistic branch only.
+- **Vintage filter rotation (REALISTIC only):** Each realistic image should carry a distinct stylized film grade — Kodachrome 70s warmth, late-80s Ektachrome saturation, expired Polaroid shift, or cross-processed slide. This adds character and variety without breaking realism. The filter must look like a physical film stock or lens artifact, not a digital overlay.
+- **Theme object anchoring (REALISTIC only):** Since people are absent, the niche/theme must remain faintly legible through subtle environmental props — e.g. a guitar on a deck lounger (music cruise), a well-worn notebook on a teak table (writing cruise), dice and a leather case on a bar rail (gaming cruise), vintage binoculars on a rail (birding cruise). The object should feel naturally placed, not staged or central — just enough to whisper the theme. Ship/sea/deck architecture remains dominant.
+- **Scene image theme preservation:** Even within REALISTIC scene images, the campaign's niche identity stays present through lighting/color temperature aligned with the campaign palette, and composition choices that hint at the community (a circle of chairs, a journal left open, a vinyl record on a bar rail).
+- **Video mixing strategy:** Promotional videos must deliberately mix both styles:
+  - **Scene source frames** (from `generateSceneImages`) are **REALISTIC** — ship-forward, architecture-forward, environment-led motion. These are the trust anchor.
+  - **Backdrop / hero inserts** (from `generateHeroImages` or `generateAestheticConcepts`) are **SKETCHED** — people-forward, emotional, aspirational.
+  - **TikTok / social shorts:** ~70% sketched (people-first sells on scroll), ~30% realistic (trust reinforcement).
+  - **Hero explainer / threshold video:** Opening sketched → Middle realistic → Closing sketched. The audio narration bridges the two styles.
+  - The `buildStoryboardShotPrompt` function should tag each shot with its intended style so the video assembler pulls from the correct source pool.
 
 ## 2. End-to-End Workflow
 
@@ -84,9 +119,12 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 ### Phase 3: Aesthetic Brief Generation
 
-1. **Visual Strategy:** Trigger generation of the aesthetic brief based on the locked blueprint.
-2. **Aesthetic Red Team:** Validate the brief.
+1. **Visual Strategy:** Trigger generation of the aesthetic brief via the agent job orchestrator.
+   - Run: `npx tsx scripts/enqueue-and-run-brief.ts <slug>` (uses `campaign_brief_generate` workflow, `stopBeforeMedia: true`)
+   - This auto-generates the aesthetic bundle, action anchors, landing still bible, and production bible.
+2. **Brief Engine Auto-Lint:** The orchestrator validates the brief internally.
    - **Check:** Does the visual plan include actual ship representation? Is it distinct from generic cruise marketing? Are the colors/vibes aligned with the niche without becoming costume parody?
+   - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (≤4 tolerated content violations), it continues but flags downstream.
 3. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
@@ -109,6 +147,8 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 Always use the shared `lib/agent-api` orchestrator for durable state.
 
-- Example: `npm run agent:brief-prototype -- <slug>`
+- Brief generation: `npx tsx scripts/enqueue-and-run-brief.ts <slug>` (recommended)
+- Alternative: `npm run agent:brief-prototype -- <slug>` (if configured in package.json)
 - Never try to skip the Agent API workflow system if a durable job record is required.
 - **Do not manually prompt Gemini or Perplexity for ideation**; use the built-in `core-logic.ts` pipeline/API route, which already fetches live web data, normalizes it, and passes exclusion context correctly.
+- Standalone scripts (e.g., `tmp/run-media-generation.ts`) that call internal Next.js modules must import `loadEnvConfig` from `@next/env` at the top to access `.env.local` variables: `loadEnvConfig(process.cwd())`.

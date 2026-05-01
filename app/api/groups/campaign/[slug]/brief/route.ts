@@ -64,7 +64,7 @@ export async function POST(
                 ...(body.instructions ? { instructions: body.instructions } : {}),
             },
             'brief-studio-ui',
-            { runNow: false },
+            { runNow: true },
         );
 
         return NextResponse.json({ jobId: job.jobId, status: job.status }, { status: 202 });

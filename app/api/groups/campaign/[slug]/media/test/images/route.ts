@@ -10,6 +10,7 @@ import {
     generateAestheticConcepts,
     generateSceneImages,
 } from '@/lib/campaigns/media/generators/stability-generator';
+import { generateDesignedAdArtifactPack } from '@/lib/campaigns/media/generators/ad-artifact-generator';
 import { generatePlatformCrops } from '@/lib/campaigns/media/generators/sharp-processor';
 import {
     discoverShipReferenceCandidates,
@@ -28,7 +29,7 @@ import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 // }
 // ────────────────────────────────────────────────────────────────────────────
 
-type ImageTestGenerator = 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'scene_images' | 'sharp_crops';
+type ImageTestGenerator = 'ship_reference_search' | 'real_ship_hero' | 'stability_concepts' | 'scene_images' | 'sharp_crops' | 'designed_ad_artifacts';
 
 interface ImageTestRequestBody {
     generator: ImageTestGenerator;
@@ -59,7 +60,7 @@ export async function POST(
         return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts', 'scene_images'];
+    const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts', 'scene_images', 'designed_ad_artifacts'];
     if (PAID_GENERATORS.includes(generator)) {
         const lintVerdict = brief.productionBuildStatus;
         if (lintVerdict === 'fail') {
@@ -198,6 +199,31 @@ export async function POST(
             });
         }
 
+        if (generator === 'designed_ad_artifacts') {
+            const result = await generateDesignedAdArtifactPack(slug, brief, campaign);
+            await upsertManifestAssetSection(slug, 'documentaryDetails', result.documentaryDetails);
+            await upsertManifestAssetSection(slug, 'designedAdArtifacts', result.designedAds);
+            return NextResponse.json({
+                generator: 'designed_ad_artifacts',
+                documentaryDetailCount: result.documentaryDetails.length,
+                designedAdCount: result.designedAds.length,
+                tokens: result.tokens,
+                documentaryDetails: result.documentaryDetails.map((record) => ({
+                    assetId: record.assetId,
+                    url: record.url,
+                    promptUsed: record.promptUsed,
+                    tags: record.tags,
+                })),
+                designedAds: result.designedAds.map((record) => ({
+                    assetId: record.assetId,
+                    url: record.url,
+                    sourceImageUrl: record.sourceImageUrl,
+                    dimensions: record.dimensions,
+                    tags: record.tags,
+                })),
+            });
+        }
+
         if (generator === 'scene_images') {
             if (!brief.productionBible) {
                 return NextResponse.json({
@@ -209,7 +235,8 @@ export async function POST(
             const generatedImages = await generateSceneImages(
                 brief.productionBible.sceneLibrary,
                 candidates,
-                shipName
+                shipName,
+                brief.visual.plausibilityFramework.allowedProps.slice(0, 2),
             );
             const records: AssetRecord[] = [];
             for (const img of generatedImages) {

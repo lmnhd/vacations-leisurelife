@@ -747,7 +747,7 @@ export default function MediaGenerationTestPage() {
                 )}
 
                 {manifest && (
-                    <MediaReviewPanel slug={slug.trim()} manifest={manifest} onManifestRefresh={handleLoadManifestRef} />
+                    <MediaReviewPanel slug={slug.trim()} manifest={manifest} brief={brief} onManifestRefresh={handleLoadManifestRef} />
                 )}
 
                 {/* Probe Renders — gated on landingStillBible existence */}

@@ -24,6 +24,8 @@ function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
         ...manifest.images.hero,
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
+        ...(manifest.images.documentaryDetails ?? []),
+        ...(manifest.images.designedAdArtifacts ?? []),
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
         ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),
@@ -110,6 +112,36 @@ function removeImageAssetFromManifest(
                 },
             };
         }
+    }
+
+    const documentaryDetails = (manifest.images.documentaryDetails ?? []).filter(r => r.assetId !== assetId);
+    if (documentaryDetails.length !== (manifest.images.documentaryDetails ?? []).length) {
+        return {
+            removed: true,
+            slot: 'documentaryDetails',
+            updatedManifest: {
+                ...manifest,
+                generatedAt: new Date().toISOString(),
+                totalAssets: 0,
+                completionStatus: 'partial',
+                images: { ...manifest.images, documentaryDetails },
+            },
+        };
+    }
+
+    const designedAdArtifacts = (manifest.images.designedAdArtifacts ?? []).filter(r => r.assetId !== assetId);
+    if (designedAdArtifacts.length !== (manifest.images.designedAdArtifacts ?? []).length) {
+        return {
+            removed: true,
+            slot: 'designedAdArtifacts',
+            updatedManifest: {
+                ...manifest,
+                generatedAt: new Date().toISOString(),
+                totalAssets: 0,
+                completionStatus: 'partial',
+                images: { ...manifest.images, designedAdArtifacts },
+            },
+        };
     }
 
     return { removed: false, slot: '', updatedManifest: manifest };

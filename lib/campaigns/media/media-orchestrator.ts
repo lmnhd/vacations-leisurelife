@@ -25,6 +25,7 @@ import { generateTikTokSeed, generateStoryboardVideo } from './generators/tiktok
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
+import { generateDesignedAdArtifactPack } from './generators/ad-artifact-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
@@ -37,7 +38,7 @@ import {
     importShipReferenceAssets,
 } from './ship-reference-service';
 import { randomUUID } from 'crypto';
-import { getMediaImageGeneratorService } from './media-pipeline-config';
+import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService } from './media-pipeline-config';
 import { assertProbeGateReady } from './probe-gate';
 import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video-models';
 import { ShipReferenceCandidate } from '../schema';
@@ -110,6 +111,12 @@ function shouldRunAsset(
     assetType: AssetType,
     assetTypes?: AssetType[]
 ): boolean {
+    if (!assetTypes && DESIGNED_MEDIA_CONFIG.mode === 'ad_artifacts_only') {
+        return assetType === 'designed_ad_artifact'
+            || assetType === 'documentary_detail_image'
+            || assetType === 'ad_creative'
+            || assetType === 'copy_batch';
+    }
     if (!assetTypes) return true;
     return assetTypes.includes(assetType);
 }
@@ -118,6 +125,14 @@ function shouldRunAny(
     requestedAssetTypes: readonly AssetType[],
     assetTypes?: AssetType[]
 ): boolean {
+    if (!assetTypes && DESIGNED_MEDIA_CONFIG.mode === 'ad_artifacts_only') {
+        return requestedAssetTypes.some((assetType) =>
+            assetType === 'designed_ad_artifact'
+            || assetType === 'documentary_detail_image'
+            || assetType === 'ad_creative'
+            || assetType === 'copy_batch'
+        );
+    }
     if (!assetTypes) return true;
     return requestedAssetTypes.some((assetType) => assetTypes.includes(assetType));
 }
@@ -139,6 +154,12 @@ function shouldRunStoryboardDeliverable(
     }
 
     return storyboardDeliverableIds.includes(deliverableId);
+}
+
+function shouldRunDesignedAds(assetTypes?: AssetType[]): boolean {
+    if (DESIGNED_MEDIA_CONFIG.mode === 'off') return false;
+    if (!assetTypes) return true;
+    return assetTypes.includes('designed_ad_artifact') || assetTypes.includes('documentary_detail_image');
 }
 
 function getSceneImageSceneId(asset: AssetRecord): string | null {
@@ -394,6 +415,8 @@ export async function runMediaGeneration(
         const heroRecords: AssetRecord[] = [];
         const sceneImageRecords: AssetRecord[] = [];
         const conceptRecords: AssetRecord[] = [];
+        const documentaryDetailRecords: AssetRecord[] = [];
+        const designedAdRecords: AssetRecord[] = [];
         const cropRecords: AssetRecord[] = [];
         const merchRecords: AssetRecord[] = [];
         const hasProductionBible = brief?.productionBible !== undefined && brief?.productionBible !== null;
@@ -427,6 +450,17 @@ export async function runMediaGeneration(
 
         // ── GROUP 1: Independent generators (parallel) ────────────────
         const group1Promises: Promise<unknown>[] = [];
+
+        if (shouldRunDesignedAds(resolvedOptions.assetTypes)) {
+            group1Promises.push(
+                runWithJob(slug, 'designed_ad_artifact', 'sharp', 'designed static ad artifact pack', async () => {
+                    const result = await generateDesignedAdArtifactPack(slug, brief!, campaign);
+                    documentaryDetailRecords.push(...result.documentaryDetails);
+                    designedAdRecords.push(...result.designedAds);
+                    return [...result.documentaryDetails, ...result.designedAds];
+                }, errors)
+            );
+        }
 
         if (shouldRunAsset('ship_reference_image', resolvedOptions.assetTypes)) {
             group1Promises.push(
@@ -696,7 +730,8 @@ export async function runMediaGeneration(
                     const sceneImages = await generateSceneImages(
                         scenesToGenerate,
                         sceneReferenceCandidates,
-                        campaign.shipTarget || 'TBD'
+                        campaign.shipTarget || 'TBD',
+                        brief?.visual.plausibilityFramework.allowedProps.slice(0, 2) ?? [],
                     );
                     const records: AssetRecord[] = [];
                     for (const img of sceneImages) {
@@ -893,6 +928,8 @@ export async function runMediaGeneration(
             hero: heroRecords.length > 0 ? heroRecords : (existingManifest?.images.hero ?? []),
             sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
             aestheticConcepts: conceptRecords.length > 0 ? conceptRecords : (existingManifest?.images.aestheticConcepts ?? []),
+            documentaryDetails: mergeAssetRecords(existingManifest?.images.documentaryDetails ?? [], documentaryDetailRecords),
+            designedAdArtifacts: mergeAssetRecords(existingManifest?.images.designedAdArtifacts ?? [], designedAdRecords),
             platformCrops: (Object.keys(cropsByFormat).length > 0
                 ? cropsByFormat
                 : (existingManifest?.images.platformCrops ?? {})) as Record<ImageFormat, AssetRecord[]>,
@@ -932,6 +969,8 @@ export async function runMediaGeneration(
             ...mergedImages.hero,
             ...mergedImages.sceneImages,
             ...mergedImages.aestheticConcepts,
+            ...mergedImages.documentaryDetails,
+            ...mergedImages.designedAdArtifacts,
             ...Object.values(mergedImages.platformCrops).flat(),
             ...(mergedVideos.tiktokSeed ? [mergedVideos.tiktokSeed] : []),
             ...(mergedVideos.heroExplainer ? [mergedVideos.heroExplainer] : []),

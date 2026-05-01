@@ -1,0 +1,78 @@
+﻿{
+  "PK": "CAMPAIGN#board-games-at-sea",
+  "aesthetic": "playful, strategic, community-focused, interactive",
+  "allowedThemeSignals": [
+    "Casual gaming attire",
+    "Themed game nights",
+    "Game-themed cocktails"
+  ],
+  "audienceSignals": [
+    "Reddit r/boardgames with 2.5M members as of 2023",
+    "Board game Kickstarter campaigns reaching $1M+ funding in 2023"
+  ],
+  "cbPriceAdvantage": 19,
+  "cbagenttoolsBookingLink": "https://bookings.cbagenttools.com/swift/cruise/package/42710?siid=1049337",
+  "cbagenttoolsGroupId": "42710",
+  "communityFitRationale": "Board gamers naturally enjoy communal play, which can enhance social connections and create memorable shared experiences.",
+  "createdAt": "2026-04-29T18:25:27.645Z",
+  "cruiseNativeMoments": [
+    "Poolside Game Demos",
+    "Evening Strategy Sessions",
+    "Casual Game Meetups on Deck"
+  ],
+  "description": "A cruise for board game enthusiasts to enjoy casual and competitive gaming sessions on the open sea.",
+  "discouragedThemeSignals": [
+    "Technical game lectures",
+    "Competitive-only events",
+    "Mandatory participation"
+  ],
+  "highlightEvents": [
+    "Open Gaming Nights",
+    "Tournament Challenges",
+    "Designer Meet-and-Greet",
+    "Thematic Game Sessions"
+  ],
+  "id": "board-games-at-sea",
+  "implausibleLiteralizations": [
+    "Mandatory game workshops",
+    "24/7 gaming marathons",
+    "Overly competitive environments"
+  ],
+  "matchedDeparturePort": "MIA",
+  "matchedNights": "6",
+  "matchedSailDate": "Nov. 16, 2026",
+  "matchedShipName": "Brilliance of the Seas",
+  "minCabinsRequired": 8,
+  "name": "Board Games at Sea",
+  "nicheExpressionMode": "Gaming tables available throughout the ship for those interested, while non-participants enjoy standard cruise activities.",
+  "odysseusRetailBookingLink": "https://bookings.cbagenttools.com/web/cruises/category.aspx?brn=WEB2080.358608899339386fab174d8cefe421bbc61398a6496cb3augdri0dkb0wdmg0cw5y54nk11049337",
+  "optionalGatheringMoments": [
+    "Drop-in game sessions",
+    "Evening lounge meetups",
+    "Casual deck gatherings"
+  ],
+  "optionalityStyle": "Participation is encouraged but not required, allowing guests to join as much or as little as they wish.",
+  "priceSource": "CB_GROUP_INVENTORY",
+  "pricingStatus": "CB_MATCHED",
+  "researchRationale": "Research from platforms like Reddit's r/boardgames shows high engagement in tabletop gaming with communities often seeking new, immersive experiences.",
+  "shipTarget": "Brilliance of the Seas",
+  "solitudeRisks": [
+    "Overly competitive atmospheres",
+    "Unwelcoming to casual gamers",
+    "Exclusion of non-gamers"
+  ],
+  "startingPrice": 856,
+  "status": "DRAFT",
+  "successLogic": "Board gaming communities demonstrate high spending on exclusive game content and events, indicating willingness to invest in a themed vacation combining leisure and passion.",
+  "targetDates": "2026-11-07",
+  "targetDestination": "Eastern Caribbean",
+  "targetingKeywords": [
+    "board games",
+    "gaming community",
+    "tabletop games",
+    "strategy enthusiasts"
+  ],
+  "updatedAt": "2026-04-30T20:28:22.525Z",
+  "vacationFitRationale": "This cruise offers a mix of relaxation and entertainment, with gaming sessions being optional and complementing the ship's natural leisure activities.",
+  "SK": "METADATA"
+}

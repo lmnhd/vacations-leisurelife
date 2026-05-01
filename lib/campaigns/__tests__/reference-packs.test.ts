@@ -68,6 +68,15 @@ test('keywords take priority even if name is generic', () => {
     assert.equal(inferNicheFamily(campaign), 'stitch');
 });
 
+test('substring collisions do not trigger wrong niche family', () => {
+    const campaign = makeCampaign({
+        id: 'stitchbook-watercolors',
+        name: 'Stitchbook Watercolors',
+        targetingKeywords: ['sketchbook', 'watercolor', 'illustration'],
+    });
+    assert.equal(inferNicheFamily(campaign), 'sketchbook');
+});
+
 // ── getReferencePack ─────────────────────────────────────────────────────────
 
 console.log('\nReference Packs — Pack Resolution\n');

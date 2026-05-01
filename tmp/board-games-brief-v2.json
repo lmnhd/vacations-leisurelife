@@ -1,0 +1,839 @@
+﻿{
+  "slug": "board-games-at-sea",
+  "themeName": "Board Games at Sea",
+  "visual": {
+    "aestheticLabel": "Oceanic Playfulness",
+    "colorPalette": {
+      "primary": "#1a2b3c",
+      "secondary": "#4d5e6f",
+      "accent": "#f0c040",
+      "background": "#0a0a0a",
+      "textOnDark": "#ffffff",
+      "textOnLight": "#111111"
+    },
+    "typographyDirection": {
+      "headlineStyle": "Bold, uppercase, high-contrast",
+      "bodyStyle": "Clean sans-serif, generous line height",
+      "suggestedFonts": [
+        "Inter",
+        "Outfit"
+      ]
+    },
+    "imageryMood": "Warm, inviting analog textures against the cool, expansive ocean backdrop. Subtle nods to the board game theme without overwhelming the serene cruise atmosphere.",
+    "lightingStyle": "Soft morning and evening light, capturing the golden hues of sunrise and sunset. Amber bar glow for indoor scenes, with natural light streaming through portholes and windows.",
+    "compositionNotes": "Focus on cruise-first imagery with subtle game-themed cues. Highlight the tranquility of ocean views and the warmth of shared moments over a game. Avoid cluttered or busy scenes.",
+    "avoidList": [],
+    "referenceMoodboard": [],
+    "plausibilityFramework": {
+      "governingPrinciple": "Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.",
+      "cruiseNativeMoments": [],
+      "nicheEnhancedMoments": [],
+      "implausibleLiteralizations": [],
+      "allowedProps": [],
+      "discouragedProps": []
+    },
+    "humanRepresentation": {
+      "castingGoal": "Depict a believable, theme-appropriate mix of guests with varied visible backgrounds, skin tones, facial features, and ages where appropriate to the campaign.",
+      "ageRangeGuidance": "Match the likely audience for the theme without making every subject the same age. Use variety unless the campaign clearly targets a narrower life stage.",
+      "diversityIntent": "Favor visible diversity across the image set, including different ethnic presentations and skin tones, without reducing anyone to a trope or costume.",
+      "pairingGuidance": "Across the full set, vary who appears together so the campaign does not default to one repeated demographic pairing.",
+      "stylingGuidance": "Let styling reflect the campaign theme through clothing texture, grooming, and accessories while keeping people natural, modern, and cruise-plausible.",
+      "antiStereotypeRules": [
+        "Do not stereotype ethnicity, religion, age, or culture through exaggerated clothing, props, or gestures.",
+        "Do not make one background the default while others appear only as token exceptions.",
+        "Do not use caricature, costume logic, or generic stock-photo diversity signaling."
+      ]
+    }
+  },
+  "messaging": {
+    "heroSlogan": "Game On, Ocean Bound",
+    "subSlogan": "Find your fun at sea.",
+    "ctaVariants": {
+      "waitlist": "Join the List",
+      "bookNow": "Book Now",
+      "merch": "Shop the Look",
+      "share": "Share This"
+    },
+    "elevatorPitch": "Set sail on the Brilliance of the Seas and dive into a world where board games meet the open horizon. Whether you're a seasoned strategist or just in it for the fun, enjoy a laid-back cruise atmosphere with optional, welcoming game sessions.",
+    "toneKeywords": [
+      "aspirational",
+      "specific",
+      "welcoming"
+    ],
+    "voicePersona": "Casual, inviting, and playful."
+  },
+  "communityExpression": {
+    "corePromise": "Enjoy the shared joy and camaraderie of board gaming while sailing the serene seas.",
+    "participationStyle": "Drop in and out of games as you please, with no pressure to commit or compete.",
+    "socialGravity": "Board games act as natural icebreakers, fostering spontaneous connections and shared laughs.",
+    "optionalGatherings": [
+      "Informal game sessions at caf├⌐ tables",
+      "Spontaneous games on deck"
+    ],
+    "belongingSignals": [
+      "Subtle game-themed apparel and accessories, shared laughter over a game, and the casual offer to join in."
+    ],
+    "solitudeAntiPatterns": [
+      "Avoid competitive atmospheres or setups that exclude non-gamers."
+    ],
+    "visualTogethernessNotes": "Show guests enjoying games in small groups or pairs, with a focus on the joy of connection rather than the game itself.",
+    "copyFramingRule": "Use language that invites participation without obligation, catering to both introverts and extroverts."
+  },
+  "socialConcepts": {
+    "tiktokOrganic": {
+      "hook": "",
+      "narrative": {
+        "title": "",
+        "durationSeconds": 30,
+        "tool": "runwayml",
+        "scriptOrNarration": "",
+        "visualDirectionNotes": "",
+        "avatarRequired": false,
+        "backgroundDescription": "",
+        "musicMood": ""
+      },
+      "caption": "",
+      "hashtags": [],
+      "callToAction": ""
+    },
+    "instagramReels": {
+      "visualConcept": "",
+      "audioTrackType": "",
+      "caption": "",
+      "hashtags": []
+    },
+    "instagramFeed": {
+      "carouselSlides": [],
+      "singlePostConcept": "",
+      "caption": ""
+    },
+    "facebookAd": {
+      "headline": "",
+      "primaryText": "",
+      "description": "",
+      "cta": "",
+      "visualDescription": ""
+    },
+    "youtubeShort": {
+      "title": "",
+      "visualConcept": "",
+      "description": "",
+      "hashtags": []
+    },
+    "pinterest": {
+      "pinTitle": "",
+      "pinDescription": "",
+      "visualConcept": ""
+    },
+    "emailHeader": {
+      "subjectLine": "",
+      "preheader": "",
+      "bodyDirection": "",
+      "visualDirection": ""
+    },
+    "discordBanner": {
+      "serverBannerDescription": "",
+      "welcomeMessageDirection": ""
+    }
+  },
+  "videoConcepts": {
+    "heroExplainer": {
+      "title": "",
+      "durationSeconds": 30,
+      "tool": "runwayml",
+      "scriptOrNarration": "",
+      "visualDirectionNotes": "",
+      "avatarRequired": false,
+      "backgroundDescription": "",
+      "musicMood": ""
+    },
+    "tiktokSeed": {
+      "title": "",
+      "durationSeconds": 30,
+      "tool": "runwayml",
+      "scriptOrNarration": "",
+      "visualDirectionNotes": "",
+      "avatarRequired": false,
+      "backgroundDescription": "",
+      "musicMood": ""
+    },
+    "thresholdAnnouncement": {
+      "title": "",
+      "durationSeconds": 30,
+      "tool": "runwayml",
+      "scriptOrNarration": "",
+      "visualDirectionNotes": "",
+      "avatarRequired": false,
+      "backgroundDescription": "",
+      "musicMood": ""
+    },
+    "merchReveal": {
+      "title": "",
+      "durationSeconds": 30,
+      "tool": "runwayml",
+      "scriptOrNarration": "",
+      "visualDirectionNotes": "",
+      "avatarRequired": false,
+      "backgroundDescription": "",
+      "musicMood": ""
+    },
+    "countdownSeries": []
+  },
+  "merch": {
+    "conceptStatement": "Cute t-shirt merch for Board Games at Sea cruise guests",
+    "coreItem": {
+      "productType": "T-Shirt",
+      "designDescription": "Board Games at Sea cruise club cute cruise slogan graphic",
+      "colorway": "soft pastel cruise colors",
+      "dallePrompt": "Create a print-ready T-Shirt graphic concept for the cruise theme \"Board Games at Sea\". Cute T-Shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Board Games at Sea cruise club. Concept direction: Cute t-shirt merch for Board Games at Sea cruise guests. Design direction: Board Games at Sea cruise club cute cruise slogan graphic. Print style: cute retro cruise slogan tee. Colorway: soft pastel cruise colors. Output a feasible apparel graphic for a real printable T-Shirt design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+      "printfulProductId": ""
+    },
+    "practicalItem": {
+      "productType": "T-Shirt",
+      "designDescription": "Board Games at Sea cruise club cute cruise slogan graphic",
+      "colorway": "soft pastel cruise colors",
+      "dallePrompt": "Create a print-ready T-Shirt graphic concept for the cruise theme \"Board Games at Sea\". Cute T-Shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Board Games at Sea cruise club. Concept direction: Cute t-shirt merch for Board Games at Sea cruise guests. Design direction: Board Games at Sea cruise club cute cruise slogan graphic. Print style: cute retro cruise slogan tee. Colorway: soft pastel cruise colors. Output a feasible apparel graphic for a real printable T-Shirt design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+      "printfulProductId": ""
+    },
+    "nicheSpecificItems": [],
+    "logoConceptDescription": "Playful ocean-themed graphics with board game elements",
+    "tagline": "Board Games at Sea cruise club",
+    "printStyle": "cute retro cruise slogan tee"
+  },
+  "audio": {
+    "ambientNarrationScript": "",
+    "hypeClipScript": "",
+    "voiceProfile": "",
+    "musicMood": ""
+  },
+  "identityBlueprint": {
+    "energyMode": "playful_collective",
+    "emotionalPromise": "The campaign feels bright, social, and participatory without becoming forced or cheesy.",
+    "socialScale": "pair_small_group",
+    "imageBehavior": [
+      "bright social warmth",
+      "friendly shared ritual",
+      "energy through people and timing"
+    ],
+    "propFamilies": [
+      "bright paper token",
+      "souvenir pin",
+      "color accent object",
+      "playful badge"
+    ],
+    "forbiddenDefaults": [
+      "sterile editorial distance",
+      "quiet prestige mood",
+      "lonely solo default"
+    ],
+    "lightBehavior": [
+      "bright daytime deck light",
+      "colorful reflections",
+      "open-air social brightness"
+    ],
+    "adFormatBias": [
+      "type_hook_card",
+      "itinerary_toc_card",
+      "quote_card"
+    ],
+    "evidenceOfBelonging": [
+      "Subtle game-themed apparel and accessories, shared laughter over a game, and the casual offer to join in.",
+      "a caf├⌐ table with a rotating library of open games, chips and drinks already poured, guests pulling up chairs as they pass by",
+      "an aft deck railing at golden hour with a travel-sized game laid out on a folded jacket, two people laughing over dice rolls",
+      "a quiet lounge corner with a single two-player game set up on a side table, a \"join if you like\" card standing in a card holder",
+      "a breakfast table with a puzzle-piece-shaped cereal bowl and a small strategy game being played between coffee refills",
+      "colorful wooden meeples scattered across a teak table beside a coffee cup"
+    ],
+    "summary": "playful collective campaign; favor bright social warmth with pair small group social scale and avoid sterile editorial distance."
+  },
+  "productionBible": {
+    "sceneLibrary": [],
+    "storyboards": [
+      {
+        "deliverableId": "tiktok_seed",
+        "title": "TikTok Seed Video",
+        "totalDurationSeconds": 35,
+        "shotSequence": [
+          {
+            "shotNumber": 1,
+            "sceneId": "open_library_evening",
+            "durationSeconds": 8,
+            "cameraMovement": "gentle gimbal drift forward",
+            "subjectMotion": "none",
+            "environmentMotion": "soft ambient ship sounds",
+            "transitionIn": "fade from black",
+            "transitionOut": "hard cut",
+            "emotionalBeat": "belonging",
+            "narrationSegment": "Step into a world where games bring us together.",
+            "musicCue": "gentle acoustic intro"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "sailaway_dice_challenge",
+            "durationSeconds": 9,
+            "cameraMovement": "handheld high angle rise",
+            "subjectMotion": "none",
+            "environmentMotion": "waves and laughter",
+            "transitionIn": "hard cut",
+            "transitionOut": "match cut",
+            "emotionalBeat": "joy",
+            "narrationSegment": "Feel the thrill of friendly challenges at sea.",
+            "musicCue": "uplifting rhythm"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "midnight_strategy_cafe",
+            "durationSeconds": 10,
+            "cameraMovement": "steadicam",
+            "subjectMotion": "none",
+            "environmentMotion": "quiet ship hum",
+            "transitionIn": "match cut",
+            "transitionOut": "cross-dissolve",
+            "emotionalBeat": "serenity",
+            "narrationSegment": "Find your peace in a midnight strategy session.",
+            "musicCue": "soft piano"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "port_day_travel_game",
+            "durationSeconds": 8,
+            "cameraMovement": "orbit",
+            "subjectMotion": "none",
+            "environmentMotion": "bus and road sounds",
+            "transitionIn": "cross-dissolve",
+            "transitionOut": "fade from black",
+            "emotionalBeat": "wonder",
+            "narrationSegment": "Discover new adventures on every shore.",
+            "musicCue": "curious strings"
+          }
+        ],
+        "narrationScript": "Step into a world where games bring us together. Feel the thrill of friendly challenges at sea. Find your peace in a midnight strategy session. Discover new adventures on every shore.",
+        "musicDirection": "warm and inviting acoustic tones with a playful rhythm",
+        "editingStyle": "dynamic and engaging, with seamless transitions and a focus on community"
+      },
+      {
+        "deliverableId": "hero_explainer",
+        "title": "Hero Explainer Video",
+        "totalDurationSeconds": 60,
+        "shotSequence": [
+          {
+            "shotNumber": 1,
+            "sceneId": "open_library_evening",
+            "durationSeconds": 12,
+            "cameraMovement": "push-in",
+            "subjectMotion": "none",
+            "environmentMotion": "ambient chatter",
+            "transitionIn": "fade from black",
+            "transitionOut": "J-cut",
+            "emotionalBeat": "belonging",
+            "narrationSegment": "Join a world of camaraderie with board games at sea.",
+            "musicCue": "inviting melody"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "sailaway_dice_challenge",
+            "durationSeconds": 10,
+            "cameraMovement": "slow arc",
+            "subjectMotion": "none",
+            "environmentMotion": "ocean breeze",
+            "transitionIn": "J-cut",
+            "transitionOut": "whip pan",
+            "emotionalBeat": "thrill",
+            "narrationSegment": "Experience the thrill of games by the sunset.",
+            "musicCue": "energetic beats"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "cabin_balcony_morning",
+            "durationSeconds": 8,
+            "cameraMovement": "overhead handheld high angle",
+            "subjectMotion": "none",
+            "environmentMotion": "gentle sea waves",
+            "transitionIn": "whip pan",
+            "transitionOut": "hard cut",
+            "emotionalBeat": "serenity",
+            "narrationSegment": "Start your day with serenity and strategy.",
+            "musicCue": "calm strings"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "midnight_strategy_cafe",
+            "durationSeconds": 10,
+            "cameraMovement": "gentle gimbal drift back",
+            "subjectMotion": "none",
+            "environmentMotion": "soft caf├⌐ ambience",
+            "transitionIn": "hard cut",
+            "transitionOut": "cross-dissolve",
+            "emotionalBeat": "intimacy",
+            "narrationSegment": "Savor intimate moments over a board game.",
+            "musicCue": "gentle piano"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "ship_atrium_game_invite",
+            "durationSeconds": 10,
+            "cameraMovement": "handheld follow",
+            "subjectMotion": "none",
+            "environmentMotion": "ambient ship sounds",
+            "transitionIn": "cross-dissolve",
+            "transitionOut": "L-cut",
+            "emotionalBeat": "joy",
+            "narrationSegment": "Invite others and share the joy of play.",
+            "musicCue": "playful harmonics"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "port_day_travel_game",
+            "durationSeconds": 10,
+            "cameraMovement": "whip pan",
+            "subjectMotion": "none",
+            "environmentMotion": "road and nature",
+            "transitionIn": "L-cut",
+            "transitionOut": "fade from black",
+            "emotionalBeat": "wonder",
+            "narrationSegment": "Every destination is a new game to explore.",
+            "musicCue": "adventurous tones"
+          }
+        ],
+        "narrationScript": "Join a world of camaraderie with board games at sea. Experience the thrill of games by the sunset. Start your day with serenity and strategy. Savor intimate moments over a board game. Invite others and share the joy of play. Every destination is a new game to explore.",
+        "musicDirection": "captivating and adventurous with a balance of calm and energetic tones",
+        "editingStyle": "smooth and cinematic, with a focus on storytelling and emotional connection"
+      },
+      {
+        "deliverableId": "threshold_announcement",
+        "title": "Threshold Announcement",
+        "totalDurationSeconds": 30,
+        "shotSequence": [
+          {
+            "shotNumber": 1,
+            "sceneId": "sailaway_dice_challenge",
+            "durationSeconds": 8,
+            "cameraMovement": "pull-out",
+            "subjectMotion": "none",
+            "environmentMotion": "sunset breeze",
+            "transitionIn": "fade from black",
+            "transitionOut": "cross-dissolve",
+            "emotionalBeat": "freedom",
+            "narrationSegment": "Discover the freedom of play under open skies.",
+            "musicCue": "expansive chords"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "open_library_evening",
+            "durationSeconds": 8,
+            "cameraMovement": "orbit",
+            "subjectMotion": "none",
+            "environmentMotion": "soft chatter",
+            "transitionIn": "cross-dissolve",
+            "transitionOut": "hard cut",
+            "emotionalBeat": "belonging",
+            "narrationSegment": "Where every game leads to new friendships.",
+            "musicCue": "warm harmonies"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "midnight_strategy_cafe",
+            "durationSeconds": 7,
+            "cameraMovement": "handheld high angle drop",
+            "subjectMotion": "none",
+            "environmentMotion": "quiet ship hum",
+            "transitionIn": "hard cut",
+            "transitionOut": "match cut",
+            "emotionalBeat": "intimacy",
+            "narrationSegment": "Find quiet moments of strategy and connection.",
+            "musicCue": "intimate piano"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "ship_atrium_game_invite",
+            "durationSeconds": 7,
+            "cameraMovement": "steadicam",
+            "subjectMotion": "none",
+            "environmentMotion": "lively ship sounds",
+            "transitionIn": "match cut",
+            "transitionOut": "fade from black",
+            "emotionalBeat": "joy",
+            "narrationSegment": "This could be your voyage.",
+            "musicCue": "uplifting finale"
+          }
+        ],
+        "narrationScript": "Discover the freedom of play under open skies. Where every game leads to new friendships. Find quiet moments of strategy and connection. This could be your voyage.",
+        "musicDirection": "uplifting and joyful, with a touch of introspection",
+        "editingStyle": "fast-paced and energetic, emphasizing the excitement and community"
+      },
+      {
+        "deliverableId": "countdown_1",
+        "title": "Planning Window Video 1",
+        "totalDurationSeconds": 15,
+        "shotSequence": [
+          {
+            "shotNumber": 1,
+            "sceneId": "cabin_balcony_morning",
+            "durationSeconds": 5,
+            "cameraMovement": "gentle gimbal drift forward",
+            "subjectMotion": "none",
+            "environmentMotion": "gentle waves",
+            "transitionIn": "fade from black",
+            "transitionOut": "hard cut",
+            "emotionalBeat": "serenity",
+            "narrationSegment": "Begin each day with a peaceful strategy.",
+            "musicCue": "morning calm"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "sailaway_dice_challenge",
+            "durationSeconds": 5,
+            "cameraMovement": "whip pan",
+            "subjectMotion": "none",
+            "environmentMotion": "laughter and ocean",
+            "transitionIn": "hard cut",
+            "transitionOut": "cross-dissolve",
+            "emotionalBeat": "joy",
+            "narrationSegment": "Feel the joy of games at sea.",
+            "musicCue": "bright notes"
+          },
+          {
+            "shotNumber": 1,
+            "sceneId": "port_day_travel_game",
+            "durationSeconds": 5,
+            "cameraMovement": "handheld follow",
+            "subjectMotion": "none",
+            "environmentMotion": "vibrant city sounds",
+            "transitionIn": "cross-dissolve",
+            "transitionOut": "fade from black",
+            "emotionalBeat": "wonder",
+            "narrationSegment": "Adventure awaits at every port.",
+            "musicCue": "adventurous crescendo"
+          }
+        ],
+        "narrationScript": "Begin each day with a peaceful strategy. Feel the joy of games at sea. Adventure awaits at every port.",
+        "musicDirection": "bright and lively, with an adventurous undertone",
+        "editingStyle": "quick and engaging, designed to capture immediate interest"
+      }
+    ],
+    "globalDirectionNotes": "Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded. ",
+    "avoidDirectives": []
+  },
+  "landingStillBible": {
+    "stillLibrary": [
+      {
+        "stillId": "still-01",
+        "usage": "hero_primary",
+        "location": "cruise lounge",
+        "timeOfDay": "evening",
+        "lighting": "warm ambient lighting",
+        "composition": "wide establishing shot of a lively gaming table",
+        "subjectAction": "a guest wearing a subtle game-themed t-shirt joins a group around a table laden with colorful wooden meeples on ship deck, laughing and strategizing",
+        "environmentDetails": "the lounge is filled with tables and guests engaged in various games, warm light creating a cozy atmosphere",
+        "mood": "inclusive camaraderie",
+        "imagePrompt": "warm ambient lighting, cruise lounge, guest wearing game-themed t-shirt with wooden meeples on ship deck, vibrant social interaction",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-01",
+        "slotRole": "HERO_PRIMARY",
+        "nicheCarryThrough": "wooden meeples on ship deck",
+        "shotIntent": "Show inclusive camaraderie and tabletop gaming as a central cruise activity",
+        "cameraDistance": "wide",
+        "framingMode": "establishing",
+        "heroSubject": "guest with game-themed t-shirt",
+        "nicheCue": "wooden meeples",
+        "antiFallbackNote": "Avoids generic lounge scene by focusing on game-themed apparel and meeples",
+        "referencePackId": "ref-tabletop-v1"
+      },
+      {
+        "stillId": "still-02",
+        "usage": "hero_alt",
+        "location": "pool deck",
+        "timeOfDay": "sunset",
+        "lighting": "golden sunset light",
+        "composition": "wide shot of friends enjoying a game on the pool deck",
+        "subjectAction": "pair of friends roll dice into a dice tray sunset ocean, laughter echoing across the deck",
+        "environmentDetails": "vibrant sunset colors reflect on the pool, creating a picturesque backdrop",
+        "mood": "joyful excitement",
+        "imagePrompt": "golden sunset light, pool deck, friends rolling dice into a dice tray sunset ocean, vibrant atmosphere",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-02",
+        "slotRole": "HERO_ALT",
+        "nicheCarryThrough": "dice tray sunset ocean",
+        "shotIntent": "Capture the excitement of gaming against a stunning sunset backdrop",
+        "cameraDistance": "wide",
+        "framingMode": "two_shot",
+        "heroSubject": "pair of friends",
+        "nicheCue": "dice tray",
+        "antiFallbackNote": "Avoids generic sunset scene by focusing on dice gaming",
+        "referencePackId": "ref-tabletop-v1"
+      },
+      {
+        "stillId": "still-03",
+        "usage": "concept",
+        "location": "library",
+        "timeOfDay": "afternoon",
+        "lighting": "soft natural light",
+        "composition": "medium-wide shot of a cozy library corner",
+        "subjectAction": "solo traveler selects a board game, their excitement evident as they find a cozy nook to explore the rulebook for a tabletop game cruise lounge",
+        "environmentDetails": "sunlight streaming through large windows, shelves filled with games and books",
+        "mood": "quiet anticipation",
+        "imagePrompt": "soft natural light, ship library, solo traveler with a board game, cozy atmosphere",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-03",
+        "slotRole": "EDITORIAL_WIDE_A",
+        "nicheCarryThrough": "tabletop game cruise lounge",
+        "shotIntent": "Highlight the library as a peaceful place for game exploration",
+        "cameraDistance": "medium_wide",
+        "framingMode": "environmental_portrait",
+        "heroSubject": "solo traveler",
+        "nicheCue": "board game",
+        "antiFallbackNote": "Avoids generic library scene by focusing on game selection",
+        "referencePackId": "ref-tabletop-v1"
+      },
+      {
+        "stillId": "still-04",
+        "usage": "email_header",
+        "location": "caf├⌐",
+        "timeOfDay": "morning",
+        "lighting": "soft ambient light",
+        "composition": "wide shot of a caf├⌐ with guests preparing for a game",
+        "subjectAction": "duo sip on drinks in a caf├⌐, admiring card sleeves fantasy art caf├⌐ as they prepare for a lively game session",
+        "environmentDetails": "comfortable seating, small tables with game components, relaxed morning vibe",
+        "mood": "creative immersion",
+        "imagePrompt": "soft ambient light, caf├⌐, guests with card sleeves fantasy art caf├⌐, lively game preparation",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-04",
+        "slotRole": "EDITORIAL_WIDE_B",
+        "nicheCarryThrough": "card sleeves fantasy art caf├⌐",
+        "shotIntent": "Show creative immersion and preparation for a game session",
+        "cameraDistance": "medium_wide",
+        "framingMode": "two_shot",
+        "heroSubject": "duo with card sleeves",
+        "nicheCue": "card sleeves",
+        "antiFallbackNote": "Avoids generic caf├⌐ scene by highlighting card game prep",
+        "referencePackId": "ref-tabletop-v1"
+      },
+      {
+        "stillId": "still-05",
+        "usage": "concept",
+        "location": "cabin balcony",
+        "timeOfDay": "morning",
+        "lighting": "soft morning light",
+        "composition": "intimate close-up of a game setup by a porthole",
+        "subjectAction": "passenger arranges Azul tiles morning light porthole, sunlight casting playful shadows",
+        "environmentDetails": "soft morning light filtering through the porthole, creating a serene and focused atmosphere",
+        "mood": "serene focus",
+        "imagePrompt": "soft morning light, cabin balcony, passenger with Azul tiles morning light porthole, serene and focused",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-05",
+        "slotRole": "INTIMATE",
+        "nicheCarryThrough": "Azul tiles morning light porthole",
+        "shotIntent": "Capture the serene focus of solo gameplay in a private space",
+        "cameraDistance": "close_up",
+        "framingMode": "detail_insert",
+        "heroSubject": "passenger",
+        "nicheCue": "Azul tiles",
+        "antiFallbackNote": "Avoids generic close-up of hands by focusing on game details",
+        "referencePackId": "ref-tabletop-v1"
+      },
+      {
+        "stillId": "still-06",
+        "usage": "social_square",
+        "location": "ship atrium",
+        "timeOfDay": "afternoon",
+        "lighting": "bright natural light",
+        "composition": "medium shot of a lively game scene in the atrium",
+        "subjectAction": "pair of travelers invite others to join their game, shared laughter over a game accessories sparking connections",
+        "environmentDetails": "grand architecture of the atrium, natural light streaming in, creating a welcoming environment",
+        "mood": "warm belonging",
+        "imagePrompt": "bright natural light, ship atrium, travelers with shared laughter over a game, inviting and connected atmosphere",
+        "referenceCategory": "tabletop",
+        "anchorId": "anchor-06",
+        "slotRole": "FLEX",
+        "nicheCarryThrough": "shared laughter over a game",
+        "shotIntent": "Show the atrium as a hub for social gaming and connection",
+        "cameraDistance": "medium",
+        "framingMode": "single_subject",
+        "heroSubject": "pair of travelers",
+        "nicheCue": "game accessories",
+        "antiFallbackNote": "Avoids generic atrium scene by focusing on game interaction",
+        "referencePackId": "ref-tabletop-v1"
+      }
+    ],
+    "globalDirectionNotes": "Highlight the integration of board games into everyday cruise activities, emphasizing social interaction and niche gaming experiences.",
+    "avoidDirectives": [
+      "Avoid generic cruise imagery without niche gaming elements.",
+      "Do not depict staged or overly ceremonial setups; focus on natural interactions and game-related activities."
+    ]
+  },
+  "productionBuildLint": {
+    "verdict": "warn",
+    "blockingIssues": [],
+    "warnings": [
+      {
+        "code": "repeated_composition_family",
+        "severity": "warning",
+        "message": "2 stills share composition family \"lounge_laughing\" ΓÇö mild repetition.",
+        "affectedStillIds": [
+          "still-01",
+          "still-06"
+        ]
+      }
+    ],
+    "scoreSummary": {
+      "totalStills": 6,
+      "noCueCount": 1,
+      "subtleCueCount": 0,
+      "explicitCueCount": 5,
+      "genericFallbackCount": 0,
+      "heroRoleCount": 2,
+      "editorialRoleCount": 2,
+      "intimateRoleCount": 1,
+      "maxCompositionFamilySize": 2
+    },
+    "patternSummary": {
+      "locationClusters": {
+        "cabin_window": [
+          "still-03"
+        ],
+        "lounge": [
+          "still-01",
+          "still-06"
+        ],
+        "dining": [
+          "still-04"
+        ],
+        "deck": [
+          "still-02"
+        ],
+        "rail": [
+          "still-05"
+        ]
+      },
+      "actionClusters": {
+        "reading": [
+          "still-03"
+        ],
+        "other": [
+          "still-05"
+        ],
+        "dining": [
+          "still-04"
+        ],
+        "laughing": [
+          "still-01",
+          "still-02",
+          "still-06"
+        ]
+      },
+      "moodClusters": {
+        "neutral": [
+          "still-01",
+          "still-04"
+        ],
+        "warm": [
+          "still-06"
+        ],
+        "joyful": [
+          "still-02"
+        ],
+        "contemplative": [
+          "still-03",
+          "still-05"
+        ]
+      },
+      "genericFallbackStillIds": [],
+      "noCueStillIds": [
+        "still-06"
+      ],
+      "subtleCueStillIds": [],
+      "explicitCueStillIds": [
+        "still-01",
+        "still-02",
+        "still-03",
+        "still-04",
+        "still-05"
+      ]
+    },
+    "stillDiagnostics": [
+      {
+        "stillId": "still-01",
+        "usage": "hero_primary",
+        "locationFamily": "lounge",
+        "actionFamily": "laughing",
+        "moodFamily": "neutral",
+        "shotRole": "hero",
+        "cueStrength": "explicit",
+        "isGenericFallback": false,
+        "compositionFamily": "lounge_laughing",
+        "flags": []
+      },
+      {
+        "stillId": "still-02",
+        "usage": "hero_alt",
+        "locationFamily": "deck",
+        "actionFamily": "laughing",
+        "moodFamily": "joyful",
+        "shotRole": "hero",
+        "cueStrength": "explicit",
+        "isGenericFallback": false,
+        "compositionFamily": "deck_sea_wide",
+        "flags": []
+      },
+      {
+        "stillId": "still-03",
+        "usage": "concept",
+        "locationFamily": "cabin_window",
+        "actionFamily": "reading",
+        "moodFamily": "contemplative",
+        "shotRole": "editorial",
+        "cueStrength": "explicit",
+        "isGenericFallback": false,
+        "compositionFamily": "cabin_window_reading",
+        "flags": []
+      },
+      {
+        "stillId": "still-04",
+        "usage": "email_header",
+        "locationFamily": "dining",
+        "actionFamily": "dining",
+        "moodFamily": "neutral",
+        "shotRole": "editorial",
+        "cueStrength": "explicit",
+        "isGenericFallback": false,
+        "compositionFamily": "dining_dining",
+        "flags": []
+      },
+      {
+        "stillId": "still-05",
+        "usage": "concept",
+        "locationFamily": "rail",
+        "actionFamily": "other",
+        "moodFamily": "contemplative",
+        "shotRole": "intimate",
+        "cueStrength": "explicit",
+        "isGenericFallback": false,
+        "compositionFamily": "rail_other",
+        "flags": []
+      },
+      {
+        "stillId": "still-06",
+        "usage": "social_square",
+        "locationFamily": "lounge",
+        "actionFamily": "laughing",
+        "moodFamily": "warm",
+        "shotRole": "supporting",
+        "cueStrength": "absent",
+        "isGenericFallback": false,
+        "compositionFamily": "lounge_laughing",
+        "flags": [
+          "no_niche_cue"
+        ]
+      }
+    ],
+    "evaluatedAt": "2026-04-30T22:23:13.173Z"
+  },
+  "productionBuildStatus": "warn",
+  "productionBuildEvaluatedAt": "2026-04-30T22:23:13.173Z",
+  "issueLedger": [],
+  "generatedAt": "2026-04-30T22:22:26.386Z",
+  "generatedBy": "agent",
+  "humanReviewStatus": "pending",
+  "revisionCycleCount": 0,
+  "revisionNotes": "Supervisor create_or_refresh: no open validation issues."
+}

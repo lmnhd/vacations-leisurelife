@@ -3,6 +3,7 @@ import type { CampaignAestheticBrief, VideoBrief } from '../schema';
 import type { Campaign } from '../types';
 import { validateBrief } from '../brief-engine/validation';
 import { applyAutoFixes } from '../brief-engine/auto-fix';
+import { buildCampaignIdentityBlueprint } from '../design-system/identity-blueprint';
 
 function makeVideoConcept(overrides: Partial<VideoBrief> = {}): VideoBrief {
     return {
@@ -101,7 +102,54 @@ function makeBrief(): CampaignAestheticBrief {
             visualTogethernessNotes: 'Small groups at the rail or table.',
             copyFramingRule: 'Use explicitly optional language: join if you like, stay for a minute, or keep moving without missing anything.',
         },
-        socialConcepts: {} as unknown as CampaignAestheticBrief['socialConcepts'],
+        socialConcepts: {
+            tiktokOrganic: {
+                hook: 'Hook',
+                narrative: makeVideoConcept(),
+                caption: 'Caption',
+                hashtags: ['#brief'],
+                callToAction: 'Join',
+            },
+            instagramReels: {
+                visualConcept: 'Reel concept',
+                audioTrackType: 'ambient',
+                caption: 'Reel caption',
+                hashtags: ['#reel'],
+            },
+            instagramFeed: {
+                carouselSlides: [],
+                singlePostConcept: 'Feed concept',
+                caption: 'Feed caption',
+            },
+            facebookAd: {
+                headline: 'Tiny windows at sea',
+                primaryText: 'Swap a print, keep strolling.',
+                description: 'Cruise-first social concept.',
+                cta: 'Reserve',
+                visualDescription: 'Relaxed shipboard companionship.',
+            },
+            youtubeShort: {
+                title: 'Short title',
+                visualConcept: 'Short concept',
+                description: 'Short description',
+                hashtags: ['#short'],
+            },
+            pinterest: {
+                pinTitle: 'Pin title',
+                pinDescription: 'Pin description',
+                visualConcept: 'Pin concept',
+            },
+            emailHeader: {
+                subjectLine: 'Subject',
+                preheader: 'Preheader',
+                bodyDirection: 'Body direction',
+                visualDirection: 'Visual direction',
+            },
+            discordBanner: {
+                serverBannerDescription: 'Banner description',
+                welcomeMessageDirection: 'Welcome direction',
+            },
+        },
         videoConcepts: {
             heroExplainer: makeVideoConcept({ title: 'Hero Explainer', durationSeconds: 60 }),
             tiktokSeed: makeVideoConcept({ title: 'TikTok Seed', durationSeconds: 15 }),
@@ -254,6 +302,30 @@ test('auto-fixes clear executable camera and gangway blockers', () => {
     assert.ok(fixResult.fixedCodes.includes('gangway_exchange_prohibited'));
     assert.ok(!finalValidation.issues.some((issue) => issue.code === 'camera_move_feasibility'));
     assert.ok(!finalValidation.issues.some((issue) => issue.code === 'gangway_exchange_prohibited'));
+});
+
+test('alignment drift is surfaced as a warning for mismatched campaign energy', () => {
+    const driftingBrief = makeBrief();
+    driftingBrief.visual.imageryMood = 'quiet serene premium balcony atmosphere';
+    driftingBrief.visual.compositionNotes = 'calm balcony still life with reflective ocean mood';
+    driftingBrief.socialConcepts.facebookAd.visualDescription = 'serene balcony moment with a drink';
+    driftingBrief.messaging.heroSlogan = 'Rock the Waves, Feel the Beat';
+    driftingBrief.messaging.subSlogan = 'Live music, sea breeze, pure vibe.';
+    driftingBrief.identityBlueprint = buildCampaignIdentityBlueprint(driftingBrief, campaign);
+
+    const validation = validateBrief(driftingBrief, campaign);
+
+    assert.ok(validation.issues.some((issue) => issue.code === 'energy_mode_visual_mismatch'));
+});
+
+test('generic welcome language alone does not satisfy optionality checks', () => {
+    const driftingBrief = makeBrief();
+    driftingBrief.communityExpression.participationStyle = 'Welcome aboard for an unforgettable trip.';
+    driftingBrief.communityExpression.copyFramingRule = 'Welcome everyone with warm hospitality.';
+    driftingBrief.communityExpression.optionalGatherings = ['Welcome meetup by the rail.'];
+
+    const validation = validateBrief(driftingBrief, campaign);
+    assert.ok(validation.issues.some((issue) => issue.code === 'optionality_language_missing'));
 });
 
 console.log(`\nPassed: ${passed}`);

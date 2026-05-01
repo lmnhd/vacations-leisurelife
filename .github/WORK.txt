@@ -1,146 +1,129 @@
-# Discovery Pipeline: Niche-Heavy Blueprint Problem — 2026-04-28
+# Media Generation: Dual-Style Strategy — 2026-04-29
 
-## Situation
+## Core Principle
 
-Gemini Deep Research integration is working (Interactions API, `store: true`, polling completes successfully). The discovery pipeline generated 5 campaigns, all passed the inventory match gate.
+NOT all-or-nothing. Two distinct visual styles, each assigned by **content type** and **audience touchpoint**.
 
-However, Red Team review results were poor:
+| Style | Content | Touchpoint | Purpose |
+|-------|---------|------------|---------|
+| **Embellished / Sketch-Like** | Images WITH people (guests, couples, groups, characters) | Ads, social previews, first impressions, hero banners | Emotional hook, imagination, aspiration — "this is what it FEELS like" |
+| **Refined Realistic** | Images WITHOUT people (ship structure, decks, pools, cabins, ports, sunsets without figures) | Landing page details, cabin selectors, deck maps, itinerary visuals | Trust, accuracy, "finish the sell" — "this is what you'll ACTUALLY get" |
 
-| Campaign | Verdict | Issues |
-|----------|---------|--------|
-| steampunk-voyage | **BLOCK** (retired) | Structural — too costume-driven |
-| mystical-seas | WARN | solitude_drift, cruise_implausibility |
-| cosplay-at-sea | WARN | solitude_drift, cruise_implausibility |
-| sci-fi-adventure | WARN | solitude_drift, cruise_implausibility, stereotype_risk |
-| fantasy-literary-cruise | WARN | cruise_implausibility, solitude_drift, stereotype_risk |
+## Rationale
 
-After auto-revision, all 4 WARN campaigns remained WARN. The Red Team consistently flags the same pattern:
+- **Sketch style for people** avoids AI fragility (uncanny hands, plastic skin, inconsistent faces). Illustration is EXPECTED to be idealized. It signals creativity and community rather than stock-photo genericness.
+- **Realistic style for ships/structures** leverages AI's strength (architectural accuracy, lighting, texture). These are trust anchors — a guest needs to believe that pool really exists on that ship.
+- **The mix creates a narrative arc:** ad/hero sees the FEELING (illustrated people living the vibe) → landing page sees the REALITY (actual ship, actual cabin, actual deck). The sketch invites imagination; the photo closes the deal.
 
-1. **Too niche-first, vacation-second** — the concepts read like "a cosplay event on a ship" rather than "a cruise vacation that happens to attract cosplayers."
-2. **Workshop/program drift** — blueprints include costume-making workshops, fantasy worldbuilding workshops, structured sci-fi activities.
-3. **Stereotype risk / exclusion** — heavy niche focus alienates non-enthusiasts (e.g., guests who don't read fantasy literature).
-4. **Solitude drift** — over-indexed on solo activities (reading alone, quiet rituals) without enough ambient group energy.
+## Open Questions to Resolve
 
-## Root Cause Analysis
+1. **What about crowd shots / groups on decks?** If people are present but small/background, does the whole image go sketch, or do we treat background people as "structure" and only foreground people as "sketch-trigger"?
+   - Proposed rule: if humans are the subject or clearly legible, sketch. If humans are tiny deck figures or silhouettes, either style is acceptable.
 
-The problem is upstream in the **research prompt framing**, not in Step 3 GPT or the Red Team.
+2. **What about storyboard stills vs. landing stills?** The production bible generates both.
+   - Storyboard stills = emotional narrative moments → almost always have people → **sketch**
+   - Landing stills = mixed (some hero shots with people, some cabin/deck shots without) → **split by content**
 
-### 1. Step 1 (Psychographic Discovery) is Niche-First
+3. **Hero transform (real ship photo → stylized)** — this currently takes a real ship photo and transforms it. If the ship photo has no people, it should stay realistic. If it has people, sketch.
 
-Current prompt opens with:
+4. **TikTok seed / HeyGen videos** — avatar videos use a hero image as backdrop. If the backdrop is people-forward, sketch. If it's ship-forward, realistic.
 
-> "Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation."
+5. **Merch designs (t-shirts, etc.)** — these are inherently illustrated. They probably belong in the **sketch/embellished** family regardless of content.
 
-This frames the task as: **find a niche, then figure out how it fits on a cruise.**
+6. **Aesthetic concept frames** — these are pure atmosphere. They usually imply human presence without showing full figures. Likely **sketch**.
 
-The output format then asks the research agent to deeply analyze each community:
-- Why the niche has market momentum
-- Why it feels natural on a ship
-- What cruise-native appeal is
-- What would make it feel too formal
+7. **Model assignment:**
+   - Nano-Banana (Gemini) can do both styles if prompted correctly. We keep it as the single provider.
+   - OR we split: Nano-Banana for sketch, DALL-E 3 / GPT Image 2 for realistic.
+   - Need to decide based on quality comparison.
 
-Gemini Deep Research, being a thorough research agent, does exactly what it's told: it researches the **niche community deeply**. The output is a community analysis document. This biases everything downstream.
+## Asset-to-Style Mapping
 
-### 2. `CRUISE_REALISM_GOVERNING_PRINCIPLE` is Secondary
+| Asset Type | Generator | Content | Style |
+|------------|-----------|---------|-------|
+| `hero_image` (non-ref) | `generateHeroImages` | People-forward hero shots (1-3 subjects) | **SKETCHED** |
+| `hero_image` (ref-grounded) | `generateReferenceGroundedHeroImages` | Real ship photo transform | **CONDITIONAL** — realistic if ship-only, sketch if people visible |
+| `aesthetic_concept` | `generateAestheticConcepts` | Atmospheric mood frames, social chemistry | **SKETCHED** |
+| `scene_image` | `generateSceneImages` | Storyboard source frames (ship-forward, incidental people) | **REALISTIC** |
+| `probe_image` | `generateProbeImage` | Validation probe from still spec | **MATCH SOURCE** |
+| `ship_reference_image` | SerpAPI | Real cruise ship photos | **REALISTIC** (source-of-truth) |
+| `platform_crop` | Sharp crop | Derived from parent | **MATCH PARENT** |
+| `merch_design` | DALL-E 3 | T-shirt/pocket-tee graphics | **SKETCHED** |
+| Video backdrops | Storyboard pipeline | Inherits backdrop image style | **MATCH PARENT** |
 
-The governing principle exists but is positioned as a filter/constraint applied AFTER the niche is chosen:
+## Draft Style Prompt Strings
+
+These replace the existing `Style: ...` and `Aspirational travel editorial photography...` lines in `stability-generator.ts`.
+
+### SKETCHED — "Feeling" Style (people-forward, emotional, first impression)
 
 ```
-${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+Hand-illustrated travel editorial in watercolor-and-ink style: loose, expressive linework with vivid color washes; human figures are idealized and gestural with warm, readable faces; ship decks, railings, and pools are recognizable but rendered with artistic looseneness rather than architectural precision; the mood is "best-day-of-vacation memory" rather than literal documentation; rich saturated palette, warm light, textural brushstrokes visible; avoid photorealism, anime, or flat vector; style of a travel journal sketch brought to life with modern color.
 ```
 
-It's not the PRIMARY framing of the research task. It's a guardrail.
+### REALISTIC — "Fact" Style (ship-forward, trust, closing the deal)
 
-### 3. Step 2 (Aesthetic) Reinforces the Niche-First Frame
+```
+Documentary-grade cruise photography: sharp detail, accurate ship architecture, natural marine lighting, believable materials (teak, steel, glass, pool tile); editorial restraint with no over-processing; warm golden-hour or natural daylight; the image must feel indistinguishable from a professional cruise line brochure or a travel photographer's portfolio shot on a modern mirrorless camera; subtle depth of field where appropriate; no illustrative treatment.
 
-> "For each promising theme, analyze it in this order: What are the most believable cruise-native expressions of this theme?"
+CRITICAL ADDITIONS for realistic style:
+- **Vintage filter rotation:** Each realistic image should carry a distinct stylized film grade — e.g. Kodachrome 70s warmth, late-80s Ektachrome saturation, expired Polaroid shift, or cross-processed slide. This adds character and variety without breaking realism. The filter must look like a physical film stock or lens artifact, not a digital overlay.
+- **Theme object anchoring:** Since people are absent, the niche/theme must still be legible through subtle environmental props. Examples: a guitar resting on a deck lounger (music cruise), a well-worn notebook on a teak table (writing cruise), dice and a leather case on a bar rail (gaming cruise), vintage binoculars on a rail (birding cruise). The object should feel naturally placed — not staged, not central, not the sole focus — just enough to whisper the theme.
+```
 
-The input is already a niche analysis. Step 2 asks "how do we put this niche on a cruise?" rather than "what cruise experience would naturally attract this community?"
+## Implementation Plan
 
-### 4. Step 3 GPT Has No Counterbalance
+1. **Add a `hasVisiblePeople` detector for `LandingStillSpec`** — reuse the regex patterns from `storyboard-motion-policy.ts` (`HUMAN_PRESENCE_PATTERN`).
+2. **Refactor `buildHeroPrompts`** — the hero path (lines 162-282) always has people by design → apply **SKETCHED** style string.
+3. **Refactor `buildReferenceGroundedHeroPrompt`** — inspect the `referenceCandidate` image or its category. If category is `exterior`/`pool_deck`/`interior` with no people → **REALISTIC**. If people detected → **SKETCHED**.
+4. **Refactor `buildConceptPrompts`** — all three concept paths (still-based, scene-based, fallback) imply human presence → apply **SKETCHED**.
+5. **Refactor `generateSceneImages` enriched prompt** — `sceneHasVisiblePeople()` is already called. If false → **REALISTIC**. (Current prompt already leans realistic; just tighten the wording.)
+6. **Refactor `generateProbeImage`** — pass a `styleHint` parameter from the caller based on the still's content.
+7. **Keep `merch_design`** in DALL-E 3 — add the sketched style directive to its prompt.
+8. **Update `SKILL.md`** — add "Media Style Dualism" section.
+9. **Test one campaign** — generate hero (sketched) + scene (realistic) + concept (sketched) and visually verify.
 
-Step 3 receives niche-heavy research text and produces niche-heavy blueprints. The prompt includes:
-- `CRUISE_REALISM_GOVERNING_PRINCIPLE` (secondary)
-- "vacationFitRationale" field (one of many fields)
-- "nicheExpressionMode" field (explains niche as "flavor layer")
+## Open Decisions
 
-But the research DATA is overwhelmingly niche-first. GPT follows the data.
+- **Model split?** Nano-Banana handles both styles in one model. No need to split providers yet. If realistic ship renders from Nano-Banana look soft, we can try `gpt-image-2` for the realistic branch only.
+- **Reference-grounded hero with people:** If the SerpAPI reference photo has people, do we (a) remove them during transform, or (b) treat as sketch? Leaning toward (b) — sketch the whole frame so the people are intentional illustrations.
+- **Probe style inheritance:** Should probes always match the target asset's intended style, or should they be a neutral middle ground? Decision: match target style so probes are useful for pre-approval.
 
-## Proposed Solutions
+## Promotional Video Mixing Strategy
 
-### Option A: Reframe Step 1 Prompt (Recommended)
+Promotional videos (storyboard-driven, TikTok seeds, hero explainers, threshold announcements, countdowns) need a deliberate mix of realistic and sketched imagery to maintain narrative arc.
 
-Rewrite the Step 1 prompt to be **vacation-first, niche-second**:
+### Scene Imagery Source
+- Storyboard source frames (`scene_image`) are **REALISTIC** by design — ship-forward, architecture-forward, incidental/no people
+- These serve as the "trust anchor" within the video: the viewer sees real ship spaces, real decks, real pools
+- Motion comes from environment (water shimmer, light shifts, cloud drift) rather than human anatomy
 
-**Current:**
-> "Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation."
+### Backdrop / Hero Overlay Mixing
+- Hero images (`hero_image`) used as video backdrops or cutaways are **SKETCHED** — people-forward, emotional
+- When a video transitions from a realistic ship scene to a sketched hero moment, the contrast should feel intentional: "this is the real ship" → "this is the feeling you'll have"
+- The audio narration or music bridges the two styles; the visual cut is the emotional beat
 
-**Proposed:**
-> "Identify 5 distinctive cruise vacation experiences that use a niche community identity as a thin social flavoring layer. The cruise vacation must be desirable on its own — the niche community is the seasoning, not the meal."
+### TikTok Seed / Social Shorts
+- Primary hook imagery: **SKETCHED** hero or concept frame — immediate emotional identification
+- Supporting b-roll inserts: **REALISTIC** ship detail shots (pool, atrium, deck rail at golden hour) — grounds the promise
+- Ratio: ~70% sketched for social discovery content (people-first sells on scroll), ~30% realistic for trust reinforcement
 
-And change the research output format:
+### Hero Explainer / Threshold Announcement
+- Opening: **SKETCHED** concept frame or hero image — sets emotional tone
+- Middle: **REALISTIC** ship/scene imagery — establishes credibility
+- Closing: **SKETCHED** hero image or logo card — returns to emotional peak for CTA
 
-**Current:**
-> "For each community, explain: 1. Why the niche has strong market momentum..."
+### Technical Implementation
+- Storyboard shot prompts already differentiate between "ship-led" (realistic source frame) and "people-led" (sketched overlay)
+- Video generation pipeline (`runway-generator.ts`, `storyboard-motion-policy.ts`) should preserve this style split:
+  - Source frames from `generateSceneImages` → realistic, environment-led motion
+  - Backdrop images from `generateHeroImages` or `generateAestheticConcepts` → sketched, emotional
+- The `buildStoryboardShotPrompt` function should tag each shot with its intended style so the video assembler knows which source pool to pull from
 
-**Proposed:**
-> "For each experience, describe: 1. The cruise vacation experience first (destinations, shipboard moments, social energy) 2. Which niche community would naturally be drawn to THIS vacation (not the other way around) 3. How the niche identity acts as a thin social flavoring — ambient, optional, not programmatic..."
+## Scene Image Theme Preservation
 
-### Option B: Add Step 2.5 — "Niche Dilution" Rewrite
-
-After Step 2 aesthetic research completes, add a lightweight GPT call that rewrites the research output to explicitly reframe every theme as "vacation-first, niche-second." This acts as a prompt-engineering layer between research and blueprint generation.
-
-**Pros:** No need to change Gemini Deep Research behavior.  
-**Cons:** Extra API call, extra latency, feels like a workaround.
-
-### Option C: Strengthen Step 3 Prompt Counterweight
-
-Keep the research as-is but dramatically strengthen the Step 3 prompt to resist niche-heavy drift:
-
-- Add explicit examples of what a "thin flavoring" looks like vs. a "programmatic center"
-- Add a scoring rubric: "If a non-enthusiast would feel excluded, reject the concept"
-- Add mandatory fields that force vacation-first thinking
-- Include the Red Team's actual failure patterns as negative examples
-
-**Pros:** Minimal upstream changes.  
-**Cons:** GPT is still working from niche-first data; it's fighting the current.
-
-### Option D: Re-Spin Feedback Loop
-
-The re-spin feedback (`buildDiscoveryRespinFeedback`) already includes prior campaign issues, but it doesn't explicitly instruct the research agent to avoid niche-heavy themes. Add explicit language:
-
-> "The following prior campaigns were rejected for being too niche-heavy, workshop-like, or exclusionary. Avoid concepts where the niche becomes the operational center of the trip. Prioritize cruise-native social experiences where the niche is ambient and optional."
-
-## Recommendation
-
-Implement **Option A** (reframe Step 1 prompt) + **Option D** (re-spin feedback loop).
-
-These are the minimal, highest-leverage fixes. They don't add new API calls or processing steps — they just change how we ask for research.
-
-If Option A alone doesn't solve it after one discovery run, add Option C (Step 3 counterweight) as reinforcement.
-
-## Files to Modify
-
-1. `app/api/groups/discovery/core-logic.ts` — Step 1 prompt (psychographicPrompt)
-2. `app/api/groups/discovery/core-logic.ts` — Step 2 prompt (aestheticPrompt) — minor tweak to reinforce vacation-first
-3. `app/api/groups/discovery/core-logic.ts` — `buildDiscoveryRespinFeedback` — add explicit anti-niche-heavy guidance
-4. `lib/campaigns/discovery-red-team.ts` — Optionally add "niche_heavy_drift" as a Red Team category with deterministic detection
-
-## Next Steps
-
-1. Implement prompt reframes
-2. Clear discovery cache
-3. Re-run discovery pipeline
-4. Verify Red Team results show PASS or fewer WARNs
-
----
-
-## Appendix: Red Team Failure Patterns (from 2026-04-28 run)
-
-**mystical-seas:** solitude_drift ("insufficient group bonding activities"), cruise_implausibility ("quiet spaces not practical")
-
-**cosplay-at-sea:** solitude_drift ("overemphasis on competitive events"), cruise_implausibility ("technical costume-making workshops")
-
-**sci-fi-adventure:** solitude_drift ("high-tech activities exclude non-enthusiasts"), stereotype_risk ("alienating non-sci-fi enthusiasts"), cruise_implausibility ("interactive experiences don't align with ship capabilities")
-
-**fantasy-literary-cruise:** cruise_implausibility ("Fantasy Worldbuilding Workshop doesn't integrate"), solitude_drift ("over-focus on reading alone"), stereotype_risk ("excludes non-readers")
+Even within the **REALISTIC** scene images (no people), the campaign's niche identity must remain faintly legible through:
+- **Environmental props** (the guitar, the notebook, the dice case, the binoculars)
+- **Lighting and color temperature** aligned with campaign palette
+- **Composition choices** that hint at the community (a circle of chairs, a journal left open, a vinyl record on a bar rail)
+- These cues must never become the sole subject — the ship/sea/deck architecture remains dominant

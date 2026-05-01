@@ -35,6 +35,13 @@ const ROYAL_SHIP_CLASS_BY_NAME = new Map<string, ShipClass>([
     ['utopia of the seas', 'oasis'],
 ]);
 
+const VIRGIN_SHIP_NAMES = new Set<string>([
+    'scarlet lady',
+    'valiant lady',
+    'resilient lady',
+    'brilliant lady',
+]);
+
 function normalizeComparableText(value: string): string {
     return value
         .toLowerCase()
@@ -68,24 +75,22 @@ function inferShipContext(campaign: Campaign): ShipContext {
     const authoritativeShip = getSpecificShipName(campaign.matchedShipName) ?? getSpecificShipName(campaign.shipTarget);
     const normalizedShipTarget = getSpecificShipName(campaign.shipTarget);
     const normalizedMatchedShip = getSpecificShipName(campaign.matchedShipName);
-    const matchedShipSource = (campaign.matchedShipName ?? '').toLowerCase();
-    const shipTargetSource = (campaign.shipTarget ?? '').toLowerCase();
 
-    const inferBrand = (value: string, shipName?: string | null): ShipBrand => {
-        if (value.includes('virgin')) {
-            return 'virgin';
-        }
-
-        if (value.includes('royal') || (shipName?.includes(' of the seas') ?? false)) {
-            return 'royal_caribbean';
-        }
-
+    const inferBrandFromShipName = (shipName?: string | null): ShipBrand => {
+        if (!shipName) return 'unknown';
+        if (VIRGIN_SHIP_NAMES.has(shipName)) return 'virgin';
+        if (ROYAL_SHIP_CLASS_BY_NAME.has(shipName)) return 'royal_caribbean';
         return 'unknown';
     };
 
-    const matchedBrand = inferBrand(matchedShipSource, normalizedMatchedShip);
-    const targetBrand = inferBrand(shipTargetSource, normalizedShipTarget);
-    const brand = matchedBrand !== 'unknown' ? matchedBrand : targetBrand;
+    const matchedBrand = inferBrandFromShipName(normalizedMatchedShip);
+    const targetBrand = inferBrandFromShipName(normalizedShipTarget);
+    const authoritativeBrand = inferBrandFromShipName(authoritativeShip);
+    const brand = matchedBrand !== 'unknown'
+        ? matchedBrand
+        : targetBrand !== 'unknown'
+            ? targetBrand
+            : authoritativeBrand;
 
     const shipClass = authoritativeShip ? (ROYAL_SHIP_CLASS_BY_NAME.get(authoritativeShip) ?? 'unknown') : 'unknown';
 

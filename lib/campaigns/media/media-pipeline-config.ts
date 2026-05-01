@@ -116,6 +116,11 @@ export const ELEVENLABS_CONFIG = {
     hypeMaxChars: 400,
 } as const;
 
+export const DESIGNED_MEDIA_CONFIG = {
+    mode: (process.env.DESIGNED_MEDIA_MODE ?? 'ad_artifacts_only') as 'off' | 'ad_artifacts_only' | 'full_designed_media',
+    documentaryDetailBudget: 5,
+} as const;
+
 // ── HeyGen Settings ───────────────────────────────────────────────────────────
 // Avatar and video generation parameters.
 

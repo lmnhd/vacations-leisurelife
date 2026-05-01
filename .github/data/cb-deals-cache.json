@@ -1,5 +1,5 @@
 {
-  "generatedAtIso": "2026-04-28T23:45:36.497Z",
+  "generatedAtIso": "2026-04-30T20:01:07.149Z",
   "promos": [
     {
       "title": "Celebrity Cruises Spring Sale - Dollars Off",
@@ -213,14 +213,6 @@
       "title": "Explora Journeys - Free Private Shore Excursion or Onboard Credit",
       "description": "Clients will receive either up to $300 Onboard Credit per cabin OR a FREE Small Group Excursion & Private Cocktail Party on select sailings through May 2028 at NO COST TO AGENT!\nUse images below to advertise offer on social media.",
       "validUntil": "Valid Until 11/30/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "Explora Journeys up to 30% off",
-      "description": "What if the most inspiring hotel… isn’t a hotel? An invitation to Explora Journeys with up to 30% savings!\nInvite your luxury clients to discover a new dimension of travel, where unrivalled space, privacy, and bespoke service are paired with ocean-inspired wellness, immersive experiences, and a sele...",
-      "validUntil": "Valid Until 04/28/2026",
       "isFeatured": false,
       "category": "unknown",
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
@@ -476,7 +468,25 @@
   ],
   "priceAdvantages": [
     {
-      "groupId": "1255110",
+      "groupId": "6746425",
+      "shipName": "Hero of the Seas",
+      "vendor": "Royal Caribbean …",
+      "sailDate": "",
+      "startingPrice": "",
+      "priceAdvantage": "",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "1568507",
+      "shipName": "Navigator of the Seas",
+      "vendor": "Royal Caribbean …",
+      "sailDate": "17 Night Tokyo To Los Angeles Cruise",
+      "startingPrice": "TYO",
+      "priceAdvantage": "16",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "443517",
       "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "sailDate": "",
@@ -485,8 +495,8 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "443517",
-      "shipName": "Jewel of the Seas",
+      "groupId": "1947601",
+      "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "sailDate": "",
       "startingPrice": "",
@@ -500,33 +510,6 @@
       "sailDate": "17 Night Tokyo To Los Angeles Cruise",
       "startingPrice": "TYO",
       "priceAdvantage": "16",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "1568507",
-      "shipName": "Navigator of the Seas",
-      "vendor": "Royal Caribbean …",
-      "sailDate": "17 Night Tokyo To Los Angeles Cruise",
-      "startingPrice": "TYO",
-      "priceAdvantage": "16",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "1247097",
-      "shipName": "Explorer of the Seas",
-      "vendor": "Royal Caribbean …",
-      "sailDate": "7 Night Greek Isles Cruise",
-      "startingPrice": "RAN",
-      "priceAdvantage": "6",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "1946084",
-      "shipName": "Grandeur of the Seas",
-      "vendor": "Royal Caribbean …",
-      "sailDate": "",
-      "startingPrice": "",
-      "priceAdvantage": "",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
@@ -1214,21 +1197,21 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "A2867554",
-      "shipName": "Norwegian Gem",
-      "vendor": "Norwegian Cruise…",
-      "sailDate": "7 Nights Caribbean -",
-      "startingPrice": "JAX",
-      "priceAdvantage": "7",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
       "groupId": "2928205",
       "shipName": "Norwegian Gem",
       "vendor": "Norwegian Cruise…",
       "sailDate": "",
       "startingPrice": "",
       "priceAdvantage": "",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "A2867554",
+      "shipName": "Norwegian Gem",
+      "vendor": "Norwegian Cruise…",
+      "sailDate": "7 Nights Caribbean -",
+      "startingPrice": "JAX",
+      "priceAdvantage": "7",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
@@ -1413,6 +1396,15 @@
     },
     {
       "groupId": "4834488",
+      "shipName": "Vision of the Seas",
+      "vendor": "Royal Caribbean …",
+      "sailDate": "",
+      "startingPrice": "",
+      "priceAdvantage": "",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "4837633",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "sailDate": "",

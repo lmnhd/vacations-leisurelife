@@ -172,6 +172,8 @@ function createEmptyManifest(slug: string): CampaignMediaManifest {
             hero: [],
             sceneImages: [],
             aestheticConcepts: [],
+            documentaryDetails: [],
+            designedAdArtifacts: [],
             platformCrops: { ...EMPTY_PLATFORM_CROPS },
         },
         videos: {
@@ -201,6 +203,8 @@ function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
         ...manifest.images.hero,
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
+        ...(manifest.images.documentaryDetails ?? []),
+        ...(manifest.images.designedAdArtifacts ?? []),
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
         ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),
@@ -228,6 +232,8 @@ type ManifestAssetSection =
     | 'hero'
     | 'aestheticConcepts'
     | 'sceneImages'
+    | 'documentaryDetails'
+    | 'designedAdArtifacts'
     | 'platformCrops'
     | 'tiktokSeed'
     | 'heroExplainer'
@@ -249,13 +255,13 @@ export async function upsertManifestAssetSection(
     const baseManifest = existingManifest ?? createEmptyManifest(slug);
     let updatedManifest: CampaignMediaManifest;
 
-    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts' || section === 'sceneImages') {
+    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts' || section === 'sceneImages' || section === 'documentaryDetails' || section === 'designedAdArtifacts') {
         const newRecords = records as AssetRecord[];
         updatedManifest = {
             ...baseManifest,
             images: {
                 ...baseManifest.images,
-                [section]: newRecords.reduce((currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord), baseManifest.images[section]),
+                [section]: newRecords.reduce((currentRecords, newRecord) => upsertAssetRecord(currentRecords, newRecord), baseManifest.images[section] ?? []),
             },
         };
     } else if (section === 'platformCrops') {
@@ -339,6 +345,8 @@ function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: A
             hero: updateAssetInCollection(manifest.images.hero, updatedRecord),
             sceneImages: updateAssetInCollection(manifest.images.sceneImages, updatedRecord),
             aestheticConcepts: updateAssetInCollection(manifest.images.aestheticConcepts, updatedRecord),
+            documentaryDetails: updateAssetInCollection(manifest.images.documentaryDetails ?? [], updatedRecord),
+            designedAdArtifacts: updateAssetInCollection(manifest.images.designedAdArtifacts ?? [], updatedRecord),
             platformCrops: Object.fromEntries(
                 Object.entries(manifest.images.platformCrops).map(([formatKey, records]) => [
                     formatKey,

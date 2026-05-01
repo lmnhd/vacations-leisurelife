@@ -47,6 +47,27 @@ function getPrimaryHeroAssetId(manifest: CampaignMediaManifest): string | null {
     return manifest.images.hero[0]?.assetId ?? manifest.images.platformCrops.hero_16x9?.[0]?.assetId ?? null;
 }
 
+function selectDesignedAdAssetId(
+    manifest: CampaignMediaManifest,
+    preferredTags: string[],
+): string | null {
+    const ads = manifest.images.designedAdArtifacts ?? [];
+    if (ads.length === 0) return null;
+
+    const loweredPreferred = preferredTags.map((tag) => tag.toLowerCase());
+    const exact = ads.find((asset) => {
+        const tags = asset.tags.map((tag) => tag.toLowerCase());
+        return loweredPreferred.every((tag) => tags.includes(tag));
+    });
+    if (exact) return exact.assetId;
+
+    const partial = ads.find((asset) => {
+        const tags = asset.tags.map((tag) => tag.toLowerCase());
+        return loweredPreferred.some((tag) => tags.includes(tag));
+    });
+    return partial?.assetId ?? null;
+}
+
 function getEmailHeaderAssetId(manifest: CampaignMediaManifest): string | null {
     return manifest.images.platformCrops.email_header?.[0]?.assetId ?? null;
 }
@@ -88,6 +109,11 @@ export function buildDistributionSchedule(
     const merchMockupId = manifest.merch.mockups[0]?.assetId ?? null;
     const pinterestAssetId = manifest.images.aestheticConcepts[0]?.assetId ?? primaryHeroAssetId;
     const squareFeedAssetId = manifest.images.platformCrops.square_1x1?.[0]?.assetId ?? null;
+    const instagramFeedAdAssetId = selectDesignedAdAssetId(manifest, ['instagram_feed'])
+        ?? selectDesignedAdAssetId(manifest, ['instagram_square'])
+        ?? squareFeedAssetId;
+    const facebookAdAssetId = selectDesignedAdAssetId(manifest, ['facebook']) ?? primaryHeroAssetId;
+    const googleDisplayAdAssetId = selectDesignedAdAssetId(manifest, ['google_display']) ?? primaryHeroAssetId;
     const defaultTikTokPlatform = resolveDefaultTikTokPlatform(options);
 
     addIfPresent(drafts, ogImageAssetId ? {
@@ -99,18 +125,18 @@ export function buildDistributionSchedule(
         notes: ['Internal placeholder until landing preview distribution adapter exists.'],
     } : null);
 
-    addIfPresent(drafts, primaryHeroAssetId ? {
+    addIfPresent(drafts, facebookAdAssetId ? {
         platform: 'facebook_ad',
-        assetId: primaryHeroAssetId,
+        assetId: facebookAdAssetId,
         copyVariant: 'ad_variant_A',
         scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
         campaignStage: 'seed_day_0',
         notes: ['Creates ad-ready placeholder schedule entry. Platform adapter not implemented yet.'],
     } : null);
 
-    addIfPresent(drafts, primaryHeroAssetId ? {
+    addIfPresent(drafts, googleDisplayAdAssetId ? {
         platform: 'google_display',
-        assetId: primaryHeroAssetId,
+        assetId: googleDisplayAdAssetId,
         copyVariant: 'google_display_0',
         scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
         campaignStage: 'seed_day_0',
@@ -138,9 +164,9 @@ export function buildDistributionSchedule(
         campaignStage: 'prelaunch_setup',
     } : null);
 
-    addIfPresent(drafts, squareFeedAssetId ? {
+    addIfPresent(drafts, instagramFeedAdAssetId ? {
         platform: 'instagram_feed',
-        assetId: squareFeedAssetId,
+        assetId: instagramFeedAdAssetId,
         copyVariant: 'carousel_day_3',
         scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_3',

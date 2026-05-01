@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck, Newspaper } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -12,6 +12,7 @@ import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, L
 
 const TABS = [
     { id: 'references', label: 'References', icon: Search },
+    { id: 'designed_ads', label: 'Designed Ads', icon: Newspaper },
     { id: 'heroes',     label: 'Heroes & Concepts', icon: ImageIcon },
     { id: 'crops',      label: 'Crops', icon: Crop },
     { id: 'scenes',     label: 'Scenes', icon: Layers },
@@ -29,6 +30,7 @@ const VIDEO_ASSET_TYPES = new Set<DeletableAssetType>([
 
 const IMAGE_ARTIFACT_TYPES = new Set<DeletableAssetType>([
     'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+    'documentary_detail_image', 'designed_ad_artifact',
 ]);
 
 function getDeleteEndpoint(slug: string, assetType: DeletableAssetType): string | null {
@@ -48,6 +50,26 @@ function getTabEntries(
 ): Array<{ entryKey: string; title: string; asset: AssetRecord }> {
     const entries: Array<{ entryKey: string; title: string; asset: AssetRecord }> = [];
 
+    const formatDesignedAdTitle = (asset: AssetRecord, index: number): string => {
+        const tags = asset.tags.map((tag) => tag.toLowerCase());
+        const has = (tag: string) => tags.includes(tag.toLowerCase());
+        if (has('editorial_cover')) return 'IG Feed · Editorial Cover';
+        if (has('quote')) return 'IG Square · Quote Card';
+        if (has('itinerary')) return 'Carousel · Itinerary Card';
+        if (has('contributor')) return 'IG Square · Contributor Card';
+        if (has('type_hook')) return 'Story/Reels · Type Hook';
+        if (has('image_detail')) return 'FB/Google · Image Detail';
+        return `Designed Ad ${index + 1}`;
+    };
+
+    const formatSourceDetailTitle = (asset: AssetRecord): string => {
+        const detailKind = asset.tags.find((tag) =>
+            ['trust_photo', 'artifact_still_life', 'texture_plate', 'human_glimpse', 'motion_plate'].includes(tag),
+        );
+        if (!detailKind) return 'Source Detail';
+        return `Source · ${detailKind.replace(/_/g, ' ')}`;
+    };
+
     switch (tabId) {
         case 'references':
             manifest.images.shipReferences.forEach((asset, i) => {
@@ -61,6 +83,15 @@ function getTabEntries(
             });
             manifest.images.aestheticConcepts.forEach((asset, i) => {
                 entries.push({ entryKey: `concept::${i}::${asset.assetId}`, title: `Concept ${i + 1}`, asset });
+            });
+            break;
+
+        case 'designed_ads':
+            (manifest.images.designedAdArtifacts ?? []).forEach((asset, i) => {
+                entries.push({ entryKey: `designed::${i}::${asset.assetId}`, title: formatDesignedAdTitle(asset, i), asset });
+            });
+            (manifest.images.documentaryDetails ?? []).forEach((asset, i) => {
+                entries.push({ entryKey: `detail::${i}::${asset.assetId}`, title: formatSourceDetailTitle(asset), asset });
             });
             break;
 
@@ -148,9 +179,10 @@ function isHumanApproved(asset: AssetRecord): boolean {
 // ────────────────────────────────────────────────────────────────────────────
 
 export function MediaReviewPanel(
-    { slug, manifest, onManifestRefresh }: {
+    { slug, manifest, brief, onManifestRefresh }: {
         slug: string;
         manifest: CampaignMediaManifest;
+        brief?: CampaignAestheticBrief | null;
         onManifestRefresh: (targetSlug: string) => Promise<void>;
     }
 ) {
@@ -413,6 +445,26 @@ export function MediaReviewPanel(
                         </div>
                     )}
 
+                    {activeTab === 'designed_ads' && brief?.identityBlueprint && (
+                        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest text-cyan-300">
+                                <span>Identity Blueprint</span>
+                                <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 normal-case tracking-normal text-[11px]">
+                                    {brief.identityBlueprint.energyMode.replace(/_/g, ' ')}
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 normal-case tracking-normal text-[11px] text-slate-300">
+                                    {brief.identityBlueprint.socialScale.replace(/_/g, ' ')}
+                                </span>
+                            </div>
+                            <div className="text-[11px] text-slate-300">
+                                {brief.identityBlueprint.summary}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                                Avoid defaults: {brief.identityBlueprint.forbiddenDefaults.join(', ')}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {activeEntries.map((entry) => (
                             <ReviewAssetCard
@@ -421,6 +473,7 @@ export function MediaReviewPanel(
                                 asset={entry.asset}
                                 title={entry.title}
                                 entryKey={entry.entryKey}
+                                identityBlueprint={brief?.identityBlueprint}
                                 onRefresh={handleRefresh}
                             />
                         ))}

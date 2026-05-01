@@ -23,7 +23,7 @@ import { isMusicFestivalCampaign } from './aesthetic-engine';
 const NICHE_FAMILY_KEYWORDS: Array<[string[], NicheFamily]> = [
     [['tabletop', 'board game', 'dice', 'game night', 'strategy game', 'card game'], 'tabletop'],
     [['stitch', 'needlework', 'embroidery', 'knitting', 'crochet', 'fiber', 'textile', 'sewing', 'cross-stitch'], 'stitch'],
-    [['sketch', 'sketchbook', 'drawing', 'watercolor', 'botanical', 'illustration', 'art journal'], 'sketchbook'],
+    [['sketch', 'sketching', 'sketchbook', 'drawing', 'watercolor', 'botanical', 'illustration', 'art journal'], 'sketchbook'],
 ];
 
 export function inferNicheFamily(campaign: Campaign): NicheFamily | null {
@@ -33,8 +33,16 @@ export function inferNicheFamily(campaign: Campaign): NicheFamily | null {
         ...(campaign.targetingKeywords ?? []),
     ].join(' ').toLowerCase();
 
+    const hasKeywordPhrase = (phrase: string): boolean => {
+        const escaped = phrase
+            .trim()
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            .replace(/\s+/g, '\\s+');
+        return new RegExp(`\\b${escaped}\\b`, 'i').test(searchText);
+    };
+
     for (const [keywords, family] of NICHE_FAMILY_KEYWORDS) {
-        if (keywords.some(kw => searchText.includes(kw))) {
+        if (keywords.some((kw) => hasKeywordPhrase(kw))) {
             return family;
         }
     }

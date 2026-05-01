@@ -84,16 +84,24 @@ export async function callOpenAI(
     }
 
     console.warn(`[AI Gateway] OpenAI model "${apiId}" unavailable. Retrying with "${fallbackModel}".`);
-    response = await client.chat.completions.create(
-      {
-        ...request,
-        model: fallbackModel,
-      },
-      { signal: options.signal }
-    );
+    // gpt-5 family models return content:null (refusal path) when response_format:json_object
+    // is requested via Chat Completions. Strip it — the system prompt handles JSON enforcement.
+    const fallbackIsNewGeneration = COMPLETION_TOKENS_MODELS.some((p) => fallbackModel.startsWith(p));
+    const fallbackRequest = {
+      ...request,
+      model: fallbackModel,
+      stream: false as const,
+      ...(fallbackIsNewGeneration ? { response_format: undefined } : {}),
+    };
+    response = await client.chat.completions.create(fallbackRequest, { signal: options.signal });
   }
 
   const choice = response.choices[0];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const refusal = (choice?.message as any)?.refusal as string | null | undefined;
+  if (refusal) {
+    console.warn(`[AI Gateway] OpenAI model "${(response as { model: string }).model}" returned a refusal:`, refusal);
+  }
   return {
     content:  choice?.message?.content ?? '',
     model:    response.model,

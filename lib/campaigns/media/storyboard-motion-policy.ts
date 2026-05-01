@@ -1,4 +1,4 @@
-import { CampaignAestheticBrief, SceneSpec, ShotSpec } from '../schema';
+import { CampaignAestheticBrief, LandingStillSpec, SceneSpec, ShotSpec } from '../schema';
 import { RUNWAYML_CONFIG } from './media-pipeline-config';
 
 export type MotionRiskLevel = 'low' | 'medium' | 'high';
@@ -101,6 +101,18 @@ export function sceneHasVisiblePeople(scene: SceneSpec): boolean {
         scene.imagePrompt,
         scene.environmentDetails,
         scene.cameraAngle,
+    ].join(' '));
+}
+
+export function stillHasVisiblePeople(still: LandingStillSpec): boolean {
+    return HUMAN_PRESENCE_PATTERN.test([
+        still.subjectAction,
+        still.imagePrompt,
+        still.environmentDetails,
+        still.composition,
+        still.heroSubject ?? '',
+        still.framingMode ?? '',
+        still.cameraDistance ?? '',
     ].join(' '));
 }
 

@@ -1,0 +1,23 @@
+﻿node.exe : [aesthetic-red-team] board-games-at-sea approved without persisted red-team review; allowing downstream media generation for legacy compatibility.
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([aesthetic-red-... compatibility.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+{
+  "message": "Media generation partial for board-games-at-sea",
+  "slug": "board-games-at-sea",
+  "totalAssets": 0,
+  "completionStatus": "partial",
+  "jobSummary": {
+    "total": 2,
+    "completed": 0,
+    "failed": 2,
+    "errors": [
+      "[ad_creative/gpt4o] Could not resolve authentication method. Expected either apiKey or authToken to be set. Or for one of the \"X-Api-Key\" or \"Authorization\" headers to be explicitly omitted",
+      "[designed_ad_artifact/sharp] GOOGLE_API_KEY or GEMINI_API_KEY not set in environment"
+    ],
+    "warnings": []
+  }
+}

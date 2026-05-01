@@ -1,6 +1,7 @@
 import { CampaignAestheticBrief } from '../../schema';
 import { GeneratedImage } from './stability-generator';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
+import { resolveMediaStyle } from '../style-prompts';
 
 // ────────────────────────────────────────────────────────────────────────────
 // DALL-E 3 Merch Design Generator
@@ -59,6 +60,20 @@ async function generateNanoBananaMerchImage(prompt: string): Promise<Buffer> {
     return Buffer.from(imageData, 'base64');
 }
 
+function buildStyledMerchPrompt(prompt: string, seed: string, themeAnchorProps: readonly string[]): string {
+    const resolvedStyle = resolveMediaStyle({
+        assetKind: 'merch',
+        hasPeople: true,
+        seed,
+        themeAnchorProps,
+    });
+
+    return [
+        resolvedStyle.promptBlock,
+        prompt,
+    ].join('. ');
+}
+
 /**
  * Generates merch design images from all merch item dallePrompts in the brief.
  * - coreItem (t-shirt)
@@ -70,31 +85,37 @@ export async function generateMerchDesigns(
 ): Promise<GeneratedImage[]> {
     const { merch } = brief;
     const results: GeneratedImage[] = [];
+    const themeAnchorProps = brief.visual.plausibilityFramework.allowedProps.slice(0, 2);
 
-    const coreBuffer = await generateNanoBananaMerchImage(merch.coreItem.dallePrompt);
+    const corePrompt = buildStyledMerchPrompt(merch.coreItem.dallePrompt, 'merch_core_tshirt', themeAnchorProps);
+    const coreBuffer = await generateNanoBananaMerchImage(corePrompt);
     results.push({
         buffer: coreBuffer,
-        prompt: merch.coreItem.dallePrompt,
+        prompt: corePrompt,
         assetId: 'merch_core_tshirt',
         fileName: `merch/designs/core_tshirt_design.png`,
     });
 
-    const practicalBuffer = await generateNanoBananaMerchImage(merch.practicalItem.dallePrompt);
+    const practicalAssetId = `merch_practical_${merch.practicalItem.productType.toLowerCase().replace(/\s+/g, '_')}`;
+    const practicalPrompt = buildStyledMerchPrompt(merch.practicalItem.dallePrompt, practicalAssetId, themeAnchorProps);
+    const practicalBuffer = await generateNanoBananaMerchImage(practicalPrompt);
     results.push({
         buffer: practicalBuffer,
-        prompt: merch.practicalItem.dallePrompt,
-        assetId: `merch_practical_${merch.practicalItem.productType.toLowerCase().replace(/\s+/g, '_')}`,
+        prompt: practicalPrompt,
+        assetId: practicalAssetId,
         fileName: `merch/designs/${merch.practicalItem.productType.toLowerCase().replace(/\s+/g, '_')}_design.png`,
     });
 
     for (let i = 0; i < merch.nicheSpecificItems.length; i++) {
         const item = merch.nicheSpecificItems[i];
-        const buffer = await generateNanoBananaMerchImage(item.dallePrompt);
         const idx = String(i + 1).padStart(3, '0');
+        const assetId = `merch_niche_${idx}`;
+        const prompt = buildStyledMerchPrompt(item.dallePrompt, assetId, themeAnchorProps);
+        const buffer = await generateNanoBananaMerchImage(prompt);
         results.push({
             buffer,
-            prompt: item.dallePrompt,
-            assetId: `merch_niche_${idx}`,
+            prompt,
+            assetId,
             fileName: `merch/designs/niche_item_${idx}_design.png`,
         });
     }

@@ -480,6 +480,16 @@ test('safe rail references do not trigger rail_safety_missing detection', () => 
     assert.ok(!suggested.includes('rail_safety_missing'));
 });
 
+test('year-like colon strings do not trigger exact_time_strings detection', () => {
+    const suggested = suggestDeterministicIssueCodes([], 'Pricing snapshot 2026:11 and coordinate marker 91:77 are metadata placeholders.');
+    assert.ok(!suggested.includes('exact_time_strings'));
+});
+
+test('photoshop mention does not trigger privacy_line_missing detection', () => {
+    const suggested = suggestDeterministicIssueCodes([], 'Color grade pass in Photoshop before export.');
+    assert.ok(!suggested.includes('privacy_line_missing'));
+});
+
 // ── Downstream semantics ──────────────────────────────────────────────────────
 
 console.log('\nDownstream Semantics\n');

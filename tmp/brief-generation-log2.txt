@@ -1,0 +1,73 @@
+﻿Enqueuing and running brief generation for board-games-at-sea...
+[brief-engine] create_or_refresh for board-games-at-sea
+[brief-engine:bundle] START full bundle (board-games-at-sea)
+[brief-engine:stage] START  aesthetic-bundle-total (board-games-at-sea)
+[aesthetic-engine] Starting aesthetic brief generation for board-games-at-sea
+[aesthetic-engine] Structured generation helper selected for board-games-at-sea: model=gpt-5.2-high
+[aesthetic-engine:pass1-attempt] START attempt=1 campaign=board-games-at-sea
+[aesthetic-pass1:board-games-at-sea:attempt-1] Starting structured generation with gpt-4o...
+[aesthetic-pass1:board-games-at-sea:attempt-1] Γ£à Completed in 13313ms
+[aesthetic-engine:pass1-attempt] END attempt=1 campaign=board-games-at-sea elapsedMs=13315
+[aesthetic-engine] Pass 1 accepted for board-games-at-sea on attempt 1
+[aesthetic-engine] Pass 2 platform concepts for board-games-at-sea
+[aesthetic-pass2-social:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-pass2-video:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-pass2-social:board-games-at-sea] Γ£à Completed in 5721ms
+[aesthetic-pass2-video:board-games-at-sea] Γ£à Completed in 7462ms
+[aesthetic-engine] Refinement pass for board-games-at-sea
+[aesthetic-refinement:board-games-at-sea] Starting structured generation with gpt-4o...
+[aesthetic-refinement:board-games-at-sea] Γ£à Completed in 28380ms
+[AI Gateway] ΓåÆ gpt-5.2-medium (openai) apiId:gpt-5-medium | coding:75 logic:82 speed:70
+node.exe : [AI Gateway] OpenAI model "gpt-5-medium" unavailable. Retrying with "gpt-5-mini".
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([AI Gateway] Op...h "gpt-5-mini".:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[brief-engine:stage] END    aesthetic-bundle-total (board-games-at-sea) ΓÇö 54.7s ΓÜá SLOW
+[brief-engine:stage] START  anchor-generation (board-games-at-sea)
+[editors-room] generateActionAnchors for board-games-at-sea
+[editors-room:anchors:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:anchors:board-games-at-sea] Γ£à Completed in 5431ms
+[brief-engine:stage] END    anchor-generation (board-games-at-sea) ΓÇö 5.4s
+[brief-engine:stage] START  landing-still-bible (board-games-at-sea)
+[editors-room] generateLandingStillBible for board-games-at-sea (refPack=ref-tabletop-v1)
+[editors-room:landing-stills:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:landing-stills:board-games-at-sea] Γ£à Completed in 15765ms
+[brief-engine:stage] END    landing-still-bible (board-games-at-sea) ΓÇö 15.8s
+[brief-engine] anchor compliance violations for board-games-at-sea: 2
+[brief-engine] unified repair for board-games-at-sea: still-03 (lint=0, anchor=1)
+[brief-engine:stage] START  isolated-still-repair (board-games-at-sea)
+[editors-room] repairFailingStills for board-games-at-sea: still-03 (refPack=ref-tabletop-v1)
+[editors-room:repair-stills:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:repair-stills:board-games-at-sea] Γ£à Completed in 2540ms
+[brief-engine:stage] END    isolated-still-repair (board-games-at-sea) ΓÇö 2.5s
+[brief-engine] post-repair anchor violations remain: 2
+[brief-engine] 2 content anchor violation(s) tolerated for board-games-at-sea ΓÇö production lint will catch downstream impact
+  [anchor-warn] still=still-03 type=niche_signal_dropped expected=""tabletop game cruise lounge" in both imagePrompt and subjectAction" actual="absent from: imagePrompt"
+  [anchor-warn] still=still-03 type=niche_carry_mismatch expected=""tabletop game cruise lounge" in both fields" actual="absent from: imagePrompt"
+[brief-engine:stage] START  production-bible-generation (board-games-at-sea)
+[editors-room] generateProductionBibleFromStills for board-games-at-sea
+[editors-room:production-bible:board-games-at-sea] Starting structured generation with gpt-4o...
+[editors-room:production-bible:board-games-at-sea] Γ£à Completed in 17511ms
+[brief-engine:stage] END    production-bible-generation (board-games-at-sea) ΓÇö 17.5s
+[brief-engine:bundle] END   full bundle (board-games-at-sea) ΓÇö total 96.0s | lint=warn
+[brief-engine] auto-fix: 2 fixable issues
+[AI Gateway] ΓåÆ gpt-5.2-medium (openai) apiId:gpt-5-medium | coding:75 logic:82 speed:70
+[AI Gateway] OpenAI model "gpt-5-medium" unavailable. Retrying with "gpt-5-mini".
+
+Result: jobId=agent_job_ca5f2213-c73 status=completed
+Steps:
+  generate_brief: completed ΓÇö Brief generated and passes all structural checks. Ready for approval.
+  load_readiness: completed ΓÇö Brief passes structural checks but needs human approval.
+  confirm_persistence: completed ΓÇö Persisted brief found in storage
+Summary: {
+  "message": "Brief generated and passes all structural checks. Ready for approval.",
+  "readiness": "needs_review",
+  "blockerCount": 0,
+  "warningCount": 0,
+  "persisted": true,
+  "approvalAttempted": false,
+  "approvalSucceeded": false
+}
