@@ -399,7 +399,7 @@ function defaultSpecsForSystem(system: VisualSystem, sourceImages: readonly Asse
             ];
         case 'system_2_nostalgia':
             return [
-                { kind: 'postcard_hero', assetId: 'ad_postcard_hero_5x3', fileName: 'ads/postcard_hero_5x3.png', width: 1080, height: 648, tags: ['designed_ad', 'postcard_hero', 'instagram_feed'], sourceImage: sourceImages[0] },
+                { kind: 'postcard_hero', assetId: 'ad_postcard_hero_5x3', fileName: 'ads/postcard_hero_5x3.png', width: 1080, height: 648, tags: ['designed_ad', 'postcard_hero', 'instagram_feed'], sourceImage: sourceImages[1] ?? sourceImages[0] },
                 { kind: 'quote_card', assetId: 'ad_quote_card_1x1', fileName: 'ads/quote_card_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'quote', 'instagram_square'] },
                 { kind: 'air_mail_social', assetId: 'ad_air_mail_1x1', fileName: 'ads/air_mail_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'air_mail', 'instagram_square'] },
                 { kind: 'boarding_pass', assetId: 'ad_boarding_pass_portrait', fileName: 'ads/boarding_pass_portrait.png', width: 1080, height: 1350, tags: ['designed_ad', 'boarding_pass', 'carousel'] },

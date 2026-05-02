@@ -42,6 +42,43 @@ function buildThemeCue(tokens: NicheTokens, brief: CampaignAestheticBrief): stri
     ].filter(Boolean).join('. ');
 }
 
+function looksLikeBoardGameCampaign(tokens: NicheTokens, brief: CampaignAestheticBrief, campaign: Campaign | null): boolean {
+    const corpus = [
+        brief.themeName,
+        brief.visual.aestheticLabel,
+        brief.messaging.heroSlogan,
+        brief.messaging.subSlogan,
+        brief.messaging.elevatorPitch,
+        campaign?.name ?? '',
+        campaign?.description ?? '',
+        campaign?.targetingKeywords?.join(' ') ?? '',
+        campaign?.allowedThemeSignals?.join(' ') ?? '',
+        campaign?.optionalGatheringMoments?.join(' ') ?? '',
+        tokens.nicheVocabulary.join(' '),
+        tokens.propSignals.join(' '),
+        tokens.momentSignals.join(' '),
+    ].join(' ').toLowerCase();
+
+    return /\b(board[- ]?game|tabletop|meeple|meeples|dice|cards?|card sleeves?|tile rack|score sheet|game box|playing pieces?|azul|monopoly|sorry|ticket to ride)\b/i.test(corpus)
+        || (tokens.energyMode === 'playful_collective' && tokens.propSignals.some((signal) => /\b(dice|cards?|game box|meeple|tile|score)\b/i.test(signal)));
+}
+
+function buildBoardGameDirective(tokens: NicheTokens, brief: CampaignAestheticBrief, campaign: Campaign | null): string {
+    if (!looksLikeBoardGameCampaign(tokens, brief, campaign)) {
+        return '';
+    }
+
+    const visibleProps = tokens.propSignals
+        .filter((signal) => /\b(dice|cards?|meeple|meeples|game box|tile|tile rack|score|board|pawns?|pieces?)\b/i.test(signal))
+        .slice(0, 4);
+
+    return [
+        `Board-game visibility: one real playable object must be legible in-frame, such as ${visibleProps.length > 0 ? visibleProps.join(', ') : 'dice, cards, meeples, a board edge, or a score sheet'}`,
+        'Board-game social texture: prefer hands near the table, over-the-shoulder framing, a small cluster around play, or a quiet seated moment with the game still obvious',
+        'Do not let the ship become the whole story; the scene should still read as board-game life aboard the ship',
+    ].join('. ');
+}
+
 function buildEnergyDirective(tokens: NicheTokens): string {
     if (tokens.energyMode === 'after_hours_electric') {
         return [
@@ -103,6 +140,7 @@ export function buildDocumentaryDetailPrompt(
         `Campaign world: ${brief.themeName}`,
         `Route/vessel context: ${tokens.route}; ${campaign?.shipTarget ?? tokens.vesselName}`,
         buildEnergyDirective(tokens),
+        buildBoardGameDirective(tokens, brief, campaign),
         buildThemeCue(tokens, brief),
         PROMPT_RULES,
     ].filter(Boolean).join('. ');
