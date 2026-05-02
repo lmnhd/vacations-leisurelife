@@ -1129,6 +1129,9 @@ export type ProbeImageResult = z.infer<typeof ProbeImageResultSchema>;
 export const ProbeRunVerdictEnum = z.enum(['approved', 'warn', 'blocked']);
 export type ProbeRunVerdict = z.infer<typeof ProbeRunVerdictEnum>;
 
+export const ProbeTypeEnum = z.enum(['landing_still', 'scene']);
+export type ProbeType = z.infer<typeof ProbeTypeEnum>;
+
 export const ProbeRunRecordSchema = z.object({
     probeRunId: z.string(),
     slug: z.string(),
@@ -1140,6 +1143,8 @@ export const ProbeRunRecordSchema = z.object({
     verdict: ProbeRunVerdictEnum,
     verdictReason: z.string(),
     results: z.array(ProbeImageResultSchema),
+    /** Distinguishes landing-still probes from scene-library probes. */
+    probeType: ProbeTypeEnum.default('landing_still'),
 });
 export type ProbeRunRecord = z.infer<typeof ProbeRunRecordSchema>;
 

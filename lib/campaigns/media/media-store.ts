@@ -565,3 +565,33 @@ export async function getLatestProbeRunRecord(slug: string): Promise<ProbeRunRec
     const item = result.Items?.[0];
     return item ? (item as ProbeRunRecord) : null;
 }
+
+// ── Scene Probe Run Records ────────────────────────────────────────────────
+// Separate SK prefix keeps scene probes distinct from landing-still probes.
+// SK: PROBE#SCENE#RUN#{ranAt_ISO}#{probeRunId}
+
+export async function saveSceneProbeRunRecord(slug: string, record: ProbeRunRecord): Promise<void> {
+    await chatDynamoDocumentClient.send(new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+            PK: `CAMPAIGN#${slug}`,
+            SK: `PROBE#SCENE#RUN#${record.ranAt}#${record.probeRunId}`,
+            ...record,
+        },
+    }));
+}
+
+export async function getLatestSceneProbeRunRecord(slug: string): Promise<ProbeRunRecord | null> {
+    const result = await chatDynamoDocumentClient.send(new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+        ExpressionAttributeValues: {
+            ':pk': `CAMPAIGN#${slug}`,
+            ':prefix': 'PROBE#SCENE#RUN#',
+        },
+        ScanIndexForward: false,
+        Limit: 1,
+    }));
+    const item = result.Items?.[0];
+    return item ? (item as ProbeRunRecord) : null;
+}

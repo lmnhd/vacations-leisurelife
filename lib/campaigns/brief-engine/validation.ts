@@ -96,23 +96,27 @@ function checkSceneLibraryMomentQuality(bible: ProductionBible): ValidationIssue
         });
     }
 
+    // subjectAction must describe an actual moment — "pool deck" is a location, not a moment.
+    // Blocking because a location-only scene produces a static image that cannot drive video.
     const emptyActionScenes = bible.sceneLibrary.filter((scene) => !scene.subjectAction || scene.subjectAction.trim().length < 10);
     if (emptyActionScenes.length > 0) {
         issues.push({
             code: 'scene_missing_moment',
-            message: `${emptyActionScenes.length} scene(s) have no subjectAction (moment description), making them location-only stills unsuitable for video: ${emptyActionScenes.map((s) => s.sceneId).join(', ')}.`,
-            severity: 'warning',
+            message: `${emptyActionScenes.length} scene(s) have no subjectAction (moment description) and will produce location-only images unusable for video: ${emptyActionScenes.map((s) => s.sceneId).join(', ')}. Regenerate the production bible.`,
+            severity: 'blocker',
             autoFixable: false,
         });
     }
 
+    // Any bare generic location name signals the brief engine defaulted to a cruise-brochure cliché.
+    // Even one is enough to flag — threshold > 0, not > 2.
     const genericLocationScenes = bible.sceneLibrary.filter((scene) =>
         GENERIC_SCENE_PATTERNS.some((pattern) => pattern.test(scene.location.trim()))
     );
-    if (genericLocationScenes.length > 2) {
+    if (genericLocationScenes.length > 0) {
         issues.push({
             code: 'scene_generic_defaults',
-            message: `${genericLocationScenes.length} scenes use generic cruise-brochure location names (pool deck, atrium, dining room, etc.) that signal no real moment. Regenerate with moment-first descriptions.`,
+            message: `${genericLocationScenes.length} scene(s) use bare generic cruise-brochure location names (pool deck, atrium, dining room, etc.) with no moment qualifier: ${genericLocationScenes.map((s) => s.sceneId).join(', ')}. Regenerate the production bible with moment-first descriptions.`,
             severity: 'warning',
             autoFixable: false,
         });

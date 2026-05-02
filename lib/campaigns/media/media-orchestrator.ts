@@ -28,6 +28,7 @@ import { generateThemeMusic } from './generators/replicate-music-generator';
 import { generateDesignedAdArtifactPack } from './generators/ad-artifact-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { scoreTikTokVideoReadiness, scoreLegacyTikTokSeed } from './lint/video-lint';
+import { inferTikTokFormat } from './generators/tiktok-formats/index';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { buildElevenLabsVoiceTags } from './elevenlabs-voices';
@@ -41,6 +42,7 @@ import {
 import { randomUUID } from 'crypto';
 import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService } from './media-pipeline-config';
 import { assertProbeGateReady } from './probe-gate';
+import { runSceneProbeLoop } from './probe-engine';
 import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video-models';
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
@@ -403,7 +405,7 @@ export async function runMediaGeneration(
                 );
             }
 
-            // ── Optional probe gate ──────────────────────────────────────────
+            // ── Optional landing-still probe gate ────────────────────────────
             if (resolvedOptions.probeGate === 'require_approved') {
                 await assertProbeGateReady(slug);
             } else if (resolvedOptions.probeGate === 'warn_only') {
@@ -416,6 +418,7 @@ export async function runMediaGeneration(
                     );
                 }
             }
+
         }
 
         // 2. Update campaign status
@@ -657,6 +660,28 @@ export async function runMediaGeneration(
             }
         }
 
+        // ── Scene probe gate — runs after GROUP 1 (brief loaded), before GROUP 2 spend ──
+        // runSceneProbeLoop generates cheap Stability probe images for every sceneLibrary
+        // entry, scores them with Claude vision, saves the result to DynamoDB, and returns
+        // a verdict. A blocked verdict stops generation before any full-resolution scene
+        // images are produced. Unconditional — does not require probeGate to be set.
+        if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && hasProductionBible) {
+            console.log(`[media-orchestrator] Running scene probe for ${slug} before scene image generation`);
+            const sceneProbeResult = await runSceneProbeLoop(slug);
+            if (sceneProbeResult.verdict === 'blocked') {
+                throw new MediaReadinessError(
+                    `Scene probe for ${slug} is blocked: ${sceneProbeResult.verdictReason}. ` +
+                    `Fix the scene imagePrompts in the production bible (regenerate), then retry scene image generation.`
+                );
+            }
+            if (sceneProbeResult.verdict === 'warn') {
+                warnings.push(
+                    `[scene-probe] WARN: ${sceneProbeResult.verdictReason} ` +
+                    `(${sceneProbeResult.passCount}/${sceneProbeResult.totalProbed} passed)`
+                );
+            }
+        }
+
         // ── GROUP 2: Depends on hero images ───────────────────────────
         const heroImageUrls = heroRecords.map(r => r.url);
         const firstHeroUrl = heroImageUrls[0] || '';
@@ -781,8 +806,11 @@ export async function runMediaGeneration(
                                 { tags: ['video', 'tiktok', 'seed', 'narrated'], durationSeconds: video.durationSeconds },
                                 brief!.videoConcepts.tiktokSeed.durationSeconds,
                             );
-                            if (lint.lintStatus === 'warn' || lint.lintStatus === 'fail') {
-                                warnings.push(`[tiktok_seed_video/lint] ${lint.lintStatus.toUpperCase()} (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
+                            if (lint.lintStatus === 'fail') {
+                                throw new Error(`TikTok seed video failed quality lint (score ${lint.lintScore}/100): ${lint.issues.join('; ')}`);
+                            }
+                            if (lint.lintStatus === 'warn') {
+                                warnings.push(`[tiktok_seed_video/lint] WARN (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
                             }
                             const rec = await uploadAndRecord(
                                 slug, video.assetId, 'tiktok_seed_video', activeVideoGeneratorService,
@@ -905,7 +933,10 @@ export async function runMediaGeneration(
                     const video = await generateStoryboardVideo(
                         brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug
                     );
-                    const baseTags = ['video', 'storyboard', delivId, 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)];
+                    // Resolve distribution tag from the format registry — deterministic, not substring-based
+                    const tiktokFormat = assetType === 'tiktok_seed_video' ? inferTikTokFormat(delivId) : null;
+                    const distributionTags = tiktokFormat ? [tiktokFormat.distributionTag] : [];
+                    const baseTags = ['video', 'storyboard', delivId, 'narrated', ...distributionTags, ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)];
                     const rec = await uploadAndRecord(
                         slug, video.assetId, assetType, activeVideoGeneratorService,
                         `${video.motionPrompt}\n\n${video.script}`,
@@ -915,16 +946,19 @@ export async function runMediaGeneration(
 
                     // Lint gate for TikTok storyboard videos
                     let finalRec = rec;
-                    if (assetType === 'tiktok_seed_video') {
-                        const variant = delivId.includes('paid') ? 'paid' : 'organic';
+                    if (assetType === 'tiktok_seed_video' && tiktokFormat) {
+                        const variant = tiktokFormat.distributionTag === 'paid' ? 'paid' : 'organic';
                         const lint = scoreTikTokVideoReadiness(
                             { tags: baseTags, durationSeconds: video.durationSeconds },
                             storyboard,
                             sceneImageMap,
                             variant,
                         );
-                        if (lint.lintStatus === 'warn' || lint.lintStatus === 'fail') {
-                            warnings.push(`[${delivId}/lint] ${lint.lintStatus.toUpperCase()} (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
+                        if (lint.lintStatus === 'fail') {
+                            throw new Error(`Storyboard video "${delivId}" failed quality lint (score ${lint.lintScore}/100): ${lint.issues.join('; ')}`);
+                        }
+                        if (lint.lintStatus === 'warn') {
+                            warnings.push(`[${delivId}/lint] WARN (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
                         }
                         finalRec = { ...rec, lintScore: lint.lintScore, lintStatus: lint.lintStatus };
                     }

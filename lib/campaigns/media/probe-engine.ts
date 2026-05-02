@@ -16,6 +16,7 @@ import { getAestheticBrief, getCampaignBlueprint } from '../campaign-store';
 import { getExpandedNicheKeywords } from '../reference-packs';
 import { generateProbeImage } from './generators/stability-generator';
 import { storeAsset } from './storage-client';
+import { saveProbeRunRecord, saveSceneProbeRunRecord } from './media-store';
 import { evaluateProbeImage } from './probe-evaluator';
 import { stillHasVisiblePeople } from './storyboard-motion-policy';
 import type { ProbeRunRecord, ProbeImageResult, ProbeRunVerdict, SceneSpec, LandingStillSpec } from '../schema';
@@ -135,7 +136,7 @@ export async function runProbeLoop(slug: string): Promise<ProbeRunRecord> {
         `[probe-engine] Complete — verdict: ${verdict} (${passCount} pass, ${warnCount} warn, ${failCount} fail)`,
     );
 
-    return {
+    const record: ProbeRunRecord = {
         probeRunId: randomUUID(),
         slug,
         ranAt,
@@ -146,7 +147,10 @@ export async function runProbeLoop(slug: string): Promise<ProbeRunRecord> {
         verdict,
         verdictReason,
         results,
+        probeType: 'landing_still',
     };
+    await saveProbeRunRecord(slug, record);
+    return record;
 }
 
 // ── Scene-aware probe loop ────────────────────────────────────────────────────
@@ -240,7 +244,7 @@ export async function runSceneProbeLoop(slug: string): Promise<ProbeRunRecord> {
 
     console.log(`[probe-engine] Scene probe complete — verdict: ${verdict} (${passCount} pass, ${warnCount} warn, ${failCount} fail)`);
 
-    return {
+    const record: ProbeRunRecord = {
         probeRunId: randomUUID(),
         slug,
         ranAt,
@@ -251,5 +255,8 @@ export async function runSceneProbeLoop(slug: string): Promise<ProbeRunRecord> {
         verdict,
         verdictReason,
         results,
+        probeType: 'scene',
     };
+    await saveSceneProbeRunRecord(slug, record);
+    return record;
 }
