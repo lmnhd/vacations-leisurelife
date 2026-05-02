@@ -199,7 +199,7 @@ function makeBrief(): CampaignAestheticBrief {
                     subjectAction: 'two guests lean on the rail and trade quick recommendations',
                     environmentDetails: 'breeze through jackets, wake line behind the ship, horizon glow',
                     mood: 'unhurried analog warmth',
-                    imagePrompt: 'cruise sailaway moment with relaxed companionship',
+                    imagePrompt: 'Open deck rail, golden hour. Two guests lean on the rail and share a quiet exchange, wake line stretching behind the ship, horizon glow ahead.',
                     referenceCategory: 'exterior',
                 },
             ],

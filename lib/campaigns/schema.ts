@@ -1066,6 +1066,9 @@ export const AssetRecordSchema = z.object({
     /** ID of the CampaignDirective that invalidated this asset, if any. */
     invalidatedBy: z.string().optional(),
     invalidatedAt: z.string().optional(),
+    /** Quality lint score (0–100) stored at generation time for video assets. */
+    lintScore: z.number().min(0).max(100).optional(),
+    lintStatus: z.enum(['pass', 'warn', 'fail']).optional(),
 });
 export type AssetRecord = z.infer<typeof AssetRecordSchema>;
 

@@ -50,7 +50,33 @@ async function runFfmpeg(argumentsList: readonly string[]): Promise<void> {
     });
 }
 
-async function composeNarratedVerticalVideoFromSources(sourceVideoBuffers: readonly Buffer[], narrationAudioBuffer: Buffer): Promise<Buffer> {
+// ────────────────────────────────────────────────────────────────────────────
+// Duration control helpers
+//
+// When targetDurationSeconds is provided:
+//   - Audio is padded with silence to reach the target (apad)
+//   - Output is hard-trimmed to target with -t
+//   This prevents narration from being cut when video clips sum to less than
+//   the storyboard's totalDurationSeconds, and prevents open-ended output
+//   when video outlasts narration.
+//
+// When targetDurationSeconds is omitted:
+//   - Falls back to -shortest (legacy behaviour, safe for non-TikTok paths)
+// ────────────────────────────────────────────────────────────────────────────
+
+function buildDurationArgs(targetDurationSeconds: number | undefined): readonly string[] {
+    return targetDurationSeconds !== undefined ? ['-t', String(targetDurationSeconds)] : ['-shortest'];
+}
+
+function buildAudioPadFilter(targetDurationSeconds: number | undefined): string | null {
+    return targetDurationSeconds !== undefined ? `apad=pad_dur=${targetDurationSeconds}` : null;
+}
+
+async function composeNarratedVerticalVideoFromSources(
+    sourceVideoBuffers: readonly Buffer[],
+    narrationAudioBuffer: Buffer,
+    targetDurationSeconds?: number,
+): Promise<Buffer> {
     const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-tiktok-compose-'));
     const narrationAudioPath = join(tempDirectory, 'narration.mp3');
     const concatListPath = join(tempDirectory, 'concat.txt');
@@ -64,22 +90,28 @@ async function composeNarratedVerticalVideoFromSources(sourceVideoBuffers: reado
         await writeFile(narrationAudioPath, toUint8Array(narrationAudioBuffer));
         await writeFile(concatListPath, sourceVideoPaths.map((sourceVideoPath) => `file '${sourceVideoPath.replace(/'/g, "'\\''")}'`).join('\n'));
 
+        const audioPadFilter = buildAudioPadFilter(targetDurationSeconds);
+        const filterComplex = audioPadFilter
+            ? `[0:v]scale=-2:1920,crop=1080:1920,setsar=1[v];[1:a]${audioPadFilter}[aout]`
+            : '[0:v]scale=-2:1920,crop=1080:1920,setsar=1[v]';
+        const audioMap = audioPadFilter ? '[aout]' : '1:a';
+
         await runFfmpeg([
             '-y',
             '-f', 'concat',
             '-safe', '0',
             '-i', concatListPath,
             '-i', narrationAudioPath,
-            '-filter_complex', '[0:v]scale=-2:1920,crop=1080:1920,setsar=1[v]',
+            '-filter_complex', filterComplex,
             '-map', '[v]',
-            '-map', '1:a',
+            '-map', audioMap,
             '-c:v', 'libx264',
             '-preset', 'medium',
             '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
             '-b:a', '192k',
             '-movflags', '+faststart',
-            '-shortest',
+            ...buildDurationArgs(targetDurationSeconds),
             outputVideoPath,
         ]);
 
@@ -112,6 +144,13 @@ export interface ProductionComposeOptions {
     crossDissolveDurationMs: number;
     musicVolume: number;
     narrationVolume: number;
+    /**
+     * When set, the output is hard-trimmed to this duration and audio is padded
+     * with silence to reach it. Prevents narration truncation when clip total
+     * is shorter than the storyboard's target, and prevents runaway output
+     * when video outlasts narration. Omit to use legacy -shortest behaviour.
+     */
+    targetDurationSeconds?: number;
 }
 
 const DEFAULT_COMPOSE_OPTIONS: ProductionComposeOptions = {
@@ -147,21 +186,28 @@ async function runNarrationOnlyCompose(
     narrationPath: string,
     outputPath: string,
     scaleCrop: string,
+    targetDurationSeconds?: number,
 ): Promise<void> {
+    const audioPadFilter = buildAudioPadFilter(targetDurationSeconds);
+    const filterComplex = audioPadFilter
+        ? `[0:v]${scaleCrop}[v];[1:a]${audioPadFilter}[aout]`
+        : `[0:v]${scaleCrop}[v]`;
+    const audioMap = audioPadFilter ? '[aout]' : '1:a';
+
     await runFfmpeg([
         '-y',
         '-f', 'concat', '-safe', '0', '-i', concatListPath,
         '-i', narrationPath,
-        '-filter_complex', `[0:v]${scaleCrop}[v]`,
+        '-filter_complex', filterComplex,
         '-map', '[v]',
-        '-map', '1:a',
+        '-map', audioMap,
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac',
         '-b:a', '192k',
         '-movflags', '+faststart',
-        '-shortest',
+        ...buildDurationArgs(targetDurationSeconds),
         outputPath,
     ]);
 }
@@ -198,13 +244,19 @@ export async function composeProductionVideo(
 
         const scaleCrop = getScaleCropFilter(opts.outputFormat);
         const hasMusic = musicAudioBuffer !== null && musicAudioBuffer.length > 0;
+        const { targetDurationSeconds } = opts;
+        const audioPadFilter = buildAudioPadFilter(targetDurationSeconds);
 
         if (hasMusic) {
             await writeFile(musicPath, toUint8Array(musicAudioBuffer));
 
             // 3 inputs: concat video, narration, music
-            // Music ducked via sidechaincompress keyed on narration
+            // Narration and music are mixed; if targetDurationSeconds is set both
+            // streams are padded to that length and output is hard-trimmed.
             try {
+                const narrFilter = audioPadFilter ? `[1:a]volume=${opts.narrationVolume},${audioPadFilter}[narr]` : `[1:a]volume=${opts.narrationVolume}[narr]`;
+                const musicFilter = audioPadFilter ? `[2:a]volume=${opts.musicVolume},${audioPadFilter}[music_padded]` : `[2:a]volume=${opts.musicVolume}[music_padded]`;
+
                 await runFfmpeg([
                     '-y',
                     '-f', 'concat', '-safe', '0', '-i', concatListPath,
@@ -212,9 +264,9 @@ export async function composeProductionVideo(
                     '-i', musicPath,
                     '-filter_complex', [
                         `[0:v]${scaleCrop}[v]`,
-                        `[2:a]volume=${opts.musicVolume}[music_low]`,
-                        `[1:a]volume=${opts.narrationVolume}[narr]`,
-                        `[music_low][narr]amix=inputs=2:duration=shortest:dropout_transition=2[aout]`,
+                        narrFilter,
+                        musicFilter,
+                        '[music_padded][narr]amix=inputs=2:duration=longest:dropout_transition=2[aout]',
                     ].join(';'),
                     '-map', '[v]',
                     '-map', '[aout]',
@@ -224,7 +276,7 @@ export async function composeProductionVideo(
                     '-c:a', 'aac',
                     '-b:a', '192k',
                     '-movflags', '+faststart',
-                    '-shortest',
+                    ...buildDurationArgs(targetDurationSeconds),
                     outputPath,
                 ]);
             } catch (error) {
@@ -233,10 +285,10 @@ export async function composeProductionVideo(
                 }
 
                 console.warn('[video-composer] Background music input failed validation. Retrying narrated compose without music.', error);
-                await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop);
+                await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop, targetDurationSeconds);
             }
         } else {
-            await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop);
+            await runNarrationOnlyCompose(concatListPath, narrationPath, outputPath, scaleCrop, targetDurationSeconds);
         }
 
         return await readFile(outputPath);

@@ -11,6 +11,24 @@ const BANNED_WORKSHOP_PATTERNS = [/\bworkshop\b/i, /\bsalon\b/i, /hosted session
 const BANNED_EXCLUSIVITY_PATTERNS = [/quiet-luxe/i, /elevated salon/i, /collector-grade/i, /rarefied/i];
 const BANNED_CAMERA_MOVES = [/\bcrane\b/i, /\bdolly\b/i, /\btracking shot\b/i, /\bslider\b/i, /\bcable[- ]?cam\b/i];
 
+// Generic cruise-brochure location defaults that carry no real scene moment
+const GENERIC_SCENE_PATTERNS = [
+    /^pool deck$/i,
+    /^atrium$/i,
+    /^dining room$/i,
+    /^main dining$/i,
+    /^buffet$/i,
+    /^lido deck$/i,
+    /^observation lounge$/i,
+    /^spa$/i,
+    /^sunset$/i,
+    /^ocean view$/i,
+    /^ship exterior$/i,
+    /^promenade deck$/i,
+];
+
+const MIN_IMAGE_PROMPT_LENGTH = 60;
+
 const REQUIRED_SAFETY_OPS = 'Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.';
 
 interface ValidationIssue {
@@ -63,6 +81,44 @@ function getExecutableProductionBibleTexts(bible: ProductionBible): string[] {
     return [...sceneTexts, ...storyboardTexts]
         .map((value) => value.trim())
         .filter((value) => value.length > 0);
+}
+
+function checkSceneLibraryMomentQuality(bible: ProductionBible): ValidationIssue[] {
+    const issues: ValidationIssue[] = [];
+
+    const emptyPromptScenes = bible.sceneLibrary.filter((scene) => !scene.imagePrompt || scene.imagePrompt.trim().length < MIN_IMAGE_PROMPT_LENGTH);
+    if (emptyPromptScenes.length > 0) {
+        issues.push({
+            code: 'scene_image_prompt_empty',
+            message: `${emptyPromptScenes.length} scene(s) have missing or too-short imagePrompt (min ${MIN_IMAGE_PROMPT_LENGTH} chars): ${emptyPromptScenes.map((s) => s.sceneId).join(', ')}. Regenerate the production bible.`,
+            severity: 'blocker',
+            autoFixable: false,
+        });
+    }
+
+    const emptyActionScenes = bible.sceneLibrary.filter((scene) => !scene.subjectAction || scene.subjectAction.trim().length < 10);
+    if (emptyActionScenes.length > 0) {
+        issues.push({
+            code: 'scene_missing_moment',
+            message: `${emptyActionScenes.length} scene(s) have no subjectAction (moment description), making them location-only stills unsuitable for video: ${emptyActionScenes.map((s) => s.sceneId).join(', ')}.`,
+            severity: 'warning',
+            autoFixable: false,
+        });
+    }
+
+    const genericLocationScenes = bible.sceneLibrary.filter((scene) =>
+        GENERIC_SCENE_PATTERNS.some((pattern) => pattern.test(scene.location.trim()))
+    );
+    if (genericLocationScenes.length > 2) {
+        issues.push({
+            code: 'scene_generic_defaults',
+            message: `${genericLocationScenes.length} scenes use generic cruise-brochure location names (pool deck, atrium, dining room, etc.) that signal no real moment. Regenerate with moment-first descriptions.`,
+            severity: 'warning',
+            autoFixable: false,
+        });
+    }
+
+    return issues;
 }
 
 function checkProductionBibleFeasibility(bible: ProductionBible): ValidationIssue[] {
@@ -164,6 +220,7 @@ export function validateBrief(brief: CampaignAestheticBrief, campaign: Campaign)
     if (!brief.productionBible || !brief.landingStillBible) {
         issues.push({ code: 'production_artifacts_missing', message: 'Both productionBible and landingStillBible are required.', severity: 'blocker', autoFixable: false });
     } else {
+        issues.push(...checkSceneLibraryMomentQuality(brief.productionBible));
         issues.push(...checkProductionBibleFeasibility(brief.productionBible));
         issues.push(...checkAvoidDirectiveCoverage(brief));
     }

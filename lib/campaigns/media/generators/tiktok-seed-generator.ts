@@ -1,6 +1,7 @@
 import { CampaignAestheticBrief, Storyboard } from '../../schema';
+import { inferTikTokFormat } from './tiktok-formats/index';
 import { generateAmbientNarration } from './elevenlabs-generator';
-import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo } from './runway-generator';
+import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo, VideoMotionFormat } from './runway-generator';
 import { composeProductionVideo } from '../video-composer';
 import { buildStoryboardShotPrompt } from '../storyboard-motion-policy';
 import { storeAsset } from '../storage-client';
@@ -36,13 +37,14 @@ async function composeWithFailureCaching(
     campaignSlug: string | undefined,
     cachePrefix: string,
     visualClips: readonly GeneratedVideo[],
+    targetDurationSeconds?: number,
 ): Promise<Buffer> {
     try {
         return await composeProductionVideo(
             sourceVideoBuffers,
             narrationAudioBuffer,
             themeMusicBuffer,
-            { outputFormat: '9:16' }
+            { outputFormat: '9:16', targetDurationSeconds }
         );
     } catch (error) {
         if (!campaignSlug) {
@@ -53,67 +55,6 @@ async function composeWithFailureCaching(
         const baseMessage = error instanceof Error ? error.message : String(error);
         throw new Error(`${baseMessage} Intermediate generated video clips were cached at: ${cachedUrls.join(', ')}`);
     }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Legacy shot plan builder — used as fallback when no Production Bible exists
-// ────────────────────────────────────────────────────────────────────────────
-
-function buildLegacyShotPlan(brief: CampaignAestheticBrief): string[] {
-    const hook = brief.socialConcepts.tiktokOrganic.hook.trim();
-    const callToAction = brief.socialConcepts.tiktokOrganic.callToAction.trim();
-    const { aestheticLabel, imageryMood, lightingStyle, compositionNotes, colorPalette } = brief.visual;
-    const { governingPrinciple, cruiseNativeMoments, nicheEnhancedMoments } = brief.visual.plausibilityFramework;
-    const toneKeywords = brief.messaging.toneKeywords.join(', ');
-
-    return [
-        [
-            `Vertical premium social ad opener for ${brief.themeName}`,
-            `Cruise-first hook with immediate ship identity, ocean movement, and one clear emotional beat`,
-            `Use cinematic motion, but keep it graceful and believable rather than spectacle-driven`,
-            `Let the ship feel alive through wake, breeze, fabric movement, reflections, posture, and natural guest motion`,
-            `Signal the niche through subtle guest-carried cues, wardrobe, timing, or atmosphere rather than signage or staged props`,
-            `Use ${aestheticLabel}, ${imageryMood}, ${lightingStyle}, ${compositionNotes}`,
-            `Ground the scene in this principle: ${governingPrinciple}`,
-            `Cruise-native anchor: ${cruiseNativeMoments[0] ?? 'rail-side horizon pause'}`,
-            `Color emphasis: ${colorPalette.primary}, ${colorPalette.accent}`,
-            `Narrative hook energy: ${hook}`,
-            `Tone: ${toneKeywords}`,
-            `Avoid signage, avoid classrooms, avoid workshop energy, avoid staged event behavior`,
-            `If people appear, keep them nearly still with subtle breathing, relaxed posture, and eye-line shifts only`,
-            `Let the motion come from camera glide, wake, fabric, reflections, hair movement, and changing light rather than complex body action`,
-            `Avoid walking cycles, clinking, sipping, hand-offs, duplicated props, or extra limbs`,
-            `Avoid slideshow pan, avoid still-photo parallax, avoid weak camera drift, avoid warped anatomy`,
-        ].join('. '),
-        [
-            `Build desire through a premium but believable shipboard moment aboard the ship`,
-            `Use low-angle orbit or lateral tracking with layered depth, open-water context, and relaxed human chemistry`,
-            `Show reflective surfaces, warm service details, and authentic cruise atmosphere without turning the ship into an event venue`,
-            `Keep ship architecture believable and premium while making the niche feel lightly woven into normal vacation life`,
-            `Believable niche-enhanced moment: ${nicheEnhancedMoments[0] ?? 'a subtle guest-carried cue that stays secondary to the ship and sea'}`,
-            `Use warm ${colorPalette.secondary} and vivid ${colorPalette.accent} highlights`,
-            `Human presence should stay calm and anchored; camera movement and ambient ship life should do most of the work`,
-            `Avoid static framing, avoid gentle zoom only, avoid empty deck feeling, avoid crowd takeover`,
-        ].join('. '),
-        [
-            `Mid-sequence emotional peak for ${brief.themeName}`,
-            `Dynamic crane rise or slow arc into the strongest vacation feeling in the sequence`,
-            `Emphasize awe, intimacy, freedom, wonder, or belonging rather than spectacle`,
-            `Add premium golden-hour or blue-hour energy depending on the brief while preserving ship realism`,
-            `Make this feel expensive, social-first, and conversion-ready without looking programmed or over-produced`,
-            `If hands or faces are visible, keep gestures minimal and settled rather than choreographed`,
-            `Avoid repetitive motion from prior shots, avoid festival energy, avoid formal group choreography`,
-        ].join('. '),
-        [
-            `Closing payoff shot with polished aspirational momentum and clear end-frame energy`,
-            `Confident push through the scene into a composed hero finish suitable for CTA overlay`,
-            `Preserve realism, ship fidelity, and rich movement in fabric, lights, reflections, and background figures`,
-            `End with emotional certainty and invitation energy tied to ${callToAction || 'link in bio'}`,
-            `Keep the close cruise-first, horizon-led, and human rather than event-like`,
-            `Keep any visible people nearly still; avoid object-to-mouth motion, clinking, or hand choreography in the finish`,
-            `Avoid dead stillness, avoid weak exit, avoid low-energy finish, avoid staged promo energy`,
-        ].join('. '),
-    ];
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -202,6 +143,9 @@ export async function generateStoryboardVideo(
         );
     }
 
+    const isTikTok = storyboard.deliverableId.startsWith('tiktok');
+    const motionFormat: VideoMotionFormat = isTikTok ? 'tiktok' : 'standard';
+
     // Generate narration + visual clips in parallel
     const [narrationAudio, visualClips] = await Promise.all([
         generateAmbientNarration(compositeBrief),
@@ -211,7 +155,8 @@ export async function generateStoryboardVideo(
             `video/${storyboard.deliverableId}_shot`,
             `vid_${storyboard.deliverableId}_shot`,
             undefined,
-            presetId
+            presetId,
+            motionFormat,
         ),
     ]);
 
@@ -226,6 +171,7 @@ export async function generateStoryboardVideo(
         campaignSlug,
         `${storyboard.deliverableId}_${runId}`,
         visualClips,
+        storyboard.totalDurationSeconds,
     );
 
     return {
@@ -262,12 +208,15 @@ export async function generateTikTokSeed(
             ambientNarrationScript: [hook, bodyScript, callToAction].filter(Boolean).join('\n\n'),
         },
     };
-    const shotPlan = buildLegacyShotPlan(brief);
+    const organicFormat = inferTikTokFormat('tiktok_organic_seed');
+    const shotPlan = organicFormat.buildShotPrompts(brief);
     const runId = createRunId();
+
+    const targetDurationSeconds = brief.videoConcepts.tiktokSeed.durationSeconds;
 
     const [narrationAudio, visualClips] = await Promise.all([
         generateAmbientNarration(compositeBrief),
-        generatePromptedClips(heroImageUrl, shotPlan, 'video/tiktok_seed_shot', 'vid_tiktok_seed_shot', undefined, presetId),
+        generatePromptedClips(heroImageUrl, shotPlan, 'video/tiktok_seed_shot', 'vid_tiktok_seed_shot', undefined, presetId, 'tiktok'),
     ]);
 
     if (visualClips.length === 0) {
@@ -281,6 +230,7 @@ export async function generateTikTokSeed(
         campaignSlug,
         `tiktok_seed_${runId}`,
         visualClips,
+        targetDurationSeconds > 0 ? targetDurationSeconds : undefined,
     );
 
     return {

@@ -15,15 +15,25 @@ interface RunwayVideoResult {
     durationSeconds: number;
 }
 
-export function buildProductionSafeMotionPrompt(motionPrompt: string): string {
+export type VideoMotionFormat = 'standard' | 'tiktok';
+
+export function buildProductionSafeMotionPrompt(motionPrompt: string, format: VideoMotionFormat = 'standard'): string {
     const normalizedPrompt = motionPrompt.trim();
 
+    const formatLeader = format === 'tiktok'
+        ? 'Punchy social-native motion; hook the viewer in the first two seconds with intentional camera energy and clear subject read'
+        : 'Preserve the source image, subject identity, and composition';
+
+    const formatFooter = format === 'tiktok'
+        ? 'Keep motion native to the format: hard cuts feel better than gentle drift; every second must carry the campaign identity'
+        : 'Avoid warped anatomy, extra limbs, prop duplication, mug or cup distortion, or scene swaps';
+
     return joinSegmentsWithinLimit([
-        'Preserve the source image, subject identity, and composition',
+        formatLeader,
         normalizedPrompt,
         'Favor camera drift, sea shimmer, reflections, clouds, steam, and light over any subject animation',
         'If people are visible, freeze them completely; no body motion, no hand motion, no facial motion, no walking, no turning, no sipping',
-        'Avoid warped anatomy, extra limbs, prop duplication, mug or cup distortion, or scene swaps',
+        formatFooter,
     ], RUNWAYML_CONFIG.motionPromptMaxChars);
 }
 
@@ -62,11 +72,12 @@ export async function generatePromptedClips(
     assetIdPrefix: string,
     durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds,
     presetId?: VideoModelPresetId,
+    format: VideoMotionFormat = 'standard',
 ): Promise<GeneratedVideo[]> {
     const results: GeneratedVideo[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const safePrompt = buildProductionSafeMotionPrompt(prompts[i]);
+        const safePrompt = buildProductionSafeMotionPrompt(prompts[i], format);
         const result = await createImageToVideo(sourceImageUrl, safePrompt, durationSeconds, presetId);
         const buffer = await downloadVideo(result.videoUrl);
         const idx = String(i + 1).padStart(3, '0');
@@ -93,12 +104,13 @@ export async function generatePromptedClipFromScenes(
     assetIdPrefix: string,
     durationSeconds: number = RUNWAYML_CONFIG.clipDurationSeconds,
     presetId?: VideoModelPresetId,
+    format: VideoMotionFormat = 'standard',
 ): Promise<GeneratedVideo[]> {
     const results: GeneratedVideo[] = [];
     const clipCount = Math.min(sourceImageUrls.length, prompts.length);
 
     for (let i = 0; i < clipCount; i++) {
-        const safePrompt = buildProductionSafeMotionPrompt(prompts[i]);
+        const safePrompt = buildProductionSafeMotionPrompt(prompts[i], format);
         const result = await createImageToVideo(sourceImageUrls[i], safePrompt, durationSeconds, presetId);
         const buffer = await downloadVideo(result.videoUrl);
         const idx = String(i + 1).padStart(3, '0');

@@ -27,6 +27,7 @@ import { generateAmbientNarration, generateHypeClip } from './generators/elevenl
 import { generateThemeMusic } from './generators/replicate-music-generator';
 import { generateDesignedAdArtifactPack } from './generators/ad-artifact-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
+import { scoreTikTokVideoReadiness, scoreLegacyTikTokSeed } from './lint/video-lint';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { buildElevenLabsVoiceTags } from './elevenlabs-voices';
@@ -776,13 +777,20 @@ export async function runMediaGeneration(
                     group2Promises.push(
                         runWithJob(slug, 'tiktok_seed_video', activeVideoGeneratorService, 'tiktok seed', async () => {
                             const video = await generateTikTokSeed(brief!, firstHeroUrl, themeMusicBuffer, resolvedOptions.videoModelPresetId, slug);
+                            const lint = scoreLegacyTikTokSeed(
+                                { tags: ['video', 'tiktok', 'seed', 'narrated'], durationSeconds: video.durationSeconds },
+                                brief!.videoConcepts.tiktokSeed.durationSeconds,
+                            );
+                            if (lint.lintStatus === 'warn' || lint.lintStatus === 'fail') {
+                                warnings.push(`[tiktok_seed_video/lint] ${lint.lintStatus.toUpperCase()} (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
+                            }
                             const rec = await uploadAndRecord(
                                 slug, video.assetId, 'tiktok_seed_video', activeVideoGeneratorService,
                                 `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
                                 ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)], undefined, video.durationSeconds
                             );
-                            videoRecords.tiktokSeed = rec;
-                            return [rec];
+                            videoRecords.tiktokSeed = { ...rec, lintScore: lint.lintScore, lintStatus: lint.lintStatus };
+                            return [videoRecords.tiktokSeed];
                         }, errors)
                     );
                 }
@@ -895,22 +903,38 @@ export async function runMediaGeneration(
 
                 await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
                     const video = await generateStoryboardVideo(
-                        // Signature kept for compatibility, but missing scene images now fail fast inside the generator.
                         brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug
                     );
+                    const baseTags = ['video', 'storyboard', delivId, 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)];
                     const rec = await uploadAndRecord(
                         slug, video.assetId, assetType, activeVideoGeneratorService,
                         `${video.motionPrompt}\n\n${video.script}`,
                         video.buffer, video.fileName, 'video/mp4',
-                        ['video', 'storyboard', delivId, 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)],
-                        undefined, video.durationSeconds
+                        baseTags, undefined, video.durationSeconds
                     );
-                    if (assetType === 'tiktok_seed_video') videoRecords.tiktokSeed = rec;
+
+                    // Lint gate for TikTok storyboard videos
+                    let finalRec = rec;
+                    if (assetType === 'tiktok_seed_video') {
+                        const variant = delivId.includes('paid') ? 'paid' : 'organic';
+                        const lint = scoreTikTokVideoReadiness(
+                            { tags: baseTags, durationSeconds: video.durationSeconds },
+                            storyboard,
+                            sceneImageMap,
+                            variant,
+                        );
+                        if (lint.lintStatus === 'warn' || lint.lintStatus === 'fail') {
+                            warnings.push(`[${delivId}/lint] ${lint.lintStatus.toUpperCase()} (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
+                        }
+                        finalRec = { ...rec, lintScore: lint.lintScore, lintStatus: lint.lintStatus };
+                    }
+
+                    if (assetType === 'tiktok_seed_video') videoRecords.tiktokSeed = finalRec;
                     else if (assetType === 'hero_explainer_video') videoRecords.heroExplainer = rec;
                     else if (assetType === 'threshold_video') videoRecords.thresholdAnnouncement = rec;
                     else if (assetType === 'countdown_video') videoRecords.countdown.push(rec);
                     else videoRecords.broll.push(rec);
-                    return [rec];
+                    return [finalRec];
                 }, errors);
             }
         }
