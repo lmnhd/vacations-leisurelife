@@ -46,7 +46,7 @@ The original Claude design also suggested a more promotional treatment layered o
 
 That matters because the best result is often not a heavily animated video. It is a strong image with smart text, subtle movement, and a few emphasized objects.
 
-The key is to make the social energy legible without requiring perfect portraiture.
+The key is to make the social energy legible without requiring perfect portraiture. After scenes are generated, the flow should stop there for user review before any video generation starts.
 
 ---
 
@@ -200,6 +200,8 @@ Use this rule instead:
 4. The user decision should be explicit: approve as-is, request another repair pass, or retire/rework the campaign direction.
 
 This keeps the campaign agentic while still making you the final quality authority when the scene layer is drifting.
+
+**Scene review checkpoint:** The agent should always stop after scene generation or right before video generation so the user can inspect the image scenes first. That review happens before any heavy TikTok spend, because scene quality determines whether the video is worth generating at all.
 
 ---
 

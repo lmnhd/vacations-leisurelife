@@ -82,7 +82,13 @@ function resolveStyleId(input: MediaStyleResolutionInput): StyleId {
         return 'sketched';
     }
 
-    // When a visual flavor is known, let it drive the style for heroes/scenes/ref_heroes.
+    // Trust-facing assets stay realistic. Scenes, probes, and documentary detail
+    // modules should never drift back into the watercolor experiment.
+    if (input.assetKind === 'scene' || input.assetKind === 'probe' || input.assetKind === 'documentary_detail') {
+        return 'realistic';
+    }
+
+    // When a visual flavor is known, let it drive the style for heroes/ref_heroes.
     // indie_zine uses a handmade polaroid aesthetic (sketched); all others use the
     // realistic trust-image pool (editorial, nostalgia, or neutral System 4).
     if (input.visualFlavor !== undefined) {

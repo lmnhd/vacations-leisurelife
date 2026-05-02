@@ -11,6 +11,7 @@ Based on V2 Campaign Strategy and previous iterations, agents using this skill M
 - **Finite Iteration:** Do not loop endlessly in discovery. If a concept requires more than 3 revisions to pass the Red Team, retire it.
 - **Honest Readiness:** Do not mark a campaign as "Ready" if it still carries required fixes.
 - **Deduplication:** Gemini Deep Research MUST exclude already generated campaigns (the backend pipeline handles this by natively injecting the DynamoDB state into the prompt).
+- **Agentic Glue:** Treat the campaign builder as a control loop, not a one-shot generator. The agent should notice gaps, make one targeted repair pass, re-check the result, and escalate persistent uncertainty to the user instead of silently pushing forward.
 
 ## 1a. Recurring Pipeline Issues & Mitigations
 
@@ -18,7 +19,7 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 
 ### Dev Server Stability During Heavy Generation
 - **Symptom:** Next.js dev server becomes unresponsive or crashes during long-running media generation calls (image/video/audio).
-- **Root Cause:** The `POST /api/groups/campaign/[slug]/media/generate` endpoint is synchronous and can take 10–20+ minutes. The dev server may exhaust resources or hit memory limits during concurrent heavy calls.
+- **Root Cause:** The `POST /api/groups/campaign/[slug]/media/generate` endpoint is synchronous and can take 10â€“20+ minutes. The dev server may exhaust resources or hit memory limits during concurrent heavy calls.
 - **Mitigation:**
   - Monitor server health before triggering media generation (`GET /api/groups/discovery` as a heartbeat).
   - If the server is unresponsive, restart it manually (the agent cannot manage the dev server).
@@ -29,7 +30,7 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **Symptom:** `POST /api/groups/discovery/revise` and `/revise/bulk` hang beyond 120s.
 - **Root Cause:** Structured generation with large prompt + JSON schema validation can exceed default API timeouts.
 - **Mitigation:**
-  - Always call revision via direct script (`npx tsx scripts/test-revise.ts <slug>`) rather than HTTP when possible — scripts have no HTTP timeout.
+  - Always call revision via direct script (`npx tsx scripts/test-revise.ts <slug>`) rather than HTTP when possible â€” scripts have no HTTP timeout.
   - If HTTP is required, set `-TimeoutSec 600` minimum on PowerShell `Invoke-RestMethod`.
   - Never attempt bulk revision of more than 1 campaign per HTTP call; batching causes cumulative timeout.
 
@@ -43,20 +44,20 @@ The following issues have been encountered repeatedly across campaigns. Agents m
   1. **Step 3 Prompt (GPT hard constraints):** The AVAILABLE CB GROUP INVENTORY list is injected as hard constraints. GPT is instructed to only name ships and destinations from the inventory.
   2. **In-Memory Match Gate:** After GPT generates blueprints but before DynamoDB save, `matchGroupInventoryToCampaign()` is run on each blueprint. Any blueprint scoring below 25 is discarded with a log message. Only matched blueprints proceed to Red Team and DynamoDB.
 - **Pipeline order:**
-  1. Scrape CB inventory → cache (`scripts/scrape-cb-deals.ts`)
-  2. Gemini 3.1 Pro Deep Research — psychographic (Step 1)
-  3. Gemini 3.1 Pro Deep Research — aesthetic analysis with inventory context (Step 2)
+  1. Scrape CB inventory â†’ cache (`scripts/scrape-cb-deals.ts`)
+  2. Gemini 3.1 Pro Deep Research â€” psychographic (Step 1)
+  3. Gemini 3.1 Pro Deep Research â€” aesthetic analysis with inventory context (Step 2)
   4. GPT blueprint generation with inventory HARD CONSTRAINTS (Step 3)
-  5. In-memory inventory match gate — discard unmatched (between Step 3 and Step 4)
-  6. Red Team review — only on matched blueprints (Step 4)
-  7. Save to DynamoDB — only matched blueprints
-  8. Phase B — confirm match against live inventory + generate Odysseus retail link
-- **Result:** Pipeline outputs 0–5 campaigns. If 0 pass the gate, a descriptive error is thrown suggesting cache refresh or re-spin with relaxed constraints.
+  5. In-memory inventory match gate â€” discard unmatched (between Step 3 and Step 4)
+  6. Red Team review â€” only on matched blueprints (Step 4)
+  7. Save to DynamoDB â€” only matched blueprints
+  8. Phase B â€” confirm match against live inventory + generate Odysseus retail link
+- **Result:** Pipeline outputs 0â€“5 campaigns. If 0 pass the gate, a descriptive error is thrown suggesting cache refresh or re-spin with relaxed constraints.
 - **Phase B is now confirmation-only:** See `scripts/run-phase-b.ts`. It no longer performs primary matching.
 
 ### Red Team Verdict Handling
 - **PASS:** Proceed to Phase 2.
-- **WARN (≤4 fixes):** Safe to auto-revise. Use `POST /api/groups/discovery/revise` or direct script.
+- **WARN (â‰¤4 fixes):** Safe to auto-revise. Use `POST /api/groups/discovery/revise` or direct script.
 - **BLOCK (>4 fixes or structural issues):** STOP. Do not auto-revise. Present the campaign to the user and ask whether to retire it or manually redesign.
 - **Stagnation:** If a campaign has been revised 3+ times and still carries warnings, consider retiring it regardless of fix count.
 
@@ -71,29 +72,29 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 ### Anchor Compliance Tolerance (Phase 3)
 - **Symptom:** Brief generation fails with "Anchor compliance unresolved".
 - **Rules:**
-  - `missing_anchor_binding` (structural): **Hard fail** — brief generation aborts.
-  - `niche_signal_dropped` / `niche_carry_mismatch` / `duplicate_location_family` (content): **Tolerated up to 4 violations** — brief generation continues, but downstream production lint will flag them.
+  - `missing_anchor_binding` (structural): **Hard fail** â€” brief generation aborts.
+  - `niche_signal_dropped` / `niche_carry_mismatch` / `duplicate_location_family` (content): **Tolerated up to 4 violations** â€” brief generation continues, but downstream production lint will flag them.
   - If structural violations exist OR content violations exceed 4, the brief is rejected.
 - **Mitigation:** Ensure the campaign's `targetingKeywords` are specific and embedded in both `imagePrompt` and `subjectAction` for every landing still. If a campaign already exists in DynamoDB with weak signals, patch the anchor fields (`allowedThemeSignals`, `cruiseNativeMoments`, `optionalGatheringMoments`, `targetingKeywords`) directly via `campaign-store.ts` rather than re-running the expensive discovery pipeline.
 
 ### Media Style Dualism ("Sketch = Feeling, Photo = Fact")
 - **Symptom:** AI-generated realistic images of people produce uncanny results (plastic skin, inconsistent hands, weird facial features) that undermine trust. Fully illustrated images of ships and cabins feel fake and reduce confidence in the actual product.
 - **Rule:** Campaign media must use **two distinct styles** depending on content, never a single uniform style:
-  - **SKETCHED / Illustrated** — Used for people-forward emotional assets when the renderer would otherwise risk uncanny guests. Common examples: aesthetic concept frames, merch designs, and hero/concept directions whose active style resolver selects `sketched`. Purpose: emotional hook, aspiration, first impression. The style is a lush watercolor-and-ink travel illustration with expressive linework, idealized figures, and saturated color washes.
-  - **REALISTIC / Photographic** — Used for trust assets and ship-forward/source-frame assets. Common examples: ship references, documentary detail modules, scene images for storyboard/video, and reference-grounded ship transforms. Purpose: trust, accuracy, "finish the sell." The style is documentary-grade cruise photography with sharp detail, natural marine lighting, and believable materials.
+  - **SKETCHED / Illustrated** â€” Reserved for people-forward emotional assets when the renderer would otherwise risk uncanny guests. Common examples: aesthetic concept frames, merch designs, and hero/concept directions whose active style resolver selects `sketched`. Purpose: emotional hook, aspiration, first impression. The style is a lush watercolor-and-ink travel illustration with expressive linework, idealized figures, and saturated color washes.
+  - **REALISTIC / Photographic** â€” Used for trust assets and ship-forward/source-frame assets. Common examples: ship references, documentary detail modules, scene images for storyboard/video, reference-grounded ship transforms, and probes. Purpose: trust, accuracy, "finish the sell." The style is documentary-grade cruise photography with sharp detail, natural marine lighting, and believable materials.
+- **Scene-image rule:** Scene images are realistic-only. The watercolor/sketched branch was an experiment for earlier assets and should not be used for scene generation. If a scene asset looks sketched, the scene pipeline needs repair, not acceptance.
 - **Designed ad exception (Phase 2.3):** Designed social/static ads are no longer treated as full AI-rendered scenes. They are code-rendered ad artifacts with model-generated documentary detail modules as image ingredients. Do not expect designed ad artifacts to match hero/concept watercolor composition; compare them against their active visual system and final ad layout.
 - **Designed Ads tab semantics:** The review UI's `Designed Ads` tab intentionally includes both `manifest.images.designedAdArtifacts` (final template-rendered ads) and `manifest.images.documentaryDetails` (ingredient/source modules). If the tab looks "mostly full images," first compare the counts of final ad artifacts vs documentary modules before assuming the template renderer failed.
-- **Pipeline enforcement:** `stability-generator.ts` and `style-prompts.ts` apply the centralized style prompt strings. Older paths branch on `sceneHasVisiblePeople()` / still people detection; newer paths may also use `identityBlueprint.visualFlavor` for hero/reference/concept decisions. When diagnosing style mismatch, inspect the actual `promptUsed` and style resolver inputs instead of assuming all people assets are watercolor.
-- **Narrative arc:** Ads and hero banners show the FEELING (illustrated people living the vibe) → landing page details show the REALITY (actual ship, actual cabin, actual deck). The sketch invites imagination; the photo closes the deal.
-- **Model assignment:** Nano-Banana (Gemini) handles both styles via prompt control. Do not split providers unless Nano-Banana produces soft ship renders — in that case, fall back to `gpt-image-2` or `dall-e-3` for the realistic branch only.
-- **Vintage filter rotation (REALISTIC only):** Each realistic image should carry a distinct stylized film grade — Kodachrome 70s warmth, late-80s Ektachrome saturation, expired Polaroid shift, or cross-processed slide. This adds character and variety without breaking realism. The filter must look like a physical film stock or lens artifact, not a digital overlay.
-- **Theme object anchoring (REALISTIC only):** Since people are absent, the niche/theme must remain faintly legible through subtle environmental props — e.g. a guitar on a deck lounger (music cruise), a well-worn notebook on a teak table (writing cruise), dice and a leather case on a bar rail (gaming cruise), vintage binoculars on a rail (birding cruise). The object should feel naturally placed, not staged or central — just enough to whisper the theme. Ship/sea/deck architecture remains dominant.
+- **Pipeline enforcement:** `stability-generator.ts` and `style-prompts.ts` apply the centralized style prompt strings. Older paths branch on `sceneHasVisiblePeople()` / still people detection; newer paths may also use `identityBlueprint.visualFlavor` for hero/reference/concept decisions. When diagnosing style mismatch, inspect the actual `promptUsed` and style resolver inputs instead of assuming the output should be watercolor.
+- **Narrative arc:** Ads and hero banners show the FEELING (illustrated people living the vibe) â†’ landing page details show the REALITY (actual ship, actual cabin, actual deck). The sketch invites imagination; the photo closes the deal.
+- **Model assignment:** Nano-Banana (Gemini) handles both styles via prompt control. Do not split providers unless Nano-Banana produces soft ship renders â€” in that case, fall back to `gpt-image-2` or `dall-e-3` for the realistic branch only.
+- **Vintage filter rotation (REALISTIC only):** Each realistic image should carry a distinct stylized film grade â€” Kodachrome 70s warmth, late-80s Ektachrome saturation, expired Polaroid shift, or cross-processed slide. This adds character and variety without breaking realism. The filter must look like a physical film stock or lens artifact, not a digital overlay.
+- **Theme object anchoring (REALISTIC only):** Since people are absent, the niche/theme must remain faintly legible through subtle environmental props â€” e.g. a guitar on a deck lounger (music cruise), a well-worn notebook on a teak table (writing cruise), dice and a leather case on a bar rail (gaming cruise), vintage binoculars on a rail (birding cruise). The object should feel naturally placed, not staged or central â€” just enough to whisper the theme. Ship/sea/deck architecture remains dominant.
 - **Scene image theme preservation:** Even within REALISTIC scene images, the campaign's niche identity stays present through lighting/color temperature aligned with the campaign palette, and composition choices that hint at the community (a circle of chairs, a journal left open, a vinyl record on a bar rail).
-- **Video mixing strategy:** Promotional videos must deliberately mix both styles:
-  - **Scene source frames** (from `generateSceneImages`) are **REALISTIC** — ship-forward, architecture-forward, environment-led motion. These are the trust anchor.
-  - **Backdrop / hero inserts** (from `generateHeroImages` or `generateAestheticConcepts`) are **SKETCHED** — people-forward, emotional, aspirational.
-  - **TikTok / social shorts:** ~70% sketched (people-first sells on scroll), ~30% realistic (trust reinforcement).
-  - **Hero explainer / threshold video:** Opening sketched → Middle realistic → Closing sketched. The audio narration bridges the two styles.
+- **Video mixing strategy:** Promotional videos may still mix styles, but the scene layer feeding them is always realistic:
+  - **Scene source frames** (from `generateSceneImages`) are **REALISTIC** â€” ship-forward, architecture-forward, environment-led motion. These are the trust anchor.
+  - **Backdrop / hero inserts** (from `generateHeroImages` or `generateAestheticConcepts`) may remain **SKETCHED** when the campaign wants illustrated emotional energy.
+  - Use text overlays, image-first motion, and subtle object movement to make the scenes carry the promotional load before escalating to full animation.
   - The `buildStoryboardShotPrompt` function should tag each shot with its intended style so the video assembler pulls from the correct source pool.
 
 ### Probe Loop Scope (Do Not Confuse With Scene Images)
@@ -104,6 +105,7 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **Generation gate reality:** The media orchestrator has an optional `probeGate` (`ignore`, `warn_only`, `require_approved`), but the public `/media/generate` route currently does not expose or force it. If a caller opts into `require_approved`, the gate applies to all spend-gated image types (`hero_image`, `aesthetic_concept`, `scene_image`) even though the probes only validate landing still directions. Treat that as a broad pre-spend quality gate, not proof that scene prompts are correct.
 - **When scene images look wrong:** Inspect the Production Bible scene library and `scene_image` `promptUsed` records directly. If the scene library is missing/empty, regenerate the aesthetic brief/production bible before spending on scene images. If the scene library exists but scene images drift, use a directive scoped to scenes or update the production-bible scene prompts; rerunning landing still probes alone will not fix scene-frame prompts.
 - **Warning escalation rule:** `scene_niche_cue_missing` and `scene_human_presence_weak` are allowed to auto-run once through a repair pass, but if they persist after that pass the agent must stop and ask the user for an explicit decision before any more scene-image or video spend. Treat persistent scene warnings as `needs_user_decision`, not as background noise.
+- **Campaign-flow rule:** When any phase yields a persistent warning after one repair pass, stop at the phase boundary, summarize the gap, and request a user decision. Do not let the agent drift into the next phase to "see if it gets better there." The point is to fix the right layer or escalate, not to bury the mismatch downstream.
 - **Recommended next implementation fix:** Add a dedicated scene-probe loop that renders one cheap probe per `productionBible.sceneLibrary` scene and gates `scene_image` generation against that result. Keep landing-still probes for hero/concept stills.
 
 ## 2. End-to-End Workflow
@@ -112,7 +114,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 ### Phase 1: Discovery & Blueprint
 
-1. **CB Inventory Pre-scrape:** Ensure `cb-deals-cache.json` is fresh (<24h old). If stale, prompt the user to run `npx tsx scripts/scrape-cb-deals.ts` before proceeding — the discovery pipeline will warn if the cache is stale.
+1. **CB Inventory Pre-scrape:** Ensure `cb-deals-cache.json` is fresh (<24h old). If stale, prompt the user to run `npx tsx scripts/scrape-cb-deals.ts` before proceeding â€” the discovery pipeline will warn if the cache is stale.
 2. **Psychographic / Niche Identification:** Execute the backend Discovery pipeline (`GET /api/groups/discovery` or equivalent local script). This uses Gemini 3.1 Pro Deep Research to fetch real-time psychographic data and automatically injects existing campaigns to prevent redundancy.
 3. **Blueprint Generation with Inventory Constraints:** The pipeline calls GPT-5 to generate blueprints constrained to available CB inventory.
 4. **In-Memory Match Gate:** Blueprints that cannot be matched to CB inventory are automatically discarded before saving.
@@ -136,10 +138,11 @@ The agent must follow these steps linearly. At the end of each major phase, the 
    - This auto-generates the aesthetic bundle, action anchors, landing still bible, and production bible.
 2. **Brief Engine Auto-Lint:** The orchestrator validates the brief internally.
    - **Check:** Does the visual plan include actual ship representation? Is it distinct from generic cruise marketing? Are the colors/vibes aligned with the niche without becoming costume parody?
-   - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (≤4 tolerated content violations), it continues but flags downstream.
-3. **Verify the production bible before proceeding — this is mandatory.**
+   - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (â‰¤4 tolerated content violations), it continues but flags downstream.
+3. **Verify the production bible before proceeding â€” this is mandatory.**
    Check `brief.productionBible.sceneLibrary` in the readiness response. Every scene object must have a non-empty `imagePrompt` field. If all `imagePrompt` fields are empty strings, the production bible generation failed silently and scene images will be generic. Re-run the brief bundle before proceeding to media generation.
    - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
+   - The same rule applies to any persistent warning in later phases: one auto-repair pass, then stop and ask for a decision. The agent is the glue between phases, not a substitute for the final call.
 4. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
@@ -151,16 +154,16 @@ Phase 4 has **three mandatory sequential sub-steps** that cannot be skipped or r
 
 ---
 
-#### 4.0 — Verify the Production Bible before spending on generation
+#### 4.0 â€” Verify the Production Bible before spending on generation
 
-Before generating any images, confirm that the production bible was generated with proper `imagePrompt` fields. A production bible with empty `imagePrompt` fields produces generic cruise scenes with no niche content — this is a generation failure, not a quality issue.
+Before generating any images, confirm that the production bible was generated with proper `imagePrompt` fields. A production bible with empty `imagePrompt` fields produces generic cruise scenes with no niche content â€” this is a generation failure, not a quality issue.
 
 ```bash
 curl -s http://localhost:3000/api/groups/campaign/[slug]/brief/readiness \
   | python -m json.tool 2>/dev/null
 ```
 
-Check the response for `brief.productionBible.sceneLibrary`. Every scene must have a non-empty `imagePrompt`. If `imagePrompt` fields are empty strings, **do not proceed to generation** — re-run the brief bundle first:
+Check the response for `brief.productionBible.sceneLibrary`. Every scene must have a non-empty `imagePrompt`. If `imagePrompt` fields are empty strings, **do not proceed to generation** â€” re-run the brief bundle first:
 
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/brief
@@ -168,11 +171,11 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/brief
 
 Wait for the async brief job to complete (poll `GET /api/groups/campaign/[slug]/brief?jobId=<id>`), then re-check readiness before continuing.
 
-Also verify `brief.landingStillBible.stillLibrary` exists and has at least 4–6 stills with non-empty `imagePrompt` fields. If the still library is missing or empty, the brief bundle did not complete correctly.
+Also verify `brief.landingStillBible.stillLibrary` exists and has at least 4â€“6 stills with non-empty `imagePrompt` fields. If the still library is missing or empty, the brief bundle did not complete correctly.
 
 ---
 
-#### 4.1 — Approve the brief for media generation
+#### 4.1 â€” Approve the brief for media generation
 
 The brief must be in `approved` status before any image generation can run. A brief in `revised` or `pending` status will cause the generate endpoint to return 422.
 
@@ -181,24 +184,24 @@ The brief must be in `approved` status before any image generation can run. A br
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/brief/approve
 ```
 
-**NEVER use** `POST /api/groups/campaign/[slug]/media/aesthetic/approve` — that is a deprecated route that requires a legacy `redTeamReview` field which the current brief engine does not populate, so it will always fail.
+**NEVER use** `POST /api/groups/campaign/[slug]/media/aesthetic/approve` â€” that is a deprecated route that requires a legacy `redTeamReview` field which the current brief engine does not populate, so it will always fail.
 
 **Success response:** `{ "readiness": "ready_for_media", ... }`
-**Failure response 409:** The brief has structural blockers — re-run the brief and fix blockers before approving.
+**Failure response 409:** The brief has structural blockers â€” re-run the brief and fix blockers before approving.
 
 If the brief was recently regenerated (`humanReviewStatus: 'revised'`), you must approve it again. Regeneration always resets status to `revised`.
 
 ---
 
-#### 4.2 — Generate media assets
+#### 4.2 â€” Generate media assets
 
 Once the brief is approved, trigger generation. Always generate **one asset type group at a time** to avoid dev server memory exhaustion.
 
-**Recommended generation order — with approval gates:**
+**Recommended generation order â€” with approval gates:**
 
 Each step below has an implicit **approval gate**: after the step completes, check the manifest for errors and review assets at `http://localhost:3000/tests/media-generation` before proceeding. Do not batch all asset types into one call.
 
-**Step A — Ship references (required before heroes and scenes):
+**Step A â€” Ship references (required before heroes and scenes):
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
@@ -206,7 +209,7 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 ```
 Ship references are SerpAPI photos of the actual vessel. They are used as grounding references for hero and scene generation. Without them, heroes generate without ship context and scenes may fail entirely.
 
-**Step B — Hero images + aesthetic concepts:**
+**Step B â€” Hero images + aesthetic concepts:**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
@@ -214,7 +217,7 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 ```
 These use the ship references as grounding. Run after Step A.
 
-**Step C — Scene images (uses production bible imagePrompts):**
+**Step C â€” Scene images (uses production bible imagePrompts):**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
@@ -226,7 +229,13 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 
 **Scene warning gate:** If the scene layer still produces `scene_niche_cue_missing` or `scene_human_presence_weak` after the first repair pass, stop the flow and present the user with a decision checkpoint. The agent may repair once automatically, but it may not silently continue through video generation while those warnings persist.
 
-**Step D — Documentary details + designed ads (together):**
+**Agentic recovery pattern:** For any campaign layer that looks "almost right" but not quite:
+1. Inspect the actual source-of-truth artifact that feeds the next step.
+2. Repair that artifact once, in the narrowest possible scope.
+3. Re-run the downstream check.
+4. If the same mismatch survives, stop and escalate to the user with a concrete choice.
+
+**Step D â€” Documentary details + designed ads (together):**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
@@ -241,12 +250,12 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/test/images 
 
 **Agent default:** If the user asks for the campaign to be rerun from the brief through the complete image pipeline, or asks for "landing page images and others," include Step D by default unless they explicitly say to stop at scene images only.
 
-**Step E — Audio, video, merch (optional, heavy):**
+**Step E â€” Audio, video, merch (optional, heavy):**
 
 **Prerequisites before running video generation:**
-1. **Scene images must exist** — Video generation requires `scene_image` assets from Step C. Storyboard videos pull source frames from `manifest.images.sceneImages`. If scene images are missing, video generation will fail silently or produce empty results.
-2. **Production Bible must have non-empty `imagePrompt` fields** — Verify with `GET /api/groups/campaign/[slug]/brief/readiness`. Empty `imagePrompt`s = generic video frames.
-3. **Brief must be approved** — Same gate as Step 4.1.
+1. **Scene images must exist** â€” Video generation requires `scene_image` assets from Step C. Storyboard videos pull source frames from `manifest.images.sceneImages`. If scene images are missing, video generation will fail silently or produce empty results.
+2. **Production Bible must have non-empty `imagePrompt` fields** â€” Verify with `GET /api/groups/campaign/[slug]/brief/readiness`. Empty `imagePrompt`s = generic video frames.
+3. **Brief must be approved** â€” Same gate as Step 4.1.
 
 **TikTok promo video rule:**
 1. Use the storyboard-driven `tiktok_seed_video` path for the actual promotional video unless there is no Production Bible yet.
@@ -261,16 +270,16 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -d '{"assetTypes":["ambient_narration","hype_clip","theme_music"],"themeMusicSource":"default"}'
 ```
 
-**Video generation (expensive, slow — run individually):**
+**Video generation (expensive, slow â€” run individually):**
 
 **CRITICAL: Generation overlap burns credits. Follow these rules exactly.**
 
-1. **One deliverable per HTTP call** — never batch multiple video assetTypes in one request.
+1. **One deliverable per HTTP call** â€” never batch multiple video assetTypes in one request.
 2. **Never re-submit the same deliverable** while the prior submission is still processing. The API returns 409 if `isGenerating()` is true for that slug.
-3. **HTTP 120s timeout is NOT a failure** — the server continues generating after the connection drops. Re-submitting queues a **second** set of clips and doubles costs.
+3. **HTTP 120s timeout is NOT a failure** â€” the server continues generating after the connection drops. Re-submitting queues a **second** set of clips and doubles costs.
 4. **After timeout: poll the manifest, never re-submit.** Use `GET /api/groups/campaign/[slug]/media/manifest` and inspect `videos.tiktokSeed`, `videos.heroExplainer`, etc. If null/empty, wait 60s and poll again. Only if the manifest has been stable (no new assets) for >5 minutes should you consider re-submitting once.
 5. **Never run two video scripts or API calls in parallel** for the same campaign slug. Sequential only.
-6. **Use the API route for video generation, not standalone scripts.** The `POST /api/groups/campaign/[slug]/media/generate` endpoint checks `isGenerating()` and returns HTTP 409 if a run is already active. Standalone scripts (`npx tsx tmp/...`) call `runMediaGeneration()` directly, bypassing the 409 gate — they are the primary cause of overlapping submissions. Always use the API endpoint for video.
+6. **Use the API route for video generation, not standalone scripts.** The `POST /api/groups/campaign/[slug]/media/generate` endpoint checks `isGenerating()` and returns HTTP 409 if a run is already active. Standalone scripts (`npx tsx tmp/...`) call `runMediaGeneration()` directly, bypassing the 409 gate â€” they are the primary cause of overlapping submissions. Always use the API endpoint for video.
 
 ```bash
 # TikTok seed video only (4 storyboard shots, ~40s final)
@@ -309,23 +318,23 @@ while ($true) {
 }
 ```
 
-**Cost warning — video provider mismatch:**
+**Cost warning â€” video provider mismatch:**
 The codebase documentation states RunwayML Gen-3 Turbo as the primary video provider (5 credits/second, ~$8.50 total for all storyboard deliverables). However, `getDefaultVideoModelPresetId()` in `lib/campaigns/media/video-models.ts` **defaults to Fal** when `FAL_KEY` is set in the environment, regardless of `MEDIA_VIDEO_PROVIDER` configuration. This can double or triple costs. To force RunwayML, explicitly set `MEDIA_VIDEO_PROVIDER=runway` in `.env.local`, or temporarily unset `FAL_KEY`.
 
-**Generation time expectation:** Each video deliverable submits multiple shots to the active provider sequentially. Allow **5–15 minutes per deliverable** depending on queue depth. The API call may HTTP-timeout after 120s while the server continues processing in the background — check the manifest afterward instead of re-submitting.
+**Generation time expectation:** Each video deliverable submits multiple shots to the active provider sequentially. Allow **5â€“15 minutes per deliverable** depending on queue depth. The API call may HTTP-timeout after 120s while the server continues processing in the background â€” check the manifest afterward instead of re-submitting.
 
-**Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** — they run alongside the full media pipeline, not instead of it. A generation request with no explicit `assetTypes` generates images, audio, video, and designed ads together. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress heroes, scenes, videos, or audio.
+**Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** â€” they run alongside the full media pipeline, not instead of it. A generation request with no explicit `assetTypes` generates images, audio, video, and designed ads together. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress heroes, scenes, videos, or audio.
 
 **TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for improving promotional TikTok quality. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
 
 ---
 
-#### 4.3 — Verify generation results
+#### 4.3 â€” Verify generation results
 
 After each generation step, check the job summary in the response:
-- `completionStatus: "complete"` — all assets generated
-- `completionStatus: "partial"` — some failed; check `jobSummary.errors`
-- Any `errors[]` entries — investigate before proceeding
+- `completionStatus: "complete"` â€” all assets generated
+- `completionStatus: "partial"` â€” some failed; check `jobSummary.errors`
+- Any `errors[]` entries â€” investigate before proceeding
 
 **Review generated assets in the UI:**
 ```
@@ -333,43 +342,45 @@ http://localhost:3000/tests/media-generation
 ```
 
 Check each tab systematically:
-- **References** — ship reference photos present? Correct ship?
-- **Heroes & Concepts** — images reflect the niche (not generic cruise)? Mixed styles (watercolor for heroes with people, photorealistic for environment scenes)?
-- **Scenes** — scene images reflect specific locations (pool deck, atrium, dining, etc.)? Do they carry any niche cues?
-- **Designed Ads** — ad templates rendered? Multiple placements (1:1, 4:5, 9:16)?
+- **References** â€” ship reference photos present? Correct ship?
+- **Heroes & Concepts** â€” images reflect the niche (not generic cruise)? Are the hero/concept assets visually distinct from the realistic scene layer?
+- **Scenes** â€” scene images reflect specific locations (pool deck, atrium, dining, etc.)? Do they carry any niche cues?
+- **Designed Ads** â€” ad templates rendered? Multiple placements (1:1, 4:5, 9:16)?
   - Remember this tab includes both final designed ads and their source modules. The actual template coverage lives in `manifest.images.designedAdArtifacts`.
-- **Crops, Video, Audio, Merch** — as applicable
+- **Crops, Video, Audio, Merch** â€” as applicable
 
 If scene images look generic (no niche props, just standard cruise locations), the production bible `imagePrompt` fields were empty when generation ran. Fix: re-run the brief, re-approve, then regenerate with `sceneImageMode: "all"`.
 
+**Scene review stop:** After scenes are generated, stop and ask the user to inspect the scene tab before any TikTok/video generation. Scene quality is the main gate for whether video spend is worth it, so do not move on automatically.
+
 ---
 
-#### 4.4 — Common failure modes and fixes
+#### 4.4 â€” Common failure modes and fixes
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | `422 AESTHETIC_BRIEF_NOT_READY` on generate | Brief is `revised` or `pending`, not `approved` | `POST /brief/approve` |
 | `409` from `/brief/approve` with "blockers" | Brief has structural validation failures | Re-run brief, fix blockers, re-approve |
-| `/media/aesthetic/approve` returns red-team error | Wrong endpoint — deprecated | Use `POST /brief/approve` instead |
-| Scene images are generic cruise (no niche) | `imagePrompt` was empty in production bible | Re-run brief → re-approve → regenerate scenes with `"all"` |
-| `GET /media/probe` returns 404 | No probe run saved yet — not an error | Run `POST /media/probe` to validate directions, or skip if brief was just regenerated |
+| `/media/aesthetic/approve` returns red-team error | Wrong endpoint â€” deprecated | Use `POST /brief/approve` instead |
+| Scene images are generic cruise (no niche) | `imagePrompt` was empty in production bible | Re-run brief â†’ re-approve â†’ regenerate scenes with `"all"` |
+| `GET /media/probe` returns 404 | No probe run saved yet â€” not an error | Run `POST /media/probe` to validate directions, or skip if brief was just regenerated |
 | `completionStatus: "partial"` after generation | Some images failed (often API timeout or rate limit) | Re-run same generation with `sceneImageMode: "missing_only"` or `assetTypes` filter |
 | Heroes look wrong but stills look correct | Brief was approved before the `imagePrompt` fix; production bible stills are driving the wrong content | Create a directive scoped to `heroes` to patch specific stills |
 | Brief reverts to `revised` after a directive apply | `patchBriefForDirective` saves the patched brief back, which resets `humanReviewStatus` | Re-approve with `POST /brief/approve` before the next generation run |
 
 ---
 
-#### 4.5 — Landing page
+#### 4.5 â€” Landing page
 
 Once heroes, scenes, and designed ads are in the manifest:
 ```
 http://localhost:3000/tests/campaign-landing/[slug]
 ```
-The landing page view model reads directly from the manifest. No separate construction step is needed — if the manifest is populated, the page renders.
+The landing page view model reads directly from the manifest. No separate construction step is needed â€” if the manifest is populated, the page renders.
 
 ### Phase 5: Publish, Distribute, and Go Live
 
-#### 5.1 — Landing Page Publishing
+#### 5.1 â€” Landing Page Publishing
 
 The campaign landing page is a Next.js dynamic route that renders directly from the campaign manifest and brief. No build or deploy step is required beyond the standard Next.js dev/prod server.
 
@@ -391,11 +402,11 @@ The landing page view model (`lib/campaigns/landing/view-model.ts`) resolves:
 
 **Verify the page renders before proceeding:** If the campaign manifest is empty or the brief has no `heroSlogan`, the page may 404 or render a fallback. Ensure media generation is complete first.
 
-#### 5.2 — Ad Distribution (Cold Placement)
+#### 5.2 â€” Ad Distribution (Cold Placement)
 
 Campaign assets are distributed via the distribution planner and dispatch system. Full reference: `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION/PHASE_4_DISTRIBUTION.md`
 
-**Step A — Generate a distribution plan (dry run / simulate):**
+**Step A â€” Generate a distribution plan (dry run / simulate):**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/distribute \
   -H "Content-Type: application/json" \
@@ -406,18 +417,18 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/distribute \
 ```
 
 Response includes:
-- `plan.posts[]` — scheduled posts with platform, copy, image references, timing
-- `plan.audience` — targeting parameters derived from campaign brief
-- `plan.budget` — estimated spend (placeholder in simulate mode)
+- `plan.posts[]` â€” scheduled posts with platform, copy, image references, timing
+- `plan.audience` â€” targeting parameters derived from campaign brief
+- `plan.budget` â€” estimated spend (placeholder in simulate mode)
 
-**Step B — Review the plan:**
+**Step B â€” Review the plan:**
 Check that:
 - Posts reference actual `assetId`s from the manifest (not stale or missing assets)
 - Copy tone matches campaign `voicePersona` and `toneKeywords`
 - Hashtag sets differ per platform (Instagram vs TikTok vs Facebook)
 - Image tags match platform requirements (1:1 for Instagram feed, 9:16 for stories, etc.)
 
-**Step C — Dispatch to platforms (live):**
+**Step C â€” Dispatch to platforms (live):**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/distribute \
   -H "Content-Type: application/json" \
@@ -433,21 +444,21 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/distribute \
 - Ad accounts must be active and funded
 - Campaign must have `status: GATHERING_INTEREST` or `status: ACTIVE`
 
-**Step D — Mark campaign live:**
+**Step D â€” Mark campaign live:**
 ```bash
 curl -X PATCH http://localhost:3000/api/groups/campaign/[slug] \
   -H "Content-Type: application/json" \
   -d '{"status": "GATHERING_INTEREST"}'
 ```
 
-#### 5.3 — Final QA Checklist
+#### 5.3 â€” Final QA Checklist
 
 1. **Landing page renders** at `/groups/[slug]` with hero, gallery, pricing, and waitlist
 2. **Book Now routing** works for both Group and Retail paths
 3. **Distribution plan** references valid assets and matches campaign tone
 4. **Campaign status** updated to `GATHERING_INTEREST`
 
-## 3. Campaign Directives — Targeted Artifact Fixes
+## 3. Campaign Directives â€” Targeted Artifact Fixes
 
 Use the Campaign Directive system to fix arbitrary issues in a campaign's generated media **without re-running the full brief pipeline (~100s)**. A directive expresses editorial intent in natural language, resolves it to concrete field overrides in one LLM call, marks only the affected assets stale, and regenerates only those assets.
 
@@ -457,47 +468,47 @@ Use the Campaign Directive system to fix arbitrary issues in a campaign's genera
 
 Use a directive when the campaign brief is structurally sound but the generated images have a specific, correctable problem:
 
-- "The board game props are too generic — use Azul, Catan, and Ticket to Ride specifically"
-- "The hero images all feel like a spa retreat — enforce the after-hours electric energy"
+- "The board game props are too generic â€” use Azul, Catan, and Ticket to Ride specifically"
+- "The hero images all feel like a spa retreat â€” enforce the after-hours electric energy"
 - "Remove the jazz bar interior from all hero stills, it reads as a music cruise not a board game cruise"
-- "The lighting in concept images is too dark — shift to morning light and warmer palette"
-- "The people in heroes look too corporate — wardrobe should feel indie and casual"
+- "The lighting in concept images is too dark â€” shift to morning light and warmer palette"
+- "The people in heroes look too corporate â€” wardrobe should feel indie and casual"
 
 Do NOT use a directive if the campaign brief itself is wrong (wrong niche temperature, wrong energy mode, wrong ship). For structural issues, re-run the brief via `enqueue-and-run-brief.ts`.
 
 ### Step-by-step: applying a directive as an agent
 
-**Step 1 — Create the directive** (resolves intent → patch, marks assets stale):
+**Step 1 â€” Create the directive** (resolves intent â†’ patch, marks assets stale):
 
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Make the board game props specific and renderable. Use Azul tile boards, Catan hex pieces, and Ticket to Ride train tokens as incidental background objects on café tables, bar rails, and lounge armrests. No generic dice or playing cards."
+    "text": "Make the board game props specific and renderable. Use Azul tile boards, Catan hex pieces, and Ticket to Ride train tokens as incidental background objects on cafÃ© tables, bar rails, and lounge armrests. No generic dice or playing cards."
   }'
 ```
 
 Response includes:
-- `directive.id` — needed for the apply call
-- `directive.scope` — which pools will be regenerated (`heroes`, `concepts`, `prop_families`, etc.)
-- `directive.patch` — the resolved field overrides (review this to confirm the agent understood correctly)
-- `affectedCount` — number of assets that will be regenerated
+- `directive.id` â€” needed for the apply call
+- `directive.scope` â€” which pools will be regenerated (`heroes`, `concepts`, `prop_families`, etc.)
+- `directive.patch` â€” the resolved field overrides (review this to confirm the agent understood correctly)
+- `affectedCount` â€” number of assets that will be regenerated
 
 **If `affectedCount` is 0:** the directive resolved to an empty patch. The instruction was too vague. Try again with more specific language naming concrete objects, placements, or lighting conditions.
 
-**Step 2 — Review the resolved patch** before applying. Check `directive.patch.allowedProps` and `directive.patch.stillPatches` to confirm the model understood the intent. If the patch looks wrong, do NOT apply — create a new directive with more precise language.
+**Step 2 â€” Review the resolved patch** before applying. Check `directive.patch.allowedProps` and `directive.patch.stillPatches` to confirm the model understood the intent. If the patch looks wrong, do NOT apply â€” create a new directive with more precise language.
 
-**Step 3 — Apply the directive** (triggers regeneration of stale pools only):
+**Step 3 â€” Apply the directive** (triggers regeneration of stale pools only):
 
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives/[directive.id]/apply
 ```
 
 Response includes:
-- `regenerated` — the new `AssetRecord[]` that were created
-- `directive.status` — `"applied"` on success, `"failed"` on error
+- `regenerated` â€” the new `AssetRecord[]` that were created
+- `directive.status` â€” `"applied"` on success, `"failed"` on error
 
-**Step 4 — Verify results:**
+**Step 4 â€” Verify results:**
 
 Direct the user to review regenerated assets at:
 ```
@@ -509,12 +520,12 @@ Navigate to the **Heroes & Concepts** tab. New assets will have `tags: ["hero", 
 
 Effective directives describe **what a camera would see or what an illustrator would draw**, not categories or concepts:
 
-| ❌ Too vague | ✅ Specific and renderable |
+| âŒ Too vague | âœ… Specific and renderable |
 |---|---|
-| "More board game energy" | "A half-finished Azul tile game on a teak café table with coffee cups, morning sea light" |
-| "Less spa-like" | "Remove robes, candles, and towel arrangements. Replace with casual indie wardrobe — denim, vintage tees, canvas bags" |
+| "More board game energy" | "A half-finished Azul tile game on a teak cafÃ© table with coffee cups, morning sea light" |
+| "Less spa-like" | "Remove robes, candles, and towel arrangements. Replace with casual indie wardrobe â€” denim, vintage tees, canvas bags" |
 | "Better lighting" | "Shift all hero stills to morning golden light through port-side lounge windows, not sunset or twilight" |
-| "Show the niche more" | "Add a Catan box spine visible on a café shelf in the background of the lounge still" |
+| "Show the niche more" | "Add a Catan box spine visible on a cafÃ© shelf in the background of the lounge still" |
 
 ### Listing existing directives for a campaign
 
@@ -528,13 +539,13 @@ Returns all directives with their status (`pending`, `applied`, `failed`). Usefu
 
 | Stage | Re-runs on directive apply? |
 |---|---|
-| Aesthetic engine (Pass 1/2/refinement) | ❌ Never |
-| Editors room (still bible, production bible) | ❌ Never |
-| Hero image generation | ✅ If scope includes `heroes` or `still_bible` |
-| Concept image generation | ✅ If scope includes `concepts` |
-| Scene image generation | ✅ If scope includes `scenes` |
-| Documentary details | ✅ If scope includes `documentary_details` |
-| Designed ad artifacts | ✅ If scope includes `designed_ads` |
+| Aesthetic engine (Pass 1/2/refinement) | âŒ Never |
+| Editors room (still bible, production bible) | âŒ Never |
+| Hero image generation | âœ… If scope includes `heroes` or `still_bible` |
+| Concept image generation | âœ… If scope includes `concepts` |
+| Scene image generation | âœ… If scope includes `scenes` |
+| Documentary details | âœ… If scope includes `documentary_details` |
+| Designed ad artifacts | âœ… If scope includes `designed_ads` |
 
 ---
 

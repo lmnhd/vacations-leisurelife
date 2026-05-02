@@ -50,7 +50,7 @@ async function main() {
     await test('ship-led scene assets resolve to realistic', () => {
         const resolved = resolveMediaStyle({
             assetKind: 'scene',
-            hasPeople: false,
+            hasPeople: true,
             seed: 'scene-01',
             themeAnchorProps: ['field notebook'],
         });
@@ -59,6 +59,18 @@ async function main() {
         assert.equal(resolved.allowPhotographicReinforcers, true);
         assert.match(resolved.promptBlock, /Documentary-grade cruise photography/i);
         assert.match(resolved.promptBlock, /field notebook/i);
+    });
+
+    await test('probe assets resolve to realistic even when people are visible', () => {
+        const resolved = resolveMediaStyle({
+            assetKind: 'probe',
+            hasPeople: true,
+            seed: 'probe-01',
+        });
+
+        assert.equal(resolved.style, 'realistic');
+        assert.equal(resolved.allowPhotographicReinforcers, true);
+        assert.match(resolved.promptBlock, /Documentary-grade cruise photography/i);
     });
 
     await test('film grade selection is deterministic by seed', () => {

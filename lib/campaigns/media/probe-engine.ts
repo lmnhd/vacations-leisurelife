@@ -18,7 +18,6 @@ import { generateProbeImage } from './generators/stability-generator';
 import { storeAsset } from './storage-client';
 import { saveProbeRunRecord, saveSceneProbeRunRecord } from './media-store';
 import { evaluateProbeImage } from './probe-evaluator';
-import { stillHasVisiblePeople } from './storyboard-motion-policy';
 import type { ProbeRunRecord, ProbeImageResult, ProbeRunVerdict, SceneSpec, LandingStillSpec } from '../schema';
 
 // ── Verdict logic — exported for unit testing ─────────────────────────────────
@@ -77,7 +76,7 @@ export async function runProbeLoop(slug: string): Promise<ProbeRunRecord> {
         try {
             const generated = await generateProbeImage(
                 still.imagePrompt,
-                stillHasVisiblePeople(still) ? 'sketched' : 'realistic',
+                'realistic',
                 {
                     seed: still.stillId,
                     themeAnchorProps: brief.visual.plausibilityFramework.allowedProps.slice(0, 2),
@@ -206,7 +205,7 @@ export async function runSceneProbeLoop(slug: string): Promise<ProbeRunRecord> {
         try {
             const generated = await generateProbeImage(
                 probeStill.imagePrompt,
-                stillHasVisiblePeople(probeStill) ? 'sketched' : 'realistic',
+                'realistic',
                 {
                     seed: scene.sceneId,
                     themeAnchorProps: brief.visual.plausibilityFramework.allowedProps.slice(0, 2),
