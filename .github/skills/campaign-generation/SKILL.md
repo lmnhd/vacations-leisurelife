@@ -69,6 +69,11 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **Integration:** The blueprint is auto-generated during brief engine orchestration and stored on the campaign aesthetic brief under `identityBlueprint`. It feeds downstream into documentary prompt building (`documentary-prompts.ts`), niche token extraction (`niche-tokens.ts`), and ad format routing.
 - **Agent guidance:** When reviewing a campaign, always check that the `identityBlueprint.energyMode` matches the actual media outputs. If the brief says `playful_collective` but the images drift toward "quiet premium lounge," this is an alignment drift that should be flagged.
 
+### Campaign Repair Playbook
+- For the recovery loop that got `board-games-at-sea` back on track, see [CAMPAIGN_REPAIR_PLAYBOOK.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/CAMPAIGN_REPAIR_PLAYBOOK.md).
+- Use that doc when an asset family is close but still generic: inspect the source-of-truth artifact, repair one layer, regenerate only the affected family, then stop for review.
+- The playbook also covers the scene-review checkpoint, the landing-still / ad distinction, and the cleanup rule for stale manifest passes after reruns.
+
 ### Anchor Compliance Tolerance (Phase 3)
 - **Symptom:** Brief generation fails with "Anchor compliance unresolved".
 - **Rules:**

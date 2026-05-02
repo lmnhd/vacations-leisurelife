@@ -21,6 +21,28 @@ The same API surface serves both the operator UI (`/tests/production-bible`, `/t
 
 ---
 
+## Agentic Flow Control
+
+This system is most useful when the agent behaves like a recovery loop rather than a blind runner. The intended pattern is:
+
+1. Inspect the source-of-truth artifact that drives the next step.
+2. Make one narrow repair if the artifact is weak.
+3. Re-run the downstream check or generation step.
+4. If the same warning or mismatch remains, stop and surface a human decision checkpoint.
+
+Use this rule across the whole campaign flow:
+
+- `blocker` means stop immediately
+- a persistent `warning` after one repair pass means ask the user what to do next
+- do not hide unresolved mismatches by pushing forward into the next phase
+- when the model is "close but not quite," repair the right layer instead of widening scope
+
+This keeps the agent acting as the glue between phases instead of a separate, competing source of truth.
+
+For the concrete recovery pattern that showed up during `board-games-at-sea`, see [CAMPAIGN_REPAIR_PLAYBOOK.md](./CAMPAIGN_REPAIR_PLAYBOOK.md). It documents the inspect → repair → regenerate → review loop for scenes, landing stills, and designed ads.
+
+---
+
 ## Implemented Endpoints
 
 ### Credit Pre-Check
