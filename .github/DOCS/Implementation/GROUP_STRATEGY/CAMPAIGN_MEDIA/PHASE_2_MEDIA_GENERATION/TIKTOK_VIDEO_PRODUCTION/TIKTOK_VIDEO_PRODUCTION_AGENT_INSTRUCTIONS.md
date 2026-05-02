@@ -6,11 +6,15 @@ This document synthesizes the design principles from the Claude Design handoff (
 
 The core thesis: **Sell the relief of not having to explain yourself, using the only thing your AI can actually render: hands, tables, light, and the occasional porthole.**
 
+For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.md](../../CAMPAIGN_EXAMPLES.md). It shows what to copy, what to avoid, and where "close but generic" usually goes wrong.
+
 ## Core Constraints
 
 - **AI Capabilities**: Image-to-video via RunwayML/Fal, composite with ffmpeg, ElevenLabs TTS, text overlays.
 - **Cannot Do**: Real people, complex multi-character interactions, true camera perspective changes.
 - **Must Do**: Hands, tables, light, portholes as primary subjects.
+
+**Text overlay reality check:** The current pipeline is text-aware, but visible text is not automatically guaranteed in the final MP4 unless the render path explicitly adds it. If a format relies on on-screen copy, the agent must verify the final render and treat missing text as an incomplete deliverable, not a stylistic preference.
 
 ## Marketing Frame Priority
 
@@ -142,6 +146,7 @@ Implement these five videos first, then iterate:
 - **Test Everything**: Run through scorecard before output.
 - **Iterate from Templates**: Build the five videos first, then adapt.
 - **Repair Before Scale**: When a campaign still feels generic, use the recovery loop in [CAMPAIGN_REPAIR_PLAYBOOK.md](../../CAMPAIGN_REPAIR_PLAYBOOK.md) before widening scope. Fix the source artifact, regenerate only the affected family, and stop for review before moving on.
+- **Use Examples as a Lens**: If a shot or render feels technically correct but emotionally flat, compare it to [CAMPAIGN_EXAMPLES.md](../../CAMPAIGN_EXAMPLES.md) before changing the whole workflow. The examples page is the fastest way to see whether the issue is the source image, the overlay language, or the motion treatment.
 
 ## Final Thesis
 

@@ -73,6 +73,7 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - For the recovery loop that got `board-games-at-sea` back on track, see [CAMPAIGN_REPAIR_PLAYBOOK.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/CAMPAIGN_REPAIR_PLAYBOOK.md).
 - Use that doc when an asset family is close but still generic: inspect the source-of-truth artifact, repair one layer, regenerate only the affected family, then stop for review.
 - The playbook also covers the scene-review checkpoint, the landing-still / ad distinction, and the cleanup rule for stale manifest passes after reruns.
+- For concrete good/bad output examples, see [CAMPAIGN_EXAMPLES.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/CAMPAIGN_EXAMPLES.md). Agents should compare current output against those examples before deciding whether to widen scope or repair upstream prompts.
 
 ### Anchor Compliance Tolerance (Phase 3)
 - **Symptom:** Brief generation fails with "Anchor compliance unresolved".
@@ -331,6 +332,7 @@ The codebase documentation states RunwayML Gen-3 Turbo as the primary video prov
 **Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** â€” they run alongside the full media pipeline, not instead of it. A generation request with no explicit `assetTypes` generates images, audio, video, and designed ads together. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress heroes, scenes, videos, or audio.
 
 **TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for improving promotional TikTok quality. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
+**Text overlay note:** The TikTok path is text-aware in prompts and templates, but that does not automatically guarantee burned-in text on the final MP4. If a TikTok format depends on visible text, verify the rendered asset itself before treating the video as complete.
 
 ---
 
@@ -353,6 +355,8 @@ Check each tab systematically:
 - **Designed Ads** â€” ad templates rendered? Multiple placements (1:1, 4:5, 9:16)?
   - Remember this tab includes both final designed ads and their source modules. The actual template coverage lives in `manifest.images.designedAdArtifacts`.
 - **Crops, Video, Audio, Merch** â€” as applicable
+
+When an output feels technically correct but emotionally flat, compare it against [CAMPAIGN_EXAMPLES.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/CAMPAIGN_EXAMPLES.md) before you change the whole pipeline. The examples page shows the difference between generic cruise imagery and campaign-specific imagery that carries the niche in-frame.
 
 If scene images look generic (no niche props, just standard cruise locations), the production bible `imagePrompt` fields were empty when generation ran. Fix: re-run the brief, re-approve, then regenerate with `sceneImageMode: "all"`.
 

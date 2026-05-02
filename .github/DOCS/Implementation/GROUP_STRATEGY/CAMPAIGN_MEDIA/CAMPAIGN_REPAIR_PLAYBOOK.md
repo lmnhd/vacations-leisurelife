@@ -19,6 +19,8 @@ The goal is not to keep asking the model for "more detail" in the abstract. The 
 
 That loop is the agentic glue for the campaign builder.
 
+For a concrete visual reference set, see [CAMPAIGN_EXAMPLES.md](./CAMPAIGN_EXAMPLES.md). Use that page when judging whether an asset is merely acceptable or actually communicating the campaign.
+
 ---
 
 ## 2. The Recovery Loop
@@ -140,6 +142,8 @@ That matters when the campaign has a good current pass but the review surface st
 - `stability-generator.ts` for model-facing prompt wording
 - `media-orchestrator.ts` for selective regeneration and review boundaries
 - directive application for targeted creative refreshes
+
+If the current output still feels generic, compare it against the examples gallery before choosing a broader repair. The gallery is there to make the next decision cheaper and clearer, especially for image families that sit close to the right answer but still lack the niche in-frame.
 
 ---
 
