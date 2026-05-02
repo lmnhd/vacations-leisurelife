@@ -27,20 +27,20 @@ export const PAID_VARIANT_SHOTS: readonly PaidVariantShotTemplate[] = [
     {
         shotRole: 'hook',
         defaultDurationSeconds: 5,
-        motionEnergy: 'Immediate, decisive — the viewer decides to stop in 1s',
-        cameraDirective: 'Tight establishing shot — ship, sea, and one clear campaign identity marker in the same frame; no ambiguity about what this cruise is',
+        motionEnergy: 'Immediate, decisive — the viewer decides to stop in 1s with one readable frame and one short text cue',
+        cameraDirective: 'Tight still frame — ship, sea, and one clear campaign identity marker in the same frame; no ambiguity about what this cruise is',
     },
     {
         shotRole: 'proof',
         defaultDurationSeconds: 8,
-        motionEnergy: 'Credible, lived-in — this is a real vacation, not a performance',
-        cameraDirective: 'Medium shot of the campaign niche moment as a natural part of cruise life; ship architecture or open water visible; no staged demonstration energy',
+        motionEnergy: 'Credible, lived-in — this is a real vacation, not a performance, with the niche cue readable at a glance',
+        cameraDirective: 'Medium still shot of the campaign niche moment as a natural part of cruise life; ship architecture or open water visible; no staged demonstration energy',
     },
     {
         shotRole: 'cta_close',
         defaultDurationSeconds: 7,
-        motionEnergy: 'Forward and inviting — momentum toward the action',
-        cameraDirective: 'Clean horizontal pull-back or slow push to a composed finish; text overlay safe; ship-first framing; premium but approachable',
+        motionEnergy: 'Forward and inviting — momentum toward the action through text, layout, and a calm finish',
+        cameraDirective: 'Clean composed finish; text overlay safe; ship-first framing; premium but approachable; no camera move required',
     },
 ];
 
@@ -60,7 +60,7 @@ export function buildPaidVariantShotPrompts(brief: CampaignAestheticBrief): stri
             `Value proposition: ${headline}`,
             `Color: ${colorPalette.primary}; ${lightingStyle}`,
             `Niche marker (one clear cue): ${cruiseNativeMoments[0] ?? 'campaign niche visible but not dominant'}`,
-            'No text, no talking heads, no whiteboard, no product demo — pure visual story',
+            'No talking heads, no whiteboard, no product demo — pure visual story with text support',
         ].join('. '),
 
         // Shot 2 — PROOF
@@ -70,7 +70,7 @@ export function buildPaidVariantShotPrompts(brief: CampaignAestheticBrief): stri
             `Mood: ${imageryMood}`,
             `Warm ${colorPalette.secondary} with ${colorPalette.accent} accents`,
             'Campaign niche shown as a relaxed guest activity — secondary to the ship and sea',
-            'Avoid staged props, workshop layout, demonstration energy, signage',
+            'Avoid staged props, workshop layout, demonstration energy, signage, or camera moves',
         ].join('. '),
 
         // Shot 3 — CTA CLOSE
@@ -80,7 +80,7 @@ export function buildPaidVariantShotPrompts(brief: CampaignAestheticBrief): stri
             `CTA: ${cta}`,
             `${lightingStyle}, open horizon, ${colorPalette.primary} anchor`,
             'Leave clear headroom and side margin for text overlay',
-            'Avoid clutter, avoid dark frame, avoid motion that competes with overlay text',
+            'Avoid clutter, avoid dark frame, avoid motion that competes with overlay text or camera movement',
         ].join('. '),
     ];
 }

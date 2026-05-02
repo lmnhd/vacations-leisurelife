@@ -92,7 +92,7 @@ export async function generateStoryboardVideo(
         ...brief,
         audio: {
             ...brief.audio,
-            ambientNarrationScript: storyboard.narrationScript,
+            ambientNarrationScript: storyboard.deliverableId.startsWith('tiktok') ? '' : storyboard.narrationScript,
         },
     };
 
@@ -205,7 +205,7 @@ export async function generateTikTokSeed(
         ...brief,
         audio: {
             ...brief.audio,
-            ambientNarrationScript: [hook, bodyScript, callToAction].filter(Boolean).join('\n\n'),
+            ambientNarrationScript: '',
         },
     };
     const organicFormat = inferTikTokFormat('tiktok_organic_seed');

@@ -2,6 +2,10 @@ import { CampaignAestheticBrief } from '../../schema';
 import type { ElevenLabsVoiceRole } from '../elevenlabs-voices';
 import { ELEVENLABS_CONFIG } from '../media-pipeline-config';
 import { resolveElevenLabsVoiceForRole } from '../voice-preference';
+import { spawn } from 'child_process';
+import { access, mkdtemp, readFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 // ────────────────────────────────────────────────────────────────────────────
 // ElevenLabs Audio Generator
@@ -13,6 +17,64 @@ function getApiKey(): string {
     const key = process.env.ELEVENLABS_API_KEY;
     if (!key) throw new Error('ELEVENLABS_API_KEY not set in environment');
     return key;
+}
+
+async function getFfmpegPath(): Promise<string> {
+    const candidates = [
+        join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
+        join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    ];
+
+    for (const candidate of candidates) {
+        try {
+            await access(candidate);
+            return candidate;
+        } catch {
+            continue;
+        }
+    }
+
+    throw new Error(`ffmpeg binary not found. Checked: ${candidates.join(', ')}`);
+}
+
+async function runFfmpeg(args: readonly string[]): Promise<void> {
+    const ffmpegPath = await getFfmpegPath();
+    await new Promise<void>((resolve, reject) => {
+        const child = spawn(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        let stderr = '';
+        child.stderr.on('data', (chunk: Buffer) => {
+            stderr += chunk.toString();
+        });
+        child.on('error', reject);
+        child.on('close', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(`ffmpeg exited with code ${code ?? 'unknown'}: ${stderr}`));
+        });
+    });
+}
+
+async function generateSilenceAudio(durationSeconds: number): Promise<Buffer> {
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-elevenlabs-silence-'));
+    const outputPath = join(tempDirectory, 'silence.mp3');
+
+    try {
+        await runFfmpeg([
+            '-y',
+            '-f', 'lavfi',
+            '-i', 'anullsrc=r=44100:cl=stereo',
+            '-t', String(durationSeconds),
+            '-q:a', '9',
+            '-acodec', 'libmp3lame',
+            outputPath,
+        ]);
+
+        return await readFile(outputPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
 }
 
 interface ElevenLabsResponse {
@@ -63,6 +125,20 @@ export async function generateAmbientNarration(
     brief: CampaignAestheticBrief
 ): Promise<GeneratedAudio> {
     const script = brief.audio.ambientNarrationScript.slice(0, ELEVENLABS_CONFIG.narrationMaxChars);
+    if (script.trim().length === 0) {
+        const voice = await resolveElevenLabsVoiceForRole('narration');
+        const buffer = await generateSilenceAudio(1);
+        return {
+            buffer,
+            script,
+            assetId: 'audio_ambient_narration',
+            fileName: 'audio/ambient_narration.mp3',
+            voiceId: voice.voiceId,
+            voiceName: voice.voiceName,
+            voiceRole: voice.role,
+        };
+    }
+
     const voice = await resolveElevenLabsVoiceForRole('narration');
     const buffer = await generateSpeech(script, voice.voiceId);
     return {

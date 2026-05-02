@@ -21,11 +21,11 @@ export function buildProductionSafeMotionPrompt(motionPrompt: string, format: Vi
     const normalizedPrompt = motionPrompt.trim();
 
     const formatLeader = format === 'tiktok'
-        ? 'Punchy social-native motion; hook the viewer in the first two seconds with intentional camera energy and clear subject read'
+        ? 'Text-first social-native motion; keep the frame readable for overlay copy and let the hook land immediately'
         : 'Preserve the source image, subject identity, and composition';
 
     const formatFooter = format === 'tiktok'
-        ? 'Keep motion native to the format: hard cuts feel better than gentle drift; every second must carry the campaign identity'
+        ? 'No camera moves, no zoom, no pan, no dolly, no perspective change; use a single in-frame action and let hard cuts handle pacing'
         : 'Avoid warped anatomy, extra limbs, prop duplication, mug or cup distortion, or scene swaps';
 
     return joinSegmentsWithinLimit([

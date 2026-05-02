@@ -762,7 +762,7 @@ export async function runMediaGeneration(
                         scenesToGenerate,
                         sceneReferenceCandidates,
                         campaign.shipTarget || 'TBD',
-                        brief?.visual.plausibilityFramework.allowedProps.slice(0, 2) ?? [],
+                        brief?.visual.plausibilityFramework.allowedProps.slice(0, 5) ?? [],
                     );
                     const records: AssetRecord[] = [];
                     for (const img of sceneImages) {
@@ -936,7 +936,11 @@ export async function runMediaGeneration(
                     // Resolve distribution tag from the format registry — deterministic, not substring-based
                     const tiktokFormat = assetType === 'tiktok_seed_video' ? inferTikTokFormat(delivId) : null;
                     const distributionTags = tiktokFormat ? [tiktokFormat.distributionTag] : [];
-                    const baseTags = ['video', 'storyboard', delivId, 'narrated', ...distributionTags, ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)];
+                    const isTextFirstTikTok = assetType === 'tiktok_seed_video' && video.script.trim().length === 0;
+                    const narrationTags = isTextFirstTikTok
+                        ? ['text_first']
+                        : ['narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)];
+                    const baseTags = ['video', 'storyboard', delivId, ...narrationTags, ...distributionTags];
                     const rec = await uploadAndRecord(
                         slug, video.assetId, assetType, activeVideoGeneratorService,
                         `${video.motionPrompt}\n\n${video.script}`,

@@ -60,9 +60,10 @@ export function scoreTikTokVideoReadiness(
         score -= missingScenes.length * 15;
     }
 
-    // Narration must be present for all formats
-    if (!asset.tags.includes('narrated')) {
-        issues.push('Video has no narration tag — ElevenLabs generation may have failed or been skipped');
+    // TikTok may be text-first instead of narrated when the production instructions
+    // intentionally keep the asset silent and rely on overlays/hard cuts.
+    if (!asset.tags.includes('narrated') && !asset.tags.includes('text_first')) {
+        issues.push('Video has no narration or text-first tag — ElevenLabs generation may have failed or been skipped');
         score -= 25;
     }
 
