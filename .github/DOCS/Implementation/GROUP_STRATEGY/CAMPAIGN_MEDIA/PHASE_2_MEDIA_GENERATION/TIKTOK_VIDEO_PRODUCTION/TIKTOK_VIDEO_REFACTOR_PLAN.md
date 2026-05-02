@@ -92,7 +92,8 @@ To get there, we should keep the plan focused on four layers:
 - Each scene must carry a clear action, framing, light, and camera angle
 - Storyboards must remain scene-driven and motion-safe
 - The system should reject empty cruise-brochure scenes earlier
-- Add a dedicated scene-probe loop for `productionBible.sceneLibrary` later; keep landing-still probes separate
+- Add a dedicated scene-probe loop for `productionBible.sceneLibrary` and wire it into the readiness / generation gate path; keep landing-still probes separate
+- Upgrade the scene-quality validator from lexical checks to stricter structural checks where possible
 
 **Acceptance criteria:**
 
@@ -144,12 +145,15 @@ To get there, we should keep the plan focused on four layers:
 - reject low-quality videos before publish
 - keep `tiktok` and `tiktok_paid` quality checks separate where needed
 - add scene-aware probing for scene-image confidence, not just landing-still confidence
+- fail closed when the lint score drops below the publish threshold instead of only emitting warnings
+- make the paid-path tag contract explicit in generation and linting so the paid rule does not false-fail forever
 
 **Acceptance criteria:**
 
 - every generated TikTok video gets a lint score
 - sub-threshold videos do not publish
 - probe and lint results are visible enough to debug without guessing
+- the paid path and organic path can be distinguished deterministically from the asset record and manifest
 
 ### Phase 3: Reusable TikTok Templates
 
@@ -166,16 +170,30 @@ To get there, we should keep the plan focused on four layers:
 - keep the prompts campaign-agnostic, with niche-specific slots for props, hooks, and audio cues
 - keep the manifest asset type stable unless a real downstream need appears
 - use distribution platform and provider draft type to distinguish organic and paid delivery
+- make format inference explicit, not substring-based, so new deliverable IDs do not silently misclassify
 
 **Acceptance criteria:**
 
 - a new campaign can produce TikTok video variants from reusable templates
 - only the niche-specific slots change between campaigns
 - the output still feels specific instead of templated
+- the organic and paid formats are selected by registry rules that are easy to audit
 
 ---
 
-## 5. Decisions We Are Locking In
+## 5. Known Gaps To Close Before We Call This Done
+
+These are the blockers the implementation work must close. They are the difference between a tidy refactor and a system we can trust.
+
+1. The new scene probe loop must be called from the pipeline, not just exported.
+2. Lint must gate publication, not just record metadata.
+3. The paid TikTok path needs a real tag/source-of-truth contract so the paid lint rule can succeed when the output is correct.
+4. Format selection should use explicit registry lookup or a deliverable map, not a substring heuristic.
+5. Scene validation should catch empty or location-only moments before they reach generation, but without becoming a brittle pile of one-off regexes.
+
+---
+
+## 6. Decisions We Are Locking In
 
 - Keep `tiktok_seed_video` as the main media asset type for the video generator
 - Use `tiktok` versus `tiktok_paid` in distribution to separate organic and paid delivery
@@ -185,7 +203,7 @@ To get there, we should keep the plan focused on four layers:
 
 ---
 
-## 6. What Good Looks Like
+## 7. What Good Looks Like
 
 We are done when:
 
@@ -197,11 +215,73 @@ We are done when:
 
 ---
 
-## 7. Next Steps
+## 8. Agent Execution Plan
 
-1. Update the scene-generation pipeline so the production bible emits real moments
-2. Harden the TikTok storyboard composer so it stops truncating and drifting
-3. Add lint gating for TikTok video quality
-4. Add a scene-aware probe loop
-5. Build reusable organic and paid TikTok templates
+This is the work order for the implementation agents. Keep the scopes disjoint so the changes land cleanly.
 
+### Agent 1: Scene Quality And Probe Wiring
+
+**Scope:**
+- `lib/campaigns/brief-engine/validation.ts`
+- `lib/campaigns/media/probe-engine.ts`
+- `lib/campaigns/media/media-orchestrator.ts`
+
+**Tasks:**
+- tighten scene validation so empty and location-only scene moments are rejected earlier
+- wire `runSceneProbeLoop()` into the actual readiness / generation path
+- make scene probes a real confidence gate for `scene_image`
+
+**Success criteria:**
+- scene probes run from the pipeline, not just from a helper export
+- scene readiness fails loudly when the bible is not fit for video generation
+- no landing-still probe result is mistaken for scene-image validation
+
+### Agent 2: Composer And Motion Safety
+
+**Scope:**
+- `lib/campaigns/media/video-composer.ts`
+- `lib/campaigns/media/generators/runway-generator.ts`
+- `lib/campaigns/media/generators/tiktok-seed-generator.ts`
+
+**Tasks:**
+- preserve target durations without truncating the end of narration
+- keep TikTok motion prompts format-aware and ship-safe
+- make storyboard-driven TikTok videos use the right per-shot source frames and timing
+
+**Success criteria:**
+- no more clip collapse from default ffmpeg trimming on TikTok paths
+- storyboard output stays readable and punchy from hook to payoff
+- video generation remains stable across organic and storyboard-driven paths
+
+### Agent 3: Lint Gate And Paid Path Contract
+
+**Scope:**
+- `lib/campaigns/media/lint/video-lint.ts`
+- `lib/campaigns/media/media-orchestrator.ts`
+- `lib/campaigns/schema.ts`
+
+**Tasks:**
+- turn lint from advisory metadata into a publish gate
+- make paid vs organic tags explicit and deterministic
+- keep lint scores visible in the manifest and review UI
+
+**Success criteria:**
+- fail scores block publication
+- paid assets can actually satisfy the paid lint rule
+- lint state is stored on the asset record without schema drift
+
+### Agent 4: Reusable TikTok Format Registry
+
+**Scope:**
+- `lib/campaigns/media/generators/tiktok-formats/*`
+- `lib/campaigns/media/generators/tiktok-seed-generator.ts`
+
+**Tasks:**
+- keep the organic and paid templates reusable across campaigns
+- replace substring-based format inference with explicit registry lookup
+- keep the prompt slots campaign-specific without baking in campaign-specific hacks
+
+**Success criteria:**
+- format selection is auditable and deterministic
+- the organic and paid templates remain easy to extend
+- new campaigns can reuse the system without duplicating format logic
