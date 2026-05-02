@@ -103,6 +103,7 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **404 behavior:** `GET /api/groups/campaign/[slug]/media/probe` returns 404 when no probe run has been saved yet. This is expected before the first `POST /api/groups/campaign/[slug]/media/probe`; it is not itself a generation failure.
 - **Generation gate reality:** The media orchestrator has an optional `probeGate` (`ignore`, `warn_only`, `require_approved`), but the public `/media/generate` route currently does not expose or force it. If a caller opts into `require_approved`, the gate applies to all spend-gated image types (`hero_image`, `aesthetic_concept`, `scene_image`) even though the probes only validate landing still directions. Treat that as a broad pre-spend quality gate, not proof that scene prompts are correct.
 - **When scene images look wrong:** Inspect the Production Bible scene library and `scene_image` `promptUsed` records directly. If the scene library is missing/empty, regenerate the aesthetic brief/production bible before spending on scene images. If the scene library exists but scene images drift, use a directive scoped to scenes or update the production-bible scene prompts; rerunning landing still probes alone will not fix scene-frame prompts.
+- **Warning escalation rule:** `scene_niche_cue_missing` and `scene_human_presence_weak` are allowed to auto-run once through a repair pass, but if they persist after that pass the agent must stop and ask the user for an explicit decision before any more scene-image or video spend. Treat persistent scene warnings as `needs_user_decision`, not as background noise.
 - **Recommended next implementation fix:** Add a dedicated scene-probe loop that renders one cheap probe per `productionBible.sceneLibrary` scene and gates `scene_image` generation against that result. Keep landing-still probes for hero/concept stills.
 
 ## 2. End-to-End Workflow
@@ -138,6 +139,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
    - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (≤4 tolerated content violations), it continues but flags downstream.
 3. **Verify the production bible before proceeding — this is mandatory.**
    Check `brief.productionBible.sceneLibrary` in the readiness response. Every scene object must have a non-empty `imagePrompt` field. If all `imagePrompt` fields are empty strings, the production bible generation failed silently and scene images will be generic. Re-run the brief bundle before proceeding to media generation.
+   - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
 4. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
@@ -221,6 +223,8 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 `sceneImageMode: "missing_only"` skips scenes that already have an image in the manifest. Use `"all"` to regenerate everything (e.g. after a brief re-run or directive change).
 
 **Important scope note:** A request to run "through scene images" stops here. It includes Step A (ship references), Step B (heroes + concepts), and Step C (scene images), but it does **not** include documentary detail modules or designed ads. Those belong to Step D and must be requested or executed explicitly if the goal is a full image pack.
+
+**Scene warning gate:** If the scene layer still produces `scene_niche_cue_missing` or `scene_human_presence_weak` after the first repair pass, stop the flow and present the user with a decision checkpoint. The agent may repair once automatically, but it may not silently continue through video generation while those warnings persist.
 
 **Step D — Documentary details + designed ads (together):**
 ```bash

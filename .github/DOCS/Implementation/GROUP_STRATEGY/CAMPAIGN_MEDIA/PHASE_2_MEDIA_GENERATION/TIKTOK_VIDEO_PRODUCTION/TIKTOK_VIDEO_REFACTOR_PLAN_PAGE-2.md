@@ -145,6 +145,11 @@ That means:
 - preserve the current ship realism while making the social texture legible
 - leave room for image-first promotional treatment instead of forcing every asset into full-motion animation
 
+**Success criteria:**
+- the generator can render people without relying on perfect facial detail
+- scenes feel inhabited rather than empty
+- the board-game identity reads in the first glance, not only after close inspection
+
 ### Agent 4: Text Overlays And Image-First Motion
 
 **Scope:**
@@ -162,11 +167,6 @@ That means:
 - promotional assets can communicate even when the underlying scene is simple
 - text works as part of the design, not only as a downstream copy artifact
 - lightweight image animation remains a deliberate choice, not a fallback
-
-**Success criteria:**
-- the generator can render people without relying on perfect facial detail
-- scenes feel inhabited rather than empty
-- the board-game identity reads in the first glance, not only after close inspection
 
 ### Agent 5: Regression Coverage
 
@@ -188,7 +188,22 @@ That means:
 
 ---
 
-## 5. Recommended Scene Cue Library
+## 5. Decision Gate Policy
+
+The strongest version of this flow is not "warnings are ignored" and it is not "warnings always block immediately."
+
+Use this rule instead:
+
+1. The agent may make **one automatic repair pass** when `scene_niche_cue_missing` or `scene_human_presence_weak` appears.
+2. If the same warning remains after that pass, the agent must stop and ask the user for a decision.
+3. The agent may not continue into scene-image spend, TikTok generation, or designed-ad regeneration while persistent scene warnings remain unresolved.
+4. The user decision should be explicit: approve as-is, request another repair pass, or retire/rework the campaign direction.
+
+This keeps the campaign agentic while still making you the final quality authority when the scene layer is drifting.
+
+---
+
+## 6. Recommended Scene Cue Library
 
 Use this as the shared vocabulary for board-games-at-sea scene prompts:
 
@@ -206,7 +221,7 @@ These cues should stay subtle. They should say "group atmosphere" without turnin
 
 ---
 
-## 6. Known Gaps To Close
+## 7. Known Gaps To Close
 
 These are the specific missing pieces Page 2 should solve:
 
@@ -218,7 +233,7 @@ These are the specific missing pieces Page 2 should solve:
 
 ---
 
-## 7. What Good Looks Like
+## 8. What Good Looks Like
 
 We are done when:
 
@@ -230,7 +245,7 @@ We are done when:
 
 ---
 
-## 8. Next Steps for Agents
+## 9. Next Steps for Agents
 
 1. Update scene prompt generation so niche and human-presence cues are required
 2. Tighten scene validation so ship-only scenes do not pass as complete
