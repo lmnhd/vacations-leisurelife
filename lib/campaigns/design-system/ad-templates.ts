@@ -442,14 +442,16 @@ export function buildDesignedAdRenderSpecs(
         return { spec, score: kindScore + tagScore };
     });
 
-    // Keep everything that has at least one bias signal, and always keep the first spec (primary placement)
-    const filtered = scored.filter((s, index) => index === 0 || s.score > 0);
-    if (filtered.length === 0) return all;
-    return filtered.map((s) => s.spec).sort((a, b) => {
-        const aScore = scored.find((s) => s.spec === a)?.score ?? 0;
-        const bScore = scored.find((s) => s.spec === b)?.score ?? 0;
-        return bScore - aScore;
-    });
+    // Bias should re-rank the pack, not collapse it to a tiny subset. We still want
+    // the full designed artifact family so review sees actual template coverage.
+    return scored
+        .sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            return all.indexOf(a.spec) - all.indexOf(b.spec);
+        })
+        .map((entry) => entry.spec);
 }
 
 export async function renderDesignedAdArtifact(

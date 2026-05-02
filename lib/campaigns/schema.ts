@@ -1063,6 +1063,9 @@ export const AssetRecordSchema = z.object({
     version: z.number().default(1),
     active: z.boolean().default(true),
     curation: AssetCurationSchema.optional(),
+    /** ID of the CampaignDirective that invalidated this asset, if any. */
+    invalidatedBy: z.string().optional(),
+    invalidatedAt: z.string().optional(),
 });
 export type AssetRecord = z.infer<typeof AssetRecordSchema>;
 
@@ -1223,6 +1226,67 @@ export const CampaignMediaManifestSchema = z.object({
     }).nullable(),
 });
 export type CampaignMediaManifest = z.infer<typeof CampaignMediaManifestSchema>;
+
+// ─── Campaign Directive System ────────────────────────────────────────────────
+
+/**
+ * Which asset pools a directive targets. Determines which manifest sections
+ * get marked stale and which generators re-run on apply.
+ */
+export const DirectiveScopeEnum = z.enum([
+    'heroes',
+    'concepts',
+    'documentary_details',
+    'designed_ads',
+    'scenes',
+    'still_bible',
+    'prop_families',
+]);
+export type DirectiveScope = z.infer<typeof DirectiveScopeEnum>;
+
+/** Per-still imagePrompt override, applied to brief.landingStillBible.stillLibrary. */
+export const StillPatchSchema = z.object({
+    stillId: z.string(),
+    imagePrompt: z.string(),
+});
+export type StillPatch = z.infer<typeof StillPatchSchema>;
+
+/**
+ * Concrete field overrides resolved from a directive's natural language text.
+ * Applied via patchBriefForDirective() before image generators run.
+ */
+export const DirectivePatchSchema = z.object({
+    allowedProps: z.array(z.string()).optional(),
+    discouragedProps: z.array(z.string()).optional(),
+    nicheEnhancedMoments: z.array(z.string()).optional(),
+    propFamilies: z.array(z.string()).optional(),
+    stillPatches: z.array(StillPatchSchema).optional(),
+    scenePatches: z.array(z.object({ sceneId: z.string(), imagePrompt: z.string() })).optional(),
+});
+export type DirectivePatch = z.infer<typeof DirectivePatchSchema>;
+
+export const DirectiveStatusEnum = z.enum(['pending', 'applied', 'failed']);
+export type DirectiveStatus = z.infer<typeof DirectiveStatusEnum>;
+
+/**
+ * An editorial directive: natural language intent resolved to a concrete patch,
+ * stored immutably, applied selectively to affected asset pools.
+ */
+export const CampaignDirectiveSchema = z.object({
+    id: z.string(),
+    slug: z.string(),
+    text: z.string(),
+    scope: z.array(DirectiveScopeEnum),
+    patch: DirectivePatchSchema,
+    status: DirectiveStatusEnum,
+    affectedAssetIds: z.array(z.string()),
+    createdAt: z.string(),
+    appliedAt: z.string().optional(),
+    failureReason: z.string().optional(),
+});
+export type CampaignDirective = z.infer<typeof CampaignDirectiveSchema>;
+
+// ─── Distribution ─────────────────────────────────────────────────────────────
 
 export const DistributionPlatformEnum = z.enum([
     'tiktok',

@@ -126,6 +126,32 @@ async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs: num
     }
 }
 
+/**
+ * Derives prop allowance rules from the campaign's own plausibility framework.
+ * When the brief names allowed props, those specific cues are permitted as incidental
+ * details. When no props are listed the rule is a generic "no prop required" without
+ * suppressing any particular category of object.
+ */
+function buildPropAllowanceRules(allowedProps: readonly string[]): string[] {
+    if (allowedProps.length > 0) {
+        const topProps = allowedProps.slice(0, 3).join(', ');
+        return [
+            `Approved incidental cue for this campaign: ${topProps} — one may appear as a small background detail`,
+            'Keep any approved prop secondary — ship, sea, people, and light carry the frame first',
+            'One cue maximum; never spread multiple props or arrange a tabletop display',
+            'The prop appears only after the ship and human moment are already working without it',
+            'Skip the prop entirely when setting and people already read clearly on their own',
+        ];
+    }
+    return [
+        'No specific prop cue required for this frame',
+        'If any object appears, keep it nearly subliminal and never the visual anchor',
+        'Ship environment, human moment, and light must read clearly before any object',
+        'Object is optional and only appears after ship and people are already carrying the frame',
+        'Prefer a prop-free composition unless one small detail clearly improves believability',
+    ];
+}
+
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
     const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
     const casting = brief.visual.humanRepresentation;
@@ -139,27 +165,22 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
     const implausibleText = plausibility.implausibleLiteralizations.slice(0, 5).join(', ');
     const stagedEventAvoidText = 'visible stages, risers, performance platforms, PA speakers, drum kits, full bands, formal concerts, organized demonstrations, workshops, staged activity setups, literal onboard niche events';
     const nicheMoments = plausibility.nicheEnhancedMoments;
+    const visualFlavor = brief.identityBlueprint?.visualFlavor;
     const nonObjectSignals = [
         'signal the niche through side-by-side ease, shared attention, and relaxed timing',
-        'use wardrobe texture, color accents, or subtle personal styling before any tabletop object',
+        'use wardrobe texture, color accents, or subtle personal styling before any explicit prop',
         'let seat choice, body angle, and window-facing posture carry the niche mood',
         'favor environmental storytelling through architecture, rail lines, harbor light, and ship atmosphere',
-        'show quiet familiarity, anticipation, or low-pressure companionship instead of visible game mechanics',
+        'show quiet familiarity, anticipation, or low-pressure companionship rather than explicit prop display',
     ];
     const cueStrategies = [
-        'express the niche through easy two-person chemistry or a shared glance first, not through a tabletop setup',
+        'express the niche through easy two-person chemistry or a shared glance first, before any staged arrangement',
         'favor wardrobe or carry-on identity cues over handheld objects',
         'if a prop appears, keep it singular, incidental, and secondary to the travel moment',
         'let the niche read through posture, pacing, and quiet companionship rather than gear',
         'use environmental or styling cues before object cues whenever possible',
     ];
-    const propAllowanceRules = [
-        'No visible tabletop object required in this frame',
-        'If any prop appears, keep it nearly subliminal and never central',
-        'Avoid cards, dice, tokens, scorepads, and pins as the main read',
-        'Object cue optional only after the ship, people, and light are already carrying the frame',
-        'Prefer a prop-free composition unless one tiny cue genuinely improves realism',
-    ];
+    const propAllowanceRules = buildPropAllowanceRules(plausibility.allowedProps);
 
     const landingStillSpecs = selectHeroLandingStillSpecs(brief);
     if (landingStillSpecs.length > 0) {
@@ -172,6 +193,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 hasPeople: stillHasVisiblePeople(still),
                 seed: still.stillId,
                 themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+                visualFlavor,
             });
 
             return [
@@ -202,11 +224,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Pairing guidance: ${casting.pairingGuidance}`,
                 `Styling guidance: ${casting.stylingGuidance}`,
                 `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
-                `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
+                allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
                 landscapeGuardrails.reality,
                 resolvedStyle.promptBlock,
-                `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, repetitive token-die-tuckbox clichés across the set, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'microscope, clipboards, lab bench gear'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, field-station setups'}`,
+                `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
             ].filter(Boolean).join('. ');
         });
     }
@@ -222,6 +244,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 hasPeople: sceneHasVisiblePeople(scene),
                 seed: scene.sceneId,
                 themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+                visualFlavor,
             });
 
             return [
@@ -245,11 +268,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
                 `People count: 1-3 max, no crowds, no dense group scenes`,
-                `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
+                allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
                 landscapeGuardrails.reality,
                 resolvedStyle.promptBlock,
-                `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, repetitive token-die-tuckbox clichés across the set, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'microscope, clipboards, lab bench gear'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, field-station setups'}`,
+                `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
             ].filter(Boolean).join('. ');
         });
     }
@@ -270,6 +293,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             hasPeople: true,
             seed: `fallback_hero_${index}`,
             themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+            visualFlavor,
         });
 
         return [
@@ -293,11 +317,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Pairing guidance: ${casting.pairingGuidance}`,
             `Styling guidance: ${casting.stylingGuidance}`,
             `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
-            `Believable cues: ${allowedPropsText || 'notebook, binoculars, sample jar, map, field guide'}`,
+            allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
             `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
             landscapeGuardrails.reality,
             resolvedStyle.promptBlock,
-            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, repetitive token-die-tuckbox clichés across the set, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'microscope, clipboards, lab bench gear'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, field-station setups'}`,
+            `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
         ].filter(Boolean).join('. ');
     });
 }
@@ -550,11 +574,12 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     const travelFirstDirection = buildTravelFirstHeroDirection(brief, brief.themeName);
     const plausibility = brief.visual.plausibilityFramework;
     const nicheMoments = plausibility.nicheEnhancedMoments;
+    const visualFlavor = brief.identityBlueprint?.visualFlavor;
     const conceptSignalRotation = [
         'shared glances, relaxed timing, and easy two-person chemistry',
         'wardrobe accents, personal styling, and tactile travel textures',
         'window choice, seating posture, and ship architecture as social context',
-        'harbor haze, rail light, and destination atmosphere rather than a visible game object',
+        'harbor haze, rail light, and destination atmosphere rather than any explicit prop',
     ];
     const stagedEventAvoidText = 'visible stages, risers, performance platforms, PA speakers, drum kits, full bands, formal concerts, organized demonstrations, workshops, staged activity setups, literal onboard niche events';
 
@@ -567,6 +592,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
                 hasPeople: true,
                 seed: still.stillId,
                 themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+                visualFlavor,
             });
 
             return [
@@ -609,6 +635,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
                 hasPeople: true,
                 seed: scene.sceneId,
                 themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+                visualFlavor,
             });
 
             return [
@@ -655,6 +682,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             hasPeople: true,
             seed: `fallback_concept_${index}`,
             themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+            visualFlavor,
         });
 
         return [
@@ -672,11 +700,11 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Diversity guidance: ${casting.diversityIntent}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
             `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
-            `Object rule: do not require cards, dice, tokens, scorepads, or pins as the main read of the image`,
+            `Prop rule: if any object appears, it must be incidental and secondary — never the main read of the frame`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
             landscapeGuardrails.reality,
             resolvedStyle.promptBlock,
-            `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, ${stagedEventAvoidText}, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
+            `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, the same prop repeated in every image, ${stagedEventAvoidText}, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
         ].filter(Boolean).join('. ');
     });
 }
@@ -717,6 +745,7 @@ function buildReferenceGroundedHeroPrompt(
         : heroSourceScenes.length > 0
             ? heroSourceScenes[heroIndex % heroSourceScenes.length]
             : null;
+    const refVisualFlavor = brief.identityBlueprint?.visualFlavor;
     const resolvedStyle = resolveMediaStyle({
         assetKind: 'ref_hero',
         hasPeople: sourceStill
@@ -726,6 +755,7 @@ function buildReferenceGroundedHeroPrompt(
                 : true,
         seed: sourceStill?.stillId ?? sourceScene?.sceneId ?? `ref_hero_${heroIndex}`,
         themeAnchorProps: plausibility.allowedProps.slice(0, 2),
+        visualFlavor: refVisualFlavor,
     });
     const cueStrategy = [
         'favor interpersonal chemistry and side-by-side ease',
@@ -733,12 +763,8 @@ function buildReferenceGroundedHeroPrompt(
         'if a prop appears, keep it singular, peripheral, and easy to miss',
         'let the ocean, ship architecture, and body language dominate over the niche cue',
     ][heroIndex % 4];
-    const propRule = [
-        'No visible tabletop object is required for this hero',
-        'Avoid making cards, dice, tokens, pins, or scorepads the visual anchor',
-        'If a niche object appears, it should read only after the ship and human moment are already clear',
-        'Prefer posture, wardrobe, framing, and light over explicit prop signaling',
-    ][heroIndex % 4];
+    const refPropAllowanceRules = buildPropAllowanceRules(plausibility.allowedProps);
+    const propRule = refPropAllowanceRules[heroIndex % refPropAllowanceRules.length];
 
     return [
         `Transform this photo of ${shipName} into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity`,
@@ -775,11 +801,11 @@ function buildReferenceGroundedHeroPrompt(
         landscapeGuardrails.reality,
         `Apply campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
         resolvedStyle.style === 'sketched'
-            ? `Wardrobe, props, and environment should reflect the niche identity naturally with one subtle cue only using lightweight believable props such as ${allowedPropsText || 'notebook, binoculars, sample jar, field guide'}`
-            : `Environment should reflect the niche identity naturally with one subtle environmental cue only using lightweight believable props such as ${allowedPropsText || 'notebook, binoculars, sample jar, field guide'}`,
+            ? `Wardrobe, props, and environment should reflect the niche identity naturally with one subtle incidental cue${allowedPropsText ? ` such as ${allowedPropsText}` : ' consistent with the campaign theme'}`
+            : `Environment should reflect the niche identity naturally with one subtle environmental cue${allowedPropsText ? ` such as ${allowedPropsText}` : ' consistent with the campaign theme'}`,
         resolvedStyle.promptBlock,
         resolvedStyle.allowPhotographicReinforcers ? `Critical: The image must feel like a moment captured from real life on this ship, not a fantasy render or over-styled editorial shoot` : '',
-        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; visible stages; risers; performance platforms; PA speakers; drum kits; full bands; formal concerts; organized demonstrations; conference-room energy; workshop-table compositions; wide busy interiors; literal activity demos that may not actually happen; repeating the same token, die, or tuckbox trope in every hero image; ${landscapeGuardrails.avoid}; land-based hotel cues`,
+        `AVOID: ${avoidText}; fantasy sci-fi props; cinematic color grades; empty luxury; loss of ship authenticity; complex multi-action scenes; excessive people; large text signage; visible stages; risers; performance platforms; PA speakers; drum kits; full bands; formal concerts; organized demonstrations; conference-room energy; workshop-table compositions; wide busy interiors; literal activity demos that may not actually happen; the same niche prop repeated across hero images; ${landscapeGuardrails.avoid}; land-based hotel cues`,
     ].filter(Boolean).join('. ');
 }
 

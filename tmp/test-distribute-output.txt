@@ -1,0 +1,110 @@
+﻿=== CHECKING LANDING PAGE ===
+Landing page status: 200 OK
+Landing page HTML length: 60802
+Contains "Board Games": true
+Contains "notFound": true
+
+=== CHECKING DISTRIBUTION PLAN ===
+Distribute status: 200 OK
+{
+  "message": "Distribution plan generated for board-games-at-sea",
+  "executionId": "dist_exec_0bbc0f8c-b19",
+  "mode": "plan",
+  "dryRun": true,
+  "providerMode": "simulate",
+  "forceDispatch": false,
+  "caller": "agent",
+  "schedule": {
+    "campaignSlug": "board-games-at-sea",
+    "timezone": "UTC",
+    "generatedAt": "2026-05-01T23:56:41.794Z",
+    "generatedBy": "agent",
+    "version": 1,
+    "posts": [
+      {
+        "postId": "dist_3d2bbb2b-209",
+        "platform": "email",
+        "assetId": "img_hero_003_og",
+        "copyVariant": "prelaunch_preview",
+        "scheduledAt": "2026-05-01T23:56:41.793Z",
+        "campaignStage": "prelaunch_setup",
+        "status": "scheduled",
+        "notes": [
+          "Internal placeholder until landing preview distribution adapter exists."
+        ]
+      },
+      {
+        "postId": "dist_286530bd-2bd",
+        "platform": "facebook_ad",
+        "assetId": "ad_image_detail_191x100",
+        "copyVariant": "ad_variant_A",
+        "scheduledAt": "ON_THRESHOLD",
+        "campaignStage": "seed_day_0",
+        "status": "scheduled",
+        "notes": [
+          "Creates ad-ready placeholder schedule entry. Platform adapter not implemented yet."
+        ]
+      },
+      {
+        "postId": "dist_16bd564b-dc3",
+        "platform": "google_display",
+        "assetId": "ad_image_detail_191x100",
+        "copyVariant": "google_display_0",
+        "scheduledAt": "ON_THRESHOLD",
+        "campaignStage": "seed_day_0",
+        "status": "scheduled",
+        "notes": [
+          "Creates paused Google Ads Display draft targeted at custom intent audiences."
+        ]
+      },
+      {
+        "postId": "dist_77a90998-907",
+        "platform": "email",
+        "assetId": "img_hero_003_email",
+        "copyVariant": "email_waitlist_confirmation",
+        "scheduledAt": "2026-05-01T23:56:41.793Z",
+        "campaignStage": "prelaunch_setup",
+        "status": "scheduled",
+        "notes": []
+      },
+      {
+        "postId": "dist_a0824719-d62",
+        "platform": "instagram_feed",
+        "assetId": "ad_postcard_hero_5x3",
+        "copyVariant": "carousel_day_3",
+        "scheduledAt": "2026-05-04T23:56:41.794Z",
+        "campaignStage": "seed_day_3",
+        "status": "scheduled",
+        "notes": []
+      },
+      {
+        "postId": "dist_999cd041-94c",
+        "platform": "sms",
+        "assetId": "audio_hype_clip",
+        "copyVariant": "threshold_met_sms",
+        "scheduledAt": "ON_THRESHOLD",
+        "campaignStage": "threshold_met",
+        "status": "scheduled",
+        "notes": []
+      },
+      {
+        "postId": "dist_2af698f8-16b",
+        "platform": "pinterest",
+        "assetId": "img_concept_001",
+        "copyVariant": "pinterest_seed_0",
+        "scheduledAt": "2026-05-01T23:56:41.794Z",
+        "campaignStage": "seed_day_0",
+        "status": "scheduled",
+        "notes": []
+      }
+    ]
+  },
+  "summary": {
+    "plannedPosts": 7,
+    "persistedPosts": 0,
+    "dispatchedPosts": 0,
+    "skippedPosts": 0
+  },
+  "warnings": [],
+  "previews": []
+}

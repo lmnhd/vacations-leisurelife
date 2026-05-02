@@ -160,6 +160,32 @@ function getTabEntries(
     return entries;
 }
 
+function sortEntriesForDisplay(
+    tabId: string,
+    entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>,
+): Array<{ entryKey: string; title: string; asset: AssetRecord }> {
+    if (tabId !== 'designed_ads') {
+        return entries;
+    }
+
+    return [...entries].sort((left, right) => {
+        const leftIsDesigned = left.asset.assetType === 'designed_ad_artifact';
+        const rightIsDesigned = right.asset.assetType === 'designed_ad_artifact';
+        if (leftIsDesigned !== rightIsDesigned) {
+            return leftIsDesigned ? -1 : 1;
+        }
+        return 0;
+    });
+}
+
+function countDesignedAdArtifacts(entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>): number {
+    return entries.filter((entry) => entry.asset.assetType === 'designed_ad_artifact').length;
+}
+
+function countDesignedAdSources(entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>): number {
+    return entries.filter((entry) => entry.asset.assetType === 'documentary_detail_image').length;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Status summary helper
 // ────────────────────────────────────────────────────────────────────────────
@@ -212,7 +238,18 @@ export function MediaReviewPanel(
         return countStatuses(all);
     }, [tabEntryMap]);
 
-    const activeEntries = tabEntryMap[activeTab] ?? [];
+    const activeEntries = useMemo(
+        () => sortEntriesForDisplay(activeTab, tabEntryMap[activeTab] ?? []),
+        [activeTab, tabEntryMap],
+    );
+    const designedAdArtifactCount = useMemo(
+        () => countDesignedAdArtifacts(activeEntries),
+        [activeEntries],
+    );
+    const designedAdSourceCount = useMemo(
+        () => countDesignedAdSources(activeEntries),
+        [activeEntries],
+    );
     const activeTabDef = TABS.find(t => t.id === activeTab) ?? TABS[0];
     const ActiveIcon = activeTabDef.icon;
     const removableEntries = activeEntries.filter((entry) => getDeleteEndpoint(slug, entry.asset.assetType) !== null);
@@ -469,6 +506,14 @@ export function MediaReviewPanel(
                             <div className="text-[11px] text-slate-400">
                                 Avoid defaults: {brief.identityBlueprint.forbiddenDefaults.join(', ')}
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'designed_ads' && (
+                        <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 text-[11px] text-slate-300">
+                            <span className="font-medium text-fuchsia-200">Designed Ads review:</span>{' '}
+                            {designedAdArtifactCount} template-rendered ads, {designedAdSourceCount} documentary source modules.
+                            Source modules are shown in this tab for traceability and appear after the final ads.
                         </div>
                     )}
 

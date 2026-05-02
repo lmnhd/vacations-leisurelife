@@ -46,12 +46,21 @@ import { resolveVideoModelPresetId } from './video-model-preference';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
+export const MEDIA_READINESS_FAILURE_CODE = 'MEDIA_READINESS_FAILURE' as const;
 
 export class ProductionBuildLintError extends Error {
     readonly code = PRODUCTION_BUILD_LINT_FAILURE_CODE;
     constructor(message: string) {
         super(message);
         this.name = 'ProductionBuildLintError';
+    }
+}
+
+export class MediaReadinessError extends Error {
+    readonly code = MEDIA_READINESS_FAILURE_CODE;
+    constructor(message: string) {
+        super(message);
+        this.name = 'MediaReadinessError';
     }
 }
 
@@ -95,7 +104,11 @@ type GeneratorCategory = 'images' | 'video' | 'audio' | 'merch' | 'copy';
 
 function getApprovedReferenceCandidates(records: readonly AssetRecord[]): ShipReferenceCandidate[] {
     return records
-        .filter((record) => record.assetType === 'ship_reference_image' && (record.curation?.approvalState === 'human_approved' || record.reviewStatus === 'human_approved'))
+        .filter((record) => record.assetType === 'ship_reference_image' && (
+            record.curation?.approvalState === 'human_approved' ||
+            record.reviewStatus === 'human_approved' ||
+            record.reviewStatus === 'auto_approved'   // SerpAPI references are systematically curated — auto_approved is their correct trusted state
+        ))
         .map((record) => assetRecordToShipReferenceCandidate(record))
         .filter((candidate): candidate is ShipReferenceCandidate => candidate !== null);
 }
@@ -111,12 +124,6 @@ function shouldRunAsset(
     assetType: AssetType,
     assetTypes?: AssetType[]
 ): boolean {
-    if (!assetTypes && DESIGNED_MEDIA_CONFIG.mode === 'ad_artifacts_only') {
-        return assetType === 'designed_ad_artifact'
-            || assetType === 'documentary_detail_image'
-            || assetType === 'ad_creative'
-            || assetType === 'copy_batch';
-    }
     if (!assetTypes) return true;
     return assetTypes.includes(assetType);
 }
@@ -125,14 +132,6 @@ function shouldRunAny(
     requestedAssetTypes: readonly AssetType[],
     assetTypes?: AssetType[]
 ): boolean {
-    if (!assetTypes && DESIGNED_MEDIA_CONFIG.mode === 'ad_artifacts_only') {
-        return requestedAssetTypes.some((assetType) =>
-            assetType === 'designed_ad_artifact'
-            || assetType === 'documentary_detail_image'
-            || assetType === 'ad_creative'
-            || assetType === 'copy_batch'
-        );
-    }
     if (!assetTypes) return true;
     return requestedAssetTypes.some((assetType) => assetTypes.includes(assetType));
 }
@@ -369,6 +368,18 @@ export async function runMediaGeneration(
         if (requiresApprovedBrief) {
             assertAestheticBriefReadyForMedia(brief!, slug);
         }
+        if (shouldRunAsset('scene_image', resolvedOptions.assetTypes)) {
+            if (!brief?.productionBible) {
+                throw new MediaReadinessError(
+                    `Production Bible missing for ${slug}. Regenerate the Production Bible, approve the brief, then retry scene image generation.`
+                );
+            }
+            if (brief.productionBible.sceneLibrary.length === 0) {
+                throw new MediaReadinessError(
+                    `Production Bible for ${slug} has no scene library entries. Regenerate the Production Bible so it emits scenes, approve the brief, then retry scene image generation.`
+                );
+            }
+        }
 
         // ── Production build lint gate ────────────────────────────────────
         const spendGatedTypes: AssetType[] = ['hero_image', 'aesthetic_concept', 'scene_image'];
@@ -492,10 +503,7 @@ export async function runMediaGeneration(
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
                     const availableReferenceCandidates = getAvailableReferenceCandidates(manifestReferenceRecords);
 
-                    if (approvedReferenceCandidates.length === 0 && availableReferenceCandidates.length > 0) {
-                        warnings.push(`Hero generation for ${slug} is using non-approved ship reference assets as fallback because no human-approved references are available yet.`);
-                    }
-
+                    // Use approved (includes auto_approved SerpAPI) candidates first; fall back to all active records.
                     const selectedHeroRecords = approvedReferenceCandidates.length > 0
                         ? await importHeroAssetsFromReferences(slug, campaign, brief!, approvedReferenceCandidates, 5)
                         : availableReferenceCandidates.length > 0
@@ -698,13 +706,10 @@ export async function runMediaGeneration(
                     ];
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
                     const availableReferenceCandidates = getAvailableReferenceCandidates(manifestReferenceRecords);
+                    // Use approved (includes auto_approved SerpAPI) candidates first; fall back to all active records.
                     const sceneReferenceCandidates = approvedReferenceCandidates.length > 0
                         ? approvedReferenceCandidates
                         : availableReferenceCandidates;
-
-                    if (approvedReferenceCandidates.length === 0 && sceneReferenceCandidates.length > 0) {
-                        warnings.push(`Scene generation for ${slug} is using non-approved ship reference assets as fallback because no human-approved references are available yet.`);
-                    }
 
                     if (sceneReferenceCandidates.length === 0) {
                         throw new Error(`No ship reference images found for ${slug}. Import references first before generating scene images.`);

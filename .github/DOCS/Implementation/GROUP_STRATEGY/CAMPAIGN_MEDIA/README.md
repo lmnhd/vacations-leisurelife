@@ -134,5 +134,6 @@ This system implements and expands **Phase C: "Vibe" Asset Generation** (§6.3) 
 
 - **§5.4 "Synthetic Influencer Strategy"** — HeyGen + ElevenLabs assets produced here feed the TikTok/Meta ad creative
 - **§5.5 TikTok — Organic Seeding** — the 30–60s concept videos are produced in Phase 2
+- TikTok video implementation is split between storyboard-driven promotional video generation and distribution-layer delivery. The active roadmap for improving TikTok promo quality lives in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md`.
 - **§2.7 Branded Merchandise** — merch design files generated in Phase 2, activated at `THRESHOLD_MET`
 - **§7.1 Monthly Blueprint Sprint** — Phase 1 + 2 run as part of the batch sprint for all 5 campaigns

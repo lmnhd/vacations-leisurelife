@@ -1,3 +1,5 @@
+import type { VisualFlavor } from '../schema';
+
 export type StyleId = 'sketched' | 'realistic';
 
 export type MediaStyleAssetKind = 'hero' | 'concept' | 'scene' | 'merch' | 'probe' | 'ref_hero' | 'documentary_detail';
@@ -7,6 +9,13 @@ export interface MediaStyleResolutionInput {
     assetKind: MediaStyleAssetKind;
     seed: string;
     themeAnchorProps?: readonly string[];
+    /**
+     * When provided, overrides the hasPeople heuristic for hero/scene/ref_hero assets.
+     * indie_zine → sketched (handmade polaroid aesthetic).
+     * All other flavors → realistic (trust-image photo pool).
+     * Concepts and merch are always sketched regardless of flavor.
+     */
+    visualFlavor?: VisualFlavor;
 }
 
 export interface ResolvedMediaStyle {
@@ -68,10 +77,19 @@ function buildThemeAnchorInstruction(themeAnchorProps: readonly string[] | undef
 }
 
 function resolveStyleId(input: MediaStyleResolutionInput): StyleId {
+    // Concepts and merch are always artistic/sketched regardless of campaign flavor.
     if (input.assetKind === 'concept' || input.assetKind === 'merch') {
         return 'sketched';
     }
 
+    // When a visual flavor is known, let it drive the style for heroes/scenes/ref_heroes.
+    // indie_zine uses a handmade polaroid aesthetic (sketched); all others use the
+    // realistic trust-image pool (editorial, nostalgia, or neutral System 4).
+    if (input.visualFlavor !== undefined) {
+        return input.visualFlavor === 'indie_zine' ? 'sketched' : 'realistic';
+    }
+
+    // Legacy fallback: use people-detection heuristic when no flavor is set.
     return input.hasPeople ? 'sketched' : 'realistic';
 }
 

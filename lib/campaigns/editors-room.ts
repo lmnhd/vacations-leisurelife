@@ -116,18 +116,25 @@ const LenientStoryboardSchema = z.object({
     deliverableId: z.string().default(''),
     title: z.string().default(''),
     totalDurationSeconds: z.number().default(30),
-    shotSequence: z.preprocess(coerceToArray, z.array(LenientShotSpecSchema).default([])),
+    shotSequence: z.preprocess(coerceToArray, z.array(LenientShotSpecSchema).min(1)),
     narrationScript: z.string().default(''),
     musicDirection: z.string().default(''),
     editingStyle: z.string().default(''),
 });
 
 const LenientProductionBibleSchema = z.object({
-    sceneLibrary: z.preprocess(coerceToArray, z.array(LenientSceneSpecSchema).default([])),
-    storyboards: z.preprocess(coerceToArray, z.array(LenientStoryboardSchema).default([])),
-    globalDirectionNotes: z.string().default(''),
+    sceneLibrary: z.preprocess(coerceToArray, z.array(LenientSceneSpecSchema).min(6)),
+    storyboards: z.preprocess(coerceToArray, z.array(LenientStoryboardSchema).min(1)),
+    globalDirectionNotes: z.string()
+        .min(20)
+        .refine((notes) => notes.includes(REQUIRED_SAFETY_OPS), {
+            message: 'globalDirectionNotes must include REQUIRED_SAFETY_OPS sentence verbatim',
+        }),
     avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
 });
+
+// Must match validators and auto-fix logic exactly.
+const REQUIRED_SAFETY_OPS = 'Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.';
 
 type ActionAnchorSet = z.infer<typeof ActionAnchorSetSchema>;
 
@@ -559,12 +566,24 @@ SCENE LIBRARY (10 scenes) + STORYBOARD RULES:
 - mood: vacation emotion only (wonder, FOMO, joy, serenity, intimacy, awe, belonging, thrill, magic, freedom)
 - subjectAction: what the person EXPERIENCES, not what they DO — aspiration format
 - At least 6 of 10 scenes must show two or more people in relaxed proximity
-- Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, close-up, dutch angle
+- Camera angles vary but must be filmable in passenger areas: wide establishing, low-angle hero, eye-level handheld, close-up detail, over-the-shoulder
 - For video scenes: humans as background accents, ship/sea/architecture as dominant subject
 - subjectMotion: default to no human motion — frozen human presence in a living environment
 - cameraMovement and environmentMotion carry all sensation of life
-- avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty scenes", "No corporate body language"
+- globalDirectionNotes MUST include this exact sentence verbatim: "${REQUIRED_SAFETY_OPS}"
+- avoidDirectives must include: "No slideshow parallax", "No repeated camera movement across consecutive shots", "No empty scenes", "No corporate body language", "No crane, dolly, tracking shot, slider, or cable-cam language"
+
+SCENE imagePrompt — CRITICAL — every scene MUST have a non-empty imagePrompt:
+- imagePrompt is the primary creative brief sent to the image generator for each scene. It MUST be a specific, renderable description of what the camera sees.
+- Write it as a documentary photography brief: concrete location on the ship, time of day, light quality, what is in frame, and one subtle niche cue drawn from the validated landing stills above.
+- The niche cue must be a physical prop or environmental detail — something a photographer could capture (e.g. "a half-finished Azul board on the café table in the foreground", "a game box spine visible on a lounge shelf", "wooden meeples resting on the teak rail").
+- Do NOT leave imagePrompt blank or write generic descriptions like "guests enjoying the cruise". Every imagePrompt must be specific enough that an image generator could produce the correct shot.
+- Format: "[Location on ship], [time of day], [lighting quality]. [What the camera sees — architecture/sea dominant]. [One incidental niche detail in the background or foreground]."
+- Example: "Pool deck, mid-afternoon, bright open sun. Wide shot of the main pool with teak loungers and the ocean horizon beyond. On the nearest table, a compact travel game box sits half-open beside a drink, unattended."
 ${avoidListBlock}${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
+SCENE LIBRARY JSON STRUCTURE — use these EXACT field names (parser reads only these keys):
+Each scene object: { "sceneId": str (one of: exterior/pool_deck/dining/stateroom/atrium/nightclub/spa/destination_port/theater/sports_deck), "location": str, "timeOfDay": str, "lighting": str, "cameraAngle": str, "subjectAction": str, "environmentDetails": str, "mood": str, "imagePrompt": str (NON-EMPTY — see rules above), "referenceCategory": str }
+
 STORYBOARD JSON STRUCTURE — use these EXACT field names (parser reads only these keys):
 Each storyboard object: { "deliverableId": str, "title": str, "totalDurationSeconds": num, "shotSequence": [ /* shots array — NEVER name this field "shots", "shotList", or anything else */ ], "narrationScript": str, "musicDirection": str, "editingStyle": str }
 Each shot object inside shotSequence: { "sceneId": str, "durationSeconds": num, "cameraMovement": str, "subjectMotion": str, "environmentMotion": str, "transitionIn": str, "transitionOut": str, "emotionalBeat": str, "narrationSegment": str, "musicCue": str }
@@ -573,7 +592,8 @@ Shot durationSeconds values must sum exactly to the storyboard totalDurationSeco
 STORYBOARD RULES:
 - Each storyboard: intrigue/hook → building desire → peak euphoria → "this could be you" CTA arc
 - No two CONSECUTIVE shots may use the same sceneId
-- Camera movements vary per shot: dolly forward/back, crane rise/drop, orbit, steadicam, push-in, pull-out, handheld follow, whip pan, slow arc
+- Camera movements vary per shot but must remain feasible without restricted equipment: handheld drift, gimbal glide, static locked-off, gentle pan/tilt, slow push-in (digital crop), slow pull-out (digital crop), soft handheld orbit (small step-around)
+- Do NOT use: crane, dolly, tracking shot, slider, cable cam, drone, jib, rail, steadicam rig language
 - transitionIn/transitionOut: hard cut, cross-dissolve, whip pan, match cut, fade from black, J-cut, L-cut
 - narrationSegment: premium travel documentary voiceover — warm, personal, aspirational
 - Do not design shots around walking toward camera, dancing, clinking, sipping, or hand-to-object choreography
@@ -616,7 +636,7 @@ ${VIDEO_DELIVERABLE_SPECS.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds
         prompt: ctx,
         maxOutputTokens: 16000,
         timeoutMs: 240_000,
-        skipRepair: true,
+        skipRepair: false,
         operationName: `editors-room:production-bible:${campaign.id}`,
     });
 

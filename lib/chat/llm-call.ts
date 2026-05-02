@@ -54,7 +54,8 @@ export async function callGlobalGenerateObject<T>(options: {
     const candidateModels = allCandidates.slice(0, maxCandidates);
     const attemptTokenLimits = candidateModels.map((_, index) => {
         const multiplier = index === 0 ? 1 : index === 1 ? 2 : 4;
-        return Math.min(baseMaxOutputTokens * multiplier, 32000);
+        // Avoid 400s on models with smaller output-token caps (e.g. gpt-4o ~16k).
+        return Math.min(baseMaxOutputTokens * multiplier, 16384);
     });
     
     console.log(`[${operationName}] Starting structured generation with ${apiId}...`);

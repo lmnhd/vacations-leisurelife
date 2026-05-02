@@ -188,12 +188,23 @@ export function assertAestheticBriefPassedRedTeam(brief: CampaignAestheticBrief,
     }
 }
 
+export const AESTHETIC_BRIEF_NOT_READY_CODE = 'AESTHETIC_BRIEF_NOT_READY' as const;
+
+export class AestheticBriefNotReadyError extends Error {
+    readonly code = AESTHETIC_BRIEF_NOT_READY_CODE;
+
+    constructor(message: string) {
+        super(message);
+        this.name = 'AestheticBriefNotReadyError';
+    }
+}
+
 export function assertAestheticBriefReadyForMedia(brief: CampaignAestheticBrief, slug: string): void {
     if (brief.humanReviewStatus !== 'approved') {
         const nextStep = brief.humanReviewStatus === 'revised'
             ? ' Re-approve the brief after regenerating the Production Bible.'
             : '';
-        throw new Error(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus}).${nextStep}`);
+        throw new AestheticBriefNotReadyError(`Aesthetic brief for ${slug} not approved (status: ${brief.humanReviewStatus}).${nextStep}`);
     }
 
     if (!brief.redTeamReview) {

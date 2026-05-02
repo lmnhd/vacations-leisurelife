@@ -9,8 +9,18 @@ import type { LLMCallOptions, LLMResponse } from '../types';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
+type OpenAIResponseContentPart = {
+  type?: string;
+  text?: string;
+  refusal?: string;
+};
+
+function isNewGenerationModel(model: string): boolean {
+  return COMPLETION_TOKENS_MODELS.some((prefix) => model.startsWith(prefix));
+}
+
 function tokenParam(model: string, count: number): Record<string, number> {
-  return COMPLETION_TOKENS_MODELS.some((prefix) => model.startsWith(prefix))
+  return isNewGenerationModel(model)
     ? { max_completion_tokens: count }
     : { max_tokens: count };
 }
@@ -20,9 +30,35 @@ function tempParam(model: string, value: number | undefined): Record<string, num
     return {};
   }
 
-  return COMPLETION_TOKENS_MODELS.some((prefix) => model.startsWith(prefix))
+  return isNewGenerationModel(model)
     ? {}
     : { temperature: value };
+}
+
+function extractMessageContent(
+  content: string | OpenAIResponseContentPart[] | null | undefined,
+): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (!Array.isArray(content)) {
+    return '';
+  }
+
+  return content
+    .map((part) => {
+      if (typeof part?.text === 'string' && part.text.trim().length > 0) {
+        return part.text;
+      }
+      if (typeof part?.refusal === 'string' && part.refusal.trim().length > 0) {
+        return part.refusal;
+      }
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n')
+    .trim();
 }
 
 function isModelAccessError(error: unknown): boolean {
@@ -65,7 +101,7 @@ export async function callOpenAI(
   const request = {
     model:       apiId,
     messages,
-    ...(options.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
+    ...(options.jsonMode && !isNewGenerationModel(apiId) ? { response_format: { type: 'json_object' as const } } : {}),
     ...tokenParam(apiId, maxTokens),
     ...tempParam(apiId, options.temperature),
   };
@@ -86,7 +122,7 @@ export async function callOpenAI(
     console.warn(`[AI Gateway] OpenAI model "${apiId}" unavailable. Retrying with "${fallbackModel}".`);
     // gpt-5 family models return content:null (refusal path) when response_format:json_object
     // is requested via Chat Completions. Strip it — the system prompt handles JSON enforcement.
-    const fallbackIsNewGeneration = COMPLETION_TOKENS_MODELS.some((p) => fallbackModel.startsWith(p));
+    const fallbackIsNewGeneration = isNewGenerationModel(fallbackModel);
     const fallbackRequest = {
       ...request,
       model: fallbackModel,
@@ -97,13 +133,12 @@ export async function callOpenAI(
   }
 
   const choice = response.choices[0];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const refusal = (choice?.message as any)?.refusal as string | null | undefined;
+  const refusal = typeof choice?.message?.refusal === 'string' ? choice.message.refusal : null;
   if (refusal) {
     console.warn(`[AI Gateway] OpenAI model "${(response as { model: string }).model}" returned a refusal:`, refusal);
   }
   return {
-    content:  choice?.message?.content ?? '',
+    content:  extractMessageContent(choice?.message?.content),
     model:    response.model,
     usage: response.usage
       ? {
