@@ -1110,6 +1110,50 @@ function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): s
 // Maps directly to the deterministic rules in production-build-lint.ts so the
 // LLM knows the exact fields and exact keywords the machine will scan.
 
+function looksLikeTabletopCampaign(coreAesthetic: z.infer<typeof Pass1Schema>): boolean {
+    const corpus = [
+        coreAesthetic.visual.plausibilityFramework.allowedProps.join(' '),
+        coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments.join(' '),
+        coreAesthetic.visual.plausibilityFramework.governingPrinciple,
+        coreAesthetic.communityExpression.belongingSignals.join(' '),
+        coreAesthetic.messaging.heroSlogan,
+        coreAesthetic.messaging.elevatorPitch,
+    ].join(' ');
+
+    return /\b(board[- ]?game|tabletop|meeple|meeples|dice|cards?|game box|score sheet|playing pieces?|tile rack|azul|monopoly|sorry)\b/i.test(corpus);
+}
+
+function buildStoryboardCouplingBlock(
+    campaign: Campaign,
+    coreAesthetic: z.infer<typeof Pass1Schema>,
+): string {
+    const allowedProps = joinCampaignList(coreAesthetic.visual.plausibilityFramework.allowedProps);
+    const nicheMoments = joinCampaignList(coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments);
+    const cruiseMoments = joinCampaignList(coreAesthetic.visual.plausibilityFramework.cruiseNativeMoments);
+    const tabletopCampaign = looksLikeTabletopCampaign(coreAesthetic);
+
+    return [
+        'STORYBOARD / SCENE-LIBRARY COUPLING RULES:',
+        '- The productionBible sceneLibrary is the canonical shot menu for every storyboard.',
+        '- Every storyboard shot.sceneId must reuse a sceneId that exists in the sceneLibrary generated in the same output.',
+        '- Do not invent placeholder sceneIds like scene_pool_deck_morning unless they are actually present in the sceneLibrary.',
+        '- Storyboards should feel like an edit built from the sceneLibrary, not a separate cruise montage invented after the fact.',
+        tabletopCampaign
+            ? [
+                '- This campaign is tabletop / board-game adjacent. Its storyboard must keep the game identity visible in the sceneLibrary and not dissolve into generic cruise scenery.',
+                '- Prefer the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.',
+                `- The board-game cues allowed for this campaign are: ${allowedProps || 'dice, cards, meeples, game boxes, score sheets'}.`,
+                `- The believable niche moments available to the campaign are: ${nicheMoments || 'shared table play, a quick recommendation, or easy guest-to-guest comparison of game pieces'}.`,
+            ].join('\n')
+            : [
+                `- Favor scenes whose niche identity is visible through ${allowedProps || 'small incidental cues'} without turning them into workshop or event-program material.`,
+                `- The believable niche moments available to the campaign are: ${nicheMoments || 'guided noticing, shared pause, or subtle object cues'}.`,
+            ].join('\n'),
+        `- Cruise-native moments to preserve while selecting shots: ${cruiseMoments || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.`,
+        '- The storyboard should still read cruise-first, but the sceneLibrary shots must make the niche visually legible at a glance.',
+    ].join('\n');
+}
+
 // Detect music/festival/open-deck campaign types from keywords or name so we can
 // inject hard niche-identity rules that ban the known generic fallback patterns.
 export function isMusicFestivalCampaign(campaign: Campaign): boolean {
@@ -1441,6 +1485,7 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 ## STORYBOARD RULES
 - Each storyboard must follow an emotional arc: intrigue/hook → building desire → peak euphoria → "this could be you" CTA.
 - No two CONSECUTIVE shots may use the same sceneId.
+- Every shot.sceneId must reuse a sceneId from the sceneLibrary generated in the same output. Do not invent placeholder ids like scene_pool_deck_morning unless they already exist in the sceneLibrary.
 - Camera movements vary per shot: dolly forward, dolly back, crane rise, crane drop, orbit left, orbit right, steadicam tracking, push-in, pull-out, handheld follow, whip pan, slow arc.
 - transitionIn/transitionOut use film terminology: hard cut, cross-dissolve, whip pan, match cut, fade from black, fade to black, J-cut, L-cut.
 - narrationSegment must sound like a premium travel documentary voiceover — warm, personal, aspirational, making the viewer ache to be there.
@@ -1454,9 +1499,11 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - If an object cue appears, it must be static, distant, and non-essential. Prefer removing it entirely from video-facing shots.
 - Prefer wide, environment-led frames over portrait-led frames. Avoid close-ups of faces, hands, legs, or side-on full-body walking compositions.
 - avoidDirectives must include: "No slideshow parallax", "No static tripod framing", "No repeated camera movement across consecutive shots", "No empty/unpopulated scenes", "No corporate body language", "No generic interiors without ship identity", "No formal or staged poses", "No work-like activities".
+- If the campaign is tabletop or board-game adjacent, the tiktok_seed storyboard should favor the most social, object-legible, and table-aware scenes in the sceneLibrary, not generic cruise filler.
 `.trim();
 
     const lintComplianceBlock = buildLintComplianceBlock(campaign, coreAesthetic.communityExpression.belongingSignals);
+    const storyboardCouplingBlock = buildStoryboardCouplingBlock(campaign, coreAesthetic);
 
     const contextPrompt = `
 CAMPAIGN CONTEXT (use as inspiration, but ALWAYS reframe through the vacation lens):
@@ -1496,6 +1543,11 @@ ${lintComplianceBlock}
 
 REMINDER: The above describes the campaign THEME. Your job is to turn that theme into VACATION DAYDREAM imagery — artsy, warm, joyful, never formal or serious.
 Plausibility Governing Principle: ${plausibility.governingPrinciple}
+Cruise-Native Moments: ${joinCampaignList(plausibility.cruiseNativeMoments)}
+Niche-Enhanced Moments: ${joinCampaignList(plausibility.nicheEnhancedMoments)}
+Allowed Props: ${joinCampaignList(plausibility.allowedProps)}
+Discouraged Props: ${joinCampaignList(plausibility.discouragedProps)}
+${storyboardCouplingBlock}
 TikTok Hook: ${tiktokHook}
 TikTok CTA: ${tiktokCTA}
 
