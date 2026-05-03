@@ -1,4 +1,5 @@
-import type { CampaignAestheticBrief } from '../../../schema';
+import type { CampaignAestheticBrief, Storyboard } from '../../../schema';
+import type { TikTokOverlayCardSpec } from '../tiktok-overlay-cards';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Paid TikTok Variant Format
@@ -21,6 +22,14 @@ export interface PaidVariantShotTemplate {
     defaultDurationSeconds: number;
     motionEnergy: string;
     cameraDirective: string;
+}
+
+function buildOverlayPlacements(): ReadonlyArray<TikTokOverlayCardSpec['placement']> {
+    return [
+        { x: 56, y: 108, width: 968, height: 248 },
+        { x: 56, y: 136, width: 968, height: 248 },
+        { x: 56, y: 176, width: 968, height: 248 },
+    ];
 }
 
 export const PAID_VARIANT_SHOTS: readonly PaidVariantShotTemplate[] = [
@@ -46,9 +55,42 @@ export const PAID_VARIANT_SHOTS: readonly PaidVariantShotTemplate[] = [
 
 export const PAID_VARIANT_TARGET_DURATION_SECONDS = PAID_VARIANT_SHOTS.reduce((sum, shot) => sum + shot.defaultDurationSeconds, 0);
 
+export function buildPaidVariantOverlayCards(brief: CampaignAestheticBrief, _storyboard?: Storyboard): TikTokOverlayCardSpec[] {
+    const headline = brief.messaging.heroSlogan.trim();
+    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Book now';
+    const { colorPalette, plausibilityFramework } = brief.visual;
+    const placements = buildOverlayPlacements();
+
+    return PAID_VARIANT_SHOTS.map((shot, index) => {
+        const roleCopy: Record<PaidVariantShotTemplate['shotRole'], { headline: string; subline: string }> = {
+            hook: {
+                headline: headline || brief.themeName,
+                subline: 'One clear frame. One clear reason to stop.',
+            },
+            proof: {
+                headline: 'Real ship, real play',
+                subline: plausibilityFramework.allowedProps.slice(0, 3).join(' - ') || 'cards - dice - meeples',
+            },
+            cta_close: {
+                headline: cta,
+                subline: 'Premium, calm, and routed to the campaign page.',
+            },
+        };
+
+        const content = roleCopy[shot.shotRole];
+        return {
+            badge: `${String(index + 1).padStart(2, '0')} / ${shot.shotRole.toUpperCase()}`,
+            headline: content.headline,
+            subline: content.subline,
+            accentColor: colorPalette.accent,
+            placement: placements[index] ?? placements[0],
+        };
+    });
+}
+
 export function buildPaidVariantShotPrompts(brief: CampaignAestheticBrief): string[] {
     const headline = brief.messaging.heroSlogan.trim();
-    const cta = brief.socialConcepts.tiktokOrganic.callToAction.trim() || 'Sign up — link in bio';
+    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Book now';
     const { imageryMood, lightingStyle, colorPalette } = brief.visual;
     const { cruiseNativeMoments } = brief.visual.plausibilityFramework;
 

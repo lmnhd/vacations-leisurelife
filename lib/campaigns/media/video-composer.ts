@@ -72,6 +72,71 @@ function buildAudioPadFilter(targetDurationSeconds: number | undefined): string 
     return targetDurationSeconds !== undefined ? `apad=pad_dur=${targetDurationSeconds}` : null;
 }
 
+export interface VideoOverlayCardInput {
+    buffer: Buffer;
+    x: number;
+    y: number;
+}
+
+export async function composeVideoWithOverlayCards(
+    sourceVideoBuffer: Buffer,
+    overlayCards: readonly VideoOverlayCardInput[],
+    durationSeconds?: number,
+): Promise<Buffer> {
+    if (overlayCards.length === 0) {
+        return sourceVideoBuffer;
+    }
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-overlay-compose-'));
+    const sourceVideoPath = join(tempDirectory, 'source.mp4');
+    const outputVideoPath = join(tempDirectory, 'output.mp4');
+    const overlayPaths = overlayCards.map((_, index) => join(tempDirectory, `overlay_${String(index + 1).padStart(3, '0')}.png`));
+
+    try {
+        await writeFile(sourceVideoPath, toUint8Array(sourceVideoBuffer));
+        for (let i = 0; i < overlayCards.length; i++) {
+            await writeFile(overlayPaths[i], toUint8Array(overlayCards[i].buffer));
+        }
+
+        const filterParts: string[] = ['[0:v]scale=-2:1920,crop=1080:1920,setsar=1[v0]'];
+        const fadeInSeconds = 0.28;
+        const fadeOutSeconds = 0.35;
+        for (let i = 0; i < overlayCards.length; i++) {
+            const inputIndex = i + 1;
+            const overlayLabel = `ov${i + 1}`;
+            const nextVideoLabel = `v${i + 1}`;
+            const currentVideoLabel = i === 0 ? 'v0' : `v${i}`;
+            const fadeOutStart = durationSeconds !== undefined
+                ? Math.max(0, durationSeconds - fadeOutSeconds)
+                : null;
+            const overlayFilter = durationSeconds !== undefined
+                ? `[${inputIndex}:v]format=rgba,fade=t=in:st=0:d=${fadeInSeconds}:alpha=1,fade=t=out:st=${fadeOutStart}:d=${fadeOutSeconds}:alpha=1[${overlayLabel}]`
+                : `[${inputIndex}:v]format=rgba,fade=t=in:st=0:d=${fadeInSeconds}:alpha=1[${overlayLabel}]`;
+
+            filterParts.push(overlayFilter);
+            filterParts.push(`[${currentVideoLabel}][${overlayLabel}]overlay=${overlayCards[i].x}:${overlayCards[i].y}:format=auto:shortest=1:eof_action=pass[${nextVideoLabel}]`);
+        }
+
+        await runFfmpeg([
+            '-y',
+            '-i', sourceVideoPath,
+            ...overlayPaths.flatMap((overlayPath) => ['-loop', '1', '-i', overlayPath]),
+            '-filter_complex', filterParts.join(';'),
+            '-map', `[v${overlayCards.length}]`,
+            '-c:v', 'libx264',
+            '-preset', 'medium',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            ...(durationSeconds !== undefined ? ['-t', String(durationSeconds)] : ['-shortest']),
+            outputVideoPath,
+        ]);
+
+        return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
 async function composeNarratedVerticalVideoFromSources(
     sourceVideoBuffers: readonly Buffer[],
     narrationAudioBuffer: Buffer,

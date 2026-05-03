@@ -546,22 +546,28 @@ function ResultPanel({
           )}
 
           {/* Designed ads images grid */}
-          {(previewType === "image-and-json" || previewType === "json") && designedAds.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-[10px] text-slate-500 uppercase tracking-widest">Generated Ad Designs</div>
-              <div className="grid grid-cols-2 gap-2">
-                {designedAds.map((ad, idx) => (
-                  <div key={idx} className="rounded-lg overflow-hidden border border-white/10">
-                    <img
-                      src={ad.imageUrl}
-                      alt={ad.altText || `Ad ${idx + 1}`}
-                      className="w-full h-auto object-cover"
-                    />
-                  </div>
-                ))}
+          {(previewType === "image-and-json" || previewType === "json") &&
+            designedAds.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest">
+                  Generated Ad Designs
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {designedAds.map((ad, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg overflow-hidden border border-white/10"
+                    >
+                      <img
+                        src={ad.imageUrl}
+                        alt={ad.altText || `Ad ${idx + 1}`}
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* JSON output */}
           {result.data && (

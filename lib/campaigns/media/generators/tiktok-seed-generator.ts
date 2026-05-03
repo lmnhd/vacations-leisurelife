@@ -1,8 +1,11 @@
 import { CampaignAestheticBrief, Storyboard } from '../../schema';
 import { inferTikTokFormat } from './tiktok-formats/index';
+import { buildOrganicSeedOverlayCards } from './tiktok-formats/organic-seed';
+import { renderTikTokOverlayCard } from './tiktok-overlay-cards';
+import type { TikTokOverlayCardSpec } from './tiktok-overlay-cards';
 import { generateAmbientNarration } from './elevenlabs-generator';
 import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo, VideoMotionFormat } from './runway-generator';
-import { composeProductionVideo } from '../video-composer';
+import { composeProductionVideo, composeVideoWithOverlayCards } from '../video-composer';
 import { buildStoryboardShotPrompt } from '../storyboard-motion-policy';
 import { storeAsset } from '../storage-client';
 import type { VideoModelPresetId } from '../video-models';
@@ -55,6 +58,42 @@ async function composeWithFailureCaching(
         const baseMessage = error instanceof Error ? error.message : String(error);
         throw new Error(`${baseMessage} Intermediate generated video clips were cached at: ${cachedUrls.join(', ')}`);
     }
+}
+
+async function applyOverlayCardsToClips(
+    clips: readonly GeneratedVideo[],
+    overlayCards: readonly { buffer: Buffer; x: number; y: number }[],
+): Promise<Buffer[]> {
+    const clipCount = Math.min(clips.length, overlayCards.length);
+    const buffers: Buffer[] = [];
+
+    for (let i = 0; i < clipCount; i += 1) {
+        const clip = clips[i];
+        const overlay = overlayCards[i];
+        buffers.push(await composeVideoWithOverlayCards(clip.buffer, [overlay], clip.durationSeconds));
+    }
+
+    for (let i = clipCount; i < clips.length; i += 1) {
+        buffers.push(clips[i].buffer);
+    }
+
+    return buffers;
+}
+
+async function renderOverlayCards(
+    cards: readonly TikTokOverlayCardSpec[],
+): Promise<readonly { buffer: Buffer; x: number; y: number }[]> {
+    const rendered: { buffer: Buffer; x: number; y: number }[] = [];
+
+    for (const card of cards) {
+        rendered.push({
+            buffer: await renderTikTokOverlayCard(card),
+            x: card.placement.x,
+            y: card.placement.y,
+        });
+    }
+
+    return rendered;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -145,6 +184,7 @@ export async function generateStoryboardVideo(
 
     const isTikTok = storyboard.deliverableId.startsWith('tiktok');
     const motionFormat: VideoMotionFormat = isTikTok ? 'tiktok' : 'standard';
+    const tiktokFormat = isTikTok ? inferTikTokFormat(storyboard.deliverableId) : null;
 
     // Generate narration + visual clips in parallel
     const [narrationAudio, visualClips] = await Promise.all([
@@ -164,8 +204,15 @@ export async function generateStoryboardVideo(
         throw new Error(`RunwayML did not return any clips for storyboard: ${storyboard.deliverableId}`);
     }
 
+    const overlayedClipBuffers = isTikTok && tiktokFormat
+        ? await applyOverlayCardsToClips(
+            visualClips,
+            await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard)),
+        )
+        : visualClips.map((clip) => clip.buffer);
+
     const finalVideoBuffer = await composeWithFailureCaching(
-        visualClips.map((clip) => clip.buffer),
+        overlayedClipBuffers,
         narrationAudio.buffer,
         themeMusicBuffer ?? null,
         campaignSlug,
@@ -223,8 +270,11 @@ export async function generateTikTokSeed(
         throw new Error('RunwayML did not return any TikTok seed visual clips');
     }
 
+    const overlayCards = await renderOverlayCards(buildOrganicSeedOverlayCards(brief));
+    const overlayedClipBuffers = await applyOverlayCardsToClips(visualClips, overlayCards);
+
     const finalVideoBuffer = await composeWithFailureCaching(
-        visualClips.map((visualClip) => visualClip.buffer),
+        overlayedClipBuffers,
         narrationAudio.buffer,
         themeMusicBuffer ?? null,
         campaignSlug,

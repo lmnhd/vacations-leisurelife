@@ -1,14 +1,18 @@
 import type { CampaignAestheticBrief } from '../../../schema';
 import {
     buildOrganicSeedShotPrompts,
+    buildOrganicSeedOverlayCards,
     ORGANIC_SEED_TARGET_DURATION_SECONDS,
     ORGANIC_SEED_SHOTS,
 } from './organic-seed';
 import {
     buildPaidVariantShotPrompts,
+    buildPaidVariantOverlayCards,
     PAID_VARIANT_TARGET_DURATION_SECONDS,
     PAID_VARIANT_SHOTS,
 } from './paid-variant';
+import type { Storyboard } from '../../../schema';
+import type { TikTokOverlayCardSpec } from '../tiktok-overlay-cards';
 
 export type TikTokFormatId = 'organic_seed' | 'paid_variant';
 
@@ -19,6 +23,7 @@ export interface TikTokFormatSpec {
     /** Distribution tag applied to the asset record — used by the lint gate and publishing adapter. */
     distributionTag: 'organic' | 'paid';
     buildShotPrompts: (brief: CampaignAestheticBrief) => string[];
+    buildOverlayCards: (brief: CampaignAestheticBrief, storyboard?: Storyboard) => TikTokOverlayCardSpec[];
 }
 
 const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
@@ -27,6 +32,7 @@ const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
     shotCount: ORGANIC_SEED_SHOTS.length,
     distributionTag: 'organic',
     buildShotPrompts: buildOrganicSeedShotPrompts,
+    buildOverlayCards: buildOrganicSeedOverlayCards,
 };
 
 const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
@@ -35,6 +41,7 @@ const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
     shotCount: PAID_VARIANT_SHOTS.length,
     distributionTag: 'paid',
     buildShotPrompts: buildPaidVariantShotPrompts,
+    buildOverlayCards: buildPaidVariantOverlayCards,
 };
 
 const FORMAT_REGISTRY: Readonly<Record<TikTokFormatId, TikTokFormatSpec>> = {
@@ -83,5 +90,5 @@ export function inferTikTokFormat(deliverableId: string): TikTokFormatSpec {
     return ORGANIC_SEED_FORMAT;
 }
 
-export { buildOrganicSeedShotPrompts, ORGANIC_SEED_TARGET_DURATION_SECONDS };
-export { buildPaidVariantShotPrompts, PAID_VARIANT_TARGET_DURATION_SECONDS };
+export { buildOrganicSeedShotPrompts, buildOrganicSeedOverlayCards, ORGANIC_SEED_TARGET_DURATION_SECONDS };
+export { buildPaidVariantShotPrompts, buildPaidVariantOverlayCards, PAID_VARIANT_TARGET_DURATION_SECONDS };

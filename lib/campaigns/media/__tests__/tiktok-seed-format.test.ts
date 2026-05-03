@@ -73,6 +73,30 @@ async function main() {
                 imagePrompt: 'Night lounge practicals glow around friends leaning in over a long game in progress, a board-game cruise scene with real social texture and no staged workshop energy, observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing',
                 referenceCategory: 'nightclub',
             },
+            {
+                sceneId: 'sports_deck',
+                location: 'sports deck',
+                timeOfDay: 'late afternoon',
+                lighting: 'bright open sun',
+                cameraAngle: 'wide deck view',
+                subjectAction: 'a group pauses between rounds around a portable game board',
+                environmentDetails: 'ocean horizon and ship rail in view',
+                mood: 'easy momentum',
+                imagePrompt: 'Sports deck in bright afternoon sun with a small group pausing between rounds around a portable game board, the ocean horizon visible beyond the rail, observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing',
+                referenceCategory: 'sports_deck',
+            },
+            {
+                sceneId: 'offboard_excursion',
+                location: 'shore excursion stop',
+                timeOfDay: 'morning',
+                lighting: 'soft coastal light',
+                cameraAngle: 'over-the-shoulder',
+                subjectAction: 'friends compare a game score sheet before boarding back',
+                environmentDetails: 'shoreline and tender boat context',
+                mood: 'belonging',
+                imagePrompt: 'Soft coastal light catches friends comparing a score sheet before boarding back, a board-game cruise cue that feels lived in and social, observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing',
+                referenceCategory: 'offboard_excursion',
+            },
         ];
 
         const storyboard: Storyboard = {
@@ -83,7 +107,7 @@ async function main() {
                 {
                     shotNumber: 1,
                     sceneId: 'exterior',
-                    durationSeconds: 8,
+                    durationSeconds: 5,
                     cameraMovement: 'static',
                     subjectMotion: 'still presence',
                     environmentMotion: 'sea shimmer',
@@ -96,7 +120,7 @@ async function main() {
                 {
                     shotNumber: 2,
                     sceneId: 'dining',
-                    durationSeconds: 9,
+                    durationSeconds: 6,
                     cameraMovement: 'static',
                     subjectMotion: 'still presence',
                     environmentMotion: 'table reflections',
@@ -109,10 +133,36 @@ async function main() {
                 {
                     shotNumber: 3,
                     sceneId: 'atrium',
-                    durationSeconds: 9,
+                    durationSeconds: 6,
                     cameraMovement: 'static',
                     subjectMotion: 'still presence',
                     environmentMotion: 'atrium glow',
+                    transitionIn: 'straight cut',
+                    transitionOut: 'straight cut',
+                    emotionalBeat: 'proof',
+                    narrationSegment: 'Proof',
+                    musicCue: 'ambient bed',
+                },
+                {
+                    shotNumber: 4,
+                    sceneId: 'nightclub',
+                    durationSeconds: 6,
+                    cameraMovement: 'static',
+                    subjectMotion: 'still presence',
+                    environmentMotion: 'lights and reflections',
+                    transitionIn: 'straight cut',
+                    transitionOut: 'straight cut',
+                    emotionalBeat: 'social',
+                    narrationSegment: 'Social',
+                    musicCue: 'ambient bed',
+                },
+                {
+                    shotNumber: 5,
+                    sceneId: 'sports_deck',
+                    durationSeconds: 6,
+                    cameraMovement: 'static',
+                    subjectMotion: 'still presence',
+                    environmentMotion: 'sunlight and sea shimmer',
                     transitionIn: 'straight cut',
                     transitionOut: 'straight cut',
                     emotionalBeat: 'peak',
@@ -120,12 +170,12 @@ async function main() {
                     musicCue: 'ambient bed',
                 },
                 {
-                    shotNumber: 4,
-                    sceneId: 'nightclub',
-                    durationSeconds: 9,
+                    shotNumber: 6,
+                    sceneId: 'offboard_excursion',
+                    durationSeconds: 6,
                     cameraMovement: 'static',
                     subjectMotion: 'still presence',
-                    environmentMotion: 'lights and reflections',
+                    environmentMotion: 'coastal air and light',
                     transitionIn: 'straight cut',
                     transitionOut: 'fade out',
                     emotionalBeat: 'payoff',
@@ -133,7 +183,7 @@ async function main() {
                     musicCue: 'fade out',
                 },
             ],
-            narrationScript: 'Hook. Build. Peak. Payoff.',
+            narrationScript: 'Hook. Build. Proof. Social. Peak. Payoff.',
             musicDirection: 'Text-first social montage',
             editingStyle: 'Static and legible',
         };
@@ -306,6 +356,8 @@ async function main() {
         assert.match(prompts[1], /dining/i);
         assert.match(prompts[2], /atrium/i);
         assert.match(prompts[3], /nightclub/i);
+        assert.match(prompts[4], /sports_deck/i);
+        assert.match(prompts[5], /offboard_excursion/i);
         assert.match(prompts[1], /dice|cards|meeples|game box/i);
     });
 

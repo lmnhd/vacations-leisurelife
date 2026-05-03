@@ -1,4 +1,4 @@
-import type { CampaignAestheticBrief, ProductionBible } from '../schema';
+import type { CampaignAestheticBrief, ProductionBible, SceneSpec } from '../schema';
 import type { Campaign } from '../types';
 import { getLaunchWindowAssessment, MINIMUM_CAMPAIGN_LEAD_DAYS } from '../launch-window';
 import { detectCampaignAlignmentDrift } from '../design-system/alignment-validator';
@@ -125,6 +125,182 @@ function checkSceneLibraryMomentQuality(bible: ProductionBible): ValidationIssue
     return issues;
 }
 
+const HUMAN_PRESENCE_CUES = [
+    /\bblurred\b/i,
+    /\bover.the.shoulder\b/i,
+    /\bover shoulder\b/i,
+    /\bhands? in frame\b/i,
+    /\bpartial.body\b/i,
+    /\bpartial body\b/i,
+    /\banonymous\b/i,
+    /\bsilhouette\b/i,
+    /\bbackground figures?\b/i,
+    /\bseated cluster\b/i,
+    /\bsoft background\b/i,
+    /\bfaces? (?:soft|blurred|turned|out of frame)\b/i,
+];
+
+const BOARD_GAME_OBJECT_CUES = [
+    /\bmeeple\b/i,
+    /\bmeeples\b/i,
+    /\bdice\b/i,
+    /\bcards?\b/i,
+    /\bboard game\b/i,
+    /\bgame box\b/i,
+    /\bscore sheet\b/i,
+    /\btabletop\b/i,
+    /\bgame night\b/i,
+    /\bgame pieces?\b/i,
+    /\btiles?\b/i,
+    /\bplay surface\b/i,
+];
+
+const BOARD_GAME_SOCIAL_CUES = [
+    /\baround the table\b/i,
+    /\bgame in progress\b/i,
+    /\brules? (?:explained|teaching|lesson)\b/i,
+    /\bover.the.shoulder\b/i,
+    /\bover shoulder\b/i,
+    /\bhands? in frame\b/i,
+    /\bblurred\b/i,
+    /\bbackground figures?\b/i,
+    /\banonymous seated cluster\b/i,
+    /\bsmall social cluster\b/i,
+    /\blean(?:ing)? in\b/i,
+    /\bshuffl(?:e|ing)\b/i,
+    /\broll(?:ing)? dice\b/i,
+    /\bplacing (?:a )?piece\b/i,
+];
+
+function isBoardGamesAtSeaCampaign(campaign: Campaign): boolean {
+    return campaign.id === 'board-games-at-sea' || /board games at sea/i.test(campaign.name);
+}
+
+function sceneHasHumanPresenceCue(scene: SceneSpec): boolean {
+    const combined = [scene.imagePrompt, scene.subjectAction, scene.cameraAngle, scene.environmentDetails].join(' ');
+    return HUMAN_PRESENCE_CUES.some((p) => p.test(combined));
+}
+
+function sceneHasBoardGameObjectCue(scene: SceneSpec): boolean {
+    const combined = [scene.imagePrompt, scene.subjectAction, scene.environmentDetails].join(' ');
+    return BOARD_GAME_OBJECT_CUES.some((p) => p.test(combined));
+}
+
+function sceneHasBoardGameSocialCue(scene: SceneSpec): boolean {
+    const combined = [scene.imagePrompt, scene.subjectAction, scene.cameraAngle, scene.environmentDetails].join(' ');
+    return BOARD_GAME_SOCIAL_CUES.some((p) => p.test(combined));
+}
+
+function sceneHasBoardGameMood(scene: SceneSpec): boolean {
+    const combined = [scene.imagePrompt, scene.subjectAction, scene.environmentDetails, scene.mood].join(' ');
+    return /\bboard game\b/i.test(combined)
+        || /\btabletop\b/i.test(combined)
+        || /\bgame night\b/i.test(combined)
+        || /\bplay\b/i.test(combined)
+        || /\bmeeple\b/i.test(combined)
+        || /\bdice\b/i.test(combined)
+        || /\bcards?\b/i.test(combined)
+        || sceneHasBoardGameObjectCue(scene)
+        || sceneHasBoardGameSocialCue(scene);
+}
+
+function sceneHasNicheCue(scene: SceneSpec, allowedProps: readonly string[], nicheEnhancedMoments: readonly string[]): boolean {
+    if (allowedProps.length === 0 && nicheEnhancedMoments.length === 0) return true;
+    const combined = [scene.imagePrompt, scene.subjectAction, scene.environmentDetails].join(' ').toLowerCase();
+    const vocabTerms = [...allowedProps, ...nicheEnhancedMoments].map((t) => t.toLowerCase());
+    // A term matches if any individual word in it appears in the scene text
+    return vocabTerms.some((term) =>
+        term.split(/\s+/).filter((w) => w.length > 3).some((word) => combined.includes(word))
+    );
+}
+
+function checkSceneNicheCoverage(
+    bible: ProductionBible,
+    allowedProps: readonly string[],
+    nicheEnhancedMoments: readonly string[],
+): ValidationIssue[] {
+    const issues: ValidationIssue[] = [];
+
+    // Skip niche coverage check if no vocabulary is defined for the campaign
+    if (allowedProps.length === 0 && nicheEnhancedMoments.length === 0) {
+        return issues;
+    }
+
+    const nicheMissingScenes = bible.sceneLibrary.filter(
+        (scene) => !sceneHasNicheCue(scene, allowedProps, nicheEnhancedMoments)
+    );
+    if (nicheMissingScenes.length > 0) {
+        issues.push({
+            code: 'scene_niche_cue_missing',
+            message: `${nicheMissingScenes.length} scene(s) have no detectable niche cue in imagePrompt or subjectAction. Each scene must include at least one prop or moment from the campaign's allowed vocabulary: ${nicheMissingScenes.map((s) => s.sceneId).join(', ')}.`,
+            severity: 'warning',
+            autoFixable: false,
+        });
+    }
+
+    const humanPresenceMissingScenes = bible.sceneLibrary.filter(
+        (scene) => !sceneHasHumanPresenceCue(scene)
+    );
+    const humanPresenceThreshold = Math.ceil(bible.sceneLibrary.length * 0.8);
+    const humanPresenceCount = bible.sceneLibrary.length - humanPresenceMissingScenes.length;
+    if (humanPresenceCount < humanPresenceThreshold && bible.sceneLibrary.length >= 3) {
+        issues.push({
+            code: 'scene_human_presence_weak',
+            message: `Only ${humanPresenceCount}/${bible.sceneLibrary.length} scenes use a low-risk human presence cue (blurred figures, over-the-shoulder, hands in frame, or anonymous cluster). At least ${humanPresenceThreshold} scenes should carry social texture. Scenes missing cues: ${humanPresenceMissingScenes.map((s) => s.sceneId).join(', ')}.`,
+            severity: 'warning',
+            autoFixable: false,
+        });
+    }
+
+    return issues;
+}
+
+function checkBoardGameSceneCoverage(
+    bible: ProductionBible,
+    campaign: Campaign,
+): ValidationIssue[] {
+    if (!isBoardGamesAtSeaCampaign(campaign)) {
+        return [];
+    }
+
+    const issues: ValidationIssue[] = [];
+    const objectCueScenes = bible.sceneLibrary.filter((scene) => sceneHasBoardGameObjectCue(scene));
+    const socialCueScenes = bible.sceneLibrary.filter((scene) => sceneHasBoardGameSocialCue(scene));
+    const thematicScenes = bible.sceneLibrary.filter((scene) => sceneHasBoardGameMood(scene));
+    const requiredObjectCount = Math.ceil(bible.sceneLibrary.length * 0.8);
+    const requiredSocialCount = Math.ceil(bible.sceneLibrary.length * 0.7);
+    const requiredThematicCount = Math.ceil(bible.sceneLibrary.length * 0.8);
+
+    if (objectCueScenes.length < requiredObjectCount) {
+        issues.push({
+            code: 'board_game_object_density_weak',
+            message: `Only ${objectCueScenes.length}/${bible.sceneLibrary.length} scenes include a recognizable board-game object cue. For board-games-at-sea, at least ${requiredObjectCount} scenes should show a visible game object or interaction. Scenes missing cues: ${bible.sceneLibrary.filter((scene) => !sceneHasBoardGameObjectCue(scene)).map((s) => s.sceneId).join(', ')}.`,
+            severity: 'blocker',
+            autoFixable: false,
+        });
+    }
+
+    if (socialCueScenes.length < requiredSocialCount) {
+        issues.push({
+            code: 'board_game_social_texture_weak',
+            message: `Only ${socialCueScenes.length}/${bible.sceneLibrary.length} scenes feel like a social board-game moment. For board-games-at-sea, at least ${requiredSocialCount} scenes should carry small-group/table/play texture. Scenes missing cues: ${bible.sceneLibrary.filter((scene) => !sceneHasBoardGameSocialCue(scene)).map((s) => s.sceneId).join(', ')}.`,
+            severity: 'blocker',
+            autoFixable: false,
+        });
+    }
+
+    if (thematicScenes.length < requiredThematicCount) {
+        issues.push({
+            code: 'board_game_thematic_readability_weak',
+            message: `Only ${thematicScenes.length}/${bible.sceneLibrary.length} scenes read as obviously board-game themed. For board-games-at-sea, at least ${requiredThematicCount} scenes should make the board-game identity legible in mood or action. Scenes missing cues: ${bible.sceneLibrary.filter((scene) => !sceneHasBoardGameMood(scene)).map((s) => s.sceneId).join(', ')}.`,
+            severity: 'blocker',
+            autoFixable: false,
+        });
+    }
+
+    return issues;
+}
+
 function checkProductionBibleFeasibility(bible: ProductionBible): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     const executableTexts = getExecutableProductionBibleTexts(bible);
@@ -225,6 +401,12 @@ export function validateBrief(brief: CampaignAestheticBrief, campaign: Campaign)
         issues.push({ code: 'production_artifacts_missing', message: 'Both productionBible and landingStillBible are required.', severity: 'blocker', autoFixable: false });
     } else {
         issues.push(...checkSceneLibraryMomentQuality(brief.productionBible));
+        issues.push(...checkSceneNicheCoverage(
+            brief.productionBible,
+            brief.visual.plausibilityFramework.allowedProps,
+            brief.visual.plausibilityFramework.nicheEnhancedMoments,
+        ));
+        issues.push(...checkBoardGameSceneCoverage(brief.productionBible, campaign));
         issues.push(...checkProductionBibleFeasibility(brief.productionBible));
         issues.push(...checkAvoidDirectiveCoverage(brief));
     }

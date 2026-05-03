@@ -288,7 +288,7 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 6. **Use the API route for video generation, not standalone scripts.** The `POST /api/groups/campaign/[slug]/media/generate` endpoint checks `isGenerating()` and returns HTTP 409 if a run is already active. Standalone scripts (`npx tsx tmp/...`) call `runMediaGeneration()` directly, bypassing the 409 gate â€” they are the primary cause of overlapping submissions. Always use the API endpoint for video.
 
 ```bash
-# TikTok seed video only (4 storyboard shots, ~40s final)
+# TikTok seed video only (6 storyboard shots, ~35s final)
 # Submit ONCE. Do not re-run until manifest shows videos.tiktokSeed populated.
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
@@ -332,7 +332,7 @@ The codebase documentation states RunwayML Gen-3 Turbo as the primary video prov
 **Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** â€” they run alongside the full media pipeline, not instead of it. A generation request with no explicit `assetTypes` generates images, audio, video, and designed ads together. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress heroes, scenes, videos, or audio.
 
 **TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for improving promotional TikTok quality. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
-**Text overlay note:** The TikTok path is text-aware in prompts and templates, but that does not automatically guarantee burned-in text on the final MP4. If a TikTok format depends on visible text, verify the rendered asset itself before treating the video as complete.
+**Text overlay note:** The TikTok path now renders explicit overlay cards into the final MP4. Prompt text is still important, but it is no longer the only text layer. If the rendered video reads as clip-only or the overlay cards are missing, repair the render before treating the asset as complete.
 
 ---
 

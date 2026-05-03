@@ -572,12 +572,12 @@ BOARD-GAMES-AT-SEA SCENE PRIORITIES:
     const boardGamesStoryboardBlock = isBoardGamesAtSeaCampaign
         ? `
 BOARD-GAMES-AT-SEA STORYBOARD PRIORITIES:
-- The tiktok_seed storyboard must be exactly four shots in a hook -> build -> peak -> payoff arc.
+- The tiktok_seed storyboard must be exactly six shots in a hook -> build -> proof -> social -> peak -> payoff arc.
 - shotNumber values must be sequential starting at 1 and must match the array order.
 - Every shot.sceneId must reuse a sceneId that exists in the generated sceneLibrary.
 - Favor the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.
 - Do not fall back to generic cruise filler when a board-game scene is available.
-- Prefer this progression when it fits the available sceneLibrary: pool_deck or exterior hook, dining or atrium build, atrium or nightclub peak, sports_deck or offboard_excursion payoff.`
+- Prefer this progression when it fits the available sceneLibrary: pool_deck or exterior hook, dining build, atrium proof, nightclub social, sports_deck peak, offboard_excursion or theater payoff.`
         : '';
 
     const system = `

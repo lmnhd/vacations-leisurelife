@@ -1,224 +1,58 @@
-Ready for review
-Select text to add comments on the plan
-Designed Media System — Cruise Campaign Overhaul
-Context
-The current cruise campaign media system asks generative image models to carry the entire campaign: ~30 staged scene images per campaign, each rendered as a full-bleed photo or sketch of "people on cruise deck doing niche thing." The output is technically better than before (after the recent dual-style sketched/realistic split), but the creative result is generic, awkward, and weakly themed. Claude Design produced a new direction (.github/CLAUDE_DESIGN_BRIEF.md): stop asking the image generator to be the campaign. Treat each artifact as a composed designed piece — frame + image_module + type_module + artifact_wrapper — where typography, accent colors, section labels, and vessel metadata are template-rendered by code, and the image generator only fills the small image_module slot with a narrow documentary detail.
+WORK2: Ad Template Research & Plan
 
-The recommendation is a 4-system family with a niche-temperature classifier routing each campaign to a foundation + flavor:
+Goal:
+- Preserve and surface the existing designed ad template family.
+- Make the rendered ad artifacts look intentionally beautiful, not plain or broken.
+- Keep all templates available while fixing the cases where outputs are missing images, wrong aspect ratios, or mismatched visual tone.
 
-System 4 / Side A (PRIMARY) — modular type-driven brand. Always on.
-System 2 / Port of Call (warm) — postcards, tickets, baggage tags.
-System 1 / Vinyl & Tide (premium) — magazine cover & spread.
-System 3 / Deck Notes (subculture) — zine collage / liner notes.
-The intended outcome: campaigns that read as designed worlds, generation cost down ~6× (3–5 documentary detail shots vs. ~30 staged scenes), and the awkward-AI-people problem largely disappears because most artifacts have no people at all.
+Current Findings:
+- `lib/campaigns/design-system/ad-templates.ts` is the source for designed ad artifacts.
+- `generateDesignedAdArtifactPack` renders these templates and saves them as `designed_ad_artifact` assets.
+- A test preview page exists at `app/(tests)/tests/visual-system-sweep/page.tsx` that shows the spec set, not the final renders.
+- The template system includes four visual systems: `system_4_modular`, `system_1_editorial`, `system_2_nostalgia`, and `system_3_zine`.
+- Some templates are landscape or square and do not naturally match TikTok-style vertical media.
+- Some templates may render fallback placeholders when `sourceImage` is not provided.
 
-Approach
-Inversion of the asset model: keep all existing brief/orchestrator infrastructure (probe gate, lint gate, manifest merge, credit pre-check, 3-group dependency execution). Add a parallel design-system layer that consumes the existing brief, extracts structured niche tokens, classifies the campaign, and renders artifacts via Satori + Resvg. The legacy scene-generation path stays in code, gated behind DESIGNED_MEDIA_CONFIG.mode, so a single config flip rolls back any phase.
+Why they can look wrong:
+- Templates with `sourceImage` dependency may be rendered without a valid image buffer.
+- Non-TikTok aspect ratios can look out of place in a campaign gallery.
+- The template family is intentionally broad, so the visual tone across different systems can look inconsistent.
+- The current code paths are being used, but the outputs are only as strong as the source-image coverage and the final rendering logic.
 
-Per user decisions:
+Research Questions / Validation Points:
+1. Which template kinds currently require `sourceImage` and which are purely graphic/text based?
+2. For each kind, what is the expected visual intent, and does it align with the campaign theme?
+3. Does `renderDesignedAdArtifact` ever receive `undefined` source sourceBuffer for an expected image module?
+4. Are there campaign briefs or `adFormatBias` values that are selecting the wrong systems/kinds for this category?
+5. How are `documentaryDetails` (source images) managed and can we move to full coverage for every image-based template?
 
-Renderer: @vercel/satori + @resvg/resvg-js (JSX → SVG → PNG buffer).
-Rollout: Phase 1 ships with mode = 'system_4_only' as default — full cutover.
-Legacy path: kept in parallel; setting mode = 'off' reverts to today's pipeline.
-Classifier: rule-based first (keyword scoring vs. voicePersona / toneKeywords / imageryMood), LLM fallback only when rules deadlock.
-Phase 0 (Week 0-1) - Creative alignment foundation
-Goal: stop treating campaign mismatch as only a rendering problem. Add an upstream identity layer that decides the emotional mode, anti-defaults, prop family, social scale, and ad-format bias before image prompts or artifact routing are assembled.
+Plan to Fix / Improve Without Removing:
+1. Audit the render path for missing source-image fallbacks.
+   - Add a checklist of templates that must always receive a real source image.
+   - If a template can’t get an image, render a richer fallback instead of a dashed placeholder.
 
-New files
-lib/campaigns/design-system/identity-blueprint.ts - buildCampaignIdentityBlueprint(brief, campaign). Derives `energyMode`, `emotionalPromise`, `socialScale`, `propFamilies`, `forbiddenDefaults`, `adFormatBias`, and `evidenceOfBelonging` from existing discovery + brief data. Deterministic first; allow LLM fallback only when deterministic scoring is inconclusive.
-lib/campaigns/design-system/alignment-validator.ts - detectCampaignAlignmentDrift(brief, identityBlueprint). Flags contradictions such as energetic slogans paired with calm premium imagery, subcultural campaigns paired with polished corporate copy, or intimate campaigns paired with crowd-forward image logic.
-Tests: __tests__/identity-blueprint.test.ts, __tests__/alignment-validator.test.ts with fixture niches including energetic music, premium quiet-luxury, warm nostalgic, and subculture campaigns.
+2. Map template kinds to campaign usage intent.
+   - `type_hook_card`, `image_detail_ad` → strong TikTok/design-ad base outputs.
+   - `editorial_cover_ad`, `postcard_hero`, `zine_cover` → should be used only where premium/social collateral is desired.
+   - Confirm whether landscape/square formats are meant for feed, website, or non-TikTok channels.
 
-Modified files
-lib/campaigns/schema.ts - extend CampaignAestheticBriefSchema with optional `identityBlueprint`.
-lib/campaigns/aesthetic-engine.ts - after the core brief is normalized, derive and attach `identityBlueprint`.
-lib/campaigns/brief-engine/validation.ts - add alignment mismatch warnings or blockers for message/image contradictions.
-lib/campaigns/design-system/niche-tokens.ts - prefer `identityBlueprint` over generic merch/social fragments when deriving section labels, prop signals, and tone.
-lib/campaigns/design-system/documentary-prompts.ts - branch prompt behavior by `energyMode`, not just by asset kind.
-app/(tests)/tests/media-generation/media-review-panel.tsx - show `energyMode`, `forbiddenDefaults`, and alignment notes beside each designed artifact.
+3. Strengthen the source-image generation pipeline.
+   - Ensure `buildDocumentaryDetailSpecs` produces enough source asset records to populate every `sourceImage` expectation.
+   - Validate the pairing between template `sourceImage: AssetRecord` and the actual generated buffer.
 
-Validation
-- A rock/music campaign must not resolve to calm balcony serenity by default.
-- A premium/refined campaign must not inherit noisy collage logic or loud prop families.
-- A reviewer should be able to tell whether an asset failed because of execution quality or identity mismatch.
-Phase 1 (Weeks 1–3) — Foundation: niche tokens, System 4 module library, image budget reduction
-Goal: Stop generating whole staged scenes. Stand up Satori renderer. Ship System 4 module library as default. Reduce AI image budget per campaign from ~30 to 3–5 narrow documentary detail shots that fill image_module slots in composed artifacts.
+4. Improve render quality and polish.
+   - Review each template’s style and make sure type, spacing, and image integration are fully filled.
+   - Make the fallback state visually polished if `sourceImage` is absent (e.g. branded pattern, rich typography, not plain placeholder).
 
-New files
-lib/campaigns/design-system/types.ts — CampaignSystemEnum, NicheTemperatureEnum, NicheTokensSchema, ArtifactKindEnum, RenderedArtifact.
-lib/campaigns/design-system/niche-tokens.ts — extractNicheTokens(brief). Pulls accent_hex from existing visual.colorPalette.accent, derives headline from existing messaging.heroSlogan, picks italic_word deterministically (longest non-trivial noun via existing tokenizer in lib/campaigns/text-utils.ts if present, otherwise inline regex), generates section_labels[] from merch.coreItem and socialConcepts, stamps vessel_name. Pure, no LLM.
-lib/campaigns/design-system/temperature-classifier.ts — classifyNicheTemperature(brief, blueprint). Rule-based scoring against voicePersona / toneKeywords / imageryMood; LLM fallback only on deadlock. Returns 'premium' | 'warm' | 'cool' | 'subculture'.
-lib/campaigns/design-system/system-router.ts — selectCampaignSystem(temperature) returns { foundation: 'system_4', flavor: null } in Phase 1. Wired for flavor routing in later phases.
-lib/campaigns/design-system/renderer/satori-renderer.ts — renderArtifact(jsx, opts): Promise<Buffer>. Wraps Satori + Resvg, lazy-loads fonts from public/fonts/ and caches by family.
-lib/campaigns/design-system/system-4/modules/HeroCard.tsx — type-driven hero, italicized accent word, optional image_module slot for one documentary photo.
-lib/campaigns/design-system/system-4/modules/FeatureModule.tsx — section_label + small image + paragraph.
-lib/campaigns/design-system/system-4/modules/ItineraryCard.tsx — vessel masthead + day list + accent rule.
-lib/campaigns/design-system/system-4/modules/SocialCard.tsx — 1:1, 4:5, 9:16 variants, type-only or type + small image.
-lib/campaigns/design-system/system-4/modules/MerchBadge.tsx — circular badge with vessel_name + tagline.
-lib/campaigns/design-system/system-4/index.ts — renderSystem4Artifact(kind, tokens, imageBuffer?) dispatcher.
-lib/campaigns/media/generators/artifact-generator.ts — pipeline-side wrapper. generateArtifacts(brief, manifest, options): Promise<AssetRecord[]>. Picks approved trust images via existing lib/campaigns/media/image-selection.ts, calls renderSystem4Artifact, uploads via existing storeAsset in lib/campaigns/media/media-store.ts.
-Tests: __tests__/niche-tokens.test.ts, __tests__/temperature-classifier.test.ts, __tests__/satori-renderer.test.ts, __tests__/system-4-modules.test.ts. Mirror the existing pattern in lib/campaigns/media/__tests__/style-prompts.test.ts.
-Modified files
-lib/campaigns/schema.ts — extend CampaignAestheticBriefSchema with nicheTokens?: NicheTokensSchema and campaignSystem?: { foundation, flavor, temperature, classifiedAt }. Extend AssetTypeEnum with 'designed_artifact'. Both additions optional so existing campaigns load unchanged.
-lib/campaigns/aesthetic-engine.ts — after pass-2 validation in generateAestheticBrief(), call extractNicheTokens(brief) and classifyNicheTemperature(brief, blueprint), attach to brief. The 2-pass + auto-fix + corrective-reprompt loop itself is unchanged.
-lib/campaigns/media/style-prompts.ts — add 'documentary_detail' to MediaStyleAssetKind. Route to 'realistic' with themeAnchorProps enforced as the focal subject (not background detail). Strip human-action verbs from prompts. Update __tests__/style-prompts.test.ts.
-lib/campaigns/media/storyboard-motion-policy.ts — add DOCUMENTARY_DETAIL_SHOT_BUDGET = 5 constant and a new buildDocumentaryDetailPrompt(scene, brief) that produces close-up object framing briefs (binoculars on a rail, folded jacket, ship rigging cleat). Existing buildStoryboardShotPrompt stays untouched for legacy mode.
-lib/campaigns/media/media-orchestrator.ts — gate generateSceneImages behind mediaPipelineConfig.designedMediaMode. When mode === 'system_4_only' (default Phase 1): skip the 30-scene set; instead generate ≤5 documentary_detail images, then call generateArtifacts(brief, manifest) to compose System 4 artifacts. When mode === 'off': legacy behavior unchanged.
-lib/campaigns/media/media-pipeline-config.ts — add DESIGNED_MEDIA_CONFIG = { mode: 'off' | 'system_4_only' | 'all_systems', documentaryDetailBudget: 5, fontFamily: 'Inter' }. Default mode = 'system_4_only'.
-lib/campaigns/brief-engine/validation.ts — add niche_tokens_missing issue code (warning, not blocking).
-lib/campaigns/aesthetic-fixers/registry.ts — add populate_niche_tokens deterministic fixer that calls extractNicheTokens (matches existing ISSUE_CODE_OPERATIONS convention; conforms to .github/DOCS/deterministic-fixers.md).
-package.json — add @vercel/satori and @resvg/resvg-js (requires user permission per project npm install rule).
-Tests to add
-Per the new files list. Plus extend lib/campaigns/__tests__/brief-engine.validation.test.ts for the new warning, and add a deterministic-fixer test for populate_niche_tokens.
+5. Expose the rendered artifacts for review.
+   - Build a temporary gallery or test harness that shows actual rendered PNGs, not just spec cards.
+   - Flag the templates that look wrong in review and group them by system and aspect ratio.
 
-What ships behind flag vs. default
-Default after Phase 0 and Phase 1: keep the new pipeline opt-in or test-default until alignment validation passes on representative fixture niches. Do not full-cutover globally until the system proves it can preserve campaign identity across at least premium, warm, energetic, and subculture cases.
-Rollback: set mode = 'off' (env or per-job option) → legacy pipeline.
-Risks and mitigation
-Satori font loading in serverless cold start. Bundle one Inter weight as a Buffer constant; lazy-load extras; cache by family.
-Existing campaigns regenerate and lose stable scene catalog. Manifest merge in media-store.ts is unchanged; documentary details are stored as a new designed_artifact asset type so old assets aren't overwritten.
-Production-build-lint fails because the still bible has fewer stills. Lint inputs unchanged in Phase 1; documentary detail artifacts are scored separately.
-Aggressive cutover means any Phase 1 bug or identity-modeling mistake hits everyone. Mitigated by keeping the legacy path in place, making the new system opt-in until alignment passes review, and running soak tests against 3–5 fixture briefs with clearly different emotional modes.
-Phase 2 (Weeks 4–6) — System 2 (Port of Call) as warm flavor
-Goal: Add postcard / ticket / baggage-tag flavor for warm-temperature niches. The AI image hides behind a paper frame, lowering the bar for image quality.
+6. Maintain the full family.
+   - Keep all flavors available, but ensure they are not all surfaced by default in a single gallery unless the campaign intends that broad system suite.
+   - Prefer a curated subset for TikTok/design-ad output, while preserving the editorial/zine versions for additional collateral.
 
-New files
-lib/campaigns/design-system/system-2/modules/PostcardFront.tsx — paper texture, rounded corners, decorative border, image_module clipped to inner rect, vessel_name postage stamp top-right.
-lib/campaigns/design-system/system-2/modules/PostcardBack.tsx — postal stamp area, handwritten-feel headline, address-block section_labels.
-lib/campaigns/design-system/system-2/modules/BaggageTag.tsx — string + grommet, vessel_name + departure port.
-lib/campaigns/design-system/system-2/modules/BoardingTicket.tsx — perforated edge, monospace itinerary.
-lib/campaigns/design-system/system-2/index.ts — renderSystem2Flavor(baseArtifact, tokens).
-__tests__/system-2-modules.test.ts — SVG snapshots per module.
-public/fonts/ additions: handwritten-feel + monospace fonts.
-Modified files
-lib/campaigns/design-system/system-router.ts — return flavor: 'system_2' when temperature is 'warm' and mode === 'all_systems'.
-lib/campaigns/media/generators/artifact-generator.ts — when flavor is set, run flavor pass after System 4 base render, additive.
-lib/campaigns/design-system/types.ts — extend ArtifactKindEnum with 'postcard_front', 'postcard_back', 'baggage_tag', 'boarding_ticket'.
-lib/campaigns/landing/view-model.ts — add optional flavorArtifacts: { postcards?, tickets? }. View-model stays a plain merge.
-Behind flag vs. default
-Phase 2 ships with mode = 'system_4_only' still default. Set mode = 'all_systems' per-campaign or globally to enable flavor routing.
-
-Phase 3 (Weeks 7–10) — Systems 1 & 3, classifier picks foundation + flavor, landing dispatcher
-Goal: Add premium and subculture flavors. Route the landing-page frontend through a system-aware dispatcher.
-
-New files
-lib/campaigns/design-system/system-1/modules/MagazineCover.tsx — masthead + vessel_name + edition number + cover-art image_module + italicized cover line.
-lib/campaigns/design-system/system-1/modules/MagazineSpread.tsx — two-column editorial layout, drop cap, pull quote, half-page image_module.
-lib/campaigns/design-system/system-1/index.ts.
-lib/campaigns/design-system/system-3/modules/ZineCollage.tsx — polaroid stack, tape elements (SVG paths), handwriting overlay using italic_word, taped-down section_labels.
-lib/campaigns/design-system/system-3/modules/LinerNotes.tsx — typewriter-style block with track-listing layout.
-lib/campaigns/design-system/system-3/index.ts.
-components/campaign-landing/system-dispatcher.tsx — reads vm.campaignSystem.foundation/flavor and renders the right landing variant.
-components/campaign-landing/system-4/CampaignLandingSystem4.tsx — type-driven modular landing. Keeps current section structure; renders modules in module style.
-components/campaign-landing/system-2/CampaignLandingSystem2.tsx — postcard-flavored landing.
-components/campaign-landing/system-1/CampaignLandingSystem1.tsx — magazine-flavored landing.
-components/campaign-landing/system-3/CampaignLandingSystem3.tsx — zine-flavored landing.
-Tests for each module + dispatcher fixture test.
-Modified files
-lib/campaigns/design-system/system-router.ts — full mapping: premium → system_1, warm → system_2, subculture → system_3, cool → null (System 4 only).
-lib/campaigns/landing/view-model.ts — populate campaignSystem field; pass through flavorArtifacts.
-app/(landing)/groups/[slug]/page.tsx — replace direct <CampaignLandingPageClaude> with <CampaignLandingDispatcher>. One-line swap.
-app/(tests)/tests/campaign-landing/[slug]/page.tsx — same swap so the test page exercises the dispatcher.
-app/(tests)/tests/media-generation/media-review-panel.tsx — group by artifact kind; show artifact previews alongside the documentary detail it was composed from. Add rejection reason capture (free-text + structured tags).
-app/(tests)/tests/media-generation/review-asset-card.tsx — render artifact previews from existing R2 URLs.
-Behind flag vs. default
-Dispatcher always active. System 4 is default; missing/null campaignSystem falls through to System 4 layout. Flavors gated by mode = 'all_systems'.
-
-Phase 4 (Weeks 11+) — Cross-format propagation
-Goal: Make video, social, and merch generators consume the same niche tokens and system tokens so a campaign reads as one designed world across formats.
-
-New files
-lib/campaigns/design-system/world-tokens.ts — buildCampaignWorldTokens(brief). Combines nicheTokens + system + temperature + small world_motifs[] derived from the brief.
-lib/campaigns/media/generators/video-prompt-builder.ts — central place for Runway/Kling prompts using world tokens. Replaces ad-hoc prompt assembly currently inline in runway-generator.ts and tiktok-seed-generator.ts.
-lib/campaigns/design-system/system-4/social/QuoteCard.tsx, LineupCard.tsx, LinkInBioCard.tsx — social variants designed from tokens.
-lib/campaigns/design-system/system-4/merch/MerchTemplate.tsx — template-rendered comp the AI generator can use as a structural reference.
-Modified files
-lib/campaigns/media/generators/runway-generator.ts — accept world tokens.
-lib/campaigns/media/generators/tiktok-seed-generator.ts — accept world tokens.
-lib/campaigns/media/generators/dalle-generator.ts — pass MerchTemplate SVG/PNG as a reference image to the merch model when flag is on.
-lib/campaigns/media/generators/copy-generator.ts — consume world tokens for caption/copy generation.
-lib/campaigns/media/storyboard-motion-policy.ts — buildStoryboardShotPrompt accepts an optional worldTokens parameter and threads it into the source-anchor block.
-Behind flag vs. default
-World tokens always built (cheap). Generator consumption gated by DESIGNED_MEDIA_CONFIG.crossFormatPropagation. Default off until Phase 4 validation.
-
-End-of-Phase-4 cleanup
-Once flavors are validated and stable, delete the legacy scene-generation surface: remove generateSceneImages legacy branch in media-orchestrator.ts, retire unused SceneSpec fields. The deterministic-fixers registry entries that referenced old issue codes get pruned in the same PR.
-
-Load-bearing infrastructure NOT to touch in Phases 1–3
-These seams keep the pipeline reliable and credit-safe; do not modify until Phase 4 at the earliest:
-
-lib/campaigns/media/probe-gate.ts and probe-engine.ts — pre-spend probe scoring.
-lib/campaigns/media/credit-check-service.ts — credit pre-check.
-lib/campaigns/media/production-build-lint.ts — structural spend gate.
-lib/campaigns/media/media-store.ts — manifest merge, DynamoDB writes.
-lib/campaigns/media/storage-client.ts, r2-client.ts — R2 storage.
-lib/campaigns/aesthetic-red-team.ts, lib/campaigns/aesthetic-validation-orchestrator.ts — brief readiness gates.
-The 3-group dependency execution in media-orchestrator.ts — orchestrator structure stays; only individual generator invocations get gated by the new flag.
-Critical files
-lib/campaigns/schema.ts — CampaignAestheticBriefSchema, AssetTypeEnum. Niche tokens + system fields added here.
-lib/campaigns/aesthetic-engine.ts — generateAestheticBrief. Niche-tokens + temperature classification hook here.
-lib/campaigns/media/media-orchestrator.ts — runMediaGeneration. Gating logic for new vs. legacy pipeline.
-lib/campaigns/media/media-pipeline-config.ts — DESIGNED_MEDIA_CONFIG lives here.
-lib/campaigns/media/style-prompts.ts — extend with 'documentary_detail' asset kind.
-lib/campaigns/media/storyboard-motion-policy.ts — add buildDocumentaryDetailPrompt.
-lib/campaigns/media/image-selection.ts — reused by artifact-generator.ts to pick approved trust images.
-lib/campaigns/media/media-store.ts — storeAsset is reused as-is.
-lib/campaigns/landing/view-model.ts — CampaignLandingViewModel extended with campaignSystem + flavorArtifacts.
-components/campaign-landing/CampaignLandingPageClaude.tsx — replaced by dispatcher in Phase 3.
-.github/DOCS/deterministic-fixers.md — required policy for the populate_niche_tokens fixer.
-.github/CLAUDE_DESIGN_BRIEF.md — design intent source of truth.
-Verification
-After each phase
-Unit tests for the new modules (mirroring the lib/campaigns/media/__tests__/style-prompts.test.ts pattern):
-npx tsx --test lib/campaigns/design-system/__tests__/*.test.ts
-Brief-engine fixture run — generate a brief for a known fixture campaign (e.g. existing test slug); assert nicheTokens and campaignSystem fields populate; assert niche_tokens_missing warning does not fire.
-Artifact render snapshot — run renderSystem4Artifact for each ArtifactKind against a fixture token set; snapshot SVG output (Satori produces SVG before rasterization) for diff-free determinism.
-End-to-end media generation in test mode — call app/api/groups/campaign/[slug]/media/test/images/route.ts with the new 'designed_artifact' generator (added in Phase 1); confirm the asset lands in R2, manifest, and review panel.
-Pre-Phase-1 deploy soak test
-Run brief generation + artifact rendering against 3–5 representative niches (premium / warm / cool / subculture flavors). Compare landing render side-by-side with legacy output. Sign-off gate before flipping mode = 'system_4_only' as the default.
-
-Rollback drill
-Confirm mode = 'off' produces identical output to current main on a fixture campaign. This is the rollback contract for every phase.
-
-Manual landing review
-Phase 3 only: open app/(tests)/tests/campaign-landing/[slug] for one campaign per temperature class, confirm the dispatcher selects the right system component and the artifacts render correctly inline.
-ADDENDUM - CREATIVE ALIGNMENT DIAGNOSIS - 2026-04-30
-
-This plan was directionally right about the media-layer overhaul, but the latest review surfaced a more upstream problem:
-
-- the ad artifacts are improving
-- the image ingredients are cleaner
-- the campaign identity is still not reliably surviving the trip from discovery -> brief -> image behavior
-
-The current failure is not only "scene generation is awkward."
-It is now often "the words and the images are in different emotional keys."
-
-Example:
-
-- `Rock the Waves, Feel the Beat` promises energy, rhythm, social charge, and nostalgic music culture
-- the actual image modules still drift toward warm premium calm: quiet balcony, amber drink, tasteful deck furniture, reflective sunset mood
-
-That means the plan needs one more layer before we keep expanding templates:
-
-- a `CampaignIdentityBlueprint`
-- an explicit `energyMode`
-- campaign-specific `forbiddenDefaults`
-- campaign-specific `propFamilies`
-- campaign-specific `adFormatBias`
-- campaign-specific `socialScale`
-
-See:
-
-- `.github/CREATIVE_ALIGNMENT_DIAGNOSIS.md`
-
-MANDATORY PLAN CORRECTION
-
-Insert a new Phase 0 before broader flavor rollout:
-
-- derive `CampaignIdentityBlueprint` from discovery + brief
-- infer `energyMode` such as `calm_contemplative`, `warm_social`, `nostalgic_kinetic`, `after_hours_electric`, `refined_premium`, `subcultural_intimate`
-- store `forbiddenDefaults`, `propFamilies`, `socialScale`, `adFormatBias`, and `evidenceOfBelonging`
-- add validation for message/image mismatch such as energetic slogan + serene image world
-- thread identity blueprint into niche token extraction, documentary detail prompts, router logic, and review UI
-
-Without that Phase 0, the rest of this plan can still produce polished misalignment.
+Deliverables for the next step:
+- A documented template quality matrix listing each `DesignedAdArtifactKind` and its readiness status.
+- A diagnostic report showing whether a given template is currently receiving valid `sourceImage` data.
+- A proposed “beautiful default pack” for TikTok-friendly assets, with the rest retained as secondary collateral.

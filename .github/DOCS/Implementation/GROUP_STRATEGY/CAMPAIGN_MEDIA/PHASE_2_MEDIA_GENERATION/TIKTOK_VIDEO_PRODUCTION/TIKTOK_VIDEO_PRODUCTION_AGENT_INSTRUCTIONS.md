@@ -14,7 +14,7 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 - **Cannot Do**: Real people, complex multi-character interactions, true camera perspective changes.
 - **Must Do**: Hands, tables, light, portholes as primary subjects.
 
-**Text overlay reality check:** The current pipeline is text-aware, but visible text is not automatically guaranteed in the final MP4 unless the render path explicitly adds it. If a format relies on on-screen copy, the agent must verify the final render and treat missing text as an incomplete deliverable, not a stylistic preference.
+**Text overlay reality check:** TikTok renders now include explicit overlay cards in the compositor, so visible text is part of the deliverable, not just prompt guidance. If a format relies on on-screen copy and the rendered MP4 does not show it, treat that as an incomplete asset and repair the render before moving on.
 
 ## Marketing Frame Priority
 
@@ -37,6 +37,8 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 2. **LISTICLE**: "3 things on a board game cruise". 3-4s per beat, hard cuts, 18-25s.
 3. **ASMR-AMBIENCE**: No text in first 3s. Pure diegetic sound. Text resolves tension at 6s. 15-20s.
 4. **CONFESSION**: Single sustained pull-quote, slow text reveal, one image, one sound. 8-12s.
+
+For the TikTok seed video specifically, prefer a six-beat structure over a four-beat one when the scene library is strong enough to support it. Faster cuts are better than lingering on one or two good-looking shots because they reduce AI-anomaly scrutiny and make the ad feel intentionally edited.
 
 ## Composition Library - What to Use
 
@@ -146,6 +148,8 @@ Implement these five videos first, then iterate:
 - **Test Everything**: Run through scorecard before output.
 - **Iterate from Templates**: Build the five videos first, then adapt.
 - **Repair Before Scale**: When a campaign still feels generic, use the recovery loop in [CAMPAIGN_REPAIR_PLAYBOOK.md](../../CAMPAIGN_REPAIR_PLAYBOOK.md) before widening scope. Fix the source artifact, regenerate only the affected family, and stop for review before moving on.
+- **Overlay Cards Are Real**: TikTok seed and paid variants should render their hook/proof/CTA cards into the MP4. Prompt language is not enough. If the frame reads as clip-only, the render is incomplete.
+- **Faster Beats Win**: Use more cuts when the source scene set is strong. Shorter beats and clearer text blocks usually beat a long clip that invites nitpicking.
 - **Use Examples as a Lens**: If a shot or render feels technically correct but emotionally flat, compare it to [CAMPAIGN_EXAMPLES.md](../../CAMPAIGN_EXAMPLES.md) before changing the whole workflow. The examples page is the fastest way to see whether the issue is the source image, the overlay language, or the motion treatment.
 
 ## Final Thesis

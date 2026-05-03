@@ -38,6 +38,19 @@ function makeCampaign(): Campaign {
     };
 }
 
+function makeBoardGamesCampaign(): Campaign {
+    return {
+        ...makeCampaign(),
+        id: 'board-games-at-sea',
+        name: 'Board Games at Sea',
+        description: 'Campaign regression coverage for board-game-specific scene validation.',
+        targetingKeywords: ['board games', 'meeples', 'dice', 'cards'],
+        allowedThemeSignals: ['board game night'],
+        cruiseNativeMoments: ['tabletop game night', 'small social clusters around a table'],
+        nicheExpressionMode: 'playful collective',
+    };
+}
+
 function makeBrief(): CampaignAestheticBrief {
     return {
         slug: 'brief-engine-test',
@@ -316,6 +329,82 @@ test('alignment drift is surfaced as a warning for mismatched campaign energy', 
     const validation = validateBrief(driftingBrief, campaign);
 
     assert.ok(validation.issues.some((issue) => issue.code === 'energy_mode_visual_mismatch'));
+});
+
+test('scene with board-game cue and over-the-shoulder framing passes niche and human-presence checks', () => {
+    const brief = makeBrief();
+    brief.visual.plausibilityFramework.allowedProps = ['dice', 'cards', 'meeples', 'game box', 'score sheet'];
+    brief.visual.plausibilityFramework.nicheEnhancedMoments = ['half-finished board game at a lounge table'];
+    brief.productionBible!.sceneLibrary[0].imagePrompt =
+        'Pool deck, late afternoon, golden side light. Wide shot of main pool with teak loungers and ocean horizon. On the nearest table, dice and a game box rest half-open beside a drink. Over-the-shoulder of a guest leaning in, blurred background figures seated nearby.';
+    brief.productionBible!.sceneLibrary[0].subjectAction = 'guests lean over a half-finished board game at a poolside table';
+
+    const validation = validateBrief(brief, campaign);
+    assert.ok(!validation.issues.some((i) => i.code === 'scene_niche_cue_missing'), 'should not flag niche cue missing');
+    assert.ok(!validation.issues.some((i) => i.code === 'scene_human_presence_weak'), 'should not flag human presence weak');
+});
+
+test('ship-only scene with no niche prop is flagged with scene_niche_cue_missing warning', () => {
+    const brief = makeBrief();
+    brief.visual.plausibilityFramework.allowedProps = ['dice', 'cards', 'meeples', 'game box'];
+    brief.visual.plausibilityFramework.nicheEnhancedMoments = ['board game at sea'];
+    brief.productionBible!.sceneLibrary[0].imagePrompt =
+        'Pool deck, mid-afternoon, bright open sun. Wide shot of main pool with teak loungers and ocean horizon in the background. Empty loungers in the foreground.';
+    brief.productionBible!.sceneLibrary[0].subjectAction = 'guests relax by the pool in the afternoon sun';
+
+    const validation = validateBrief(brief, campaign);
+    assert.ok(validation.issues.some((i) => i.code === 'scene_niche_cue_missing'), 'should flag missing niche cue');
+    assert.equal(validation.issues.find((i) => i.code === 'scene_niche_cue_missing')?.severity, 'warning');
+});
+
+test('scene with no human-presence cue is flagged when threshold is not met', () => {
+    const brief = makeBrief();
+    // Add multiple scenes that all lack human-presence cues
+    for (let i = 1; i < 5; i++) {
+        brief.productionBible!.sceneLibrary.push({
+            sceneId: `scene_ship_${i}`,
+            location: `open deck ${i}`,
+            timeOfDay: 'afternoon',
+            lighting: 'bright open sun',
+            cameraAngle: 'wide establishing',
+            subjectAction: `guests enjoy the cruise day ${i}`,
+            environmentDetails: 'ocean horizon, ship railings',
+            mood: 'serenity',
+            imagePrompt: `Open deck ${i}, afternoon sun. Wide shot of deck chairs and ocean horizon. Quiet atmosphere with no people visible.`,
+            referenceCategory: 'exterior',
+        });
+    }
+
+    const validation = validateBrief(brief, campaign);
+    assert.ok(validation.issues.some((i) => i.code === 'scene_human_presence_weak'), 'should flag weak human presence when threshold is not met');
+});
+
+test('board-games-at-sea scenes require stronger board-game density and social texture', () => {
+    const brief = makeBrief();
+    const boardGamesCampaign = makeBoardGamesCampaign();
+    const seedScene = brief.productionBible!.sceneLibrary[0];
+
+    brief.visual.plausibilityFramework.allowedProps = ['meeples', 'dice', 'cards', 'game box', 'score sheet'];
+    brief.visual.plausibilityFramework.nicheEnhancedMoments = ['tabletop game night', 'over-the-shoulder rules explanation'];
+    brief.productionBible!.sceneLibrary = Array.from({ length: 10 }, (_, index) => ({
+        ...seedScene,
+        sceneId: `scene_board_${String(index + 1).padStart(2, '0')}`,
+        location: index < 5 ? 'pool deck table' : 'open deck rail',
+        subjectAction: index < 5
+            ? 'guests lean over a half-finished board game at a table'
+            : 'guests relax by the rail on a cruise afternoon',
+        environmentDetails: index < 5
+            ? 'dice, game box, cards, and a small cluster around the table'
+            : 'ocean horizon, teak railings, loungers',
+        imagePrompt: index < 5
+            ? 'Pool deck, late afternoon, golden side light. Over-the-shoulder view of guests leaning over a board game table. Dice, cards, and a game box are visible near a drink, with blurred background figures nearby.'
+            : 'Open deck rail, late afternoon, bright sun. Wide shot of teak railings and ocean horizon with relaxed cruise atmosphere.',
+    }));
+
+    const validation = validateBrief(brief, boardGamesCampaign);
+    assert.ok(validation.issues.some((i) => i.code === 'board_game_object_density_weak'), 'should flag weak board-game object density');
+    assert.ok(validation.issues.some((i) => i.code === 'board_game_social_texture_weak'), 'should flag weak board-game social texture');
+    assert.ok(validation.issues.some((i) => i.code === 'board_game_thematic_readability_weak'), 'should flag weak board-game thematic readability');
 });
 
 test('generic welcome language alone does not satisfy optionality checks', () => {

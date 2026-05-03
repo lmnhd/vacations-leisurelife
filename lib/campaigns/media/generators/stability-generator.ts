@@ -1035,9 +1035,9 @@ function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
     }
 
     return [
-        'Storyboard source frame direction: do NOT focus on human subjects; keep people secondary to the ship and sea and never dominant foreground subjects',
-        'Favor wide or medium-wide ship-led framing with background silhouettes, rail-side profiles, or over-the-shoulder figures only',
-        'Capture a settled end-state only: no mid-gesture hands, no hand-to-object action, no mugs, glasses, cups, walking, or drinking motion in frame',
+        'Storyboard source frame direction: keep human subjects secondary to ship and sea — never the dominant foreground focal point',
+        'Prefer low-risk human presence: blurred background figures, over-the-shoulder views, hands near a table or game piece, or an anonymous seated cluster; avoid close-up faces, eye-contact portraits, or staged group poses',
+        'Capture a settled social moment: people at rest around a table or at the rail, game or props visible, no walking, no sipping, no object hand-offs in motion',
     ].join('. ');
 }
 
@@ -1062,6 +1062,10 @@ export async function generateSceneImages(
             themeAnchorProps: themeAnchorProps.slice(0, 2),
         });
 
+        const nicheVisibilityGuidance = themeAnchorProps.length > 0
+            ? `Niche prop visibility: at least one of these campaign props must be visible in the frame — ${themeAnchorProps.join(', ')} — placed incidentally on a table, in the foreground, or near a background figure`
+            : '';
+
         const enrichedPrompt = [
             // Style + emotional framing FIRST — highest weight for image gen
             resolvedStyle.promptBlock,
@@ -1069,14 +1073,16 @@ export async function generateSceneImages(
             // Primary creative direction from Production Bible
             scene.imagePrompt,
             buildStoryboardSafeSceneDirection(scene),
+            // Niche prop visibility (injected from campaign allowedProps)
+            nicheVisibilityGuidance,
             // Atmosphere context (no task descriptions)
             `Setting: ${scene.location}`,
             `Time: ${scene.timeOfDay}`,
             `Light: ${scene.lighting}`,
             `Framing: ${scene.cameraAngle}`,
             shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
-            // Reinforce: vacation, not work
-            'If people appear at all, they must be incidental background figures or silhouettes, never the focal subject, never holding hero props, and never interacting with handheld objects',
+            // Human presence: prefer low-risk social texture over total suppression
+            'If people appear: prefer blurred background figures, over-the-shoulder views, or hands near a table; avoid close-up portraits, mid-gesture motion, and eye-contact hero framing',
             'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
             'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
             landscapeGuardrails.reality,
