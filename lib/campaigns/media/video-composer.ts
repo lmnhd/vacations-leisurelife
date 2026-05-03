@@ -78,6 +78,82 @@ export interface VideoOverlayCardInput {
     y: number;
 }
 
+export async function createStillVerticalClip(
+    imageBuffer: Buffer,
+    durationSeconds: number,
+): Promise<Buffer> {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+        throw new Error(`Invalid still clip duration: ${durationSeconds}`);
+    }
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-still-clip-'));
+    const sourceImagePath = join(tempDirectory, 'source.png');
+    const outputVideoPath = join(tempDirectory, 'output.mp4');
+
+    try {
+        await writeFile(sourceImagePath, toUint8Array(imageBuffer));
+
+        await runFfmpeg([
+            '-y',
+            '-loop', '1',
+            '-i', sourceImagePath,
+            '-t', String(durationSeconds),
+            '-vf', 'scale=-2:1920,crop=1080:1920,setsar=1',
+            '-c:v', 'libx264',
+            '-preset', 'medium',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            '-an',
+            outputVideoPath,
+        ]);
+
+        return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
+export async function createContainedStillVerticalClip(
+    imageBuffer: Buffer,
+    durationSeconds: number,
+): Promise<Buffer> {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+        throw new Error(`Invalid still clip duration: ${durationSeconds}`);
+    }
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-contained-still-clip-'));
+    const sourceImagePath = join(tempDirectory, 'source.png');
+    const outputVideoPath = join(tempDirectory, 'output.mp4');
+
+    try {
+        await writeFile(sourceImagePath, toUint8Array(imageBuffer));
+
+        await runFfmpeg([
+            '-y',
+            '-loop', '1',
+            '-i', sourceImagePath,
+            '-t', String(durationSeconds),
+            '-filter_complex', [
+                '[0:v]split=2[bg_src][fg_src]',
+                '[bg_src]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:1,eq=brightness=-0.12:saturation=0.78[bg]',
+                '[fg_src]scale=1080:1920:force_original_aspect_ratio=decrease,setsar=1[fg]',
+                '[bg][fg]overlay=(W-w)/2:(H-h)/2:shortest=1:format=auto[v]',
+            ].join(';'),
+            '-map', '[v]',
+            '-c:v', 'libx264',
+            '-preset', 'medium',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            '-an',
+            outputVideoPath,
+        ]);
+
+        return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
 export async function composeVideoWithOverlayCards(
     sourceVideoBuffer: Buffer,
     overlayCards: readonly VideoOverlayCardInput[],
@@ -128,6 +204,42 @@ export async function composeVideoWithOverlayCards(
             '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
             ...(durationSeconds !== undefined ? ['-t', String(durationSeconds)] : ['-shortest']),
+            outputVideoPath,
+        ]);
+
+        return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
+export async function composeVideoSequence(
+    sourceVideoBuffers: readonly Buffer[],
+    durationSeconds?: number,
+): Promise<Buffer> {
+    if (sourceVideoBuffers.length === 0) {
+        throw new Error('At least one source video buffer is required to compose a sequence');
+    }
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-sequence-compose-'));
+    const concatListPath = join(tempDirectory, 'concat.txt');
+    const outputVideoPath = join(tempDirectory, 'output.mp4');
+    const sourceVideoPaths = sourceVideoBuffers.map((_, index) => join(tempDirectory, `source_${String(index + 1).padStart(3, '0')}.mp4`));
+
+    try {
+        for (let i = 0; i < sourceVideoBuffers.length; i++) {
+            await writeFile(sourceVideoPaths[i], toUint8Array(sourceVideoBuffers[i]));
+        }
+        await writeFile(concatListPath, sourceVideoPaths.map((sourceVideoPath) => `file '${sourceVideoPath.replace(/'/g, "'\\''")}'`).join('\n'));
+
+        await runFfmpeg([
+            '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', concatListPath,
+            '-c', 'copy',
+            '-movflags', '+faststart',
+            ...(durationSeconds !== undefined ? ['-t', String(durationSeconds)] : []),
             outputVideoPath,
         ]);
 

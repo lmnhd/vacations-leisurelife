@@ -109,6 +109,7 @@ Video is downstream of scene quality.
 
 Do not spend on video if the scene layer is still generic.
 Use the scene review checkpoint before any video pass.
+For TikTok, prefer package-first video construction: still scenes, designed text cards, hard cuts, and clear ad framing. If the result still feels like motion clips with labels pasted on top, repair the package layer before trying another motion-heavy rerun.
 
 ---
 

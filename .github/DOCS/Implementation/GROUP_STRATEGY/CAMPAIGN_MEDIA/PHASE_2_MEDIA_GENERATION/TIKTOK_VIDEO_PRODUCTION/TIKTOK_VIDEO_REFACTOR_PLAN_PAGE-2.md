@@ -48,6 +48,8 @@ That matters because the best result is often not a heavily animated video. It i
 
 The key is to make the social energy legible without requiring perfect portraiture. After scenes are generated, the flow should stop there for user review before any video generation starts.
 
+For the reusable template system that turns stills into the final TikTok package, see [TIKTOK_TEMPLATE_SYSTEM.md](./TIKTOK_TEMPLATE_SYSTEM.md). That doc defines the full-frame ad rule, the no-crop image rule, and the sandbox workflow that future agents should follow once the template exists.
+
 ---
 
 ## 3. Implementation Direction
@@ -162,11 +164,14 @@ That means:
 - support light image animation as a first-class promotional style
 - keep parallax, zoom, pan, and object emphasis as the default motion vocabulary
 - keep text brief, legible, and useful as a hook or CTA layer
+- keep the final export as a full-frame 9:16 ad, with the source still preserved at full size and the package built around it
+- do not crop or zoom the source image just to fill the canvas
 
 **Success criteria:**
 - promotional assets can communicate even when the underlying scene is simple
 - text works as part of the design, not only as a downstream copy artifact
 - lightweight image animation remains a deliberate choice, not a fallback
+- the same template can be reused across campaigns by swapping only the stills, copy, and palette
 
 ### Agent 5: Regression Coverage
 

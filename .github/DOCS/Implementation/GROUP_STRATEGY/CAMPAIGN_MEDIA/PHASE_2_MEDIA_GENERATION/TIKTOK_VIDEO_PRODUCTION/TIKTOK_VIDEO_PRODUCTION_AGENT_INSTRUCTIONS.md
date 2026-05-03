@@ -16,6 +16,11 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 
 **Text overlay reality check:** TikTok renders now include explicit overlay cards in the compositor, so visible text is part of the deliverable, not just prompt guidance. If a format relies on on-screen copy and the rendered MP4 does not show it, treat that as an incomplete asset and repair the render before moving on.
 
+**Package-first rule:** The preferred TikTok seed path is now a packaged still-image ad, not a motion-first image-to-video cut. Use the scene images as the visual base, frame them with the overlay package, and let typography, layout, and pacing do the heavy lifting. Motion inside the source image is optional, not the main value proposition.
+
+**Template-first rule:** Build and refine the reusable TikTok package in the sandbox before spending on live campaign reruns. The exported MP4 should be a full-frame 9:16 ad that keeps the source still at full size and places text around it. Do not crop or zoom the still just to make it fill the canvas. For the shared template architecture, see [TIKTOK_TEMPLATE_SYSTEM.md](./TIKTOK_TEMPLATE_SYSTEM.md).
+**Editorial frame rule:** The frame should feel like a commercial layout, not an app panel. Use wide top/bottom bands, stronger text hierarchy, and a styled backdrop behind the centered still so the empty space reads as intentional design.
+
 ## Marketing Frame Priority
 
 **Primary Frame (60% of output)**: Relief - "Finally, a vacation where you don't have to explain your hobby."
@@ -39,6 +44,7 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 4. **CONFESSION**: Single sustained pull-quote, slow text reveal, one image, one sound. 8-12s.
 
 For the TikTok seed video specifically, prefer a six-beat structure over a four-beat one when the scene library is strong enough to support it. Faster cuts are better than lingering on one or two good-looking shots because they reduce AI-anomaly scrutiny and make the ad feel intentionally edited.
+When the scene set is strong enough, the preferred TikTok seed is a static-package edit: still scenes, designed text cards, and quick beat changes. Do not spend credits chasing subtle motion if the package itself can carry the ad.
 
 ## Composition Library - What to Use
 
@@ -149,6 +155,7 @@ Implement these five videos first, then iterate:
 - **Iterate from Templates**: Build the five videos first, then adapt.
 - **Repair Before Scale**: When a campaign still feels generic, use the recovery loop in [CAMPAIGN_REPAIR_PLAYBOOK.md](../../CAMPAIGN_REPAIR_PLAYBOOK.md) before widening scope. Fix the source artifact, regenerate only the affected family, and stop for review before moving on.
 - **Overlay Cards Are Real**: TikTok seed and paid variants should render their hook/proof/CTA cards into the MP4. Prompt language is not enough. If the frame reads as clip-only, the render is incomplete.
+- **Full-Frame Package Rule**: The final TikTok export is the ad. The still image should stay intact and visible inside the vertical frame, with text bands and CTA scaffolding built around it. If the image is being cropped or blown up just to fill space, the template needs repair.
 - **Faster Beats Win**: Use more cuts when the source scene set is strong. Shorter beats and clearer text blocks usually beat a long clip that invites nitpicking.
 - **Use Examples as a Lens**: If a shot or render feels technically correct but emotionally flat, compare it to [CAMPAIGN_EXAMPLES.md](../../CAMPAIGN_EXAMPLES.md) before changing the whole workflow. The examples page is the fastest way to see whether the issue is the source image, the overlay language, or the motion treatment.
 

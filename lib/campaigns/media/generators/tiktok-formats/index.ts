@@ -20,6 +20,7 @@ export interface TikTokFormatSpec {
     formatId: TikTokFormatId;
     targetDurationSeconds: number;
     shotCount: number;
+    renderMode: 'static_package' | 'motion_clip';
     /** Distribution tag applied to the asset record — used by the lint gate and publishing adapter. */
     distributionTag: 'organic' | 'paid';
     buildShotPrompts: (brief: CampaignAestheticBrief) => string[];
@@ -30,6 +31,7 @@ const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
     formatId: 'organic_seed',
     targetDurationSeconds: ORGANIC_SEED_TARGET_DURATION_SECONDS,
     shotCount: ORGANIC_SEED_SHOTS.length,
+    renderMode: 'static_package',
     distributionTag: 'organic',
     buildShotPrompts: buildOrganicSeedShotPrompts,
     buildOverlayCards: buildOrganicSeedOverlayCards,
@@ -39,6 +41,7 @@ const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
     formatId: 'paid_variant',
     targetDurationSeconds: PAID_VARIANT_TARGET_DURATION_SECONDS,
     shotCount: PAID_VARIANT_SHOTS.length,
+    renderMode: 'static_package',
     distributionTag: 'paid',
     buildShotPrompts: buildPaidVariantShotPrompts,
     buildOverlayCards: buildPaidVariantOverlayCards,

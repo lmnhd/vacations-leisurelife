@@ -5,7 +5,7 @@ import { renderTikTokOverlayCard } from './tiktok-overlay-cards';
 import type { TikTokOverlayCardSpec } from './tiktok-overlay-cards';
 import { generateAmbientNarration } from './elevenlabs-generator';
 import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo, VideoMotionFormat } from './runway-generator';
-import { composeProductionVideo, composeVideoWithOverlayCards } from '../video-composer';
+import { composeProductionVideo, composeVideoSequence, composeVideoWithOverlayCards, createContainedStillVerticalClip, createStillVerticalClip } from '../video-composer';
 import { buildStoryboardShotPrompt } from '../storyboard-motion-policy';
 import { storeAsset } from '../storage-client';
 import type { VideoModelPresetId } from '../video-models';
@@ -96,6 +96,50 @@ async function renderOverlayCards(
     return rendered;
 }
 
+async function downloadAssetBuffer(url: string): Promise<Buffer> {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to download asset: ${response.status}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+}
+
+async function generateStaticPackageStoryboardVideo(
+    brief: CampaignAestheticBrief,
+    storyboard: Storyboard,
+    sceneImageMap: ReadonlyMap<string, string>,
+): Promise<{ buffer: Buffer; script: string; durationSeconds: number; motionPrompt: string }> {
+    const tiktokFormat = inferTikTokFormat(storyboard.deliverableId);
+    const overlayCards = await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard));
+
+    const sourceBuffers: Buffer[] = [];
+    const shotPrompts: string[] = [];
+
+    for (let index = 0; index < storyboard.shotSequence.length; index += 1) {
+        const shot = storyboard.shotSequence[index];
+        const imageUrl = sceneImageMap.get(shot.sceneId);
+        if (!imageUrl) {
+            throw new Error(`Missing generated scene image for storyboard shot ${shot.sceneId}`);
+        }
+
+        const imageBuffer = await downloadAssetBuffer(imageUrl);
+        const stillClip = await createContainedStillVerticalClip(imageBuffer, shot.durationSeconds);
+        const overlayedStill = await composeVideoWithOverlayCards(stillClip, [overlayCards[index] ?? overlayCards[0]], shot.durationSeconds);
+        sourceBuffers.push(overlayedStill);
+        shotPrompts.push(buildStoryboardShotPrompt(shot, brief, brief.productionBible?.sceneLibrary.find((scene) => scene.sceneId === shot.sceneId)));
+    }
+
+    const finalVideoBuffer = await composeVideoSequence(sourceBuffers, storyboard.totalDurationSeconds);
+
+    return {
+        buffer: finalVideoBuffer,
+        script: '',
+        durationSeconds: storyboard.totalDurationSeconds,
+        motionPrompt: shotPrompts.join('\n\n---\n\n'),
+    };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Storyboard-driven video generation
 // Each shot uses its OWN scene image from the sceneImageMap
@@ -125,15 +169,6 @@ export async function generateStoryboardVideo(
     campaignSlug?: string,
 ): Promise<StoryboardVideoResult> {
     const runId = createRunId();
-
-    // Build narration brief from the storyboard's script
-    const compositeBrief: CampaignAestheticBrief = {
-        ...brief,
-        audio: {
-            ...brief.audio,
-            ambientNarrationScript: storyboard.deliverableId.startsWith('tiktok') ? '' : storyboard.narrationScript,
-        },
-    };
 
     // Build per-shot motion prompts and resolve source images
     const shotPrompts: string[] = [];
@@ -183,8 +218,33 @@ export async function generateStoryboardVideo(
     }
 
     const isTikTok = storyboard.deliverableId.startsWith('tiktok');
-    const motionFormat: VideoMotionFormat = isTikTok ? 'tiktok' : 'standard';
     const tiktokFormat = isTikTok ? inferTikTokFormat(storyboard.deliverableId) : null;
+
+    if (isTikTok && tiktokFormat?.renderMode === 'static_package') {
+        const staticPackageResult = await generateStaticPackageStoryboardVideo(brief, storyboard, sceneImageMap);
+        return {
+            buffer: staticPackageResult.buffer,
+            script: staticPackageResult.script,
+            durationSeconds: staticPackageResult.durationSeconds,
+            assetId: `vid_${storyboard.deliverableId}_${runId}`,
+            fileName: `video/${storyboard.deliverableId}_${runId}.mp4`,
+            motionPrompt: staticPackageResult.motionPrompt,
+            deliverableId: storyboard.deliverableId,
+            narrationVoiceId: '',
+            narrationVoiceName: null,
+        };
+    }
+
+    // Build narration brief from the storyboard's script
+    const compositeBrief: CampaignAestheticBrief = {
+        ...brief,
+        audio: {
+            ...brief.audio,
+            ambientNarrationScript: storyboard.deliverableId.startsWith('tiktok') ? '' : storyboard.narrationScript,
+        },
+    };
+
+    const motionFormat: VideoMotionFormat = isTikTok ? 'tiktok' : 'standard';
 
     // Generate narration + visual clips in parallel
     const [narrationAudio, visualClips] = await Promise.all([

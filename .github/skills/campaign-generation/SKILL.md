@@ -103,6 +103,9 @@ The following issues have been encountered repeatedly across campaigns. Agents m
   - Use text overlays, image-first motion, and subtle object movement to make the scenes carry the promotional load before escalating to full animation.
   - The `buildStoryboardShotPrompt` function should tag each shot with its intended style so the video assembler pulls from the correct source pool.
 
+- **TikTok template system:** Treat TikTok as a reusable full-frame ad package, not a phone-within-a-phone preview or a motion-first clip reel. The source still should stay full size and visible inside the vertical frame, with text bands and CTA scaffolding built around it. For the shared template architecture and sandbox workflow, see [TIKTOK_TEMPLATE_SYSTEM.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_TEMPLATE_SYSTEM.md).
+- **Editorial frame rule:** The frame should feel like a commercial layout, not a dashboard widget. Prefer wide bands, stronger hierarchy, and a styled backdrop behind the centered still so the empty frame space reads as part of the ad.
+
 ### Probe Loop Scope (Do Not Confuse With Scene Images)
 - **What probes currently simulate:** Probes are cheap image renders from `brief.landingStillBible.stillLibrary` only. They validate planned still directions for hero/concept/social still expansion: niche signal, slot role, composition, and generic-cruise fallback risk.
 - **What probes do NOT currently simulate:** They are not generated from `brief.productionBible.sceneLibrary`, do not validate storyboard/video scene frames, do not validate documentary detail modules, and do not validate designed ad artifacts.
@@ -264,10 +267,12 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/test/images 
 3. **Brief must be approved** â€” Same gate as Step 4.1.
 
 **TikTok promo video rule:**
-1. Use the storyboard-driven `tiktok_seed_video` path for the actual promotional video unless there is no Production Bible yet.
+1. Use the storyboard-driven `tiktok_seed_video` path for the actual promotional video unless there is no Production Bible yet. Prefer the package-first TikTok render mode: still scenes + overlay cards + hard cuts. Motion inside the source image is now optional, not the core creative dependency.
 2. Keep `tiktok` organic delivery and `tiktok_paid` lead-gen delivery separate. They are different distribution contracts, not one shared publish flow.
 3. If the video feels generic, inspect the Production Bible scene library and the storyboard prompts before touching the composer.
 4. Landing-still probes do not prove TikTok scene quality. They are a separate confidence loop.
+5. If the TikTok render still looks like stitched clips instead of a packaged ad, repair the package layer first before asking for more motion or more source-image generation.
+6. The final TikTok export should be the ad itself: a full-frame 9:16 package with the still image preserved, text overlays integrated into the video, and only light motion if it helps the composition.
 
 **Audio generation (light, safe to run first):**
 ```bash

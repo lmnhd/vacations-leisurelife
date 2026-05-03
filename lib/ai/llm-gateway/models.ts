@@ -119,7 +119,7 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_MEDIUM]: {
     provider: "openai",
-    apiId: "gpt-5-medium",
+    apiId: "gpt-5.4-mini",
     maxTokens: 8_192,
     defaultTemp: 0.7,
     contextWindow: 128_000,
