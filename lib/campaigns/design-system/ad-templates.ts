@@ -104,6 +104,12 @@ function headlineWithAccent(tokens: NicheTokens, size: number): React.ReactEleme
     }, part)));
 }
 
+function campaignBadgeText(tokens: NicheTokens): string {
+    const shortLabel = tokens.nicheVocabulary.slice(0, 2).join(' ').trim();
+    if (shortLabel.length >= 4) return shortLabel;
+    return tokens.headline;
+}
+
 function editorialCover(input: RenderInput): React.ReactElement {
     const { tokens, sourceImage, width, height } = input;
     return h('div', { style: baseStyle(width, height, PAPER) },
@@ -253,7 +259,7 @@ function boardingPass(input: RenderInput): React.ReactElement {
         h('div', { style: { display: 'flex', marginTop: 'auto', justifyContent: 'space-between', alignItems: 'flex-end' } },
             h('div', { style: { display: 'flex', flexDirection: 'column' } },
                 h('span', { style: { fontSize: 12, fontFamily: 'Mono', color: '#888' } }, 'SEAL'),
-                h('span', { style: { fontSize: 16, fontFamily: 'Serif', fontStyle: 'italic' } }, tokens.nicheVocabulary[0] ?? 'Voyage'),
+                h('span', { style: { fontSize: 16, fontFamily: 'Serif', fontStyle: 'italic' } }, campaignBadgeText(tokens)),
             ),
             h('div', { style: { display: 'flex', border: '2px dashed #555', padding: '4px 8px', fontFamily: 'Mono', fontSize: 14 } }, '||| || ||| ||'),
         ),
@@ -267,7 +273,7 @@ function baggageTag(input: RenderInput): React.ReactElement {
             h('div', { style: { display: 'flex', justifyContent: 'center', marginBottom: 16 } },
                 h('div', { style: { width: 28, height: 28, borderRadius: '50%', border: '3px solid #8b7355' } }),
             ),
-            h('div', { style: { display: 'flex', fontFamily: 'Serif', fontStyle: 'italic', fontSize: Math.round(width * 0.055), fontWeight: 700, textAlign: 'center', marginBottom: 18 } }, tokens.nicheVocabulary[0] ?? tokens.headline),
+            h('div', { style: { display: 'flex', fontFamily: 'Serif', fontStyle: 'italic', fontSize: Math.round(width * 0.055), fontWeight: 700, textAlign: 'center', marginBottom: 18 } }, campaignBadgeText(tokens)),
             h('div', { style: { display: 'flex', background: tokens.accentHex, color: '#fff', fontFamily: 'Mono', fontSize: 14, padding: '6px 12px', textAlign: 'center', marginBottom: 18 } }, tokens.vesselName),
             h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
                 h('div', { style: { display: 'flex', justifyContent: 'space-between' } },
