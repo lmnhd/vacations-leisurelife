@@ -557,6 +557,29 @@ ADDITIONAL avoidDirectives REQUIRED for this campaign:
   - "No storyboard where musicCue stays at ambient bed for all shots"`.trim()
         : '';
 
+    const isBoardGamesAtSeaCampaign = campaign.id === 'board-games-at-sea' || /board games at sea/i.test(campaign.name);
+    const boardGamesSceneBlock = isBoardGamesAtSeaCampaign
+        ? `
+BOARD-GAMES-AT-SEA SCENE PRIORITIES:
+- Every scene must visibly earn the campaign title. A board-game prop or interaction should be legible in frame, not merely implied.
+- Prefer tabletop play, rules explanations, card shuffles, dice rolls, meeples, score sheets, game boxes, or hands arranging pieces.
+- At least 6 of the 10 scenes should feel like a small social cluster around a game table or shared play surface.
+- Limit pure cruise postcard scenes to at most 2 total; the rest should feel like board-game life happening aboard the ship.
+- If a scene is set in spa, theater, nightclub, or destination_port, it still needs a recognizable game cue or social play detail so the niche does not disappear.
+- A scene counts as clearly board-game themed only when the imagePrompt or subjectAction makes the play object or interaction visible; do not rely on generic "game" language alone.`
+        : '';
+
+    const boardGamesStoryboardBlock = isBoardGamesAtSeaCampaign
+        ? `
+BOARD-GAMES-AT-SEA STORYBOARD PRIORITIES:
+- The tiktok_seed storyboard must be exactly four shots in a hook -> build -> peak -> payoff arc.
+- shotNumber values must be sequential starting at 1 and must match the array order.
+- Every shot.sceneId must reuse a sceneId that exists in the generated sceneLibrary.
+- Favor the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.
+- Do not fall back to generic cruise filler when a board-game scene is available.
+- Prefer this progression when it fits the available sceneLibrary: pool_deck or exterior hook, dining or atrium build, atrium or nightclub peak, sports_deck or offboard_excursion payoff.`
+        : '';
+
     const system = `
 You are the Creative Director generating a Production Bible for a niche cruise campaign.
 The landing still set is already validated. Use it as the community identity reference.
@@ -575,11 +598,23 @@ SCENE LIBRARY (10 scenes) + STORYBOARD RULES:
 
 SCENE imagePrompt — CRITICAL — every scene MUST have a non-empty imagePrompt:
 - imagePrompt is the primary creative brief sent to the image generator for each scene. It MUST be a specific, renderable description of what the camera sees.
-- Write it as a documentary photography brief: concrete location on the ship, time of day, light quality, what is in frame, and one subtle niche cue drawn from the validated landing stills above.
-- The niche cue must be a physical prop or environmental detail — something a photographer could capture (e.g. "a half-finished Azul board on the café table in the foreground", "a game box spine visible on a lounge shelf", "wooden meeples resting on the teak rail").
+- Write it as a documentary photography brief: concrete location on the ship, time of day, light quality, what is in frame, one niche prop cue, and one human-presence cue.
+- The niche cue must be a physical prop or environmental detail from the campaign's "Niche prop families" (see context) — something a photographer could capture.
 - Do NOT leave imagePrompt blank or write generic descriptions like "guests enjoying the cruise". Every imagePrompt must be specific enough that an image generator could produce the correct shot.
-- Format: "[Location on ship], [time of day], [lighting quality]. [What the camera sees — architecture/sea dominant]. [One incidental niche detail in the background or foreground]."
-- Example: "Pool deck, mid-afternoon, bright open sun. Wide shot of the main pool with teak loungers and the ocean horizon beyond. On the nearest table, a compact travel game box sits half-open beside a drink, unattended."
+- Format: "[Location on ship], [time of day], [lighting quality]. [What the camera sees — architecture/sea dominant]. [One niche prop detail]. [One human-presence cue: blurred background figures, over-the-shoulder view, or hands near the table]."
+- Example: "Pool deck, mid-afternoon, bright open sun. Wide shot of the main pool with teak loungers and the ocean horizon beyond. On the nearest table, a compact game box sits half-open beside a drink. In the soft background, two guests lean over the table, faces blurred, hands near the pieces."
+
+SCENE NICHE ANCHOR — REQUIRED in every imagePrompt:
+Each imagePrompt MUST name at least one prop from the campaign's "Niche prop families" list in the context. Place it as an incidental foreground or background detail — on a table, near a lounge chair, carried by a background figure — not as the hero of the shot. If the prop list is empty, draw the cue from the "Niche-enhanced moments" list instead.
+
+SCENE HUMAN PRESENCE — REQUIRED in at least 8 of 10 imagePrompts:
+Each imagePrompt must use one of these low-risk, model-friendly human presence techniques. These produce legible social energy without requiring the model to render perfect faces:
+- "blurred background figures" — soft silhouettes in the mid-to-far ground
+- "over-the-shoulder" — viewer-POV framing behind a seated or standing guest
+- "hands in partial frame" — hands near props, placing pieces, or reaching across the table
+- "anonymous seated cluster" — small group around a table, faces soft or turned away
+Do NOT describe fully-posed groups, direct eye-contact portraits, or staged demonstration setups. The social energy must be implied through proximity and props — not performed for the camera.
+${boardGamesSceneBlock ? `${boardGamesSceneBlock}` : ''}
 ${avoidListBlock}${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
 SCENE LIBRARY JSON STRUCTURE — use these EXACT field names (parser reads only these keys):
 Each scene object: { "sceneId": str (one of: exterior/pool_deck/dining/stateroom/atrium/nightclub/spa/destination_port/theater/sports_deck), "location": str, "timeOfDay": str, "lighting": str, "cameraAngle": str, "subjectAction": str, "environmentDetails": str, "mood": str, "imagePrompt": str (NON-EMPTY — see rules above), "referenceCategory": str }
@@ -597,6 +632,7 @@ STORYBOARD RULES:
 - transitionIn/transitionOut: hard cut, cross-dissolve, whip pan, match cut, fade from black, J-cut, L-cut
 - narrationSegment: premium travel documentary voiceover — warm, personal, aspirational
 - Do not design shots around walking toward camera, dancing, clinking, sipping, or hand-to-object choreography
+${boardGamesStoryboardBlock ? `${boardGamesStoryboardBlock}` : ''}
 ${options?.instructions ? `
 OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
@@ -619,6 +655,8 @@ Community Promise: ${communityExpression?.corePromise ?? ''}
 Belonging Signals: ${communityExpression?.belongingSignals?.join('; ') ?? ''}
 Governing Principle: ${plausibility?.governingPrinciple ?? ''}
 Cruise-native moments: ${plausibility?.cruiseNativeMoments?.join('; ') ?? ''}
+Niche prop families: ${plausibility?.allowedProps?.join('; ') ?? ''}
+Niche-enhanced moments: ${plausibility?.nicheEnhancedMoments?.join('; ') ?? ''}
 Implausible bans: ${plausibility?.implausibleLiteralizations?.join('; ') ?? ''}
 
 VALIDATED LANDING STILLS (reference for campaign identity):
