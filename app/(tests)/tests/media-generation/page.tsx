@@ -88,7 +88,7 @@ const CATEGORIES: readonly CategoryConfig[] = [
     { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
     { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
     { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
-    { key: "video", label: "Video", icon: Film, color: "purple", types: ["tiktok_seed_video", "hero_explainer_video", "threshold_video", "countdown_video", "broll_clip"] },
+    { key: "tiktok", label: "TikTok Package", icon: Film, color: "purple", types: ["tiktok_seed_video"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
     { key: "copy", label: "Copy", icon: Type, color: "amber", types: ["ad_creative", "carousel_slide", "email_header"] },
     { key: "merch", label: "Merch", icon: Shirt, color: "pink", types: ["merch_design"] },
@@ -98,7 +98,7 @@ const COST_ESTIMATES: Record<string, string> = {
     references: "~SerpAPI search + import only",
     images: "~Nano-Banana × heroes + concepts + crops (uses approved refs)",
     scenes: "~Nano-Banana × 8–12 scene images (Production Bible)",
-    video: "~RunwayML × shots per storyboard + ElevenLabs",
+    tiktok: "~Production Bible scenes + ElevenLabs",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
     copy: "~$0.05 (GPT-4o single call)",
     merch: "~$0.40 (Nano-Banana × 3–5 designs)",
@@ -291,7 +291,7 @@ export default function MediaGenerationTestPage() {
             return;
         }
 
-        const VIDEO_ASSET_TYPES: readonly AssetType[] = ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'];
+        const VIDEO_ASSET_TYPES: readonly AssetType[] = ['tiktok_seed_video'];
         const willGenerateVideo = !assetTypes || assetTypes.some(t => VIDEO_ASSET_TYPES.includes(t));
         const hasMusicTrack = !!(manifest?.audio?.themeMusic);
 
@@ -545,8 +545,8 @@ export default function MediaGenerationTestPage() {
                         </span>
                     ) : brief ? (
                         <span>
-                            No Production Bible on this brief. Video will use the legacy single-hero path.
-                            Regenerate the aesthetic brief to get a Production Bible.
+                            No Production Bible on this brief. TikTok video generation is blocked until the brief is regenerated with storyboard scenes.
+                            Use /tests/production-bible to create the Production Bible, then rerun media generation.
                         </span>
                     ) : (
                         <span className="text-slate-500">Load a campaign to see Production Bible status.</span>
@@ -642,14 +642,15 @@ export default function MediaGenerationTestPage() {
                             const Icon = cat.icon;
                             const isActive = activeCategory === cat.key;
                             const requiresProductionBible = cat.types.includes('scene_image');
-                            const isBlocked = requiresProductionBible && !hasProductionBible;
+                            const requiresTikTokStoryboard = cat.types.includes('tiktok_seed_video');
+                            const isBlocked = (requiresProductionBible || requiresTikTokStoryboard) && !hasProductionBible;
                             return (
                                 <button
                                     key={cat.key}
                                     id={`btn-gen-${cat.key}`}
                                     onClick={() => handleGenerate(cat.types)}
                                     disabled={isBusy || !slug.trim() || isBlocked}
-                                    title={isBlocked ? 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.' : ''}
+                                    title={isBlocked ? (requiresTikTokStoryboard ? 'TikTok seed video requires a saved Production Bible and storyboard scene images.' : 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.') : ''}
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}
                                 >
                                     {isActive

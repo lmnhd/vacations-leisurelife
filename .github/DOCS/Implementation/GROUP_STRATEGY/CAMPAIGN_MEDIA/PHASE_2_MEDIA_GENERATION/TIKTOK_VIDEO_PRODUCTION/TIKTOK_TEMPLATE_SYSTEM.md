@@ -1,7 +1,7 @@
 # TikTok Template System
 
-**Status:** working draft
-**Purpose:** define the reusable, full-frame TikTok ad template system that turns campaign stills into packaged vertical promos without relying on motion-first video generation.
+**Status:** production template system
+**Purpose:** define the reusable, full-frame TikTok ad template system that turns campaign stills and manifest copy into packaged vertical promos without relying on motion-first video generation.
 
 ## 1. Core Idea
 
@@ -33,67 +33,115 @@ This is closer to a Canva-style presentation system than a motion-video generato
 
 - Keep the source image intact and fully visible.
 - Use vertical spacing around the image for text, CTA, and pacing.
-- Use the empty frame space as part of the design; if needed, add a blurred or color-treated backdrop behind the centered still.
+- Use the empty frame space as part of the design; the backdrop is a dimmed, blurred duplicate of the same still.
+- Soften the seam between contained still and backdrop with a feathered alpha edge — never a hard letterbox cut.
 - Use consistent template zones so campaign swaps are cheap.
 - Prefer type, layout, and sequencing over heavy image animation.
-- If motion is used, keep it subtle and deterministic.
+- If motion is used, keep it subtle and deterministic. The backdrop carries the motion (slow parallax zoom); the foreground photo stays anchored.
 - Treat the typography as commercial copy, not metadata. Headline blocks should feel like ad statements, not inspector labels.
 - Favor wide editorial bands, stronger hierarchy, and generous breathing room over compact rounded widgets.
 
 ## 4. Template Layers
 
-### Layer 1: Full-resolution image
+### Layer 1: Backdrop (Layer 0 in the render pipeline)
 
-The image should remain untouched and readable.
+A cover-fit, blurred, color-graded duplicate of the same still. Receives the slow parallax zoom that gives the clip motion. Implemented in `createContainedStillVerticalClip` ([video-composer.ts](../../../../../../lib/campaigns/media/video-composer.ts)).
 
-### Layer 2: Text presentation
+### Layer 2: Foreground photo
 
-Text can sit above, below, or alongside the image depending on the template.
-Text should carry the hook, proof, or CTA.
+The campaign still, contained-fit (no crop), centered. Top/bottom edges feathered (alpha gradient) so the seam against the backdrop is invisible.
 
-### Layer 3: Package frame
+### Layer 3: Text presentation (cards)
 
-The surrounding design makes the ad feel intentional and commercial.
-At this stage, the frame should feel like a polished poster or mini editorial spread, not an app mockup.
+Three card variants drive the entire system. They are all 9:16-aware and fade in (~0.28s) at clip start, fade out (~0.35s) at clip end.
 
-### Layer 4: Optional motion
+| Variant | Role | Footprint | Type weight | Anchor |
+|---|---|---|---|---|
+| `tag` | Hook tag at top — draws the eye, names the beat. Lower visual weight than the statement so the photo still owns the frame. | ~940×200 | 14pt mono badge / 34pt sans headline / 18pt sans subline | top-aligned content, accent strip on the LEFT edge |
+| `statement` | The dominant message. Bottom-of-frame anchor with the largest type and full presence. | ~940×320 | 18pt mono badge / 64pt sans-black headline / 24pt sans subline | bottom-aligned content, accent strip on the TOP edge |
+| `cta` | Pill-shaped action. Filled accent background, dark text, arrow puck on the right. | ~800×110 | 16pt mono badge / 38pt sans-black headline | center-aligned, fully rounded (height/2 radius) |
 
-Light fades, slides, text reveals, and simple transitions are fine.
-Heavy scene animation is optional, not required.
+Card styling:
+- Backgrounds use a near-black gradient (`rgba(6,8,14,0.78→0.62)`) for dark cards; CTA is filled with the accent color directly.
+- Borders use the per-card `accentColor` at reduced alpha (NOT a hardcoded gold). Each card spec carries `accentColor` plus an `accentMuted` variant for two-step intensity.
 
-## 4. Current Working Direction
+### Layer 4: Brand lockup
 
-The current best version of the template is:
+A small fixed wordmark + tagline (e.g. `LEISURE LIFE — CRUISES THAT FIT`) anchored top-left, persistent across the full clip (does not fade with cards). Sits in the backdrop band above the contained photo.
 
-- a full-frame 9:16 export
-- a full-resolution still preserved in the center lane
-- a styled backdrop filling the remainder of the frame
-- a top hook band and bottom CTA / proof band
-- typography that feels like campaign copy rather than technical metadata
+### Layer 5: Film grain finisher
 
-This is the direction to refine until the template feels like a finished commercial package.
+A 4–8 strength temporal+uniform `noise` pass over the composed frame unifies type and photo so the cards don't read as pasted-on. Optional but on by default in the production preview render.
 
-## 5. Sandbox Workflow
+## 6. Sequence Layer
 
-Use the sandbox to:
+The template is not just one panel. It is a repeatable sequence of panels.
 
-- test template presets
-- edit overlay copy
-- adjust color tokens
-- swap scene images
-- confirm the full-frame composition before live generation
+- Build each beat as a standalone package: still, backdrop, typography, CTA.
+- Give each beat a `spokenText` line that the ElevenLabs voice can read; keep it short enough to fit naturally inside the visual beat.
+- The current production workflow favors one continuous narration script built from the full sequence, not fragile beat-by-beat audio stitching.
+- Keep the package duration predictable. The working preview uses an approximately 35-second window and distributes the beats evenly across that span.
+- The exported MP4 should keep narration audible over the package, then mix the music bed underneath it.
+- Chain beats together with light crossfades or hard cuts depending on the preset.
+- Keep the still image intact inside every beat; the transition should move the composition, not crop the source.
+- Prefer 6–8 beats for the strongest TikTok packages so the ad feels deliberate and fast enough to avoid lingering on one frame.
+- Allow one beat to be the hook, one to be social proof, one to be the payoff, and one to be the CTA close.
+- Treat the sequence order as part of the template decision, not an afterthought.
 
-The sandbox is for template development. It is not the final export shape.
+## 7. Safe Areas (1080×1920)
 
-## 6. Build Order
+Reserve from each edge so cards don't collide with TikTok's UI chrome:
 
-1. Create or refine the reusable template.
+| Edge | Reserve (px) | What lives there |
+|---|---|---|
+| Top | 200 | status bar, top tabs (Following / For You) |
+| Bottom | 380 | caption text, username, follow button |
+| Right | 130 | like / comment / share / profile rail |
+
+The preview render shows dashed rose guides at these boundaries when "Show safe-area guides" is on.
+
+## 8. Motion Language
+
+- **Backdrop:** ~5% zoom over clip duration via `zoompan`. Feels cinematic, not animated.
+- **Foreground:** static. Image truth requires it.
+- **Cards:** fade in (0.28s), fade out (0.35s). No slide-in or position animation — the type is the ad, not the choreography.
+- **Brand lockup:** no fade, persistent.
+
+## 9. Three Working Presets
+
+The preview ships three named presets that demonstrate one of each card variant in its natural composition:
+
+| Preset | Cards | Use |
+|---|---|---|
+| `hook` | One `tag` at top | First-beat punch. Photo owns the frame. |
+| `social` | `tag` at top + `statement` at bottom | Two-card workhorse. Hook + payoff. |
+| `cta` | `statement` mid-frame + `cta` pill below | The closer. Drives the action. |
+
+All three include the brand lockup. Accent colors per preset establish a campaign palette (board-games-at-sea: gold / mint / amber).
+These presets are the reusable visual grammar. The sequence planner repeats and varies them across 6-8 beats to create the finished ad.
+
+## 10. Sandbox Workflow
+
+Use the media-generation preview to:
+
+- pick a campaign scene and apply a template preset
+- adjust copy, accent colors, and per-card placement
+- toggle safe-area guides to verify chrome clearance
+- toggle preview-grain to anticipate the final render look
+- render a real 1080×1920 MP4 via the same pipeline production will use
+
+The media-generation preview path matches the final render coordinate system (1080×1920) — no design-canvas indirection.
+The preview includes a sequence planner that cycles the three presets across multiple beats so you can shape the final flow before live TikTok generation.
+
+## 11. Build Order
+
+1. Refine the reusable template in the preview.
 2. Render preview clips from approved stills.
-3. Review the preview in the sandbox.
+3. Review the preview.
 4. Lock the template.
 5. Reuse the template across campaigns by swapping image and copy inputs.
 
-## 7. Handoff Rule
+## 12. Handoff Rule
 
 When the template looks good:
 

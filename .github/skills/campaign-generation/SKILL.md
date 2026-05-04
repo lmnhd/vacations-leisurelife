@@ -103,8 +103,11 @@ The following issues have been encountered repeatedly across campaigns. Agents m
   - Use text overlays, image-first motion, and subtle object movement to make the scenes carry the promotional load before escalating to full animation.
   - The `buildStoryboardShotPrompt` function should tag each shot with its intended style so the video assembler pulls from the correct source pool.
 
-- **TikTok template system:** Treat TikTok as a reusable full-frame ad package, not a phone-within-a-phone preview or a motion-first clip reel. The source still should stay full size and visible inside the vertical frame, with text bands and CTA scaffolding built around it. For the shared template architecture and sandbox workflow, see [TIKTOK_TEMPLATE_SYSTEM.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_TEMPLATE_SYSTEM.md).
+- **TikTok template system:** Treat TikTok as a reusable full-frame ad package, not a phone-within-a-phone preview or a motion-first clip reel. The source still should stay full size and visible inside the vertical frame, with text bands and CTA scaffolding built around it. For the shared template architecture, see [TIKTOK_TEMPLATE_SYSTEM.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_TEMPLATE_SYSTEM.md).
 - **Editorial frame rule:** The frame should feel like a commercial layout, not a dashboard widget. Prefer wide bands, stronger hierarchy, and a styled backdrop behind the centered still so the empty frame space reads as part of the ad.
+- **Sequence planner rule:** The three template presets are the visual grammar, not the finished ad. Reuse them across a 6-8 beat sequence so the flow carries hook, social proof, payoff, and CTA instead of repeating one slide.
+- **Narration rule:** Each beat may carry a short `spokenText` line for ElevenLabs, but the current package workflow can also collapse those lines into one continuous voiceover for the full sequence. Keep the spoken line short, readable, and aligned to the on-screen copy.
+- **Audio mix rule:** The final TikTok MP4 should keep narration audible over the package and mix the music bed underneath it. Do not let music drown out speech, but do not overcomplicate the template with beat-level audio choreography unless the render specifically needs it.
 
 ### Probe Loop Scope (Do Not Confuse With Scene Images)
 - **What probes currently simulate:** Probes are cheap image renders from `brief.landingStillBible.stillLibrary` only. They validate planned still directions for hero/concept/social still expansion: niche signal, slot role, composition, and generic-cruise fallback risk.
@@ -267,10 +270,10 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/test/images 
 3. **Brief must be approved** â€” Same gate as Step 4.1.
 
 **TikTok promo video rule:**
-1. Use the storyboard-driven `tiktok_seed_video` path for the actual promotional video unless there is no Production Bible yet. Prefer the package-first TikTok render mode: still scenes + overlay cards + hard cuts. Motion inside the source image is now optional, not the core creative dependency.
+1. Use the storyboard-driven `tiktok_seed_video` path for the actual promotional video. A saved Production Bible is required because the video must use the generated scene images and storyboard copy.
 2. Keep `tiktok` organic delivery and `tiktok_paid` lead-gen delivery separate. They are different distribution contracts, not one shared publish flow.
-3. If the video feels generic, inspect the Production Bible scene library and the storyboard prompts before touching the composer.
-4. Landing-still probes do not prove TikTok scene quality. They are a separate confidence loop.
+3. Build the video as a package-first TikTok render: still scenes, overlay cards, hard cuts, and generated copy from the manifest. Motion inside the source image is optional, not the core creative dependency.
+4. If the video feels generic, inspect the Production Bible scene library and the storyboard prompts before touching the composer.
 5. If the TikTok render still looks like stitched clips instead of a packaged ad, repair the package layer first before asking for more motion or more source-image generation.
 6. The final TikTok export should be the ad itself: a full-frame 9:16 package with the still image preserved, text overlays integrated into the video, and only light motion if it helps the composition.
 
@@ -336,7 +339,7 @@ The codebase documentation states RunwayML Gen-3 Turbo as the primary video prov
 
 **Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** â€” they run alongside the full media pipeline, not instead of it. A generation request with no explicit `assetTypes` generates images, audio, video, and designed ads together. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress heroes, scenes, videos, or audio.
 
-**TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for improving promotional TikTok quality. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
+**TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for maintaining the production TikTok package system. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
 **Text overlay note:** The TikTok path now renders explicit overlay cards into the final MP4. Prompt text is still important, but it is no longer the only text layer. If the rendered video reads as clip-only or the overlay cards are missing, repair the render before treating the asset as complete.
 
 ---

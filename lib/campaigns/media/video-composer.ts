@@ -113,6 +113,10 @@ export async function createStillVerticalClip(
     }
 }
 
+const CONTAINED_STILL_FPS = 30;
+const CONTAINED_STILL_FEATHER_PX = 32;
+const CONTAINED_STILL_BG_TOTAL_ZOOM = 0.05;
+
 export async function createContainedStillVerticalClip(
     imageBuffer: Buffer,
     durationSeconds: number,
@@ -128,6 +132,10 @@ export async function createContainedStillVerticalClip(
     try {
         await writeFile(sourceImagePath, toUint8Array(imageBuffer));
 
+        const totalFrames = Math.max(2, Math.round(durationSeconds * CONTAINED_STILL_FPS));
+        const zoomStep = CONTAINED_STILL_BG_TOTAL_ZOOM / (totalFrames - 1);
+        const featherDivisor = CONTAINED_STILL_FEATHER_PX;
+
         await runFfmpeg([
             '-y',
             '-loop', '1',
@@ -135,11 +143,14 @@ export async function createContainedStillVerticalClip(
             '-t', String(durationSeconds),
             '-filter_complex', [
                 '[0:v]split=2[bg_src][fg_src]',
-                '[bg_src]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:1,eq=brightness=-0.12:saturation=0.78[bg]',
-                '[fg_src]scale=1080:1920:force_original_aspect_ratio=decrease,setsar=1[fg]',
+                // Backdrop: cover-fit, blurred, color-graded, slow parallax zoom (gives motion without touching foreground truth)
+                `[bg_src]scale=2200:2200:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=18:1,eq=brightness=-0.10:saturation=0.78,zoompan=z='zoom+${zoomStep.toFixed(6)}':d=${totalFrames}:s=1080x1920:fps=${CONTAINED_STILL_FPS}[bg]`,
+                // Foreground: contained-fit (no crop), feathered alpha edges so the seam against the backdrop is invisible
+                `[fg_src]scale=1080:1920:force_original_aspect_ratio=decrease,setsar=1,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='clip(min(min(X,W-X),min(Y,H-Y))*255/${featherDivisor},0,255)'[fg]`,
                 '[bg][fg]overlay=(W-w)/2:(H-h)/2:shortest=1:format=auto[v]',
             ].join(';'),
             '-map', '[v]',
+            '-r', String(CONTAINED_STILL_FPS),
             '-c:v', 'libx264',
             '-preset', 'medium',
             '-pix_fmt', 'yuv420p',
@@ -154,51 +165,93 @@ export async function createContainedStillVerticalClip(
     }
 }
 
+export interface OverlayComposeOptions {
+    /** When true (default), applies a subtle film grain to unify type and photo. */
+    applyFilmGrain?: boolean;
+    /** ffmpeg `noise` strength, 0-100. Subtle is 4-8. Default 6. */
+    grainStrength?: number;
+    /**
+     * When non-empty, treated as fixed (non-fading) overlays. Use this for brand
+     * marks that should persist across the full clip while card overlays fade.
+     */
+    fixedOverlays?: readonly VideoOverlayCardInput[];
+}
+
 export async function composeVideoWithOverlayCards(
     sourceVideoBuffer: Buffer,
     overlayCards: readonly VideoOverlayCardInput[],
     durationSeconds?: number,
+    options: OverlayComposeOptions = {},
 ): Promise<Buffer> {
-    if (overlayCards.length === 0) {
+    const fixedOverlays = options.fixedOverlays ?? [];
+    if (overlayCards.length === 0 && fixedOverlays.length === 0) {
         return sourceVideoBuffer;
     }
+
+    const applyFilmGrain = options.applyFilmGrain ?? true;
+    const grainStrength = Math.max(0, Math.min(100, options.grainStrength ?? 6));
 
     const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-overlay-compose-'));
     const sourceVideoPath = join(tempDirectory, 'source.mp4');
     const outputVideoPath = join(tempDirectory, 'output.mp4');
-    const overlayPaths = overlayCards.map((_, index) => join(tempDirectory, `overlay_${String(index + 1).padStart(3, '0')}.png`));
+    const fadingPaths = overlayCards.map((_, index) => join(tempDirectory, `overlay_${String(index + 1).padStart(3, '0')}.png`));
+    const fixedPaths = fixedOverlays.map((_, index) => join(tempDirectory, `fixed_${String(index + 1).padStart(3, '0')}.png`));
 
     try {
         await writeFile(sourceVideoPath, toUint8Array(sourceVideoBuffer));
         for (let i = 0; i < overlayCards.length; i++) {
-            await writeFile(overlayPaths[i], toUint8Array(overlayCards[i].buffer));
+            await writeFile(fadingPaths[i], toUint8Array(overlayCards[i].buffer));
+        }
+        for (let i = 0; i < fixedOverlays.length; i++) {
+            await writeFile(fixedPaths[i], toUint8Array(fixedOverlays[i].buffer));
         }
 
         const filterParts: string[] = ['[0:v]scale=-2:1920,crop=1080:1920,setsar=1[v0]'];
         const fadeInSeconds = 0.28;
         const fadeOutSeconds = 0.35;
+        let videoStepIndex = 0;
+        let inputCursor = 1;
+
         for (let i = 0; i < overlayCards.length; i++) {
-            const inputIndex = i + 1;
+            const inputIndex = inputCursor++;
             const overlayLabel = `ov${i + 1}`;
-            const nextVideoLabel = `v${i + 1}`;
-            const currentVideoLabel = i === 0 ? 'v0' : `v${i}`;
+            const nextVideoLabel = `v${videoStepIndex + 1}`;
+            const currentVideoLabel = `v${videoStepIndex}`;
             const fadeOutStart = durationSeconds !== undefined
                 ? Math.max(0, durationSeconds - fadeOutSeconds)
                 : null;
-            const overlayFilter = durationSeconds !== undefined
+            const overlayFilter = fadeOutStart !== null
                 ? `[${inputIndex}:v]format=rgba,fade=t=in:st=0:d=${fadeInSeconds}:alpha=1,fade=t=out:st=${fadeOutStart}:d=${fadeOutSeconds}:alpha=1[${overlayLabel}]`
                 : `[${inputIndex}:v]format=rgba,fade=t=in:st=0:d=${fadeInSeconds}:alpha=1[${overlayLabel}]`;
 
             filterParts.push(overlayFilter);
             filterParts.push(`[${currentVideoLabel}][${overlayLabel}]overlay=${overlayCards[i].x}:${overlayCards[i].y}:format=auto:shortest=1:eof_action=pass[${nextVideoLabel}]`);
+            videoStepIndex += 1;
+        }
+
+        for (let i = 0; i < fixedOverlays.length; i++) {
+            const inputIndex = inputCursor++;
+            const overlayLabel = `fx${i + 1}`;
+            const nextVideoLabel = `v${videoStepIndex + 1}`;
+            const currentVideoLabel = `v${videoStepIndex}`;
+            filterParts.push(`[${inputIndex}:v]format=rgba[${overlayLabel}]`);
+            filterParts.push(`[${currentVideoLabel}][${overlayLabel}]overlay=${fixedOverlays[i].x}:${fixedOverlays[i].y}:format=auto:shortest=1:eof_action=pass[${nextVideoLabel}]`);
+            videoStepIndex += 1;
+        }
+
+        const lastVideoLabel = `v${videoStepIndex}`;
+        const finalLabel = applyFilmGrain && grainStrength > 0 ? 'vfinal' : lastVideoLabel;
+        if (applyFilmGrain && grainStrength > 0) {
+            filterParts.push(`[${lastVideoLabel}]noise=alls=${grainStrength}:allf=t+u[${finalLabel}]`);
         }
 
         await runFfmpeg([
             '-y',
             '-i', sourceVideoPath,
-            ...overlayPaths.flatMap((overlayPath) => ['-loop', '1', '-i', overlayPath]),
+            ...fadingPaths.flatMap((overlayPath) => ['-loop', '1', '-i', overlayPath]),
+            ...fixedPaths.flatMap((overlayPath) => ['-loop', '1', '-i', overlayPath]),
             '-filter_complex', filterParts.join(';'),
-            '-map', `[v${overlayCards.length}]`,
+            '-map', `[${finalLabel}]`,
             '-c:v', 'libx264',
             '-preset', 'medium',
             '-pix_fmt', 'yuv420p',
@@ -244,6 +297,108 @@ export async function composeVideoSequence(
         ]);
 
         return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
+export async function composeVideoSequenceWithTransitions(
+    sourceVideoBuffers: readonly Buffer[],
+    sourceDurationsSeconds: readonly number[],
+    transitionSeconds = 0.28,
+): Promise<Buffer> {
+    if (sourceVideoBuffers.length === 0) {
+        throw new Error('At least one source video buffer is required to compose a transition sequence');
+    }
+
+    if (sourceVideoBuffers.length !== sourceDurationsSeconds.length) {
+        throw new Error('sourceVideoBuffers and sourceDurationsSeconds must have the same length');
+    }
+
+    if (sourceVideoBuffers.length === 1) {
+        return sourceVideoBuffers[0];
+    }
+
+    const safeTransitionSeconds = Math.max(0.08, Math.min(transitionSeconds, Math.min(...sourceDurationsSeconds) / 3));
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-transition-sequence-'));
+    const outputVideoPath = join(tempDirectory, 'output.mp4');
+    const sourceVideoPaths = sourceVideoBuffers.map((_, index) => join(tempDirectory, `source_${String(index + 1).padStart(3, '0')}.mp4`));
+
+    try {
+        for (let i = 0; i < sourceVideoBuffers.length; i++) {
+            await writeFile(sourceVideoPaths[i], toUint8Array(sourceVideoBuffers[i]));
+        }
+
+        const filterParts: string[] = sourceVideoPaths.map((_, index) => `[${index}:v]setpts=PTS-STARTPTS,format=yuv420p[v${index}]`);
+        let currentLabel = 'v0';
+        let cumulativeDuration = sourceDurationsSeconds[0];
+
+        for (let i = 1; i < sourceVideoPaths.length; i += 1) {
+            const outputLabel = `x${i}`;
+            const offsetSeconds = Math.max(0, cumulativeDuration - (safeTransitionSeconds * i));
+            filterParts.push(`[${currentLabel}][v${i}]xfade=transition=fade:duration=${safeTransitionSeconds}:offset=${offsetSeconds}[${outputLabel}]`);
+            cumulativeDuration += sourceDurationsSeconds[i];
+            currentLabel = outputLabel;
+        }
+
+        const tailHoldSeconds = safeTransitionSeconds * (sourceVideoPaths.length - 1);
+        const finalLabel = tailHoldSeconds > 0 ? 'vout' : currentLabel;
+        if (tailHoldSeconds > 0) {
+            filterParts.push(`[${currentLabel}]tpad=stop_mode=clone:stop_duration=${tailHoldSeconds}[${finalLabel}]`);
+        }
+
+        await runFfmpeg([
+            '-y',
+            ...sourceVideoPaths.flatMap((sourceVideoPath) => ['-i', sourceVideoPath]),
+            '-filter_complex', filterParts.join(';'),
+            '-map', `[${finalLabel}]`,
+            '-c:v', 'libx264',
+            '-preset', 'medium',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            outputVideoPath,
+        ]);
+
+        return await readFile(outputVideoPath);
+    } finally {
+        await rm(tempDirectory, { recursive: true, force: true });
+    }
+}
+
+export async function composeAudioSequence(
+    sourceAudioBuffers: readonly Buffer[],
+): Promise<Buffer> {
+    if (sourceAudioBuffers.length === 0) {
+        throw new Error('At least one source audio buffer is required to compose an audio sequence');
+    }
+
+    if (sourceAudioBuffers.length === 1) {
+        return sourceAudioBuffers[0];
+    }
+
+    const tempDirectory = await mkdtemp(join(tmpdir(), 'lli-audio-sequence-'));
+    const concatListPath = join(tempDirectory, 'concat.txt');
+    const outputAudioPath = join(tempDirectory, 'output.mp3');
+    const sourceAudioPaths = sourceAudioBuffers.map((_, index) => join(tempDirectory, `source_${String(index + 1).padStart(3, '0')}.mp3`));
+
+    try {
+        for (let i = 0; i < sourceAudioBuffers.length; i++) {
+            await writeFile(sourceAudioPaths[i], toUint8Array(sourceAudioBuffers[i]));
+        }
+        await writeFile(concatListPath, sourceAudioPaths.map((sourceAudioPath) => `file '${sourceAudioPath.replace(/'/g, "'\\''")}'`).join('\n'));
+
+        await runFfmpeg([
+            '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', concatListPath,
+            '-c:a', 'libmp3lame',
+            '-q:a', '4',
+            outputAudioPath,
+        ]);
+
+        return await readFile(outputAudioPath);
     } finally {
         await rm(tempDirectory, { recursive: true, force: true });
     }
@@ -333,7 +488,7 @@ export interface ProductionComposeOptions {
 const DEFAULT_COMPOSE_OPTIONS: ProductionComposeOptions = {
     outputFormat: '9:16',
     crossDissolveDurationMs: 500,
-    musicVolume: 0.15,
+    musicVolume: 0.2,
     narrationVolume: 1.0,
 };
 

@@ -18,8 +18,11 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 
 **Package-first rule:** The preferred TikTok seed path is now a packaged still-image ad, not a motion-first image-to-video cut. Use the scene images as the visual base, frame them with the overlay package, and let typography, layout, and pacing do the heavy lifting. Motion inside the source image is optional, not the main value proposition.
 
-**Template-first rule:** Build and refine the reusable TikTok package in the sandbox before spending on live campaign reruns. The exported MP4 should be a full-frame 9:16 ad that keeps the source still at full size and places text around it. Do not crop or zoom the still just to make it fill the canvas. For the shared template architecture, see [TIKTOK_TEMPLATE_SYSTEM.md](./TIKTOK_TEMPLATE_SYSTEM.md).
+**Template-first rule:** Build and refine the reusable TikTok package in the media-generation flow before spending on live campaign reruns. The exported MP4 should be a full-frame 9:16 ad that keeps the source still at full size and places text around it. Do not crop or zoom the still just to make it fill the canvas. For the shared template architecture, see [TIKTOK_TEMPLATE_SYSTEM.md](./TIKTOK_TEMPLATE_SYSTEM.md).
 **Editorial frame rule:** The frame should feel like a commercial layout, not an app panel. Use wide top/bottom bands, stronger text hierarchy, and a styled backdrop behind the centered still so the empty space reads as intentional design.
+**Sequence planner rule:** The three presets are the visual grammar. Use them as repeating building blocks across a 6-8 beat sequence so the ad feels like a finished commercial run, not a single repeated card.
+**Narration rule:** Give each beat a short `spokenText` line for ElevenLabs. Keep the copy aligned to the on-screen text, but do not rely on beat-level audio choreography as the only way to make the package work. The current render flow can also build one continuous voiceover from the full sequence.
+**Audio mix rule:** The final MP4 should keep narration audible over the package and layer the music bed underneath it. If the voice gets brittle or hard to follow, simplify the script before changing the mix.
 
 ## Marketing Frame Priority
 
@@ -45,6 +48,7 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 
 For the TikTok seed video specifically, prefer a six-beat structure over a four-beat one when the scene library is strong enough to support it. Faster cuts are better than lingering on one or two good-looking shots because they reduce AI-anomaly scrutiny and make the ad feel intentionally edited.
 When the scene set is strong enough, the preferred TikTok seed is a static-package edit: still scenes, designed text cards, and quick beat changes. Do not spend credits chasing subtle motion if the package itself can carry the ad.
+The current implementation favors a single continuous narration script over the whole package rather than complex per-beat dialogue timing. Use beat copy to shape the sequence, but let the overall 9:16 ad remain the primary unit.
 
 ## Composition Library - What to Use
 

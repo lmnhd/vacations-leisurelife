@@ -107,6 +107,18 @@ async function generateSpeech(text: string, voiceId: string): Promise<Buffer> {
     return Buffer.from(await response.arrayBuffer());
 }
 
+export async function generateSpeechClip(
+    text: string,
+    voiceId: string,
+): Promise<Buffer> {
+    const trimmed = text.trim();
+    if (trimmed.length === 0) {
+        return generateSilenceAudio(1);
+    }
+
+    return generateSpeech(trimmed, voiceId);
+}
+
 export interface GeneratedAudio {
     buffer: Buffer;
     script: string;

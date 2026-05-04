@@ -87,36 +87,3 @@ export function scoreTikTokVideoReadiness(
         issues,
     };
 }
-
-export function scoreLegacyTikTokSeed(
-    asset: ScoredAsset,
-    targetDurationSeconds: number,
-): VideoLintResult {
-    const issues: string[] = [];
-    let score = 100;
-
-    if (!asset.durationSeconds || asset.durationSeconds < 10) {
-        issues.push(`Legacy TikTok seed is too short (${asset.durationSeconds ?? 0}s, minimum 10s)`);
-        score -= 30;
-    }
-
-    if (!asset.tags.includes('narrated')) {
-        issues.push('Legacy TikTok seed has no narration tag');
-        score -= 25;
-    }
-
-    if (targetDurationSeconds > 0 && asset.durationSeconds) {
-        const delta = Math.abs(asset.durationSeconds - targetDurationSeconds);
-        if (delta > 5) {
-            issues.push(`Legacy seed actual duration (${asset.durationSeconds}s) diverges from brief target (${targetDurationSeconds}s) by ${delta}s`);
-            score -= 10;
-        }
-    }
-
-    const lintScore = Math.max(0, score);
-    return {
-        lintScore,
-        lintStatus: deriveLintStatus(lintScore),
-        issues,
-    };
-}

@@ -4,12 +4,12 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red-team';
 import { buildElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
-import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { getMediaManifest, saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import {
     generateHeroExplainer,
     generateThresholdAnnouncement,
 } from '@/lib/campaigns/media/generators/heygen-generator';
-import { generateTikTokSeed } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
+import { generateStoryboardVideo } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
 import {
     generateCountdownVideos,
     generateBrollClips,
@@ -68,7 +68,45 @@ export async function POST(
 
     try {
         if (generator === 'tiktok_voiceover') {
-            const video = await generateTikTokSeed(brief, heroImageUrl, null, undefined, slug);
+            const manifest = await getMediaManifest(slug);
+            if (!manifest) {
+                return NextResponse.json({ error: 'TikTok seed generation now requires a saved media manifest with scene images' }, { status: 400 });
+            }
+
+            const tiktokStoryboard = brief.productionBible?.storyboards.find((storyboard) => storyboard.deliverableId === 'tiktok_seed');
+            if (!tiktokStoryboard) {
+                return NextResponse.json({ error: 'TikTok seed generation now requires a Production Bible storyboard with deliverableId "tiktok_seed"' }, { status: 400 });
+            }
+
+            const sceneImageMap = new Map<string, string>();
+            for (const record of manifest.images.sceneImages ?? []) {
+                const sceneIdTag = record.tags.find((tag) => tag !== 'scene' && tag !== 'revised');
+                if (sceneIdTag) {
+                    sceneImageMap.set(sceneIdTag, record.url);
+                }
+            }
+
+            if (sceneImageMap.size === 0) {
+                return NextResponse.json({ error: 'TikTok seed generation now requires generated Production Bible scene images' }, { status: 400 });
+            }
+
+            let themeMusicBuffer: Buffer | null = null;
+            const themeMusicUrl = manifest.audio.themeMusic?.url;
+            if (themeMusicUrl) {
+                const musicResponse = await fetch(themeMusicUrl);
+                if (!musicResponse.ok) {
+                    return NextResponse.json({ error: `Failed to download theme music: ${musicResponse.status}` }, { status: 400 });
+                }
+                themeMusicBuffer = Buffer.from(await musicResponse.arrayBuffer());
+            }
+
+            const video = await generateStoryboardVideo(
+                brief,
+                tiktokStoryboard,
+                sceneImageMap,
+                heroImageUrl,
+                themeMusicBuffer,
+            );
             const cdnUrl = await uploadAsset(slug, video.fileName, video.buffer, 'video/mp4');
             await saveAssetRecord(slug, {
                 assetId: video.assetId,
@@ -79,7 +117,7 @@ export async function POST(
                 durationSeconds: video.durationSeconds,
                 fileSizeBytes: video.buffer.length,
                 mimeType: 'video/mp4',
-                tags: ['video', 'tiktok', activeVideoGeneratorService, 'elevenlabs', 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)],
+                tags: ['video', 'tiktok', 'storyboard', activeVideoGeneratorService, 'elevenlabs', 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)],
                 createdAt: new Date().toISOString(),
                 reviewStatus: 'needs_review',
                 version: 1,

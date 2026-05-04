@@ -163,6 +163,7 @@ export function buildOrganicSeedOverlayCards(brief: CampaignAestheticBrief, _sto
             badge: `${String(index + 1).padStart(2, '0')} / ${shot.shotRole.toUpperCase()}`,
             headline: content.headline,
             subline: content.subline,
+            spokenText: `${content.headline} ${content.subline}`.replace(/\s+/g, ' ').trim(),
             accentColor: colorPalette.primary,
             placement: placements[index] ?? placements[0],
         };

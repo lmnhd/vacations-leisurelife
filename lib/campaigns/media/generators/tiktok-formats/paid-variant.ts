@@ -82,6 +82,7 @@ export function buildPaidVariantOverlayCards(brief: CampaignAestheticBrief, _sto
             badge: `${String(index + 1).padStart(2, '0')} / ${shot.shotRole.toUpperCase()}`,
             headline: content.headline,
             subline: content.subline,
+            spokenText: `${content.headline} ${content.subline}`.replace(/\s+/g, ' ').trim(),
             accentColor: colorPalette.accent,
             placement: placements[index] ?? placements[0],
         };

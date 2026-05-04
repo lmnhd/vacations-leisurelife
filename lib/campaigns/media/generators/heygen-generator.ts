@@ -112,20 +112,6 @@ export interface GeneratedVideo {
     fileName: string;
 }
 
-/** TikTok seed video (30–45s) — avatar + hero image backdrop. 9:16 */
-export async function generateTikTokSeed(
-    brief: CampaignAestheticBrief,
-    heroImageUrl: string
-): Promise<GeneratedVideo> {
-    const tiktokBrief = brief.videoConcepts.tiktokSeed;
-    const hook = brief.socialConcepts.tiktokOrganic.hook;
-    const script = `${hook}\n\n${tiktokBrief.scriptOrNarration}\n\nSign up below — link in bio.`;
-
-    const result = await createVideo(script, heroImageUrl, HEYGEN_CONFIG.tiktokAspectRatio);
-    const buffer = await downloadVideo(result.videoUrl);
-    return { buffer, script, durationSeconds: result.durationSeconds, assetId: 'vid_tiktok_seed', fileName: 'video/tiktok_seed.mp4' };
-}
-
 /** Hero explainer video (60s) — full avatar presentation. 16:9 */
 export async function generateHeroExplainer(
     brief: CampaignAestheticBrief,

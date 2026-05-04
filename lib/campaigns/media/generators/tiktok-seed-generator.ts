@@ -1,17 +1,28 @@
 import { CampaignAestheticBrief, Storyboard } from '../../schema';
 import { inferTikTokFormat } from './tiktok-formats/index';
 import { buildOrganicSeedOverlayCards } from './tiktok-formats/organic-seed';
+import {
+    BOARD_GAMES_TEMPLATE_SEQUENCE,
+    buildBoardGamesBeatSpokenText,
+    getBoardGamesTemplatePreset,
+    renderBoardGamesTemplateOverlay,
+} from './tiktok-formats/board-games-at-sea-template';
 import { renderTikTokOverlayCard } from './tiktok-overlay-cards';
 import type { TikTokOverlayCardSpec } from './tiktok-overlay-cards';
-import { generateAmbientNarration } from './elevenlabs-generator';
-import { generatePromptedClipFromScenes, generatePromptedClips, GeneratedVideo, VideoMotionFormat } from './runway-generator';
-import { composeProductionVideo, composeVideoSequence, composeVideoWithOverlayCards, createContainedStillVerticalClip, createStillVerticalClip } from '../video-composer';
+import { generateAmbientNarration, generateSpeechClip } from './elevenlabs-generator';
+import { generatePromptedClipFromScenes, GeneratedVideo, VideoMotionFormat } from './runway-generator';
+import { composeProductionVideo, composeVideoSequenceWithTransitions, composeVideoWithOverlayCards, createContainedStillVerticalClip } from '../video-composer';
+import { resolveElevenLabsVoiceForRole } from '../voice-preference';
 import { buildStoryboardShotPrompt } from '../storyboard-motion-policy';
 import { storeAsset } from '../storage-client';
 import type { VideoModelPresetId } from '../video-models';
 
 function createRunId(): string {
     return Date.now().toString(36);
+}
+
+function isBoardGamesAtSeaBrief(brief: CampaignAestheticBrief): boolean {
+    return /board games at sea/i.test(brief.themeName);
 }
 
 async function cacheIntermediateGeneratedClips(
@@ -80,16 +91,23 @@ async function applyOverlayCardsToClips(
     return buffers;
 }
 
+interface RenderedOverlayCard extends TikTokOverlayCardSpec {
+    buffer: Buffer;
+    x: number;
+    y: number;
+}
+
 async function renderOverlayCards(
     cards: readonly TikTokOverlayCardSpec[],
-): Promise<readonly { buffer: Buffer; x: number; y: number }[]> {
-    const rendered: { buffer: Buffer; x: number; y: number }[] = [];
+): Promise<readonly RenderedOverlayCard[]> {
+    const rendered: RenderedOverlayCard[] = [];
 
     for (const card of cards) {
         rendered.push({
             buffer: await renderTikTokOverlayCard(card),
             x: card.placement.x,
             y: card.placement.y,
+            ...card,
         });
     }
 
@@ -109,12 +127,18 @@ async function generateStaticPackageStoryboardVideo(
     brief: CampaignAestheticBrief,
     storyboard: Storyboard,
     sceneImageMap: ReadonlyMap<string, string>,
-): Promise<{ buffer: Buffer; script: string; durationSeconds: number; motionPrompt: string }> {
+    themeMusicBuffer?: Buffer | null,
+): Promise<{ buffer: Buffer; script: string; durationSeconds: number; motionPrompt: string; narrationVoiceId: string; narrationVoiceName: string | null }> {
     const tiktokFormat = inferTikTokFormat(storyboard.deliverableId);
-    const overlayCards = await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard));
+    const useSandboxExactTemplate = isBoardGamesAtSeaBrief(brief) && storyboard.deliverableId === 'tiktok_seed';
+    const overlayCards = useSandboxExactTemplate
+        ? []
+        : await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard));
 
     const sourceBuffers: Buffer[] = [];
+    const shotDurations: number[] = [];
     const shotPrompts: string[] = [];
+    const narrationVoice = await resolveElevenLabsVoiceForRole('narration');
 
     for (let index = 0; index < storyboard.shotSequence.length; index += 1) {
         const shot = storyboard.shotSequence[index];
@@ -125,18 +149,65 @@ async function generateStaticPackageStoryboardVideo(
 
         const imageBuffer = await downloadAssetBuffer(imageUrl);
         const stillClip = await createContainedStillVerticalClip(imageBuffer, shot.durationSeconds);
-        const overlayedStill = await composeVideoWithOverlayCards(stillClip, [overlayCards[index] ?? overlayCards[0]], shot.durationSeconds);
+        const overlayedStill = useSandboxExactTemplate
+            ? await (async () => {
+                const preset = getBoardGamesTemplatePreset(
+                    BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length]
+                );
+                const frameOverlay = await renderBoardGamesTemplateOverlay(preset);
+                return composeVideoWithOverlayCards(
+                    stillClip,
+                    [{ buffer: frameOverlay, x: 0, y: 0 }],
+                    shot.durationSeconds,
+                );
+            })()
+            : await composeVideoWithOverlayCards(stillClip, [overlayCards[index] ?? overlayCards[0]], shot.durationSeconds);
         sourceBuffers.push(overlayedStill);
-        shotPrompts.push(buildStoryboardShotPrompt(shot, brief, brief.productionBible?.sceneLibrary.find((scene) => scene.sceneId === shot.sceneId)));
+        shotDurations.push(shot.durationSeconds);
+        const scene = brief.productionBible?.sceneLibrary.find((scene) => scene.sceneId === shot.sceneId);
+        if (useSandboxExactTemplate) {
+            const preset = getBoardGamesTemplatePreset(
+                BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length]
+            );
+            shotPrompts.push(`${preset.label}: ${buildBoardGamesBeatSpokenText(preset)}`);
+        } else {
+            shotPrompts.push(buildStoryboardShotPrompt(shot, brief, scene));
+        }
     }
 
-    const finalVideoBuffer = await composeVideoSequence(sourceBuffers, storyboard.totalDurationSeconds);
+    const finalVideoBuffer = await composeVideoSequenceWithTransitions(sourceBuffers, shotDurations);
+    const narrationScript = useSandboxExactTemplate
+        ? storyboard.shotSequence
+            .map((_, index) => buildBoardGamesBeatSpokenText(getBoardGamesTemplatePreset(BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length])))
+            .filter(Boolean)
+            .join('. ')
+            .replace(/\s+\./g, '.')
+            .replace(/\.\.+/g, '.')
+        : storyboard.shotSequence
+            .map((shot, index) => {
+                const overlayText = overlayCards[index]?.spokenText
+                    ?? `${overlayCards[index]?.headline ?? ''} ${overlayCards[index]?.subline ?? ''}`.replace(/\s+/g, ' ').trim();
+                return overlayText || shot.narrationSegment || shot.emotionalBeat;
+            })
+            .filter(Boolean)
+            .join('. ')
+            .replace(/\s+\./g, '.')
+            .replace(/\.\.+/g, '.');
+    const narrationBuffer = await generateSpeechClip(narrationScript, narrationVoice.voiceId);
+    const audioMixedVideo = await composeProductionVideo([finalVideoBuffer], narrationBuffer, themeMusicBuffer ?? null, {
+        outputFormat: '9:16',
+        targetDurationSeconds: storyboard.totalDurationSeconds,
+        narrationVolume: 1.35,
+        musicVolume: 0.12,
+    });
 
     return {
-        buffer: finalVideoBuffer,
-        script: '',
+        buffer: audioMixedVideo,
+        script: narrationScript,
         durationSeconds: storyboard.totalDurationSeconds,
         motionPrompt: shotPrompts.join('\n\n---\n\n'),
+        narrationVoiceId: narrationVoice.voiceId,
+        narrationVoiceName: narrationVoice.voiceName,
     };
 }
 
@@ -221,7 +292,12 @@ export async function generateStoryboardVideo(
     const tiktokFormat = isTikTok ? inferTikTokFormat(storyboard.deliverableId) : null;
 
     if (isTikTok && tiktokFormat?.renderMode === 'static_package') {
-        const staticPackageResult = await generateStaticPackageStoryboardVideo(brief, storyboard, sceneImageMap);
+        const staticPackageResult = await generateStaticPackageStoryboardVideo(
+            brief,
+            storyboard,
+            sceneImageMap,
+            themeMusicBuffer ?? null,
+        );
         return {
             buffer: staticPackageResult.buffer,
             script: staticPackageResult.script,
@@ -230,8 +306,8 @@ export async function generateStoryboardVideo(
             fileName: `video/${storyboard.deliverableId}_${runId}.mp4`,
             motionPrompt: staticPackageResult.motionPrompt,
             deliverableId: storyboard.deliverableId,
-            narrationVoiceId: '',
-            narrationVoiceName: null,
+            narrationVoiceId: staticPackageResult.narrationVoiceId,
+            narrationVoiceName: staticPackageResult.narrationVoiceName,
         };
     }
 
@@ -269,7 +345,7 @@ export async function generateStoryboardVideo(
             visualClips,
             await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard)),
         )
-        : visualClips.map((clip) => clip.buffer);
+        : visualClips.map((clip: GeneratedVideo) => clip.buffer);
 
     const finalVideoBuffer = await composeWithFailureCaching(
         overlayedClipBuffers,
@@ -294,63 +370,3 @@ export async function generateStoryboardVideo(
     };
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Legacy TikTok seed (fallback when no Production Bible)
-// ────────────────────────────────────────────────────────────────────────────
-
-export async function generateTikTokSeed(
-    brief: CampaignAestheticBrief,
-    heroImageUrl: string,
-    themeMusicBuffer?: Buffer | null,
-    presetId?: VideoModelPresetId,
-    campaignSlug?: string,
-): Promise<{ buffer: Buffer; script: string; durationSeconds: number; assetId: string; fileName: string; motionPrompt: string; narrationVoiceId: string; narrationVoiceName: string | null }> {
-    const hook = brief.socialConcepts.tiktokOrganic.hook.trim();
-    const bodyScript = brief.videoConcepts.tiktokSeed.scriptOrNarration.trim();
-    const callToAction = brief.socialConcepts.tiktokOrganic.callToAction.trim() || 'Sign up below — link in bio.';
-    const compositeBrief: CampaignAestheticBrief = {
-        ...brief,
-        audio: {
-            ...brief.audio,
-            ambientNarrationScript: '',
-        },
-    };
-    const organicFormat = inferTikTokFormat('tiktok_organic_seed');
-    const shotPlan = organicFormat.buildShotPrompts(brief);
-    const runId = createRunId();
-
-    const targetDurationSeconds = brief.videoConcepts.tiktokSeed.durationSeconds;
-
-    const [narrationAudio, visualClips] = await Promise.all([
-        generateAmbientNarration(compositeBrief),
-        generatePromptedClips(heroImageUrl, shotPlan, 'video/tiktok_seed_shot', 'vid_tiktok_seed_shot', undefined, presetId, 'tiktok'),
-    ]);
-
-    if (visualClips.length === 0) {
-        throw new Error('RunwayML did not return any TikTok seed visual clips');
-    }
-
-    const overlayCards = await renderOverlayCards(buildOrganicSeedOverlayCards(brief));
-    const overlayedClipBuffers = await applyOverlayCardsToClips(visualClips, overlayCards);
-
-    const finalVideoBuffer = await composeWithFailureCaching(
-        overlayedClipBuffers,
-        narrationAudio.buffer,
-        themeMusicBuffer ?? null,
-        campaignSlug,
-        `tiktok_seed_${runId}`,
-        visualClips,
-        targetDurationSeconds > 0 ? targetDurationSeconds : undefined,
-    );
-
-    return {
-        buffer: finalVideoBuffer,
-        script: narrationAudio.script,
-        durationSeconds: brief.videoConcepts.tiktokSeed.durationSeconds,
-        assetId: `vid_tiktok_seed_${runId}`,
-        fileName: `video/tiktok_seed_${runId}.mp4`,
-        motionPrompt: shotPlan.join('\n\n---\n\n'),
-        narrationVoiceId: narrationAudio.voiceId,
-        narrationVoiceName: narrationAudio.voiceName,
-    };
-}

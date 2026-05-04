@@ -21,13 +21,13 @@ import { generateAestheticConcepts, generateSceneImages } from './generators/sta
 import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
-import { generateTikTokSeed, generateStoryboardVideo } from './generators/tiktok-seed-generator';
+import { generateStoryboardVideo } from './generators/tiktok-seed-generator';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
 import { generateDesignedAdArtifactPack } from './generators/ad-artifact-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
-import { scoreTikTokVideoReadiness, scoreLegacyTikTokSeed } from './lint/video-lint';
+import { scoreTikTokVideoReadiness } from './lint/video-lint';
 import { inferTikTokFormat } from './generators/tiktok-formats/index';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
@@ -214,8 +214,7 @@ function calculateRequestedElevenLabsCredits(
             .map((storyboard) => storyboard.narrationScript)
         : [];
 
-    const shouldIncludeAmbientNarration = shouldRunAsset('ambient_narration', options.assetTypes)
-        || (!hasProductionBible && shouldRunAsset('tiktok_seed_video', options.assetTypes));
+    const shouldIncludeAmbientNarration = shouldRunAsset('ambient_narration', options.assetTypes);
     const ambientNarrationScript = shouldIncludeAmbientNarration ? brief?.audio.ambientNarrationScript : undefined;
 
     const hypeClipScript = shouldRunAsset('hype_clip', options.assetTypes) ? brief?.audio.hypeClipScript : undefined;
@@ -799,27 +798,9 @@ export async function runMediaGeneration(
             if (!hasProductionBible && firstHeroUrl) {
                 // ── Legacy video generation (no Production Bible) ──────────
                 if (shouldRunAsset('tiktok_seed_video', resolvedOptions.assetTypes)) {
-                    group2Promises.push(
-                        runWithJob(slug, 'tiktok_seed_video', activeVideoGeneratorService, 'tiktok seed', async () => {
-                            const video = await generateTikTokSeed(brief!, firstHeroUrl, themeMusicBuffer, resolvedOptions.videoModelPresetId, slug);
-                            const lint = scoreLegacyTikTokSeed(
-                                { tags: ['video', 'tiktok', 'seed', 'narrated'], durationSeconds: video.durationSeconds },
-                                brief!.videoConcepts.tiktokSeed.durationSeconds,
-                            );
-                            if (lint.lintStatus === 'fail') {
-                                throw new Error(`TikTok seed video failed quality lint (score ${lint.lintScore}/100): ${lint.issues.join('; ')}`);
-                            }
-                            if (lint.lintStatus === 'warn') {
-                                warnings.push(`[tiktok_seed_video/lint] WARN (score ${lint.lintScore}): ${lint.issues.join('; ')}`);
-                            }
-                            const rec = await uploadAndRecord(
-                                slug, video.assetId, 'tiktok_seed_video', activeVideoGeneratorService,
-                                `${video.motionPrompt}\n\n${video.script}`, video.buffer, video.fileName, 'video/mp4',
-                                ['video', 'tiktok', 'seed', 'elevenlabs', 'narrated', ...buildElevenLabsVoiceTags('narration', video.narrationVoiceId, video.narrationVoiceName)], undefined, video.durationSeconds
-                            );
-                            videoRecords.tiktokSeed = { ...rec, lintScore: lint.lintScore, lintStatus: lint.lintStatus };
-                            return [videoRecords.tiktokSeed];
-                        }, errors)
+                    errors.push(
+                        'TikTok seed video now requires a Production Bible and generated scene images. ' +
+                        'Generate the Production Bible first, then rerun media generation for tiktok_seed_video.'
                     );
                 }
 

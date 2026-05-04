@@ -34,6 +34,8 @@ interface PlaygroundState {
     previewImage: string;
     isGenerating: boolean;
     generatedSnippet?: string;
+    applyFilmGrain: boolean;
+    grainStrength: number;
 }
 
 export default function TikTokStylePlaygroundPage() {
@@ -58,6 +60,8 @@ export default function TikTokStylePlaygroundPage() {
         },
         previewImage: SAMPLE_IMAGE_URL,
         isGenerating: false,
+        applyFilmGrain: true,
+        grainStrength: 6,
     });
 
     const availableFormats: TikTokFormatSpec[] = [
@@ -77,7 +81,41 @@ export default function TikTokStylePlaygroundPage() {
         },
     ];
 
-    const selectedFormat = availableFormats.find(f => f.formatId === playground.selectedFormat) || availableFormats[0];
+    const presetStyles = {
+        classic: {
+            badge: "EXCLUSIVE",
+            headline: "Board Games At Sea",
+            subline: "Adventure awaits on the waves",
+            accentColor: "#F2C450",
+        },
+        urgent: {
+            badge: "LIMITED TIME",
+            headline: "Don't Miss Out!",
+            subline: "Book now before it's gone",
+            accentColor: "#FF6B6B",
+        },
+        premium: {
+            badge: "PREMIUM",
+            headline: "Luxury Experience",
+            subline: "Indulge in the finest",
+            accentColor: "#4ECDC4",
+        },
+        adventure: {
+            badge: "ADVENTURE",
+            headline: "Epic Journey",
+            subline: "Create unforgettable memories",
+            accentColor: "#45B7D1",
+        },
+    };
+
+    const applyPreset = (presetKey: keyof typeof presetStyles) => {
+        const preset = presetStyles[presetKey];
+        updateCustomCard(preset);
+    };
+
+    const sceneImages = useMemo(() => {
+        return manifest?.images?.sceneImages ?? [];
+    }, [manifest]);
 
     const loadCampaignBrief = async () => {
         setLoading(true);
@@ -107,8 +145,11 @@ export default function TikTokStylePlaygroundPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    overlaySpec: playground.customCard,
+                    overlaySpecs: [playground.customCard],
                     backgroundImageUrl: playground.previewImage,
+                    durationSeconds: 3,
+                    applyFilmGrain: playground.applyFilmGrain,
+                    grainStrength: playground.grainStrength,
                 }),
             });
 
@@ -299,6 +340,23 @@ export default function TikTokStylePlaygroundPage() {
                             <h3 className="text-lg font-semibold text-slate-100">Overlay Card</h3>
                         </div>
 
+                        {/* Presets */}
+                        <div className="mb-6">
+                            <h4 className="text-sm font-medium text-slate-300 mb-3">Quick Presets</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(presetStyles).map(([key, preset]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => applyPreset(key as keyof typeof presetStyles)}
+                                        className="px-3 py-2 text-xs rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 transition text-left"
+                                    >
+                                        <div className="font-medium text-slate-100 capitalize">{key}</div>
+                                        <div className="text-slate-400 truncate">{preset.badge}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <label className="block space-y-2">
                                 <span className="text-sm font-medium text-slate-300">Badge</span>
@@ -341,6 +399,35 @@ export default function TikTokStylePlaygroundPage() {
                                     className="h-10 w-full rounded border border-slate-700 bg-slate-950"
                                 />
                             </label>
+
+                            <div className="space-y-3 pt-2 border-t border-slate-700">
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="film-grain"
+                                        checked={playground.applyFilmGrain}
+                                        onChange={(e) => setPlayground(prev => ({ ...prev, applyFilmGrain: e.target.checked }))}
+                                        className="text-cyan-500"
+                                    />
+                                    <label htmlFor="film-grain" className="text-sm font-medium text-slate-300">
+                                        Apply Film Grain
+                                    </label>
+                                </div>
+
+                                {playground.applyFilmGrain && (
+                                    <label className="block space-y-2">
+                                        <span className="text-sm font-medium text-slate-300">Grain Strength: {playground.grainStrength}</span>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="20"
+                                            value={playground.grainStrength}
+                                            onChange={(e) => setPlayground(prev => ({ ...prev, grainStrength: Number(e.target.value) }))}
+                                            className="w-full"
+                                        />
+                                    </label>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -401,8 +488,28 @@ export default function TikTokStylePlaygroundPage() {
                             <h3 className="text-lg font-semibold text-slate-100">Background Image</h3>
                         </div>
 
+                        {sceneImages.length > 0 && (
+                            <div className="mb-4">
+                                <label className="block space-y-2">
+                                    <span className="text-sm font-medium text-slate-300">Campaign Scene Images</span>
+                                    <select
+                                        value={playground.previewImage}
+                                        onChange={(e) => setPlayground(prev => ({ ...prev, previewImage: e.target.value }))}
+                                        className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-cyan-500"
+                                    >
+                                        <option value={SAMPLE_IMAGE_URL}>Sample Image</option>
+                                        {sceneImages.map((image) => (
+                                            <option key={image.assetId} value={image.url}>
+                                                {image.assetId}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            </div>
+                        )}
+
                         <label className="block space-y-2">
-                            <span className="text-sm font-medium text-slate-300">Image URL</span>
+                            <span className="text-sm font-medium text-slate-300">Custom Image URL</span>
                             <input
                                 type="url"
                                 value={playground.previewImage}

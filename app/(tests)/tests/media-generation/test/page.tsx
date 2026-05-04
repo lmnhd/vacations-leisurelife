@@ -1065,7 +1065,7 @@ export default function MediaGenerationTestPage() {
           cost="~5 images + render"
           apiKeys={["GOOGLE", "R2"]}
           result={designedAdsResult}
-          previewType="image-and-json"
+          previewType="json"
           onRun={() =>
             runGenerator(
               `${base}/images`,
@@ -1147,10 +1147,10 @@ export default function MediaGenerationTestPage() {
         <GeneratorCard
           id="gen-tiktok-voiceover"
           keyStatus={keyStatus}
-          title="RunwayML + ElevenLabs — TikTok Seed Video (9:16)"
+          title="RunwayML + ElevenLabs — TikTok Seed Video (Production Bible)"
           icon={<Play className="h-4 w-4" />}
           color="violet"
-          description="Storyboard-driven: each shot uses its own scene image from the Production Bible. Falls back to single hero image if no Production Bible exists. Narration from ElevenLabs, composed by ffmpeg."
+          description="Storyboard-driven: each shot uses its own Production Bible scene image and the manifest copy. Requires a saved Production Bible plus generated scene images."
           cost="~RunwayML × shots + ElevenLabs"
           apiKeys={["RUNWAYML", "ELEVENLABS", "R2"]}
           result={tiktokVoiceoverResult}
