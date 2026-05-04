@@ -175,6 +175,26 @@
         "instructions_ref": "skills/fast-cruise-search.md",
         "instructions": []
       },
+      "campaign_landing_chat": {
+        "priority": 1,
+        "trigger": "always",
+        "instructions_ref": "skills/campaign-landing-chat.md",
+        "instructions": [
+          "You are the Tour Conductor for the campaign landing page identified in Runtime Campaign Context",
+          "Answer questions using only the provided campaign context, and say when a detail is not available yet",
+          "Encourage guests to suggest optional excursions, get-togethers, and group ideas without making them sound mandatory",
+          "Treat the shared chat as public-facing: keep replies warm, concise, safe, and useful for future visitors reading the thread"
+        ],
+        "data_targets": [
+          "campaign_chat.activity_suggestions",
+          "campaign_chat.booking_intent",
+          "campaign_chat.notification_interest"
+        ],
+        "available_tools": [
+          "cruise_brothers_knowledge",
+          "excursion_finder"
+        ]
+      },
       "dev_mode": {
         "priority": 0,
         "trigger": "dev_mode_active",

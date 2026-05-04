@@ -1,9 +1,6 @@
 import { notFound } from 'next/navigation';
-import { CampaignLandingPage } from '@/components/campaign-landing/landing-page';
 import { getCampaignLandingBySlug } from '@/lib/campaigns/landing/view-model';
-import { CampaignLandingPageGemini } from '@/components/campaign-landing/CampaignLandingPageGemini';
-import { CampaignLandingPageClaude } from '@/components/campaign-landing/CampaignLandingPageClaude';
-import { CampaignLandingPageGpt } from '@/components/campaign-landing/landing-page-gpt';
+import { CampaignLandingPageVisualSystem } from '@/components/campaign-landing/landing-page-visual-system';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,5 +24,5 @@ export default async function GroupCampaignLandingPage(
         notFound();
     }
 
-    return <CampaignLandingPageClaude landing={result.landing} />;
+    return <CampaignLandingPageVisualSystem landing={result.landing} />;
 }

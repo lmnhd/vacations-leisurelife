@@ -122,6 +122,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         activeRules,
         loadedSkills,
         startingContext: input.startingContext,
+        contextBlock: input.contextBlock,
     });
 
     pipelineLog.stage('prompt-assembler', input.sessionId, { systemPromptLength: systemPrompt.length });

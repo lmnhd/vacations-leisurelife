@@ -100,6 +100,7 @@ export async function assembleSystemPrompt(input: {
     preResolvedContext?: Awaited<ReturnType<typeof resolveContext>>;
     activeRules?: string[];
     loadedSkills?: string[];
+    contextBlock?: string;
 }): Promise<{ systemPrompt: string; activeContextPath: string }> {
     const resolvedContext = input.preResolvedContext
         ? input.preResolvedContext
@@ -148,6 +149,9 @@ export async function assembleSystemPrompt(input: {
         '# Context Skill Content',
         contextInstructionBlocks.join('\n\n').trim(),
         ...loadedSkills,
+        '',
+        '# Runtime Campaign Context',
+        input.contextBlock?.trim() ?? '',
         '',
         '# Data Collection Targets',
         ...resolvedContext.dataTargets.map((targetPath) => `- ${targetPath}`),

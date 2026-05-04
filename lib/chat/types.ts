@@ -27,6 +27,7 @@ export interface ChatRequest {
     sessionId: string;
     channel: Channel;
     persona?: PersonaKey;
+    contextBlock?: string;
 }
 
 export interface ChatResponse {
@@ -182,6 +183,7 @@ export interface PipelineInput {
     channel: Channel;
     model?: string;
     startingContext?: string;
+    contextBlock?: string;
 }
 
 export type ToolCallLogEntry = {

@@ -1,10 +1,12 @@
 import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
-import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import type { AssetRecord, CampaignAestheticBrief, CampaignEnergyMode, CampaignMediaManifest, VisualFlavor } from '@/lib/campaigns/schema';
 import { formatDeparturePort } from '@/lib/campaigns/cruise-ports';
 import { getPublicGroupCabinTarget, getPublicThresholdPercent } from '@/lib/campaigns/threshold-policy';
 import type { Campaign } from '@/lib/campaigns/types';
 import { getCampaignWaitlistSummary, type CampaignWaitlistSummary } from '@/lib/campaigns/waitlist-store';
+import { extractNicheTokens } from '@/lib/campaigns/design-system/niche-tokens';
+import type { VisualSystem } from '@/lib/campaigns/design-system/types';
 
 export interface LandingLoaderOptions {
     includeDraftPreview?: boolean;
@@ -44,6 +46,30 @@ export interface LandingFaqItem {
     answer: string;
 }
 
+export interface LandingDesignSystem {
+    visualFlavor: VisualFlavor;
+    system: VisualSystem;
+    energyMode: CampaignEnergyMode;
+    issueLabel: string;
+    sectionLabels: string[];
+    italicWord: string;
+    accentHex: string;
+    headline: string;
+    subhead: string;
+    quote: string;
+    quoteCite: string;
+    cta: string;
+    chat: {
+        sessionId: string;
+        title: string;
+        eyebrow: string;
+        signedOutMessage: string;
+        starterQuestion: string;
+        starterAnswer: string;
+        endpoint: string;
+    };
+}
+
 export interface CampaignLandingViewModel {
     slug: string;
     preview: boolean;
@@ -59,6 +85,7 @@ export interface CampaignLandingViewModel {
     accentColor: string;
     surfaceColor: string;
     textColor: string;
+    designSystem: LandingDesignSystem;
     facts: LandingFact[];
     story: {
         whatItIs: LandingStorySection;
@@ -116,6 +143,94 @@ const STATE_LABELS: Record<Campaign['status'], string> = {
     CONVERTED: 'Now Booking',
     EXPIRED: 'Closed',
 };
+
+const FALLBACK_DESIGN_SYSTEM: Omit<LandingDesignSystem, 'chat'> = {
+    visualFlavor: 'none',
+    system: 'system_4_modular',
+    energyMode: 'calm_contemplative',
+    issueLabel: 'Campaign',
+    sectionLabels: ['The Sailing', 'The People', 'The Moment'],
+    italicWord: 'Sea',
+    accentHex: '#ff5a3d',
+    headline: 'A Real Cruise, Designed Around A Shared Mood',
+    subhead: 'A public campaign page for a themed group sailing.',
+    quote: 'This is a real cruise, but it feels designed for people like me.',
+    quoteCite: 'Leisure Life Interactive',
+    cta: 'Join the group list',
+};
+
+function visualFlavorForSystem(system: VisualSystem): VisualFlavor {
+    if (system === 'system_1_editorial') return 'editorial_magazine';
+    if (system === 'system_2_nostalgia') return 'travel_nostalgia';
+    if (system === 'system_3_zine') return 'indie_zine';
+    return 'none';
+}
+
+function normalizeSectionLabels(labels: string[]): string[] {
+    const cleaned = labels
+        .map((label) => label.trim())
+        .filter(Boolean)
+        .filter((label, index, array) => array.indexOf(label) === index)
+        .slice(0, 5);
+
+    return cleaned.length >= 3 ? cleaned : FALLBACK_DESIGN_SYSTEM.sectionLabels;
+}
+
+function buildChatStarterAnswer(campaign: Campaign, brief: CampaignAestheticBrief | null): string {
+    const pitch = brief?.messaging.elevatorPitch ?? campaign.communityFitRationale ?? campaign.description;
+    const ship = campaign.matchedShipName ?? campaign.shipTarget ?? 'the selected ship';
+    const route = campaign.targetDestination ? ` sailing toward ${campaign.targetDestination}` : '';
+    const dates = campaign.targetDates ? ` on ${campaign.targetDates}` : '';
+    return `${pitch} It is planned for ${ship}${route}${dates}. The Tour Conductor can answer logistics, track group progress, and collect ideas from guests as this sailing takes shape.`;
+}
+
+export function buildLandingDesignSystem(
+    campaign: Campaign,
+    brief: CampaignAestheticBrief | null,
+): LandingDesignSystem {
+    const endpoint = `/api/groups/campaign/${campaign.id}/chat`;
+    const chatBase = {
+        sessionId: `campaign-chat://${campaign.id}`,
+        title: 'Tour Conductor',
+        starterQuestion: 'What is this cruise about?',
+        starterAnswer: buildChatStarterAnswer(campaign, brief),
+        endpoint,
+    };
+
+    if (!brief) {
+        return {
+            ...FALLBACK_DESIGN_SYSTEM,
+            chat: {
+                ...chatBase,
+                eyebrow: 'Status Desk',
+                signedOutMessage: 'Join updates to ask the Tour Conductor a question. You can still read the shared campaign thread here.',
+            },
+        };
+    }
+
+    const tokens = extractNicheTokens(brief, campaign);
+    const visualFlavor = brief.identityBlueprint?.visualFlavor ?? visualFlavorForSystem(tokens.system);
+
+    return {
+        visualFlavor,
+        system: tokens.system,
+        energyMode: tokens.energyMode,
+        issueLabel: tokens.issueLabel,
+        sectionLabels: normalizeSectionLabels(tokens.sectionLabels),
+        italicWord: tokens.italicWord,
+        accentHex: tokens.accentHex,
+        headline: tokens.headline,
+        subhead: tokens.subhead,
+        quote: tokens.quote,
+        quoteCite: tokens.quoteCite,
+        cta: tokens.cta,
+        chat: {
+            ...chatBase,
+            eyebrow: tokens.issueLabel,
+            signedOutMessage: 'Join updates to unlock the Tour Conductor. The shared history stays visible so new guests can catch the group energy before speaking.',
+        },
+    };
+}
 
 function normalizeColorToken(value: string | undefined, fallback: string): string {
     if (!value) {
@@ -596,6 +711,7 @@ function buildLandingViewModel(
     const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
     const trustImages = buildTrustImages(campaign, manifest, heroImage);
     const percentOfThreshold = getPublicThresholdPercent(targetCabins, waitlistSummary.totalEntries);
+    const designSystem = buildLandingDesignSystem(campaign, brief);
 
     return {
         slug: campaign.id,
@@ -612,6 +728,7 @@ function buildLandingViewModel(
         accentColor: normalizeColorToken(brief?.visual.colorPalette.accent, '#2962FF'),
         surfaceColor: normalizeColorToken(brief?.visual.colorPalette.background, '#0F172A'),
         textColor: normalizeColorToken(brief?.visual.colorPalette.textOnDark, '#F8FAFC'),
+        designSystem,
         facts: buildFacts(campaign, waitlistSummary),
         story: {
             whatItIs: buildWhatItIs(campaign, brief),

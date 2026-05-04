@@ -15,6 +15,7 @@ const ChatRequestSchema = z.object({
     channel: z.enum(['text', 'voice', 'voice_hybrid']).default('text'),
     model: z.string().optional(),
     startingContext: z.string().optional(),
+    contextBlock: z.string().max(12000).optional(),
 });
 
 export async function handleChatRequest(
@@ -32,7 +33,7 @@ export async function handleChatRequest(
         };
     }
 
-    const { message, sessionId, userId, channel, model, startingContext } = parsed.data;
+    const { message, sessionId, userId, channel, model, startingContext, contextBlock } = parsed.data;
     const resolvedUserId = userId ?? `anon:${sessionId}`;
 
     try {
@@ -43,6 +44,7 @@ export async function handleChatRequest(
             channel,
             model,
             startingContext,
+            contextBlock,
         });
 
         return {
