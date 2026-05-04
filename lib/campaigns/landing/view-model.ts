@@ -302,7 +302,7 @@ function selectTrustAsset(manifest: CampaignMediaManifest | null): AssetRecord |
         (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
         (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
     );
-    return approved ?? withUrl[0] ?? null;
+    return approved ?? null;
 }
 
 function resolveHeroImage(

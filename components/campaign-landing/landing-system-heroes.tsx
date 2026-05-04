@@ -232,13 +232,13 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
 
 export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps) {
     const cardImage =
-        (landing.heroImage?.url ? landing.heroImage : null) ??
         getImage(landing.galleryImages, 0) ??
-        getImage(landing.trustImages, 0);
-    const bgImage =
-        getImage(landing.galleryImages, 1) ??
         getImage(landing.trustImages, 0) ??
-        cardImage;
+        (landing.heroImage?.url ? landing.heroImage : null);
+    const bgImage =
+        (landing.heroImage?.url ? landing.heroImage : null) ??
+        getImage(landing.galleryImages, 1) ??
+        getImage(landing.trustImages, 0);
     const accent = landing.designSystem.accentHex;
 
     return (
