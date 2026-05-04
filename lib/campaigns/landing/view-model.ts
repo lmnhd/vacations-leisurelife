@@ -258,15 +258,10 @@ function formatCurrency(value?: number): string {
     }).format(value);
 }
 
-function buildHeroFallback(campaign: Campaign, brief: CampaignAestheticBrief | null): LandingImageAsset | null {
-    const target = campaign.targetDestination ?? campaign.shipTarget ?? campaign.name;
-    if (!target) {
-        return null;
-    }
-
+function buildHeroFallback(brief: CampaignAestheticBrief | null): LandingImageAsset | null {
     return {
         url: '',
-        alt: brief?.messaging.heroSlogan ?? campaign.name,
+        alt: brief?.messaging.heroSlogan ?? '',
     };
 }
 
@@ -281,13 +276,15 @@ function selectPreferredAsset(manifest: CampaignMediaManifest | null): AssetReco
         ...manifest.images.aestheticConcepts,
         ...manifest.images.sceneImages,
         ...manifest.images.shipReferences,
+        ...manifest.images.documentaryDetails,
     ];
 
-    const approved = candidates.find((asset) => 
+    const withUrl = candidates.filter((asset) => asset.url);
+    const approved = withUrl.find((asset) => 
         (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
         (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
     );
-    return approved ?? candidates[0] ?? null;
+    return approved ?? withUrl[0] ?? null;
 }
 
 function selectTrustAsset(manifest: CampaignMediaManifest | null): AssetRecord | null {
@@ -300,11 +297,12 @@ function selectTrustAsset(manifest: CampaignMediaManifest | null): AssetRecord |
         ...manifest.images.documentaryDetails,
     ];
 
-    const approved = candidates.find((asset) =>
+    const withUrl = candidates.filter((asset) => asset.url);
+    const approved = withUrl.find((asset) =>
         (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
         (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
     );
-    return approved ?? candidates[0] ?? null;
+    return approved ?? withUrl[0] ?? null;
 }
 
 function resolveHeroImage(
@@ -322,7 +320,7 @@ function resolveHeroImage(
 
     const asset = selectPreferredAsset(manifest);
     if (!asset) {
-        return buildHeroFallback(campaign, brief);
+        return buildHeroFallback(brief);
     }
 
     return {
@@ -357,7 +355,10 @@ function buildGalleryImages(
         const out: LandingImageAsset[] = [];
         for (const asset of candidates) {
             if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
-            if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') continue;
+            const approved =
+                asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved' ||
+                asset.curation?.approvalState === 'human_approved' || asset.curation?.approvalState === 'auto_approved';
+            if (!approved) continue;
             seen.add(asset.url);
             out.push({ url: asset.url, alt: `${campaign.name} campaign image` });
         }
@@ -406,7 +407,10 @@ function buildTrustImages(
 
     for (const asset of candidates) {
         if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
-        if (asset.reviewStatus !== 'human_approved' && asset.reviewStatus !== 'auto_approved') continue;
+        const approved =
+            asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved' ||
+            asset.curation?.approvalState === 'human_approved' || asset.curation?.approvalState === 'auto_approved';
+        if (!approved) continue;
         seen.add(asset.url);
         out.push({ url: asset.url, alt: `${campaign.name} ship reference` });
     }

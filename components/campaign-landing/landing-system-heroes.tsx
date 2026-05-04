@@ -235,19 +235,33 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
         (landing.heroImage?.url ? landing.heroImage : null) ??
         getImage(landing.galleryImages, 0) ??
         getImage(landing.trustImages, 0);
+    const bgImage =
+        getImage(landing.galleryImages, 1) ??
+        getImage(landing.trustImages, 0) ??
+        cardImage;
     const accent = landing.designSystem.accentHex;
 
     return (
-        <section className="relative bg-[#f6e4bf] py-12 text-amber-950 md:py-16">
-            <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+        <section className="relative overflow-hidden bg-[#f6e4bf] py-12 text-amber-950 md:py-16">
+            {/* Background image with heavy cream overlay for depth without washing out postcard */}
+            {bgImage?.url && (
+                <>
+                    <div
+                        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20 saturate-50 blur-sm"
+                        style={{ backgroundImage: `url(${bgImage.url})` }}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-[#f6e4bf]/75" />
+                </>
+            )}
+            <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
                 {/* The postcard */}
                 <div className="relative">
-                    <div className="relative rotate-[-1.2deg] border-[14px] border-[#fff8e8] bg-[#fff8e8] p-2 shadow-[0_30px_70px_rgba(101,60,18,0.25)]">
-                        <div className="aspect-[5/3] overflow-hidden bg-amber-200">
+                    <div className="relative rotate-[-1.2deg] border-[14px] border-[#fff8e8] bg-[#fff8e8] p-2 shadow-[0_30px_70px_rgba(101,60,18,0.35)]">
+                        <div className="aspect-[5/3] overflow-hidden bg-amber-100">
                             {cardImage?.url ? (
-                                <div className="h-full w-full bg-cover bg-center sepia-[0.15] saturate-[0.9]" style={{ backgroundImage: `url(${cardImage.url})` }} />
+                                <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${cardImage.url})` }} />
                             ) : (
-                                <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${accent}, #b16f24)` }} />
+                                <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${accent}55, #b16f2488)` }} />
                             )}
                         </div>
 
