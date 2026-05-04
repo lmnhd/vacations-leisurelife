@@ -21,6 +21,8 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 **Template-first rule:** Build and refine the reusable TikTok package in the media-generation flow before spending on live campaign reruns. The exported MP4 should be a full-frame 9:16 ad that keeps the source still at full size and places text around it. Do not crop or zoom the still just to make it fill the canvas. For the shared template architecture, see [TIKTOK_TEMPLATE_SYSTEM.md](./TIKTOK_TEMPLATE_SYSTEM.md).
 **Editorial frame rule:** The frame should feel like a commercial layout, not an app panel. Use wide top/bottom bands, stronger text hierarchy, and a styled backdrop behind the centered still so the empty space reads as intentional design.
 **Sequence planner rule:** The three presets are the visual grammar. Use them as repeating building blocks across a 6-8 beat sequence so the ad feels like a finished commercial run, not a single repeated card.
+**Late-stage synthesis rule:** Do not assume the best TikTok copy was already solved in the earliest brief fields. Once scenes, designed ads, and audio direction are substantially in place, run a late-stage promotion synthesis pass that extracts the strongest phrases from the mature campaign state and turns them into the final TikTok beat package.
+**No-fallback copy rule:** Production TikTok renders should use the synthesized promotion package only. Do not silently recycle `heroSlogan`, `subSlogan`, or other brief-era fields if synthesis is missing or thin. If the package is not usable, the render should fail and be repaired.
 **Narration rule:** Give each beat a short `spokenText` line for ElevenLabs. Keep the copy aligned to the on-screen text, but do not rely on beat-level audio choreography as the only way to make the package work. The current render flow can also build one continuous voiceover from the full sequence.
 **Audio mix rule:** The final MP4 should keep narration audible over the package and layer the music bed underneath it. If the voice gets brittle or hard to follow, simplify the script before changing the mix.
 
@@ -49,6 +51,7 @@ For concrete good/bad references while refining output, use [CAMPAIGN_EXAMPLES.m
 For the TikTok seed video specifically, prefer a six-beat structure over a four-beat one when the scene library is strong enough to support it. Faster cuts are better than lingering on one or two good-looking shots because they reduce AI-anomaly scrutiny and make the ad feel intentionally edited.
 When the scene set is strong enough, the preferred TikTok seed is a static-package edit: still scenes, designed text cards, and quick beat changes. Do not spend credits chasing subtle motion if the package itself can carry the ad.
 The current implementation favors a single continuous narration script over the whole package rather than complex per-beat dialogue timing. Use beat copy to shape the sequence, but let the overall 9:16 ad remain the primary unit.
+Do not let one small brief-era slogan bundle dictate all six beats. The final beat language should be harvested from the best downstream campaign material available right before TikTok render.
 
 ## Composition Library - What to Use
 
@@ -161,6 +164,7 @@ Implement these five videos first, then iterate:
 - **Overlay Cards Are Real**: TikTok seed and paid variants should render their hook/proof/CTA cards into the MP4. Prompt language is not enough. If the frame reads as clip-only, the render is incomplete.
 - **Full-Frame Package Rule**: The final TikTok export is the ad. The still image should stay intact and visible inside the vertical frame, with text bands and CTA scaffolding built around it. If the image is being cropped or blown up just to fill space, the template needs repair.
 - **Faster Beats Win**: Use more cuts when the source scene set is strong. Shorter beats and clearer text blocks usually beat a long clip that invites nitpicking.
+- **Late Copy Harvesting Beats Early Guessing**: If the campaign's strongest language only becomes obvious after scenes, designed ads, or audio work, trust the later evidence. Build the TikTok beat package from the mature campaign state instead of forcing the renderer to live off a tiny early copy set.
 - **Use Examples as a Lens**: If a shot or render feels technically correct but emotionally flat, compare it to [CAMPAIGN_EXAMPLES.md](../../CAMPAIGN_EXAMPLES.md) before changing the whole workflow. The examples page is the fastest way to see whether the issue is the source image, the overlay language, or the motion treatment.
 
 ## Final Thesis

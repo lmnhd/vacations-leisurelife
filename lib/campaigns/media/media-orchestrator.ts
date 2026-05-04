@@ -22,6 +22,8 @@ import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
 import { generateStoryboardVideo } from './generators/tiktok-seed-generator';
+import { generateTikTokPromotionPackage } from './generators/tiktok-promotion-synthesis';
+import type { TikTokPromotionPackage } from '../schema';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
@@ -877,8 +879,40 @@ export async function runMediaGeneration(
 
         await Promise.all(group2Promises);
 
+        // ── TikTok Promotion Synthesis ────────────────────────────────────────────
+        // Runs before GROUP 3 so synthesized beat copy is available for the render.
+        // Uses existing package from manifest when present; generates once otherwise.
+        // TikTok package render is synthesis-driven only: no brief-era copy fallback.
+        let tiktokPromotionPackage: TikTokPromotionPackage | null =
+            existingManifest?.tiktokPromotionPackage ?? null;
+
+        const willRenderTikTok = hasProductionBible &&
+            brief!.productionBible!.storyboards.some((s) => s.deliverableId.startsWith('tiktok')) &&
+            shouldRunAsset('tiktok_seed_video', resolvedOptions.assetTypes) &&
+            videoCreditsOk;
+
+        if (willRenderTikTok && !tiktokPromotionPackage) {
+            const tiktokStoryboard = brief!.productionBible!.storyboards.find(
+                (s) => s.deliverableId.startsWith('tiktok'),
+            );
+            if (tiktokStoryboard) {
+                try {
+                    tiktokPromotionPackage = await generateTikTokPromotionPackage(brief!, tiktokStoryboard);
+                    console.log(`[TikTok Synthesis] Generated ${tiktokPromotionPackage.beats.length} promotion beats for ${slug}`);
+                } catch (synthErr) {
+                    warnings.push(`[tiktok-synthesis] Failed — using brief fallback: ${synthErr instanceof Error ? synthErr.message : String(synthErr)}`);
+                }
+            }
+        }
+
         // ── GROUP 3: Storyboard-driven video assembly (Production Bible path) ────────
         // Must run AFTER group2 so sceneImageRecords is fully populated.
+        if (willRenderTikTok && !tiktokPromotionPackage) {
+            throw new Error(
+                `[tiktok-synthesis] Missing promotion package for ${slug}; TikTok video generation requires synthesized campaign copy.`,
+            );
+        }
+
         if (videoCreditsOk && hasProductionBible && brief!.productionBible!.storyboards.length > 0) {
             // Prefer freshly-generated scene image records; fall back to existing manifest
             const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
@@ -911,8 +945,9 @@ export async function runMediaGeneration(
                 if (alreadyExists && !forceRegenerateAsset) continue;
 
                 await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
+                    const synthPackage = assetType === 'tiktok_seed_video' ? tiktokPromotionPackage : null;
                     const video = await generateStoryboardVideo(
-                        brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug
+                        brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug, synthPackage
                     );
                     // Resolve distribution tag from the format registry — deterministic, not substring-based
                     const tiktokFormat = assetType === 'tiktok_seed_video' ? inferTikTokFormat(delivId) : null;
@@ -1042,6 +1077,7 @@ export async function runMediaGeneration(
             audio: mergedAudio,
             merch: mergedMerch,
             copy: mergedCopy,
+            tiktokPromotionPackage: tiktokPromotionPackage ?? existingManifest?.tiktokPromotionPackage,
         };
 
         await saveMediaManifest(manifest);

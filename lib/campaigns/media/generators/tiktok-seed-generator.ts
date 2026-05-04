@@ -1,13 +1,6 @@
-import { CampaignAestheticBrief, Storyboard } from '../../schema';
-import { inferTikTokFormat } from './tiktok-formats/index';
-import { buildOrganicSeedOverlayCards } from './tiktok-formats/organic-seed';
-import {
-    BOARD_GAMES_TEMPLATE_SEQUENCE,
-    buildBoardGamesBeatSpokenText,
-    getBoardGamesTemplatePreset,
-    renderBoardGamesTemplateOverlay,
-} from './tiktok-formats/board-games-at-sea-template';
-import { renderTikTokOverlayCard } from './tiktok-overlay-cards';
+import { CampaignAestheticBrief, Storyboard, type TikTokPromotionPackage } from '../../schema';
+import { inferTikTokFormat, type TikTokSequenceBeat } from './tiktok-formats/index';
+import { renderTikTokOverlayCard, renderTikTokBrandLockup } from './tiktok-overlay-cards';
 import type { TikTokOverlayCardSpec } from './tiktok-overlay-cards';
 import { generateAmbientNarration, generateSpeechClip } from './elevenlabs-generator';
 import { generatePromptedClipFromScenes, GeneratedVideo, VideoMotionFormat } from './runway-generator';
@@ -19,10 +12,6 @@ import type { VideoModelPresetId } from '../video-models';
 
 function createRunId(): string {
     return Date.now().toString(36);
-}
-
-function isBoardGamesAtSeaBrief(brief: CampaignAestheticBrief): boolean {
-    return /board games at sea/i.test(brief.themeName);
 }
 
 async function cacheIntermediateGeneratedClips(
@@ -123,17 +112,43 @@ async function downloadAssetBuffer(url: string): Promise<Buffer> {
     return Buffer.from(await response.arrayBuffer());
 }
 
+async function renderBeatOverlayBuffers(beat: TikTokSequenceBeat): Promise<{
+    overlayInputs: { buffer: Buffer; x: number; y: number }[];
+    brandLockupInput: { buffer: Buffer; x: number; y: number };
+}> {
+    const overlayInputs = await Promise.all(
+        beat.overlaySpecs.map(async (spec) => ({
+            buffer: await renderTikTokOverlayCard(spec),
+            x: spec.placement.x,
+            y: spec.placement.y,
+        })),
+    );
+    const brandLockupBuffer = await renderTikTokBrandLockup(beat.brandLockup);
+    return {
+        overlayInputs,
+        brandLockupInput: {
+            buffer: brandLockupBuffer,
+            x: beat.brandLockup.placement.x,
+            y: beat.brandLockup.placement.y,
+        },
+    };
+}
+
 async function generateStaticPackageStoryboardVideo(
     brief: CampaignAestheticBrief,
     storyboard: Storyboard,
     sceneImageMap: ReadonlyMap<string, string>,
     themeMusicBuffer?: Buffer | null,
+    promotionPackage?: TikTokPromotionPackage | null,
 ): Promise<{ buffer: Buffer; script: string; durationSeconds: number; motionPrompt: string; narrationVoiceId: string; narrationVoiceName: string | null }> {
+    if (!promotionPackage) {
+        throw new Error(
+            `TikTok promotion package is required for ${storyboard.deliverableId}; production TikTok render does not support fallback copy.`,
+        );
+    }
+
     const tiktokFormat = inferTikTokFormat(storyboard.deliverableId);
-    const useSandboxExactTemplate = isBoardGamesAtSeaBrief(brief) && storyboard.deliverableId === 'tiktok_seed';
-    const overlayCards = useSandboxExactTemplate
-        ? []
-        : await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard));
+    const sequenceBeats = tiktokFormat.buildSequenceBeats(brief, storyboard, promotionPackage);
 
     const sourceBuffers: Buffer[] = [];
     const shotDurations: number[] = [];
@@ -142,57 +157,46 @@ async function generateStaticPackageStoryboardVideo(
 
     for (let index = 0; index < storyboard.shotSequence.length; index += 1) {
         const shot = storyboard.shotSequence[index];
-        const imageUrl = sceneImageMap.get(shot.sceneId);
+        const beat = sequenceBeats[index] ?? sequenceBeats[index % sequenceBeats.length];
+
+        // beat.sceneId is explicitly mapped from storyboard.shotSequence[i].sceneId
+        // in buildPackageSequenceBeats. Use it as the primary lookup key.
+        const resolvedSceneId = beat.sceneId || shot.sceneId;
+        const imageUrl = sceneImageMap.get(resolvedSceneId);
         if (!imageUrl) {
-            throw new Error(`Missing generated scene image for storyboard shot ${shot.sceneId}`);
+            throw new Error(`Missing generated scene image for storyboard shot ${resolvedSceneId}`);
         }
 
         const imageBuffer = await downloadAssetBuffer(imageUrl);
-        const stillClip = await createContainedStillVerticalClip(imageBuffer, shot.durationSeconds);
-        const overlayedStill = useSandboxExactTemplate
-            ? await (async () => {
-                const preset = getBoardGamesTemplatePreset(
-                    BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length]
-                );
-                const frameOverlay = await renderBoardGamesTemplateOverlay(preset);
-                return composeVideoWithOverlayCards(
-                    stillClip,
-                    [{ buffer: frameOverlay, x: 0, y: 0 }],
-                    shot.durationSeconds,
-                );
-            })()
-            : await composeVideoWithOverlayCards(stillClip, [overlayCards[index] ?? overlayCards[0]], shot.durationSeconds);
+        const stillClip = await createContainedStillVerticalClip(imageBuffer, beat.durationSeconds);
+        const { overlayInputs, brandLockupInput } = await renderBeatOverlayBuffers(beat);
+
+        const overlayedStill = await composeVideoWithOverlayCards(
+            stillClip,
+            overlayInputs,
+            beat.durationSeconds,
+            {
+                applyFilmGrain: true,
+                grainStrength: 6,
+                fixedOverlays: [brandLockupInput],
+            },
+        );
         sourceBuffers.push(overlayedStill);
-        shotDurations.push(shot.durationSeconds);
-        const scene = brief.productionBible?.sceneLibrary.find((scene) => scene.sceneId === shot.sceneId);
-        if (useSandboxExactTemplate) {
-            const preset = getBoardGamesTemplatePreset(
-                BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length]
-            );
-            shotPrompts.push(`${preset.label}: ${buildBoardGamesBeatSpokenText(preset)}`);
-        } else {
-            shotPrompts.push(buildStoryboardShotPrompt(shot, brief, scene));
-        }
+        shotDurations.push(beat.durationSeconds);
+        const scene = brief.productionBible?.sceneLibrary.find((s) => s.sceneId === resolvedSceneId);
+        shotPrompts.push(buildStoryboardShotPrompt(shot, brief, scene));
     }
 
     const finalVideoBuffer = await composeVideoSequenceWithTransitions(sourceBuffers, shotDurations);
-    const narrationScript = useSandboxExactTemplate
-        ? storyboard.shotSequence
-            .map((_, index) => buildBoardGamesBeatSpokenText(getBoardGamesTemplatePreset(BOARD_GAMES_TEMPLATE_SEQUENCE[index % BOARD_GAMES_TEMPLATE_SEQUENCE.length])))
-            .filter(Boolean)
-            .join('. ')
-            .replace(/\s+\./g, '.')
-            .replace(/\.\.+/g, '.')
-        : storyboard.shotSequence
-            .map((shot, index) => {
-                const overlayText = overlayCards[index]?.spokenText
-                    ?? `${overlayCards[index]?.headline ?? ''} ${overlayCards[index]?.subline ?? ''}`.replace(/\s+/g, ' ').trim();
-                return overlayText || shot.narrationSegment || shot.emotionalBeat;
-            })
-            .filter(Boolean)
-            .join('. ')
-            .replace(/\s+\./g, '.')
-            .replace(/\.\.+/g, '.');
+    // Narration comes from the synthesized promotion package so on-screen copy
+    // and voiceover stay in the same final copy system.
+    const narrationScript = sequenceBeats
+        .slice(0, storyboard.shotSequence.length)
+        .map((beat) => beat.spokenText)
+        .filter(Boolean)
+        .join('. ')
+        .replace(/\s+\./g, '.')
+        .replace(/\.\.+/g, '.');
     const narrationBuffer = await generateSpeechClip(narrationScript, narrationVoice.voiceId);
     const audioMixedVideo = await composeProductionVideo([finalVideoBuffer], narrationBuffer, themeMusicBuffer ?? null, {
         outputFormat: '9:16',
@@ -238,6 +242,7 @@ export async function generateStoryboardVideo(
     motionPromptOverride?: string,
     presetId?: VideoModelPresetId,
     campaignSlug?: string,
+    promotionPackage?: TikTokPromotionPackage | null,
 ): Promise<StoryboardVideoResult> {
     const runId = createRunId();
 
@@ -297,6 +302,7 @@ export async function generateStoryboardVideo(
             storyboard,
             sceneImageMap,
             themeMusicBuffer ?? null,
+            promotionPackage,
         );
         return {
             buffer: staticPackageResult.buffer,
@@ -343,7 +349,7 @@ export async function generateStoryboardVideo(
     const overlayedClipBuffers = isTikTok && tiktokFormat
         ? await applyOverlayCardsToClips(
             visualClips,
-            await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard)),
+            await renderOverlayCards(tiktokFormat.buildOverlayCards(brief, storyboard, promotionPackage)),
         )
         : visualClips.map((clip: GeneratedVideo) => clip.buffer);
 
@@ -369,4 +375,3 @@ export async function generateStoryboardVideo(
         narrationVoiceName: narrationAudio.voiceName,
     };
 }
-

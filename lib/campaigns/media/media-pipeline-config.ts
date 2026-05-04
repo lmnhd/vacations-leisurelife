@@ -72,6 +72,8 @@ export const MEDIA_LLM_CONFIG = {
     nicheDiscovery: ModelName.GEMINI_3_PRO,
     /** Campaign match scoring and decision logic */
     campaignDecision: modelForTask('decision'),
+    /** Late-stage TikTok promotion synthesis — generates 6 distinct beats from mature campaign */
+    tiktokPromotionSynthesis: modelForTask('creative'),
 } as const satisfies Record<string, ModelName>;
 
 // ── Stability AI Settings ─────────────────────────────────────────────────────

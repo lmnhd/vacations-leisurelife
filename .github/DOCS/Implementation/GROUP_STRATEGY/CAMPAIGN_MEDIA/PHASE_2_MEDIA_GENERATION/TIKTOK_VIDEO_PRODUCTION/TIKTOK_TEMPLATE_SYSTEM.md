@@ -1,7 +1,7 @@
 # TikTok Template System
 
 **Status:** production template system
-**Purpose:** define the reusable, full-frame TikTok ad template system that turns campaign stills and manifest copy into packaged vertical promos without relying on motion-first video generation.
+**Purpose:** define the reusable, full-frame TikTok ad template system that turns campaign stills and late-stage campaign synthesis copy into packaged vertical promos without relying on motion-first video generation.
 
 ## 1. Core Idea
 
@@ -17,9 +17,9 @@ The video should be built from:
 The still image is the truth layer. Do not crop, zoom, or re-frame the image just to fill the canvas.
 When the still does not fill the vertical frame, use a styled backdrop or softened duplicate of the same image behind it so the empty bands feel designed instead of dead.
 
-## 2. What We Are Building
+## 2. What This System Does
 
-We are building a reusable template engine that:
+The current production system uses a reusable template engine that:
 
 1. takes a campaign's approved still images
 2. places them into a fixed vertical package
@@ -133,19 +133,53 @@ Use the media-generation preview to:
 The media-generation preview path matches the final render coordinate system (1080×1920) — no design-canvas indirection.
 The preview includes a sequence planner that cycles the three presets across multiple beats so you can shape the final flow before live TikTok generation.
 
-## 11. Build Order
+## 11. Operating Order
 
-1. Refine the reusable template in the preview.
-2. Render preview clips from approved stills.
-3. Review the preview.
-4. Lock the template.
-5. Reuse the template across campaigns by swapping image and copy inputs.
+1. Refine the reusable template in the preview when the layout system needs work.
+2. Render preview clips from approved stills when validating the package.
+3. Review and lock the template behavior.
+4. Run the late-stage TikTok promotion synthesis pass against the mature campaign state.
+5. Reuse the template across campaigns by swapping image inputs and synthesized beat copy.
 
-## 12. Handoff Rule
+## 11A. Late-Stage Promotion Synthesis
 
-When the template looks good:
+The sequence should not be built from one or two early slogans repeated across every beat.
+
+For production TikTok, treat the overlay language as a late-stage promotion synthesis layer:
+
+- the campaign should already be substantially built before the final TikTok package copy is generated
+- the TikTok system should harvest the strongest phrases, tensions, proof points, and CTA language from the campaign's mature state
+- the reusable part is the layout grammar and beat roles, not a tiny fixed text bundle
+
+Preferred source order for production beat copy:
+
+1. a dedicated late-stage TikTok promotion package created after scenes, designed ads, and audio are in good shape
+2. approved campaign brief messaging and social concepts
+3. production-bible storyboard and narration material
+4. manifest copy and designed-ad language
+
+Production rule:
+
+- there is no fallback copy path for production TikTok renders
+- the reusable system should render from the synthesized TikTok promotion package only
+- if the package is missing, too thin, or fails to generate, the TikTok render should fail rather than recycle early brief-era slogans
+
+Suggested output contract:
+
+- `role`: `hook`, `proof`, `social`, `payoff`, or `cta`
+- `headline`
+- `subline`
+- `spokenText`
+- optional `badge`
+- optional `cta`
+- optional `sceneHint`
+
+## 12. Maintenance Rule
+
+Once the template behavior is settled:
 
 - document the template decision in the TikTok production plan
 - update the TikTok agent instructions
 - update the campaign generation skill so later agents follow the same flow
 - stop using live generation as a design lab
+- keep the late-stage promotion synthesis step separate from early discovery and brief speculation

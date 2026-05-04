@@ -1,18 +1,20 @@
-import type { CampaignAestheticBrief } from '../../../schema';
+import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage } from '../../../schema';
 import {
     buildOrganicSeedShotPrompts,
-    buildOrganicSeedOverlayCards,
     ORGANIC_SEED_TARGET_DURATION_SECONDS,
     ORGANIC_SEED_SHOTS,
 } from './organic-seed';
 import {
     buildPaidVariantShotPrompts,
-    buildPaidVariantOverlayCards,
     PAID_VARIANT_TARGET_DURATION_SECONDS,
     PAID_VARIANT_SHOTS,
 } from './paid-variant';
-import type { Storyboard } from '../../../schema';
 import type { TikTokOverlayCardSpec } from '../tiktok-overlay-cards';
+import {
+    buildPackageSequenceBeats,
+    flattenSequenceBeatsToPrimaryOverlays,
+    type TikTokSequenceBeat,
+} from './package-template';
 
 export type TikTokFormatId = 'organic_seed' | 'paid_variant';
 
@@ -24,7 +26,24 @@ export interface TikTokFormatSpec {
     /** Distribution tag applied to the asset record — used by the lint gate and publishing adapter. */
     distributionTag: 'organic' | 'paid';
     buildShotPrompts: (brief: CampaignAestheticBrief) => string[];
-    buildOverlayCards: (brief: CampaignAestheticBrief, storyboard?: Storyboard) => TikTokOverlayCardSpec[];
+    /**
+     * Manifest-driven sequence beats — multi-overlay + brand lockup per beat.
+     * Promotion package is the required copy source for production TikTok render.
+     */
+    buildSequenceBeats: (
+        brief: CampaignAestheticBrief,
+        storyboard?: Storyboard,
+        promotionPackage?: TikTokPromotionPackage | null,
+    ) => TikTokSequenceBeat[];
+    /**
+     * Flat overlay list for the motion-clip path (one prominent card per shot).
+     * Derived from `buildSequenceBeats` so the two paths stay in lockstep.
+     */
+    buildOverlayCards: (
+        brief: CampaignAestheticBrief,
+        storyboard?: Storyboard,
+        promotionPackage?: TikTokPromotionPackage | null,
+    ) => TikTokOverlayCardSpec[];
 }
 
 const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
@@ -34,7 +53,20 @@ const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
     renderMode: 'static_package',
     distributionTag: 'organic',
     buildShotPrompts: buildOrganicSeedShotPrompts,
-    buildOverlayCards: buildOrganicSeedOverlayCards,
+    buildSequenceBeats: (brief, storyboard, promotionPackage) =>
+        buildPackageSequenceBeats(
+            brief,
+            storyboard,
+            { beatCount: ORGANIC_SEED_SHOTS.length, targetDurationSeconds: ORGANIC_SEED_TARGET_DURATION_SECONDS },
+            promotionPackage,
+        ),
+    buildOverlayCards: (brief, storyboard, promotionPackage) =>
+        flattenSequenceBeatsToPrimaryOverlays(
+            buildPackageSequenceBeats(brief, storyboard, {
+                beatCount: ORGANIC_SEED_SHOTS.length,
+                targetDurationSeconds: ORGANIC_SEED_TARGET_DURATION_SECONDS,
+            }, promotionPackage),
+        ),
 };
 
 const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
@@ -44,7 +76,20 @@ const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
     renderMode: 'static_package',
     distributionTag: 'paid',
     buildShotPrompts: buildPaidVariantShotPrompts,
-    buildOverlayCards: buildPaidVariantOverlayCards,
+    buildSequenceBeats: (brief, storyboard, promotionPackage) =>
+        buildPackageSequenceBeats(
+            brief,
+            storyboard,
+            { beatCount: PAID_VARIANT_SHOTS.length, targetDurationSeconds: PAID_VARIANT_TARGET_DURATION_SECONDS },
+            promotionPackage,
+        ),
+    buildOverlayCards: (brief, storyboard, promotionPackage) =>
+        flattenSequenceBeatsToPrimaryOverlays(
+            buildPackageSequenceBeats(brief, storyboard, {
+                beatCount: PAID_VARIANT_SHOTS.length,
+                targetDurationSeconds: PAID_VARIANT_TARGET_DURATION_SECONDS,
+            }, promotionPackage),
+        ),
 };
 
 const FORMAT_REGISTRY: Readonly<Record<TikTokFormatId, TikTokFormatSpec>> = {
@@ -93,5 +138,6 @@ export function inferTikTokFormat(deliverableId: string): TikTokFormatSpec {
     return ORGANIC_SEED_FORMAT;
 }
 
-export { buildOrganicSeedShotPrompts, buildOrganicSeedOverlayCards, ORGANIC_SEED_TARGET_DURATION_SECONDS };
-export { buildPaidVariantShotPrompts, buildPaidVariantOverlayCards, PAID_VARIANT_TARGET_DURATION_SECONDS };
+export { buildOrganicSeedShotPrompts, ORGANIC_SEED_TARGET_DURATION_SECONDS };
+export { buildPaidVariantShotPrompts, PAID_VARIANT_TARGET_DURATION_SECONDS };
+export type { TikTokSequenceBeat };

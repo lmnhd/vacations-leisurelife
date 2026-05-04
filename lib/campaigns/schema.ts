@@ -1186,6 +1186,30 @@ export const PlatformCaptionsSchema = z.object({
 });
 export type PlatformCaptions = z.infer<typeof PlatformCaptionsSchema>;
 
+// ── TikTok Promotion Synthesis ────────────────────────────────────────────────
+// Late-stage synthesized beat copy. Generated from the mature campaign state
+// (brief + storyboard + scene library) immediately before TikTok render.
+// Stored on the manifest so it can be inspected and regenerated independently.
+
+export const TikTokPromotionBeatSchema = z.object({
+    role: z.enum(['hook', 'proof', 'social', 'payoff', 'cta']),
+    headline: z.string(),
+    subline: z.string(),
+    spokenText: z.string(),
+    badge: z.string().optional(),
+    cta: z.string().optional(),
+    sceneHint: z.string().optional(),
+});
+export type TikTokPromotionBeat = z.infer<typeof TikTokPromotionBeatSchema>;
+
+export const TikTokPromotionPackageSchema = z.object({
+    synthesizedAt: z.string(),
+    strategySummary: z.string(),
+    extractionNotes: z.array(z.string()),
+    beats: z.array(TikTokPromotionBeatSchema).min(3).max(8),
+});
+export type TikTokPromotionPackage = z.infer<typeof TikTokPromotionPackageSchema>;
+
 export const CampaignMediaManifestSchema = z.object({
     slug: z.string(),
     generatedAt: z.string(),
@@ -1195,6 +1219,7 @@ export const CampaignMediaManifestSchema = z.object({
     selections: z.object({
         images: z.record(z.string(), ContextSelectionEntrySchema).default({}),
     }).optional(),
+    tiktokPromotionPackage: TikTokPromotionPackageSchema.optional(),
 
     images: z.object({
         shipReferences: z.array(AssetRecordSchema),
