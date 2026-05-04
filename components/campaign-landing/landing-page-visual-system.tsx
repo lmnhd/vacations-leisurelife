@@ -435,7 +435,7 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                 <StatusPanel landing={landing} theme={theme} accentHex={accentHex} />
             </SectionShell>
 
-            <SectionShell theme={theme} eyebrow="What to expect" title="The mood we are designing for" description={landing.subSlogan} accentHex={accentHex}>
+            <SectionShell theme={theme} eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel} title={`On board: ${landing.designSystem.sectionLabels[0] ?? landing.title}`} accentHex={accentHex}>
                 <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
             </SectionShell>
 

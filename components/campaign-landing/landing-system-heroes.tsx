@@ -231,7 +231,10 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
 // =============================================================================
 
 export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps) {
-    const heroImage = landing.heroImage;
+    const cardImage =
+        (landing.heroImage?.url ? landing.heroImage : null) ??
+        getImage(landing.galleryImages, 0) ??
+        getImage(landing.trustImages, 0);
     const accent = landing.designSystem.accentHex;
 
     return (
@@ -241,8 +244,8 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                 <div className="relative">
                     <div className="relative rotate-[-1.2deg] border-[14px] border-[#fff8e8] bg-[#fff8e8] p-2 shadow-[0_30px_70px_rgba(101,60,18,0.25)]">
                         <div className="aspect-[5/3] overflow-hidden bg-amber-200">
-                            {heroImage?.url ? (
-                                <div className="h-full w-full bg-cover bg-center sepia-[0.15] saturate-[0.9]" style={{ backgroundImage: `url(${heroImage.url})` }} />
+                            {cardImage?.url ? (
+                                <div className="h-full w-full bg-cover bg-center sepia-[0.15] saturate-[0.9]" style={{ backgroundImage: `url(${cardImage.url})` }} />
                             ) : (
                                 <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${accent}, #b16f24)` }} />
                             )}
