@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import type { CampaignLandingViewModel } from '@/lib/campaigns/landing/view-model';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,7 @@ type ChatPostResponse = ChatHistoryResponse & {
 
 interface LandingPageTourConductorProps {
     landing: CampaignLandingViewModel;
+    variant?: 'sidebar';
 }
 
 const SYSTEM_COPY: Record<CampaignLandingViewModel['designSystem']['system'], {
@@ -81,13 +82,15 @@ function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
     ];
 }
 
-export function LandingPageTourConductor({ landing }: LandingPageTourConductorProps) {
+export function LandingPageTourConductor({ landing, variant }: LandingPageTourConductorProps) {
     const copy = SYSTEM_COPY[landing.designSystem.system];
     const [messages, setMessages] = useState<ChatMessage[]>(() => fallbackMessages(landing));
     const [message, setMessage] = useState('');
     const [signedUp, setSignedUp] = useState(false);
     const [error, setError] = useState('');
     const [isPending, startTransition] = useTransition();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const accentHex = landing.designSystem.accentHex;
 
     useEffect(() => {
         let alive = true;
@@ -101,7 +104,7 @@ export function LandingPageTourConductor({ landing }: LandingPageTourConductorPr
                     setMessages(data.messages);
                 }
             } catch {
-                // The seeded local conversation is still useful if persistence is unavailable.
+                // Seeded local conversation still useful if persistence is unavailable.
             }
         }
 
@@ -113,6 +116,13 @@ export function LandingPageTourConductor({ landing }: LandingPageTourConductorPr
             window.clearInterval(interval);
         };
     }, [landing.designSystem.chat.endpoint]);
+
+    // Scroll to bottom whenever messages update
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     async function sendMessage() {
         const trimmed = message.trim();
@@ -150,12 +160,119 @@ export function LandingPageTourConductor({ landing }: LandingPageTourConductorPr
         });
     }
 
+    const messageThread = (
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((item) => (
+                <div key={item.id} className={item.role === 'assistant' ? 'pr-6' : 'pl-6'}>
+                    <div
+                        className={`p-3.5 border ${item.role === 'assistant' ? copy.badge : 'border-current/10 bg-white/70 text-slate-950'}`}
+                        style={item.role === 'assistant' ? { borderLeftWidth: 3, borderLeftColor: accentHex } : undefined}
+                    >
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] opacity-60">{item.displayName}</p>
+                            {item.isStarterMessage && (
+                                <span className="text-[9px] uppercase tracking-[0.18em] opacity-40">Starter</span>
+                            )}
+                        </div>
+                        <p className="text-sm leading-[1.72]">{item.content}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
+    const inputArea = (
+        <div className="border-t border-current/15 p-4 shrink-0">
+            {!signedUp ? (
+                <div className={`border p-4 ${copy.badge}`}>
+                    <p className="text-xs leading-5 opacity-80 mb-3">{landing.designSystem.chat.signedOutMessage}</p>
+                    <Button
+                        type="button"
+                        className="w-full rounded-none text-sm font-semibold"
+                        style={{ backgroundColor: accentHex, color: '#0f172a' }}
+                        onClick={() => setSignedUp(true)}
+                    >
+                        I joined updates · unlock chat
+                    </Button>
+                </div>
+            ) : (
+                <div className="grid gap-2">
+                    <Textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Ask about the sailing, progress, cabin timing, or suggest an onboard idea..."
+                        className={`min-h-[80px] rounded-none text-sm ${copy.input}`}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { void sendMessage(); } }}
+                    />
+                    {error && <p className="text-xs text-red-500">{error}</p>}
+                    <Button
+                        type="button"
+                        disabled={isPending || !message.trim()}
+                        onClick={sendMessage}
+                        className="rounded-none text-sm font-semibold"
+                        style={{ backgroundColor: accentHex, color: '#0f172a' }}
+                    >
+                        {isPending ? 'Conductor is writing...' : 'Send to shared thread'}
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+
+    // ── Sidebar variant ────────────────────────────────────────────────────────
+    if (variant === 'sidebar') {
+        return (
+            <div
+                className={`flex flex-col overflow-hidden border ${copy.shell}`}
+                style={{ height: 'calc(100vh - 5rem)' }}
+            >
+                <div className="shrink-0 border-b border-current/15 p-5">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className={`inline-flex border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.26em] ${copy.badge}`}>
+                            {copy.label}
+                        </span>
+                        <span
+                            className="border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.22em]"
+                            style={{ borderColor: accentHex, color: accentHex }}
+                        >
+                            {landing.threshold.percentOfThreshold}% filled
+                        </span>
+                    </div>
+                    <h2 className="text-2xl font-black leading-tight">
+                        Ask the {landing.designSystem.chat.title}.
+                    </h2>
+                    <p className="mt-1.5 text-xs leading-5 opacity-55">
+                        Shared public thread · {landing.threshold.joinedPassengers} guests · read the history, then join the conversation.
+                    </p>
+                </div>
+
+                {messageThread}
+
+                {inputArea}
+
+                <div className={`shrink-0 border-t border-current/15 grid grid-cols-2 gap-0 divide-x divide-current/15 ${copy.badge}`}>
+                    <div className="p-3.5">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] opacity-45 mb-1">Guests represented</p>
+                        <p className="text-base font-black leading-tight" style={{ color: accentHex }}>
+                            {landing.threshold.joinedPassengers}
+                        </p>
+                    </div>
+                    <div className="p-3.5">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] opacity-45 mb-1">{landing.designSystem.chat.eyebrow}</p>
+                        <p className="text-xs leading-4 opacity-65 italic line-clamp-2">{landing.designSystem.quote}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Full-width variant (mobile / standalone) ───────────────────────────────
     return (
         <section id="tour-conductor" className="mx-auto w-full max-w-7xl px-4 py-14 md:px-6 lg:px-8">
             <div className={`relative overflow-hidden border p-5 md:p-7 ${copy.shell}`}>
                 <div
                     className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full opacity-25 blur-2xl"
-                    style={{ backgroundColor: landing.designSystem.accentHex }}
+                    style={{ backgroundColor: accentHex }}
                 />
                 <div className="relative grid gap-7 lg:grid-cols-[0.85fr_1.15fr]">
                     <div className="flex flex-col justify-between gap-6">
@@ -185,56 +302,8 @@ export function LandingPageTourConductor({ landing }: LandingPageTourConductorPr
                     </div>
 
                     <div className="relative grid min-h-[520px] grid-rows-[1fr_auto] overflow-hidden border border-current/20 bg-black/5">
-                        <div className="grid max-h-[430px] gap-4 overflow-y-auto p-4 md:p-5">
-                            {messages.map((item) => (
-                                <div key={item.id} className={item.role === 'assistant' ? 'pr-8' : 'pl-8'}>
-                                    <div className={`border p-4 ${item.role === 'assistant' ? copy.badge : 'border-current/10 bg-white/70 text-slate-950'}`}>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">{item.displayName}</p>
-                                            {item.isStarterMessage && (
-                                                <span className="text-[10px] uppercase tracking-[0.18em] opacity-50">Starter</span>
-                                            )}
-                                        </div>
-                                        <p className="mt-3 text-sm leading-7">{item.content}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="border-t border-current/20 p-4 md:p-5">
-                            {!signedUp ? (
-                                <div className={`grid gap-3 border p-4 ${copy.badge}`}>
-                                    <p className="text-sm leading-6">{landing.designSystem.chat.signedOutMessage}</p>
-                                    <Button
-                                        type="button"
-                                        className="w-full rounded-none font-semibold"
-                                        style={{ backgroundColor: landing.designSystem.accentHex, color: '#0f172a' }}
-                                        onClick={() => setSignedUp(true)}
-                                    >
-                                        I joined updates, unlock chat
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="grid gap-3">
-                                    <Textarea
-                                        value={message}
-                                        onChange={(event) => setMessage(event.target.value)}
-                                        placeholder="Ask about the sailing, progress, cabin timing, or suggest an onboard idea..."
-                                        className={`min-h-[96px] rounded-none ${copy.input}`}
-                                    />
-                                    {error && <p className="text-sm text-red-500">{error}</p>}
-                                    <Button
-                                        type="button"
-                                        disabled={isPending || !message.trim()}
-                                        onClick={sendMessage}
-                                        className="rounded-none font-semibold"
-                                        style={{ backgroundColor: landing.designSystem.accentHex, color: '#0f172a' }}
-                                    >
-                                        {isPending ? 'Conductor is writing...' : 'Send to shared thread'}
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                        {messageThread}
+                        {inputArea}
                     </div>
                 </div>
             </div>

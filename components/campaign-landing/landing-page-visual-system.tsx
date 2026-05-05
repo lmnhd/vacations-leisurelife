@@ -6,12 +6,12 @@ import type {
     LandingFaqItem,
     LandingImageAsset,
     LandingPathChoice,
-    LandingStorySection,
 } from '@/lib/campaigns/landing/view-model';
 import { Button } from '@/components/ui/button';
 import { CampaignWaitlistForm } from '@/components/campaign-landing/waitlist-form';
 import { LandingPageTourConductor } from '@/components/campaign-landing/landing-page-tour-conductor';
 import { EditorialHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
+import { Itinerary } from '@/components/campaign-landing/landing-system-itinerary';
 import { alfa_slab_one, orbitron, prompt } from '@/lib/fonts';
 
 interface CampaignLandingPageVisualSystemProps {
@@ -169,86 +169,40 @@ function SectionShell({ theme, eyebrow, title, description, children, alt, accen
     );
 }
 
-// ── Itinerary / How It Works (system-specific layouts) ───────────────────────
-
-function ItineraryEditorial({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
+function InnerSection({ theme, eyebrow, title, description, children, accentHex }: Omit<SectionShellProps, 'alt'>) {
     return (
-        <ol className={`divide-y ${theme.rule} border-y ${theme.rule}`}>
-            {steps.map((step, i) => (
-                <li key={step.title} className="grid gap-6 py-6 md:grid-cols-[5rem_1fr_2fr]">
-                    <span className={`${alfa_slab_one.className} text-5xl leading-none`} style={{ color: accentHex }}>{String(i + 1).padStart(2, '0')}</span>
-                    <h3 className={`font-serif text-xl italic ${theme.pageText}`}>{step.title.replace(/^\d+\.\s*/, '')}</h3>
-                    <p className={`text-base leading-7 ${theme.softText}`}>{step.body}</p>
-                </li>
-            ))}
-        </ol>
+        <div className={`border-t ${theme.rule} py-12 md:py-16`}>
+            <header className="max-w-2xl mb-8">
+                <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>{eyebrow}</p>
+                <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{title}</h2>
+                {description && <p className={`mt-4 text-base leading-7 ${theme.softText}`}>{description}</p>}
+            </header>
+            {children}
+        </div>
     );
 }
 
-function ItineraryNostalgia({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
+// ── Atmospheric photo strip ─────────────────────────────────────────────────
+
+function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: SystemKey }) {
+    const active = images.filter((img) => img.url).slice(0, 4);
+    if (active.length === 0) return null;
+    const filter = system === 'system_1_editorial' ? 'grayscale(0.2) contrast(1.05) saturate(0.85)'
+        : system === 'system_2_nostalgia' ? 'sepia(0.18) saturate(0.9)'
+        : system === 'system_3_zine' ? 'contrast(1.08) saturate(1.08)'
+        : 'saturate(0.65) brightness(0.75)';
     return (
-        <div className="grid gap-5">
-            {steps.map((step, i) => (
-                <div key={step.title} className={`relative grid gap-4 border border-dashed border-amber-900/40 bg-[#fff8e8] p-5 shadow-[0_14px_36px_rgba(120,73,24,0.14)] md:grid-cols-[7rem_1fr]`}>
-                    <div className="border-r border-dashed border-amber-900/30 pr-4">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-900/60">Stamp {i + 1}</p>
-                        <p className={`${alfa_slab_one.className} mt-2 text-3xl`} style={{ color: accentHex }}>№{i + 1}</p>
-                    </div>
-                    <div>
-                        <p className={`font-serif text-xl italic ${theme.pageText}`}>{step.title.replace(/^\d+\.\s*/, '')}</p>
-                        <p className={`mt-2 text-sm leading-7 ${theme.softText}`}>{step.body}</p>
-                    </div>
+        <div className="grid overflow-hidden" style={{ gridTemplateColumns: `repeat(${active.length}, 1fr)`, height: 148 }}>
+            {active.map((img, i) => (
+                <div key={i} className="relative overflow-hidden">
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
+                        style={{ backgroundImage: `url(${img.url})`, filter }}
+                    />
                 </div>
             ))}
         </div>
     );
-}
-
-function ItineraryZine({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
-    return (
-        <div className="border-2 border-zinc-950 bg-[#fff9e8] shadow-[8px_8px_0_rgba(0,0,0,0.85)]">
-            <div className="border-b-2 border-zinc-950 bg-zinc-950 px-5 py-3">
-                <p className={`${orbitron.className} text-sm font-black uppercase tracking-[0.32em] text-[#fff9e8]`}>SIDE B — TRACKLIST</p>
-            </div>
-            <ol className="divide-y-2 divide-dashed divide-zinc-950/30">
-                {steps.map((step, i) => (
-                    <li key={step.title} className="grid gap-2 px-5 py-4 md:grid-cols-[3.5rem_1fr]">
-                        <span className={`${orbitron.className} text-3xl font-black`} style={{ color: accentHex }}>{String(i + 1).padStart(2, '0')}</span>
-                        <div>
-                            <p className={`${orbitron.className} text-base font-black uppercase tracking-tight ${theme.pageText}`}>
-                                {step.title.replace(/^\d+\.\s*/, '')}
-                            </p>
-                            <p className={`mt-1 text-sm leading-6 ${theme.softText}`}>{step.body}</p>
-                        </div>
-                    </li>
-                ))}
-            </ol>
-        </div>
-    );
-}
-
-function ItineraryModular({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
-    return (
-        <div className="grid gap-4 md:grid-cols-3">
-            {steps.map((step, i) => (
-                <div key={step.title} className={`${theme.surface} relative p-6`}>
-                    <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-white/45">Step {String(i + 1).padStart(2, '0')}</span>
-                        <span className="block h-1 w-8" style={{ backgroundColor: accentHex }} />
-                    </div>
-                    <h3 className={`mt-5 text-xl font-bold ${theme.pageText}`}>{step.title.replace(/^\d+\.\s*/, '')}</h3>
-                    <p className={`mt-3 text-sm leading-7 ${theme.softText}`}>{step.body}</p>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function Itinerary({ system, steps, theme, accentHex }: { system: SystemKey; steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
-    if (system === 'system_1_editorial') return <ItineraryEditorial steps={steps} theme={theme} accentHex={accentHex} />;
-    if (system === 'system_2_nostalgia') return <ItineraryNostalgia steps={steps} theme={theme} accentHex={accentHex} />;
-    if (system === 'system_3_zine') return <ItineraryZine steps={steps} theme={theme} accentHex={accentHex} />;
-    return <ItineraryModular steps={steps} theme={theme} accentHex={accentHex} />;
 }
 
 // ── Generic styled sections ──────────────────────────────────────────────────
@@ -263,7 +217,7 @@ function StatusPanel({ landing, theme, accentHex }: { landing: CampaignLandingVi
                 <p className={`mt-3 text-sm leading-7 ${theme.softText}`}>{landing.threshold.detail}</p>
                 <div className="mt-6">
                     <div className={`relative h-2 w-full overflow-hidden ${theme.cardBorder} border`}>
-                        <div className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, backgroundColor: accentHex }} />
+                        <div className="absolute inset-y-0 left-0 transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: accentHex }} />
                     </div>
                     <div className={`mt-3 flex items-center justify-between text-xs ${theme.softerText}`}>
                         <span>{landing.threshold.joinedPassengers} guests · {landing.threshold.joinedEntries} entries</span>
@@ -281,77 +235,21 @@ function StatusPanel({ landing, theme, accentHex }: { landing: CampaignLandingVi
     );
 }
 
-function Gallery({ images, theme, system }: { images: LandingImageAsset[]; theme: SystemTheme; system: SystemKey }) {
-    if (images.length === 0) return null;
-    if (system === 'system_3_zine') {
-        return (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {images.slice(0, 6).map((img, i) => {
-                    const tilt = ['rotate-[-2deg]', 'rotate-[1.5deg]', 'rotate-[-1deg]', 'rotate-[2deg]', 'rotate-[-2.5deg]', 'rotate-[1deg]'][i] ?? '';
-                    return (
-                        <div key={img.url} className={`${tilt} border-[10px] border-white bg-white p-1 shadow-[8px_8px_0_rgba(0,0,0,0.85)]`}>
-                            <div className="aspect-square overflow-hidden bg-zinc-200">
-                                <div className="h-full w-full bg-cover bg-center contrast-[1.05]" style={{ backgroundImage: `url(${img.url})` }} />
-                            </div>
-                            <p className="px-2 py-2 text-center font-mono text-[10px] uppercase tracking-wider text-zinc-700">deck note {String(i + 1).padStart(2, '0')}</p>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    }
-    if (system === 'system_2_nostalgia') {
-        return (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {images.slice(0, 6).map((img, i) => (
-                    <div key={img.url} className={`${i % 2 === 0 ? 'rotate-[-1deg]' : 'rotate-[1deg]'} border-[10px] border-[#fff8e8] bg-[#fff8e8] p-1 shadow-[0_14px_40px_rgba(120,73,24,0.18)]`}>
-                        <div className="aspect-[4/3] overflow-hidden bg-amber-200">
-                            <div className="h-full w-full bg-cover bg-center sepia-[0.1]" style={{ backgroundImage: `url(${img.url})` }} />
-                        </div>
-                        <p className="px-2 py-3 text-center font-serif text-sm italic text-amber-900/70">{img.alt}</p>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-    if (system === 'system_1_editorial') {
-        return (
-            <div className="grid gap-8 lg:grid-cols-3">
-                {images.slice(0, 6).map((img, i) => (
-                    <figure key={img.url} className="space-y-3">
-                        <div className="aspect-[4/5] overflow-hidden border border-stone-400/50 bg-stone-200 grayscale-[0.15]">
-                            <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${img.url})` }} />
-                        </div>
-                        <figcaption className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-500">
-                            Plate {String(i + 1).padStart(2, '0')} — {img.alt}
-                        </figcaption>
-                    </figure>
-                ))}
-            </div>
-        );
-    }
-    return (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {images.slice(0, 6).map((img) => (
-                <div key={img.url} className={`${theme.cardBorder} border bg-white/[0.03]`}>
-                    <div className="aspect-[4/3] overflow-hidden">
-                        <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${img.url})` }} />
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
 function ExperienceList({ items, theme, accentHex }: { items: string[]; theme: SystemTheme; accentHex: string }) {
     return (
         <div className="grid gap-4 md:grid-cols-2">
             {items.map((item, i) => (
-                <div key={i} className={`${theme.surface} flex items-start gap-4 p-5`}>
-                    <span className={`${theme.eyebrowFont} mt-1 inline-block min-w-8 text-sm font-bold`} style={{ color: accentHex }}>
+                <div key={i} className={`${theme.surface} relative flex items-start gap-4 overflow-hidden p-5`}>
+                    <span
+                        className="pointer-events-none absolute -bottom-3 -right-1 select-none font-mono text-8xl font-black"
+                        style={{ color: accentHex, opacity: 0.06 }}
+                    >
                         {String(i + 1).padStart(2, '0')}
                     </span>
-                    <p className={`text-sm leading-7 ${theme.softText}`}>{item}</p>
+                    <span className={`${theme.eyebrowFont} mt-1 shrink-0 text-sm font-bold`} style={{ color: accentHex }}>
+                        {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className={`relative z-10 text-sm leading-7 ${theme.softText}`}>{item}</p>
                 </div>
             ))}
         </div>
@@ -416,6 +314,7 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
     const accentHex = landing.designSystem.accentHex;
     const pageStyle: CSSProperties = { ['--accent' as string]: accentHex };
     const { primaryHref, secondaryHref } = resolveCtaHrefs(landing, primaryHrefProp, secondaryHrefProp);
+    const images = landing.galleryImages.filter((img) => img.url.trim().length > 0);
 
     return (
         <div className={`${prompt.className} min-h-screen ${theme.pageBg}`} style={pageStyle}>
@@ -431,40 +330,122 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                 <FactsRail facts={landing.facts} theme={theme} accentHex={accentHex} />
             </SectionShell>
 
-            <SectionShell theme={theme} eyebrow="Group Progress" title="Where this sailing stands today" accentHex={accentHex} alt>
-                <StatusPanel landing={landing} theme={theme} accentHex={accentHex} />
-            </SectionShell>
+            {/* Atmospheric photo strip — photos spread across the page, no gallery section */}
+            <PhotoStrip images={images} system={system} />
 
-            <SectionShell theme={theme} eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel} title={`On board: ${landing.designSystem.sectionLabels[0] ?? landing.title}`} accentHex={accentHex}>
-                <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
-            </SectionShell>
+            {/* Two-column layout: main content left | Tour Conductor sticky sidebar right */}
+            <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8">
+                <div className="grid lg:grid-cols-[1fr_390px] lg:items-start">
 
-            {landing.galleryImages.length > 0 && (
-                <SectionShell theme={theme} eyebrow="Field Plates" title="What this voyage looks like" accentHex={accentHex} alt>
-                    <Gallery images={landing.galleryImages} theme={theme} system={system} />
-                </SectionShell>
-            )}
+                    {/* Left: main content column */}
+                    <div className={`lg:border-r ${theme.rule} lg:pr-10`}>
 
-            <SectionShell theme={theme} eyebrow="How it works" title="Three steps from interest to booking" accentHex={accentHex}>
-                <Itinerary system={system} steps={landing.story.howItWorks} theme={theme} accentHex={accentHex} />
-            </SectionShell>
+                        <InnerSection theme={theme} eyebrow="Group Progress" title="Where this sailing stands today" accentHex={accentHex}>
+                            <StatusPanel landing={landing} theme={theme} accentHex={accentHex} />
+                        </InnerSection>
 
-            <SectionShell theme={theme} eyebrow="Choose your pace" title="Two ways to join this sailing" accentHex={accentHex} alt>
-                <PathChoices choices={landing.bookingPathChoices} theme={theme} accentHex={accentHex} />
-            </SectionShell>
+                        <InnerSection
+                            theme={theme}
+                            eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel}
+                            title={`On board: ${landing.designSystem.sectionLabels[0] ?? landing.title}`}
+                            accentHex={accentHex}
+                        >
+                            <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
+                        </InnerSection>
 
-            <SectionShell theme={theme} eyebrow="Why now" title="Reasons to raise your hand early" accentHex={accentHex}>
-                <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
-                    {landing.story.whyJoinNow.map((reason, i) => (
-                        <li key={i} className={`${theme.surface} relative p-5`}>
-                            <span className="absolute right-4 top-3 font-mono text-[9px] uppercase tracking-[0.3em]" style={{ color: accentHex }}>0{i + 1}</span>
-                            <p className={`pr-8 text-sm leading-7 ${theme.softText}`}>{reason}</p>
-                        </li>
-                    ))}
-                </ul>
-            </SectionShell>
+                        {/* Inline photo + pull quote — atmosphere between content sections */}
+                        {images.length >= 2 && (
+                            <div className={`relative h-52 overflow-hidden border-t border-b ${theme.rule}`}>
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${images[1]?.url})` }}
+                                />
+                                <div className={`absolute inset-0 ${system === 'system_4_modular' ? 'bg-black/60' : 'bg-black/35'}`} />
+                                <div className="relative z-10 flex h-full items-center px-8 md:px-10">
+                                    <blockquote>
+                                        <p className="max-w-xl text-xl font-medium italic leading-8 text-white/90">
+                                            &ldquo;{landing.designSystem.quote}&rdquo;
+                                        </p>
+                                        <cite className="mt-3 block text-[10px] font-semibold uppercase not-italic tracking-[0.28em] text-white/50">
+                                            {landing.designSystem.quoteCite}
+                                        </cite>
+                                    </blockquote>
+                                </div>
+                            </div>
+                        )}
 
-            <LandingPageTourConductor landing={landing} />
+                        <InnerSection theme={theme} eyebrow="How it works" title="Three steps from interest to booking" accentHex={accentHex}>
+                            <Itinerary system={system} steps={landing.story.howItWorks} theme={theme} accentHex={accentHex} />
+                        </InnerSection>
+
+                        <InnerSection theme={theme} eyebrow="Choose your pace" title="Two ways to join this sailing" accentHex={accentHex}>
+                            <PathChoices choices={landing.bookingPathChoices} theme={theme} accentHex={accentHex} />
+                        </InnerSection>
+
+                        <InnerSection theme={theme} eyebrow="Why now" title="Reasons to raise your hand early" accentHex={accentHex}>
+                            <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
+                                {landing.story.whyJoinNow.map((reason, i) => (
+                                    <li key={i} className={`${theme.surface} relative overflow-hidden p-5`}>
+                                        <span
+                                            className="pointer-events-none absolute -bottom-4 -right-2 select-none font-mono text-9xl font-black"
+                                            style={{ color: accentHex, opacity: 0.07 }}
+                                        >
+                                            {String(i + 1).padStart(2, '0')}
+                                        </span>
+                                        <div className="flex items-start gap-3">
+                                            <span className={`${theme.eyebrowFont} mt-0.5 shrink-0 text-2xl font-black leading-none`} style={{ color: accentHex }}>
+                                                {String(i + 1).padStart(2, '0')}
+                                            </span>
+                                            <p className={`text-sm leading-7 ${theme.softText}`}>{reason}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </InnerSection>
+
+                        {/* Second inline photo accent */}
+                        {images.length >= 3 && (
+                            <div className={`grid gap-0 border-t ${theme.rule}`} style={{ gridTemplateColumns: '2fr 1fr', height: 120 }}>
+                                {[images[2], images[3] ?? images[0]].filter(Boolean).map((img, i) => (
+                                    <div key={i} className="relative overflow-hidden">
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center transition-transform duration-500 hover:scale-105"
+                                            style={{
+                                                backgroundImage: `url(${img?.url})`,
+                                                filter: system === 'system_4_modular' ? 'saturate(0.6) brightness(0.7)' : 'saturate(0.85)',
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <InnerSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex}>
+                            <FaqList items={landing.faq} theme={theme} />
+                        </InnerSection>
+
+                        <InnerSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex}>
+                            <ul className="grid gap-3 md:grid-cols-2">
+                                {landing.trustBullets.map((bullet, i) => (
+                                    <li key={i} className={`${theme.surface} p-5`}>
+                                        <p className={`text-sm leading-7 ${theme.softText}`}>{bullet}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </InnerSection>
+                    </div>
+
+                    {/* Right: Tour Conductor sticky sidebar (desktop only) */}
+                    <div className="hidden lg:flex lg:sticky lg:top-6 lg:flex-col lg:pl-8 lg:pt-14">
+                        <LandingPageTourConductor landing={landing} variant="sidebar" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile: Tour Conductor full-width (shown only below lg) */}
+            <div className="lg:hidden">
+                <LandingPageTourConductor landing={landing} />
+            </div>
 
             {landing.form.enabled && (
                 <SectionShell theme={theme} eyebrow="Save your place" title="Hold a spot for this sailing" description="No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens." accentHex={accentHex}>
@@ -479,20 +460,6 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                     </div>
                 </SectionShell>
             )}
-
-            <SectionShell theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} alt>
-                <ul className={`grid gap-3 md:grid-cols-3`}>
-                    {landing.trustBullets.map((bullet, i) => (
-                        <li key={i} className={`${theme.surface} p-5`}>
-                            <p className={`text-sm leading-7 ${theme.softText}`}>{bullet}</p>
-                        </li>
-                    ))}
-                </ul>
-            </SectionShell>
-
-            <SectionShell theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex}>
-                <FaqList items={landing.faq} theme={theme} />
-            </SectionShell>
 
             <section className={`border-t ${theme.rule}`}>
                 <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-6 lg:px-8">
