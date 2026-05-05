@@ -122,6 +122,128 @@ The following issues have been encountered repeatedly across campaigns. Agents m
 - **Campaign-flow rule:** When any phase yields a persistent warning after one repair pass, stop at the phase boundary, summarize the gap, and request a user decision. Do not let the agent drift into the next phase to "see if it gets better there." The point is to fix the right layer or escalate, not to bury the mismatch downstream.
 - **Recommended next implementation fix:** Add a dedicated scene-probe loop that renders one cheap probe per `productionBible.sceneLibrary` scene and gates `scene_image` generation against that result. Keep landing-still probes for hero/concept stills.
 
+## 1b. Campaign Directive System (Surgical Changes)
+
+**Purpose:** The directive system lets an agent (or human) express editorial intent in natural language, resolve it to concrete field overrides, mark only the affected assets stale, and regenerate only those assets — without re-running the full ~100s brief pipeline.
+
+**When to use it:**
+- A specific scene image needs a prop or lighting change (e.g. "Change scene_003 to show a vinyl record on the bar rail instead of dice").
+- A hero still needs a composition tweak (e.g. "Hero 2 should show the game box spine on the café shelf, not generic dice").
+- Prop families or allowed/discouraged props need updating across heroes, concepts, and documentary details.
+- Any case where `"sceneImageMode": "all"` would regenerate the entire pool just to fix one or two images.
+
+**When NOT to use it:**
+- The production bible itself is missing or has empty `imagePrompt` fields — fix upstream via brief re-generation first.
+- The campaign needs a full aesthetic pivot (energy mode, color palette, slogan) — re-run the brief engine instead.
+
+### Two-Step API Flow
+
+**Step 1 — Create the directive (resolves text → concrete patch, marks assets stale):**
+```bash
+curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives \
+  -H "Content-Type: application/json" \
+  -d '{ "text": "Make scene_003 show a vinyl record on the bar rail, keep sunset deck lighting" }'
+```
+Response includes `directive.id`, `affectedCount`, and inferred `scope`.
+
+**Step 2 — Apply the directive (regenerates only stale assets):**
+```bash
+curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives/[id]/apply
+```
+
+The apply step merges all previously applied directives into a single patch, patches the brief, runs only the generators for the affected scopes, clears stale flags, and saves the patched brief back to DynamoDB.
+
+### Directive Scopes
+
+| Scope | What gets invalidated | What re-runs |
+|-------|-----------------------|--------------|
+| `heroes` | `manifest.images.hero` | `generateHeroImages()` |
+| `concepts` | `manifest.images.aestheticConcepts` | `generateAestheticConcepts()` |
+| `scenes` | `manifest.images.sceneImages` | `generateSceneImages()` |
+| `documentary_details` | `manifest.images.documentaryDetails` | documentary prompt builder + designed-ad source modules |
+| `designed_ads` | `manifest.images.designedAdArtifacts` | ad template renderer (and its documentary detail ingredients) |
+| `still_bible` | `manifest.images.hero` | `generateHeroImages()` with patched stills |
+| `prop_families` | heroes + concepts + documentary_details | all three generators |
+
+Scope is inferred automatically from which patch fields are non-empty. The resolution agent (`lib/campaigns/directive-agent.ts`) handles the translation from natural language to `DirectivePatch` (`stillPatches`, `scenePatches`, `allowedProps`, `discouragedProps`, `propFamilies`, `nicheEnhancedMoments`).
+
+### Review the patch before applying
+
+After Step 1, check `directive.patch` in the response. Confirm the resolution agent understood the intent correctly:
+- `patch.scenePatches` should reference exact `sceneId` values from the production bible
+- `patch.allowedProps` should describe concrete, renderable objects (not category names)
+- `patch.propFamilies` should list specific physical items, not abstract concepts
+
+If the patch looks wrong, do **not** apply it. Create a new directive with more precise language.
+
+### Writing effective directive text
+
+Effective directives describe **what a camera would see or what an illustrator would draw**, not categories or concepts:
+
+| ❌ Too vague | ✅ Specific and renderable |
+|---|---|
+| "More board game energy" | "A half-finished Azul tile game on a teak café table with coffee cups, morning sea light" |
+| "Less spa-like" | "Remove robes, candles, and towel arrangements. Replace with casual indie wardrobe — denim, vintage tees, canvas bags" |
+| "Better lighting" | "Shift all hero stills to morning golden light through port-side lounge windows, not sunset or twilight" |
+| "Show the niche more" | "Add a Catan box spine visible on a café shelf in the background of the lounge still" |
+
+### Agent Discipline with Directives
+
+- **Prefer a directive over `"sceneImageMode":"all"`** when the change is targeted. Burning the full scene pool wastes credits and time.
+- **Verify the patch scope** in the create response. If you asked for a scene change but `scope` does not include `scenes`, the resolution agent misunderstood — inspect the `patch` and either rephrase the directive or apply it manually via `PATCH /api/groups/campaign/[slug]/brief`.
+- **Poll the manifest after apply** the same way you poll after video generation. The apply route returns immediately with a jobId; generation runs in the background.
+- **One repair pass rule still applies:** If a directive apply does not fix the issue (e.g. scene still lacks niche signal after regeneration), stop and escalate to the user. Do not chain multiple directives silently.
+
+### When Directives Fail — Manual Scene Patch Fallback
+
+The directive resolution agent (`lib/campaigns/directive-agent.ts`) can misinterpret scene-specific intent, translating "Change the atrium scene..." into `stillPatches` for hero stills instead of `scenePatches` for the production bible. This has been observed in production (May 2026). When it happens, the created directive has `scope` missing `scenes` and `patch.scenePatches` is empty.
+
+**Do NOT apply a mis-scoped directive.** It regenerates 18 unrelated assets and leaves the scene untouched.
+
+**Fallback workflow (verified):**
+
+1. **Delete the stale scene asset** from the manifest so it shows as missing:
+   ```powershell
+   $body = @{ assetId = "img_scene_atrium_003" } | ConvertTo-Json
+   Invoke-RestMethod -Uri "http://localhost:3000/api/groups/campaign/[slug]/media/manifest/scene-image-artifact" -Method DELETE -ContentType "application/json" -Body $body
+   ```
+
+2. **Fetch the current brief** via `GET /api/groups/campaign/[slug]/brief/readiness`. Extract `productionBible.sceneLibrary[].sceneId` to find the exact target record.
+
+3. **PATCH the brief** directly, updating the scene's `imagePrompt`, `subjectAction`, and `environmentDetails` fields:
+   ```powershell
+   $pb = $brief.brief.productionBible
+   $scene = $pb.sceneLibrary | Where-Object { $_.sceneId -eq "atrium" }
+   $scene.imagePrompt = "Ship atrium, sunset, glowing sunset light. Over-the-shoulder view of a multigenerational group gathered around a large wooden table... [full revised prompt]"
+   $scene.subjectAction = "feeling joy as a multigenerational group plays a piece-heavy board game together"
+   $scene.environmentDetails = "grand staircase with ocean view, large wooden table covered with colorful game pieces"
+   $body = @{ fieldEdits = @{ productionBible = $pb } } | ConvertTo-Json -Depth 10
+   Invoke-RestMethod -Uri "http://localhost:3000/api/groups/campaign/[slug]/brief" -Method PATCH -ContentType "application/json" -Body $body
+   ```
+
+4. **Re-approve** the brief:
+   ```powershell
+   Invoke-RestMethod -Uri "http://localhost:3000/api/groups/campaign/[slug]/brief/approve" -Method POST
+   ```
+
+5. **Regenerate with `missing_only`** so only the deleted scene re-runs:
+   ```powershell
+   $body = @{ assetTypes = @("scene_image"); sceneImageMode = "missing_only" } | ConvertTo-Json
+   Invoke-RestMethod -Uri "http://localhost:3000/api/groups/campaign/[slug]/media/generate" -Method POST -ContentType "application/json" -Body $body
+   ```
+
+6. **Poll the manifest** to confirm the new asset (`img_scene_atrium_001`) appears with the patched prompt in `promptUsed`.
+
+### Listing existing directives for a campaign
+
+```bash
+curl http://localhost:3000/api/groups/campaign/[slug]/directives
+```
+
+Returns all directives with their status (`pending`, `applied`, `failed`). Useful to audit what has already been changed and avoid conflicting patches.
+
+**Full reference:** `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/SURGICAL_MODIFICATIONS/CAMPAIGN_DIRECTIVES.md`
+
 ## 2. End-to-End Workflow
 
 The agent must follow these steps linearly. At the end of each major phase, the agent should pause and provide the local testing URL to the user so they can review the work visually. Ask the user if they wish to intervene, modify, or approve the transition to the next phase.
@@ -237,7 +359,9 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
   -d '{"assetTypes":["scene_image"],"sceneImageMode":"missing_only"}'
 ```
-`sceneImageMode: "missing_only"` skips scenes that already have an image in the manifest. Use `"all"` to regenerate everything (e.g. after a brief re-run or directive change).
+`sceneImageMode: "missing_only"` skips scenes that already have an image in the manifest. Use `"all"` to regenerate everything (e.g. after a full brief re-run).
+
+**Surgical scene changes:** If only one or a few scenes need revision, use a **Campaign Directive** (see §1b) instead of `"all"`. Create a directive targeting the specific `sceneId`, apply it, and only the affected scenes regenerate. This is cheaper, faster, and preserves existing assets that are already correct.
 
 **Important scope note:** A request to run "through scene images" stops here. It includes Step A (ship references), Step B (heroes + concepts), and Step C (scene images), but it does **not** include documentary detail modules or designed ads. Those belong to Step D and must be requested or executed explicitly if the goal is a full image pack.
 
@@ -477,98 +601,7 @@ curl -X PATCH http://localhost:3000/api/groups/campaign/[slug] \
 3. **Distribution plan** references valid assets and matches campaign tone
 4. **Campaign status** updated to `GATHERING_INTEREST`
 
-## 3. Campaign Directives â€” Targeted Artifact Fixes
-
-Use the Campaign Directive system to fix arbitrary issues in a campaign's generated media **without re-running the full brief pipeline (~100s)**. A directive expresses editorial intent in natural language, resolves it to concrete field overrides in one LLM call, marks only the affected assets stale, and regenerates only those assets.
-
-**Full reference:** `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/SURGICAL_MODIFICATIONS/CAMPAIGN_DIRECTIVES.md`
-
-### When to use a directive (not a full re-brief)
-
-Use a directive when the campaign brief is structurally sound but the generated images have a specific, correctable problem:
-
-- "The board game props are too generic â€” use Azul, Catan, and Ticket to Ride specifically"
-- "The hero images all feel like a spa retreat â€” enforce the after-hours electric energy"
-- "Remove the jazz bar interior from all hero stills, it reads as a music cruise not a board game cruise"
-- "The lighting in concept images is too dark â€” shift to morning light and warmer palette"
-- "The people in heroes look too corporate â€” wardrobe should feel indie and casual"
-
-Do NOT use a directive if the campaign brief itself is wrong (wrong niche temperature, wrong energy mode, wrong ship). For structural issues, re-run the brief via `enqueue-and-run-brief.ts`.
-
-### Step-by-step: applying a directive as an agent
-
-**Step 1 â€” Create the directive** (resolves intent â†’ patch, marks assets stale):
-
-```bash
-curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Make the board game props specific and renderable. Use Azul tile boards, Catan hex pieces, and Ticket to Ride train tokens as incidental background objects on cafÃ© tables, bar rails, and lounge armrests. No generic dice or playing cards."
-  }'
-```
-
-Response includes:
-- `directive.id` â€” needed for the apply call
-- `directive.scope` â€” which pools will be regenerated (`heroes`, `concepts`, `prop_families`, etc.)
-- `directive.patch` â€” the resolved field overrides (review this to confirm the agent understood correctly)
-- `affectedCount` â€” number of assets that will be regenerated
-
-**If `affectedCount` is 0:** the directive resolved to an empty patch. The instruction was too vague. Try again with more specific language naming concrete objects, placements, or lighting conditions.
-
-**Step 2 â€” Review the resolved patch** before applying. Check `directive.patch.allowedProps` and `directive.patch.stillPatches` to confirm the model understood the intent. If the patch looks wrong, do NOT apply â€” create a new directive with more precise language.
-
-**Step 3 â€” Apply the directive** (triggers regeneration of stale pools only):
-
-```bash
-curl -X POST http://localhost:3000/api/groups/campaign/[slug]/directives/[directive.id]/apply
-```
-
-Response includes:
-- `regenerated` â€” the new `AssetRecord[]` that were created
-- `directive.status` â€” `"applied"` on success, `"failed"` on error
-
-**Step 4 â€” Verify results:**
-
-Direct the user to review regenerated assets at:
-```
-http://localhost:3000/tests/media-generation
-```
-Navigate to the **Heroes & Concepts** tab. New assets will have `tags: ["hero", "directive:[id]"]` and `reviewStatus: "needs_review"`. The user approves or requests a follow-up directive.
-
-### Writing effective directive text
-
-Effective directives describe **what a camera would see or what an illustrator would draw**, not categories or concepts:
-
-| âŒ Too vague | âœ… Specific and renderable |
-|---|---|
-| "More board game energy" | "A half-finished Azul tile game on a teak cafÃ© table with coffee cups, morning sea light" |
-| "Less spa-like" | "Remove robes, candles, and towel arrangements. Replace with casual indie wardrobe â€” denim, vintage tees, canvas bags" |
-| "Better lighting" | "Shift all hero stills to morning golden light through port-side lounge windows, not sunset or twilight" |
-| "Show the niche more" | "Add a Catan box spine visible on a cafÃ© shelf in the background of the lounge still" |
-
-### Listing existing directives for a campaign
-
-```bash
-curl http://localhost:3000/api/groups/campaign/[slug]/directives
-```
-
-Returns all directives with their status (`pending`, `applied`, `failed`). Useful to audit what has already been changed and avoid conflicting patches.
-
-### What re-runs vs. what doesn't
-
-| Stage | Re-runs on directive apply? |
-|---|---|
-| Aesthetic engine (Pass 1/2/refinement) | âŒ Never |
-| Editors room (still bible, production bible) | âŒ Never |
-| Hero image generation | âœ… If scope includes `heroes` or `still_bible` |
-| Concept image generation | âœ… If scope includes `concepts` |
-| Scene image generation | âœ… If scope includes `scenes` |
-| Documentary details | âœ… If scope includes `documentary_details` |
-| Designed ad artifacts | âœ… If scope includes `designed_ads` |
-
----
-
-## 4. Tooling & API Guidance
+## 3. Tooling & API Guidance
 
 Always use the shared `lib/agent-api` orchestrator for durable state.
 

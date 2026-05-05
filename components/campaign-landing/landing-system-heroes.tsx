@@ -232,9 +232,10 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
 
 export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps) {
     const cardImage =
+        (landing.heroImage?.url ? landing.heroImage : null) ??
         getImage(landing.galleryImages, 0) ??
         getImage(landing.trustImages, 0) ??
-        (landing.heroImage?.url ? landing.heroImage : null);
+        null;
     const bgImage =
         (landing.heroImage?.url ? landing.heroImage : null) ??
         getImage(landing.galleryImages, 1) ??

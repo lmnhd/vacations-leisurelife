@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { buildLandingDesignSystem } from '../view-model';
-import type { CampaignAestheticBrief, VisualFlavor } from '../../schema';
+import { buildLandingDesignSystem, selectLandingHeroAsset } from '../view-model';
+import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest, VisualFlavor } from '../../schema';
 import type { Campaign } from '../../types';
 
 function makeBrief(visualFlavor: VisualFlavor): CampaignAestheticBrief {
@@ -110,5 +110,77 @@ const fallback = buildLandingDesignSystem(campaign, null);
 assert.equal(fallback.visualFlavor, 'none');
 assert.equal(fallback.system, 'system_4_modular');
 assert.equal(fallback.chat.endpoint, '/api/groups/campaign/board-games-at-sea/chat');
+
+function makeAsset(assetId: string, assetType: AssetRecord['assetType'], url: string, reviewStatus: AssetRecord['reviewStatus'], tags: string[] = []): AssetRecord {
+    return {
+        assetId,
+        assetType,
+        url,
+        generator: 'gemini3_flash',
+        promptUsed: '',
+        dimensions: { width: 1200, height: 800 },
+        mimeType: 'image/png',
+        fileSizeBytes: 100,
+        tags,
+        createdAt: new Date().toISOString(),
+        reviewStatus,
+        version: 1,
+        active: true,
+    };
+}
+
+const manifestWithSceneFirst = {
+    images: {
+        shipReferences: [],
+        hero: [
+            makeAsset('hero_1', 'hero_image', 'https://example.com/hero.png', 'human_approved'),
+        ],
+        sceneImages: [
+            makeAsset('atrium_scene', 'scene_image', 'https://example.com/scene.png', 'auto_approved', ['scene', 'atrium']),
+        ],
+        aestheticConcepts: [
+            makeAsset('concept_1', 'aesthetic_concept', 'https://example.com/concept.png', 'human_approved'),
+        ],
+        documentaryDetails: [
+            makeAsset('doc_1', 'documentary_detail_image', 'https://example.com/doc.png', 'auto_approved'),
+        ],
+        designedAdArtifacts: [],
+        platformCrops: {
+            hero_16x9: [],
+            hero_4x5: [],
+            story_9x16: [],
+            square_1x1: [],
+            banner_3x1: [],
+            email_header: [],
+            og_image: [],
+            thumbnail: [],
+        },
+    },
+    videos: {
+        tiktokSeed: null,
+        heroExplainer: null,
+        thresholdAnnouncement: null,
+        countdown: [],
+        broll: [],
+    },
+    audio: {
+        ambientNarration: null,
+        hypeClip: null,
+        themeMusic: null,
+    },
+    merch: {
+        designs: [],
+        mockups: [],
+        printfulProductIds: [],
+    },
+    copy: null,
+    generatedAt: new Date().toISOString(),
+    totalAssets: 4,
+    completionStatus: 'partial',
+} as unknown as CampaignMediaManifest;
+
+const selectedHero = selectLandingHeroAsset(manifestWithSceneFirst);
+assert.equal(selectedHero?.assetId, 'hero_1');
+assert.notEqual(selectedHero?.assetType, 'scene_image');
 
 console.log('landing design-system mapping test passed');

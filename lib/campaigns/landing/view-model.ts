@@ -265,44 +265,30 @@ function buildHeroFallback(brief: CampaignAestheticBrief | null): LandingImageAs
     };
 }
 
-function selectPreferredAsset(manifest: CampaignMediaManifest | null): AssetRecord | null {
-    if (!manifest) {
-        return null;
-    }
-
-    const candidates = [
-        ...manifest.images.hero,
-        ...(manifest.images.platformCrops.hero_16x9 ?? []),
-        ...manifest.images.aestheticConcepts,
-        ...manifest.images.sceneImages,
-        ...manifest.images.shipReferences,
-        ...manifest.images.documentaryDetails,
-    ];
-
-    const withUrl = candidates.filter((asset) => asset.url);
-    const approved = withUrl.find((asset) => 
-        (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
-        (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
-    );
-    return approved ?? withUrl[0] ?? null;
+function isApprovedAsset(asset: AssetRecord): boolean {
+    return asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved' ||
+        asset.curation?.approvalState === 'human_approved' || asset.curation?.approvalState === 'auto_approved';
 }
 
-function selectTrustAsset(manifest: CampaignMediaManifest | null): AssetRecord | null {
+function selectApprovedOrFirst(candidates: AssetRecord[]): AssetRecord | null {
+    const withUrl = candidates.filter((asset) => asset.url);
+    return withUrl.find(isApprovedAsset) ?? withUrl[0] ?? null;
+}
+
+export function selectLandingHeroAsset(manifest: CampaignMediaManifest | null): AssetRecord | null {
     if (!manifest) {
         return null;
     }
 
+    // Landing heroes must come from the landing hero/concept pool.
+    // Scene images are storyboard/TikTok source frames and should not drive the page hero.
     const candidates = [
-        ...manifest.images.shipReferences,
-        ...manifest.images.documentaryDetails,
+        ...(manifest.images.platformCrops.hero_16x9 ?? []),
+        ...manifest.images.hero,
+        ...manifest.images.aestheticConcepts,
     ];
 
-    const withUrl = candidates.filter((asset) => asset.url);
-    const approved = withUrl.find((asset) =>
-        (asset.curation?.approvalState === 'human_approved' || asset.reviewStatus === 'human_approved') ||
-        (asset.curation?.approvalState === 'auto_approved' || asset.reviewStatus === 'auto_approved')
-    );
-    return approved ?? null;
+    return selectApprovedOrFirst(candidates);
 }
 
 function resolveHeroImage(
@@ -310,15 +296,7 @@ function resolveHeroImage(
     brief: CampaignAestheticBrief | null,
     manifest: CampaignMediaManifest | null,
 ): LandingImageAsset | null {
-    const trustAsset = selectTrustAsset(manifest);
-    if (trustAsset) {
-        return {
-            url: trustAsset.url,
-            alt: brief?.messaging.heroSlogan ?? campaign.name,
-        };
-    }
-
-    const asset = selectPreferredAsset(manifest);
+    const asset = selectLandingHeroAsset(manifest);
     if (!asset) {
         return buildHeroFallback(brief);
     }
@@ -340,10 +318,10 @@ function buildGalleryImages(
         return heroImage?.url ? [heroImage] : [];
     }
 
-    const artisticCandidates = [
-        ...manifest.images.sceneImages,
-        ...manifest.images.aestheticConcepts,
+    const landingConceptCandidates = [
         ...manifest.images.hero,
+        ...(manifest.images.platformCrops.hero_16x9 ?? []),
+        ...manifest.images.aestheticConcepts,
     ];
     const trustCandidates = [
         ...manifest.images.shipReferences,
@@ -355,31 +333,28 @@ function buildGalleryImages(
         const out: LandingImageAsset[] = [];
         for (const asset of candidates) {
             if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
-            const approved =
-                asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved' ||
-                asset.curation?.approvalState === 'human_approved' || asset.curation?.approvalState === 'auto_approved';
-            if (!approved) continue;
+            if (!isApprovedAsset(asset)) continue;
             seen.add(asset.url);
             out.push({ url: asset.url, alt: `${campaign.name} campaign image` });
         }
         return out;
     }
 
-    const artistic = collectApproved(artisticCandidates);
+    const landingConcepts = collectApproved(landingConceptCandidates);
     const trust = collectApproved(trustCandidates);
 
     const mixed: LandingImageAsset[] = [];
     const maxEach = Math.ceil(maxGalleryImages / 2);
     for (let i = 0; i < maxEach; i++) {
-        if (artistic[i]) mixed.push(artistic[i]);
+        if (landingConcepts[i]) mixed.push(landingConcepts[i]);
         if (trust[i]) mixed.push(trust[i]);
         if (mixed.length >= maxGalleryImages) break;
     }
 
     if (mixed.length < maxGalleryImages) {
-        for (let i = Math.ceil(mixed.length / 2); i < artistic.length && mixed.length < maxGalleryImages; i++) {
-            if (!mixed.some((m) => m.url === artistic[i].url)) {
-                mixed.push(artistic[i]);
+        for (let i = Math.ceil(mixed.length / 2); i < landingConcepts.length && mixed.length < maxGalleryImages; i++) {
+            if (!mixed.some((m) => m.url === landingConcepts[i].url)) {
+                mixed.push(landingConcepts[i]);
             }
         }
     }
@@ -407,10 +382,7 @@ function buildTrustImages(
 
     for (const asset of candidates) {
         if (!asset.url || asset.url === heroImage?.url || seen.has(asset.url)) continue;
-        const approved =
-            asset.reviewStatus === 'human_approved' || asset.reviewStatus === 'auto_approved' ||
-            asset.curation?.approvalState === 'human_approved' || asset.curation?.approvalState === 'auto_approved';
-        if (!approved) continue;
+        if (!isApprovedAsset(asset)) continue;
         seen.add(asset.url);
         out.push({ url: asset.url, alt: `${campaign.name} ship reference` });
     }
