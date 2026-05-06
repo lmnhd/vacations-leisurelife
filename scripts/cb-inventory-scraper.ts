@@ -142,3 +142,36 @@ export async function scrapeGroupInventory(): Promise<CbGroupInventoryItem[]> {
         await browser.close();
     }
 }
+
+/**
+ * Given a CBAT groupId (e.g. "44071"), visits the group detail page
+ * and extracts the true Personal Link which contains the actual Odysseus package ID.
+ */
+export async function scrapeGroupPersonalLink(groupId: string): Promise<string | null> {
+    const { browser, page } = await getAuthenticatedPage();
+    try {
+        const url = `${CB_BASE_URL}/groups/view_group/${groupId}/`;
+        console.log(`[cb-inventory-scraper] Navigating to group details to extract personal link: ${url}`);
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        
+        // Sometimes the link takes a moment to render or is just a static anchor
+        const personalLink = await page.evaluate(() => {
+            const anchors = Array.from(document.querySelectorAll('a'));
+            const link = anchors.find(a => a.href.includes('swift') || a.href.includes('package') || a.innerText.includes('Personal Link'));
+            return link ? link.href : null;
+        });
+        
+        if (personalLink) {
+            console.log(`[cb-inventory-scraper] ✅ Found true Personal Link: ${personalLink}`);
+        } else {
+            console.warn(`[cb-inventory-scraper] ⚠️ Could not find Personal Link on page ${url}`);
+        }
+        
+        return personalLink;
+    } catch (e) {
+        console.error(`[cb-inventory-scraper] Error extracting personal link for group ${groupId}:`, e);
+        return null;
+    } finally {
+        await browser.close();
+    }
+}

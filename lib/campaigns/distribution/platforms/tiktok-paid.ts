@@ -1,5 +1,6 @@
 import type { TikTokPaidLeadGenContract } from '../../schema';
 import { getTikTokAdvertiserStatus } from '@/lib/integrations/tiktok-auth';
+import { getActiveAssetRecord } from '@/lib/campaigns/media/media-store';
 
 const TIKTOK_MARKETING_API_BASE = 'https://business-api.tiktok.com/open_api/v1.3';
 
@@ -26,27 +27,48 @@ interface TikTokLeadFormCreateData {
     form_id: string;
 }
 
-function buildMarketingApiHeaders(appId: string, appSecret: string): HeadersInit {
+interface TikTokVideoUploadData {
+    video_id: string;
+    width: number;
+    height: number;
+    duration: number;
+    material_id: string;
+}
+
+interface TikTokPaidLeadGenDeps {
+    fetchImpl?: typeof fetch;
+    getAdvertiserStatus?: typeof getTikTokAdvertiserStatus;
+    getAssetRecord?: typeof getActiveAssetRecord;
+    now?: () => Date;
+}
+
+function buildMarketingApiHeaders(accessToken: string): HeadersInit {
     return {
-        'Access-Token': appSecret,
+        'Access-Token': accessToken,
         'Content-Type': 'application/json',
     };
 }
 
 async function postMarketingApi<TData>(
-    appId: string,
     accessToken: string,
     path: string,
     body: Record<string, unknown>,
+    fetchImpl: typeof fetch = fetch,
 ): Promise<TData> {
     const url = `${TIKTOK_MARKETING_API_BASE}${path}`;
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
         method: 'POST',
-        headers: buildMarketingApiHeaders(appId, accessToken),
+        headers: buildMarketingApiHeaders(accessToken),
         body: JSON.stringify(body),
     });
 
-    const text = await response.text(); let payload: any; try { payload = JSON.parse(text); } catch (e) { throw new Error(`Non-JSON response from ${url} [Status ${response.status}]: ${text}`); }
+    const text = await response.text();
+    let payload: TikTokMarketingApiResponse<TData>;
+    try {
+        payload = JSON.parse(text) as TikTokMarketingApiResponse<TData>;
+    } catch {
+        throw new Error(`Non-JSON response from ${url} [Status ${response.status}]: ${text}`);
+    }
     if (!response.ok || payload.code !== 0) {
         throw new Error(
             `TikTok Marketing API error [${path}]: code=${payload.code} message=${payload.message}`,
@@ -65,8 +87,9 @@ async function postMarketingApi<TData>(
  */
 export async function createTikTokPaidLeadGenDraft(
     contract: Omit<TikTokPaidLeadGenContract, 'nativeCampaignId' | 'nativeAdGroupId' | 'nativeAdId' | 'nativeFormId' | 'activationState' | 'createdAt' | 'updatedAt'>,
+    deps: TikTokPaidLeadGenDeps = {},
 ): Promise<TikTokPaidLeadGenContract> {
-    const advertiserStatus = getTikTokAdvertiserStatus();
+    const advertiserStatus = deps.getAdvertiserStatus?.() ?? getTikTokAdvertiserStatus();
     if (!advertiserStatus.ready) {
         throw new Error(
             'TikTok advertiser credentials are not configured. ' +
@@ -75,17 +98,26 @@ export async function createTikTokPaidLeadGenDraft(
         );
     }
 
-    const { advertiserAccountId, appId } = advertiserStatus;
-    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim(); 
-    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim(); 
+    const { advertiserAccountId } = advertiserStatus;
+    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim();
     if (!accessToken) throw new Error("Missing TIKTOK_MARKETING_ACCESS_TOKEN or TIKTOK_ACCESS_TOKEN");
-    const now = new Date().toISOString();
+    const now = (deps.now ?? (() => new Date()))().toISOString();
+    const fetchImpl = deps.fetchImpl ?? fetch;
+    const getAssetRecord = deps.getAssetRecord ?? getActiveAssetRecord;
+    const assetRecord = await getAssetRecord(contract.campaignSlug, contract.adAssetId);
+    if (!assetRecord) {
+        throw new Error(`[TikTok-Paid] Asset not found in media store: ${contract.adAssetId}`);
+    }
+    if (!assetRecord.mimeType.startsWith('video/')) {
+        throw new Error(
+            `[TikTok-Paid] Asset must be a video asset before TikTok upload: ${contract.adAssetId} (${assetRecord.assetType}, ${assetRecord.mimeType})`,
+        );
+    }
 
     console.log(`[TikTok-Paid] Creating lead-gen draft for campaign ${contract.campaignSlug}`);
 
     // 1. Create paused Lead Generation campaign
     const campaignData = await postMarketingApi<TikTokCampaignCreateData>(
-        appId,
         accessToken,
         '/campaign/create/',
         {
@@ -95,6 +127,7 @@ export async function createTikTokPaidLeadGenDraft(
             budget_mode: 'BUDGET_MODE_INFINITE',
             operation_status: 'DISABLE',
         },
+        fetchImpl,
     );
 
     console.log(`[TikTok-Paid] Campaign created: ${campaignData.campaign_id}`);
@@ -121,21 +154,37 @@ export async function createTikTokPaidLeadGenDraft(
     }
 
     const adGroupData = await postMarketingApi<TikTokAdGroupCreateData>(
-        appId,
         accessToken,
         '/adgroup/create/',
         adGroupBody,
+        fetchImpl,
     );
 
     console.log(`[TikTok-Paid] Ad group created: ${adGroupData.adgroup_id}`);
 
-    // 3. Create paused ad referencing the creative asset and lead form
+    // 3a. Upload the validated video asset to TikTok Creative Center
+    const videoUploadData = await postMarketingApi<TikTokVideoUploadData>(
+        accessToken,
+        '/file/video/ad/upload/',
+        {
+            advertiser_id: advertiserAccountId,
+            video_url: assetRecord.url,
+            display_name: `LLI-${contract.campaignSlug}-creative`,
+            allow_download: false,
+            is_shareable: false,
+        },
+        fetchImpl,
+    );
+
+    console.log(`[TikTok-Paid] Video uploaded: ${videoUploadData.video_id}`);
+
+    // 3b. Create paused ad referencing the uploaded video and lead form
     const adBody: Record<string, unknown> = {
         advertiser_id: advertiserAccountId,
         adgroup_id: adGroupData.adgroup_id,
         ad_name: `LLI-${contract.campaignSlug}-ad`,
         ad_format: 'SINGLE_VIDEO',
-        video_id: contract.adAssetId,
+        video_id: videoUploadData.video_id,
         operation_status: 'DISABLE',
     };
 
@@ -144,10 +193,10 @@ export async function createTikTokPaidLeadGenDraft(
     }
 
     const adData = await postMarketingApi<TikTokAdCreateData>(
-        appId,
         accessToken,
         '/ad/create/',
         adBody,
+        fetchImpl,
     );
 
     console.log(`[TikTok-Paid] Ad created: ${adData.ad_id}`);
@@ -172,8 +221,9 @@ export async function createTikTokPaidLeadGenDraft(
 export async function createTikTokLeadForm(
     campaignSlug: string,
     campaignLandingUrl: string,
+    deps: TikTokPaidLeadGenDeps = {},
 ): Promise<string> {
-    const advertiserStatus = getTikTokAdvertiserStatus();
+    const advertiserStatus = deps.getAdvertiserStatus?.() ?? getTikTokAdvertiserStatus();
     if (!advertiserStatus.ready) {
         throw new Error(
             'TikTok advertiser credentials are not configured. ' +
@@ -181,13 +231,30 @@ export async function createTikTokLeadForm(
         );
     }
 
-    const { advertiserAccountId, appId } = advertiserStatus;
-    const appSecret = process.env.TIKTOK_MARKETING_API_SECRET!.trim(); 
-    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim(); 
+    const { advertiserAccountId } = advertiserStatus;
+    const accessToken = (process.env.TIKTOK_MARKETING_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN)?.trim();
     if (!accessToken) throw new Error("Missing TIKTOK_MARKETING_ACCESS_TOKEN or TIKTOK_ACCESS_TOKEN");
 
-    console.warn("[TikTok-Paid] Lead form creation via API is currently unsupported in v1.3. Returning placeholder.");
-    const formData = { form_id: "pending_manual_form_creation" };
+    const formData = await postMarketingApi<TikTokLeadFormCreateData>(
+        accessToken,
+        '/leadgen/form/create/',
+        {
+            advertiser_id: advertiserAccountId,
+            form_name: `LLI-${campaignSlug}-lead-form`,
+            form_type: 'INSTANT_FORM',
+            locale: 'en_US',
+            thank_you_page: {
+                type: 'WEBSITE',
+                website_url: campaignLandingUrl,
+            },
+            questions: [
+                { question_type: 'CUSTOM', title: 'First Name', is_required: true },
+                { question_type: 'CUSTOM', title: 'Email', is_required: true },
+                { question_type: 'CUSTOM', title: 'Phone Number', is_required: true },
+            ],
+        },
+        deps.fetchImpl ?? fetch,
+    );
 
     console.log(`[TikTok-Paid] Lead form created: ${formData.form_id}`);
     return formData.form_id;

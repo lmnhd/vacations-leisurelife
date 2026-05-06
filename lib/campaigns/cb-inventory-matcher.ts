@@ -277,7 +277,7 @@ export function matchGroupInventoryToCampaign(
         : bestItem.priceAdvantageNumber > 0
             ? bestItem.priceAdvantageNumber * 100  // priceAdvantage is % off — rough baseline
             : 0;
-    const cbPersonalLink = `https://bookings.cbagenttools.com/swift/cruise/package/${bestItem.groupId}?siid=${CB_AGENT_SIID}`;
+    const cbPersonalLink = ''; // Will be populated by Phase B by scraping the group details page
     const computedStartingPrice = Math.round(rawPrice * THEME_FEE_MULTIPLIER);
 
     console.log(`[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice})`);

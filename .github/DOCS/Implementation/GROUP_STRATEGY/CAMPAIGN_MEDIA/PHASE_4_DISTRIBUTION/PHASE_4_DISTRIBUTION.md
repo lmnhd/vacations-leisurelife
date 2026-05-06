@@ -42,7 +42,7 @@ The immediate goal of the ad phase is no longer "send ads everywhere from one bu
 
 1. Meta Ads first. This path already exists partially and should be hardened into the first real native draft workflow.
 2. Google Ads second. This requires a new adapter and a concrete product choice, likely Responsive Display or Demand Gen.
-3. TikTok third. The selected first implementation path is TikTok organic posting through the Content Posting API.
+3. TikTok third. The selected first implementation path is TikTok paid lead acquisition through the Marketing API, with organic retained as a supporting adapter.
 
 ### Explicit Non-Goal For This Pass
 
@@ -98,6 +98,13 @@ This is the authoritative direction for the ad phase going forward.
 **Status:** `ads_first_with_organic_support`  
 
 TikTok is no longer undecided for the immediate roadmap, but the roadmap is now aligned back to the master campaign strategy.
+
+Current implementation note:
+
+1. The two TikTok Marketing API blockers are now fixed in `lib/campaigns/distribution/platforms/tiktok-paid.ts`.
+2. Lead forms are created through `POST /open_api/v1.3/leadgen/form/create/` and return a real native `form_id`.
+3. The paid draft helper resolves the campaign asset to an `AssetRecord`, validates that it is a video asset, uploads `assetRecord.url` through `POST /open_api/v1.3/file/video/ad/upload/`, and uses the returned native `video_id` in `ad/create/`.
+4. Local verification should use `npx tsx lib/campaigns/distribution/platforms/__tests__/tiktok-paid.test.ts`.
 
 The selected first implementation path is:
 
@@ -234,17 +241,30 @@ The expected TikTok env contract for the first implementation pass is:
 
 If TikTok requires additional token refresh or account metadata fields during implementation, extend this contract in one place and update the docs at the same time.
 
+### Current Paid Runtime Env Contract
+
+The TikTok paid-acquisition path expects these env vars before any Marketing API dispatch:
+
+- `TIKTOK_ADVERTISER_ID`
+- `TIKTOK_MARKETING_API_APP_ID`
+- `TIKTOK_MARKETING_API_SECRET`
+- `TIKTOK_MARKETING_ACCESS_TOKEN` or `TIKTOK_ACCESS_TOKEN`
+- `TIKTOK_LEAD_FORM_ID` (optional, if the advertiser account already has a reusable lead form)
+
+If campaign creation returns `Complete payment to continue`, the blocker is advertiser billing setup rather than the code path.
+
 ### Recommended Verification Sequence
 
 Use this order when finishing TikTok setup.
 
 1. Confirm the TikTok developer app exists.
 2. Confirm the correct TikTok publishing account is being used.
-3. Complete OAuth and store the initial access token.
-4. Place the TikTok env vars into the local environment.
-5. Add or run TikTok provider connection validation from the app.
-6. Run a single live TikTok publish for one generated seed video.
-7. Confirm the returned TikTok post ID is stored in the distribution record.
+3. Complete OAuth and store the initial access token for the organic adapter.
+4. Place the TikTok paid env vars into the local environment.
+5. Run the paid-path smoke test: `npx tsx lib/campaigns/distribution/platforms/__tests__/tiktok-paid.test.ts`.
+6. Add or run TikTok advertiser connection validation from the app.
+7. Run a single live TikTok paid dispatch for one generated video asset.
+8. Confirm the returned native campaign, ad group, ad, and form IDs are stored in the distribution record.
 
 ### Success Criteria For TikTok Organic
 
@@ -255,6 +275,18 @@ TikTok organic is considered complete for this phase only when all of the follow
 3. the distribution record stores a real TikTok post ID
 4. simulated payload preview remains available for debugging
 5. organic TikTok posting works without depending on the future paid-ads path
+
+### Success Criteria For TikTok Paid Lead Gen
+
+TikTok paid lead generation is considered complete for this phase only when all of the following are true:
+
+1. the app validates TikTok advertiser readiness before dispatch
+2. a real lead form is created through the Marketing API
+3. the generated campaign video resolves to a public `AssetRecord.url` and uploads before `ad/create/`
+4. the ad payload uses the native TikTok `video_id`, not the internal asset UUID
+5. paused native campaign, ad group, ad, and form IDs are persisted in the distribution record
+6. non-video assets fail fast before any TikTok Marketing API call is made
+7. the paid-path smoke test passes locally
 
 ---
 

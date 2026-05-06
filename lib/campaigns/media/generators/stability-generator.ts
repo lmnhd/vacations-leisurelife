@@ -152,6 +152,10 @@ function buildPropAllowanceRules(allowedProps: readonly string[]): string[] {
     ];
 }
 
+function buildGroupPresenceGuidance(): string {
+    return 'People count: 3-6 visible people when the frame is social or group-led; do not default to a couple or solo figure for a group theme';
+}
+
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
     const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
     const casting = brief.visual.humanRepresentation;
@@ -217,7 +221,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-                `People count: 1-3 max, no crowds, no dense group scenes`,
+                buildGroupPresenceGuidance(),
                 `Casting goal: ${casting.castingGoal}`,
                 `Age guidance: ${casting.ageRangeGuidance}`,
                 `Diversity guidance: ${casting.diversityIntent}`,
@@ -267,7 +271,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-                `People count: 1-3 max, no crowds, no dense group scenes`,
+                buildGroupPresenceGuidance(),
                 allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
                 landscapeGuardrails.reality,
@@ -310,7 +314,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Prop rule: ${propAllowanceRules[index % propAllowanceRules.length]}`,
             `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
             `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-            `People count: 1-3 max, no crowds, no dense group scenes; at least some prompts should feel softly social rather than isolated`,
+            `${buildGroupPresenceGuidance()}; at least some prompts should feel softly social rather than isolated`,
             `Casting goal: ${casting.castingGoal}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
             `Diversity guidance: ${casting.diversityIntent}`,
@@ -794,7 +798,7 @@ function buildReferenceGroundedHeroPrompt(
         `Staging bias: ${heroVariant.stagingBias}`,
         `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
         resolvedStyle.style === 'sketched'
-            ? `Framing constraints: ${heroVariant.framing}, one focal plane, 1-2 people preferred and never more than 3, background simplified and readable`
+            ? `Framing constraints: ${heroVariant.framing}, one focal plane, 3-6 visible people for group-led frames, background simplified and readable`
             : `Framing constraints: one focal plane, ship-led composition, tiny background figures or silhouettes acceptable only if incidental`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Environment integrity: preserve marine deck materials, railings, glazing, pool surfaces, and vessel architecture from the source reference; do not convert ship spaces into landscaped resort spaces`,
@@ -1036,7 +1040,7 @@ function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
 
     return [
         'Storyboard source frame direction: keep human subjects secondary to ship and sea — never the dominant foreground focal point',
-        'Prefer low-risk human presence: blurred background figures, over-the-shoulder views, hands near a table or game piece, or an anonymous seated cluster; avoid close-up faces, eye-contact portraits, or staged group poses',
+        'Prefer visible group presence: 3 or more people around a table or at the rail, with blurred background figures only as support; avoid couples-as-default, solo portraits, close-up faces, eye-contact portraits, or staged group poses',
         'Capture a settled social moment: people at rest around a table or at the rail, game or props visible, no walking, no sipping, no object hand-offs in motion',
     ].join('. ');
 }
@@ -1082,7 +1086,7 @@ export async function generateSceneImages(
             `Framing: ${scene.cameraAngle}`,
             shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
             // Human presence: prefer low-risk social texture over total suppression
-            'If people appear: prefer blurred background figures, over-the-shoulder views, or hands near a table; avoid close-up portraits, mid-gesture motion, and eye-contact hero framing',
+            'If people appear: show 3 or more visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults',
             'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
             'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
             landscapeGuardrails.reality,

@@ -501,7 +501,7 @@ async function dispatchTikTokPaidLive(
 }> {
   const { getTikTokAdvertiserStatus } =
     await import("@/lib/integrations/tiktok-auth");
-  const { createTikTokLeadForm, createTikTokPaidLeadGenDraft } =
+  const { createTikTokPaidLeadGenDraft } =
     await import("@/lib/campaigns/distribution/platforms/tiktok-paid");
 
   const advertiserStatus = getTikTokAdvertiserStatus();
@@ -513,7 +513,7 @@ async function dispatchTikTokPaidLive(
   }
 
   const landingUrl = getCampaignLandingUrl(campaign);
-  const leadFormId = await createTikTokLeadForm(campaign.id, landingUrl);
+  const leadFormId = process.env.TIKTOK_LEAD_FORM_ID?.trim() || undefined;
   const contract = await createTikTokPaidLeadGenDraft({
     campaignSlug: campaign.id,
     advertiserAccountId: advertiserStatus.advertiserAccountId,
@@ -530,6 +530,7 @@ async function dispatchTikTokPaidLive(
     `native_form_id=${contract.nativeFormId ?? leadFormId}`,
     `activation_state=${contract.activationState}`,
     `landing_url=${landingUrl}`,
+    leadFormId ? `lead_form_mode=preconfigured` : `lead_form_mode=omitted`,
     `dispatched_at=${new Date().toISOString()}`,
   ];
 

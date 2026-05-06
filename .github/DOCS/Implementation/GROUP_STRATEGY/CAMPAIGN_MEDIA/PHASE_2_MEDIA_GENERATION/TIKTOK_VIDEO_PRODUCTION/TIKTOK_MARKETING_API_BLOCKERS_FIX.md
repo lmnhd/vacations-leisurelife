@@ -1,7 +1,12 @@
 # TikTok Marketing API Blockers — Fix Instructions
 
-## Context
-The `TIKTOK_MARKETING_ACCESS_TOKEN` is now populated in `.env.local`. Two code blockers remain in `lib/campaigns/distribution/platforms/tiktok-paid.ts` before paid lead-gen campaigns can be dispatched end-to-end via the Marketing API.
+## Status
+The two original blockers in `lib/campaigns/distribution/platforms/tiktok-paid.ts` are now implemented and verified locally:
+
+1. `leadgen/form/create/` now returns a real `form_id`.
+2. The paid draft flow resolves `post.assetId` to an `AssetRecord`, validates it as a video asset, uploads `assetRecord.url` through `file/video/ad/upload/`, and uses the returned native `video_id` in `ad/create/`.
+
+This document now serves as the implementation record and verification reference for the paid TikTok path.
 
 ---
 

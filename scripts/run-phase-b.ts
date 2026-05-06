@@ -15,7 +15,7 @@
  */
 
 import { loadEnvConfig } from '@next/env';
-import { scrapeGroupInventory } from './cb-inventory-scraper';
+import { scrapeGroupInventory, scrapeGroupPersonalLink } from './cb-inventory-scraper';
 import { matchGroupInventoryToCampaign, CbInventoryMatch } from '../lib/campaigns/cb-inventory-matcher';
 import {
     scanMatchedCampaigns,
@@ -137,6 +137,16 @@ async function runPhaseB(): Promise<void> {
 
         if (confirmation) {
             console.log(`[run-phase-b] ✅ Match confirmed for "${campaign.id}" → ${confirmation.matchedShipName} (score: ${confirmation.matchScore})`);
+            
+            // 3a. Extract the true Personal Link from the group details page
+            console.log(`[run-phase-b] Fetching true Personal Booking Link for group ${confirmation.cbGroupId}...`);
+            const truePersonalLink = await scrapeGroupPersonalLink(confirmation.cbGroupId);
+            if (truePersonalLink) {
+                confirmation.cbPersonalLink = truePersonalLink;
+            } else {
+                console.warn(`[run-phase-b] ⚠️ Could not fetch true Personal Link for group ${confirmation.cbGroupId}. Link may be 404.`);
+            }
+
             console.log(`[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`);
             confirmation.odysseusRetailBookingLink = await generateOdysseusRetailLink(confirmation);
 
