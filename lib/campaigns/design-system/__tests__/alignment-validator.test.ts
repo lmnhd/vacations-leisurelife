@@ -65,6 +65,7 @@ function makeBrief(): CampaignAestheticBrief {
             elevatorPitch: 'A nostalgic music cruise at sea.',
             toneKeywords: ['specific', 'welcoming'],
             voicePersona: 'Energetic and inviting.',
+            starterConversation: [],
         },
         communityExpression: {
             corePromise: 'Find your people naturally.',
@@ -75,6 +76,7 @@ function makeBrief(): CampaignAestheticBrief {
             solitudeAntiPatterns: ['forced programming'],
             visualTogethernessNotes: 'Pairs and small groups.',
             copyFramingRule: 'Cruise first.',
+            activityInvitations: [],
         },
         socialConcepts: {
             tiktokOrganic: { hook: '', narrative: { title: '', durationSeconds: 0, tool: 'runwayml', scriptOrNarration: '', visualDirectionNotes: '', avatarRequired: false, backgroundDescription: '', musicMood: '' }, caption: '', hashtags: [], callToAction: '' },

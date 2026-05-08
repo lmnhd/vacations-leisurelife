@@ -1,4 +1,4 @@
-import type { DiscoveryIterationState, RedTeamReview } from './schema';
+import type { DiscoveryIterationState, RedTeamReview, VisualFlavor } from './schema';
 
 export interface Campaign {
     /**
@@ -248,6 +248,15 @@ export interface Campaign {
      * socially hollow even if it remains aesthetically attractive.
      */
     solitudeRisks?: string[];
+
+    /**
+     * Operator-locked visual flavor override.
+     * When set, takes precedence over `identityBlueprint.visualFlavor` for the
+     * landing/portal render. Set via the audition toolbar on
+     * /tests/campaign-landing/[slug] before publishing. Cleared = "auto select".
+     * See: .github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION/LANDING_PAGE_CHAT/GUEST_PORTAL_REDESIGN.md
+     */
+    manualVisualFlavor?: VisualFlavor;
 
     createdAt: string;
     updatedAt: string;

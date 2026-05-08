@@ -43,11 +43,15 @@ interface CampaignWaitlistFormProps {
     enabled: boolean;
     defaultMode: 'GROUP_WAIT' | 'BOOK_NOW';
     isGatheringInterest?: boolean;
+    /** Called after a successful signup with the persistent chat identity. */
+    onGuestRegistered?: (identity: GuestIdentity) => void;
 }
 
 interface WaitlistResponse {
     success: boolean;
     error?: string;
+    guestToken?: string;
+    displayName?: string;
     progress?: {
         joinedEntries: number;
         joinedPassengers: number;
@@ -62,12 +66,18 @@ interface WaitlistResponse {
     };
 }
 
+export interface GuestIdentity {
+    guestToken: string;
+    displayName: string;
+}
+
 export function CampaignWaitlistForm({
     campaignName,
     endpoint,
     enabled,
     defaultMode,
     isGatheringInterest = false,
+    onGuestRegistered,
 }: CampaignWaitlistFormProps) {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -136,6 +146,13 @@ export function CampaignWaitlistForm({
             }
 
             setResult(payload);
+
+            if (payload.guestToken && payload.displayName && onGuestRegistered) {
+                onGuestRegistered({
+                    guestToken: payload.guestToken,
+                    displayName: payload.displayName,
+                });
+            }
         } catch {
             setError('We could not save your spot right now.');
             setResult(null);
@@ -264,8 +281,8 @@ export function CampaignWaitlistForm({
                                         <SelectValue placeholder="Choose a path" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="GROUP_WAIT">Join the group list</SelectItem>
-                                        <SelectItem value="BOOK_NOW">I want the early booking path</SelectItem>
+                                        <SelectItem value="GROUP_WAIT">Join the list</SelectItem>
+                                        <SelectItem value="BOOK_NOW">Book now</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -285,7 +302,7 @@ export function CampaignWaitlistForm({
 
                         {isGatheringInterest && bookingMode === 'BOOK_NOW' && (
                             <div className="px-4 py-3 text-sm border rounded-lg border-amber-400/30 bg-amber-500/10 text-amber-100">
-                                Booking independently now means you will secure your cabin immediately, but you may forfeit group-specific pricing and amenities. To guarantee the group experience, choose &ldquo;Join the group list&rdquo; instead.
+                                Booking independently now means you will secure your cabin immediately, but you may forfeit group-specific pricing and amenities. To guarantee the group experience, choose &ldquo;Join the list&rdquo; instead.
                             </div>
                         )}
 

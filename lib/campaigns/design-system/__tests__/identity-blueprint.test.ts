@@ -46,6 +46,7 @@ const baseBrief = {
         elevatorPitch: 'A campaign world for analog listeners at sea.',
         toneKeywords: ['warm', 'specific', 'welcoming'],
         voicePersona: 'Inviting and music-literate.',
+        starterConversation: [],
     },
     communityExpression: {
         corePromise: 'Find your people naturally.',
@@ -56,6 +57,7 @@ const baseBrief = {
         solitudeAntiPatterns: ['forced programming'],
         visualTogethernessNotes: 'Pairs and small groups.',
         copyFramingRule: 'Cruise first.',
+        activityInvitations: [],
     },
     socialConcepts: {
         tiktokOrganic: { hook: '', narrative: { title: '', durationSeconds: 0, tool: 'runwayml', scriptOrNarration: '', visualDirectionNotes: '', avatarRequired: false, backgroundDescription: '', musicMood: '' }, caption: '', hashtags: [], callToAction: '' },

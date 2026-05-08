@@ -28,12 +28,12 @@ export function CampaignLandingPage({ landing }: CampaignLandingPageProps) {
             background: `linear-gradient(135deg, ${landing.surfaceColor}, #0f172a)`,
         };
 
-    const primaryHref = landing.links.booking && landing.ctas.primary.mode === 'BOOK_NOW' && !landing.ctas.primary.disabled
-        ? landing.links.booking
+    const primaryHref = landing.ctas.primary.mode === 'BOOK_NOW' && !landing.ctas.primary.disabled
+        ? (landing.links.retailBooking ?? landing.links.booking ?? '#save-your-place')
         : '#save-your-place';
 
-    const secondaryHref = landing.links.booking && landing.ctas.secondary.mode === 'BOOK_NOW' && !landing.ctas.secondary.disabled
-        ? landing.links.booking
+    const secondaryHref = landing.ctas.secondary.mode === 'BOOK_NOW' && !landing.ctas.secondary.disabled
+        ? (landing.links.retailBooking ?? landing.links.booking ?? '#save-your-place')
         : '#save-your-place';
 
     const availabilityLabel = landing.state === 'THRESHOLD_MET' || landing.state === 'CONVERTED'

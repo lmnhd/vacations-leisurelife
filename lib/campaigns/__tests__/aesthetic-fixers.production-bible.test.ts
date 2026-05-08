@@ -114,8 +114,8 @@ function makeBrief(overrides: Partial<CampaignAestheticBrief> = {}): CampaignAes
             plausibilityFramework: { governingPrinciple: 'Cruise-native', cruiseNativeMoments: [], nicheEnhancedMoments: [], implausibleLiteralizations: [], allowedProps: [], discouragedProps: [] },
             humanRepresentation: { castingGoal: 'Mixed', ageRangeGuidance: '25-65', diversityIntent: 'Inclusive', pairingGuidance: 'Mixed pairs', stylingGuidance: 'Smart casual', antiStereotypeRules: [] },
         },
-        messaging: { heroSlogan: 'Frame Every Moment', subSlogan: 'An artist voyage', ctaVariants: { waitlist: 'Join', bookNow: 'Book', merch: 'Shop', share: 'Share' }, elevatorPitch: 'Film and photography at sea.', toneKeywords: [], voicePersona: 'Thoughtful and direct' },
-        communityExpression: { corePromise: 'Creative community', participationStyle: 'Active', socialGravity: 'High', optionalGatherings: [], belongingSignals: [], solitudeAntiPatterns: [], visualTogethernessNotes: 'Workshop energy', copyFramingRule: 'Inclusive' },
+        messaging: { heroSlogan: 'Frame Every Moment', subSlogan: 'An artist voyage', ctaVariants: { waitlist: 'Join', bookNow: 'Book', merch: 'Shop', share: 'Share' }, elevatorPitch: 'Film and photography at sea.', toneKeywords: [], voicePersona: 'Thoughtful and direct', starterConversation: [] },
+        communityExpression: { corePromise: 'Creative community', participationStyle: 'Active', socialGravity: 'High', optionalGatherings: [], belongingSignals: [], solitudeAntiPatterns: [], visualTogethernessNotes: 'Workshop energy', copyFramingRule: 'Inclusive', activityInvitations: [] },
         socialConcepts: {} as unknown as CampaignAestheticBrief['socialConcepts'],
         videoConcepts: {
             heroExplainer: makeVideoConcept({ title: 'Hero', durationSeconds: 30 }),

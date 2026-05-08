@@ -104,6 +104,7 @@ function makeBrief(): CampaignAestheticBrief {
             elevatorPitch: 'A cruise-native analog social concept for travelers who like quiet shared moments.',
             toneKeywords: ['ocean-first', 'analog-warm', 'welcoming'],
             voicePersona: 'The calm friend who spots good light first.',
+            starterConversation: [],
         },
         communityExpression: {
             corePromise: 'Find your people in small analog moments between normal ship rhythms.',
@@ -114,6 +115,7 @@ function makeBrief(): CampaignAestheticBrief {
             solitudeAntiPatterns: ['exclusive energy'],
             visualTogethernessNotes: 'Small groups at the rail or table.',
             copyFramingRule: 'Use explicitly optional language: join if you like, stay for a minute, or keep moving without missing anything.',
+            activityInvitations: [],
         },
         socialConcepts: {
             tiktokOrganic: {

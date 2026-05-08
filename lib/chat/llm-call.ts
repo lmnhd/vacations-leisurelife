@@ -194,14 +194,49 @@ function tempParam(model: string, value: number): Record<string, number> {
         : { temperature: value };
 }
 
+async function callChatLlmAnthropic(apiId: string, history: ChatMessage[]): Promise<string> {
+    // @ts-ignore — optional dependency; install @anthropic-ai/sdk to activate
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const systemMsg = history.find((m) => m.role === 'system');
+    const turns = history
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    const response = await client.messages.create({
+        model: apiId,
+        max_tokens: 2000,
+        system: systemMsg?.content,
+        messages: turns,
+        temperature: 0.8,
+    });
+
+    const firstBlock = response.content[0];
+    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
+    if (!text) throw new Error('LLM returned an empty assistant response.');
+    return text;
+}
+
 export async function callChatLlm(input: {
     history: ChatMessage[];
     /** Pass a ModelName enum value; raw legacy strings are also accepted for backward compat. */
     model?: ModelName | string;
 }): Promise<string> {
+    const targetModel = input.model ?? MODEL_MAIN;
+    const allNames = Object.values(ModelName) as string[];
+
+    if (allNames.includes(targetModel as string)) {
+        const config = getModelConfig(targetModel as ModelName);
+        if (config.provider === 'anthropic') {
+            const apiId = config.apiId ?? (targetModel as string);
+            return callChatLlmAnthropic(apiId, input.history);
+        }
+    }
+
+    // OpenAI-compatible path (openai, groq, legacy models)
     const openai = new OpenAI();
-    // Resolve through the gateway registry so model selection stays centralised.
-    const apiId = resolveModelApiId(input.model ?? MODEL_MAIN);
+    const apiId = resolveModelApiId(targetModel);
 
     const completion = await openai.chat.completions.create({
         model: apiId,

@@ -11,9 +11,14 @@ interface CampaignLandingPageGptProps {
     landing: CampaignLandingViewModel;
 }
 
-function getCtaHref(bookingLink: string | null, mode: 'GROUP_WAIT' | 'BOOK_NOW', disabled: boolean): string {
-    if (bookingLink && mode === 'BOOK_NOW' && !disabled) {
-        return bookingLink;
+function getCtaHref(
+    retailBookingLink: string | null,
+    bookingLink: string | null,
+    mode: 'GROUP_WAIT' | 'BOOK_NOW',
+    disabled: boolean,
+): string {
+    if (mode === 'BOOK_NOW' && !disabled) {
+        return retailBookingLink ?? bookingLink ?? '#save-your-place';
     }
 
     return '#save-your-place';
@@ -55,8 +60,18 @@ export function CampaignLandingPageGpt({ landing }: CampaignLandingPageGptProps)
     const galleryImages = landing.galleryImages.filter((image) => image.url.trim().length > 0);
     const heroImage = landing.heroImage?.url?.trim().length ? landing.heroImage : galleryImages[0] ?? null;
     const supportingImages = galleryImages.filter((image) => image.url !== heroImage?.url);
-    const primaryHref = getCtaHref(landing.links.booking, landing.ctas.primary.mode, landing.ctas.primary.disabled);
-    const secondaryHref = getCtaHref(landing.links.booking, landing.ctas.secondary.mode, landing.ctas.secondary.disabled);
+    const primaryHref = getCtaHref(
+        landing.links.retailBooking,
+        landing.links.booking,
+        landing.ctas.primary.mode,
+        landing.ctas.primary.disabled,
+    );
+    const secondaryHref = getCtaHref(
+        landing.links.retailBooking,
+        landing.links.booking,
+        landing.ctas.secondary.mode,
+        landing.ctas.secondary.disabled,
+    );
     const primaryAnchorProps = getAnchorProps(primaryHref);
     const secondaryAnchorProps = getAnchorProps(secondaryHref);
     const pageStyle = {

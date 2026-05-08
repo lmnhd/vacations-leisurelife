@@ -71,6 +71,7 @@ function makeBrief(): CampaignAestheticBrief {
             elevatorPitch: 'A ship-first social concept.',
             toneKeywords: ['cruise-first'],
             voicePersona: 'Calm travel friend',
+            starterConversation: [],
         },
         communityExpression: {
             corePromise: 'Low-pressure belonging.',
@@ -81,6 +82,7 @@ function makeBrief(): CampaignAestheticBrief {
             solitudeAntiPatterns: ['exclusive energy'],
             visualTogethernessNotes: 'Small groups only.',
             copyFramingRule: 'Optional language only.',
+            activityInvitations: [],
         },
         socialConcepts: {} as CampaignAestheticBrief['socialConcepts'],
         videoConcepts: {

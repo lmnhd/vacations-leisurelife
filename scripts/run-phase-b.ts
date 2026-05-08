@@ -100,15 +100,18 @@ async function generateOdysseusRetailLink(
 // ─── CLI argument parsing ────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const targetSlugs = args.reduce<string[]>((collected, value, index) => {
-  if (value === "--slug") {
-    const slug = args[index + 1];
-    if (slug) {
-      collected.push(slug);
+const targetSlugs = args.reduce<string[]>(
+  (collected: string[], value: string, index: number) => {
+    if (value === "--slug") {
+      const slug = args[index + 1];
+      if (slug) {
+        collected.push(slug);
+      }
     }
-  }
-  return collected;
-}, []);
+    return collected;
+  },
+  [],
+);
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
@@ -136,10 +139,10 @@ async function runPhaseB(): Promise<void> {
 
   if (targetSlugs.length > 0) {
     const requestedCampaigns = await Promise.all(
-      targetSlugs.map((slug) => getCampaignBlueprint(slug)),
+      targetSlugs.map((slug: string) => getCampaignBlueprint(slug)),
     );
     const missingSlugs = targetSlugs.filter(
-      (slug, index) => !requestedCampaigns[index],
+      (slug: string, index: number) => !requestedCampaigns[index],
     );
 
     if (missingSlugs.length > 0) {
@@ -150,7 +153,7 @@ async function runPhaseB(): Promise<void> {
       return;
     }
 
-    campaigns = requestedCampaigns.filter((campaign) => campaign !== null);
+    campaigns = requestedCampaigns.filter((campaign: any) => campaign !== null);
   }
 
   console.log(

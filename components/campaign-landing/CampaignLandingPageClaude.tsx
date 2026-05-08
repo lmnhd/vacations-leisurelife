@@ -38,21 +38,18 @@ export function CampaignLandingPageClaude({
   landing,
 }: CampaignLandingPageClaudeProps) {
   const p = buildPalette(landing);
+  const galleryImages = landing.galleryImages;
+  const getGalleryImage = (idx: number) => galleryImages[idx];
 
+  const bookingHref =
+    landing.links.retailBooking ?? landing.links.booking ?? "#save-your-place";
   const primaryHref =
-    landing.links.booking &&
-    landing.ctas.primary.mode === "BOOK_NOW" &&
-    !landing.ctas.primary.disabled &&
-    (landing.state === "THRESHOLD_MET" || landing.state === "CONVERTED")
-      ? landing.links.booking
+    landing.ctas.primary.mode === "BOOK_NOW" && !landing.ctas.primary.disabled
+      ? bookingHref
       : "#save-your-place";
-
   const secondaryHref =
-    landing.links.booking &&
-    landing.ctas.secondary.mode === "BOOK_NOW" &&
-    !landing.ctas.secondary.disabled &&
-    (landing.state === "THRESHOLD_MET" || landing.state === "CONVERTED")
-      ? landing.links.booking
+    landing.ctas.secondary.mode === "BOOK_NOW" && !landing.ctas.secondary.disabled
+      ? bookingHref
       : "#save-your-place";
 
   const heroGradient = `linear-gradient(to top, ${landing.surfaceColor} 0%, ${landing.surfaceColor}99 45%, ${landing.surfaceColor}22 100%)`;
@@ -132,7 +129,7 @@ export function CampaignLandingPageClaude({
                   {landing.subSlogan}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3 pt-1">
+              <div className="grid gap-3 pt-1 sm:max-w-md">
                 {landing.ctas.primary.disabled ? (
                   <Button
                     size="lg"
@@ -166,45 +163,17 @@ export function CampaignLandingPageClaude({
                     </a>
                   </Button>
                 )}
-                {landing.ctas.secondary.disabled ? (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    disabled
-                    className="h-12 rounded-none px-7 text-base opacity-40"
-                    style={{
-                      borderColor: landing.accentColor,
-                      color: p.bodyText,
-                    }}
+                <p className="text-sm leading-6" style={{ color: p.bodyText, opacity: 0.65 }}>
+                  <span>Need the faster path? </span>
+                  <a
+                    href={secondaryHref}
+                    target={secondaryHref.startsWith("http") ? "_blank" : undefined}
+                    rel={secondaryHref.startsWith("http") ? "noreferrer" : undefined}
+                    className="underline underline-offset-4 hover:opacity-100"
                   >
                     {landing.ctas.secondary.label}
-                  </Button>
-                ) : (
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="h-12 rounded-none bg-transparent px-7 text-base hover:opacity-80"
-                    style={{
-                      borderColor: landing.accentColor,
-                      color: p.bodyText,
-                    }}
-                  >
-                    <a
-                      href={secondaryHref}
-                      target={
-                        secondaryHref.startsWith("http") ? "_blank" : undefined
-                      }
-                      rel={
-                        secondaryHref.startsWith("http")
-                          ? "noreferrer"
-                          : undefined
-                      }
-                    >
-                      {landing.ctas.secondary.label}
-                    </a>
-                  </Button>
-                )}
+                  </a>
+                </p>
               </div>
             </div>
 

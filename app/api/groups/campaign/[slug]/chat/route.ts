@@ -19,24 +19,14 @@ type PublicChatMessage = {
 };
 
 function starterMessages(slug: string, landing: CampaignLandingViewModel): PublicChatMessage[] {
-    return [
-        {
-            id: `${slug}-starter-user`,
-            role: 'user',
-            displayName: 'Ghost Guest',
-            content: landing.designSystem.chat.starterQuestion,
-            createdAt: new Date(0).toISOString(),
-            isStarterMessage: true,
-        },
-        {
-            id: `${slug}-starter-assistant`,
-            role: 'assistant',
-            displayName: landing.designSystem.chat.title,
-            content: landing.designSystem.chat.starterAnswer,
-            createdAt: new Date(0).toISOString(),
-            isStarterMessage: true,
-        },
-    ];
+    return landing.designSystem.chat.starterConversation.map((turn, i) => ({
+        id: `${slug}-starter-${i}`,
+        role: turn.role,
+        displayName: turn.role === 'assistant' ? landing.designSystem.chat.title : 'guest_123',
+        content: turn.content,
+        createdAt: new Date(0).toISOString(),
+        isStarterMessage: true,
+    }));
 }
 
 function mapConversationTurn(turn: Record<string, unknown>): PublicChatMessage | null {
@@ -49,10 +39,16 @@ function mapConversationTurn(turn: Record<string, unknown>): PublicChatMessage |
         return null;
     }
 
+    // Use displayName stored on the turn if present; otherwise fall back to role defaults.
+    const storedName = typeof turn.displayName === 'string' ? turn.displayName.trim() : '';
+    const displayName = role === 'assistant'
+        ? 'Tour Conductor'
+        : (storedName || 'Guest');
+
     return {
         id,
         role,
-        displayName: role === 'assistant' ? 'Tour Conductor' : 'Guest',
+        displayName,
         content,
         createdAt,
     };
@@ -119,14 +115,44 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     });
 }
 
+/**
+ * Decode a guest token issued by the waitlist API.
+ * Token format: base64url(slug:email). Returns null for invalid/mismatched tokens.
+ */
+function decodeGuestToken(slug: string, token: string): { email: string } | null {
+    try {
+        const decoded = Buffer.from(token, 'base64url').toString('utf-8');
+        const colonIdx = decoded.indexOf(':');
+        if (colonIdx === -1) return null;
+        const tokenSlug = decoded.slice(0, colonIdx);
+        const email = decoded.slice(colonIdx + 1);
+        // Ensure the token was issued for this campaign, not another one.
+        if (tokenSlug !== slug || !email.includes('@')) return null;
+        return { email };
+    } catch {
+        return null;
+    }
+}
+
 export async function POST(request: NextRequest, context: RouteContext) {
     const { slug } = await context.params;
-    const body = await request.json().catch(() => ({})) as { message?: string; signedUp?: boolean };
+    const body = await request.json().catch(() => ({})) as {
+        message?: string;
+        guestToken?: string;
+        displayName?: string;
+        channel?: string;
+        /** @deprecated Use guestToken. Kept for backward compat with old clients. */
+        signedUp?: boolean;
+    };
 
-    if (body.signedUp !== true) {
+    // Accept either a real guestToken (new path) or the legacy signedUp boolean.
+    const hasValidToken = typeof body.guestToken === 'string' && !!decodeGuestToken(slug, body.guestToken);
+    const hasLegacyFlag = body.signedUp === true;
+
+    if (!hasValidToken && !hasLegacyFlag) {
         return NextResponse.json({
             success: false,
-            error: 'Join updates before sending a message to the Tour Conductor.',
+            error: 'Save your spot on this voyage to talk to the Tour Conductor.',
         }, { status: 403 });
     }
 
@@ -135,13 +161,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return NextResponse.json({ success: false, error: `No landing page found for "${slug}".` }, { status: 404 });
     }
 
+    // Use the display name from the token payload if provided; fall back to "Guest".
+    const displayName = (typeof body.displayName === 'string' && body.displayName.trim())
+        ? body.displayName.trim()
+        : 'Guest';
+
+    const campaignContext = buildCampaignContext(result.landing);
+    const guestLine = displayName !== 'Guest' ? `\nGuest name: ${displayName}` : '';
+
     const chatResult = await handleChatRequest({
         message: body.message,
         sessionId: result.landing.designSystem.chat.sessionId,
-        userId: `campaign-chat:${slug}`,
+        userId: body.guestToken ? `guest:${body.guestToken}` : `campaign-chat:${slug}`,
         channel: 'text',
         startingContext: 'campaign_landing_chat',
-        contextBlock: buildCampaignContext(result.landing),
+        contextBlock: `${campaignContext}${guestLine}`,
     });
 
     if (chatResult.status >= 400) {

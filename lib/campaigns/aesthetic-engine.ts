@@ -130,6 +130,17 @@ const GenerationPass1MessagingSchema = z.object({
     elevatorPitch: z.string().default(''),
     toneKeywords: z.array(z.string()).default([]),
     voicePersona: z.string().default(''),
+    starterConversation: z.preprocess(
+        (val) => (Array.isArray(val) ? val : []),
+        z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            // Inline coerce: model occasionally returns an array instead of a string.
+            content: z.preprocess(
+                (v) => Array.isArray(v) ? (v as unknown[]).join(' ') : v,
+                z.string().default(''),
+            ),
+        })).default([]),
+    ),
 });
 
 // Coerce array → string for string fields the model might return as a list.
@@ -149,6 +160,7 @@ const GenerationPass1CommunitySchema = z.object({
     solitudeAntiPatterns: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
     visualTogethernessNotes: z.preprocess(coerceToStr, z.string().default('')),
     copyFramingRule: z.preprocess(coerceToStr, z.string().default('')),
+    activityInvitations: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
 });
 
 const GenerationPass1MerchSchema = z.object({
@@ -692,12 +704,14 @@ CRITICAL VISUAL RULES:
 - visual.humanRepresentation.antiStereotypeRules should explicitly ban token casting, costume logic, and reductive cultural shortcuts.
 
 CRITICAL MESSAGING AND SOCIAL RULES:
+- messaging.starterConversation must be a 6-turn alternating user/assistant conversation (3 exchanges) that opens the Group Chat Hall for this specific campaign. It is rendered verbatim — write it as real chat, not marketing copy. Rules: (1) The first user turn must be "What is this cruise about?" (2) The first TC reply must be one sentence: the core of the sailing in plain language, followed by ship name, destination, and dates — no "Embark on..." or "Discover..." lead-ins. (3) The second user turn should ask something naturally specific to THIS niche — not generic ("Any listening rooms?" for vinyl, "Is there a game library?" for board games, "Do I need to bring gear?" for cycling). (4) The second TC reply: 1–2 short sentences describing how the niche shows up, in casual language, no jargon. (5) The third user turn: "How do I join?" or an equivalent natural closing question. (6) The third TC reply: 1–2 sentences on the form and no-payment-today reality. Every TC response must be ≤ 25 words. Every user line must be ≤ 12 words. Never use "journey", "unique", "embark", "unforgettable", "immersive", "curated", "bespoke", or "discover".
 - The niche must remain a social flavor layer, not a scheduled program architecture.
 - communityExpression is mandatory and must make the group feel emotionally real without turning the trip into managed programming.
 - communityExpression.corePromise should explain what social reward the guest gets from being around their people on this sailing.
 - communityExpression.participationStyle must explicitly describe low-pressure, drop-in/drop-out participation.
 - communityExpression.socialGravity must explain why strangers in this niche naturally start talking, clustering, or recognizing one another at sea.
 - communityExpression.optionalGatherings should name lightweight gatherings or rhythms, not scheduled curriculum.
+- communityExpression.activityInvitations must contain 4–6 short activity invitations written strictly from the guest's action POV. Each item is one sentence, present-tense, and action-forward — something a guest would tell a friend they got to do on this trip ("Bring a travel game to the stern deck at sunset", "Open café tables all day — pull up a chair, no sign-up needed"). These strings are rendered verbatim in the Guest Chat Hall idea board, so they MUST NOT be scene descriptions, camera directions, or cinematographer cues. Avoid "a [noun] with [visual detail]..." constructions. The niche identity should be legible from what the activity IS, not from how it looks in a photograph.
 - communityExpression.belongingSignals should focus on recognizable cues, shared taste, easy social openings, and visual identity rather than event operations.
 - communityExpression.solitudeAntiPatterns should guard against lonely, exclusive, emotionally hollow, or premium-solo-retreat drift.
 - communityExpression.visualTogethernessNotes should explain how imagery can show togetherness without crowds, choreography, or busy event scenes.
@@ -790,6 +804,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
                 toneKeywords: raw.messaging.toneKeywords?.length ? raw.messaging.toneKeywords : ['aspirational', 'specific', 'welcoming'],
                 elevatorPitch: raw.messaging.elevatorPitch || '',
                 voicePersona: raw.messaging.voicePersona || '',
+                starterConversation: raw.messaging.starterConversation ?? [],
             },
             communityExpression: {
                 corePromise: raw.communityExpression.corePromise,
@@ -800,6 +815,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
                 solitudeAntiPatterns: raw.communityExpression.solitudeAntiPatterns,
                 visualTogethernessNotes: raw.communityExpression.visualTogethernessNotes,
                 copyFramingRule: raw.communityExpression.copyFramingRule,
+                activityInvitations: raw.communityExpression.activityInvitations,
             },
             merch: normalizeMerchBrief(campaign.name, {
                 conceptStatement: raw.merch.conceptStatement,

@@ -18,10 +18,10 @@ async function run() {
     return Array.from(rows)
       .slice(0, 3)
       .map((row) => {
-        const anchors = Array.from(row.querySelectorAll("a")).map(
-          (a) => a.href,
+        const cells = Array.from(row.querySelectorAll("td")).map((td) =>
+          td.innerText.trim(),
         );
-        return anchors;
+        return cells;
       });
   });
 

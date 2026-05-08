@@ -39,8 +39,8 @@ function makeBrief(countdownSeries: VideoBrief[]): CampaignAestheticBrief {
             plausibilityFramework: { governingPrinciple: 'Cruise-native', cruiseNativeMoments: [], nicheEnhancedMoments: [], implausibleLiteralizations: [], allowedProps: [], discouragedProps: [] },
             humanRepresentation: { castingGoal: 'Mixed', ageRangeGuidance: '25-65', diversityIntent: 'Inclusive', pairingGuidance: 'Mixed pairs', stylingGuidance: 'Smart casual', antiStereotypeRules: [] },
         },
-        messaging: { heroSlogan: 'Sail With Purpose', subSlogan: 'Your voyage awaits', ctaVariants: { waitlist: 'Join', bookNow: 'Book', merch: 'Shop', share: 'Share' }, elevatorPitch: 'A jazz cruise.', toneKeywords: [], voicePersona: 'Warm and direct' },
-        communityExpression: { corePromise: 'Community', participationStyle: 'Active', socialGravity: 'High', optionalGatherings: [], belongingSignals: [], solitudeAntiPatterns: [], visualTogethernessNotes: 'Group energy', copyFramingRule: 'Inclusive' },
+        messaging: { heroSlogan: 'Sail With Purpose', subSlogan: 'Your voyage awaits', ctaVariants: { waitlist: 'Join', bookNow: 'Book', merch: 'Shop', share: 'Share' }, elevatorPitch: 'A jazz cruise.', toneKeywords: [], voicePersona: 'Warm and direct', starterConversation: [] },
+        communityExpression: { corePromise: 'Community', participationStyle: 'Active', socialGravity: 'High', optionalGatherings: [], belongingSignals: [], solitudeAntiPatterns: [], visualTogethernessNotes: 'Group energy', copyFramingRule: 'Inclusive', activityInvitations: [] },
         socialConcepts: {} as unknown as CampaignAestheticBrief['socialConcepts'],
         videoConcepts: {
             heroExplainer: makeVideoConcept({ title: 'Hero' }),

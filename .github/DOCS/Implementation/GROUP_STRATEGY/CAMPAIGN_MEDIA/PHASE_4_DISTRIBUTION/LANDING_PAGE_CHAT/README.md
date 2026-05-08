@@ -1,5 +1,9 @@
 # Landing Page Chat System Brainstorm
 
+> **Active spec for the rebuild:** See [GUEST_PORTAL_REDESIGN.md](./GUEST_PORTAL_REDESIGN.md). The page is being reframed from "landing page with sidebar chat widget" to "Interactive Guest Portal with full-width Group Chat Hall as centerpiece" — and gains a manual visual-flavor override + audition workflow so any of the four Claude Design systems can be selected per campaign before launch.
+>
+> The brainstorm and feature notes below remain accurate as the *behavioral* requirements (TC persona, signup gating, shared history, idea capture). Phase A of the redesign ships the structural reframe and audition mechanism. Phase C is where the chat-as-data-collector requirements in this README get their full backend wiring.
+
 ## Overview
 
 Implement a group chat system on campaign landing pages where visitors can interact with an AI "tour conductor" to ask questions about the cruise and suggest activities, excursions, and projects. All visitors to the same landing page share the same conversation, fostering community and co-creation of the cruise experience.
@@ -60,5 +64,4 @@ We can reuse this pipeline for the landing page chat.
 - TC should add guests to email and SMS notifications when requested
 - The conversation must persist for every visitor to see the full shared history
 - The portal should also act as a campaign status center and discovery point for other campaigns
-- TC must collect launch-ready data from guest activity suggestions and notification signups</content>
-  <parameter name="filePath">c:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\.github\DOCS\Implementation\GROUP_STRATEGY\CAMPAIGN_MEDIA\PHASE_4_DISTRIBUTION\LANDING_PAGE_CHAT\README.md
+- TC must collect launch-ready data from guest activity suggestions and notification signups

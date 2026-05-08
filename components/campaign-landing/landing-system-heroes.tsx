@@ -63,7 +63,7 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
                     </div>
 
                     <div>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 sm:max-w-lg">
                             <Button
                                 asChild
                                 disabled={landing.ctas.primary.disabled}
@@ -72,14 +72,12 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label} →</a>
                             </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                disabled={landing.ctas.secondary.disabled}
-                                className="min-h-[60px] rounded-none border-white/20 bg-transparent px-6 text-base font-bold text-white hover:bg-white/5"
-                            >
-                                <a href={secondaryHref} {...externalTarget(secondaryHref)}>{landing.ctas.secondary.label}</a>
-                            </Button>
+                            <p className="text-sm leading-6 text-white/65">
+                                <span>Need the faster path? </span>
+                                <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-white">
+                                    {landing.ctas.secondary.label}
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -192,7 +190,7 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                             </cite>
                         </blockquote>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 sm:max-w-md">
                             <Button
                                 asChild
                                 disabled={landing.ctas.primary.disabled}
@@ -201,14 +199,12 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                             </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                disabled={landing.ctas.secondary.disabled}
-                                className="min-h-[58px] rounded-none border-stone-950 bg-transparent text-base font-bold text-stone-950 hover:bg-stone-950/5"
-                            >
-                                <a href={secondaryHref} {...externalTarget(secondaryHref)}>{landing.ctas.secondary.label}</a>
-                            </Button>
+                            <p className="text-sm leading-6 text-stone-700">
+                                <span>Need the faster path? </span>
+                                <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-stone-950">
+                                    {landing.ctas.secondary.label}
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -348,7 +344,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:max-w-md">
                         <Button
                             asChild
                             disabled={landing.ctas.primary.disabled}
@@ -357,14 +353,12 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         >
                             <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                         </Button>
-                        <Button
-                            asChild
-                            variant="outline"
-                            disabled={landing.ctas.secondary.disabled}
-                            className="min-h-[58px] rounded-none border-amber-900 bg-transparent text-base font-bold text-amber-950 hover:bg-amber-900/5"
-                        >
-                            <a href={secondaryHref} {...externalTarget(secondaryHref)}>{landing.ctas.secondary.label}</a>
-                        </Button>
+                        <p className="text-sm leading-6 text-amber-900/75">
+                            <span>Need the faster path? </span>
+                            <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-amber-950">
+                                {landing.ctas.secondary.label}
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -418,18 +412,18 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
 
                 <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
                     {/* Polaroid collage */}
-                    <div className="relative min-h-[460px]">
+                    <div className="relative flex flex-col gap-4 lg:block lg:min-h-[460px]">
                         {polaroids.map((img, i) => {
                             const positions = [
-                                'left-0 top-0',
-                                'left-[35%] top-6',
-                                'left-[12%] top-[55%]',
-                                'left-[55%] top-[48%]',
+                                'lg:left-0 lg:top-0',
+                                'lg:left-[35%] lg:top-6',
+                                'lg:left-[12%] lg:top-[55%]',
+                                'lg:left-[55%] lg:top-[48%]',
                             ];
                             return (
                                 <div
                                     key={i}
-                                    className={`absolute w-[58%] max-w-[280px] ${positions[i]} ${tilts[i]} border-[10px] border-white bg-white p-1 shadow-[8px_8px_0_rgba(0,0,0,0.85)]`}
+                                    className={`relative w-full border-[10px] border-white bg-white p-1 shadow-[8px_8px_0_rgba(0,0,0,0.85)] lg:absolute lg:w-[58%] lg:max-w-[280px] ${positions[i]} ${tilts[i]}`}
                                     style={{ zIndex: 10 + i }}
                                 >
                                     {/* masking tape */}
@@ -447,7 +441,7 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                             );
                         })}
                         {/* Sticky note */}
-                        <div className="absolute bottom-0 right-0 z-30 w-44 rotate-[4deg] bg-yellow-200 p-4 shadow-[6px_6px_0_rgba(0,0,0,0.7)]">
+                        <div className="relative z-30 ml-auto w-44 rotate-[4deg] bg-yellow-200 p-4 shadow-[6px_6px_0_rgba(0,0,0,0.7)] lg:absolute lg:bottom-0 lg:right-0">
                             <p className="font-serif text-lg italic leading-tight text-zinc-900">
                                 &ldquo;{landing.designSystem.quote.slice(0, 80)}{landing.designSystem.quote.length > 80 ? '...' : ''}&rdquo;
                             </p>
@@ -499,14 +493,16 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>► {landing.ctas.primary.label}</a>
                             </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                disabled={landing.ctas.secondary.disabled}
-                                className="min-h-[58px] rounded-none border-2 border-zinc-950 bg-[#fff9e8] px-6 text-base font-black uppercase text-zinc-950 shadow-[6px_6px_0_rgba(0,0,0,0.95)] hover:bg-white"
-                            >
-                                <a href={secondaryHref} {...externalTarget(secondaryHref)}>{landing.ctas.secondary.label}</a>
-                            </Button>
+                            <p className="flex items-center px-1 text-sm font-bold uppercase tracking-[0.2em] text-zinc-700">
+                                <span>Need the faster path? </span>
+                                <a
+                                    href={secondaryHref}
+                                    {...externalTarget(secondaryHref)}
+                                    className="ml-2 inline-flex underline underline-offset-4 transition hover:text-zinc-950"
+                                >
+                                    {landing.ctas.secondary.label}
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>

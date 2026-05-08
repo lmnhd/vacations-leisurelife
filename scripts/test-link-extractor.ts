@@ -8,7 +8,7 @@ async function run() {
   const context = await browser.newContext({ storageState: STATE_FILE });
   const page = await context.newPage();
 
-  await page.goto("https://www.cbagenttools.com/groups/view_group/44071/", {
+  await page.goto("https://www.cbagenttools.com/groups/view_group/42710/", {
     waitUntil: "networkidle",
   });
 

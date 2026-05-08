@@ -213,6 +213,21 @@ No photography. Pure designed graphic.
 
 The `VisualFlavor` is set by `selectVisualFlavor()` in `identity-blueprint.ts` and stored in `CampaignIdentityBlueprint.visualFlavor`. The token system reads it via `brief.identityBlueprint?.visualFlavor` and maps it to `NicheTokens.system`.
 
+### Override + audition (operator workflow)
+
+Auto-selection from energy mode is the default, but operators can override the visual flavor before publishing.
+
+**Precedence (highest first):**
+1. `?flavor=editorial_magazine` (or `travel_nostalgia` / `indie_zine` / `none`) on `/tests/campaign-landing/[slug]` — **preview only**, never persisted.
+2. `Campaign.manualVisualFlavor` — locked override on the campaign record. Honored by both the public route and previews.
+3. `brief.identityBlueprint.visualFlavor` — auto-derived from energy mode.
+
+**Where to switch flavors during review:** the preview page at `/tests/campaign-landing/[slug]` carries a `FlavorAuditionToolbar` directly under the existing review controls. Click any of the four system buttons to instantly rerender the campaign in that flavor. Click **Lock** to PATCH `manualVisualFlavor` so the public route honors the choice.
+
+The override is applied at the view-model boundary by `resolveActiveVisualFlavor` in `lib/campaigns/landing/view-model.ts`. The `extractNicheTokens` system pick is overwritten when an override is present, so the entire portal — hero, chat hall theming, body sections — flips together.
+
+**Full spec:** [PHASE_4_DISTRIBUTION/LANDING_PAGE_CHAT/GUEST_PORTAL_REDESIGN.md](../PHASE_4_DISTRIBUTION/LANDING_PAGE_CHAT/GUEST_PORTAL_REDESIGN.md).
+
 ---
 
 ## Cross-Format Application

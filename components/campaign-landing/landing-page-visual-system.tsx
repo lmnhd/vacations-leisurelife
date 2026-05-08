@@ -20,13 +20,25 @@ interface CampaignLandingPageVisualSystemProps {
     secondaryHref?: string;
 }
 
-function resolveCtaHrefs(landing: CampaignLandingViewModel, primaryHref?: string, secondaryHref?: string): { primaryHref: string; secondaryHref: string } {
+function resolveCtaHrefs(
+    landing: CampaignLandingViewModel,
+    primaryHref?: string,
+    secondaryHref?: string,
+): { primaryHref: string; secondaryHref: string; bookingHref: string | null } {
     const waitlistAnchor = '#save-your-place';
-    const bookingHref = landing.links.retailBooking ?? landing.links.booking ?? waitlistAnchor;
+    const bookingHref = landing.links.retailBooking ?? landing.links.booking ?? null;
     const primaryMode = landing.ctas.primary.mode;
-    const computedPrimary = primaryHref ?? (primaryMode === 'BOOK_NOW' ? bookingHref : waitlistAnchor);
-    const computedSecondary = secondaryHref ?? (landing.ctas.secondary.mode === 'BOOK_NOW' ? bookingHref : waitlistAnchor);
-    return { primaryHref: computedPrimary, secondaryHref: computedSecondary };
+    const computedPrimary =
+        primaryHref ??
+        (primaryMode === 'BOOK_NOW' && !landing.ctas.primary.disabled
+            ? bookingHref ?? waitlistAnchor
+            : waitlistAnchor);
+    const computedSecondary =
+        secondaryHref ??
+        (landing.ctas.secondary.mode === 'BOOK_NOW'
+            ? bookingHref ?? waitlistAnchor
+            : waitlistAnchor);
+    return { primaryHref: computedPrimary, secondaryHref: computedSecondary, bookingHref };
 }
 
 type SystemKey = CampaignLandingViewModel['designSystem']['system'];
@@ -256,7 +268,15 @@ function ExperienceList({ items, theme, accentHex }: { items: string[]; theme: S
     );
 }
 
-function PathChoices({ choices, theme, accentHex }: { choices: LandingPathChoice[]; theme: SystemTheme; accentHex: string }) {
+function PathChoices({
+    choices,
+    theme,
+    accentHex,
+}: {
+    choices: LandingPathChoice[];
+    theme: SystemTheme;
+    accentHex: string;
+}) {
     return (
         <div className="grid gap-4 md:grid-cols-2">
             {choices.map((choice) => (
@@ -378,10 +398,6 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                             <Itinerary system={system} steps={landing.story.howItWorks} theme={theme} accentHex={accentHex} />
                         </InnerSection>
 
-                        <InnerSection theme={theme} eyebrow="Choose your pace" title="Two ways to join this sailing" accentHex={accentHex}>
-                            <PathChoices choices={landing.bookingPathChoices} theme={theme} accentHex={accentHex} />
-                        </InnerSection>
-
                         <InnerSection theme={theme} eyebrow="Why now" title="Reasons to raise your hand early" accentHex={accentHex}>
                             <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
                                 {landing.story.whyJoinNow.map((reason, i) => (
@@ -467,13 +483,14 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                         <h2 className={`${theme.headingFont} text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{landing.designSystem.cta}</h2>
                         <p className={`mt-3 max-w-xl text-base leading-7 ${theme.softText}`}>{landing.ctas.primary.description}</p>
                     </div>
-                    <div className="grid gap-3 self-end sm:grid-cols-2">
-                        <Button asChild disabled={landing.ctas.primary.disabled} className="min-h-[58px] rounded-none px-6 text-base font-bold" style={{ backgroundColor: accentHex, color: theme.primaryBtnTextColor }}>
-                            <a href={primaryHref}>{landing.ctas.primary.label}</a>
-                        </Button>
-                        <Button asChild variant="outline" disabled={landing.ctas.secondary.disabled} className={`min-h-[58px] rounded-none px-6 text-base font-bold ${theme.secondaryBtnClasses}`}>
-                            <a href={secondaryHref}>{landing.ctas.secondary.label}</a>
-                        </Button>
+                    <div className="flex items-end">
+                        <a
+                            href="#save-your-place"
+                            className="text-base font-bold underline underline-offset-4 transition hover:opacity-80"
+                            style={{ color: accentHex }}
+                        >
+                            Go to the form
+                        </a>
                     </div>
                 </div>
             </section>

@@ -2,6 +2,16 @@
 
 **Description:** Orchestrates the end-to-end creation of a Leisure Life Interactive shadow group campaign. Use this skill to guide agents through discovery, inventory matching, aesthetic briefing, and final media generation while enforcing hard quality constraints and allowing user intervention.
 
+## 0. Shared Process Memory
+
+Agents using this skill must treat ad hoc user-driven workflow changes as important process evidence, not just one-off conversation details.
+
+- **Read first:** Before substantial campaign work, review [CAMPAIGN_PROCESS_MEMORY.md](./CAMPAIGN_PROCESS_MEMORY.md) for prior adjustments, recurring friction points, and temporary operating rules.
+- **Append after meaningful changes:** If the user asks for an ad hoc process change, exception, workaround, new guardrail, or manual override that changes how the campaign pipeline is being operated, document it in [CAMPAIGN_PROCESS_MEMORY.md](./CAMPAIGN_PROCESS_MEMORY.md) before ending the task.
+- **What belongs there:** Workflow deviations, recurring blockers, manual operator steps, routing changes, messaging adjustments, inventory/booking exceptions, review heuristics, and any temporary policy that future agents should know about.
+- **Why this exists:** This file is the shared memory layer for the campaign-development process across agents. It is meant to accumulate real-world implementation friction so the system can later be refactored with evidence instead of relying on memory or scattered thread history.
+- **How to write entries:** Add a dated note with a short title, the trigger or user request, the change that was made, and the broader lesson or refactor implication.
+
 ## 1. Core Philosophy & Pitfalls to Avoid
 
 Based on V2 Campaign Strategy and previous iterations, agents using this skill MUST adhere to the following:

@@ -2,10 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCampaignBlueprint, deleteCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
+import { VisualFlavorEnum } from '@/lib/campaigns/schema';
 
-const CampaignStatusPatchSchema = z.object({
-    status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']),
-});
+const CampaignPatchSchema = z.object({
+    status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']).optional(),
+    /**
+     * Set to a VisualFlavor to lock that flavor as the campaign's manual override.
+     * Set to `null` to clear the override and return to auto-selection.
+     */
+    manualVisualFlavor: z.union([VisualFlavorEnum, z.null()]).optional(),
+    /**
+     * Guest-facing activity invitations for the idea board.
+     * Replace the discovery-pipeline optionalGatheringMoments with invitation-register copy
+     * (action-forward, from the guest's POV) without re-running the full brief pipeline.
+     * See: GUEST_PORTAL_REDESIGN.md §9 for copy format guidance.
+     */
+    optionalGatheringMoments: z.array(z.string().min(1).max(300)).min(1).max(10).optional(),
+}).refine(
+    (value) =>
+        value.status !== undefined
+        || value.manualVisualFlavor !== undefined
+        || value.optionalGatheringMoments !== undefined,
+    { message: 'Patch must include at least one of: status, manualVisualFlavor, optionalGatheringMoments.' },
+);
 
 export async function GET(
     _req: NextRequest,
@@ -67,6 +86,7 @@ export async function GET(
             discoveryIteration: campaign.discoveryIteration ?? null,
             cbagenttoolsGroupId: campaign.cbagenttoolsGroupId ?? null,
             cbagenttoolsBookingLink: campaign.cbagenttoolsBookingLink ?? null,
+            manualVisualFlavor: campaign.manualVisualFlavor ?? null,
             createdAt: campaign.createdAt,
             updatedAt: campaign.updatedAt,
         },
@@ -93,10 +113,10 @@ export async function PATCH(
         rawBody = {};
     }
 
-    const parsed = CampaignStatusPatchSchema.safeParse(rawBody);
+    const parsed = CampaignPatchSchema.safeParse(rawBody);
     if (!parsed.success) {
         return NextResponse.json(
-            { success: false, error: 'Invalid status payload.', issues: parsed.error.issues },
+            { success: false, error: 'Invalid patch payload.', issues: parsed.error.issues },
             { status: 400 }
         );
     }
@@ -109,26 +129,53 @@ export async function PATCH(
         );
     }
 
-    if (campaign.status === parsed.data.status) {
+    const patch = parsed.data;
+    const messages: string[] = [];
+    const updatedCampaign = { ...campaign };
+
+    if (patch.status !== undefined) {
+        if (campaign.status === patch.status) {
+            messages.push(`Campaign already in status ${campaign.status}.`);
+        } else {
+            updatedCampaign.status = patch.status;
+            messages.push(`Status updated from ${campaign.status} to ${patch.status}.`);
+        }
+    }
+
+    if (patch.manualVisualFlavor !== undefined) {
+        if (patch.manualVisualFlavor === null) {
+            delete updatedCampaign.manualVisualFlavor;
+            messages.push('Cleared manualVisualFlavor; reverting to auto-selection.');
+        } else {
+            updatedCampaign.manualVisualFlavor = patch.manualVisualFlavor;
+            messages.push(`manualVisualFlavor locked to "${patch.manualVisualFlavor}".`);
+        }
+    }
+
+    if (patch.optionalGatheringMoments !== undefined) {
+        updatedCampaign.optionalGatheringMoments = patch.optionalGatheringMoments;
+        messages.push(`optionalGatheringMoments updated (${patch.optionalGatheringMoments.length} items).`);
+    }
+
+    const isUnchanged = updatedCampaign.status === campaign.status
+        && updatedCampaign.manualVisualFlavor === campaign.manualVisualFlavor
+        && JSON.stringify(updatedCampaign.optionalGatheringMoments) === JSON.stringify(campaign.optionalGatheringMoments);
+
+    if (isUnchanged) {
         return NextResponse.json({
             success: true,
             campaign,
-            message: `Campaign already in status ${campaign.status}.`,
+            message: messages.join(' ') || 'No changes applied.',
         });
     }
 
-    const updatedCampaign = {
-        ...campaign,
-        status: parsed.data.status,
-        updatedAt: new Date().toISOString(),
-    };
-
+    updatedCampaign.updatedAt = new Date().toISOString();
     await saveCampaignBlueprint(updatedCampaign);
 
     return NextResponse.json({
         success: true,
         campaign: updatedCampaign,
-        message: `Campaign status updated from ${campaign.status} to ${updatedCampaign.status}.`,
+        message: messages.join(' '),
     });
 }
 

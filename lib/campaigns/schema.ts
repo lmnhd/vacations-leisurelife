@@ -268,6 +268,18 @@ export const CommunityExpressionSchema = z.object({
     solitudeAntiPatterns: z.array(z.string()),
     visualTogethernessNotes: z.string(),
     copyFramingRule: z.string(),
+    /**
+     * Guest-facing activity invitations for the Group Chat Hall idea board.
+     * 4–6 short, action-forward strings written from the guest's POV ("you can...",
+     * "bring...", "join..."). Each sentence should name something a guest would
+     * actually do or suggest — NOT a camera direction or scene description.
+     *
+     * Example (board games): "Open game tables in the café all day — pull up a chair, no sign-up needed"
+     * NOT: "a café table with a rotating library of open games, chips and drinks already poured..."
+     *
+     * Optional-with-default so existing briefs and test mocks remain valid.
+     */
+    activityInvitations: z.array(z.string()).optional(),
 });
 export type CommunityExpression = z.infer<typeof CommunityExpressionSchema>;
 
@@ -483,6 +495,11 @@ export const DEFAULT_COMMUNITY_EXPRESSION = {
     ],
     visualTogethernessNotes: 'Show togetherness through pairs or small clusters, shared attention, and easy companionship rather than crowds or choreography.',
     copyFramingRule: 'Frame all social moments as optional, low-pressure, and warmly available. Guests should feel welcome whether they join often, occasionally, or barely at all.',
+    activityInvitations: [
+        'Suggest an onboard activity or get-together for the group.',
+        'Ask the Tour Conductor about the itinerary or shore excursions.',
+        'Tell us what kind of people you want to meet on this sailing.',
+    ],
 } satisfies CommunityExpression;
 
 export function normalizeCommunityExpression(
@@ -497,6 +514,7 @@ export function normalizeCommunityExpression(
         solitudeAntiPatterns: input?.solitudeAntiPatterns?.length ? input.solitudeAntiPatterns : DEFAULT_COMMUNITY_EXPRESSION.solitudeAntiPatterns,
         visualTogethernessNotes: input?.visualTogethernessNotes?.trim() || DEFAULT_COMMUNITY_EXPRESSION.visualTogethernessNotes,
         copyFramingRule: input?.copyFramingRule?.trim() || DEFAULT_COMMUNITY_EXPRESSION.copyFramingRule,
+        activityInvitations: input?.activityInvitations?.length ? input.activityInvitations : DEFAULT_COMMUNITY_EXPRESSION.activityInvitations,
     };
 }
 
@@ -857,6 +875,18 @@ export const CampaignAestheticBriefSchema = z.object({
         elevatorPitch: z.string(),
         toneKeywords: z.array(z.string()),
         voicePersona: z.string(),
+        /**
+         * Bespoke multi-turn starter conversation for the Group Chat Hall.
+         * Alternates user/assistant. Written in a chatty, short-response register
+         * using this campaign's specific niche vocabulary and energy mode.
+         * Rendered verbatim — no post-processing. Empty/absent = fall back to
+         * deterministic builder in buildStarterConversation().
+         * Optional so existing briefs and test mocks without this field remain valid.
+         */
+        starterConversation: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+        })).optional(),
     }),
 
     communityExpression: CommunityExpressionSchema,

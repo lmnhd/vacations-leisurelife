@@ -16,12 +16,12 @@ export function CampaignLandingPageKimi({ landing }: CampaignLandingPageKimiProp
 
     const galleryImages = landing.galleryImages.filter((image) => image.url.trim().length > 0);
 
-    const primaryHref = landing.links.booking && landing.ctas.primary.mode === 'BOOK_NOW' && !landing.ctas.primary.disabled
-        ? landing.links.booking
+    const primaryHref = landing.ctas.primary.mode === 'BOOK_NOW' && !landing.ctas.primary.disabled
+        ? (landing.links.retailBooking ?? landing.links.booking ?? '#save-your-place')
         : '#save-your-place';
 
-    const secondaryHref = landing.links.booking && landing.ctas.secondary.mode === 'BOOK_NOW' && !landing.ctas.secondary.disabled
-        ? landing.links.booking
+    const secondaryHref = landing.ctas.secondary.mode === 'BOOK_NOW' && !landing.ctas.secondary.disabled
+        ? (landing.links.retailBooking ?? landing.links.booking ?? '#save-your-place')
         : '#save-your-place';
 
     return (

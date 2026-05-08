@@ -11,7 +11,7 @@
 
 import { chromium } from "playwright";
 import { existsSync } from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
 import { CbGroupInventoryItem } from "../lib/campaigns/cb-inventory-types";
 
 const CB_BASE_URL = "https://www.cbagenttools.com";

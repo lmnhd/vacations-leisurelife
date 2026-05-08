@@ -62,24 +62,14 @@ const SYSTEM_COPY: Record<CampaignLandingViewModel['designSystem']['system'], {
 };
 
 function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
-    return [
-        {
-            id: `${landing.slug}-starter-user`,
-            role: 'user',
-            displayName: 'Ghost Guest',
-            content: landing.designSystem.chat.starterQuestion,
-            createdAt: new Date(0).toISOString(),
-            isStarterMessage: true,
-        },
-        {
-            id: `${landing.slug}-starter-assistant`,
-            role: 'assistant',
-            displayName: landing.designSystem.chat.title,
-            content: landing.designSystem.chat.starterAnswer,
-            createdAt: new Date(0).toISOString(),
-            isStarterMessage: true,
-        },
-    ];
+    return landing.designSystem.chat.starterConversation.map((turn, i) => ({
+        id: `${landing.slug}-starter-${i}`,
+        role: turn.role,
+        displayName: turn.role === 'assistant' ? landing.designSystem.chat.title : 'guest_123',
+        content: turn.content,
+        createdAt: new Date(0).toISOString(),
+        isStarterMessage: true,
+    }));
 }
 
 export function LandingPageTourConductor({ landing, variant }: LandingPageTourConductorProps) {

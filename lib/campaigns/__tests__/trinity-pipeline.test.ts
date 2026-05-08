@@ -93,6 +93,7 @@ function makeBrief(): CampaignAestheticBrief {
             elevatorPitch: 'A hosted session at sea for analog travelers.',
             toneKeywords: ['ocean-first', 'analog-warm', 'welcoming'],
             voicePersona: 'The calm friend who spots good light first.',
+            starterConversation: [],
         },
         communityExpression: {
             corePromise: 'Find your people in small analog moments between normal ship rhythms.',
@@ -103,6 +104,7 @@ function makeBrief(): CampaignAestheticBrief {
             solitudeAntiPatterns: ['exclusive energy'],
             visualTogethernessNotes: 'Small groups at the rail or table.',
             copyFramingRule: 'Attend the hosted session and stay on schedule.',
+            activityInvitations: [],
         },
         socialConcepts: {} as unknown as CampaignAestheticBrief['socialConcepts'],
         videoConcepts: {

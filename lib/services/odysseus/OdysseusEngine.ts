@@ -287,8 +287,9 @@ export class OdysseusEngine {
      * and navigating directly to it. This avoids the flaky Angular form validation
      * and anti-bot detection on the Continue button.
      *
-     * Returns the final landed URL (category.aspx or equivalent) on success, or
-     * null if extraction or navigation fails.
+     * Returns the shareable booking URL exposed by the portal on success, or
+     * the constructed details.aspx entrypoint as a fallback if the share field
+     * is unavailable. Returns null if extraction or navigation fails.
      */
     async bypassGuestInfoAndContinue(guestAges: number[] = [35, 35], guestState: string = 'FL'): Promise<string | null> {
         if (!this.odysseusPage) throw new Error("Odysseus page not initialized.");
@@ -340,8 +341,21 @@ export class OdysseusEngine {
             }
 
             console.log(`[OdysseusEngine] Final URL: ${finalUrl}`);
+
+            const shareLink = await page
+                .locator('#shareToClipboard, #visible-input')
+                .first()
+                .inputValue()
+                .catch(() => '');
+            if (shareLink && shareLink.trim().length > 0) {
+                const normalizedShareLink = shareLink.trim().replace(/&amp;/g, '&');
+                console.log(`[OdysseusEngine] Share link extracted: ${normalizedShareLink}`);
+                await page.screenshot({ path: 'post-bypass-state.png', fullPage: true });
+                return normalizedShareLink;
+            }
+
             await page.screenshot({ path: 'post-bypass-state.png', fullPage: true });
-            return finalUrl.includes('category.aspx') ? finalUrl : null;
+            return detailsUrl;
 
         } catch (e) {
             console.log(`[OdysseusEngine] Navigation to details.aspx failed:`, e);
