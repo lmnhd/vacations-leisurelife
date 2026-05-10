@@ -1,0 +1,19 @@
+{
+  "slug": "wellness-and-nature-cruise",
+  "campaignExists": true,
+  "name": "Wellness and Nature Cruise",
+  "status": "DRAFT",
+  "pricingStatus": "CB_MATCHED",
+  "aestheticBriefStatus": null,
+  "activeBookingMode": "GROUP_BLOCK_ACTIVE",
+  "inventoryHealth": "HEALTHY",
+  "inventoryLastCheckedAt": "2026-05-09T19:43:19.962Z",
+  "matchedShipName": "Icon of the Seas",
+  "matchedSailDate": "Nov. 21, 2026",
+  "startingPrice": 1969,
+  "retiredAt": null,
+  "brief": {
+    "exists": false
+  },
+  "checkedAt": "2026-05-09T21:51:26.934Z"
+}

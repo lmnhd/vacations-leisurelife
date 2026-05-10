@@ -10,7 +10,7 @@ import {
   ChevronUp,
   FlaskConical,
 } from "lucide-react";
-import { Campaign } from "@/lib/campaigns/types";
+import type { Campaign, CampaignInventoryCandidate, CampaignInventoryMode, InventoryHealthStatus } from "@/lib/campaigns/types";
 import { getLaunchWindowAssessment } from "@/lib/campaigns/launch-window";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -33,6 +33,11 @@ interface PhaseBCampaignRef {
   priceSource?: string;
   cbPriceAdvantage?: number;
   cbagenttoolsBookingLink?: string;
+  // Inventory health & ranked candidates (populated by ranked Phase B)
+  activeBookingMode?: CampaignInventoryMode | null;
+  inventoryHealth?: InventoryHealthStatus | null;
+  inventoryLastCheckedAt?: string | null;
+  inventoryCandidates?: CampaignInventoryCandidate[] | null;
 }
 
 type PhaseBRunMode = "all" | "selected";
@@ -136,10 +141,10 @@ function SonarResearchPanel({ research }: { research: SonarResearch }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
         <FlaskConical className="h-3.5 w-3.5 text-amber-400" />
         <span className="text-xs tracking-widest uppercase text-amber-400">
-          Sonar Deep Research
+          Gemini Deep Research
         </span>
         <span className="text-[10px] text-slate-600 ml-1">
-          Raw Perplexity responses — the foundation for all 5 blueprints
+          Raw Gemini Deep Research responses — the foundation for all 5 blueprints
         </span>
       </div>
       <div className="divide-y divide-amber-500/10">
@@ -564,6 +569,160 @@ function BlueprintRationaleSection({ campaign }: { campaign: Campaign }) {
   );
 }
 
+// ─── Inventory Health Badge ────────────────────────────────────────────────────
+
+function InventoryHealthBadge({ status }: { status: InventoryHealthStatus }) {
+  const styles: Record<InventoryHealthStatus, string> = {
+    HEALTHY: "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300",
+    DEGRADED: "bg-amber-500/15 border border-amber-500/30 text-amber-300",
+    FAILED: "bg-red-500/15 border border-red-500/30 text-red-300",
+    UNVERIFIED: "bg-slate-700/30 border border-slate-600 text-slate-400",
+  };
+  return (
+    <span className={`text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded ${styles[status]}`}>
+      {status.toLowerCase()}
+    </span>
+  );
+}
+
+// ─── Phase B Campaign Row (with expandable alternatives) ──────────────────────
+
+function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
+  const [open, setOpen] = useState(false);
+  const candidates = c.inventoryCandidates ?? [];
+  const hasCandidates = candidates.length > 0;
+  const cbCandidates = candidates.filter((cand) => cand.source === "CB_GROUP");
+  const retailCandidate = candidates.find((cand) => cand.source === "ODYSSEUS_RETAIL");
+
+  return (
+    <div className="border rounded-lg border-white/10 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={!hasCandidates}
+        className={`flex items-center justify-between w-full px-3 py-2 text-left transition-colors ${hasCandidates ? "hover:bg-white/5 cursor-pointer" : "cursor-default"}`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-300">{c.name}</span>
+            <span className="text-[10px] text-slate-600">{c.slug}</span>
+            {hasCandidates && (
+              <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
+                {cbCandidates.length} candidate{cbCandidates.length === 1 ? "" : "s"}
+                {retailCandidate ? " + retail" : ""}
+              </span>
+            )}
+            {c.activeBookingMode && c.activeBookingMode !== "GROUP_BLOCK_ACTIVE" && (
+              <span
+                title={`Active booking mode is ${c.activeBookingMode}. Inventory transitioned away from the original group block.`}
+                className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300"
+              >
+                {c.activeBookingMode.replace(/_/g, " ").toLowerCase()}
+              </span>
+            )}
+          </div>
+          {c.matchedShipName && (
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {c.matchedShipName}
+              {c.matchedSailDate ? ` · ${c.matchedSailDate}` : ""}
+              {c.startingPrice ? ` · From $${c.startingPrice.toLocaleString()}/pp` : ""}
+            </div>
+          )}
+          {c.meetsMinimumLeadTime === false && (
+            <div className="text-[10px] text-red-300 mt-1">
+              Too close to launch normally: {c.daysUntilSail} days until sail.
+            </div>
+          )}
+          {c.isTightLeadTime && (
+            <div className="text-[10px] text-amber-300 mt-1">
+              Tight launch window: {c.daysUntilSail} days until sail.
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {c.inventoryHealth && <InventoryHealthBadge status={c.inventoryHealth} />}
+          <PricingBadge status={c.pricingStatus} />
+          {hasCandidates && (
+            open ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />
+          )}
+        </div>
+      </button>
+
+      {open && hasCandidates && (
+        <div className="border-t border-white/5 bg-slate-950/50 px-3 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">
+            Ranked candidates · last checked {c.inventoryLastCheckedAt ? new Date(c.inventoryLastCheckedAt).toLocaleString() : "unknown"}
+          </p>
+          <ol className="space-y-1.5">
+            {candidates.map((cand) => (
+              <li
+                key={`${cand.source}-${cand.rank}-${cand.groupId ?? cand.retailLink ?? cand.shipName}`}
+                className="flex items-start gap-3 px-2.5 py-2 rounded bg-slate-900/60 border border-white/5"
+              >
+                <span className="text-[10px] uppercase tracking-widest font-mono text-slate-500 shrink-0 w-12">
+                  {cand.source === "CB_GROUP" ? `Rank ${cand.rank}` : "Retail"}
+                </span>
+                <div className="flex-1 min-w-0 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-300">{cand.shipName}</span>
+                    <span className="text-slate-500">· {cand.sailDate}</span>
+                    {cand.departurePort && (
+                      <span className="text-slate-500">· {cand.departurePort}</span>
+                    )}
+                    {cand.startingPrice && (
+                      <span className="text-emerald-400">· ${cand.startingPrice.toLocaleString()}/pp</span>
+                    )}
+                    {cand.priceDeltaFromPrimary !== undefined && cand.priceDeltaFromPrimary !== 0 && (
+                      <span className={cand.priceDeltaFromPrimary > 0 ? "text-amber-300" : "text-emerald-300"}>
+                        ({cand.priceDeltaFromPrimary > 0 ? "+" : ""}${cand.priceDeltaFromPrimary})
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[10px]">
+                    {cand.source === "CB_GROUP" && (
+                      <span
+                        title={`Promise delta vs primary: ${cand.promiseDelta}. NONE = same ship/date/port; PRICE_ONLY = price differs ≤10%; AMENITIES_CHANGED = nearby date or port changed; SHIP_OR_DATE_CHANGED = bigger drift.`}
+                        className={
+                          cand.promiseDelta === "NONE"
+                            ? "text-emerald-400"
+                            : cand.promiseDelta === "PRICE_ONLY"
+                              ? "text-cyan-400"
+                              : cand.promiseDelta === "AMENITIES_CHANGED"
+                                ? "text-amber-400"
+                                : "text-red-400"
+                        }
+                      >
+                        {cand.promiseDelta.replace(/_/g, " ").toLowerCase()}
+                      </span>
+                    )}
+                    {cand.matchScore > 0 && (
+                      <span className="text-slate-500">match score: {cand.matchScore}</span>
+                    )}
+                    {cand.failureReason && (
+                      <span className="text-red-400" title={cand.failureReason}>· {cand.failureReason}</span>
+                    )}
+                  </div>
+                  {(cand.personalLink || cand.retailLink) && (
+                    <a
+                      href={cand.personalLink || cand.retailLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 underline break-all mt-0.5 inline-block"
+                    >
+                      {cand.personalLink || cand.retailLink}
+                    </a>
+                  )}
+                </div>
+                <InventoryHealthBadge status={cand.healthStatus} />
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Pricing Badge ────────────────────────────────────────────────────────────
 
 function PricingBadge({ status }: { status: PricingStatus }) {
@@ -616,6 +775,19 @@ export default function DiscoveryTestPage() {
     null,
   );
   const [revisionMessage, setRevisionMessage] = useState<string | null>(null);
+  const [retireLoadingSlug, setRetireLoadingSlug] = useState<string | null>(null);
+
+  // Two-stage pipeline (research / generate split)
+  const [researchCacheStatus, setResearchCacheStatus] = useState<{
+    hasCache: boolean;
+    cachedAt: string | null;
+    hasPsychographic: boolean;
+    hasAesthetic: boolean;
+    promptVersion: string | null;
+    isCurrentVersion: boolean;
+  } | null>(null);
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [generateLoading, setGenerateLoading] = useState(false);
 
   // Phase B state
   const [phaseBLoading, setPhaseBLoading] = useState(false);
@@ -672,11 +844,26 @@ export default function DiscoveryTestPage() {
     };
   }, [clearPhaseBPollingInterval]);
 
+  // ─── Research cache status (for two-stage pipeline UI) ─────────────────────
+  const refreshResearchCacheStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/groups/discovery/research");
+      const data = (await res.json()) as { success?: boolean; cache?: typeof researchCacheStatus };
+      if (data.success && data.cache) setResearchCacheStatus(data.cache);
+    } catch {
+      // Silent — cache status is informational
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshResearchCacheStatus();
+  }, [refreshResearchCacheStatus]);
+
   // ─── Phase A ─────────────────────────────────────────────────────────────
 
   const handleGenerate = async (respin: boolean = false) => {
     const confirmed = window.confirm(
-      `This will make 2× Sonar Deep Research calls + 1× GPT-5 structured generation call${respin ? ", bypass cache, and feed prior campaign/red-team feedback into the new run" : ""}.\n\n` +
+      `This will make 2× Gemini Deep Research calls + 1× GPT-5 structured generation call${respin ? ", bypass cache, and feed prior campaign/red-team feedback into the new run" : ""}.\n\n` +
         "Continue?",
     );
     if (!confirmed) return;
@@ -721,6 +908,116 @@ export default function DiscoveryTestPage() {
       setPhaseAError(err instanceof Error ? err.message : "Network error");
     } finally {
       setPhaseALoading(false);
+    }
+  };
+
+  // ─── Two-stage pipeline handlers ──────────────────────────────────────────
+
+  const handleRunResearch = async (force: boolean) => {
+    const confirmed = window.confirm(
+      `Run Stage 1: Gemini Deep Research only (Steps 1+2).\n\n` +
+        (force
+          ? "Force=true: bypass same-day cache, call Gemini fresh.\n\n"
+          : "Will reuse same-day cache if available.\n\n") +
+        "After this completes, click \"Generate Blueprints from Research\" to add campaigns without re-paying for Gemini.\n\nContinue?",
+    );
+    if (!confirmed) return;
+
+    setResearchLoading(true);
+    setPhaseAError(null);
+
+    try {
+      const res = await fetch("/api/groups/discovery/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+        research?: { psychographic: string; aesthetic: string };
+        cache?: typeof researchCacheStatus;
+      };
+      if (!res.ok || !data.success) throw new Error(data.error ?? "Research failed");
+
+      if (data.research) {
+        setSonarResearch({
+          psychographic: data.research.psychographic,
+          aesthetic: data.research.aesthetic,
+        });
+      }
+      if (data.cache) setResearchCacheStatus(data.cache);
+      setRevisionMessage(data.message ?? "Research complete.");
+    } catch (error) {
+      setPhaseAError(error instanceof Error ? error.message : "Research failed");
+    } finally {
+      setResearchLoading(false);
+    }
+  };
+
+  const handleGenerateFromResearch = async (respin: boolean) => {
+    if (!researchCacheStatus?.hasPsychographic || !researchCacheStatus?.hasAesthetic) {
+      setPhaseAError(
+        "No cached research available. Click \"Run Research\" first to populate the cache.",
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Run Stage 2: GPT-5 blueprint generation against cached research from ${researchCacheStatus.cachedAt}.\n\n` +
+        (respin
+          ? "Re-spin: prior-campaign feedback will be injected into the GPT prompt.\n\n"
+          : "") +
+        "This adds new blueprints to the existing slate (idempotent on slug — duplicates are skipped). Does NOT call Gemini.\n\nContinue?",
+    );
+    if (!confirmed) return;
+
+    setGenerateLoading(true);
+    setPhaseAError(null);
+
+    try {
+      const res = await fetch("/api/groups/discovery/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ respin }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        hint?: string;
+        message?: string;
+        skippedCount?: number;
+        campaigns?: Array<{ id: string; name: string; fetchUrl: string }>;
+        sonarResearch?: SonarResearch;
+      };
+      if (!res.ok || !data.success) {
+        throw new Error([data.error, data.hint].filter(Boolean).join(" — "));
+      }
+
+      setSkippedCount(data.skippedCount ?? 0);
+      if (data.sonarResearch) setSonarResearch(data.sonarResearch);
+
+      // Fetch the new campaigns and merge them into the blueprints list (don't wipe existing)
+      if (data.campaigns?.length) {
+        const fetched = await Promise.all(
+          data.campaigns.map(async (ref) => {
+            const r = await fetch(ref.fetchUrl);
+            const d = (await r.json()) as { success?: boolean; campaign?: Campaign };
+            return d.success ? d.campaign ?? null : null;
+          }),
+        );
+        const newCampaigns = fetched.filter((c): c is Campaign => c !== null);
+        setBlueprints((current) => {
+          const existingIds = new Set(current.map((c) => c.id));
+          return [...current, ...newCampaigns.filter((c) => !existingIds.has(c.id))];
+        });
+      }
+      setRevisionMessage(data.message ?? "Blueprint generation complete.");
+    } catch (error) {
+      setPhaseAError(error instanceof Error ? error.message : "Generation failed");
+    } finally {
+      setGenerateLoading(false);
     }
   };
 
@@ -986,6 +1283,73 @@ export default function DiscoveryTestPage() {
     }
   };
 
+  // ─── Manual retirement (operator-driven) ──────────────────────────────────
+
+  const handleRetireBlueprint = async (slug: string) => {
+    const blueprint = blueprints.find((item) => item.id === slug);
+    if (!blueprint) return;
+
+    const reason = window.prompt(
+      `Retire "${blueprint.name}"?\n\n` +
+        "Retired campaigns are hidden from the discovery view by default but stay in the database " +
+        "and continue feeding deduplication into new research runs.\n\n" +
+        "Optional reason:",
+      "Past launch window / not pursuing this wave",
+    );
+    if (reason === null) return;
+
+    setRetireLoadingSlug(slug);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const response = await fetch(`/api/groups/discovery/retire/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = (await response.json()) as { success?: boolean; error?: string; campaign?: Campaign };
+      if (!response.ok || !data.success || !data.campaign) {
+        throw new Error(data.error ?? "Retire failed");
+      }
+      setBlueprints((current) =>
+        current.map((item) => (item.id === slug ? (data.campaign as Campaign) : item)),
+      );
+      setRevisionMessage(`Retired ${blueprint.name}. It is hidden from the default view but still excluded from new research runs.`);
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Retire failed");
+    } finally {
+      setRetireLoadingSlug(null);
+    }
+  };
+
+  const handleUnretireBlueprint = async (slug: string) => {
+    const blueprint = blueprints.find((item) => item.id === slug);
+    if (!blueprint) return;
+
+    setRetireLoadingSlug(slug);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const response = await fetch(`/api/groups/discovery/retire/${slug}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { success?: boolean; error?: string; campaign?: Campaign };
+      if (!response.ok || !data.success || !data.campaign) {
+        throw new Error(data.error ?? "Unretire failed");
+      }
+      setBlueprints((current) =>
+        current.map((item) => (item.id === slug ? (data.campaign as Campaign) : item)),
+      );
+      setRevisionMessage(`Restored ${blueprint.name} to the active discovery list.`);
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Unretire failed");
+    } finally {
+      setRetireLoadingSlug(null);
+    }
+  };
+
   // ─── Phase B ─────────────────────────────────────────────────────────────
 
   const pollPhaseBStatus = useCallback(async () => {
@@ -1087,7 +1451,17 @@ export default function DiscoveryTestPage() {
     }
   };
 
-  const [filterMode, setFilterMode] = useState<"all" | "new">("new");
+  // ─── Filters ──────────────────────────────────────────────────────────────
+  // recencyFilter: "new" = show 5 most recent, "all" = show all
+  // pricingFilter: filter by Phase B match status
+  // launchFilter: filter by sail-date proximity (lead-time bands)
+  // showRetired: hidden by default — operator-retired campaigns are excluded
+  // unless this is on. Retired campaigns still feed deduplication for new
+  // research runs even when hidden from this UI.
+  const [recencyFilter, setRecencyFilter] = useState<"all" | "new">("new");
+  const [pricingFilter, setPricingFilter] = useState<"all" | "matched" | "estimate" | "unmatched">("all");
+  const [launchFilter, setLaunchFilter] = useState<"all" | "healthy" | "tight" | "past_minimum">("all");
+  const [showRetired, setShowRetired] = useState(false);
 
   const hasPhaseAResults = blueprints.length > 0;
   const revisableBlueprints = blueprints.filter(
@@ -1097,6 +1471,32 @@ export default function DiscoveryTestPage() {
     revisableBlueprints.some((bp) => bp.id === slug),
   ).length;
 
+  function isCampaignRetired(bp: Campaign): boolean {
+    return !!bp.discoveryIteration?.retiredAt
+      || bp.discoveryIteration?.recommendedNextAction === 'retire';
+  }
+
+  function matchesPricingFilter(bp: Campaign): boolean {
+    if (pricingFilter === "all") return true;
+    const status = bp.pricingStatus ?? "AI_ESTIMATE";
+    if (pricingFilter === "matched") return status === "CB_MATCHED";
+    if (pricingFilter === "estimate") return status === "AI_ESTIMATE";
+    return status === "UNMATCHED";
+  }
+
+  function matchesLaunchFilter(bp: Campaign): boolean {
+    if (launchFilter === "all") return true;
+    const assessment = getLaunchWindowAssessment({
+      matchedSailDate: bp.matchedSailDate,
+      targetDates: bp.targetDates,
+    });
+    const days = assessment.daysUntilSail;
+    if (days === null) return false;
+    if (launchFilter === "past_minimum") return days < 180;
+    if (launchFilter === "tight") return days >= 180 && days < 210;
+    return days >= 210; // healthy
+  }
+
   // Sort campaigns descending by createdAt, so the newest ones are always first
   const sortedBlueprints = [...blueprints].sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -1104,9 +1504,16 @@ export default function DiscoveryTestPage() {
     return dateB - dateA;
   });
 
-  // If filter is 'new', just show the 5 most recent
+  const filteredBlueprints = sortedBlueprints
+    .filter((bp) => showRetired || !isCampaignRetired(bp))
+    .filter(matchesPricingFilter)
+    .filter(matchesLaunchFilter);
+
   const visibleBlueprints =
-    filterMode === "new" ? sortedBlueprints.slice(0, 5) : sortedBlueprints;
+    recencyFilter === "new" ? filteredBlueprints.slice(0, 5) : filteredBlueprints;
+
+  const retiredCount = blueprints.filter(isCampaignRetired).length;
+  const activeCount = blueprints.length - retiredCount;
 
   return (
     <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
@@ -1131,102 +1538,225 @@ export default function DiscoveryTestPage() {
                   Phase A — AI Discovery
                 </span>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  2× Perplexity Sonar + 1× GPT-5 structured generation
+                  2× Gemini Deep Research + 1× GPT-5 structured generation
                 </p>
               </div>
-              {blueprints.length > 0 && (
-                <div className="ml-2 flex rounded-md overflow-hidden border border-slate-700">
+            </div>
+            {/* ─── Action groups (Generate · Review · Destructive) ────── */}
+            <div className="flex flex-wrap gap-2">
+              {/* GENERATE group — primary blueprint creation */}
+              <div className="flex items-center gap-1.5 pr-2 border-r border-white/10">
+                {blueprints.length > 0 && (
                   <button
-                    onClick={() => setFilterMode("new")}
-                    className={`px-3 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${filterMode === "new" ? "bg-cyan-500/20 text-cyan-400 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+                    onClick={() => void handleGenerate(true)}
+                    disabled={phaseALoading}
+                    title="Re-Spin (all-in-one): Runs all 3 steps (Gemini psychographic + Gemini aesthetic + GPT-5 blueprints) and adds new campaigns to the existing slate. Bypasses Gemini cache. For most iterative work, prefer the cheaper two-stage flow: Run Research → Generate from Research."
+                    className="text-xs px-3 py-1.5 rounded border border-fuchsia-500/30 text-fuchsia-400 hover:text-fuchsia-300 hover:border-fuchsia-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    Newest 5
+                    <RotateCcw className="w-3 h-3" /> Re-Spin
                   </button>
+                )}
+                <button
+                  onClick={() => void handleGenerate(false)}
+                  disabled={phaseALoading || hasPhaseAResults}
+                  title="Run the full 3-step discovery pipeline in one shot (Gemini psychographic + Gemini aesthetic + GPT-5 blueprints). Disabled once results are loaded — use Re-Spin to add more, or Reset to clear local state first."
+                  className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {phaseALoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />{" "}
+                      Researching…
+                    </>
+                  ) : hasPhaseAResults ? (
+                    "Results Loaded"
+                  ) : (
+                    "Generate Blueprints"
+                  )}
+                </button>
+              </div>
+
+              {/* TWO-STAGE group — research and generate independently */}
+              <div className="flex items-center gap-1.5 pr-2 border-r border-white/10">
+                <button
+                  onClick={() => void handleRunResearch(researchCacheStatus?.hasCache ?? false)}
+                  disabled={researchLoading}
+                  title="Run Research (Stage 1): Calls Gemini Deep Research Steps 1+2 only. Caches the output. Use this to refresh the research foundation without burning GPT credits. Cheap to repeat with force=true if same-day cache exists."
+                  className="text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-300 hover:text-amber-200 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {researchLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" /> Researching…
+                    </>
+                  ) : researchCacheStatus?.hasCache ? (
+                    <>🔬 Refresh Research</>
+                  ) : (
+                    <>🔬 Run Research</>
+                  )}
+                </button>
+                <button
+                  onClick={() => void handleGenerateFromResearch(blueprints.length > 0)}
+                  disabled={
+                    generateLoading ||
+                    !researchCacheStatus?.hasPsychographic ||
+                    !researchCacheStatus?.hasAesthetic
+                  }
+                  title="Generate Blueprints from Research (Stage 2): Runs GPT-5 against the cached research. Adds new campaigns to the slate without re-calling Gemini. Use this to iteratively grow the slate. If the research cache is empty, click Run Research first."
+                  className="text-xs px-3 py-1.5 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:border-emerald-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {generateLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" /> Generating…
+                    </>
+                  ) : (
+                    <>✨ Generate from Research</>
+                  )}
+                </button>
+                {/* Cache freshness pill */}
+                <span
+                  title={
+                    researchCacheStatus?.hasCache
+                      ? `Research cache last written ${researchCacheStatus.cachedAt}. Prompt version: ${researchCacheStatus.promptVersion ?? "unknown"} ${researchCacheStatus.isCurrentVersion ? "(current)" : "(stale prompt — will be invalidated on next run)"}.`
+                      : "No research cache. Stage 2 (Generate from Research) is disabled until you Run Research."
+                  }
+                  className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded border ${
+                    researchCacheStatus?.hasCache && researchCacheStatus.isCurrentVersion
+                      ? "border-emerald-500/30 text-emerald-300 bg-emerald-500/10"
+                      : researchCacheStatus?.hasCache
+                        ? "border-amber-500/30 text-amber-300 bg-amber-500/10"
+                        : "border-slate-600 text-slate-500 bg-slate-900/50"
+                  }`}
+                >
+                  {researchCacheStatus?.hasCache
+                    ? `Cache: ${researchCacheStatus.cachedAt}${researchCacheStatus.isCurrentVersion ? "" : " (stale)"}`
+                    : "Cache: empty"}
+                </span>
+              </div>
+
+              {/* REVIEW group — red-team validation + revision */}
+              {hasPhaseAResults && (
+                <div className="flex items-center gap-1.5 pr-2 border-r border-white/10">
                   <button
-                    onClick={() => setFilterMode("all")}
-                    className={`px-3 py-1.5 text-[10px] uppercase tracking-widest transition-colors ${filterMode === "all" ? "bg-cyan-500/20 text-cyan-400 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+                    onClick={() => void handleBulkRedTeam()}
+                    disabled={phaseALoading || bulkRedTeamLoading}
+                    title="Review All: Runs the discovery red-team validator (GPT-5) against every loaded blueprint and persists the verdict (pass / warn / block) on each card. Used by Re-Spin to feed feedback into the next generation."
+                    className="text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    All ({blueprints.length})
+                    {bulkRedTeamLoading ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" /> Reviewing
+                        All…
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="w-3 h-3" /> Review All
+                      </>
+                    )}
                   </button>
+                  {revisableBlueprints.length > 0 && (
+                    <button
+                      onClick={() => void handleReviseSelected()}
+                      disabled={bulkRevisionLoading || selectedRevisableCount === 0}
+                      title="Revise Selected: For checked cards that already have a stored review, regenerates the blueprint in place using that review's feedback. Cleared review must be re-run after revision."
+                      className="text-xs px-3 py-1.5 rounded border border-cyan-500/30 text-cyan-300 hover:text-cyan-200 hover:border-cyan-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      {bulkRevisionLoading ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" /> Revising
+                          Selected…
+                        </>
+                      ) : (
+                        `Revise Selected${selectedRevisableCount > 0 ? ` (${selectedRevisableCount})` : ""}`
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleClearAll}
-                className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-400/60 transition-all flex items-center gap-1.5"
-              >
-                🗑 Clear All
-              </button>
-              {hasPhaseAResults && (
-                <button
-                  onClick={() => void handleBulkRedTeam()}
-                  disabled={phaseALoading || bulkRedTeamLoading}
-                  className="text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  {bulkRedTeamLoading ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" /> Reviewing
-                      All…
-                    </>
-                  ) : (
-                    <>
-                      <GitBranch className="w-3 h-3" /> Review All
-                    </>
-                  )}
-                </button>
-              )}
-              {revisableBlueprints.length > 0 && (
-                <button
-                  onClick={() => void handleReviseSelected()}
-                  disabled={bulkRevisionLoading || selectedRevisableCount === 0}
-                  className="text-xs px-3 py-1.5 rounded border border-cyan-500/30 text-cyan-300 hover:text-cyan-200 hover:border-cyan-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  {bulkRevisionLoading ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" /> Revising
-                      Selected…
-                    </>
-                  ) : (
-                    `Revise Selected${selectedRevisableCount > 0 ? ` (${selectedRevisableCount})` : ""}`
-                  )}
-                </button>
-              )}
-              {hasPhaseAResults && (
-                <button
-                  onClick={handleClear}
-                  className="text-xs px-3 py-1.5 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all flex items-center gap-1.5"
-                >
-                  <RotateCcw className="w-3 h-3" /> Reset
-                </button>
-              )}
-              {blueprints.length > 0 && (
-                <button
-                  onClick={() => void handleGenerate(true)}
-                  disabled={phaseALoading}
-                  className="text-xs px-3 py-1.5 rounded border border-fuchsia-500/30 text-fuchsia-400 hover:text-fuchsia-300 hover:border-fuchsia-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  <RotateCcw className="w-3 h-3" /> Re-Spin
-                </button>
-              )}
-              <button
-                onClick={() => void handleGenerate(false)}
-                disabled={phaseALoading || hasPhaseAResults}
-                className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
-              >
-                {phaseALoading ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />{" "}
-                    Researching…
-                  </>
-                ) : hasPhaseAResults ? (
-                  "Results Loaded"
-                ) : (
-                  "Generate Blueprints"
+
+              {/* DESTRUCTIVE group — local + permanent reset */}
+              <div className="flex items-center gap-1.5">
+                {hasPhaseAResults && (
+                  <button
+                    onClick={handleClear}
+                    title="Reset: Clears the loaded blueprints from this UI only. Database records are untouched — refresh or click Generate Blueprints again to reload them."
+                    className="text-xs px-3 py-1.5 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Reset
+                  </button>
                 )}
-              </button>
+                <button
+                  onClick={handleClearAll}
+                  title="Clear All (DESTRUCTIVE): Permanently deletes every campaign METADATA record from DynamoDB and clears the research cache. Cannot be undone. Use Retire on individual campaigns to keep them in the database but hide them from this view."
+                  className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-400/60 transition-all flex items-center gap-1.5"
+                >
+                  🗑 Clear All
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* ─── Filter bar ──────────────────────────────────────────── */}
+          {blueprints.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-white/5 bg-slate-950/40">
+              <span className="text-[10px] uppercase tracking-widest text-slate-500">Filters</span>
+              <div className="flex rounded-md overflow-hidden border border-slate-700">
+                <button
+                  onClick={() => setRecencyFilter("new")}
+                  title="Show only the 5 most recently created blueprints."
+                  className={`px-3 py-1 text-[10px] uppercase tracking-widest transition-colors ${recencyFilter === "new" ? "bg-cyan-500/20 text-cyan-400 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+                >
+                  Newest 5
+                </button>
+                <button
+                  onClick={() => setRecencyFilter("all")}
+                  title="Show all blueprints matching the active filters."
+                  className={`px-3 py-1 text-[10px] uppercase tracking-widest transition-colors ${recencyFilter === "all" ? "bg-cyan-500/20 text-cyan-400 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+                >
+                  All ({filteredBlueprints.length})
+                </button>
+              </div>
+
+              <select
+                value={pricingFilter}
+                onChange={(e) => setPricingFilter(e.target.value as typeof pricingFilter)}
+                title="Filter by Phase B inventory match status. CB Matched = personal booking link confirmed; AI Estimate = pre-Phase-B; Unmatched = Phase B couldn't find inventory."
+                className="bg-slate-900 border border-slate-700 text-[10px] uppercase tracking-widest text-slate-300 px-2 py-1 rounded"
+              >
+                <option value="all">Pricing: All</option>
+                <option value="matched">CB Matched</option>
+                <option value="estimate">AI Estimate</option>
+                <option value="unmatched">Unmatched</option>
+              </select>
+
+              <select
+                value={launchFilter}
+                onChange={(e) => setLaunchFilter(e.target.value as typeof launchFilter)}
+                title="Filter by days-until-sail lead time. Healthy = 210+ days, Tight = 180–210 days, Past minimum = under 180 days (campaign cannot launch)."
+                className="bg-slate-900 border border-slate-700 text-[10px] uppercase tracking-widest text-slate-300 px-2 py-1 rounded"
+              >
+                <option value="all">Launch window: All</option>
+                <option value="healthy">Healthy (210+ days)</option>
+                <option value="tight">Tight (180–210 days)</option>
+                <option value="past_minimum">Past minimum (&lt;180 days)</option>
+              </select>
+
+              <label
+                title="Retired campaigns are hidden from the discovery view by default. They stay in the database and continue to feed deduplication into new research runs."
+                className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-slate-400 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={showRetired}
+                  onChange={(e) => setShowRetired(e.target.checked)}
+                  className="accent-fuchsia-500"
+                />
+                Show retired ({retiredCount})
+              </label>
+
+              <span className="text-[10px] text-slate-600 ml-auto">
+                Showing {visibleBlueprints.length} of {activeCount} active{retiredCount > 0 ? ` (+${retiredCount} retired)` : ""}
+              </span>
+            </div>
+          )}
 
           <div className="p-4">
             {skippedCount > 0 && (
@@ -1487,16 +2017,25 @@ export default function DiscoveryTestPage() {
                               : "Revise"}
                           </button>
                         )}
-                        <button
-                          onClick={() =>
-                            setBlueprints((prev) =>
-                              prev.filter((b) => b.id !== bp.id),
-                            )
-                          }
-                          className="ml-auto text-xs px-3 py-1.5 rounded border border-red-500/20 text-red-400 hover:text-red-300 hover:border-red-400/40 transition-all"
-                        >
-                          Remove
-                        </button>
+                        {isCampaignRetired(bp) ? (
+                          <button
+                            onClick={() => void handleUnretireBlueprint(bp.id)}
+                            disabled={retireLoadingSlug === bp.id}
+                            title="Restore this campaign to the active discovery list."
+                            className="ml-auto text-xs px-3 py-1.5 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:border-emerald-400/60 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            {retireLoadingSlug === bp.id ? "Restoring…" : "Unretire"}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => void handleRetireBlueprint(bp.id)}
+                            disabled={retireLoadingSlug === bp.id}
+                            title="Retire this campaign. It stays in the database (and continues feeding deduplication into new research) but is hidden from this view by default. Reversible."
+                            className="ml-auto text-xs px-3 py-1.5 rounded border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            {retireLoadingSlug === bp.id ? "Retiring…" : "Retire"}
+                          </button>
+                        )}
                       </div>
 
                       {/* Research Intelligence (collapsible) */}
@@ -1569,9 +2108,7 @@ export default function DiscoveryTestPage() {
           <div className="p-4">
             {hasPhaseAResults && (
               <div className="px-3 py-2 mb-3 text-xs border rounded bg-sky-500/10 border-sky-500/20 text-sky-200">
-                Use the blueprint checkboxes above to target a selected-only
-                Phase B run. "Match All" remains available when you want to
-                refresh the whole inventory view.
+                <strong>This is a status overview of every campaign in the database</strong> — it always shows all campaigns, not just the ones you matched. Use the blueprint checkboxes above to target a selected-only Phase B run; "Match All" refreshes everything. Click a matched row to see ranked backup candidates and link health.
               </div>
             )}
             {phaseBError && (
@@ -1590,30 +2127,7 @@ export default function DiscoveryTestPage() {
             {phaseBCampaigns.length > 0 ? (
               <div className="space-y-2">
                 {phaseBCampaigns.map((c) => (
-                  <div
-                    key={c.slug}
-                    className="flex items-center justify-between px-3 py-2 border rounded-lg border-white/10"
-                  >
-                    <div>
-                      <span className="text-xs text-slate-300">{c.name}</span>
-                      <span className="text-[10px] text-slate-600 ml-2">
-                        {c.slug}
-                      </span>
-                      {c.meetsMinimumLeadTime === false && (
-                        <div className="text-[10px] text-red-300 mt-1">
-                          Too close to launch normally: {c.daysUntilSail} days
-                          until sail.
-                        </div>
-                      )}
-                      {c.isTightLeadTime && (
-                        <div className="text-[10px] text-amber-300 mt-1">
-                          Tight launch window: {c.daysUntilSail} days until
-                          sail.
-                        </div>
-                      )}
-                    </div>
-                    <PricingBadge status={c.pricingStatus} />
-                  </div>
+                  <PhaseBCampaignRow key={c.slug} campaign={c} />
                 ))}
               </div>
             ) : (

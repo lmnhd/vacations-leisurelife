@@ -6,6 +6,7 @@ import { VoicePreferencePanel } from "@/components/voice-preference-panel";
 import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest, ProbeRunRecord } from "@/lib/campaigns/schema";
 import { ProbeResultsPanel } from "./probe-results-panel";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
+import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
 import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
@@ -669,7 +670,7 @@ export default function MediaGenerationTestPage() {
                         {/* Full Pipeline Button */}
                         <button
                             id="btn-gen-all"
-                            onClick={() => handleGenerate()}
+                            onClick={() => handleGenerate(PRODUCTION_ALL_MEDIA_ASSET_TYPES)}
                             disabled={isBusy || !slug.trim()}
                             className="flex flex-col items-center col-span-2 gap-2 px-4 py-4 text-sm font-medium text-white transition-all border rounded-xl bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 border-white/20 hover:brightness-125 disabled:opacity-40 disabled:pointer-events-none md:col-span-3"
                         >

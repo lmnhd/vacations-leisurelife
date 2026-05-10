@@ -367,6 +367,17 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             {/* 1) Hero — system-themed, full bleed */}
             <HeroDispatcher landing={landing} primaryHref={primaryHref} secondaryHref={secondaryHref} />
 
+            {/* Inventory status banner — shown only when group block has changed */}
+            {landing.inventoryDisclosure.bannerVisible && (
+                <div className={`w-full px-5 py-4 text-sm font-medium leading-6 md:px-8 ${
+                    landing.inventoryDisclosure.mode === 'INVENTORY_FAILED_PAUSED'
+                        ? 'bg-red-900/80 text-red-100'
+                        : 'bg-amber-800/80 text-amber-100'
+                }`}>
+                    <p className="mx-auto max-w-5xl">{landing.inventoryDisclosure.bannerCopy}</p>
+                </div>
+            )}
+
             {/* 2) Group Chat Hall — full-width centerpiece */}
             <GroupChatHall landing={landing} guestIdentity={guestIdentity} />
 
@@ -432,7 +443,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </div>
             )}
 
-            {/* 8) How it works */}
+            {/* 8) How it works + inventory process note */}
             <BleedSection theme={theme} eyebrow="How it works" title="Three steps from interest to booking" accentHex={accentHex}>
                 <Itinerary
                     system={system}
@@ -447,6 +458,9 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                     }}
                     accentHex={accentHex}
                 />
+                <p className={`mt-6 max-w-3xl text-sm leading-7 ${theme.softText} opacity-80`}>
+                    {landing.inventoryDisclosure.processNote}
+                </p>
             </BleedSection>
 
             {/* 9) FAQ */}
@@ -484,6 +498,9 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                             isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
                             onGuestRegistered={handleGuestRegistered}
                         />
+                        <p className={`mt-4 text-xs leading-5 ${theme.softText} opacity-60`}>
+                            {landing.inventoryDisclosure.formAcknowledgement}
+                        </p>
                     </div>
                 </BleedSection>
             )}

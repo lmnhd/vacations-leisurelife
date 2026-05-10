@@ -49,6 +49,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 priceSource: c.priceSource,
                 cbPriceAdvantage: c.cbPriceAdvantage,
                 cbagenttoolsBookingLink: c.cbagenttoolsBookingLink,
+                // Inventory health & ranked candidates (new — populated by ranked Phase B)
+                activeBookingMode: c.activeBookingMode ?? null,
+                inventoryHealth: c.inventoryHealth ?? null,
+                inventoryLastCheckedAt: c.inventoryLastCheckedAt ?? null,
+                inventoryCandidates: c.inventoryCandidates ?? null,
             })),
         });
     } catch (error) {

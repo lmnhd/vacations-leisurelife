@@ -1,0 +1,28 @@
+
+> vacations_leisurelife@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.137.1:3000
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: "50mb"
+
+✓ Starting...
+✓ Ready in 3.1s
+○ Compiling /tests/media-generation ...
+ GET /tests/media-generation 200 in 14.8s (compile: 14.2s, render: 573ms)
+ GET /tests 200 in 435ms (compile: 147ms, render: 289ms)
+ GET /dashboard/campaigns/board-games-at-sea/conversion 200 in 15.3s (compile: 15.1s, render: 218ms)
+ GET /tests 200 in 272ms (compile: 9ms, render: 264ms)
+○ Compiling /api/groups/campaign/[slug]/leads ...
+ GET /tests/brief-studio 200 in 2.3s (compile: 2.2s, render: 117ms)
+ GET /tests/media-generation 200 in 173ms (compile: 27ms, render: 146ms)
+ GET /tests/media-generation 200 in 286ms (compile: 22ms, render: 263ms)
+ GET /tests/brief-studio 200 in 294ms (compile: 140ms, render: 154ms)
+ GET /tests/brief-studio 200 in 125ms (compile: 8ms, render: 117ms)
+ GET /api/groups/campaign/board-games-at-sea/leads 200 in 8.4s (compile: 7.7s, render: 694ms)
+ GET /tests 200 in 132ms (compile: 7ms, render: 125ms)
+ GET /tests/media-generation 200 in 114ms (compile: 22ms, render: 93ms)
+ GET /tests/brief-studio 200 in 94ms (compile: 7ms, render: 87ms)

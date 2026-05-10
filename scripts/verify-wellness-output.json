@@ -1,0 +1,151 @@
+{
+  "totalAssets": 70,
+  "completionStatus": "complete",
+  "generatedAt": "2026-05-10T15:17:18.890Z",
+  "heroes": [
+    {
+      "assetId": "img_hero_rev_01ed476c",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Transform this photo of Icon of the Seas into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity. Use offboard excursion as the anchor scene. "
+    },
+    {
+      "assetId": "img_hero_rev_5041d9c0",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Transform this photo of Icon of the Seas into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity. Use exterior as the anchor scene. Primary ap"
+    },
+    {
+      "assetId": "img_hero_rev_e34024a4",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Transform this photo of Icon of the Seas into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity. Use exterior as the anchor scene. Primary ap"
+    },
+    {
+      "assetId": "img_hero_rev_0886ec5a",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Transform this photo of Icon of the Seas into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity. Use destination view as the anchor scene. Pr"
+    },
+    {
+      "assetId": "img_hero_rev_e752d338",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Transform this photo of Icon of the Seas into an authentic campaign hero image preserving ship identity, architecture, deck geometry, and visual integrity. Use pool deck as the anchor scene. Primary a"
+    }
+  ],
+  "concepts": [
+    {
+      "assetId": "img_concept_rev_1da23aeb",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Serene Escape atmospheric concept frame derived from approved Landing Still Bible. Primary image blueprint: solo traveler in nature-inspired outfit capturing atrium flora. Still usage: concept. Still "
+    },
+    {
+      "assetId": "img_concept_rev_cd7cd87f",
+      "version": 2,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Serene Escape atmospheric concept frame derived from approved Landing Still Bible. Primary image blueprint: guests leaning on pier railing, pointing at sea life, featuring nature. Still usage: concept"
+    }
+  ],
+  "designedAds": [
+    {
+      "assetId": "ad_quote_card_1x1",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "sharp",
+      "tags": [
+        "designed_ad",
+        "quote",
+        "instagram_square",
+        "system_4_modular"
+      ],
+      "promptUsed": "Rendered quote_card from deterministic designed-media template. Source image: none"
+    },
+    {
+      "assetId": "ad_image_detail_191x100",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "sharp",
+      "tags": [
+        "designed_ad",
+        "image_detail",
+        "facebook",
+        "google_display",
+        "system_4_modular"
+      ],
+      "promptUsed": "Rendered image_detail_ad from deterministic designed-media template. Source image: doc_detail_trust_photo_01"
+    },
+    {
+      "assetId": "ad_type_hook_9x16",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "sharp",
+      "tags": [
+        "designed_ad",
+        "type_hook",
+        "story",
+        "tiktok",
+        "system_4_modular"
+      ],
+      "promptUsed": "Rendered type_hook_card from deterministic designed-media template. Source image: none"
+    },
+    {
+      "assetId": "ad_itinerary_toc_4x5",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "sharp",
+      "tags": [
+        "designed_ad",
+        "itinerary",
+        "carousel",
+        "system_4_modular"
+      ],
+      "promptUsed": "Rendered itinerary_toc_card from deterministic designed-media template. Source image: none"
+    }
+  ],
+  "documentaryDetails": [
+    {
+      "assetId": "doc_detail_trust_photo_01",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Documentary cruise travel image module. A believable cruise ship deck, lounge, cabin detail, or port-facing ship space, with accurate railings, teak, glass, steel, sea horizon, and marine materials. O"
+    },
+    {
+      "assetId": "doc_detail_artifact_still_life_02",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Close documentary still life. A small cluster of believable travel artifacts on a cruise cabin desk or lounge table: cabin key, folded itinerary paper, one niche-related personal object, warm porthole"
+    },
+    {
+      "assetId": "doc_detail_texture_plate_03",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Cruise-native texture plate. Close view of sunlit teak deck, brass railing detail, sea-blue reflection, paper shadow, cabin textile, or varnished wood. Designed as a quiet background layer for typogra"
+    },
+    {
+      "assetId": "doc_detail_human_glimpse_04",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Documentary travel detail, no full faces, no full-body posing. Cropped hands near a rail, a sleeve brushing a notebook, a shoulder silhouette by a ship window, or a quiet anonymous traveler detail. Hu"
+    },
+    {
+      "assetId": "doc_detail_motion_plate_05",
+      "version": 1,
+      "reviewStatus": "needs_review",
+      "generator": "gemini3_flash",
+      "promptUsed": "Cinematic cruise source frame. Ocean horizon through lounge glass, warm light moving across wood, one subtle niche object, premium atmosphere, environment-led composition. No people in foreground, no "
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "step": "done",
+  "status": "failed",
+  "data": {
+    "jobId": "agent_job_9a39b2b9-e37",
+    "status": "failed",
+    "campaignSlug": "wellness-and-nature-cruise",
+    "steps": [
+      {
+        "stepId": "generate_brief",
+        "startedAt": "2026-05-09T21:53:33.582Z",
+        "completedAt": "2026-05-09T21:53:48.210Z",
+        "label": "Generate or refresh brief",
+        "message": "Schema validation failed for model gpt-4o. Issues: [\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      0,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      1,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      2,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      3,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      4,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      5,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+        "status": "failed"
+      },
+      {
+        "stepId": "load_readiness",
+        "completedAt": "2026-05-09T21:53:48.210Z",
+        "label": "Load stored readiness",
+        "message": "Skipped due to prior step failure",
+        "status": "skipped"
+      },
+      {
+        "stepId": "confirm_persistence",
+        "completedAt": "2026-05-09T21:53:48.210Z",
+        "label": "Confirm persisted brief exists",
+        "message": "Skipped due to prior step failure",
+        "status": "skipped"
+      }
+    ],
+    "summary": {
+      "message": "Schema validation failed for model gpt-4o. Issues: [\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      0,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      1,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      2,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      3,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      4,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      5,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "approvalSucceeded": false,
+      "approvalAttempted": false
+    },
+    "error": "Schema validation failed for model gpt-4o. Issues: [\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      0,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      1,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      2,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      3,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      4,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      5,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+    "createdAt": "2026-05-09T21:53:32.852Z",
+    "startedAt": "2026-05-09T21:53:33.485Z",
+    "completedAt": "2026-05-09T21:53:48.210Z",
+    "failureDiagnostics": {
+      "errorMessage": "Schema validation failed for model gpt-4o. Issues: [\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      0,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      1,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      2,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      3,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      4,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"expected\": \"'user' | 'assistant'\",\n    \"received\": \"undefined\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"messaging\",\n      \"starterConversation\",\n      5,\n      \"role\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "timings": [
+        {
+          "stages": [
+            {
+              "stageName": "aesthetic-pass1-attempt-1-error",
+              "elapsedMs": 14405
+            }
+          ],
+          "passLabel": "initial",
+          "totalElapsedMs": null
+        }
+      ],
+      "failedAt": "2026-05-09T21:53:48.210Z",
+      "slug": "wellness-and-nature-cruise"
+    }
+  },
+  "time": "2026-05-09T21:53:53.500Z"
+}

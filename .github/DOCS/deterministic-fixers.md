@@ -5,6 +5,7 @@
 This document is the project-level policy for extending and using deterministic fixers in the aesthetic workflow.
 
 Use it whenever a campaign hits:
+
 - revision deadlock
 - repeated red-team blockers
 - production-feasibility contradictions
@@ -15,6 +16,7 @@ Use it whenever a campaign hits:
 Add deterministic fixers by reusable issue class, not by one-off campaign hack.
 
 Good deterministic fixer candidates:
+
 - countdown/scarcity cleanup
 - exact time removal
 - queue/device language cleanup
@@ -27,8 +29,10 @@ Good deterministic fixer candidates:
 - gangway exchange relocation/removal
 - storyboard duration alignment
 - production safety ops injection
+- exact anchor compliance injection (missing nicheSignal/nicheCarryThrough)
 
 Bad deterministic fixer candidates:
+
 - weak vibe
 - generic luxury drift
 - poor thematic cohesion
@@ -51,6 +55,7 @@ If any of those fail, keep the issue in manual or LLM-revision territory.
 Expect the deterministic fixer library to grow over time as more campaigns expose recurring structural failures.
 
 Agents should treat each deadlock as a classification problem:
+
 - if the surviving blocker is deterministic, add or extend a reusable fixer and tests
 - if the blocker is not deterministic, do not force it into the fixer system
 

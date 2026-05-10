@@ -1,512 +1,707 @@
-import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
-import { z } from 'zod';
-import { Campaign } from './types';
-import { ModelName, modelForTask } from '@/lib/ai/llm-gateway';
-import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
+import { VIDEO_DELIVERABLE_SPECS } from "./media/video-deliverable-specs";
+import { z } from "zod";
+import { Campaign } from "./types";
+import { ModelName, modelForTask } from "@/lib/ai/llm-gateway";
+import { callGlobalGenerateObject } from "@/lib/chat/llm-call";
 import {
-    CampaignAestheticBrief,
-    CampaignAestheticBriefSchema,
-    TikTokConceptSetSchema,
-    ReelConceptSetSchema,
-    FeedConceptSetSchema,
-    AdConceptSetSchema,
-    YouTubeConceptSetSchema,
-    PinterestConceptSetSchema,
-    EmailConceptSetSchema,
-    DiscordConceptSetSchema,
-    VideoBriefSchema,
-    ProductionBibleSchema,
-    ProductionBible,
-    LandingStillBibleSchema,
-    LandingStillBible,
-    normalizeVisualPlausibilityFramework,
-    normalizeHumanRepresentationGuidance,
-} from './schema';
-import { buildCampaignIdentityBlueprintAsync } from './design-system/identity-blueprint';
+  CampaignAestheticBrief,
+  CampaignAestheticBriefSchema,
+  TikTokConceptSetSchema,
+  ReelConceptSetSchema,
+  FeedConceptSetSchema,
+  AdConceptSetSchema,
+  YouTubeConceptSetSchema,
+  PinterestConceptSetSchema,
+  EmailConceptSetSchema,
+  DiscordConceptSetSchema,
+  VideoBriefSchema,
+  ProductionBibleSchema,
+  ProductionBible,
+  LandingStillBibleSchema,
+  LandingStillBible,
+  normalizeVisualPlausibilityFramework,
+  normalizeHumanRepresentationGuidance,
+} from "./schema";
+import { buildCampaignIdentityBlueprintAsync } from "./design-system/identity-blueprint";
 
-function buildMerchDallePrompt(productType: string, themeName: string, conceptStatement: string, tagline: string, printStyle: string, designDescription: string, colorway: string): string {
-    return [
-        `Create a print-ready ${productType} graphic concept for the cruise theme "${themeName}"`,
-        `Cute ${productType} concept with cruise humor or theme-specific charm`,
-        `Primary slogan/tagline: ${tagline}`,
-        `Concept direction: ${conceptStatement}`,
-        `Design direction: ${designDescription}`,
-        `Print style: ${printStyle}`,
-        `Colorway: ${colorway}`,
-        `Output a feasible apparel graphic for a real printable ${productType} design`,
-        'Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling',
-        'Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept',
-    ].join('. ');
+function buildMerchDallePrompt(
+  productType: string,
+  themeName: string,
+  conceptStatement: string,
+  tagline: string,
+  printStyle: string,
+  designDescription: string,
+  colorway: string,
+): string {
+  return [
+    `Create a print-ready ${productType} graphic concept for the cruise theme "${themeName}"`,
+    `Cute ${productType} concept with cruise humor or theme-specific charm`,
+    `Primary slogan/tagline: ${tagline}`,
+    `Concept direction: ${conceptStatement}`,
+    `Design direction: ${designDescription}`,
+    `Print style: ${printStyle}`,
+    `Colorway: ${colorway}`,
+    `Output a feasible apparel graphic for a real printable ${productType} design`,
+    "Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling",
+    "Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+  ].join(". ");
 }
 
-function normalizeMerchItem(themeName: string, conceptStatement: string, tagline: string, printStyle: string, item: z.infer<typeof Pass1Schema>['merch']['coreItem'], forceShirt: boolean = false): z.infer<typeof Pass1Schema>['merch']['coreItem'] {
-    const productType = forceShirt ? 'T-Shirt' : (item.productType.trim() || 'T-Shirt');
-    const normalizedColorway = item.colorway.trim() || 'soft pastel cruise colors';
-    const normalizedDesignDescription = item.designDescription.trim() || `${tagline} cute cruise slogan graphic`;
-    return {
-        ...item,
-        productType,
-        designDescription: normalizedDesignDescription,
-        colorway: normalizedColorway,
-        dallePrompt: buildMerchDallePrompt(productType, themeName, conceptStatement, tagline, printStyle, normalizedDesignDescription, normalizedColorway),
-    };
+function normalizeMerchItem(
+  themeName: string,
+  conceptStatement: string,
+  tagline: string,
+  printStyle: string,
+  item: z.infer<typeof Pass1Schema>["merch"]["coreItem"],
+  forceShirt: boolean = false,
+): z.infer<typeof Pass1Schema>["merch"]["coreItem"] {
+  const productType = forceShirt
+    ? "T-Shirt"
+    : item.productType.trim() || "T-Shirt";
+  const normalizedColorway =
+    item.colorway.trim() || "soft pastel cruise colors";
+  const normalizedDesignDescription =
+    item.designDescription.trim() || `${tagline} cute cruise slogan graphic`;
+  return {
+    ...item,
+    productType,
+    designDescription: normalizedDesignDescription,
+    colorway: normalizedColorway,
+    dallePrompt: buildMerchDallePrompt(
+      productType,
+      themeName,
+      conceptStatement,
+      tagline,
+      printStyle,
+      normalizedDesignDescription,
+      normalizedColorway,
+    ),
+  };
 }
 
-function normalizeMerchBrief(themeName: string, merch: z.infer<typeof Pass1Schema>['merch']): z.infer<typeof Pass1Schema>['merch'] {
-    const normalizedTagline = merch.tagline.trim() || merch.conceptStatement.trim() || `${themeName} cruise club`;
-    const normalizedPrintStyle = merch.printStyle.trim() || 'cute retro cruise slogan tee';
-    const normalizedConceptStatement = merch.conceptStatement.trim() || `Cute t-shirt merch for ${themeName} cruise guests`; 
-    return {
-        ...merch,
-        conceptStatement: normalizedConceptStatement,
-        tagline: normalizedTagline,
-        printStyle: normalizedPrintStyle,
-        coreItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.coreItem, true),
-        practicalItem: normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, merch.practicalItem, false),
-        nicheSpecificItems: merch.nicheSpecificItems.map((item) => normalizeMerchItem(themeName, normalizedConceptStatement, normalizedTagline, normalizedPrintStyle, item, false)),
-    };
+function normalizeMerchBrief(
+  themeName: string,
+  merch: z.infer<typeof Pass1Schema>["merch"],
+): z.infer<typeof Pass1Schema>["merch"] {
+  const normalizedTagline =
+    merch.tagline.trim() ||
+    merch.conceptStatement.trim() ||
+    `${themeName} cruise club`;
+  const normalizedPrintStyle =
+    merch.printStyle.trim() || "cute retro cruise slogan tee";
+  const normalizedConceptStatement =
+    merch.conceptStatement.trim() ||
+    `Cute t-shirt merch for ${themeName} cruise guests`;
+  return {
+    ...merch,
+    conceptStatement: normalizedConceptStatement,
+    tagline: normalizedTagline,
+    printStyle: normalizedPrintStyle,
+    coreItem: normalizeMerchItem(
+      themeName,
+      normalizedConceptStatement,
+      normalizedTagline,
+      normalizedPrintStyle,
+      merch.coreItem,
+      true,
+    ),
+    practicalItem: normalizeMerchItem(
+      themeName,
+      normalizedConceptStatement,
+      normalizedTagline,
+      normalizedPrintStyle,
+      merch.practicalItem,
+      false,
+    ),
+    nicheSpecificItems: merch.nicheSpecificItems.map((item) =>
+      normalizeMerchItem(
+        themeName,
+        normalizedConceptStatement,
+        normalizedTagline,
+        normalizedPrintStyle,
+        item,
+        false,
+      ),
+    ),
+  };
 }
 
 // Helper Schema for Pass 1 (Excludes heavy platform concepts)
 const Pass1Schema = CampaignAestheticBriefSchema.omit({
-    socialConcepts: true,
-    videoConcepts: true,
-    productionBible: true,
-    landingStillBible: true,
-    productionBuildLint: true,
-    productionBuildStatus: true,
-    productionBuildEvaluatedAt: true,
-    modificationHistory: true,
-    issueLedger: true,
-    activeRemediationPlan: true,
-    generatedAt: true,
-    generatedBy: true,
-    humanReviewStatus: true,
-    revisionNotes: true,
-    redTeamReview: true,
-    revisionCycleCount: true,
-    slug: true,
-    themeName: true
+  socialConcepts: true,
+  videoConcepts: true,
+  productionBible: true,
+  landingStillBible: true,
+  productionBuildLint: true,
+  productionBuildStatus: true,
+  productionBuildEvaluatedAt: true,
+  modificationHistory: true,
+  issueLedger: true,
+  activeRemediationPlan: true,
+  generatedAt: true,
+  generatedBy: true,
+  humanReviewStatus: true,
+  revisionNotes: true,
+  redTeamReview: true,
+  revisionCycleCount: true,
+  slug: true,
+  themeName: true,
 });
 
 // Flat schema for Pass 1 Generation to avoid Zod omission/repair loops
 const GenerationPass1VisualSchema = z.object({
-    aestheticLabel: z.string().default(''),
-    primaryColor: z.string().default(''),
-    secondaryColor: z.string().default(''),
-    accentColor: z.string().default(''),
-    backgroundColor: z.string().default(''),
-    textOnDarkColor: z.string().default(''),
-    textOnLightColor: z.string().default(''),
-    headlineStyle: z.string().default(''),
-    bodyStyle: z.string().default(''),
-    suggestedFonts: z.array(z.string()).default([]),
-    imageryMood: z.string().default(''),
-    lightingStyle: z.string().default(''),
-    compositionNotes: z.string().default(''),
-    avoidList: z.array(z.string()).default([]),
-    referenceMoodboard: z.array(z.string()).default([]),
-    plausibilityGoverningPrinciple: z.string().default(''),
-    cruiseNativeMoments: z.array(z.string()).default([]),
-    nicheEnhancedMoments: z.array(z.string()).default([]),
-    implausibleLiteralizations: z.array(z.string()).default([]),
-    allowedProps: z.array(z.string()).default([]),
-    discouragedProps: z.array(z.string()).default([]),
-    castingGoal: z.string().default(''),
-    ageRangeGuidance: z.string().default(''),
-    diversityIntent: z.string().default(''),
-    pairingGuidance: z.string().default(''),
-    stylingGuidance: z.string().default(''),
-    antiStereotypeRules: z.array(z.string()).default([]),
+  aestheticLabel: z.string().default(""),
+  primaryColor: z.string().default(""),
+  secondaryColor: z.string().default(""),
+  accentColor: z.string().default(""),
+  backgroundColor: z.string().default(""),
+  textOnDarkColor: z.string().default(""),
+  textOnLightColor: z.string().default(""),
+  headlineStyle: z.string().default(""),
+  bodyStyle: z.string().default(""),
+  suggestedFonts: z.array(z.string()).default([]),
+  imageryMood: z.string().default(""),
+  lightingStyle: z.string().default(""),
+  compositionNotes: z.string().default(""),
+  avoidList: z.array(z.string()).default([]),
+  referenceMoodboard: z.array(z.string()).default([]),
+  plausibilityGoverningPrinciple: z.string().default(""),
+  cruiseNativeMoments: z.array(z.string()).default([]),
+  nicheEnhancedMoments: z.array(z.string()).default([]),
+  implausibleLiteralizations: z.array(z.string()).default([]),
+  allowedProps: z.array(z.string()).default([]),
+  discouragedProps: z.array(z.string()).default([]),
+  castingGoal: z.string().default(""),
+  ageRangeGuidance: z.string().default(""),
+  diversityIntent: z.string().default(""),
+  pairingGuidance: z.string().default(""),
+  stylingGuidance: z.string().default(""),
+  antiStereotypeRules: z.array(z.string()).default([]),
 });
 
 const GenerationPass1MessagingSchema = z.object({
-    heroSlogan: z.string().default(''),
-    subSlogan: z.string().default(''),
-    ctaWaitlist: z.string().default(''),
-    ctaBookNow: z.string().default(''),
-    ctaMerch: z.string().default(''),
-    ctaShare: z.string().default(''),
-    elevatorPitch: z.string().default(''),
-    toneKeywords: z.array(z.string()).default([]),
-    voicePersona: z.string().default(''),
-    starterConversation: z.preprocess(
-        (val) => (Array.isArray(val) ? val : []),
-        z.array(z.object({
-            role: z.enum(['user', 'assistant']),
-            // Inline coerce: model occasionally returns an array instead of a string.
-            content: z.preprocess(
-                (v) => Array.isArray(v) ? (v as unknown[]).join(' ') : v,
-                z.string().default(''),
-            ),
-        })).default([]),
-    ),
+  heroSlogan: z.string().default(""),
+  subSlogan: z.string().default(""),
+  ctaWaitlist: z.string().default(""),
+  ctaBookNow: z.string().default(""),
+  ctaMerch: z.string().default(""),
+  ctaShare: z.string().default(""),
+  elevatorPitch: z.string().default(""),
+  toneKeywords: z.array(z.string()).default([]),
+  voicePersona: z.string().default(""),
+  starterConversation: z.preprocess(
+    (val) => {
+      if (!Array.isArray(val)) return [];
+      // Coerce string array elements to objects with alternating roles.
+      if (val.length > 0 && typeof val[0] === "string") {
+        return val.map((item, idx) => ({
+          role: idx % 2 === 0 ? "user" : "assistant",
+          content: String(item),
+        }));
+      }
+      // Ensure objects have alternating roles if missing
+      return val.map((item, idx) => {
+        if (typeof item === "object" && item !== null) {
+          if (!("role" in item)) {
+            return { ...item, role: idx % 2 === 0 ? "user" : "assistant" };
+          }
+        }
+        return item;
+      });
+    },
+    z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          // Inline coerce: model occasionally returns an array instead of a string.
+          content: z.preprocess(
+            (v) => (Array.isArray(v) ? (v as unknown[]).join(" ") : v),
+            z.string().default(""),
+          ),
+        }),
+      )
+      .default([]),
+  ),
 });
 
 // Coerce array → string for string fields the model might return as a list.
 const coerceToStr = (val: unknown): unknown =>
-    Array.isArray(val) ? (val as string[]).join(' ') : val;
+  Array.isArray(val) ? (val as string[]).join(" ") : val;
 
 // Coerce string → single-item array for array fields the model might return as a string.
 const coerceToStrArr = (val: unknown): unknown =>
-    typeof val === 'string' ? [val] : val;
+  typeof val === "string" ? [val] : val;
 
 const GenerationPass1CommunitySchema = z.object({
-    corePromise: z.preprocess(coerceToStr, z.string().default('')),
-    participationStyle: z.preprocess(coerceToStr, z.string().default('')),
-    socialGravity: z.preprocess(coerceToStr, z.string().default('')),
-    optionalGatherings: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
-    belongingSignals: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
-    solitudeAntiPatterns: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
-    visualTogethernessNotes: z.preprocess(coerceToStr, z.string().default('')),
-    copyFramingRule: z.preprocess(coerceToStr, z.string().default('')),
-    activityInvitations: z.preprocess(coerceToStrArr, z.array(z.string()).default([])),
+  corePromise: z.preprocess(coerceToStr, z.string().default("")),
+  participationStyle: z.preprocess(coerceToStr, z.string().default("")),
+  socialGravity: z.preprocess(coerceToStr, z.string().default("")),
+  optionalGatherings: z.preprocess(
+    coerceToStrArr,
+    z.array(z.string()).default([]),
+  ),
+  belongingSignals: z.preprocess(
+    coerceToStrArr,
+    z.array(z.string()).default([]),
+  ),
+  solitudeAntiPatterns: z.preprocess(
+    coerceToStrArr,
+    z.array(z.string()).default([]),
+  ),
+  visualTogethernessNotes: z.preprocess(coerceToStr, z.string().default("")),
+  copyFramingRule: z.preprocess(coerceToStr, z.string().default("")),
+  activityInvitations: z.preprocess(
+    coerceToStrArr,
+    z.array(z.string()).default([]),
+  ),
 });
 
 const GenerationPass1MerchSchema = z.object({
-    conceptStatement: z.string().default(''),
-    logoConceptDescription: z.string().default(''),
-    tagline: z.string().default(''),
-    printStyle: z.string().default(''),
-    coreProductType: z.string().default(''),
-    coreDesignDescription: z.string().default(''),
-    coreColorway: z.string().default(''),
-    practicalProductType: z.string().default(''),
-    practicalDesignDescription: z.string().default(''),
-    practicalColorway: z.string().default(''),
-    nicheSpecificItems: z.array(z.object({
-        productType: z.string().default(''),
-        designDescription: z.string().default(''),
-        colorway: z.string().default('')
-    })).default([]).describe('Array of merch objects (not strings) that fit the niche.'),
+  conceptStatement: z.string().default(""),
+  logoConceptDescription: z.string().default(""),
+  tagline: z.string().default(""),
+  printStyle: z.string().default(""),
+  coreProductType: z.string().default(""),
+  coreDesignDescription: z.string().default(""),
+  coreColorway: z.string().default(""),
+  practicalProductType: z.string().default(""),
+  practicalDesignDescription: z.string().default(""),
+  practicalColorway: z.string().default(""),
+  nicheSpecificItems: z
+    .array(
+      z.object({
+        productType: z.string().default(""),
+        designDescription: z.string().default(""),
+        colorway: z.string().default(""),
+      }),
+    )
+    .default([])
+    .describe("Array of merch objects (not strings) that fit the niche."),
 });
 
 const GenerationPass1AudioSchema = z.object({
-    ambientNarrationScript: z.string().default(''),
-    hypeClipScript: z.string().default(''),
-    voiceProfile: z.string().default(''),
-    musicMood: z.string().default(''),
+  ambientNarrationScript: z.string().default(""),
+  hypeClipScript: z.string().default(""),
+  voiceProfile: z.string().default(""),
+  musicMood: z.string().default(""),
 });
 
 const GenerationPass1Schema = z.object({
-    visual: GenerationPass1VisualSchema.default({}),
-    messaging: GenerationPass1MessagingSchema.default({}),
-    communityExpression: GenerationPass1CommunitySchema.default({}),
-    merch: GenerationPass1MerchSchema.default({}),
-    audio: GenerationPass1AudioSchema.default({}),
+  visual: GenerationPass1VisualSchema.default({}),
+  messaging: GenerationPass1MessagingSchema.default({}),
+  communityExpression: GenerationPass1CommunitySchema.default({}),
+  merch: GenerationPass1MerchSchema.default({}),
+  audio: GenerationPass1AudioSchema.default({}),
 });
 
 // ── Lenient Pass 2 generation schemas (defaults on all leaves to avoid repair loops) ──
 const LenientVideoBriefSchema = z.object({
-    title: z.string().default(''),
-    durationSeconds: z.number().default(30),
-    tool: z.enum(['heygen', 'runwayml', 'kling', 'composite']).default('runwayml'),
-    scriptOrNarration: z.string().default(''),
-    visualDirectionNotes: z.string().default(''),
-    avatarRequired: z.boolean().default(false),
-    backgroundDescription: z.string().default(''),
-    musicMood: z.string().default(''),
+  title: z.string().default(""),
+  durationSeconds: z.number().default(30),
+  tool: z
+    .enum(["heygen", "runwayml", "kling", "composite"])
+    .default("runwayml"),
+  scriptOrNarration: z.string().default(""),
+  visualDirectionNotes: z.string().default(""),
+  avatarRequired: z.boolean().default(false),
+  backgroundDescription: z.string().default(""),
+  musicMood: z.string().default(""),
 });
 
 const LenientTikTokSchema = z.object({
-    hook: z.string().default(''),
-    narrative: LenientVideoBriefSchema.default({}),
-    caption: z.string().default(''),
-    hashtags: z.array(z.string()).default([]),
-    callToAction: z.string().default(''),
+  hook: z.string().default(""),
+  narrative: LenientVideoBriefSchema.default({}),
+  caption: z.string().default(""),
+  hashtags: z.array(z.string()).default([]),
+  callToAction: z.string().default(""),
 });
 
 const LenientReelSchema = z.object({
-    visualConcept: z.string().default(''),
-    audioTrackType: z.string().default(''),
-    caption: z.string().default(''),
-    hashtags: z.array(z.string()).default([]),
+  visualConcept: z.string().default(""),
+  audioTrackType: z.string().default(""),
+  caption: z.string().default(""),
+  hashtags: z.array(z.string()).default([]),
 });
 
 const LenientCarouselSlideSchema = z.object({
-    slideNumber: z.number().default(1),
-    headline: z.string().default(''),
-    bodyText: z.string().default(''),
-    visualDescription: z.string().default(''),
+  slideNumber: z.number().default(1),
+  headline: z.string().default(""),
+  bodyText: z.string().default(""),
+  visualDescription: z.string().default(""),
 });
 
 const LenientFeedSchema = z.object({
-    carouselSlides: z.array(LenientCarouselSlideSchema).default([]),
-    singlePostConcept: z.string().default(''),
-    caption: z.string().default(''),
+  carouselSlides: z.array(LenientCarouselSlideSchema).default([]),
+  singlePostConcept: z.string().default(""),
+  caption: z.string().default(""),
 });
 
 const LenientAdSchema = z.object({
-    headline: z.string().default(''),
-    primaryText: z.string().default(''),
-    description: z.string().default(''),
-    cta: z.string().default(''),
-    visualDescription: z.string().default(''),
+  headline: z.string().default(""),
+  primaryText: z.string().default(""),
+  description: z.string().default(""),
+  cta: z.string().default(""),
+  visualDescription: z.string().default(""),
 });
 
 const LenientYouTubeSchema = z.object({
-    title: z.string().default(''),
-    visualConcept: z.string().default(''),
-    description: z.string().default(''),
-    hashtags: z.array(z.string()).default([]),
+  title: z.string().default(""),
+  visualConcept: z.string().default(""),
+  description: z.string().default(""),
+  hashtags: z.array(z.string()).default([]),
 });
 
 const LenientPinterestSchema = z.object({
-    pinTitle: z.string().default(''),
-    pinDescription: z.string().default(''),
-    visualConcept: z.string().default(''),
+  pinTitle: z.string().default(""),
+  pinDescription: z.string().default(""),
+  visualConcept: z.string().default(""),
 });
 
 const LenientEmailSchema = z.object({
-    subjectLine: z.string().default(''),
-    preheader: z.string().default(''),
-    bodyDirection: z.string().default(''),
-    visualDirection: z.string().default(''),
+  subjectLine: z.string().default(""),
+  preheader: z.string().default(""),
+  bodyDirection: z.string().default(""),
+  visualDirection: z.string().default(""),
 });
 
 const LenientDiscordSchema = z.object({
-    serverBannerDescription: z.string().default(''),
-    welcomeMessageDirection: z.string().default(''),
+  serverBannerDescription: z.string().default(""),
+  welcomeMessageDirection: z.string().default(""),
 });
 
 const Pass2SocialSchema = z.object({
-    tiktokOrganic: LenientTikTokSchema.default({}),
-    instagramReels: LenientReelSchema.default({}),
-    instagramFeed: LenientFeedSchema.default({}),
-    facebookAd: LenientAdSchema.default({}),
-    youtubeShort: LenientYouTubeSchema.default({}),
-    pinterest: LenientPinterestSchema.default({}),
-    emailHeader: LenientEmailSchema.default({}),
-    discordBanner: LenientDiscordSchema.default({}),
+  tiktokOrganic: LenientTikTokSchema.default({}),
+  instagramReels: LenientReelSchema.default({}),
+  instagramFeed: LenientFeedSchema.default({}),
+  facebookAd: LenientAdSchema.default({}),
+  youtubeShort: LenientYouTubeSchema.default({}),
+  pinterest: LenientPinterestSchema.default({}),
+  emailHeader: LenientEmailSchema.default({}),
+  discordBanner: LenientDiscordSchema.default({}),
 });
 
 const Pass2VideoSchema = z.object({
-    heroExplainer: LenientVideoBriefSchema.default({}),
-    tiktokSeed: LenientVideoBriefSchema.default({}),
-    thresholdAnnouncement: LenientVideoBriefSchema.default({}),
-    merchReveal: LenientVideoBriefSchema.default({}),
-    countdownSeries: z.array(LenientVideoBriefSchema).default([]),
+  heroExplainer: LenientVideoBriefSchema.default({}),
+  tiktokSeed: LenientVideoBriefSchema.default({}),
+  thresholdAnnouncement: LenientVideoBriefSchema.default({}),
+  merchReveal: LenientVideoBriefSchema.default({}),
+  countdownSeries: z.array(LenientVideoBriefSchema).default([]),
 });
 
 // Combined type used downstream
 const Pass2Schema = z.object({
-    socialConcepts: Pass2SocialSchema,
-    videoConcepts: Pass2VideoSchema,
+  socialConcepts: Pass2SocialSchema,
+  videoConcepts: Pass2VideoSchema,
 });
 
 // Lenient merch item for refinement parsing (dallePrompt/printfulProductId often missing from model output)
 const LenientMerchItemForRefinement = z.object({
-    productType: z.string().default(''),
-    designDescription: z.string().default(''),
-    colorway: z.string().default(''),
-    dallePrompt: z.string().default(''),
-    printfulProductId: z.string().default(''),
+  productType: z.string().default(""),
+  designDescription: z.string().default(""),
+  colorway: z.string().default(""),
+  dallePrompt: z.string().default(""),
+  printfulProductId: z.string().default(""),
 });
 
 const RefinementSchema = CampaignAestheticBriefSchema.omit({
-    slug: true,
-    themeName: true,
-    productionBible: true,
-    landingStillBible: true,
-    productionBuildLint: true,
-    productionBuildStatus: true,
-    productionBuildEvaluatedAt: true,
-    modificationHistory: true,
-    issueLedger: true,
-    activeRemediationPlan: true,
-    generatedAt: true,
-    generatedBy: true,
-    humanReviewStatus: true,
-    revisionNotes: true,
-    redTeamReview: true,
-    // Pass 2 platform concepts are generated separately and carried forward unchanged
-    socialConcepts: true,
-    videoConcepts: true,
-    // Override merch to use lenient item schema with defaults
-    merch: true,
+  slug: true,
+  themeName: true,
+  productionBible: true,
+  landingStillBible: true,
+  productionBuildLint: true,
+  productionBuildStatus: true,
+  productionBuildEvaluatedAt: true,
+  modificationHistory: true,
+  issueLedger: true,
+  activeRemediationPlan: true,
+  generatedAt: true,
+  generatedBy: true,
+  humanReviewStatus: true,
+  revisionNotes: true,
+  redTeamReview: true,
+  // Pass 2 platform concepts are generated separately and carried forward unchanged
+  socialConcepts: true,
+  videoConcepts: true,
+  // Override merch to use lenient item schema with defaults
+  merch: true,
 }).extend({
-    merch: z.object({
-        conceptStatement: z.string().default(''),
-        coreItem: LenientMerchItemForRefinement.default({}),
-        practicalItem: LenientMerchItemForRefinement.default({}),
-        nicheSpecificItems: z.array(LenientMerchItemForRefinement).default([]),
-        logoConceptDescription: z.string().default(''),
-        tagline: z.string().default(''),
-        printStyle: z.string().default(''),
-    }).default({}),
+  merch: z
+    .object({
+      conceptStatement: z.string().default(""),
+      coreItem: LenientMerchItemForRefinement.default({}),
+      practicalItem: LenientMerchItemForRefinement.default({}),
+      nicheSpecificItems: z.array(LenientMerchItemForRefinement).default([]),
+      logoConceptDescription: z.string().default(""),
+      tagline: z.string().default(""),
+      printStyle: z.string().default(""),
+    })
+    .default({}),
 });
 
-function checkSloganQuality(heroSlogan: string, subSlogan: string, nicheKeywords: string[] = [], isMusicFestival: boolean = false): string[] {
-    const failures: string[] = [];
-    const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
-    const cliches = ["paradise", "perfect vacation", "dream getaway", "sail away", "unforgettable", "memories"];
+function checkSloganQuality(
+  heroSlogan: string,
+  subSlogan: string,
+  nicheKeywords: string[] = [],
+  isMusicFestival: boolean = false,
+): string[] {
+  const failures: string[] = [];
+  const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
+  const cliches = [
+    "paradise",
+    "perfect vacation",
+    "dream getaway",
+    "sail away",
+    "unforgettable",
+    "memories",
+  ];
 
-    // Check 1: No cliches
-    for (const cliche of cliches) {
-        if (lowerSlogans.includes(cliche)) {
-            failures.push(`Contains cliche: '${cliche}'`);
-        }
+  // Check 1: No cliches
+  for (const cliche of cliches) {
+    if (lowerSlogans.includes(cliche)) {
+      failures.push(`Contains cliche: '${cliche}'`);
     }
+  }
 
-    // Check 2: Length counts
-    const heroWords = heroSlogan.split(" ").filter(w => w.trim().length > 0).length;
-    const subWords = subSlogan.split(" ").filter(w => w.trim().length > 0).length;
+  // Check 2: Length counts
+  const heroWords = heroSlogan
+    .split(" ")
+    .filter((w) => w.trim().length > 0).length;
+  const subWords = subSlogan
+    .split(" ")
+    .filter((w) => w.trim().length > 0).length;
 
-    if (heroWords > 6) failures.push(`Hero slogan too long (${heroWords} words, max 6)`);
-    if (subWords > 12) failures.push(`Sub slogan too long (${subWords} words, max 12)`);
+  if (heroWords > 6)
+    failures.push(`Hero slogan too long (${heroWords} words, max 6)`);
+  if (subWords > 12)
+    failures.push(`Sub slogan too long (${subWords} words, max 12)`);
 
-    // Check 3: Decisiveness — reject purely ambient adjective-noun slogans with no hook
-    const ambientOnlyWords = new Set(['soft', 'gentle', 'calm', 'quiet', 'open', 'easy', 'warm', 'slow', 'still', 'light', 'deep']);
-    const genericNouns = new Set(['greens', 'seas', 'waters', 'days', 'time', 'skies', 'air', 'light', 'winds', 'waves', 'horizons']);
-    const heroTokens = heroSlogan.toLowerCase().replace(/[^a-z\s]/g, '').split(' ').filter(w => w.length > 0);
-    const meaningfulTokens = heroTokens.filter(w => !ambientOnlyWords.has(w) && !genericNouns.has(w) && w.length > 2);
-    if (meaningfulTokens.length === 0 && heroTokens.length > 0) {
-        failures.push('Hero slogan is too ambient — needs a verb, contrast, or identity anchor beyond soft adjectives');
+  // Check 3: Decisiveness — reject purely ambient adjective-noun slogans with no hook
+  const ambientOnlyWords = new Set([
+    "soft",
+    "gentle",
+    "calm",
+    "quiet",
+    "open",
+    "easy",
+    "warm",
+    "slow",
+    "still",
+    "light",
+    "deep",
+  ]);
+  const genericNouns = new Set([
+    "greens",
+    "seas",
+    "waters",
+    "days",
+    "time",
+    "skies",
+    "air",
+    "light",
+    "winds",
+    "waves",
+    "horizons",
+  ]);
+  const heroTokens = heroSlogan
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "")
+    .split(" ")
+    .filter((w) => w.length > 0);
+  const meaningfulTokens = heroTokens.filter(
+    (w) => !ambientOnlyWords.has(w) && !genericNouns.has(w) && w.length > 2,
+  );
+  if (meaningfulTokens.length === 0 && heroTokens.length > 0) {
+    failures.push(
+      "Hero slogan is too ambient — needs a verb, contrast, or identity anchor beyond soft adjectives",
+    );
+  }
+
+  // Check 4: Niche anchor — at least one keyword or synonym should appear in combined slogans
+  if (nicheKeywords.length > 0) {
+    const lowerKeywords = nicheKeywords.map((k) => k.toLowerCase());
+    const hasNicheAnchor = lowerKeywords.some((keyword) =>
+      lowerSlogans.includes(keyword),
+    );
+    if (!hasNicheAnchor) {
+      failures.push(
+        `Slogan does not anchor to niche identity — expected at least one of: ${lowerKeywords.slice(0, 5).join(", ")}`,
+      );
     }
+  }
 
-    // Check 4: Niche anchor — at least one keyword or synonym should appear in combined slogans
-    if (nicheKeywords.length > 0) {
-        const lowerKeywords = nicheKeywords.map(k => k.toLowerCase());
-        const hasNicheAnchor = lowerKeywords.some(keyword => lowerSlogans.includes(keyword));
-        if (!hasNicheAnchor) {
-            failures.push(`Slogan does not anchor to niche identity — expected at least one of: ${lowerKeywords.slice(0, 5).join(', ')}`);
-        }
+  // Check 5: Music/festival identity anchor — slogans must contain at least one explicit music signal
+  if (isMusicFestival) {
+    const MUSIC_SIGNAL_TERMS = [
+      "danc",
+      "beat",
+      "sound",
+      "track",
+      "bass",
+      "groove",
+      "rhythm",
+      "stage",
+      "festival",
+      "playlist",
+      "music",
+      "open deck",
+      "performer",
+      "band",
+      "dj ",
+      " dj",
+      "crowd",
+      "set ",
+      " set",
+      "drop",
+      "vibe",
+    ];
+    const hasMusicSignal = MUSIC_SIGNAL_TERMS.some((term) =>
+      lowerSlogans.includes(term),
+    );
+    if (!hasMusicSignal) {
+      failures.push(
+        "Music/festival campaign slogans must contain at least one explicit music signal (beat, sound, deck, festival, music, crowd, stage, band, drop, etc.) — slogans are not distinguishable from generic cruise marketing",
+      );
     }
+  }
 
-    // Check 5: Music/festival identity anchor — slogans must contain at least one explicit music signal
-    if (isMusicFestival) {
-        const MUSIC_SIGNAL_TERMS = ['danc', 'beat', 'sound', 'track', 'bass', 'groove', 'rhythm', 'stage', 'festival', 'playlist', 'music', 'open deck', 'performer', 'band', 'dj ', ' dj', 'crowd', 'set ', ' set', 'drop', 'vibe'];
-        const hasMusicSignal = MUSIC_SIGNAL_TERMS.some(term => lowerSlogans.includes(term));
-        if (!hasMusicSignal) {
-            failures.push('Music/festival campaign slogans must contain at least one explicit music signal (beat, sound, deck, festival, music, crowd, stage, band, drop, etc.) — slogans are not distinguishable from generic cruise marketing');
-        }
-    }
-
-    return failures;
+  return failures;
 }
 
 export function joinCampaignList(values?: string[]): string {
-    if (!values || values.length === 0) {
-        return 'None provided';
-    }
+  if (!values || values.length === 0) {
+    return "None provided";
+  }
 
-    return values.join(', ');
+  return values.join(", ");
 }
 
 function sanitizePromptText(value?: string): string {
-    if (!value) {
-        return 'Not provided';
-    }
+  if (!value) {
+    return "Not provided";
+  }
 
-    return value
-        .replace(/leave[- ]one\/?take[- ]one shelf/gi, 'guest-to-guest book passing')
-        .replace(/book[- ]swap shelf/gi, 'guest-to-guest book passing')
-        .replace(/shared shelf/gi, 'guest-to-guest recommendation flow')
-        .replace(/curated shelf/gi, 'personal recommendation flow')
-        .replace(/book[- ]swap station/gi, 'casual guest book exchange')
-        .replace(/book swap/gi, 'casual guest book exchange')
-        .replace(/optional salons/gi, 'optional after-dinner conversation')
-        .replace(/salon-style/gi, 'easy conversational')
-        .replace(/\bsalons\b/gi, 'after-dinner conversations')
-        .replace(/\bsalon\b/gi, 'after-dinner conversation')
-        .replace(/listening room/gi, 'window-side listening mood')
-        .replace(/hosted talk/gi, 'easy conversation')
-        .replace(/teach-and-play/gi, 'easy guest-led play')
-        .trim();
+  return value
+    .replace(
+      /leave[- ]one\/?take[- ]one shelf/gi,
+      "guest-to-guest book passing",
+    )
+    .replace(/book[- ]swap shelf/gi, "guest-to-guest book passing")
+    .replace(/shared shelf/gi, "guest-to-guest recommendation flow")
+    .replace(/curated shelf/gi, "personal recommendation flow")
+    .replace(/book[- ]swap station/gi, "casual guest book exchange")
+    .replace(/book swap/gi, "casual guest book exchange")
+    .replace(/optional salons/gi, "optional after-dinner conversation")
+    .replace(/salon-style/gi, "easy conversational")
+    .replace(/\bsalons\b/gi, "after-dinner conversations")
+    .replace(/\bsalon\b/gi, "after-dinner conversation")
+    .replace(/listening room/gi, "window-side listening mood")
+    .replace(/hosted talk/gi, "easy conversation")
+    .replace(/teach-and-play/gi, "easy guest-led play")
+    .trim();
 }
 
 export function sanitizePromptList(values?: string[]): string[] {
-    if (!values || values.length === 0) {
-        return [];
-    }
+  if (!values || values.length === 0) {
+    return [];
+  }
 
-    return values.map((value) => sanitizePromptText(value));
+  return values.map((value) => sanitizePromptText(value));
 }
 
 export function getCanonicalShipName(campaign: Campaign): string {
-    const shipTarget = campaign.shipTarget?.trim();
-    if (shipTarget) {
-        return shipTarget;
-    }
+  const shipTarget = campaign.shipTarget?.trim();
+  if (shipTarget) {
+    return shipTarget;
+  }
 
-    const matchedShipName = campaign.matchedShipName?.trim();
-    if (matchedShipName) {
-        return matchedShipName;
-    }
+  const matchedShipName = campaign.matchedShipName?.trim();
+  if (matchedShipName) {
+    return matchedShipName;
+  }
 
-    return 'TBD';
+  return "TBD";
 }
 
 export function buildShipContext(campaign: Campaign): string {
-    const canonicalShip = getCanonicalShipName(campaign);
-    const matchedShipName = campaign.matchedShipName?.trim();
+  const canonicalShip = getCanonicalShipName(campaign);
+  const matchedShipName = campaign.matchedShipName?.trim();
 
-    if (matchedShipName && campaign.shipTarget?.trim() && matchedShipName !== campaign.shipTarget.trim()) {
-        return `${canonicalShip} | Inventory metadata conflict: ${matchedShipName} (do not use conflicting ship name in outward copy)`;
-    }
+  if (
+    matchedShipName &&
+    campaign.shipTarget?.trim() &&
+    matchedShipName !== campaign.shipTarget.trim()
+  ) {
+    return `${canonicalShip} | Inventory metadata conflict: ${matchedShipName} (do not use conflicting ship name in outward copy)`;
+  }
 
-    if (matchedShipName) {
-        return `${canonicalShip} | Inventory matched ship: ${matchedShipName}`;
-    }
+  if (matchedShipName) {
+    return `${canonicalShip} | Inventory matched ship: ${matchedShipName}`;
+  }
 
-    return canonicalShip;
+  return canonicalShip;
 }
 
 function buildRouteContext(campaign: Campaign): string {
-    const routeParts = [
-        campaign.targetDestination,
-        campaign.matchedDeparturePort ? `Departure Port: ${campaign.matchedDeparturePort}` : undefined,
-        campaign.matchedNights ? `Duration: ${campaign.matchedNights}` : undefined,
-        campaign.matchedSailDate ? `Matched Sail Date: ${campaign.matchedSailDate}` : undefined,
-    ].filter(Boolean);
+  const routeParts = [
+    campaign.targetDestination,
+    campaign.matchedDeparturePort
+      ? `Departure Port: ${campaign.matchedDeparturePort}`
+      : undefined,
+    campaign.matchedNights ? `Duration: ${campaign.matchedNights}` : undefined,
+    campaign.matchedSailDate
+      ? `Matched Sail Date: ${campaign.matchedSailDate}`
+      : undefined,
+  ].filter(Boolean);
 
-    return routeParts.length > 0 ? routeParts.join(' | ') : 'No route context provided';
+  return routeParts.length > 0
+    ? routeParts.join(" | ")
+    : "No route context provided";
 }
 
 export function buildEventFramingGuidance(campaign: Campaign): string {
-    const highlightEvents = sanitizePromptList(campaign.highlightEvents);
+  const highlightEvents = sanitizePromptList(campaign.highlightEvents);
 
-    if (highlightEvents.length === 0) {
-        return 'No highlight events provided. Do not invent event-specific spectacle, themed operations, or special-viewing infrastructure.';
-    }
+  if (highlightEvents.length === 0) {
+    return "No highlight events provided. Do not invent event-specific spectacle, themed operations, or special-viewing infrastructure.";
+  }
 
-    return [
-        `Highlight events provided: ${joinCampaignList(highlightEvents)}.`,
-        'Treat real itinerary-timed events, seasonal phenomena, holidays, and cultural moments as backdrop context unless the campaign is explicitly being sold as that event experience.',
-        'Let those events influence lighting, sky color, timing, destination mood, emotional cadence, or shared atmosphere rather than turning them into onboard programming.',
-        'Do not let a secondary event silently hijack the campaign identity, hero slogan, or repeated social/video beats.',
-        'Avoid language that implies ceremony, viewing rituals, special gear, or hosted infrastructure unless that operation is genuinely part of the product.'
-    ].join(' ');
+  return [
+    `Highlight events provided: ${joinCampaignList(highlightEvents)}.`,
+    "Treat real itinerary-timed events, seasonal phenomena, holidays, and cultural moments as backdrop context unless the campaign is explicitly being sold as that event experience.",
+    "Let those events influence lighting, sky color, timing, destination mood, emotional cadence, or shared atmosphere rather than turning them into onboard programming.",
+    "Do not let a secondary event silently hijack the campaign identity, hero slogan, or repeated social/video beats.",
+    "Avoid language that implies ceremony, viewing rituals, special gear, or hosted infrastructure unless that operation is genuinely part of the product.",
+  ].join(" ");
 }
 
 function buildRefinementContext(campaign: Campaign): string {
-    return [
-        `Theme: ${campaign.name}`,
-        `Canonical Ship: ${getCanonicalShipName(campaign)}`,
-        `Ship Context: ${buildShipContext(campaign)}`,
-        `Destination: ${campaign.targetDestination || 'TBD'}`,
-        `Route Context: ${buildRouteContext(campaign)}`,
-        `Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}`,
-        `Event Framing Guidance: ${buildEventFramingGuidance(campaign)}`,
-        `Vacation Fit Rationale: ${sanitizePromptText(campaign.vacationFitRationale)}`,
-        `Cruise-Native Moments: ${joinCampaignList(sanitizePromptList(campaign.cruiseNativeMoments))}`,
-        `Niche Expression Mode: ${sanitizePromptText(campaign.nicheExpressionMode)}`,
-        `Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}`,
-        `Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}`,
-        `Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}`,
-        `Community Fit Rationale: ${sanitizePromptText(campaign.communityFitRationale)}`,
-        `Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}`,
-        `Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}`,
-        `Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}`,
-    ].join('\n');
+  return [
+    `Theme: ${campaign.name}`,
+    `Canonical Ship: ${getCanonicalShipName(campaign)}`,
+    `Ship Context: ${buildShipContext(campaign)}`,
+    `Destination: ${campaign.targetDestination || "TBD"}`,
+    `Route Context: ${buildRouteContext(campaign)}`,
+    `Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}`,
+    `Event Framing Guidance: ${buildEventFramingGuidance(campaign)}`,
+    `Vacation Fit Rationale: ${sanitizePromptText(campaign.vacationFitRationale)}`,
+    `Cruise-Native Moments: ${joinCampaignList(sanitizePromptList(campaign.cruiseNativeMoments))}`,
+    `Niche Expression Mode: ${sanitizePromptText(campaign.nicheExpressionMode)}`,
+    `Allowed Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.allowedThemeSignals))}`,
+    `Discouraged Theme Signals: ${joinCampaignList(sanitizePromptList(campaign.discouragedThemeSignals))}`,
+    `Implausible Literalizations: ${joinCampaignList(sanitizePromptList(campaign.implausibleLiteralizations))}`,
+    `Community Fit Rationale: ${sanitizePromptText(campaign.communityFitRationale)}`,
+    `Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}`,
+    `Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}`,
+    `Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}`,
+  ].join("\n");
 }
 
 async function refineAestheticBrief(
-    campaign: Campaign,
-    draftBrief: CampaignAestheticBrief,
-    instructions?: string,
+  campaign: Campaign,
+  draftBrief: CampaignAestheticBrief,
+  instructions?: string,
 ): Promise<CampaignAestheticBrief> {
-    const refinementPrompt = `
+  const refinementPrompt = `
 You are GitHub Copilot using GPT-5.4 in a dedicated aesthetic refinement phase.
 
 Review the draft aesthetic brief and polish it like a senior creative director performing a final quality pass.
@@ -576,56 +771,74 @@ OUTPUT RULES:
 - If the campaign context provides a ship name, use that exact ship name in copy fields and do not invent another ship.
 `.trim();
 
-    const instructionBlock = instructions
-        ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${instructions}`
-        : '';
+  const instructionBlock = instructions
+    ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${instructions}`
+    : "";
 
-    const musicFestivalRefinementBlock: string = isMusicFestivalCampaign(campaign)
-        ? `\n\nMUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — REFINEMENT PROTECTION RULES:\nThis is a music, festival, or open-deck community campaign. The refinement pass must protect its energy identity, not sand it down.\nDO NOT remove or soften: open-deck crowd energy language, dancing-on-deck descriptions, stage or sound-system adjacency references, festival atmosphere, or crowd response to live music. These are the campaign's core identity, not program language to be stripped.\nDO NOT replace "crowd dancing on deck" with "guests enjoying the deck". DO NOT replace "guests responding to the music" with "guests relaxing outdoors". The physical, social, crowd-energy dimension of this campaign must survive refinement intact.\nDO strengthen: any belonging signal that lacks a specific observable music cue should be sharpened to name the concrete behavior. Vague signals like "shared love of music" must be replaced with observable scene descriptions.\nDO ensure heroSlogan and subSlogan both contain at least one explicit music signal term (beat, sound, music, deck, stage, festival, crowd, bass, groove, band, drop). If they do not, rewrite them to pass this test.\nDO ensure communityExpression.socialGravity names music-specific recognition, not generic shared-taste language.`
-        : '';
+  const musicFestivalRefinementBlock: string = isMusicFestivalCampaign(campaign)
+    ? `\n\nMUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — REFINEMENT PROTECTION RULES:\nThis is a music, festival, or open-deck community campaign. The refinement pass must protect its energy identity, not sand it down.\nDO NOT remove or soften: open-deck crowd energy language, dancing-on-deck descriptions, stage or sound-system adjacency references, festival atmosphere, or crowd response to live music. These are the campaign's core identity, not program language to be stripped.\nDO NOT replace "crowd dancing on deck" with "guests enjoying the deck". DO NOT replace "guests responding to the music" with "guests relaxing outdoors". The physical, social, crowd-energy dimension of this campaign must survive refinement intact.\nDO strengthen: any belonging signal that lacks a specific observable music cue should be sharpened to name the concrete behavior. Vague signals like "shared love of music" must be replaced with observable scene descriptions.\nDO ensure heroSlogan and subSlogan both contain at least one explicit music signal term (beat, sound, music, deck, stage, festival, crowd, bass, groove, band, drop). If they do not, rewrite them to pass this test.\nDO ensure communityExpression.socialGravity names music-specific recognition, not generic shared-taste language.`
+    : "";
 
-    const { object } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: RefinementSchema,
-        system: refinementPrompt + musicFestivalRefinementBlock + instructionBlock,
-        prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
-        maxOutputTokens: 14000,
-        maxCandidates: 2,
-        skipRepair: true,
-        operationName: `aesthetic-refinement:${campaign.id}`,
-    });
+  const { object } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: RefinementSchema,
+    system: refinementPrompt + musicFestivalRefinementBlock + instructionBlock,
+    prompt: `Campaign Context:\n${buildRefinementContext(campaign)}\n\nDraft Brief To Refine:\n${JSON.stringify(draftBrief, null, 2)}`,
+    maxOutputTokens: 14000,
+    maxCandidates: 2,
+    skipRepair: true,
+    operationName: `aesthetic-refinement:${campaign.id}`,
+  });
 
-    const refinedMerch = normalizeMerchBrief(campaign.name, object.merch as z.output<typeof RefinementSchema>['merch']);
-    const refinedBrief: CampaignAestheticBrief = {
-        ...draftBrief,
-        ...object,
-        slug: campaign.id,
-        themeName: campaign.name,
-        visual: {
-            ...object.visual,
-            plausibilityFramework: normalizeVisualPlausibilityFramework(object.visual.plausibilityFramework),
-            humanRepresentation: normalizeHumanRepresentationGuidance(object.visual.humanRepresentation),
-        },
-        merch: refinedMerch,
-        generatedAt: new Date().toISOString(),
-        generatedBy: 'agent',
-        humanReviewStatus: 'pending',
-        revisionCycleCount: draftBrief.revisionCycleCount,
-    };
+  const refinedMerch = normalizeMerchBrief(
+    campaign.name,
+    object.merch as z.output<typeof RefinementSchema>["merch"],
+  );
+  const refinedBrief: CampaignAestheticBrief = {
+    ...draftBrief,
+    ...object,
+    slug: campaign.id,
+    themeName: campaign.name,
+    visual: {
+      ...object.visual,
+      plausibilityFramework: normalizeVisualPlausibilityFramework(
+        object.visual.plausibilityFramework,
+      ),
+      humanRepresentation: normalizeHumanRepresentationGuidance(
+        object.visual.humanRepresentation,
+      ),
+    },
+    merch: refinedMerch,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "agent",
+    humanReviewStatus: "pending",
+    revisionCycleCount: draftBrief.revisionCycleCount,
+  };
 
-    refinedBrief.identityBlueprint = await buildCampaignIdentityBlueprintAsync(refinedBrief, campaign);
+  refinedBrief.identityBlueprint = await buildCampaignIdentityBlueprintAsync(
+    refinedBrief,
+    campaign,
+  );
 
-    return refinedBrief;
+  return refinedBrief;
 }
 
 export async function generateAestheticBrief(
-    campaign: Campaign,
-    options?: { correctionContext?: string; instructions?: string; recordStageTiming?: (stageName: string, elapsedMs: number) => void },
+  campaign: Campaign,
+  options?: {
+    correctionContext?: string;
+    instructions?: string;
+    recordStageTiming?: (stageName: string, elapsedMs: number) => void;
+  },
 ): Promise<CampaignAestheticBrief> {
-    console.log(`[aesthetic-engine] Starting aesthetic brief generation for ${campaign.id}`);
-    console.log(`[aesthetic-engine] Structured generation helper selected for ${campaign.id}: model=${ModelName.GPT_5_HIGH}`);
+  console.log(
+    `[aesthetic-engine] Starting aesthetic brief generation for ${campaign.id}`,
+  );
+  console.log(
+    `[aesthetic-engine] Structured generation helper selected for ${campaign.id}: model=${ModelName.GPT_5_HIGH}`,
+  );
 
-    const brandGuidelines = `
+  const brandGuidelines = `
 Leisure Life Interactive Brand Guidelines:
 - Brand typefaces must take precedence on the landing page.
 - CTA buttons always use brand interaction colors.
@@ -633,15 +846,15 @@ Leisure Life Interactive Brand Guidelines:
 - Do NOT use generic cruise marketing copy ("Your Adventure Starts Here", "Sail Away").
     `.trim();
 
-    const baseContext = `
+  const baseContext = `
 Theme: ${campaign.name}
-Aesthetic Request: ${campaign.aesthetic || 'Determine best fit'}
-Target Audience/Keywords: ${(campaign.targetingKeywords || []).join(', ')}
+Aesthetic Request: ${campaign.aesthetic || "Determine best fit"}
+Target Audience/Keywords: ${(campaign.targetingKeywords || []).join(", ")}
 Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
 Event Framing Guidance: ${buildEventFramingGuidance(campaign)}
 Canonical Ship: ${getCanonicalShipName(campaign)}
 Ship Context: ${buildShipContext(campaign)}
-Destination: ${campaign.targetDestination || 'TBD'}
+Destination: ${campaign.targetDestination || "TBD"}
 Route Context: ${buildRouteContext(campaign)}
 Vacation Fit Rationale: ${sanitizePromptText(campaign.vacationFitRationale)}
 Cruise-Native Moments: ${joinCampaignList(sanitizePromptList(campaign.cruiseNativeMoments))}
@@ -668,7 +881,7 @@ Visual Priority Rules:
 - The brief must define why the group feels real and welcoming even when guests engage lightly.
 `;
 
-    const merchGuidelines = `
+  const merchGuidelines = `
 Merch Direction:
 - Merch concepts must specialize in cute cruise/theme t-shirt ideas.
 - The core item must be a t-shirt concept suitable for real print-on-demand production.
@@ -677,7 +890,7 @@ Merch Direction:
 - Keep all merch prompts grounded in feasible front-of-shirt artwork, not product fantasy scenes.
     `.trim();
 
-    const systemPromptPass1 = `
+  const systemPromptPass1 = `
 You are the Creative Director for Leisure Life Interactive, a boutique cruise campaign studio. 
 Your role is to devise the core aesthetic identity (visuals, messaging, merch, audio) for a niche-targeted group cruise.
 Return a partial CampaignAestheticBrief JSON object conforming to the schema.
@@ -739,217 +952,268 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 - For reading/literary campaigns specifically, never use shelf-based ambient infrastructure as the mechanism for discovery; recommendations should move person-to-person, book-to-hand, or remain purely atmospheric.
 `.trim();
 
-    const correctionSuffix = options?.correctionContext
-        ? `\n\nCORRECTIVE REPROMPT — HARD FAILURE CONTEXT:\nThe previous generation produced the following validation blockers. You MUST resolve every one of them in this output.\n${options.correctionContext}`
-        : '';
-    const instructionSuffix = options?.instructions
-        ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${options.instructions}`
-        : '';
+  const correctionSuffix = options?.correctionContext
+    ? `\n\nCORRECTIVE REPROMPT — HARD FAILURE CONTEXT:\nThe previous generation produced the following validation blockers. You MUST resolve every one of them in this output.\n${options.correctionContext}`
+    : "";
+  const instructionSuffix = options?.instructions
+    ? `\n\nOPERATOR INSTRUCTIONS:\nHonor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.\n${options.instructions}`
+    : "";
 
-// ── PASS1_TIMEOUT_MS: per-attempt wall-clock cap (ms).
-    // If a single callGlobalGenerateObject call exceeds this, we abort the attempt and
-    // break with the last accepted result (or use the partial if no attempt passed).
-    const PASS1_ATTEMPT_TIMEOUT_MS = 180_000;
+  // ── PASS1_TIMEOUT_MS: per-attempt wall-clock cap (ms).
+  // If a single callGlobalGenerateObject call exceeds this, we abort the attempt and
+  // break with the last accepted result (or use the partial if no attempt passed).
+  const PASS1_ATTEMPT_TIMEOUT_MS = 180_000;
 
-    // ── normalizePass1Output: maps flat LLM generation to full nested Pass1 shape.
-    // Keeps the live structured-output contract strict while absorbing model gaps in TS.
-    function normalizePass1Output(raw: z.output<typeof GenerationPass1Schema>): z.infer<typeof Pass1Schema> {
-        return {
-            visual: {
-                aestheticLabel: raw.visual.aestheticLabel,
-                colorPalette: {
-                    primary: raw.visual.primaryColor || '#1a2b3c',
-                    secondary: raw.visual.secondaryColor || '#4d5e6f',
-                    accent: raw.visual.accentColor || '#f0c040',
-                    background: raw.visual.backgroundColor || '#0a0a0a',
-                    textOnDark: raw.visual.textOnDarkColor || '#ffffff',
-                    textOnLight: raw.visual.textOnLightColor || '#111111',
-                },
-                typographyDirection: {
-                    headlineStyle: raw.visual.headlineStyle || 'Bold, uppercase, high-contrast',
-                    bodyStyle: raw.visual.bodyStyle || 'Clean sans-serif, generous line height',
-                    suggestedFonts: raw.visual.suggestedFonts?.length ? raw.visual.suggestedFonts : ['Inter', 'Outfit'],
-                },
-                imageryMood: raw.visual.imageryMood,
-                lightingStyle: raw.visual.lightingStyle,
-                compositionNotes: raw.visual.compositionNotes,
-                avoidList: raw.visual.avoidList,
-                referenceMoodboard: raw.visual.referenceMoodboard,
-                plausibilityFramework: normalizeVisualPlausibilityFramework({
-                    governingPrinciple: raw.visual.plausibilityGoverningPrinciple,
-                    cruiseNativeMoments: raw.visual.cruiseNativeMoments,
-                    nicheEnhancedMoments: raw.visual.nicheEnhancedMoments,
-                    implausibleLiteralizations: raw.visual.implausibleLiteralizations,
-                    allowedProps: raw.visual.allowedProps,
-                    discouragedProps: raw.visual.discouragedProps,
-                }),
-                humanRepresentation: normalizeHumanRepresentationGuidance({
-                    castingGoal: raw.visual.castingGoal,
-                    ageRangeGuidance: raw.visual.ageRangeGuidance,
-                    diversityIntent: raw.visual.diversityIntent,
-                    pairingGuidance: raw.visual.pairingGuidance,
-                    stylingGuidance: raw.visual.stylingGuidance,
-                    antiStereotypeRules: raw.visual.antiStereotypeRules,
-                }),
-            },
-            messaging: {
-                heroSlogan: raw.messaging.heroSlogan || `${raw.visual.aestheticLabel} by sea`,
-                subSlogan: raw.messaging.subSlogan || 'Your kind of cruise.',
-                ctaVariants: {
-                    waitlist: raw.messaging.ctaWaitlist || 'Join the List',
-                    bookNow: raw.messaging.ctaBookNow || 'Book Now',
-                    merch: raw.messaging.ctaMerch || 'Shop the Look',
-                    share: raw.messaging.ctaShare || 'Share This',
-                },
-                toneKeywords: raw.messaging.toneKeywords?.length ? raw.messaging.toneKeywords : ['aspirational', 'specific', 'welcoming'],
-                elevatorPitch: raw.messaging.elevatorPitch || '',
-                voicePersona: raw.messaging.voicePersona || '',
-                starterConversation: raw.messaging.starterConversation ?? [],
-            },
-            communityExpression: {
-                corePromise: raw.communityExpression.corePromise,
-                participationStyle: raw.communityExpression.participationStyle,
-                socialGravity: raw.communityExpression.socialGravity,
-                optionalGatherings: raw.communityExpression.optionalGatherings,
-                belongingSignals: raw.communityExpression.belongingSignals,
-                solitudeAntiPatterns: raw.communityExpression.solitudeAntiPatterns,
-                visualTogethernessNotes: raw.communityExpression.visualTogethernessNotes,
-                copyFramingRule: raw.communityExpression.copyFramingRule,
-                activityInvitations: raw.communityExpression.activityInvitations,
-            },
-            merch: normalizeMerchBrief(campaign.name, {
-                conceptStatement: raw.merch.conceptStatement,
-                logoConceptDescription: raw.merch.logoConceptDescription,
-                tagline: raw.merch.tagline,
-                printStyle: raw.merch.printStyle,
-                coreItem: {
-                    productType: raw.merch.coreProductType,
-                    designDescription: raw.merch.coreDesignDescription,
-                    colorway: raw.merch.coreColorway,
-                    dallePrompt: '',
-                    printfulProductId: '',
-                },
-                practicalItem: {
-                    productType: raw.merch.practicalProductType,
-                    designDescription: raw.merch.practicalDesignDescription,
-                    colorway: raw.merch.practicalColorway,
-                    dallePrompt: '',
-                    printfulProductId: '',
-                },
-                nicheSpecificItems: raw.merch.nicheSpecificItems.map(item => ({
-                    productType: item.productType,
-                    designDescription: item.designDescription,
-                    colorway: item.colorway,
-                    dallePrompt: '',
-                    printfulProductId: '',
-                })),
-            }),
-            audio: raw.audio,
-        };
+  // ── normalizePass1Output: maps flat LLM generation to full nested Pass1 shape.
+  // Keeps the live structured-output contract strict while absorbing model gaps in TS.
+  function normalizePass1Output(
+    raw: z.output<typeof GenerationPass1Schema>,
+  ): z.infer<typeof Pass1Schema> {
+    return {
+      visual: {
+        aestheticLabel: raw.visual.aestheticLabel,
+        colorPalette: {
+          primary: raw.visual.primaryColor || "#1a2b3c",
+          secondary: raw.visual.secondaryColor || "#4d5e6f",
+          accent: raw.visual.accentColor || "#f0c040",
+          background: raw.visual.backgroundColor || "#0a0a0a",
+          textOnDark: raw.visual.textOnDarkColor || "#ffffff",
+          textOnLight: raw.visual.textOnLightColor || "#111111",
+        },
+        typographyDirection: {
+          headlineStyle:
+            raw.visual.headlineStyle || "Bold, uppercase, high-contrast",
+          bodyStyle:
+            raw.visual.bodyStyle || "Clean sans-serif, generous line height",
+          suggestedFonts: raw.visual.suggestedFonts?.length
+            ? raw.visual.suggestedFonts
+            : ["Inter", "Outfit"],
+        },
+        imageryMood: raw.visual.imageryMood,
+        lightingStyle: raw.visual.lightingStyle,
+        compositionNotes: raw.visual.compositionNotes,
+        avoidList: raw.visual.avoidList,
+        referenceMoodboard: raw.visual.referenceMoodboard,
+        plausibilityFramework: normalizeVisualPlausibilityFramework({
+          governingPrinciple: raw.visual.plausibilityGoverningPrinciple,
+          cruiseNativeMoments: raw.visual.cruiseNativeMoments,
+          nicheEnhancedMoments: raw.visual.nicheEnhancedMoments,
+          implausibleLiteralizations: raw.visual.implausibleLiteralizations,
+          allowedProps: raw.visual.allowedProps,
+          discouragedProps: raw.visual.discouragedProps,
+        }),
+        humanRepresentation: normalizeHumanRepresentationGuidance({
+          castingGoal: raw.visual.castingGoal,
+          ageRangeGuidance: raw.visual.ageRangeGuidance,
+          diversityIntent: raw.visual.diversityIntent,
+          pairingGuidance: raw.visual.pairingGuidance,
+          stylingGuidance: raw.visual.stylingGuidance,
+          antiStereotypeRules: raw.visual.antiStereotypeRules,
+        }),
+      },
+      messaging: {
+        heroSlogan:
+          raw.messaging.heroSlogan || `${raw.visual.aestheticLabel} by sea`,
+        subSlogan: raw.messaging.subSlogan || "Your kind of cruise.",
+        ctaVariants: {
+          waitlist: raw.messaging.ctaWaitlist || "Join the List",
+          bookNow: raw.messaging.ctaBookNow || "Book Now",
+          merch: raw.messaging.ctaMerch || "Shop the Look",
+          share: raw.messaging.ctaShare || "Share This",
+        },
+        toneKeywords: raw.messaging.toneKeywords?.length
+          ? raw.messaging.toneKeywords
+          : ["aspirational", "specific", "welcoming"],
+        elevatorPitch: raw.messaging.elevatorPitch || "",
+        voicePersona: raw.messaging.voicePersona || "",
+        starterConversation: raw.messaging.starterConversation ?? [],
+      },
+      communityExpression: {
+        corePromise: raw.communityExpression.corePromise,
+        participationStyle: raw.communityExpression.participationStyle,
+        socialGravity: raw.communityExpression.socialGravity,
+        optionalGatherings: raw.communityExpression.optionalGatherings,
+        belongingSignals: raw.communityExpression.belongingSignals,
+        solitudeAntiPatterns: raw.communityExpression.solitudeAntiPatterns,
+        visualTogethernessNotes:
+          raw.communityExpression.visualTogethernessNotes,
+        copyFramingRule: raw.communityExpression.copyFramingRule,
+        activityInvitations: raw.communityExpression.activityInvitations,
+      },
+      merch: normalizeMerchBrief(campaign.name, {
+        conceptStatement: raw.merch.conceptStatement,
+        logoConceptDescription: raw.merch.logoConceptDescription,
+        tagline: raw.merch.tagline,
+        printStyle: raw.merch.printStyle,
+        coreItem: {
+          productType: raw.merch.coreProductType,
+          designDescription: raw.merch.coreDesignDescription,
+          colorway: raw.merch.coreColorway,
+          dallePrompt: "",
+          printfulProductId: "",
+        },
+        practicalItem: {
+          productType: raw.merch.practicalProductType,
+          designDescription: raw.merch.practicalDesignDescription,
+          colorway: raw.merch.practicalColorway,
+          dallePrompt: "",
+          printfulProductId: "",
+        },
+        nicheSpecificItems: raw.merch.nicheSpecificItems.map((item) => ({
+          productType: item.productType,
+          designDescription: item.designDescription,
+          colorway: item.colorway,
+          dallePrompt: "",
+          printfulProductId: "",
+        })),
+      }),
+      audio: raw.audio,
+    };
+  }
+
+  // ── Music/festival Pass 1 enforcement block (injected when campaign type matches).
+  const musicFestivalPass1Block: string = isMusicFestivalCampaign(campaign)
+    ? [
+        "",
+        "MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PASS 1 HARD REQUIREMENTS:",
+        "This campaign is a music, festival, or open-deck community type. Generic cruise identity is not acceptable — the output must be specific to music/festival culture at sea.",
+        "",
+        "communityExpression REQUIRED STANDARDS:",
+        '  - belongingSignals: must include at least 4 signals. At least 3 MUST be explicitly music-cue-bearing, naming a specific observable behavior — not a feeling. Required pattern: describe what a guest does or sees that proves the music community is present. Acceptable: "guests dancing together on the open deck when a live set starts", "a pair sharing earbuds showing each other album art on their phones", "crowd gathering near the stage on the stern deck for an afternoon DJ set", "guests in band tees striking up a conversation about the set list at the bar". NOT acceptable: "shared love of music", "music brings people together", "vibrant festival energy".',
+        '  - socialGravity MUST name music-specific recognition dynamics: shared setlist anticipation, recognizable fan subculture markers, spontaneous track recommendation exchange, visible dancing energy on deck. Generic "shared taste creates easy conversation" is NOT acceptable for this campaign type.',
+        '  - corePromise MUST name what the open-deck or live-music experience specifically delivers: shared crowd energy, acoustic sea air, dancing under open sky. Generic "vacation with your kind of people" fails this test.',
+        '  - optionalGatherings MUST include at least 2 music-specific gatherings: sailaway DJ set on deck, afternoon live performance atmosphere, acoustic session at the stern bar, poolside sound-system crowd. Generic "pre-dinner meetup" alone is insufficient.',
+        "",
+        "visual REQUIRED STANDARDS:",
+        '  - imageryMood MUST name music atmosphere elements specifically: crowd warmth, golden-hour stage glow, open-air energy, festival-social ease. NOT just "warm and inviting" or "vibrant and joyful".',
+        "  - plausibilityFramework.nicheEnhancedMoments MUST include at least 2 explicitly music-enhanced moments: guests naturally gathering on deck when an outdoor set starts, crowd swaying together at sailaway, a friend group dancing barefoot on the pool deck at dusk.",
+        "  - compositionNotes MUST reference open-deck visual geometry: wide sky, crowd in motion, stage or speaker visible at distance, sea horizon as backdrop.",
+        "",
+        "messaging REQUIRED STANDARDS:",
+        "  - heroSlogan MUST contain at least one of: dancing, beat, sound, music, deck, stage, festival, crowd, bass, groove, rhythm, track, band, drop, vibe. A slogan containing none of these terms is interchangeable with generic cruise marketing and WILL FAIL the quality gate.",
+        '  - subSlogan MUST describe the social experience of music at sea, not generic "your kind of cruise" equivalents.',
+        "",
+        "BANNED for this campaign type in ALL output fields:",
+        "  - hosted listening room energy or collector-prestige salon language",
+        "  - public-playback control fantasy",
+        "  - generic luxury leisure with no observable music proof",
+        "  - managed event infrastructure",
+        "  - any belonging signal that could describe a non-music community unchanged",
+      ].join("\n")
+    : "";
+
+  let pass1Result:
+    | { object: z.infer<typeof Pass1Schema>; failures?: string[] }
+    | undefined;
+  const pass1Start = Date.now();
+  let attempts = 0;
+  while (attempts < 3) {
+    attempts++;
+    const attemptStart = Date.now();
+    console.log(
+      `[aesthetic-engine:pass1-attempt] START attempt=${attempts} campaign=${campaign.id}`,
+    );
+    const feedbackOpt =
+      attempts > 1
+        ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join("\n")}\nFIX THESE ISSUES.`
+        : "";
+
+    let attemptObject: z.output<typeof GenerationPass1Schema> | undefined;
+    try {
+      const attemptTimeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `[aesthetic-engine:pass1-timeout] Attempt ${attempts} for ${campaign.id} exceeded ${PASS1_ATTEMPT_TIMEOUT_MS / 1000}s`,
+              ),
+            ),
+          PASS1_ATTEMPT_TIMEOUT_MS,
+        );
+      });
+      const { object } = await Promise.race([
+        callGlobalGenerateObject({
+          modelName: ModelName.GPT_5_HIGH,
+          schema: GenerationPass1Schema,
+          system:
+            systemPromptPass1 +
+            musicFestivalPass1Block +
+            feedbackOpt +
+            instructionSuffix +
+            correctionSuffix,
+          prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
+          maxOutputTokens: 9000,
+          operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
+          maxCandidates: 2,
+          timeoutMs: PASS1_ATTEMPT_TIMEOUT_MS - 20_000,
+          skipRepair: true,
+        }),
+        attemptTimeoutPromise,
+      ]);
+      attemptObject = object as z.output<typeof GenerationPass1Schema>;
+    } catch (attemptError) {
+      const attemptElapsedMs = Date.now() - attemptStart;
+      const attemptMessage =
+        attemptError instanceof Error
+          ? attemptError.message
+          : String(attemptError);
+      const isTimeout = attemptMessage.includes(
+        "[aesthetic-engine:pass1-timeout]",
+      );
+      console.warn(
+        `[aesthetic-engine:pass1-attempt] ${isTimeout ? "TIMEOUT" : "ERROR"} attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs} msg=${attemptMessage}`,
+      );
+      options?.recordStageTiming?.(
+        `aesthetic-pass1-attempt-${attempts}-error`,
+        attemptElapsedMs,
+      );
+      if (isTimeout && pass1Result) {
+        // Already have a good prior result; break with it rather than burning more budget.
+        console.log(
+          `[aesthetic-engine:pass1-attempt] Using prior accepted result after timeout on attempt ${attempts}`,
+        );
+        break;
+      }
+      // No prior good result: rethrow and let outer error handling surface this
+      throw attemptError;
     }
 
-    // ── Music/festival Pass 1 enforcement block (injected when campaign type matches).
-    const musicFestivalPass1Block: string = isMusicFestivalCampaign(campaign)
-        ? [
-            '',
-            'MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PASS 1 HARD REQUIREMENTS:',
-            'This campaign is a music, festival, or open-deck community type. Generic cruise identity is not acceptable — the output must be specific to music/festival culture at sea.',
-            '',
-            'communityExpression REQUIRED STANDARDS:',
-            '  - belongingSignals: must include at least 4 signals. At least 3 MUST be explicitly music-cue-bearing, naming a specific observable behavior — not a feeling. Required pattern: describe what a guest does or sees that proves the music community is present. Acceptable: "guests dancing together on the open deck when a live set starts", "a pair sharing earbuds showing each other album art on their phones", "crowd gathering near the stage on the stern deck for an afternoon DJ set", "guests in band tees striking up a conversation about the set list at the bar". NOT acceptable: "shared love of music", "music brings people together", "vibrant festival energy".',
-            '  - socialGravity MUST name music-specific recognition dynamics: shared setlist anticipation, recognizable fan subculture markers, spontaneous track recommendation exchange, visible dancing energy on deck. Generic "shared taste creates easy conversation" is NOT acceptable for this campaign type.',
-            '  - corePromise MUST name what the open-deck or live-music experience specifically delivers: shared crowd energy, acoustic sea air, dancing under open sky. Generic "vacation with your kind of people" fails this test.',
-            '  - optionalGatherings MUST include at least 2 music-specific gatherings: sailaway DJ set on deck, afternoon live performance atmosphere, acoustic session at the stern bar, poolside sound-system crowd. Generic "pre-dinner meetup" alone is insufficient.',
-            '',
-            'visual REQUIRED STANDARDS:',
-            '  - imageryMood MUST name music atmosphere elements specifically: crowd warmth, golden-hour stage glow, open-air energy, festival-social ease. NOT just "warm and inviting" or "vibrant and joyful".',
-            '  - plausibilityFramework.nicheEnhancedMoments MUST include at least 2 explicitly music-enhanced moments: guests naturally gathering on deck when an outdoor set starts, crowd swaying together at sailaway, a friend group dancing barefoot on the pool deck at dusk.',
-            '  - compositionNotes MUST reference open-deck visual geometry: wide sky, crowd in motion, stage or speaker visible at distance, sea horizon as backdrop.',
-            '',
-            'messaging REQUIRED STANDARDS:',
-            '  - heroSlogan MUST contain at least one of: dancing, beat, sound, music, deck, stage, festival, crowd, bass, groove, rhythm, track, band, drop, vibe. A slogan containing none of these terms is interchangeable with generic cruise marketing and WILL FAIL the quality gate.',
-            '  - subSlogan MUST describe the social experience of music at sea, not generic "your kind of cruise" equivalents.',
-            '',
-            'BANNED for this campaign type in ALL output fields:',
-            '  - hosted listening room energy or collector-prestige salon language',
-            '  - public-playback control fantasy',
-            '  - generic luxury leisure with no observable music proof',
-            '  - managed event infrastructure',
-            '  - any belonging signal that could describe a non-music community unchanged',
-        ].join('\n')
-        : '';
+    const attemptElapsedMs = Date.now() - attemptStart;
+    const normalizedObject = normalizePass1Output(attemptObject!);
+    options?.recordStageTiming?.(
+      `aesthetic-pass1-attempt-${attempts}`,
+      attemptElapsedMs,
+    );
+    console.log(
+      `[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`,
+    );
 
-    let pass1Result: { object: z.infer<typeof Pass1Schema>, failures?: string[] } | undefined;
-    const pass1Start = Date.now();
-    let attempts = 0;
-    while (attempts < 3) {
-        attempts++;
-        const attemptStart = Date.now();
-        console.log(`[aesthetic-engine:pass1-attempt] START attempt=${attempts} campaign=${campaign.id}`);
-        const feedbackOpt = attempts > 1 ? `\nPREVIOUS ATTEMPT FAILED QUALITY GATE:\n${pass1Result?.failures?.join('\n')}\nFIX THESE ISSUES.` : '';
-
-        let attemptObject: z.output<typeof GenerationPass1Schema> | undefined;
-        try {
-            const attemptTimeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(
-                    () => reject(new Error(`[aesthetic-engine:pass1-timeout] Attempt ${attempts} for ${campaign.id} exceeded ${PASS1_ATTEMPT_TIMEOUT_MS / 1000}s`)),
-                    PASS1_ATTEMPT_TIMEOUT_MS,
-                );
-            });
-            const { object } = await Promise.race([
-                callGlobalGenerateObject({
-                    modelName: ModelName.GPT_5_HIGH,
-                    schema: GenerationPass1Schema,
-                    system: systemPromptPass1 + musicFestivalPass1Block + feedbackOpt + instructionSuffix + correctionSuffix,
-                    prompt: `Context:\n${baseContext}\n\nBrand Guidelines:\n${brandGuidelines}\n\n${merchGuidelines}`,
-                    maxOutputTokens: 9000,
-                    operationName: `aesthetic-pass1:${campaign.id}:attempt-${attempts}`,
-                    maxCandidates: 2,
-                    timeoutMs: PASS1_ATTEMPT_TIMEOUT_MS - 20_000,
-                    skipRepair: true,
-                }),
-                attemptTimeoutPromise,
-            ]);
-            attemptObject = object as z.output<typeof GenerationPass1Schema>;
-        } catch (attemptError) {
-            const attemptElapsedMs = Date.now() - attemptStart;
-            const attemptMessage = attemptError instanceof Error ? attemptError.message : String(attemptError);
-            const isTimeout = attemptMessage.includes('[aesthetic-engine:pass1-timeout]');
-            console.warn(`[aesthetic-engine:pass1-attempt] ${isTimeout ? 'TIMEOUT' : 'ERROR'} attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs} msg=${attemptMessage}`);
-            options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}-error`, attemptElapsedMs);
-            if (isTimeout && pass1Result) {
-                // Already have a good prior result; break with it rather than burning more budget.
-                console.log(`[aesthetic-engine:pass1-attempt] Using prior accepted result after timeout on attempt ${attempts}`);
-                break;
-            }
-            // No prior good result: rethrow and let outer error handling surface this
-            throw attemptError;
-        }
-
-        const attemptElapsedMs = Date.now() - attemptStart;
-        const normalizedObject = normalizePass1Output(attemptObject!);
-        options?.recordStageTiming?.(`aesthetic-pass1-attempt-${attempts}`, attemptElapsedMs);
-        console.log(`[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`);
-
-        const sloganFailures = checkSloganQuality(normalizedObject.messaging.heroSlogan, normalizedObject.messaging.subSlogan, campaign.targetingKeywords, isMusicFestivalCampaign(campaign));
-        if (sloganFailures.length < 2) {
-            console.log(`[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`);
-            pass1Result = { object: normalizedObject };
-            break; // Pass!
-        } else {
-            console.warn(
-                `[aesthetic-engine] Pass 1 quality gate failed for ${campaign.id} on attempt ${attempts}: ${sloganFailures.join('; ')}`
-            );
-            pass1Result = { object: normalizedObject, failures: sloganFailures };
-        }
+    const sloganFailures = checkSloganQuality(
+      normalizedObject.messaging.heroSlogan,
+      normalizedObject.messaging.subSlogan,
+      campaign.targetingKeywords,
+      isMusicFestivalCampaign(campaign),
+    );
+    if (sloganFailures.length < 2) {
+      console.log(
+        `[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`,
+      );
+      pass1Result = { object: normalizedObject };
+      break; // Pass!
+    } else {
+      console.warn(
+        `[aesthetic-engine] Pass 1 quality gate failed for ${campaign.id} on attempt ${attempts}: ${sloganFailures.join("; ")}`,
+      );
+      pass1Result = { object: normalizedObject, failures: sloganFailures };
     }
+  }
 
-    // Fallback if it failed 3 times, keep last result
-    const coreAesthetic = pass1Result!.object;
-    options?.recordStageTiming?.('aesthetic-pass1-core', Date.now() - pass1Start);
+  // Fallback if it failed 3 times, keep last result
+  const coreAesthetic = pass1Result!.object;
+  options?.recordStageTiming?.("aesthetic-pass1-core", Date.now() - pass1Start);
 
-    // PASS 2: Platform Extrapolations
-    const systemPromptPass2 = `
+  // PASS 2: Platform Extrapolations
+  const systemPromptPass2 = `
 You are the Creative Director for Leisure Life Interactive. 
 Based on the finalized core aesthetic identity, expand this campaign into precise, platform-native social media and video concepts.
 Return ONLY the socialConcepts and videoConcepts conforming to the schema.
@@ -974,60 +1238,71 @@ PASS 2 GUARDRAILS:
 - Prefer spontaneous social moments over any copy that implies a managed onboard tabletop ecosystem.
 `.trim();
 
-    console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
+  console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
-    const pass2Start = Date.now();
-    const pass2Prompt = `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`;
-    const pass2System = systemPromptPass2 + instructionSuffix + correctionSuffix;
+  const pass2Start = Date.now();
+  const pass2Prompt = `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`;
+  const pass2System = systemPromptPass2 + instructionSuffix + correctionSuffix;
 
-    const [{ object: socialConcepts }, { object: videoConcepts }] = await Promise.all([
-        callGlobalGenerateObject({
-            modelName: ModelName.GPT_5_HIGH,
-            schema: Pass2SocialSchema,
-            system: pass2System,
-            prompt: pass2Prompt,
-            maxOutputTokens: 16000,
-            maxCandidates: 2,
-            skipRepair: true,
-            operationName: `aesthetic-pass2-social:${campaign.id}`,
-        }),
-        callGlobalGenerateObject({
-            modelName: ModelName.GPT_5_HIGH,
-            schema: Pass2VideoSchema,
-            system: pass2System,
-            prompt: pass2Prompt,
-            maxOutputTokens: 16000,
-            maxCandidates: 2,
-            skipRepair: true,
-            operationName: `aesthetic-pass2-video:${campaign.id}`,
-        }),
+  const [{ object: socialConcepts }, { object: videoConcepts }] =
+    await Promise.all([
+      callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
+        schema: Pass2SocialSchema,
+        system: pass2System,
+        prompt: pass2Prompt,
+        maxOutputTokens: 16000,
+        maxCandidates: 2,
+        skipRepair: true,
+        operationName: `aesthetic-pass2-social:${campaign.id}`,
+      }),
+      callGlobalGenerateObject({
+        modelName: ModelName.GPT_5_HIGH,
+        schema: Pass2VideoSchema,
+        system: pass2System,
+        prompt: pass2Prompt,
+        maxOutputTokens: 16000,
+        maxCandidates: 2,
+        skipRepair: true,
+        operationName: `aesthetic-pass2-video:${campaign.id}`,
+      }),
     ]);
 
-    const platformConcepts = {
-        socialConcepts: socialConcepts as z.output<typeof Pass2SocialSchema>,
-        videoConcepts: videoConcepts as z.output<typeof Pass2VideoSchema>,
-    };
-    options?.recordStageTiming?.('aesthetic-pass2-platform', Date.now() - pass2Start);
+  const platformConcepts = {
+    socialConcepts: socialConcepts as z.output<typeof Pass2SocialSchema>,
+    videoConcepts: videoConcepts as z.output<typeof Pass2VideoSchema>,
+  };
+  options?.recordStageTiming?.(
+    "aesthetic-pass2-platform",
+    Date.now() - pass2Start,
+  );
 
-    // Assemble the core brief. The default generate route now immediately follows
-    // with visual-planning generation so saved briefs include production artifacts.
-    const draftBrief: CampaignAestheticBrief = {
-        slug: campaign.id,
-        themeName: campaign.name,
-        ...coreAesthetic,
-        socialConcepts: platformConcepts.socialConcepts,
-        videoConcepts: platformConcepts.videoConcepts,
-        generatedAt: new Date().toISOString(),
-        generatedBy: 'agent',
-        humanReviewStatus: 'pending',
-        revisionCycleCount: 0,
-    };
+  // Assemble the core brief. The default generate route now immediately follows
+  // with visual-planning generation so saved briefs include production artifacts.
+  const draftBrief: CampaignAestheticBrief = {
+    slug: campaign.id,
+    themeName: campaign.name,
+    ...coreAesthetic,
+    socialConcepts: platformConcepts.socialConcepts,
+    videoConcepts: platformConcepts.videoConcepts,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "agent",
+    humanReviewStatus: "pending",
+    revisionCycleCount: 0,
+  };
 
-    console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);
-    const refinementStart = Date.now();
-    const refinedBrief = await refineAestheticBrief(campaign, draftBrief, options?.instructions);
-    options?.recordStageTiming?.('aesthetic-refinement', Date.now() - refinementStart);
-    return refinedBrief;
+  console.log(`[aesthetic-engine] Refinement pass for ${campaign.id}`);
+  const refinementStart = Date.now();
+  const refinedBrief = await refineAestheticBrief(
+    campaign,
+    draftBrief,
+    options?.instructions,
+  );
+  options?.recordStageTiming?.(
+    "aesthetic-refinement",
+    Date.now() - refinementStart,
+  );
+  return refinedBrief;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1036,16 +1311,24 @@ PASS 2 GUARDRAILS:
 // ────────────────────────────────────────────────────────────────────────────
 
 const SHIP_REFERENCE_CATEGORIES = [
-    'exterior', 'pool_deck', 'dining', 'stateroom', 'atrium',
-    'nightclub', 'spa', 'destination_port', 'theater', 'sports_deck',
-    'offboard_excursion'
+  "exterior",
+  "pool_deck",
+  "dining",
+  "stateroom",
+  "atrium",
+  "nightclub",
+  "spa",
+  "destination_port",
+  "theater",
+  "sports_deck",
+  "offboard_excursion",
 ] as const;
 
 const VIDEO_DELIVERABLES = VIDEO_DELIVERABLE_SPECS;
 
 const VisualPlanningBundleSchema = z.object({
-    landingStillBible: LandingStillBibleSchema,
-    productionBible: ProductionBibleSchema,
+  landingStillBible: LandingStillBibleSchema,
+  productionBible: ProductionBibleSchema,
 });
 
 type VisualPlanningBundle = z.infer<typeof VisualPlanningBundleSchema>;
@@ -1053,238 +1336,317 @@ type VisualPlanningBundle = z.infer<typeof VisualPlanningBundleSchema>;
 // Public entry point for explicit production-bible refreshes.
 // The default /media/aesthetic generate route also calls visual planning automatically.
 export async function generateProductionBibleFromBrief(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
 ): Promise<ProductionBible> {
-    const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
-    return visualPlanning.productionBible;
+  const visualPlanning = await generateVisualPlanningFromBrief(campaign, brief);
+  return visualPlanning.productionBible;
 }
 
 export async function generateVisualPlanningFromBrief(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
 ): Promise<VisualPlanningBundle> {
-    const coreAesthetic = {
-        visual: brief.visual,
-        messaging: brief.messaging,
-        communityExpression: brief.communityExpression,
-        audio: brief.audio,
-        merch: brief.merch,
-    } as z.infer<typeof Pass1Schema>;
+  const coreAesthetic = {
+    visual: brief.visual,
+    messaging: brief.messaging,
+    communityExpression: brief.communityExpression,
+    audio: brief.audio,
+    merch: brief.merch,
+  } as z.infer<typeof Pass1Schema>;
 
-    const platformConcepts = {
-        socialConcepts: brief.socialConcepts,
-        videoConcepts: brief.videoConcepts,
-    } as z.infer<typeof Pass2Schema>;
+  const platformConcepts = {
+    socialConcepts: brief.socialConcepts,
+    videoConcepts: brief.videoConcepts,
+  } as z.infer<typeof Pass2Schema>;
 
-    const remediationContext = buildVisualPlanningRemediationContext(brief);
+  const remediationContext = buildVisualPlanningRemediationContext(brief);
 
-    return generateVisualPlanningBundle(campaign, coreAesthetic, platformConcepts, remediationContext);
+  return generateVisualPlanningBundle(
+    campaign,
+    coreAesthetic,
+    platformConcepts,
+    remediationContext,
+  );
 }
 
-function buildVisualPlanningRemediationContext(brief: CampaignAestheticBrief): string {
-    const openIssues = (brief.issueLedger ?? []).filter(issue =>
-        (issue.status === 'open' || issue.status === 'failed')
-        && ['brief', 'production_bible', 'landing_still_bible', 'cross_artifact'].includes(issue.owningArtifact),
+function buildVisualPlanningRemediationContext(
+  brief: CampaignAestheticBrief,
+): string {
+  const openIssues = (brief.issueLedger ?? []).filter(
+    (issue) =>
+      (issue.status === "open" || issue.status === "failed") &&
+      [
+        "brief",
+        "production_bible",
+        "landing_still_bible",
+        "cross_artifact",
+      ].includes(issue.owningArtifact),
+  );
+
+  const dedupedIssues = Array.from(
+    new Map(
+      openIssues.map((issue) => [`${issue.title}::${issue.summary}`, issue]),
+    ).values(),
+  );
+
+  const lines: string[] = [];
+
+  if (brief.redTeamReview?.requiredFixes?.length) {
+    lines.push(
+      "Prior required fixes that remain binding until explicitly closed:",
     );
+    brief.redTeamReview.requiredFixes.forEach((fix, index) => {
+      lines.push(`${index + 1}. ${fix}`);
+    });
+  }
 
-    const dedupedIssues = Array.from(new Map(
-        openIssues.map(issue => [`${issue.title}::${issue.summary}`, issue]),
-    ).values());
+  if (dedupedIssues.length) {
+    lines.push(
+      "Open issue-ledger constraints to close in this generation pass:",
+    );
+    dedupedIssues.forEach((issue, index) => {
+      const targetPaths =
+        issue.targetPaths.length > 0
+          ? ` | Target paths: ${issue.targetPaths.join(", ")}`
+          : "";
+      const evidence = issue.evidence[0]
+        ? ` | Evidence: ${issue.evidence[0]}`
+        : "";
+      lines.push(
+        `${index + 1}. [${issue.severity}] ${issue.title} -> ${issue.summary}${targetPaths}${evidence}`,
+      );
+    });
+  }
 
-    const lines: string[] = [];
+  if (lines.length === 0) {
+    return "No unresolved remediation constraints were provided for visual-planning generation.";
+  }
 
-    if (brief.redTeamReview?.requiredFixes?.length) {
-        lines.push('Prior required fixes that remain binding until explicitly closed:');
-        brief.redTeamReview.requiredFixes.forEach((fix, index) => {
-            lines.push(`${index + 1}. ${fix}`);
-        });
-    }
-
-    if (dedupedIssues.length) {
-        lines.push('Open issue-ledger constraints to close in this generation pass:');
-        dedupedIssues.forEach((issue, index) => {
-            const targetPaths = issue.targetPaths.length > 0 ? ` | Target paths: ${issue.targetPaths.join(', ')}` : '';
-            const evidence = issue.evidence[0] ? ` | Evidence: ${issue.evidence[0]}` : '';
-            lines.push(`${index + 1}. [${issue.severity}] ${issue.title} -> ${issue.summary}${targetPaths}${evidence}`);
-        });
-    }
-
-    if (lines.length === 0) {
-        return 'No unresolved remediation constraints were provided for visual-planning generation.';
-    }
-
-    return [
-        'UNRESOLVED REMEDIATION CONSTRAINTS:',
-        'Treat every blocker below as a hard failure condition for the new production bible and landing still bible.',
-        'Do not reproduce blocked camera moves, blocked venue assumptions, blocked upholstery/stamping logic, empty-scene conflicts, or previously rejected planning language simply because similar text appears elsewhere in the brief.',
-        ...lines,
-    ].join('\n');
+  return [
+    "UNRESOLVED REMEDIATION CONSTRAINTS:",
+    "Treat every blocker below as a hard failure condition for the new production bible and landing still bible.",
+    "Do not reproduce blocked camera moves, blocked venue assumptions, blocked upholstery/stamping logic, empty-scene conflicts, or previously rejected planning language simply because similar text appears elsewhere in the brief.",
+    ...lines,
+  ].join("\n");
 }
 
 // ── Lint compliance block injected into every visual-planning prompt ──────────
 // Maps directly to the deterministic rules in production-build-lint.ts so the
 // LLM knows the exact fields and exact keywords the machine will scan.
 
-function looksLikeTabletopCampaign(coreAesthetic: z.infer<typeof Pass1Schema>): boolean {
-    const corpus = [
-        coreAesthetic.visual.plausibilityFramework.allowedProps.join(' '),
-        coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments.join(' '),
-        coreAesthetic.visual.plausibilityFramework.governingPrinciple,
-        coreAesthetic.communityExpression.belongingSignals.join(' '),
-        coreAesthetic.messaging.heroSlogan,
-        coreAesthetic.messaging.elevatorPitch,
-    ].join(' ');
+function looksLikeTabletopCampaign(
+  coreAesthetic: z.infer<typeof Pass1Schema>,
+): boolean {
+  const corpus = [
+    coreAesthetic.visual.plausibilityFramework.allowedProps.join(" "),
+    coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments.join(" "),
+    coreAesthetic.visual.plausibilityFramework.governingPrinciple,
+    coreAesthetic.communityExpression.belongingSignals.join(" "),
+    coreAesthetic.messaging.heroSlogan,
+    coreAesthetic.messaging.elevatorPitch,
+  ].join(" ");
 
-    return /\b(board[- ]?game|tabletop|meeple|meeples|dice|cards?|game box|score sheet|playing pieces?|tile rack|azul|monopoly|sorry)\b/i.test(corpus);
+  return /\b(board[- ]?game|tabletop|meeple|meeples|dice|cards?|game box|score sheet|playing pieces?|tile rack|azul|monopoly|sorry)\b/i.test(
+    corpus,
+  );
 }
 
 function buildStoryboardCouplingBlock(
-    campaign: Campaign,
-    coreAesthetic: z.infer<typeof Pass1Schema>,
+  campaign: Campaign,
+  coreAesthetic: z.infer<typeof Pass1Schema>,
 ): string {
-    const allowedProps = joinCampaignList(coreAesthetic.visual.plausibilityFramework.allowedProps);
-    const nicheMoments = joinCampaignList(coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments);
-    const cruiseMoments = joinCampaignList(coreAesthetic.visual.plausibilityFramework.cruiseNativeMoments);
-    const tabletopCampaign = looksLikeTabletopCampaign(coreAesthetic);
+  const allowedProps = joinCampaignList(
+    coreAesthetic.visual.plausibilityFramework.allowedProps,
+  );
+  const nicheMoments = joinCampaignList(
+    coreAesthetic.visual.plausibilityFramework.nicheEnhancedMoments,
+  );
+  const cruiseMoments = joinCampaignList(
+    coreAesthetic.visual.plausibilityFramework.cruiseNativeMoments,
+  );
+  const tabletopCampaign = looksLikeTabletopCampaign(coreAesthetic);
 
-    return [
-        'STORYBOARD / SCENE-LIBRARY COUPLING RULES:',
-        '- The productionBible sceneLibrary is the canonical shot menu for every storyboard.',
-        '- Every storyboard shot.sceneId must reuse a sceneId that exists in the sceneLibrary generated in the same output.',
-        '- Do not invent placeholder sceneIds like scene_pool_deck_morning unless they are actually present in the sceneLibrary.',
-        '- Storyboards should feel like an edit built from the sceneLibrary, not a separate cruise montage invented after the fact.',
-        tabletopCampaign
-            ? [
-                '- This campaign is tabletop / board-game adjacent. Its storyboard must keep the game identity visible in the sceneLibrary and not dissolve into generic cruise scenery.',
-                '- Prefer the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.',
-                `- The board-game cues allowed for this campaign are: ${allowedProps || 'dice, cards, meeples, game boxes, score sheets'}.`,
-                `- The believable niche moments available to the campaign are: ${nicheMoments || 'shared table play, a quick recommendation, or easy guest-to-guest comparison of game pieces'}.`,
-            ].join('\n')
-            : [
-                `- Favor scenes whose niche identity is visible through ${allowedProps || 'small incidental cues'} without turning them into workshop or event-program material.`,
-                `- The believable niche moments available to the campaign are: ${nicheMoments || 'guided noticing, shared pause, or subtle object cues'}.`,
-            ].join('\n'),
-        `- Cruise-native moments to preserve while selecting shots: ${cruiseMoments || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.`,
-        '- The storyboard should still read cruise-first, but the sceneLibrary shots must make the niche visually legible at a glance.',
-    ].join('\n');
+  return [
+    "STORYBOARD / SCENE-LIBRARY COUPLING RULES:",
+    "- The productionBible sceneLibrary is the canonical shot menu for every storyboard.",
+    "- Every storyboard shot.sceneId must reuse a sceneId that exists in the sceneLibrary generated in the same output.",
+    "- Do not invent placeholder sceneIds like scene_pool_deck_morning unless they are actually present in the sceneLibrary.",
+    "- Storyboards should feel like an edit built from the sceneLibrary, not a separate cruise montage invented after the fact.",
+    tabletopCampaign
+      ? [
+          "- This campaign is tabletop / board-game adjacent. Its storyboard must keep the game identity visible in the sceneLibrary and not dissolve into generic cruise scenery.",
+          "- Prefer the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.",
+          `- The board-game cues allowed for this campaign are: ${allowedProps || "dice, cards, meeples, game boxes, score sheets"}.`,
+          `- The believable niche moments available to the campaign are: ${nicheMoments || "shared table play, a quick recommendation, or easy guest-to-guest comparison of game pieces"}.`,
+        ].join("\n")
+      : [
+          `- Favor scenes whose niche identity is visible through ${allowedProps || "small incidental cues"} without turning them into workshop or event-program material.`,
+          `- The believable niche moments available to the campaign are: ${nicheMoments || "guided noticing, shared pause, or subtle object cues"}.`,
+        ].join("\n"),
+    `- Cruise-native moments to preserve while selecting shots: ${cruiseMoments || "sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon"}.`,
+    "- The storyboard should still read cruise-first, but the sceneLibrary shots must make the niche visually legible at a glance.",
+  ].join("\n");
 }
 
 // Detect music/festival/open-deck campaign types from keywords or name so we can
 // inject hard niche-identity rules that ban the known generic fallback patterns.
 export function isMusicFestivalCampaign(campaign: Campaign): boolean {
-    const haystack = [
-        campaign.name,
-        ...(campaign.targetingKeywords ?? []),
-        campaign.nicheExpressionMode ?? '',
-    ].join(' ').toLowerCase();
-    return ['music', 'festival', 'open deck', 'open-deck', 'band', 'concert', 'dj', 'live music', 'vinyl', 'listening'].some(
-        term => haystack.includes(term),
-    );
+  const haystack = [
+    campaign.name,
+    ...(campaign.targetingKeywords ?? []),
+    campaign.nicheExpressionMode ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return [
+    "music",
+    "festival",
+    "open deck",
+    "open-deck",
+    "band",
+    "concert",
+    "dj",
+    "live music",
+    "vinyl",
+    "listening",
+  ].some((term) => haystack.includes(term));
 }
 
 const MUSIC_FESTIVAL_LINT_KEYWORDS = [
-    'dancing', 'live music', 'open deck', 'deck party', 'sound system', 'festival',
-    'dj', 'bass', 'crowd energy', 'earbuds', 'playlist', 'performer', 'stage',
-    'music', 'beat', 'groove', 'rhythm', 'band', 'crowd', 'dancing on deck',
-    'live set', 'acoustic', 'deck dancing', 'album art', 'headphones',
+  "dancing",
+  "live music",
+  "open deck",
+  "deck party",
+  "sound system",
+  "festival",
+  "dj",
+  "bass",
+  "crowd energy",
+  "earbuds",
+  "playlist",
+  "performer",
+  "stage",
+  "music",
+  "beat",
+  "groove",
+  "rhythm",
+  "band",
+  "crowd",
+  "dancing on deck",
+  "live set",
+  "acoustic",
+  "deck dancing",
+  "album art",
+  "headphones",
 ];
 
-export function buildLintComplianceBlock(campaign: Campaign, belongingSignals?: string[]): string {
-    const nicheKw = (campaign.targetingKeywords ?? []).filter(k => k.trim().length > 0);
-    const effectiveNicheKw = isMusicFestivalCampaign(campaign)
-        ? [...new Set([...nicheKw, ...MUSIC_FESTIVAL_LINT_KEYWORDS])]
-        : nicheKw;
-    const kwDisplay = effectiveNicheKw.length > 0
-        ? effectiveNicheKw.join(', ')
-        : campaign.name.toLowerCase().split(/\s+/).filter(t => t.length > 3).join(', ');
+export function buildLintComplianceBlock(
+  campaign: Campaign,
+  belongingSignals?: string[],
+): string {
+  const nicheKw = (campaign.targetingKeywords ?? []).filter(
+    (k) => k.trim().length > 0,
+  );
+  const effectiveNicheKw = isMusicFestivalCampaign(campaign)
+    ? [...new Set([...nicheKw, ...MUSIC_FESTIVAL_LINT_KEYWORDS])]
+    : nicheKw;
+  const kwDisplay =
+    effectiveNicheKw.length > 0
+      ? effectiveNicheKw.join(", ")
+      : campaign.name
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((t) => t.length > 3)
+          .join(", ");
 
-    const vocabularyLines: string[] = belongingSignals && belongingSignals.length > 0
-        ? [
-            '',
-            `   NICHE SIGNAL VOCABULARY — any of the following satisfy the keyword check when present in imagePrompt or subjectAction:`,
-            `   Keywords: ${kwDisplay}`,
-            '   Campaign belonging signals (observable scene details that also satisfy the scanner):',
-            ...belongingSignals.slice(0, 6).map((s, i) => `   ${i + 1}. ${s}`),
-            '',
-            `   COMPLIANT imagePrompt pattern: "[Atmosphere and light], [ship or port location], [guest experiencing something specific to the ${campaign.name} community — at least one of the above terms embedded here], [ocean or ship as backdrop]"`,
-            `   NON-COMPLIANT imagePrompt pattern: "[Atmosphere and light], [any ship location], [generic vacation action — laughing, gazing, couple at rail — no niche term present]" — FAILS scanner`,
+  const vocabularyLines: string[] =
+    belongingSignals && belongingSignals.length > 0
+      ? [
+          "",
+          `   NICHE SIGNAL VOCABULARY — any of the following satisfy the keyword check when present in imagePrompt or subjectAction:`,
+          `   Keywords: ${kwDisplay}`,
+          "   Campaign belonging signals (observable scene details that also satisfy the scanner):",
+          ...belongingSignals.slice(0, 6).map((s, i) => `   ${i + 1}. ${s}`),
+          "",
+          `   COMPLIANT imagePrompt pattern: "[Atmosphere and light], [ship or port location], [guest experiencing something specific to the ${campaign.name} community — at least one of the above terms embedded here], [ocean or ship as backdrop]"`,
+          `   NON-COMPLIANT imagePrompt pattern: "[Atmosphere and light], [any ship location], [generic vacation action — laughing, gazing, couple at rail — no niche term present]" — FAILS scanner`,
         ]
-        : [
-            '',
-            `   COMPLIANT pattern: embed at least one of these: ${kwDisplay} — naturally inside imagePrompt or subjectAction.`,
-            '   NON-COMPLIANT pattern: imagePrompt and subjectAction both describe generic vacation activity with no niche-specific term — FAILS scanner.',
+      : [
+          "",
+          `   COMPLIANT pattern: embed at least one of these: ${kwDisplay} — naturally inside imagePrompt or subjectAction.`,
+          "   NON-COMPLIANT pattern: imagePrompt and subjectAction both describe generic vacation activity with no niche-specific term — FAILS scanner.",
         ];
 
-    const musicFestivalNicheBlock: string[] = isMusicFestivalCampaign(campaign)
-        ? [
-            '',
-            '4. MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ADDITIONAL HARD RULES (niche identity must be visible on sight):',
-            '   This campaign is flagged as a music, festival, or open-deck community. Generic cruise visuals are not sufficient.',
-            '   HARD RULES:',
-            '   - At least 3 of the 6 stills MUST show an observable on-image music signal that is immediately legible from the image alone — a viewer who cannot read captions must recognize music culture.',
-            '   - REQUIRED SIGNAL FAMILIES — each of the 3 required stills must carry one of:',
-            '     × DECK ENERGY: guests dancing, swaying, or physically reacting to music on an open deck — arms loosely raised, bodies in motion, crowd gathered near speakers.',
-            '     × PERFORMANCE PROXIMITY: a live performer, band, stage, speaker stack, or DJ booth visible in the scene — guests close enough to feel the energy.',
-            '     × PERSONAL LISTENING: earbuds shared between two guests, phone showing album art, headphones half-off in mid-recommendation — intimate music identity cue.',
-            '     × CROWD RECOGNITION: festival wristbands, band tees, or recognizable music-subculture wardrobe worn by multiple guests — visible community identity in clothing.',
-            '     × AUDIO ENVIRONMENT: outdoor speakers, sound-system rigging, or stage lighting visible as part of the ship environment while guests react.',
-            '   - The following compositions are BANNED for music/festival campaigns (do not use even as one of 6):',
-            '     × deck_sea_wide (couple facing horizon/sunset at wide distance with no music cue present)',
-            '     × quiet_window_solo (solo guest gazing out porthole or cabin window with no music cue in frame)',
-            '     × port_shore_laughing (guests on shore or pier laughing with no music context in scene)',
-            '     × cabin_window_other (any cabin or window setup with no music identity present)',
-            '     × generic pool lounging (guests reclining by the pool with no music awareness visible)',
-            '   - cueStrength must be "explicit" (not "subtle", not "absent") for at least 3 stills — meaning the niche is immediately legible from the image alone.',
-            '   - Do NOT use slogan copy or caption text to carry the music identity — it must be visible in the scene itself.',
-            '   - For each music-signal still: the specific signal MUST appear in BOTH imagePrompt AND subjectAction. Embedding it only in environmentDetails or composition is insufficient.',
-        ]
-        : [];
+  const musicFestivalNicheBlock: string[] = isMusicFestivalCampaign(campaign)
+    ? [
+        "",
+        "4. MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ADDITIONAL HARD RULES (niche identity must be visible on sight):",
+        "   This campaign is flagged as a music, festival, or open-deck community. Generic cruise visuals are not sufficient.",
+        "   HARD RULES:",
+        "   - At least 3 of the 6 stills MUST show an observable on-image music signal that is immediately legible from the image alone — a viewer who cannot read captions must recognize music culture.",
+        "   - REQUIRED SIGNAL FAMILIES — each of the 3 required stills must carry one of:",
+        "     × DECK ENERGY: guests dancing, swaying, or physically reacting to music on an open deck — arms loosely raised, bodies in motion, crowd gathered near speakers.",
+        "     × PERFORMANCE PROXIMITY: a live performer, band, stage, speaker stack, or DJ booth visible in the scene — guests close enough to feel the energy.",
+        "     × PERSONAL LISTENING: earbuds shared between two guests, phone showing album art, headphones half-off in mid-recommendation — intimate music identity cue.",
+        "     × CROWD RECOGNITION: festival wristbands, band tees, or recognizable music-subculture wardrobe worn by multiple guests — visible community identity in clothing.",
+        "     × AUDIO ENVIRONMENT: outdoor speakers, sound-system rigging, or stage lighting visible as part of the ship environment while guests react.",
+        "   - The following compositions are BANNED for music/festival campaigns (do not use even as one of 6):",
+        "     × deck_sea_wide (couple facing horizon/sunset at wide distance with no music cue present)",
+        "     × quiet_window_solo (solo guest gazing out porthole or cabin window with no music cue in frame)",
+        "     × port_shore_laughing (guests on shore or pier laughing with no music context in scene)",
+        "     × cabin_window_other (any cabin or window setup with no music identity present)",
+        "     × generic pool lounging (guests reclining by the pool with no music awareness visible)",
+        '   - cueStrength must be "explicit" (not "subtle", not "absent") for at least 3 stills — meaning the niche is immediately legible from the image alone.',
+        "   - Do NOT use slogan copy or caption text to carry the music identity — it must be visible in the scene itself.",
+        "   - For each music-signal still: the specific signal MUST appear in BOTH imagePrompt AND subjectAction. Embedding it only in environmentDetails or composition is insufficient.",
+      ]
+    : [];
 
-    return [
-        'LINT COMPLIANCE REQUIREMENTS — MACHINE-CHECKED — NON-COMPLIANCE BLOCKS CAMPAIGN APPROVAL:',
-        '',
-        '1. NICHE KEYWORD INJECTION (prevents weak_niche_signal and identity_legibility_too_low failures):',
-        `   Campaign niche keywords: ${kwDisplay}`,
-        '   HARD RULE: At least 4 of the 6 landing stills MUST embed at least one of these keywords (or a direct synonym) inside the "imagePrompt" field OR the "subjectAction" field.',
-        '   The remaining 2 stills must include a niche keyword in either "environmentDetails" OR "composition".',
-        '   Zero-keyword stills (no niche term in any of the 4 fields) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.',
-        `   Self-check per still: does imagePrompt OR subjectAction contain at least one of: ${kwDisplay}?`,
-        ...vocabularyLines,
-        '',
-        '2. STILL USAGE FIELD DISTRIBUTION (prevents missing_role_coverage failure):',
-        '   Produce exactly this distribution across the 6 stills:',
-        '   - 2 stills: usage = "hero_primary" or "hero_alt" (wide headline-safe hero compositions)',
-        '   - 2 stills: usage = "concept" or "email_header" where the composition field does NOT contain "intimate", "close", "tight", or "detail" (editorial/wide role)',
-        '   - 1 still: usage = "concept" where the composition field MUST contain at least one of: "intimate", "close", "tight", "detail" (intimate/tight role)',
-        '   - 1 still: any remaining usage value (hero_alt, email_header, social_square, or concept)',
-        '   The machine check reads the usage field and composition text directly — comply with exact field values.',
-        '',
-        '3. COMPOSITION VARIETY (prevents repeated_composition_family and generic_fallback_overuse failures):',
-        '   These 4 composition patterns are machine-detected as generic cruise fallbacks. Any pattern appearing 3+ times in the 6 stills is a BLOCKING failure.',
-        '   LIMIT EACH TO AT MOST 1 OF THE 6 STILLS:',
-        '   - Pattern A (rail_couple_laugh): railing or balcony location + couple laughing or smiling together',
-        '   - Pattern B (quiet_window_solo): cabin/porthole/window/stateroom location + solo guest contemplating, gazing, or alone',
-        '   - Pattern C (dining_intimacy): dining/restaurant/dinner location + intimate couple or candlelight mood',
-        '   - Pattern D (deck_sea_wide): deck/bow/stern/outdoor location + couple facing sea/horizon/sunset at wide distance',
-        '   Vary location cluster, subject action, social unit, and mood across all 6 stills so no two stills share both the same location cluster AND the same action cluster.',
-        ...musicFestivalNicheBlock,
-    ].join('\n');
+  return [
+    "LINT COMPLIANCE REQUIREMENTS — MACHINE-CHECKED — NON-COMPLIANCE BLOCKS CAMPAIGN APPROVAL:",
+    "",
+    "1. NICHE KEYWORD INJECTION (prevents weak_niche_signal and identity_legibility_too_low failures):",
+    `   Campaign niche keywords: ${kwDisplay}`,
+    '   HARD RULE: At least 4 of the 6 landing stills MUST embed at least one of these keywords (or a direct synonym) inside the "imagePrompt" field OR the "subjectAction" field.',
+    '   The remaining 2 stills must include a niche keyword in either "environmentDetails" OR "composition".',
+    "   Zero-keyword stills (no niche term in any of the 4 fields) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.",
+    `   Self-check per still: does imagePrompt OR subjectAction contain at least one of: ${kwDisplay}?`,
+    ...vocabularyLines,
+    "",
+    "2. STILL USAGE FIELD DISTRIBUTION (prevents missing_role_coverage failure):",
+    "   Produce exactly this distribution across the 6 stills:",
+    '   - 2 stills: usage = "hero_primary" or "hero_alt" (wide headline-safe hero compositions)',
+    '   - 2 stills: usage = "concept" or "email_header" where the composition field does NOT contain "intimate", "close", "tight", or "detail" (editorial/wide role)',
+    '   - 1 still: usage = "concept" where the composition field MUST contain at least one of: "intimate", "close", "tight", "detail" (intimate/tight role)',
+    "   - 1 still: any remaining usage value (hero_alt, email_header, social_square, or concept)",
+    "   The machine check reads the usage field and composition text directly — comply with exact field values.",
+    "",
+    "3. COMPOSITION VARIETY (prevents repeated_composition_family and generic_fallback_overuse failures):",
+    "   These 4 composition patterns are machine-detected as generic cruise fallbacks. Any pattern appearing 3+ times in the 6 stills is a BLOCKING failure.",
+    "   LIMIT EACH TO AT MOST 1 OF THE 6 STILLS:",
+    "   - Pattern A (rail_couple_laugh): railing or balcony location + couple laughing or smiling together",
+    "   - Pattern B (quiet_window_solo): cabin/porthole/window/stateroom location + solo guest contemplating, gazing, or alone",
+    "   - Pattern C (dining_intimacy): dining/restaurant/dinner location + intimate couple or candlelight mood",
+    "   - Pattern D (deck_sea_wide): deck/bow/stern/outdoor location + couple facing sea/horizon/sunset at wide distance",
+    "   Vary location cluster, subject action, social unit, and mood across all 6 stills so no two stills share both the same location cluster AND the same action cluster.",
+    ...musicFestivalNicheBlock,
+  ].join("\n");
 }
 
 async function generateVisualPlanningBundle(
-    campaign: Campaign,
-    coreAesthetic: z.infer<typeof Pass1Schema>,
-    platformConcepts: z.infer<typeof Pass2Schema>,
-    remediationContext: string,
+  campaign: Campaign,
+  coreAesthetic: z.infer<typeof Pass1Schema>,
+  platformConcepts: z.infer<typeof Pass2Schema>,
+  remediationContext: string,
 ): Promise<VisualPlanningBundle> {
-    const { visual, messaging, communityExpression, audio } = coreAesthetic;
-    const plausibility = visual.plausibilityFramework;
-    const casting = visual.humanRepresentation;
-    const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
-    const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
+  const { visual, messaging, communityExpression, audio } = coreAesthetic;
+  const plausibility = visual.plausibilityFramework;
+  const casting = visual.humanRepresentation;
+  const tiktokHook = platformConcepts.socialConcepts.tiktokOrganic.hook;
+  const tiktokCTA = platformConcepts.socialConcepts.tiktokOrganic.callToAction;
 
-    const systemPromptPass3 = `
+  const systemPromptPass3 = `
 You are the Creative Director of an aspirational travel advertising agency commissioned by Leisure Life Interactive.
 Your ONE job: make someone watching this campaign stop scrolling and think "I NEED to be on that ship."
 
@@ -1313,9 +1675,9 @@ Use the campaign community intent below as hard guidance:
 - Core promise: ${communityExpression.corePromise}
 - Participation style: ${communityExpression.participationStyle}
 - Social gravity: ${communityExpression.socialGravity}
-- Optional gatherings: ${communityExpression.optionalGatherings.join('; ')}
-- Belonging signals: ${communityExpression.belongingSignals.join('; ')}
-- Solitude anti-patterns: ${communityExpression.solitudeAntiPatterns.join('; ')}
+- Optional gatherings: ${communityExpression.optionalGatherings.join("; ")}
+- Belonging signals: ${communityExpression.belongingSignals.join("; ")}
+- Solitude anti-patterns: ${communityExpression.solitudeAntiPatterns.join("; ")}
 - Visual togetherness notes: ${communityExpression.visualTogethernessNotes}
 - Copy framing rule: ${communityExpression.copyFramingRule}
 
@@ -1327,7 +1689,7 @@ Use these casting instructions as hard guidance across the still set and scene l
 - Diversity intent: ${casting.diversityIntent}
 - Pairing guidance: ${casting.pairingGuidance}
 - Styling guidance: ${casting.stylingGuidance}
-- Anti-stereotype rules: ${casting.antiStereotypeRules.join('; ')}
+- Anti-stereotype rules: ${casting.antiStereotypeRules.join("; ")}
 Do not default to one repeated age band, one repeated ethnic presentation, or one default couple type across the set.
 When people appear, vary visible backgrounds across the campaign while keeping every subject theme-appropriate, cruise-plausible, and natural.
 Never use caricature, exoticizing cues, costume shorthand, or token-background casting.
@@ -1343,7 +1705,7 @@ The viewer should feel "this voyage happens during something special," not "this
 Every scene and still in this campaign must carry at least one specific, visible connection to the campaign's niche identity.
 Generic premium-cruise imagery that could belong to any sailing is not acceptable — even if it is beautiful and vacation-first.
 The niche does not need to dominate the frame, but it must be present and identifiable.
-For this campaign, niche presence means: ${communityExpression.belongingSignals.join('; ')}.
+For this campaign, niche presence means: ${communityExpression.belongingSignals.join("; ")}.
 If a scene cannot include at least one of those signals naturally, replace that scene with one that can.
 A scene that reads as "any luxury cruise" rather than "this specific community's cruise" has failed.
 FIELD-LEVEL REQUIREMENT: For every landing still spec, the niche identity must appear in the "imagePrompt" field OR the "subjectAction" field — not just in supporting fields. An automated scanner reads imagePrompt and subjectAction first; stills that carry niche identity only in supplementary fields still register as weak or absent. Embed a campaign-specific term, behavior, or belonging signal directly in imagePrompt and subjectAction.
@@ -1461,13 +1823,13 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - However, backgrounded pairs or small clusters of relaxed guests ARE allowed and encouraged. The goal is "people enjoying a ship," not "empty ship."
 - Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
 - PHONE EXCEPTION: A phone held at mid-distance showing a plant photo to a friend is an allowed still-image cue. For video-oriented scenes, the phone should be static and backgrounded, not animated.
-- referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(', ')}. Spread scenes across at least 6 different categories.
+- referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(", ")}. Spread scenes across at least 6 different categories.
 - DESTINATION OFFBOARD RULE: If the user provided a specific Destination below, YOU MUST include at least one still image and one storyboard scene using 'offboard_excursion' that captures the essence of that specific location (e.g. tourist exploring a ruin, beautiful recognizable beach, local culture, mountain, port city skyline). Do not use 'offboard_excursion' for generic ocean waves - it MUST be land or local culture focused.
-- Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join('; ') || 'sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon'}.
-- Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join('; ') || 'guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues'}.
-- Implausible literalizations to ban: ${plausibility.implausibleLiteralizations.join('; ') || 'microscope lab on open deck; classroom workshop staging; equipment-heavy field station setups; conference-style demos'}.
-- Allowed props: ${plausibility.allowedProps.join('; ') || 'notebook; binoculars; sample jar; map; field guide'}.
-- Discouraged props: ${plausibility.discouragedProps.join('; ') || 'microscope; clipboard stacks; lab bench gear; presentation boards; elaborate instruments'}.
+- Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join("; ") || "sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon"}.
+- Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join("; ") || "guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues"}.
+- Implausible literalizations to ban: ${plausibility.implausibleLiteralizations.join("; ") || "microscope lab on open deck; classroom workshop staging; equipment-heavy field station setups; conference-style demos"}.
+- Allowed props: ${plausibility.allowedProps.join("; ") || "notebook; binoculars; sample jar; map; field guide"}.
+- Discouraged props: ${plausibility.discouragedProps.join("; ") || "microscope; clipboard stacks; lab bench gear; presentation boards; elaborate instruments"}.
 
 ## IMAGE PROMPT RULES
 - Each imagePrompt is the SINGLE MOST IMPORTANT field. It drives the generated image directly.
@@ -1518,15 +1880,21 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - If the campaign is tabletop or board-game adjacent, the tiktok_seed storyboard should favor the most social, object-legible, and table-aware scenes in the sceneLibrary, not generic cruise filler.
 `.trim();
 
-    const lintComplianceBlock = buildLintComplianceBlock(campaign, coreAesthetic.communityExpression.belongingSignals);
-    const storyboardCouplingBlock = buildStoryboardCouplingBlock(campaign, coreAesthetic);
+  const lintComplianceBlock = buildLintComplianceBlock(
+    campaign,
+    coreAesthetic.communityExpression.belongingSignals,
+  );
+  const storyboardCouplingBlock = buildStoryboardCouplingBlock(
+    campaign,
+    coreAesthetic,
+  );
 
-    const contextPrompt = `
+  const contextPrompt = `
 CAMPAIGN CONTEXT (use as inspiration, but ALWAYS reframe through the vacation lens):
 Campaign: ${campaign.name}
 Ship: ${getCanonicalShipName(campaign)}
 Ship Context: ${buildShipContext(campaign)}
-Destination: ${campaign.targetDestination || 'TBD'}
+Destination: ${campaign.targetDestination || "TBD"}
 Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
 Event Framing Guidance: ${buildEventFramingGuidance(campaign)}
 Aesthetic: ${visual.aestheticLabel}
@@ -1539,16 +1907,16 @@ Age Range Guidance: ${casting.ageRangeGuidance}
 Diversity Intent: ${casting.diversityIntent}
 Pairing Guidance: ${casting.pairingGuidance}
 Styling Guidance: ${casting.stylingGuidance}
-Anti-Stereotype Rules: ${casting.antiStereotypeRules.join('; ')}
-Tone: ${messaging.toneKeywords.join(', ')}
+Anti-Stereotype Rules: ${casting.antiStereotypeRules.join("; ")}
+Tone: ${messaging.toneKeywords.join(", ")}
 Hero Slogan: ${messaging.heroSlogan}
 Elevator Pitch: ${messaging.elevatorPitch}
 Community Core Promise: ${communityExpression.corePromise}
 Participation Style: ${communityExpression.participationStyle}
 Social Gravity: ${communityExpression.socialGravity}
-Optional Gatherings: ${communityExpression.optionalGatherings.join('; ')}
-Belonging Signals: ${communityExpression.belongingSignals.join('; ')}
-Solitude Anti-Patterns: ${communityExpression.solitudeAntiPatterns.join('; ')}
+Optional Gatherings: ${communityExpression.optionalGatherings.join("; ")}
+Belonging Signals: ${communityExpression.belongingSignals.join("; ")}
+Solitude Anti-Patterns: ${communityExpression.solitudeAntiPatterns.join("; ")}
 Visual Togetherness Notes: ${communityExpression.visualTogethernessNotes}
 Copy Framing Rule: ${communityExpression.copyFramingRule}
 Music Mood: ${audio.musicMood}
@@ -1568,17 +1936,17 @@ TikTok Hook: ${tiktokHook}
 TikTok CTA: ${tiktokCTA}
 
 Video Deliverables to storyboard:
-${VIDEO_DELIVERABLES.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join('\n')}
+${VIDEO_DELIVERABLES.map((d) => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join("\n")}
 `.trim();
 
-    const { object: visualPlanning } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: VisualPlanningBundleSchema,
-        system: systemPromptPass3,
-        prompt: contextPrompt,
-        maxOutputTokens: 12000,
-        operationName: `visual-planning:${campaign.id}`,
-    });
+  const { object: visualPlanning } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: VisualPlanningBundleSchema,
+    system: systemPromptPass3,
+    prompt: contextPrompt,
+    maxOutputTokens: 12000,
+    operationName: `visual-planning:${campaign.id}`,
+  });
 
-    return visualPlanning;
+  return visualPlanning;
 }

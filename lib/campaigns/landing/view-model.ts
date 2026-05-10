@@ -15,7 +15,7 @@ import {
   getPublicGroupCabinTarget,
   getPublicThresholdPercent,
 } from "@/lib/campaigns/threshold-policy";
-import type { Campaign } from "@/lib/campaigns/types";
+import type { Campaign, CampaignInventoryMode } from "@/lib/campaigns/types";
 import {
   getCampaignWaitlistSummary,
   type CampaignWaitlistSummary,
@@ -67,6 +67,20 @@ export interface LandingPathChoice {
 export interface LandingFaqItem {
   question: string;
   answer: string;
+}
+
+export interface LandingInventoryDisclosure {
+  mode: CampaignInventoryMode;
+  /** True when the page should show a visible banner (mode !== GROUP_BLOCK_ACTIVE). */
+  bannerVisible: boolean;
+  /** Mode-specific short copy for the banner strip. Empty when bannerVisible is false. */
+  bannerCopy: string;
+  /** Always-visible note appended below the "How it works" steps. */
+  processNote: string;
+  /** Inventory-specific trust bullet to append to trustBullets. */
+  trustBullet: string;
+  /** Near-submit form acknowledgement copy. */
+  formAcknowledgement: string;
 }
 
 export interface LandingDesignSystem {
@@ -159,6 +173,7 @@ export interface CampaignLandingViewModel {
     endpoint: string;
     defaultMode: "GROUP_WAIT" | "BOOK_NOW";
   };
+  inventoryDisclosure: LandingInventoryDisclosure;
 }
 
 export interface CampaignLandingLoadResult {
@@ -849,8 +864,67 @@ function buildWhatItIs(
   };
 }
 
+function buildInventoryDisclosure(campaign: Campaign): LandingInventoryDisclosure {
+  const mode: CampaignInventoryMode = campaign.activeBookingMode ?? "GROUP_BLOCK_ACTIVE";
+
+  const processNote =
+    "Cruise inventory can change while a group is forming. We verify the sailing before launch and keep checking it while interest builds. If the group block changes, we will either switch to a verified backup, offer an individual-booking path for the same sailing, or pause the campaign instead of sending you to a dead booking page.";
+
+  const formAcknowledgement =
+    "By joining, you are asking for updates on this sailing. Booking details may change if supplier inventory changes before the group is finalized.";
+
+  const trustBullet =
+    "Group pricing, cabin availability, and group amenities are subject to supplier inventory. If the official group block is no longer available, we will clearly mark the page before offering any alternate booking path.";
+
+  if (mode === "GROUP_BACKUP_SWITCHED") {
+    return {
+      mode,
+      bannerVisible: true,
+      bannerCopy:
+        "We re-verified the sailing and updated the inventory source behind this trip. The overall trip remains available, and the page now reflects the latest booking path.",
+      processNote,
+      trustBullet,
+      formAcknowledgement,
+    };
+  }
+
+  if (mode === "RETAIL_MULTI_BOOKING") {
+    return {
+      mode,
+      bannerVisible: true,
+      bannerCopy:
+        "The official group block for this sailing is no longer available. We can still help guests book the same cruise individually and coordinate the experience where possible. Pricing, cabin location, and group-specific amenities may differ from the original offer.",
+      processNote,
+      trustBullet,
+      formAcknowledgement,
+    };
+  }
+
+  if (mode === "INVENTORY_FAILED_PAUSED") {
+    return {
+      mode,
+      bannerVisible: true,
+      bannerCopy:
+        "We are pausing this sailing because the original inventory is no longer available in a way we can stand behind. Rather than send guests into an uncertain booking path, we are stopping this version of the offer and will follow up with the best available alternative.",
+      processNote,
+      trustBullet,
+      formAcknowledgement,
+    };
+  }
+
+  return {
+    mode: "GROUP_BLOCK_ACTIVE",
+    bannerVisible: false,
+    bannerCopy: "",
+    processNote,
+    trustBullet,
+    formAcknowledgement,
+  };
+}
+
 function buildTrustBullets(campaign: Campaign): string[] {
   const targetCabins = getPublicGroupCabinTarget(campaign);
+  const disclosure = buildInventoryDisclosure(campaign);
 
   return [
     "You are not paying on this page. This step only saves your interest, party size, and cabin preference.",
@@ -858,6 +932,7 @@ function buildTrustBullets(campaign: Campaign): string[] {
     campaign.expiresAt
       ? `If the cabin target is not reached by ${campaign.expiresAt}, this version of the sailing can close instead of drifting without a clear answer.`
       : "If the cabin target is not reached in time, this version of the sailing can close instead of drifting without a clear answer.",
+    disclosure.trustBullet,
   ];
 }
 
@@ -1022,6 +1097,7 @@ function buildLandingViewModel(
       endpoint: `/api/groups/campaign/${campaign.id}/waitlist`,
       defaultMode: ctas.primary.mode,
     },
+    inventoryDisclosure: buildInventoryDisclosure(campaign),
   };
 }
 

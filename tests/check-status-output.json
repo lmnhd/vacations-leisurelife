@@ -1,0 +1,1098 @@
+{
+  "briefReadiness": {
+    "status": 200,
+    "data": {
+      "readiness": "ready_for_media",
+      "brief": {
+        "slug": "wellness-and-nature-cruise",
+        "themeName": "Wellness and Nature Cruise",
+        "visual": {
+          "aestheticLabel": "Serene Escape",
+          "colorPalette": {
+            "primary": "#1a2b3c",
+            "secondary": "#4d5e6f",
+            "accent": "#f0c040",
+            "background": "#0a0a0a",
+            "textOnDark": "#ffffff",
+            "textOnLight": "#111111"
+          },
+          "typographyDirection": {
+            "headlineStyle": "Bold, uppercase, high-contrast",
+            "bodyStyle": "Clean sans-serif, generous line height",
+            "suggestedFonts": [
+              "Inter",
+              "Outfit"
+            ]
+          },
+          "imageryMood": "Serene and rejuvenating, with gentle ocean breezes and soft natural light.",
+          "lightingStyle": "Warm sunrise hues blending with open ocean vistas, reflecting tranquility.",
+          "compositionNotes": "Focus on expansive ocean views, peaceful ship corners, and subtle wellness cues.",
+          "avoidList": [],
+          "referenceMoodboard": [],
+          "plausibilityFramework": {
+            "governingPrinciple": "Depict the campaign theme as a believable modulation of ordinary cruise life, not as a staged demonstration of the niche itself.",
+            "cruiseNativeMoments": [],
+            "nicheEnhancedMoments": [],
+            "implausibleLiteralizations": [],
+            "allowedProps": [],
+            "discouragedProps": []
+          },
+          "humanRepresentation": {
+            "castingGoal": "Depict a believable, theme-appropriate mix of guests with varied visible backgrounds, skin tones, facial features, and ages where appropriate to the campaign.",
+            "ageRangeGuidance": "Match the likely audience for the theme without making every subject the same age. Use variety unless the campaign clearly targets a narrower life stage.",
+            "diversityIntent": "Favor visible diversity across the image set, including different ethnic presentations and skin tones, without reducing anyone to a trope or costume.",
+            "pairingGuidance": "Across the full set, vary who appears together so the campaign does not default to one repeated demographic pairing.",
+            "stylingGuidance": "Let styling reflect the campaign theme through clothing texture, grooming, and accessories while keeping people natural, modern, and cruise-plausible.",
+            "antiStereotypeRules": [
+              "Do not stereotype ethnicity, religion, age, or culture through exaggerated clothing, props, or gestures.",
+              "Do not make one background the default while others appear only as token exceptions.",
+              "Do not use caricature, costume logic, or generic stock-photo diversity signaling."
+            ]
+          }
+        },
+        "messaging": {
+          "heroSlogan": "Feel the Horizon",
+          "subSlogan": "Find peace at sea.",
+          "ctaVariants": {
+            "waitlist": "Join the List",
+            "bookNow": "Book Now",
+            "merch": "Shop the Look",
+            "share": "Share This"
+          },
+          "elevatorPitch": "Set sail on the Icon of the Seas and immerse yourself in a journey that blends wellness with the beauty of nature. Enjoy optional yoga sessions at sunrise, unwind with guided meditations, or explore art inspired by the sea, all at your own pace.",
+          "toneKeywords": [
+            "aspirational",
+            "specific",
+            "welcoming"
+          ],
+          "voicePersona": "Calm and inviting, with an emphasis on relaxation and natural beauty.",
+          "starterConversation": [
+            {
+              "role": "user",
+              "content": "What makes this cruise special?"
+            },
+            {
+              "role": "assistant",
+              "content": "Imagine waking up to sunrise yoga overlooking the ocean, followed by a day of relaxed exploration and optional wellness activities. It's a perfect blend of tranquility and adventure."
+            },
+            {
+              "role": "user",
+              "content": "Do I have to join all the activities?"
+            },
+            {
+              "role": "assistant",
+              "content": "Not at all. Participate in what interests you, whether it's a drop-in meditation session or a nature walk during port stops. It's your cruise, your pace."
+            },
+            {
+              "role": "user",
+              "content": "How does the cruise foster a sense of community?"
+            },
+            {
+              "role": "assistant",
+              "content": "By sharing experiences in a relaxed setting, like swapping wellness tips over breakfast or joining a casual evening meditation, you'll find natural connections with fellow guests."
+            }
+          ]
+        },
+        "communityExpression": {
+          "corePromise": "Embrace rejuvenation in a supportive, relaxing sea environment with fellow wellness enthusiasts.",
+          "participationStyle": "Activities are relaxed, allowing guests to participate at their own pace.",
+          "socialGravity": "Shared interest in wellness naturally connects guests, fostering easy conversation.",
+          "optionalGatherings": [
+            "Drop-in yoga classes",
+            "Casual nature walks",
+            "Evening mindfulness sessions"
+          ],
+          "belongingSignals": [
+            "Nature-inspired clothing, shared yoga practice, and casual wellness discussions."
+          ],
+          "solitudeAntiPatterns": [
+            "Avoid pushing solo wellness; emphasize shared experiences."
+          ],
+          "visualTogethernessNotes": "Highlight small groups enjoying quiet moments or sharing simple wellness activities.",
+          "copyFramingRule": "Opt-in phrasing respects both introverts and casual participants.",
+          "activityInvitations": [
+            "Join sunrise yoga on the top deck.",
+            "Drop by for evening meditation circles.",
+            "Explore nature trails during port excursions.",
+            "Gather for a calming spa session.",
+            "Share wellness tips over breakfast."
+          ]
+        },
+        "socialConcepts": {
+          "tiktokOrganic": {
+            "hook": "",
+            "narrative": {
+              "title": "",
+              "durationSeconds": 30,
+              "tool": "runwayml",
+              "scriptOrNarration": "",
+              "visualDirectionNotes": "",
+              "avatarRequired": false,
+              "backgroundDescription": "",
+              "musicMood": ""
+            },
+            "caption": "",
+            "hashtags": [],
+            "callToAction": ""
+          },
+          "instagramReels": {
+            "visualConcept": "",
+            "audioTrackType": "",
+            "caption": "",
+            "hashtags": []
+          },
+          "instagramFeed": {
+            "carouselSlides": [],
+            "singlePostConcept": "",
+            "caption": ""
+          },
+          "facebookAd": {
+            "headline": "",
+            "primaryText": "",
+            "description": "",
+            "cta": "",
+            "visualDescription": ""
+          },
+          "youtubeShort": {
+            "title": "",
+            "visualConcept": "",
+            "description": "",
+            "hashtags": []
+          },
+          "pinterest": {
+            "pinTitle": "",
+            "pinDescription": "",
+            "visualConcept": ""
+          },
+          "emailHeader": {
+            "subjectLine": "",
+            "preheader": "",
+            "bodyDirection": "",
+            "visualDirection": ""
+          },
+          "discordBanner": {
+            "serverBannerDescription": "",
+            "welcomeMessageDirection": ""
+          }
+        },
+        "videoConcepts": {
+          "heroExplainer": {
+            "title": "",
+            "durationSeconds": 30,
+            "tool": "runwayml",
+            "scriptOrNarration": "",
+            "visualDirectionNotes": "",
+            "avatarRequired": false,
+            "backgroundDescription": "",
+            "musicMood": ""
+          },
+          "tiktokSeed": {
+            "title": "",
+            "durationSeconds": 30,
+            "tool": "runwayml",
+            "scriptOrNarration": "",
+            "visualDirectionNotes": "",
+            "avatarRequired": false,
+            "backgroundDescription": "",
+            "musicMood": ""
+          },
+          "thresholdAnnouncement": {
+            "title": "",
+            "durationSeconds": 30,
+            "tool": "runwayml",
+            "scriptOrNarration": "",
+            "visualDirectionNotes": "",
+            "avatarRequired": false,
+            "backgroundDescription": "",
+            "musicMood": ""
+          },
+          "merchReveal": {
+            "title": "",
+            "durationSeconds": 30,
+            "tool": "runwayml",
+            "scriptOrNarration": "",
+            "visualDirectionNotes": "",
+            "avatarRequired": false,
+            "backgroundDescription": "",
+            "musicMood": ""
+          },
+          "countdownSeries": []
+        },
+        "merch": {
+          "conceptStatement": "Cute t-shirt merch for Wellness and Nature Cruise guests",
+          "coreItem": {
+            "productType": "T-Shirt",
+            "designDescription": "Wellness and Nature Cruise Club cute cruise slogan graphic",
+            "colorway": "soft pastel cruise colors",
+            "dallePrompt": "Create a print-ready T-Shirt graphic concept for the cruise theme \"Wellness and Nature Cruise\". Cute T-Shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Wellness and Nature Cruise Club. Concept direction: Cute t-shirt merch for Wellness and Nature Cruise guests. Design direction: Wellness and Nature Cruise Club cute cruise slogan graphic. Print style: cute retro cruise slogan tee. Colorway: soft pastel cruise colors. Output a feasible apparel graphic for a real printable T-Shirt design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+            "printfulProductId": ""
+          },
+          "practicalItem": {
+            "productType": "T-Shirt",
+            "designDescription": "Wellness and Nature Cruise Club cute cruise slogan graphic",
+            "colorway": "soft pastel cruise colors",
+            "dallePrompt": "Create a print-ready T-Shirt graphic concept for the cruise theme \"Wellness and Nature Cruise\". Cute T-Shirt concept with cruise humor or theme-specific charm. Primary slogan/tagline: Wellness and Nature Cruise Club. Concept direction: Cute t-shirt merch for Wellness and Nature Cruise guests. Design direction: Wellness and Nature Cruise Club cute cruise slogan graphic. Print style: cute retro cruise slogan tee. Colorway: soft pastel cruise colors. Output a feasible apparel graphic for a real printable T-Shirt design. Use flat graphic composition, clean edges, limited print-friendly colors, and screen-print-friendly styling. Do not depict bags, leather goods, impossible accessories, product mockups, or non-apparel objects as the primary concept",
+            "printfulProductId": ""
+          },
+          "nicheSpecificItems": [],
+          "logoConceptDescription": "A subtle design inspired by the sea and wellness, perfect for cruise memories.",
+          "tagline": "Wellness and Nature Cruise Club",
+          "printStyle": "cute retro cruise slogan tee"
+        },
+        "audio": {
+          "ambientNarrationScript": "Feel the gentle sway of the ocean as you embrace a voyage of wellness and peace on the Icon of the Seas.",
+          "hypeClipScript": "Discover serenity at sea. Join us for a rejuvenating journey where wellness and nature meet.",
+          "voiceProfile": "Soothing, with a hint of excitement for discovery.",
+          "musicMood": "Calming instrumental with oceanic undertones."
+        },
+        "identityBlueprint": {
+          "energyMode": "calm_contemplative",
+          "emotionalPromise": "The campaign feels quietly right for a particular kind of traveler without having to overstate itself.",
+          "socialScale": "solo_pair",
+          "imageBehavior": [
+            "quiet ship life",
+            "horizon-led calm",
+            "small meaningful details"
+          ],
+          "propFamilies": [
+            "small paper artifact",
+            "textile accent",
+            "personal object with cruise context"
+          ],
+          "forbiddenDefaults": [
+            "staged theme spectacle",
+            "generic cruise brochure calm",
+            "prop-heavy demo scene"
+          ],
+          "lightBehavior": [
+            "overcast sea light",
+            "morning deck light",
+            "quiet horizon light"
+          ],
+          "adFormatBias": [
+            "editorial_cover_ad",
+            "image_detail_ad",
+            "quote_card"
+          ],
+          "evidenceOfBelonging": [
+            "Nature-inspired clothing, shared yoga practice, and casual wellness discussions.",
+            "Drop-in yoga sessions",
+            "Evening meditation circles",
+            "Casual nature walks",
+            "Nature-inspired decor",
+            "Wellness-themed dining"
+          ],
+          "visualFlavor": "none",
+          "summary": "calm contemplative campaign; favor quiet ship life with solo pair social scale and avoid staged theme spectacle."
+        },
+        "productionBible": {
+          "sceneLibrary": [
+            {
+              "sceneId": "exterior",
+              "location": "Sunrise yoga deck",
+              "timeOfDay": "early morning",
+              "lighting": "warm sunrise hues",
+              "cameraAngle": "wide establishing",
+              "subjectAction": "aspiring to tranquility while surrounded by the vast ocean",
+              "environmentDetails": "ocean views with a light breeze",
+              "mood": "serenity",
+              "imagePrompt": "Yoga deck, early morning, warm sunrise hues. Wide view of the ocean with yoga mats laid out neatly. A rolled-up yoga mat rests beside a water bottle. In the background, blurred figures in yoga poses enhance the scene.",
+              "referenceCategory": "pool_deck"
+            },
+            {
+              "sceneId": "dining",
+              "location": "Oceanview café",
+              "timeOfDay": "mid-morning",
+              "lighting": "soft natural light",
+              "cameraAngle": "over-the-shoulder",
+              "subjectAction": "engaging in casual wellness discussions over a nourishing breakfast",
+              "environmentDetails": "open seating with ocean views",
+              "mood": "belonging",
+              "imagePrompt": "Oceanview café, mid-morning, soft natural light. Over-the-shoulder shot of a table with fresh fruit and smoothie bowls. A small plant adds a touch of nature to the table. Two guests, softly blurred, engage in conversation.",
+              "referenceCategory": "dining"
+            },
+            {
+              "sceneId": "stateroom",
+              "location": "Private balcony",
+              "timeOfDay": "late afternoon",
+              "lighting": "gentle golden hour light",
+              "cameraAngle": "eye-level handheld",
+              "subjectAction": "finding peace while gazing at the horizon",
+              "environmentDetails": "ocean breeze with personal space",
+              "mood": "intimacy",
+              "imagePrompt": "Private balcony, late afternoon, gentle golden hour light. A plush chair facing the ocean. A pair of binoculars sits on a side table. Hands rest on the balcony railing, enjoying the view.",
+              "referenceCategory": "stateroom"
+            },
+            {
+              "sceneId": "atrium",
+              "location": "Central atrium",
+              "timeOfDay": "midday",
+              "lighting": "bright and airy",
+              "cameraAngle": "low-angle hero",
+              "subjectAction": "feeling awe at the grandeur of the ship's architecture",
+              "environmentDetails": "modern design with open spaces",
+              "mood": "awe",
+              "imagePrompt": "Central atrium, midday, bright and airy. Low-angle view of the grand staircase. A decorative plant arrangement catches the eye. Blurred figures move up and down the stairs, adding life to the scene.",
+              "referenceCategory": "atrium"
+            },
+            {
+              "sceneId": "nightclub",
+              "location": "Evening lounge",
+              "timeOfDay": "evening",
+              "lighting": "soft ambient glow",
+              "cameraAngle": "close-up detail",
+              "subjectAction": "feeling joy while enjoying a night of music and laughter",
+              "environmentDetails": "intimate seating with live music",
+              "mood": "joy",
+              "imagePrompt": "Evening lounge, evening, soft ambient glow. Close-up of a cocktail glass with a small umbrella on a table. In the background, blurred silhouettes of guests enjoying the live music.",
+              "referenceCategory": "nightclub"
+            },
+            {
+              "sceneId": "spa",
+              "location": "Wellness spa",
+              "timeOfDay": "noon",
+              "lighting": "tranquil soft lighting",
+              "cameraAngle": "eye-level handheld",
+              "subjectAction": "experiencing rejuvenation and relaxation",
+              "environmentDetails": "calming decor with soothing ambiance",
+              "mood": "magic",
+              "imagePrompt": "Wellness spa, noon, tranquil soft lighting. Eye-level view of massage tables with aromatherapy candles. A neatly folded towel is placed on a chair. Two guests, softly blurred, chat quietly in the background.",
+              "referenceCategory": "spa"
+            },
+            {
+              "sceneId": "destination_port",
+              "location": "Tropical island port",
+              "timeOfDay": "late morning",
+              "lighting": "bright and sunny",
+              "cameraAngle": "wide establishing",
+              "subjectAction": "feeling the thrill of new discoveries onshore",
+              "environmentDetails": "vibrant local culture with natural beauty",
+              "mood": "thrill",
+              "imagePrompt": "Tropical island port, late morning, bright and sunny. Wide view of the bustling port with colorful market stalls. A woven beach bag with local crafts peeks from a table. Blurred figures explore the area.",
+              "referenceCategory": "destination_port"
+            },
+            {
+              "sceneId": "theater",
+              "location": "Main theater",
+              "timeOfDay": "evening",
+              "lighting": "dramatic stage lighting",
+              "cameraAngle": "over-the-shoulder",
+              "subjectAction": "immersed in a captivating performance",
+              "environmentDetails": "opulent seating with a grand stage",
+              "mood": "wonder",
+              "imagePrompt": "Main theater, evening, dramatic stage lighting. Over-the-shoulder view of an audience member watching the show. A program booklet rests on a lap. The stage is lit with performers in the background.",
+              "referenceCategory": "theater"
+            },
+            {
+              "sceneId": "sports_deck",
+              "location": "Outdoor sports deck",
+              "timeOfDay": "afternoon",
+              "lighting": "bright natural light",
+              "cameraAngle": "eye-level handheld",
+              "subjectAction": "enjoying the freedom of open-air activities",
+              "environmentDetails": "spacious deck with sports facilities",
+              "mood": "freedom",
+              "imagePrompt": "Outdoor sports deck, afternoon, bright natural light. Eye-level view of a basketball court with a ball at rest. A water bottle stands next to a bench. Blurred figures play in the background.",
+              "referenceCategory": "sports_deck"
+            },
+            {
+              "sceneId": "offboard_excursion",
+              "location": "Seaside nature trail",
+              "timeOfDay": "early afternoon",
+              "lighting": "dappled sunlight",
+              "cameraAngle": "wide establishing",
+              "subjectAction": "experiencing awe at the natural wonders around",
+              "environmentDetails": "lush greenery with coastal views",
+              "mood": "awe",
+              "imagePrompt": "Seaside nature trail, early afternoon, dappled sunlight. Wide view of the trail winding through dense foliage. A guidebook peeks from a backpack. Blurred figures explore the path ahead.",
+              "referenceCategory": "offboard_excursion"
+            }
+          ],
+          "storyboards": [
+            {
+              "deliverableId": "tiktok_seed",
+              "title": "TikTok Seed Video",
+              "totalDurationSeconds": 35,
+              "shotSequence": [
+                {
+                  "shotNumber": 1,
+                  "sceneId": "exterior",
+                  "durationSeconds": 6,
+                  "cameraMovement": "slow push-in",
+                  "subjectMotion": "none",
+                  "environmentMotion": "gentle ocean waves",
+                  "transitionIn": "fade from black",
+                  "transitionOut": "hard cut",
+                  "emotionalBeat": "intrigue",
+                  "narrationSegment": "Begin your day with tranquility.",
+                  "musicCue": "gentle piano melody"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "dining",
+                  "durationSeconds": 6,
+                  "cameraMovement": "gimbal glide",
+                  "subjectMotion": "none",
+                  "environmentMotion": "ambient chatter",
+                  "transitionIn": "hard cut",
+                  "transitionOut": "cross-dissolve",
+                  "emotionalBeat": "building connection",
+                  "narrationSegment": "Indulge in nourishing conversations.",
+                  "musicCue": "soft acoustic guitar"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "destination_port",
+                  "durationSeconds": 6,
+                  "cameraMovement": "gentle pan",
+                  "subjectMotion": "none",
+                  "environmentMotion": "bustling port activity",
+                  "transitionIn": "cross-dissolve",
+                  "transitionOut": "whip pan",
+                  "emotionalBeat": "thrill",
+                  "narrationSegment": "Discover vibrant cultures.",
+                  "musicCue": "upbeat tropical percussion"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "spa",
+                  "durationSeconds": 6,
+                  "cameraMovement": "static locked-off",
+                  "subjectMotion": "none",
+                  "environmentMotion": "soft ambient sounds",
+                  "transitionIn": "whip pan",
+                  "transitionOut": "L-cut",
+                  "emotionalBeat": "rejuvenation",
+                  "narrationSegment": "Rejuvenate your senses.",
+                  "musicCue": "calm ambient synth"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "theater",
+                  "durationSeconds": 6,
+                  "cameraMovement": "soft handheld orbit",
+                  "subjectMotion": "none",
+                  "environmentMotion": "stage lighting changes",
+                  "transitionIn": "L-cut",
+                  "transitionOut": "match cut",
+                  "emotionalBeat": "wonder",
+                  "narrationSegment": "Be captivated by the arts.",
+                  "musicCue": "dramatic orchestral theme"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "sports_deck",
+                  "durationSeconds": 5,
+                  "cameraMovement": "slow pull-out",
+                  "subjectMotion": "none",
+                  "environmentMotion": "wind in sails",
+                  "transitionIn": "match cut",
+                  "transitionOut": "fade to black",
+                  "emotionalBeat": "freedom",
+                  "narrationSegment": "Feel the freedom of the sea.",
+                  "musicCue": "uplifting synth wave"
+                }
+              ],
+              "narrationScript": "Begin your day with tranquility. Indulge in nourishing conversations. Discover vibrant cultures. Rejuvenate your senses. Be captivated by the arts. Feel the freedom of the sea.",
+              "musicDirection": "A blend of serene and uplifting tunes, capturing the essence of a rejuvenating escape.",
+              "editingStyle": "Dynamic yet smooth transitions to evoke a sense of continuous flow and discovery."
+            },
+            {
+              "deliverableId": "hero_explainer",
+              "title": "Hero Explainer Video",
+              "totalDurationSeconds": 60,
+              "shotSequence": [
+                {
+                  "shotNumber": 1,
+                  "sceneId": "atrium",
+                  "durationSeconds": 10,
+                  "cameraMovement": "slow push-in",
+                  "subjectMotion": "none",
+                  "environmentMotion": "soft ambient music",
+                  "transitionIn": "fade from black",
+                  "transitionOut": "hard cut",
+                  "emotionalBeat": "intrigue",
+                  "narrationSegment": "Step into a world of luxury and wonder.",
+                  "musicCue": "orchestral swell"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "exterior",
+                  "durationSeconds": 10,
+                  "cameraMovement": "gentle pan",
+                  "subjectMotion": "none",
+                  "environmentMotion": "ocean waves",
+                  "transitionIn": "hard cut",
+                  "transitionOut": "cross-dissolve",
+                  "emotionalBeat": "serenity",
+                  "narrationSegment": "Embrace the serene beauty of the sea.",
+                  "musicCue": "peaceful piano"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "spa",
+                  "durationSeconds": 10,
+                  "cameraMovement": "gimbal glide",
+                  "subjectMotion": "none",
+                  "environmentMotion": "calming spa sounds",
+                  "transitionIn": "cross-dissolve",
+                  "transitionOut": "whip pan",
+                  "emotionalBeat": "rejuvenation",
+                  "narrationSegment": "Revitalize your mind and body.",
+                  "musicCue": "soothing ambient"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "dining",
+                  "durationSeconds": 10,
+                  "cameraMovement": "static locked-off",
+                  "subjectMotion": "none",
+                  "environmentMotion": "dining chatter",
+                  "transitionIn": "whip pan",
+                  "transitionOut": "L-cut",
+                  "emotionalBeat": "belonging",
+                  "narrationSegment": "Connect over delightful flavors.",
+                  "musicCue": "light jazz"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "nightclub",
+                  "durationSeconds": 10,
+                  "cameraMovement": "soft handheld orbit",
+                  "subjectMotion": "none",
+                  "environmentMotion": "lively music",
+                  "transitionIn": "L-cut",
+                  "transitionOut": "match cut",
+                  "emotionalBeat": "joy",
+                  "narrationSegment": "Celebrate life with rhythm and laughter.",
+                  "musicCue": "upbeat dance track"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "offboard_excursion",
+                  "durationSeconds": 10,
+                  "cameraMovement": "slow pull-out",
+                  "subjectMotion": "none",
+                  "environmentMotion": "nature sounds",
+                  "transitionIn": "match cut",
+                  "transitionOut": "fade to black",
+                  "emotionalBeat": "freedom",
+                  "narrationSegment": "Explore the wonders beyond the horizon.",
+                  "musicCue": "adventurous theme"
+                }
+              ],
+              "narrationScript": "Step into a world of luxury and wonder. Embrace the serene beauty of the sea. Revitalize your mind and body. Connect over delightful flavors. Celebrate life with rhythm and laughter. Explore the wonders beyond the horizon.",
+              "musicDirection": "A harmonious blend of serene and lively tracks that mirror the diverse experiences onboard.",
+              "editingStyle": "Smooth and elegant transitions, capturing the feeling of a seamless journey."
+            },
+            {
+              "deliverableId": "threshold_announcement",
+              "title": "Threshold Announcement",
+              "totalDurationSeconds": 30,
+              "shotSequence": [
+                {
+                  "shotNumber": 1,
+                  "sceneId": "stateroom",
+                  "durationSeconds": 8,
+                  "cameraMovement": "slow push-in",
+                  "subjectMotion": "none",
+                  "environmentMotion": "gentle ocean breeze",
+                  "transitionIn": "fade from black",
+                  "transitionOut": "hard cut",
+                  "emotionalBeat": "intimacy",
+                  "narrationSegment": "Find your personal haven at sea.",
+                  "musicCue": "soft strings"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "sports_deck",
+                  "durationSeconds": 7,
+                  "cameraMovement": "gimbal glide",
+                  "subjectMotion": "none",
+                  "environmentMotion": "wind through sails",
+                  "transitionIn": "hard cut",
+                  "transitionOut": "cross-dissolve",
+                  "emotionalBeat": "freedom",
+                  "narrationSegment": "Let the open air invigorate you.",
+                  "musicCue": "energetic beats"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "theater",
+                  "durationSeconds": 8,
+                  "cameraMovement": "soft handheld orbit",
+                  "subjectMotion": "none",
+                  "environmentMotion": "stage lighting",
+                  "transitionIn": "cross-dissolve",
+                  "transitionOut": "whip pan",
+                  "emotionalBeat": "wonder",
+                  "narrationSegment": "Witness the grandeur of performance.",
+                  "musicCue": "grand orchestral"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "atrium",
+                  "durationSeconds": 7,
+                  "cameraMovement": "slow pull-out",
+                  "subjectMotion": "none",
+                  "environmentMotion": "ambient atrium sounds",
+                  "transitionIn": "whip pan",
+                  "transitionOut": "fade to black",
+                  "emotionalBeat": "awe",
+                  "narrationSegment": "Experience the heart of the ship.",
+                  "musicCue": "inspiring crescendo"
+                }
+              ],
+              "narrationScript": "Find your personal haven at sea. Let the open air invigorate you. Witness the grandeur of performance. Experience the heart of the ship.",
+              "musicDirection": "A mix of calming and uplifting melodies to evoke a sense of discovery.",
+              "editingStyle": "Engaging cuts with a focus on transitions that emphasize the journey and exploration."
+            },
+            {
+              "deliverableId": "countdown_1",
+              "title": "Planning Window Video 1",
+              "totalDurationSeconds": 15,
+              "shotSequence": [
+                {
+                  "shotNumber": 1,
+                  "sceneId": "spa",
+                  "durationSeconds": 5,
+                  "cameraMovement": "gentle pan",
+                  "subjectMotion": "none",
+                  "environmentMotion": "calming spa sounds",
+                  "transitionIn": "fade from black",
+                  "transitionOut": "hard cut",
+                  "emotionalBeat": "magic",
+                  "narrationSegment": "Rejuvenate your spirit.",
+                  "musicCue": "tranquil chimes"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "destination_port",
+                  "durationSeconds": 5,
+                  "cameraMovement": "static locked-off",
+                  "subjectMotion": "none",
+                  "environmentMotion": "local market buzz",
+                  "transitionIn": "hard cut",
+                  "transitionOut": "cross-dissolve",
+                  "emotionalBeat": "thrill",
+                  "narrationSegment": "Adventure awaits.",
+                  "musicCue": "exciting rhythms"
+                },
+                {
+                  "shotNumber": 1,
+                  "sceneId": "nightclub",
+                  "durationSeconds": 5,
+                  "cameraMovement": "slow push-in",
+                  "subjectMotion": "none",
+                  "environmentMotion": "lively music",
+                  "transitionIn": "cross-dissolve",
+                  "transitionOut": "fade to black",
+                  "emotionalBeat": "joy",
+                  "narrationSegment": "Celebrate each moment.",
+                  "musicCue": "festive beats"
+                }
+              ],
+              "narrationScript": "Rejuvenate your spirit. Adventure awaits. Celebrate each moment.",
+              "musicDirection": "A vibrant and uplifting score that energizes and excites the viewer.",
+              "editingStyle": "Quick, engaging cuts to build anticipation and excitement."
+            }
+          ],
+          "globalDirectionNotes": "Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.",
+          "avoidDirectives": [
+            "No slideshow parallax",
+            "No repeated camera movement across consecutive shots",
+            "No empty scenes",
+            "No corporate body language",
+            "No crane, dolly, tracking shot, slider, or cable-cam language"
+          ]
+        },
+        "landingStillBible": {
+          "stillLibrary": [
+            {
+              "stillId": "still-01",
+              "usage": "hero_primary",
+              "location": "main pool deck",
+              "timeOfDay": "morning",
+              "lighting": "sunlit",
+              "composition": "wide view of friends practicing yoga",
+              "subjectAction": "pair of friends performing yoga",
+              "environmentDetails": "ocean backdrop with yoga mats",
+              "mood": "invigorating",
+              "imagePrompt": "sunlit deck with pair of friends practicing yoga, ocean as backdrop",
+              "referenceCategory": "activity",
+              "anchorId": "anchor-01",
+              "slotRole": "HERO_PRIMARY",
+              "nicheCarryThrough": "yoga",
+              "shotIntent": "Showcase the invigorating start to a day with yoga on the deck.",
+              "cameraDistance": "wide",
+              "framingMode": "environmental_portrait",
+              "heroSubject": "pair of friends",
+              "nicheCue": "yoga mats",
+              "antiFallbackNote": "Avoids cabin or window setup by focusing on outdoor activity.",
+              "referencePackId": "none"
+            },
+            {
+              "stillId": "still-02",
+              "usage": "hero_alt",
+              "location": "dining lounge",
+              "timeOfDay": "afternoon",
+              "lighting": "soft",
+              "composition": "medium view of guests enjoying smoothies",
+              "subjectAction": "guests discussing wellness at juice bar",
+              "environmentDetails": "nature-inspired decor",
+              "mood": "refreshing",
+              "imagePrompt": "guests enjoying smoothies in a nature-inspired lounge, featuring wellness",
+              "referenceCategory": "dining",
+              "anchorId": "anchor-02",
+              "slotRole": "HERO_ALT",
+              "nicheCarryThrough": "wellness",
+              "shotIntent": "Capture a refreshing moment highlighting wellness through conversation.",
+              "cameraDistance": "medium",
+              "framingMode": "two_shot",
+              "heroSubject": "two guests",
+              "nicheCue": "smoothies",
+              "antiFallbackNote": "Avoids balcony and deck setups by focusing on interior wellness.",
+              "referencePackId": "none"
+            },
+            {
+              "stillId": "still-03",
+              "usage": "concept",
+              "location": "ship atrium",
+              "timeOfDay": "daytime",
+              "lighting": "natural",
+              "composition": "wide view of solo traveler in atrium garden",
+              "subjectAction": "solo traveler capturing photos, including nature",
+              "environmentDetails": "vibrant flora with atrium's natural light",
+              "mood": "enlightening",
+              "imagePrompt": "solo traveler in nature-inspired outfit capturing atrium flora",
+              "referenceCategory": "exploration",
+              "anchorId": "anchor-03",
+              "slotRole": "EDITORIAL_WIDE_A",
+              "nicheCarryThrough": "nature",
+              "shotIntent": "Highlight the enlightening experience of nature aboard.",
+              "cameraDistance": "wide",
+              "framingMode": "establishing",
+              "heroSubject": "solo traveler",
+              "nicheCue": "nature-inspired outfit",
+              "antiFallbackNote": "Avoids tight and intimate compositions by focusing on wide atrium space.",
+              "referencePackId": "none"
+            },
+            {
+              "stillId": "still-04",
+              "usage": "email_header",
+              "location": "spa solarium",
+              "timeOfDay": "afternoon",
+              "lighting": "soft, diffused",
+              "composition": "wide view of friends in spa solarium",
+              "subjectAction": "friends discussing meditation techniques",
+              "environmentDetails": "calming spa setting with solarium light",
+              "mood": "soothing",
+              "imagePrompt": "friends in spa solarium discussing meditation",
+              "referenceCategory": "relaxation",
+              "anchorId": "anchor-04",
+              "slotRole": "EDITORIAL_WIDE_B",
+              "nicheCarryThrough": "meditation",
+              "shotIntent": "Capture the soothing environment where guests share meditation insights.",
+              "cameraDistance": "wide",
+              "framingMode": "environmental_portrait",
+              "heroSubject": "two friends",
+              "nicheCue": "meditation discussion",
+              "antiFallbackNote": "Avoids railing and balcony setups by highlighting spa environment.",
+              "referencePackId": "none"
+            },
+            {
+              "stillId": "still-05",
+              "usage": "concept",
+              "location": "embarkation pier",
+              "timeOfDay": "dusk",
+              "lighting": "gentle twilight",
+              "composition": "close view of guests leaning on pier railing",
+              "subjectAction": "guests pointing at sea life below, including nature",
+              "environmentDetails": "diverse sea life visible in water",
+              "mood": "wonder",
+              "imagePrompt": "guests leaning on pier railing, pointing at sea life, featuring nature",
+              "referenceCategory": "discovery",
+              "anchorId": "anchor-05",
+              "slotRole": "INTIMATE",
+              "nicheCarryThrough": "nature",
+              "shotIntent": "Show the intimate wonder of discovering sea life together.",
+              "cameraDistance": "close_up",
+              "framingMode": "over_the_shoulder",
+              "heroSubject": "pair of guests",
+              "nicheCue": "diverse sea life",
+              "antiFallbackNote": "Avoids candlelit dining by focusing on pier discovery.",
+              "referencePackId": "none"
+            },
+            {
+              "stillId": "still-06",
+              "usage": "social_square",
+              "location": "cabin balcony",
+              "timeOfDay": "morning",
+              "lighting": "soft morning light",
+              "composition": "single subject meditating on balcony",
+              "subjectAction": "solo traveler meditating with potted plants, including meditation",
+              "environmentDetails": "peaceful balcony setting with plants",
+              "mood": "peaceful",
+              "imagePrompt": "solo traveler meditating on cabin balcony with plants, featuring meditation",
+              "referenceCategory": "serenity",
+              "anchorId": "anchor-06",
+              "slotRole": "FLEX",
+              "nicheCarryThrough": "meditation",
+              "shotIntent": "Illustrate a peaceful moment of meditation in a private space.",
+              "cameraDistance": "medium_close",
+              "framingMode": "single_subject",
+              "heroSubject": "solo traveler",
+              "nicheCue": "potted plants",
+              "antiFallbackNote": "Avoids quiet window solo by focusing on meditation setup.",
+              "referencePackId": "none"
+            }
+          ],
+          "globalDirectionNotes": "Maintain a consistent theme of wellness and nature across all visuals. Ensure scenes communicate the rejuvenating and supportive atmosphere of the cruise.",
+          "avoidDirectives": [
+            "Avoid overusing generic cruise fallbacks.",
+            "Ensure variety in location and social units across stills."
+          ]
+        },
+        "productionBuildLint": {
+          "verdict": "pass",
+          "blockingIssues": [],
+          "warnings": [],
+          "scoreSummary": {
+            "totalStills": 6,
+            "noCueCount": 0,
+            "subtleCueCount": 0,
+            "explicitCueCount": 6,
+            "genericFallbackCount": 0,
+            "heroRoleCount": 2,
+            "editorialRoleCount": 2,
+            "intimateRoleCount": 1,
+            "maxCompositionFamilySize": 1
+          },
+          "patternSummary": {
+            "locationClusters": {
+              "other": [
+                "still-04"
+              ],
+              "lounge": [
+                "still-03",
+                "still-05"
+              ],
+              "dining": [
+                "still-02"
+              ],
+              "deck": [
+                "still-01"
+              ],
+              "rail": [
+                "still-06"
+              ]
+            },
+            "actionClusters": {
+              "other": [
+                "still-01",
+                "still-03",
+                "still-06"
+              ],
+              "chatting": [
+                "still-04"
+              ],
+              "laughing": [
+                "still-02"
+              ],
+              "lounging": [
+                "still-05"
+              ]
+            },
+            "moodClusters": {
+              "neutral": [
+                "still-01",
+                "still-02",
+                "still-03",
+                "still-04",
+                "still-05"
+              ],
+              "contemplative": [
+                "still-06"
+              ]
+            },
+            "genericFallbackStillIds": [],
+            "noCueStillIds": [],
+            "subtleCueStillIds": [],
+            "explicitCueStillIds": [
+              "still-01",
+              "still-02",
+              "still-03",
+              "still-04",
+              "still-05",
+              "still-06"
+            ]
+          },
+          "stillDiagnostics": [
+            {
+              "stillId": "still-01",
+              "usage": "hero_primary",
+              "locationFamily": "deck",
+              "actionFamily": "other",
+              "moodFamily": "neutral",
+              "shotRole": "hero",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "deck_sea_wide",
+              "flags": []
+            },
+            {
+              "stillId": "still-02",
+              "usage": "hero_alt",
+              "locationFamily": "dining",
+              "actionFamily": "laughing",
+              "moodFamily": "neutral",
+              "shotRole": "hero",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "dining_laughing",
+              "flags": []
+            },
+            {
+              "stillId": "still-03",
+              "usage": "concept",
+              "locationFamily": "lounge",
+              "actionFamily": "other",
+              "moodFamily": "neutral",
+              "shotRole": "editorial",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "lounge_other",
+              "flags": []
+            },
+            {
+              "stillId": "still-04",
+              "usage": "email_header",
+              "locationFamily": "other",
+              "actionFamily": "chatting",
+              "moodFamily": "neutral",
+              "shotRole": "editorial",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "other_chatting",
+              "flags": []
+            },
+            {
+              "stillId": "still-05",
+              "usage": "concept",
+              "locationFamily": "lounge",
+              "actionFamily": "lounging",
+              "moodFamily": "neutral",
+              "shotRole": "intimate",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "lounge_lounging",
+              "flags": []
+            },
+            {
+              "stillId": "still-06",
+              "usage": "social_square",
+              "locationFamily": "rail",
+              "actionFamily": "other",
+              "moodFamily": "contemplative",
+              "shotRole": "supporting",
+              "cueStrength": "explicit",
+              "isGenericFallback": false,
+              "compositionFamily": "rail_other",
+              "flags": []
+            }
+          ],
+          "evaluatedAt": "2026-05-09T22:13:24.962Z"
+        },
+        "productionBuildStatus": "pass",
+        "productionBuildEvaluatedAt": "2026-05-09T22:13:24.962Z",
+        "issueLedger": [],
+        "generatedAt": "2026-05-09T22:12:13.044Z",
+        "generatedBy": "agent",
+        "humanReviewStatus": "approved",
+        "revisionCycleCount": 0,
+        "revisionNotes": "Supervisor approval: no open validation issues."
+      },
+      "issues": [],
+      "summary": "Brief is approved and passes all structural and production-build checks.",
+      "campaignName": "Wellness and Nature Cruise"
+    }
+  },
+  "manifest": {
+    "status": 200,
+    "totalAssets": 70,
+    "completionStatus": "complete",
+    "generatedAt": "2026-05-10T15:53:53.419Z",
+    "heroes": [
+      {
+        "id": "img_hero_rev_8097b2e0",
+        "v": 3
+      },
+      {
+        "id": "img_hero_rev_cc222a33",
+        "v": 3
+      },
+      {
+        "id": "img_hero_rev_7899f9a6",
+        "v": 3
+      },
+      {
+        "id": "img_hero_rev_1e80af79",
+        "v": 3
+      },
+      {
+        "id": "img_hero_rev_b29a4256",
+        "v": 3
+      }
+    ],
+    "concepts": [
+      {
+        "id": "img_concept_rev_8cc584fb",
+        "v": 3
+      },
+      {
+        "id": "img_concept_rev_a8a6ce08",
+        "v": 3
+      }
+    ],
+    "ads": [
+      {
+        "id": "ad_quote_card_1x1",
+        "v": 1
+      },
+      {
+        "id": "ad_image_detail_191x100",
+        "v": 1
+      },
+      {
+        "id": "ad_type_hook_9x16",
+        "v": 1
+      },
+      {
+        "id": "ad_itinerary_toc_4x5",
+        "v": 1
+      }
+    ],
+    "docs": [
+      {
+        "id": "doc_detail_trust_photo_01",
+        "v": 1
+      },
+      {
+        "id": "doc_detail_artifact_still_life_02",
+        "v": 1
+      },
+      {
+        "id": "doc_detail_texture_plate_03",
+        "v": 1
+      },
+      {
+        "id": "doc_detail_human_glimpse_04",
+        "v": 1
+      },
+      {
+        "id": "doc_detail_motion_plate_05",
+        "v": 1
+      }
+    ]
+  }
+}

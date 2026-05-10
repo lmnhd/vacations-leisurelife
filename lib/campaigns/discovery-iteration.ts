@@ -310,3 +310,41 @@ export function getDiscoveryRevisionMode(campaign: Campaign): 'single' | 'branch
     }
     return 'single';
 }
+
+/**
+ * Operator-driven retirement. Marks a campaign retired without going through
+ * the stagnation review loop. Retired campaigns stay in the database (so they
+ * still feed deduplication into new discovery runs) but the UI hides them
+ * from the default view.
+ */
+export function applyManualDiscoveryRetirement(campaign: Campaign, reason: string): Campaign {
+    const now = new Date().toISOString();
+    const state = normalizeDiscoveryIterationState(campaign.discoveryIteration);
+    const trimmedReason = reason.trim() || 'Manually retired by operator.';
+    return {
+        ...campaign,
+        discoveryIteration: {
+            ...state,
+            recommendedNextAction: 'retire',
+            retiredAt: now,
+            retirementReason: trimmedReason,
+        },
+    };
+}
+
+/**
+ * Reverses a manual retirement. Resets recommendedNextAction to 'hold' so the
+ * campaign is treated as a normal active record again.
+ */
+export function clearDiscoveryRetirement(campaign: Campaign): Campaign {
+    const state = normalizeDiscoveryIterationState(campaign.discoveryIteration);
+    return {
+        ...campaign,
+        discoveryIteration: {
+            ...state,
+            recommendedNextAction: 'hold',
+            retiredAt: undefined,
+            retirementReason: undefined,
+        },
+    };
+}

@@ -7,7 +7,7 @@
  * Called by run-phase-b.ts after the scrape completes.
  */
 
-import { Campaign } from "./types";
+import type { Campaign, CampaignInventoryCandidate } from "./types";
 import { CbGroupInventoryItem } from "./cb-inventory-types";
 import { getLaunchWindowAssessment } from "./launch-window";
 
@@ -373,4 +373,125 @@ export function matchGroupInventoryToCampaign(
     matchScore: bestScore,
     odysseusRetailBookingLink: null,
   };
+}
+
+// ─── Ranked Candidates ────────────────────────────────────────────────────────
+
+export const INVENTORY_POLICY = {
+  MAX_AUTO_PRICE_DELTA_PERCENT: 10,
+  MAX_AUTO_DATE_DELTA_DAYS: 0,
+  REQUIRE_SAME_SHIP_FOR_AUTO_SWITCH: true,
+  REQUIRE_SAME_PORT_FOR_AUTO_SWITCH: true,
+} as const;
+
+function parseSailDateMs(sailDate: string): number | null {
+  const d = new Date(sailDate);
+  return isNaN(d.getTime()) ? null : d.getTime();
+}
+
+function classifyPromiseDelta(
+  candidate: { shipName: string; sailDate: string; departurePort?: string; startingPrice?: number },
+  primary: { shipName: string; sailDate: string; departurePort?: string; startingPrice?: number },
+): CampaignInventoryCandidate["promiseDelta"] {
+  const normCandidate = normalizeComparableText(stripCruiseLinePrefixes(candidate.shipName));
+  const normPrimary = normalizeComparableText(stripCruiseLinePrefixes(primary.shipName));
+
+  if (normCandidate !== normPrimary) return "SHIP_OR_DATE_CHANGED";
+
+  const candMs = parseSailDateMs(candidate.sailDate);
+  const primMs = parseSailDateMs(primary.sailDate);
+
+  if (candMs !== null && primMs !== null) {
+    const daysDiff = Math.abs(candMs - primMs) / 86400000;
+    if (daysDiff > INVENTORY_POLICY.MAX_AUTO_DATE_DELTA_DAYS) {
+      return daysDiff <= 14 ? "AMENITIES_CHANGED" : "SHIP_OR_DATE_CHANGED";
+    }
+  } else if (candidate.sailDate !== primary.sailDate) {
+    return "AMENITIES_CHANGED";
+  }
+
+  const normCandPort = normalizeComparableText(candidate.departurePort ?? "");
+  const normPrimPort = normalizeComparableText(primary.departurePort ?? "");
+  if (normCandPort && normPrimPort && normCandPort !== normPrimPort) {
+    return "AMENITIES_CHANGED";
+  }
+
+  if (candidate.startingPrice && primary.startingPrice && primary.startingPrice > 0) {
+    const deltaPct = (Math.abs(candidate.startingPrice - primary.startingPrice) / primary.startingPrice) * 100;
+    if (deltaPct > INVENTORY_POLICY.MAX_AUTO_PRICE_DELTA_PERCENT) return "PRICE_ONLY";
+  }
+
+  return "NONE";
+}
+
+/**
+ * Returns the top N CB inventory candidates for a campaign, ranked by match score.
+ * Each candidate carries a promiseDelta (relative to rank 0) and starts UNVERIFIED.
+ * Phase B should call validateBookingLink() on each before writing.
+ */
+export function rankGroupInventoryCandidates(
+  campaign: Campaign,
+  inventory: CbGroupInventoryItem[],
+  topN = 3,
+): CampaignInventoryCandidate[] {
+  const MIN_MATCH_SCORE = 25;
+
+  if (inventory.length === 0) return [];
+
+  const requiredShipName = getSpecificShipName(campaign.shipTarget);
+  const exactShipCandidates = requiredShipName
+    ? inventory.filter((item) => getSpecificShipName(item.shipName) === requiredShipName)
+    : [];
+  const exactShipRequired = exactShipCandidates.length > 0;
+
+  const scored: Array<{ item: CbGroupInventoryItem; score: number; dateScore: number }> = [];
+
+  for (const item of inventory) {
+    if (!item.groupId) continue;
+
+    const assessment = getLaunchWindowAssessment({
+      matchedSailDate: item.sailDate,
+      targetDates: campaign.targetDates,
+    });
+    if (assessment.meetsMinimumLeadTime === false) continue;
+
+    const score = scoreMatch(campaign, item, exactShipRequired);
+    if (score < MIN_MATCH_SCORE) continue;
+
+    scored.push({ item, score, dateScore: getDatePreferenceScore(campaign, item) });
+  }
+
+  scored.sort((a, b) => b.score - a.score || b.dateScore - a.dateScore);
+
+  const top = scored.slice(0, topN);
+  if (top.length === 0) return [];
+
+  const primaryItem = top[0]!.item;
+  const primaryPrice = Math.round((primaryItem.startingPriceNumber > 0 ? primaryItem.startingPriceNumber : 0) * THEME_FEE_MULTIPLIER);
+
+  return top.map(({ item, score }, rank) => {
+    const startingPrice = Math.round((item.startingPriceNumber > 0 ? item.startingPriceNumber : 0) * THEME_FEE_MULTIPLIER);
+    return {
+      rank,
+      source: "CB_GROUP",
+      groupId: item.groupId,
+      personalLink: "",
+      shipName: item.shipName,
+      sailDate: item.sailDate,
+      departurePort: item.departurePort,
+      nights: item.nights,
+      startingPrice,
+      priceSource: "CB_GROUP_INVENTORY",
+      matchScore: score,
+      priceDeltaFromPrimary: rank === 0 ? undefined : startingPrice - primaryPrice,
+      promiseDelta:
+        rank === 0
+          ? "NONE"
+          : classifyPromiseDelta(
+              { shipName: item.shipName, sailDate: item.sailDate, departurePort: item.departurePort, startingPrice },
+              { shipName: primaryItem.shipName, sailDate: primaryItem.sailDate, departurePort: primaryItem.departurePort, startingPrice: primaryPrice },
+            ),
+      healthStatus: "UNVERIFIED",
+    } satisfies CampaignInventoryCandidate;
+  });
 }

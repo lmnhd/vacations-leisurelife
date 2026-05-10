@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runMediaGeneration, isGenerating, GenerationOptions, MediaReadinessError, ProductionBuildLintError } from '@/lib/campaigns/media/media-orchestrator';
 import { resolveVideoModelPresetIdFromRequest } from '@/lib/campaigns/media/video-model-preference';
+import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from '@/lib/campaigns/media/default-asset-types';
 import { AssetType, AssetTypeEnum } from '@/lib/campaigns/schema';
 import { AestheticBriefNotReadyError } from '@/lib/campaigns/aesthetic-red-team';
 
@@ -35,6 +36,7 @@ export async function POST(
     }
 
     let options: GenerationOptions = {
+        assetTypes: [...PRODUCTION_ALL_MEDIA_ASSET_TYPES],
         videoModelPresetId: await resolveVideoModelPresetIdFromRequest(request),
     };
 
@@ -76,7 +78,7 @@ export async function POST(
         }
         options.videoModelPresetId = await resolveVideoModelPresetIdFromRequest(request, body.videoModelPresetId);
     } catch {
-        // No body or invalid JSON — run everything
+        // No body or invalid JSON — run the curated production all-media bundle.
     }
 
     try {

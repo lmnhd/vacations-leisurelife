@@ -175,6 +175,87 @@ interface DiscoveryPipelineOptions {
     respin?: boolean;
 }
 
+// ─── Two-Stage Pipeline Types ──────────────────────────────────────────────────
+// The discovery pipeline can be invoked all-at-once via runGroupDiscoveryPipeline,
+// or split into two stages: runDiscoveryResearch (Steps 1+2, Gemini Deep Research)
+// then generateDiscoveryBlueprints (Step 3, GPT-5 + match gate + DynamoDB save).
+// The two-stage form lets operators iteratively add new campaigns without re-paying
+// for Gemini calls when the research is still fresh.
+
+export interface DiscoveryResearchData {
+    psychographicData: string;
+    aestheticData: string;
+}
+
+export interface DiscoveryResearchResult extends DiscoveryResearchData {
+    /** ISO date (YYYY-MM-DD) the research was generated/cached on. */
+    cachedAt: string;
+    psychographicFromCache: boolean;
+    aestheticFromCache: boolean;
+}
+
+export interface DiscoveryResearchOptions {
+    /** Force fresh Gemini calls instead of using same-day cache. */
+    force?: boolean;
+    /** Re-spin context: pull existing campaigns + iteration feedback into prompts. */
+    respin?: boolean;
+}
+
+export interface DiscoveryGenerateOptions {
+    /** Use this research instead of reading from cache. Required when cache is empty. */
+    research?: DiscoveryResearchData;
+    /** Re-spin: feed prior campaign feedback into the GPT-5 blueprint prompt. */
+    respin?: boolean;
+}
+
+export interface DiscoveryResearchCacheStatus {
+    hasCache: boolean;
+    cachedAt: string | null;
+    hasPsychographic: boolean;
+    hasAesthetic: boolean;
+    promptVersion: string | null;
+    isCurrentVersion: boolean;
+}
+
+/**
+ * Returns the current state of the research cache so operators can see
+ * whether Stage 2 (generate) will use cached research or needs a fresh
+ * Stage 1 (research) run first.
+ */
+export function getDiscoveryResearchCacheStatus(): DiscoveryResearchCacheStatus {
+    if (!existsSync(CACHE_FILE)) {
+        return {
+            hasCache: false,
+            cachedAt: null,
+            hasPsychographic: false,
+            hasAesthetic: false,
+            promptVersion: null,
+            isCurrentVersion: false,
+        };
+    }
+    try {
+        const raw = readFileSync(CACHE_FILE, 'utf-8');
+        const parsed = JSON.parse(raw) as ResearchCache;
+        return {
+            hasCache: true,
+            cachedAt: parsed.date ?? null,
+            hasPsychographic: !!parsed.psychographicData,
+            hasAesthetic: !!parsed.aestheticData,
+            promptVersion: parsed.promptVersion ?? null,
+            isCurrentVersion: parsed.promptVersion === DISCOVERY_PROMPT_VERSION,
+        };
+    } catch {
+        return {
+            hasCache: false,
+            cachedAt: null,
+            hasPsychographic: false,
+            hasAesthetic: false,
+            promptVersion: null,
+            isCurrentVersion: false,
+        };
+    }
+}
+
 type PriorCampaignContext = {
     campaign: Campaign;
     brief: Awaited<ReturnType<typeof getAestheticBrief>>;
@@ -293,39 +374,165 @@ Prior results:
 ${lines}`;
 }
 
-export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOptions = {}): Promise<DiscoveryPipelineResult> {
-    const { respin = false } = options;
-    const now = new Date();
-    const cache = respin ? { date: new Date().toISOString().slice(0, 10), promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
-
-    // Pre-load CB inventory for both Step 2 (context) and Step 3 (hard constraints + match gate)
+/**
+ * Internal: builds the prompt-context blocks shared by both research and generate stages.
+ * Cheap (mostly cache reads + a single DynamoDB scan), so safe to call once per stage.
+ */
+async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date }) {
+    const { respin, now } = opts;
     warnIfCbCacheStale(now);
     const cbInventoryContext = buildCbInventoryContext(now);
     const cachedInventory = loadCbInventoryFromCache();
     const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
-    if (cbInventoryContext) {
-        console.log(`[runGroupDiscoveryPipeline] CB inventory context loaded: ${cachedInventory.length} item(s) available for match gate.`);
-    } else {
-        console.warn('[runGroupDiscoveryPipeline] No CB inventory cache — hard constraints disabled. Run scrape-cb-deals.ts first.');
-    }
-
-    // Pre-load existing campaigns to build the deduplication exclusion list
     const existingCampaigns = await scanAllCampaigns();
     const priorCampaignContext = respin ? await loadPriorCampaignContext(existingCampaigns) : [];
-    const existingThemesBlock = respin ? buildCorrectiveThemesBlock(priorCampaignContext) : buildExistingThemesBlock(existingCampaigns);
+    const existingThemesBlock = respin
+        ? buildCorrectiveThemesBlock(priorCampaignContext)
+        : buildExistingThemesBlock(existingCampaigns);
     const approvedCandidatesBlock = respin ? buildApprovedCandidatesBlock(priorCampaignContext) : '';
     const respinFeedbackBlock = respin ? await buildDiscoveryRespinFeedback(priorCampaignContext) : '';
+    return {
+        cbInventoryContext,
+        cachedInventory,
+        launchWindowPromptGuidance,
+        existingThemesBlock,
+        approvedCandidatesBlock,
+        respinFeedbackBlock,
+        existingCampaignsCount: existingCampaigns.length,
+    };
+}
 
-    console.log(`[runGroupDiscoveryPipeline] ${existingCampaigns.length} existing campaign(s) found — injecting exclusion list${respin ? ' and re-spin feedback' : ''} into prompts.`);
+/**
+ * Stage 1 (cacheable): Run Gemini Deep Research Steps 1+2 only.
+ * Persists results to .github/data/discovery-research-cache.json.
+ * Stage 2 (generateDiscoveryBlueprints) reads this cache automatically.
+ *
+ * Use opts.force=true to force fresh Gemini calls even if same-day cache exists.
+ * Use opts.respin=true to inject prior-campaign feedback into prompts.
+ */
+export async function runDiscoveryResearch(opts: DiscoveryResearchOptions = {}): Promise<DiscoveryResearchResult> {
+    const { force = false, respin = false } = opts;
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const cache = force ? { date: today, promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
 
-    // ── Step 1: Psychographic Discovery ──────────────────────────────────────
+    const ctx = await buildDiscoveryPromptContext({ respin, now });
+    const { launchWindowPromptGuidance, cbInventoryContext, existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock, existingCampaignsCount } = ctx;
+    console.log(`[runDiscoveryResearch] ${existingCampaignsCount} existing campaign(s) found — injecting exclusion list${respin ? ' and re-spin feedback' : ''} into prompts.`);
+
     let psychographicData: string;
-    if (!respin && cache.psychographicData) {
-        console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Resuming from cache (psychographicData)');
+    let psychographicFromCache = false;
+    if (!force && cache.psychographicData) {
+        console.log('[runDiscoveryResearch] Step 1: ✅ Resuming from cache (psychographicData)');
         psychographicData = cache.psychographicData;
+        psychographicFromCache = true;
     } else {
-        console.log('[runGroupDiscoveryPipeline] Step 1: Psychographic Discovery');
-        const psychographicPrompt = `
+        console.log('[runDiscoveryResearch] Step 1: Psychographic Discovery');
+        const psychographicPrompt = buildPsychographicPrompt({ existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock });
+        psychographicData = await callGeminiDeepResearch(psychographicPrompt);
+        cache.psychographicData = psychographicData;
+        writeResearchCache(cache);
+        console.log('[runDiscoveryResearch] Step 1: ✅ Saved to cache.');
+    }
+
+    let aestheticData: string;
+    let aestheticFromCache = false;
+    if (!force && cache.aestheticData) {
+        console.log('[runDiscoveryResearch] Step 2: ✅ Resuming from cache (aestheticData)');
+        aestheticData = cache.aestheticData;
+        aestheticFromCache = true;
+    } else {
+        console.log('[runDiscoveryResearch] Step 2: Aesthetic Gap Follow-up');
+        const aestheticPrompt = buildAestheticPrompt({
+            psychographicData,
+            launchWindowPromptGuidance,
+            cbInventoryContext,
+            approvedCandidatesBlock,
+            respinFeedbackBlock,
+        });
+        aestheticData = await callGeminiDeepResearch(aestheticPrompt);
+        cache.aestheticData = aestheticData;
+        writeResearchCache(cache);
+        console.log('[runDiscoveryResearch] Step 2: ✅ Saved to cache.');
+    }
+
+    return {
+        psychographicData,
+        aestheticData,
+        cachedAt: cache.date ?? today,
+        psychographicFromCache,
+        aestheticFromCache,
+    };
+}
+
+/**
+ * Stage 2: Run GPT-5 Step 3 (structured blueprint generation) + inventory match gate +
+ * DynamoDB save. Reads research from the cache by default; pass opts.research to use
+ * an explicit research payload instead.
+ *
+ * Throws if no research is available in the cache and none is provided.
+ */
+export async function generateDiscoveryBlueprints(opts: DiscoveryGenerateOptions = {}): Promise<DiscoveryPipelineResult> {
+    const { research, respin = false } = opts;
+    const now = new Date();
+
+    // Resolve research data: explicit input wins over cache
+    let psychographicData: string;
+    let aestheticData: string;
+    if (research) {
+        psychographicData = research.psychographicData;
+        aestheticData = research.aestheticData;
+    } else {
+        const cache = readResearchCache();
+        if (!cache.psychographicData || !cache.aestheticData) {
+            throw new Error(
+                'No cached discovery research available. Run runDiscoveryResearch() first, or pass research data explicitly via opts.research.',
+            );
+        }
+        psychographicData = cache.psychographicData;
+        aestheticData = cache.aestheticData;
+    }
+
+    const ctx = await buildDiscoveryPromptContext({ respin, now });
+    const { cbInventoryContext, cachedInventory, launchWindowPromptGuidance, existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock } = ctx;
+    if (cbInventoryContext) {
+        console.log(`[generateDiscoveryBlueprints] CB inventory context loaded: ${cachedInventory.length} item(s) available for match gate.`);
+    } else {
+        console.warn('[generateDiscoveryBlueprints] No CB inventory cache — hard constraints disabled. Run scrape-cb-deals.ts first.');
+    }
+
+    return await runStep3AndPersist({
+        aestheticData,
+        psychographicData,
+        cbInventoryContext,
+        cachedInventory,
+        launchWindowPromptGuidance,
+        existingThemesBlock,
+        approvedCandidatesBlock,
+        respinFeedbackBlock,
+        now,
+    });
+}
+
+/**
+ * Legacy all-in-one pipeline. Calls runDiscoveryResearch + generateDiscoveryBlueprints.
+ * Kept for backwards compatibility with the existing GET /api/groups/discovery route.
+ */
+export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOptions = {}): Promise<DiscoveryPipelineResult> {
+    const { respin = false } = options;
+    const research = await runDiscoveryResearch({ force: respin, respin });
+    return await generateDiscoveryBlueprints({ research, respin });
+}
+
+// ─── Internal: prompt builders + Step 3 + persistence ─────────────────────────
+
+function buildPsychographicPrompt(blocks: {
+    existingThemesBlock: string;
+    approvedCandidatesBlock: string;
+    respinFeedbackBlock: string;
+}): string {
+    const { existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock } = blocks;
+    return `
     You are researching cruise vacation experiences for a vacation-first group cruise business.
 
     PRIMARY FRAMING RULE — read this before everything else:
@@ -364,20 +571,17 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
 
     Do not optimize for the most intense or industrial niche. Optimize for the best blend of vacation desirability, cruise plausibility, laid-back social chemistry, ambient community potential, and ownable aesthetic.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        psychographicData = await callGeminiDeepResearch(psychographicPrompt);
-        cache.psychographicData = psychographicData;
-        writeResearchCache(cache);
-        console.log('[runGroupDiscoveryPipeline] Step 1: ✅ Saved to cache.');
-    }
+}
 
-    // ── Step 2: Aesthetic Gap Follow-up ──────────────────────────────────────
-    let aestheticData: string;
-    if (!respin && cache.aestheticData) {
-        console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Resuming from cache (aestheticData)');
-        aestheticData = cache.aestheticData;
-    } else {
-        console.log('[runGroupDiscoveryPipeline] Step 2: Aesthetic Gap Follow-up');
-        const aestheticPrompt = `
+function buildAestheticPrompt(blocks: {
+    psychographicData: string;
+    launchWindowPromptGuidance: string;
+    cbInventoryContext: string;
+    approvedCandidatesBlock: string;
+    respinFeedbackBlock: string;
+}): string {
+    const { psychographicData, launchWindowPromptGuidance, cbInventoryContext, approvedCandidatesBlock, respinFeedbackBlock } = blocks;
+    return `
 Based on the following vacation experiences and their self-selecting communities:
 ${psychographicData}
 
@@ -424,13 +628,34 @@ ${psychographicData}
     - distinguish cozy, handmade, garden, thrifted, analog, and unhurried cues from polished, status-signaling, "quiet luxury" cues
     - if a ship fit relies mainly on words like refined, luxe, elevated, premium, or sophisticated, the match is too generic and needs a more niche-native justification${launchWindowPromptGuidance}${cbInventoryContext}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
-        aestheticData = await callGeminiDeepResearch(aestheticPrompt);
-        cache.aestheticData = aestheticData;
-        writeResearchCache(cache);
-        console.log('[runGroupDiscoveryPipeline] Step 2: ✅ Saved to cache.');
-    }
+}
 
-    console.log('[runGroupDiscoveryPipeline] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
+interface Step3PersistArgs {
+    aestheticData: string;
+    psychographicData: string;
+    cbInventoryContext: string;
+    cachedInventory: CbGroupInventoryItem[];
+    launchWindowPromptGuidance: string;
+    existingThemesBlock: string;
+    approvedCandidatesBlock: string;
+    respinFeedbackBlock: string;
+    now: Date;
+}
+
+async function runStep3AndPersist(args: Step3PersistArgs): Promise<DiscoveryPipelineResult> {
+    const {
+        aestheticData,
+        psychographicData,
+        cbInventoryContext,
+        cachedInventory,
+        launchWindowPromptGuidance,
+        existingThemesBlock,
+        approvedCandidatesBlock,
+        respinFeedbackBlock,
+        now,
+    } = args;
+
+    console.log('[generateDiscoveryBlueprints] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
     const cbInventoryHardConstraintBlock = cbInventoryContext
         ? `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.`
         : '';
@@ -438,10 +663,10 @@ ${psychographicData}
         schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
         operationName: 'DiscoveryStep3-Blueprints',
-        timeoutMs: 300000, // 5 minute timeout for complex generation
+        timeoutMs: 300000,
         maxOutputTokens: 12000,
         prompt: `
-You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Perplexity Sonar Deep Research regarding niche subcultures and ship infrastructure:
+You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing. Review the following Gemini Deep Research findings on niche subcultures and ship infrastructure:
 
 Research Data:
 ${aestheticData}
@@ -449,7 +674,7 @@ ${aestheticData}
 Write a structured JSON detailing exactly 5 fully vetted, high-value Theme Cruise Blueprints based on this research.
 
 CRITICAL REQUIREMENTS for each blueprint:
-1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, or metrics the Sonar data surfaced. Do not generalise.
+1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, or metrics the research data surfaced. Do not generalise.
 2. successLogic: Explain the commercial + psychological case for why this niche will convert to bookings. Include spend willingness signals, the IRL pull factor, and what market gap this fills.
 3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available).
 4. vacationFitRationale: Prove that this concept feels like a desirable cruise vacation, not a retreat, class, residency, lab, or conference.
@@ -541,7 +766,7 @@ Output must be a single JSON object with a top-level "blueprints" array containi
 
     if (launchWindowViolations.length > 0) {
         const details = launchWindowViolations.map((violation) => violation.message).join('; ');
-        console.error(`[runGroupDiscoveryPipeline] Step 3: Rejected generated blueprints before campaign creation: ${details}`);
+        console.error(`[generateDiscoveryBlueprints] Step 3: Rejected generated blueprints before campaign creation: ${details}`);
         throw new Error(`Discovery generated ineligible sailings before campaign creation: ${details}`);
     }
 
@@ -560,21 +785,21 @@ Output must be a single JSON object with a top-level "blueprints" array containi
     const matchedCampaigns: Campaign[] = [];
 
     if (cachedInventory.length === 0) {
-        console.warn('[runGroupDiscoveryPipeline] Inventory Match Gate: no cached inventory — bypassing gate, all blueprints proceed.');
+        console.warn('[generateDiscoveryBlueprints] Inventory Match Gate: no cached inventory — bypassing gate, all blueprints proceed.');
         matchedCampaigns.push(...allCampaigns);
     } else {
         for (const campaign of allCampaigns) {
             const match = matchGroupInventoryToCampaign(campaign, cachedInventory);
             if (match) {
-                console.log(`[runGroupDiscoveryPipeline] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
+                console.log(`[generateDiscoveryBlueprints] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
                 matchedCampaigns.push(campaign);
             } else {
-                console.warn(`[runGroupDiscoveryPipeline] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
+                console.warn(`[generateDiscoveryBlueprints] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
             }
         }
         const discardedCount = allCampaigns.length - matchedCampaigns.length;
         if (discardedCount > 0) {
-            console.log(`[runGroupDiscoveryPipeline] Inventory Match Gate: ${matchedCampaigns.length}/${allCampaigns.length} blueprints passed (${discardedCount} discarded).`);
+            console.log(`[generateDiscoveryBlueprints] Inventory Match Gate: ${matchedCampaigns.length}/${allCampaigns.length} blueprints passed (${discardedCount} discarded).`);
         }
     }
 
@@ -589,15 +814,15 @@ Output must be a single JSON object with a top-level "blueprints" array containi
     }
 
     if (matchedCampaigns.length < 2) {
-        console.warn(`[runGroupDiscoveryPipeline] Only ${matchedCampaigns.length} blueprint(s) passed the inventory gate — consider a re-spin with relaxed constraints.`);
+        console.warn(`[generateDiscoveryBlueprints] Only ${matchedCampaigns.length} blueprint(s) passed the inventory gate — consider a re-spin with relaxed constraints.`);
     }
 
-    console.log('[runGroupDiscoveryPipeline] Step 4: Saving Matched Blueprints to DynamoDB (with idempotency check)');
+    console.log('[generateDiscoveryBlueprints] Step 4: Saving Matched Blueprints to DynamoDB (with idempotency check)');
     let skippedCount = 0;
     for (const campaign of matchedCampaigns) {
         const existing = await getCampaignBlueprint(campaign.id);
         if (existing) {
-            console.warn(`[runGroupDiscoveryPipeline] Campaign "${campaign.id}" already exists — skipping.`);
+            console.warn(`[generateDiscoveryBlueprints] Campaign "${campaign.id}" already exists — skipping.`);
             skippedCount++;
             continue;
         }

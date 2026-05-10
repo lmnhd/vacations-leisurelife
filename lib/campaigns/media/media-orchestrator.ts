@@ -48,6 +48,7 @@ import { runSceneProbeLoop } from './probe-engine';
 import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video-models';
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
+import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from './default-asset-types';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
@@ -77,7 +78,7 @@ export class MediaReadinessError extends Error {
 const activeGenerations = new Set<string>();
 
 export interface GenerationOptions {
-    /** Specific asset types to generate. If omitted, generates everything. */
+    /** Specific asset types to generate. If omitted, uses the curated production all-media bundle. */
     assetTypes?: AssetType[];
     /** Asset types that must bypass existing-manifest skip logic. */
     forceRegenerateAssetTypes?: AssetType[];
@@ -339,6 +340,7 @@ export async function runMediaGeneration(
     try {
         const resolvedOptions: GenerationOptions = {
             ...(options ?? {}),
+            assetTypes: options?.assetTypes ? [...options.assetTypes] : [...PRODUCTION_ALL_MEDIA_ASSET_TYPES],
             videoModelPresetId: await resolveVideoModelPresetId(options?.videoModelPresetId),
         };
         const activeVideoGeneratorService = getActiveVideoGeneratorService(resolvedOptions.videoModelPresetId);
@@ -645,6 +647,11 @@ export async function runMediaGeneration(
 
         await Promise.all(group1Promises);
 
+        // ── Load existing hero records if needed for platform crops ──
+        if (heroRecords.length === 0 && existingManifest?.images?.hero && existingManifest.images.hero.length > 0) {
+            heroRecords.push(...existingManifest.images.hero);
+        }
+
         const shouldGenerateNarratedVideos = shouldRunAny(['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'], resolvedOptions.assetTypes);
         const selectedThemeMusicRecord = audioRecords.themeMusic ?? existingManifest?.audio.themeMusic ?? null;
         let themeMusicBuffer: Buffer | null = null;
@@ -900,7 +907,7 @@ export async function runMediaGeneration(
                     tiktokPromotionPackage = await generateTikTokPromotionPackage(brief!, tiktokStoryboard);
                     console.log(`[TikTok Synthesis] Generated ${tiktokPromotionPackage.beats.length} promotion beats for ${slug}`);
                 } catch (synthErr) {
-                    warnings.push(`[tiktok-synthesis] Failed — using brief fallback: ${synthErr instanceof Error ? synthErr.message : String(synthErr)}`);
+                    warnings.push(`[tiktok-synthesis] Failed to build promotion package: ${synthErr instanceof Error ? synthErr.message : String(synthErr)}`);
                 }
             }
         }

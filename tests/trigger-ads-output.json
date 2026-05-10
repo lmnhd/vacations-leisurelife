@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "data": {
+    "message": "Media generation complete for wellness-and-nature-cruise",
+    "slug": "wellness-and-nature-cruise",
+    "totalAssets": 70,
+    "completionStatus": "complete",
+    "jobSummary": {
+      "total": 70,
+      "completed": 70,
+      "failed": 0,
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "time": "2026-05-10T15:53:58.041Z"
+}

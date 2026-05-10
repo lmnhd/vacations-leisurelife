@@ -1,0 +1,156 @@
+{
+  "success": true,
+  "campaign": {
+    "sailingDateText": "Nov. 21, 2026",
+    "sailingDateIso": "2026-11-21T05:00:00.000Z",
+    "daysUntilSail": 196,
+    "meetsMinimumLeadTime": true,
+    "isTightLeadTime": true,
+    "minimumLeadDays": 180,
+    "id": "wellness-and-nature-cruise",
+    "name": "Wellness and Nature Cruise",
+    "description": "A rejuvenating journey focusing on wellness and nature, featuring yoga, meditation, and nature excursions.",
+    "aesthetic": "serene, natural, rejuvenating, mindful",
+    "status": "DRAFT",
+    "targetDates": "2026-10-26",
+    "targetDestination": "Western Caribbean",
+    "shipTarget": "Icon of the Seas",
+    "matchedShipName": "Icon of the Seas",
+    "matchedSailDate": "Nov. 21, 2026",
+    "highlightEvents": [
+      "Sunrise Yoga Sessions",
+      "Guided Meditation Workshops",
+      "Nature-inspired Art Classes"
+    ],
+    "targetingKeywords": [
+      "wellness",
+      "nature",
+      "yoga",
+      "meditation"
+    ],
+    "startingPrice": 1969,
+    "priceSource": "CB_GROUP_INVENTORY",
+    "pricingStatus": "CB_MATCHED",
+    "minCabinsRequired": 8,
+    "researchRationale": "The rising trend in wellness tourism and nature-centric experiences, as seen on platforms like Instagram with hashtags like #wellnessretreats, show a growing interest in combining travel with wellness.",
+    "successLogic": "Travelers are investing in wellness experiences that offer relaxation and renewal, making this cruise appealing for its holistic approach to travel and well-being.",
+    "audienceSignals": [
+      "#wellnessretreats with 5M+ posts on Instagram",
+      "Growing demand for wellness travel packages"
+    ],
+    "vacationFitRationale": "The cruise integrates wellness and nature activities into the overall itinerary, enhancing relaxation without overwhelming the vacation experience.",
+    "cruiseNativeMoments": [
+      "Morning Beach Yoga",
+      "Onboard Wellness Workshops",
+      "Nature Excursions at Ports"
+    ],
+    "nicheExpressionMode": "Wellness and nature activities are seamlessly integrated into the cruise, allowing guests to partake at their own pace and interest level.",
+    "implausibleLiteralizations": [
+      "Mandatory wellness assessments",
+      "All-day meditation retreats",
+      "Exclusive wellness-only areas"
+    ],
+    "allowedThemeSignals": [
+      "Nature-inspired decor",
+      "Wellness-themed dining",
+      "Mindfulness sessions"
+    ],
+    "discouragedThemeSignals": [
+      "Overly technical wellness talks",
+      "Formal wellness assessments",
+      "Exclusive access sessions"
+    ],
+    "communityFitRationale": "Wellness and nature enthusiasts enjoy sharing experiences and techniques in group settings, creating a supportive and inclusive atmosphere.",
+    "optionalGatheringMoments": [
+      "Drop-in yoga sessions",
+      "Evening meditation circles",
+      "Casual nature walks"
+    ],
+    "optionalityStyle": "Guests are free to participate in activities as they wish, ensuring a relaxing and stress-free experience.",
+    "solitudeRisks": [
+      "Overemphasis on wellness",
+      "Exclusion of non-wellness guests",
+      "Neglect of leisure activities"
+    ],
+    "discoveryRedTeamReview": {
+      "summary": "The Wellness and Nature Cruise blueprint presents a viable concept with strong grounding in wellness trends and a matched ship, but it requires further refinement in community logic and optionality to ensure inclusivity and avoid solitude risks.",
+      "approvalRecommendation": "Revise community engagement strategies and ensure optionality is inclusive before advancing to aesthetics.",
+      "requiredFixes": [
+        "Develop specific community engagement strategies to enhance group inclusivity.",
+        "Ensure a balanced itinerary that includes leisure activities appealing to non-wellness participants."
+      ],
+      "strengths": [
+        "Strong alignment with growing wellness tourism trends.",
+        "Clear integration of wellness and nature activities into the cruise experience.",
+        "Matched ship and inventory details are consistent and healthy."
+      ],
+      "verdict": "warn",
+      "promptVersion": "2026-03-15-discovery-red-team-v2",
+      "model": "gpt-5.2-high",
+      "evaluatedAt": "2026-05-09T20:39:51.173Z",
+      "issues": [
+        {
+          "severity": "warning",
+          "recommendation": "Ensure a balance of wellness and general leisure activities to include all types of guests.",
+          "category": "solitude_drift",
+          "title": "Overemphasis on Wellness",
+          "evidence": "Solitude risks highlight potential exclusion of non-wellness guests."
+        },
+        {
+          "severity": "warning",
+          "recommendation": "Develop specific strategies or events that actively facilitate community building among guests.",
+          "category": "community_drift",
+          "title": "Weak Community Logic",
+          "evidence": "Community fit rationale assumes group settings without explicit mechanisms for fostering supportive interactions."
+        }
+      ],
+      "optionalImprovements": [
+        "Consider adding more diverse activities that appeal to broader demographics.",
+        "Clarify optionality of activities to ensure guests feel no pressure to participate in wellness activities."
+      ]
+    },
+    "discoveryIteration": {
+      "currentIssueSignature": "warn | community_drift | solitude_drift | Develop specific community engagement strategies to enhance group inclusivity. | Ensure a balanced itinerary that includes leisure activities appealing to non-wellness participants.",
+      "currentFingerprint": "A rejuvenating journey focusing on wellness and nature, featuring yoga, meditation, and nature excursions. | Casual nature walks | Drop-in yoga sessions | Evening meditation circles | Guests are free to participate in activities as they wish, ensuring a relaxing and stress-free experience. | Icon of the Seas | Mindfulness sessions | Morning Beach Yoga | Nature Excursions at Ports | Nature-inspired decor | Onboard Wellness Workshops | Wellness and Nature Cruise | Wellness and nature activities are seamlessly integrated into the cruise, allowing guests to partake at their own pace and interest level. | Wellness and nature enthusiasts enjoy sharing experiences and techniques in group settings, creating a supportive and inclusive atmosphere. | Wellness-themed dining | Western Caribbean | serene, natural, rejuvenating, mindful",
+      "recommendedNextAction": "continue",
+      "reviewCount": 1,
+      "consecutiveNonPassReviews": 1,
+      "history": [
+        {
+          "approvalRecommendation": "Revise community engagement strategies and ensure optionality is inclusive before advancing to aesthetics.",
+          "targetedIssues": [],
+          "eventType": "review",
+          "improvement": {
+            "resolvedIssueCategories": [],
+            "persistingIssueCategories": [],
+            "repeatedIssueSignature": false,
+            "fingerprintSimilarity": 0,
+            "meaningfulImprovement": false
+          },
+          "issueCount": 2,
+          "createdAt": "2026-05-09T20:39:51.174Z",
+          "changesMade": [],
+          "requiredFixes": [
+            "Develop specific community engagement strategies to enhance group inclusivity.",
+            "Ensure a balanced itinerary that includes leisure activities appealing to non-wellness participants."
+          ],
+          "issueCategories": [
+            "community_drift",
+            "solitude_drift"
+          ],
+          "verdict": "warn",
+          "fingerprint": "A rejuvenating journey focusing on wellness and nature, featuring yoga, meditation, and nature excursions. | Casual nature walks | Drop-in yoga sessions | Evening meditation circles | Guests are free to participate in activities as they wish, ensuring a relaxing and stress-free experience. | Icon of the Seas | Mindfulness sessions | Morning Beach Yoga | Nature Excursions at Ports | Nature-inspired decor | Onboard Wellness Workshops | Wellness and Nature Cruise | Wellness and nature activities are seamlessly integrated into the cruise, allowing guests to partake at their own pace and interest level. | Wellness and nature enthusiasts enjoy sharing experiences and techniques in group settings, creating a supportive and inclusive atmosphere. | Wellness-themed dining | Western Caribbean | serene, natural, rejuvenating, mindful",
+          "warningCount": 2,
+          "blockerCount": 0
+        }
+      ],
+      "revisionCount": 0,
+      "stagnant": false
+    },
+    "cbagenttoolsGroupId": "43504",
+    "cbagenttoolsBookingLink": "https://bookings.cbagenttools.com/swift/cruise/package/1556796?siid=1049337",
+    "manualVisualFlavor": null,
+    "createdAt": "2026-04-29T18:25:27.645Z",
+    "updatedAt": "2026-05-09T20:39:51.174Z"
+  }
+}

@@ -8,149 +8,190 @@
  *   4. generateProductionBibleFromStills — scene library + storyboards from validated stills
  */
 
-import { z } from 'zod';
-import type { Campaign } from './types';
-import type { CampaignAestheticBrief, LandingStillBible, LandingStillSpec, ProductionBuildLintIssue } from './schema';
-import { LandingStillUsageEnum, LandingStillSlotRoleEnum, ProductionBibleSchema } from './schema';
-import { VIDEO_DELIVERABLE_SPECS } from './media/video-deliverable-specs';
-import { ModelName } from '@/lib/ai/llm-gateway';
-import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
+import { z } from "zod";
+import type { Campaign } from "./types";
+import type {
+  CampaignAestheticBrief,
+  LandingStillBible,
+  LandingStillSpec,
+  ProductionBuildLintIssue,
+} from "./schema";
 import {
-    buildLintComplianceBlock,
-    getCanonicalShipName,
-    buildShipContext,
-    buildEventFramingGuidance,
-    joinCampaignList,
-    sanitizePromptList,
-    isMusicFestivalCampaign,
-} from './aesthetic-engine';
-import { getReferencePack, formatReferencePackForGeneration, formatReferenceBundleForPrompt, getSlotReferenceBundle } from './reference-packs';
-import { CameraDistanceEnum, FramingModeEnum } from './reference-pack-types';
+  LandingStillUsageEnum,
+  LandingStillSlotRoleEnum,
+  ProductionBibleSchema,
+} from "./schema";
+import { VIDEO_DELIVERABLE_SPECS } from "./media/video-deliverable-specs";
+import { ModelName } from "@/lib/ai/llm-gateway";
+import { callGlobalGenerateObject } from "@/lib/chat/llm-call";
+import {
+  buildLintComplianceBlock,
+  getCanonicalShipName,
+  buildShipContext,
+  buildEventFramingGuidance,
+  joinCampaignList,
+  sanitizePromptList,
+  isMusicFestivalCampaign,
+} from "./aesthetic-engine";
+import {
+  getReferencePack,
+  formatReferencePackForGeneration,
+  formatReferenceBundleForPrompt,
+  getSlotReferenceBundle,
+} from "./reference-packs";
+import { CameraDistanceEnum, FramingModeEnum } from "./reference-pack-types";
 
 // ── Lenient generation schemas: .default() on all fields so Zod fills gaps instead of triggering repair loops ──
 // These are used ONLY for generateObject calls. schema.ts keeps strict schemas for downstream persistence.
 
 // Coerce keyed-object responses (model returns {"1":{...}, "2":{...}} instead of [{...}, {...}]) to arrays.
 const coerceToArray = (val: unknown): unknown[] =>
-    Array.isArray(val) ? val : (val !== null && typeof val === 'object' ? Object.values(val as object) : []);
+  Array.isArray(val)
+    ? val
+    : val !== null && typeof val === "object"
+      ? Object.values(val as object)
+      : [];
 
 const LenientStillSpecSchema = z.object({
-    stillId: z.string().default(''),
-    usage: LandingStillUsageEnum.default('hero_primary' as const),
-    location: z.string().default(''),
-    timeOfDay: z.string().default(''),
-    lighting: z.string().default(''),
-    composition: z.string().default(''),
-    subjectAction: z.string().default(''),
-    environmentDetails: z.string().default(''),
-    mood: z.string().default(''),
-    imagePrompt: z.string().default(''),
-    referenceCategory: z.string().default(''),
-    anchorId: z.string().default(''),
-    slotRole: LandingStillSlotRoleEnum.default('HERO_PRIMARY' as const),
-    nicheCarryThrough: z.string().default(''),
-    shotIntent: z.string().default(''),
-    cameraDistance: CameraDistanceEnum.default('medium'),
-    framingMode: FramingModeEnum.default('single_subject' as const),
-    heroSubject: z.string().default(''),
-    nicheCue: z.string().default(''),
-    antiFallbackNote: z.string().default(''),
-    referencePackId: z.string().default(''),
+  stillId: z.string().default(""),
+  usage: LandingStillUsageEnum.default("hero_primary" as const),
+  location: z.string().default(""),
+  timeOfDay: z.string().default(""),
+  lighting: z.string().default(""),
+  composition: z.string().default(""),
+  subjectAction: z.string().default(""),
+  environmentDetails: z.string().default(""),
+  mood: z.string().default(""),
+  imagePrompt: z.string().default(""),
+  referenceCategory: z.string().default(""),
+  anchorId: z.string().default(""),
+  slotRole: LandingStillSlotRoleEnum.default("HERO_PRIMARY" as const),
+  nicheCarryThrough: z.string().default(""),
+  shotIntent: z.string().default(""),
+  cameraDistance: CameraDistanceEnum.default("medium"),
+  framingMode: FramingModeEnum.default("single_subject" as const),
+  heroSubject: z.string().default(""),
+  nicheCue: z.string().default(""),
+  antiFallbackNote: z.string().default(""),
+  referencePackId: z.string().default(""),
 });
 
 const StillSpecForGenerationSchema = LenientStillSpecSchema;
 
 const BibleForGenerationSchema = z.object({
-    stillLibrary: z.preprocess(coerceToArray, z.array(LenientStillSpecSchema).default([])),
-    globalDirectionNotes: z.string().default(''),
-    avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
+  stillLibrary: z.preprocess(
+    coerceToArray,
+    z.array(LenientStillSpecSchema).default([]),
+  ),
+  globalDirectionNotes: z.string().default(""),
+  avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
 });
 
-const RepairResultSchema = z.object({ stills: z.preprocess(coerceToArray, z.array(LenientStillSpecSchema).default([])) });
+const RepairResultSchema = z.object({
+  stills: z.preprocess(
+    coerceToArray,
+    z.array(LenientStillSpecSchema).default([]),
+  ),
+});
 
 // ── Internal: anchor schema (intermediate only — not exported as a named type) ──
 
 const ActionAnchorSchema = z.object({
-    anchorId: z.string().default(''),
-    communityAction: z.string().default(''),
-    locationFamily: z.string().default(''),
-    nicheSignal: z.string().default(''),
-    socialUnit: z.enum(['solo', 'pair']).default('pair'),
-    emotionalRegister: z.string().default(''),
+  anchorId: z.string().default(""),
+  communityAction: z.string().default(""),
+  locationFamily: z.string().default(""),
+  nicheSignal: z.string().default(""),
+  socialUnit: z.enum(["solo", "pair"]).default("pair"),
+  emotionalRegister: z.string().default(""),
 });
 
 const ActionAnchorSetSchema = z.object({
-    anchors: z.preprocess(coerceToArray, z.array(ActionAnchorSchema).default([])),
+  anchors: z.preprocess(coerceToArray, z.array(ActionAnchorSchema).default([])),
 });
 
 // ── Lenient ProductionBible override for generation (strict ProductionBibleSchema used downstream) ──
 
 const LenientSceneSpecSchema = z.object({
-    sceneId: z.string().default(''),
-    location: z.string().default(''),
-    timeOfDay: z.string().default(''),
-    lighting: z.string().default(''),
-    cameraAngle: z.string().default(''),
-    subjectAction: z.string().default(''),
-    environmentDetails: z.string().default(''),
-    mood: z.string().default(''),
-    imagePrompt: z.string().default(''),
-    referenceCategory: z.string().default(''),
+  sceneId: z.string().default(""),
+  location: z.string().default(""),
+  timeOfDay: z.string().default(""),
+  lighting: z.string().default(""),
+  cameraAngle: z.string().default(""),
+  subjectAction: z.string().default(""),
+  environmentDetails: z.string().default(""),
+  mood: z.string().default(""),
+  imagePrompt: z.string().default(""),
+  referenceCategory: z.string().default(""),
 });
 
 const LenientShotSpecSchema = z.object({
-    sceneId: z.string().default(''),
-    durationSeconds: z.number().default(0),
-    shotNumber: z.number().default(1),
-    cameraMovement: z.string().default(''),
-    subjectMotion: z.string().default(''),
-    environmentMotion: z.string().default(''),
-    transitionIn: z.string().default(''),
-    transitionOut: z.string().default(''),
-    emotionalBeat: z.string().default(''),
-    narrationSegment: z.string().default(''),
-    musicCue: z.string().default(''),
+  sceneId: z.string().default(""),
+  durationSeconds: z.number().default(0),
+  shotNumber: z.number().default(1),
+  cameraMovement: z.string().default(""),
+  subjectMotion: z.string().default(""),
+  environmentMotion: z.string().default(""),
+  transitionIn: z.string().default(""),
+  transitionOut: z.string().default(""),
+  emotionalBeat: z.string().default(""),
+  narrationSegment: z.string().default(""),
+  musicCue: z.string().default(""),
 });
 
 const LenientStoryboardSchema = z.object({
-    deliverableId: z.string().default(''),
-    title: z.string().default(''),
-    totalDurationSeconds: z.number().default(30),
-    shotSequence: z.preprocess(coerceToArray, z.array(LenientShotSpecSchema).min(1)),
-    narrationScript: z.string().default(''),
-    musicDirection: z.string().default(''),
-    editingStyle: z.string().default(''),
+  deliverableId: z.string().default(""),
+  title: z.string().default(""),
+  totalDurationSeconds: z.number().default(30),
+  shotSequence: z.preprocess(
+    coerceToArray,
+    z.array(LenientShotSpecSchema).min(1),
+  ),
+  narrationScript: z.string().default(""),
+  musicDirection: z.string().default(""),
+  editingStyle: z.string().default(""),
 });
 
 const LenientProductionBibleSchema = z.object({
-    sceneLibrary: z.preprocess(coerceToArray, z.array(LenientSceneSpecSchema).min(6)),
-    storyboards: z.preprocess(coerceToArray, z.array(LenientStoryboardSchema).min(1)),
-    globalDirectionNotes: z.string()
-        .min(20)
-        .refine((notes) => notes.includes(REQUIRED_SAFETY_OPS), {
-            message: 'globalDirectionNotes must include REQUIRED_SAFETY_OPS sentence verbatim',
-        }),
-    avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
+  sceneLibrary: z.preprocess(
+    coerceToArray,
+    z.array(LenientSceneSpecSchema).min(6),
+  ),
+  storyboards: z.preprocess(
+    coerceToArray,
+    z.array(LenientStoryboardSchema).min(1),
+  ),
+  globalDirectionNotes: z
+    .string()
+    .min(20)
+    .refine((notes) => notes.includes(REQUIRED_SAFETY_OPS), {
+      message:
+        "globalDirectionNotes must include REQUIRED_SAFETY_OPS sentence verbatim",
+    }),
+  avoidDirectives: z.preprocess(coerceToArray, z.array(z.string()).default([])),
 });
 
 // Must match validators and auto-fix logic exactly.
-const REQUIRED_SAFETY_OPS = 'Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.';
+const REQUIRED_SAFETY_OPS =
+  "Passenger-area capture rules: max two-person crew, one off-frame spotter, off-peak capture only, maintain single-file keep-right flow, and stand down immediately if passenger traffic builds or flow is impeded.";
 
 type ActionAnchorSet = z.infer<typeof ActionAnchorSetSchema>;
 
 // ── Step 1: Generate community-native action anchors ─────────────────────────
 
 export async function generateActionAnchors(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief,
-    options?: { instructions?: string },
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
+  options?: { instructions?: string },
 ): Promise<ActionAnchorSet> {
-    const nicheKw = (campaign.targetingKeywords ?? []).join(', ') || campaign.name;
-    const belonging = brief.communityExpression?.belongingSignals?.join('; ') ?? 'None';
-    const solitudeAnti = brief.communityExpression?.solitudeAntiPatterns?.join('; ') ?? 'None';
+  const nicheKw =
+    (campaign.targetingKeywords ?? []).join(", ") || campaign.name;
+  const belonging =
+    brief.communityExpression?.belongingSignals?.join("; ") ?? "None";
+  const solitudeAnti =
+    brief.communityExpression?.solitudeAntiPatterns?.join("; ") ?? "None";
 
-    const musicAnchorBlock = isMusicFestivalCampaign(campaign)
-        ? `
+  const musicAnchorBlock = isMusicFestivalCampaign(campaign)
+    ? `
 MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — ANCHOR HARD REQUIREMENTS:
 This campaign requires strong on-image music identity across the still set. Generic cruise anchor seeds are not acceptable.
 
@@ -187,9 +228,9 @@ BANNED anchor seeds for this campaign:
   × interior scene where music is entirely absent and interchangeable with any luxury cruise
 
 The remaining anchors (outside the 3 required families) may use any location family BUT must still carry a music signal in their nicheSignal field.`.trim()
-        : '';
+    : "";
 
-    const system = `
+  const system = `
 You are a community strategist seeding a landing still set for a niche cruise campaign.
 Generate 6-8 community-native action anchors. Each anchor seeds one specific landing still.
 
@@ -206,49 +247,61 @@ BANNED FALLBACK ANCHORS (do not generate these):
 - solo guest gazing contemplatively at the ocean
 - couple facing the horizon at wide distance
 - candlelit dining intimacy with no niche context
-${musicAnchorBlock ? `\n${musicAnchorBlock}` : ''}
+${musicAnchorBlock ? `\n${musicAnchorBlock}` : ""}
 Niche vocabulary: ${nicheKw}
 Belonging signals: ${belonging}
 Solitude anti-patterns to avoid as anchor seeds: ${solitudeAnti}
-${options?.instructions ? `
+${
+  options?.instructions
+    ? `
 OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
-${options.instructions}` : ''}
+${options.instructions}`
+    : ""
+}
 `.trim();
 
-    console.log(`[editors-room] generateActionAnchors for ${campaign.id}`);
-    const { object } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: ActionAnchorSetSchema,
-        system,
-        prompt: `Campaign: ${campaign.name}\nShip: ${getCanonicalShipName(campaign)}\nDestination: ${campaign.targetDestination ?? 'TBD'}`,
-        maxOutputTokens: 8000,
-        skipRepair: true,
-        operationName: `editors-room:anchors:${campaign.id}`,
-    });
+  console.log(`[editors-room] generateActionAnchors for ${campaign.id}`);
+  const { object } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: ActionAnchorSetSchema,
+    system,
+    prompt: `Campaign: ${campaign.name}\nShip: ${getCanonicalShipName(campaign)}\nDestination: ${campaign.targetDestination ?? "TBD"}`,
+    maxOutputTokens: 8000,
+    skipRepair: true,
+    operationName: `editors-room:anchors:${campaign.id}`,
+  });
 
-    return object as z.output<typeof ActionAnchorSetSchema>;
+  return object as z.output<typeof ActionAnchorSetSchema>;
 }
 
 // ── Step 2: Generate landing still bible from locked anchors ──────────────────
 
 export async function generateLandingStillBible(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief,
-    anchors: ActionAnchorSet,
-    options?: { correctionContext?: string; instructions?: string },
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
+  anchors: ActionAnchorSet,
+  options?: { correctionContext?: string; instructions?: string },
 ): Promise<LandingStillBible> {
-    const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
-    const anchorList = anchors.anchors
-        .map((a, i) => `anchorId="${a.anchorId}" | Slot ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`)
-        .join('\n');
+  const lintBlock = buildLintComplianceBlock(
+    campaign,
+    brief.communityExpression?.belongingSignals,
+  );
+  const anchorList = anchors.anchors
+    .map(
+      (a, i) =>
+        `anchorId="${a.anchorId}" | Slot ${i + 1}: [${a.locationFamily}] [${a.socialUnit}] [niche="${a.nicheSignal}"] — ${a.communityAction} | feel: ${a.emotionalRegister}`,
+    )
+    .join("\n");
 
-    // ── Reference grounding ──────────────────────────────────────────────
-    const refPack = getReferencePack(campaign);
-    const referenceBlock = refPack ? formatReferencePackForGeneration(refPack) : '';
-    const refPackId = refPack?.referencePackId ?? 'none';
+  // ── Reference grounding ──────────────────────────────────────────────
+  const refPack = getReferencePack(campaign);
+  const referenceBlock = refPack
+    ? formatReferencePackForGeneration(refPack)
+    : "";
+  const refPackId = refPack?.referencePackId ?? "none";
 
-    const system = `
+  const system = `
 You are a visual director translating community action anchors into 6 landing still specs for a niche cruise campaign.
 
 SLOT ASSIGNMENT — for each still, populate ALL of these fields:
@@ -293,11 +346,15 @@ ANCHOR SEEDS (translate each into a full still spec; set anchorId accordingly):
 ${anchorList}
 ${referenceBlock}
 ${lintBlock}
-${options?.instructions ? `
+${
+  options?.instructions
+    ? `
 OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
-${options.instructions}` : ''}
-${options?.correctionContext ? `\nHARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following in this regeneration:\n${options.correctionContext}\n` : ''}
+${options.instructions}`
+    : ""
+}
+${options?.correctionContext ? `\nHARD FAILURES FROM PREVIOUS GENERATION — you MUST fix ALL of the following in this regeneration:\n${options.correctionContext}\n` : ""}
 REQUIRED JSON OUTPUT STRUCTURE — use these EXACT field names. Each still MUST have a unique stillId, slotRole, and location family:
 {
   "stillLibrary": [
@@ -317,30 +374,32 @@ NEVER name the stills array field anything other than "stillLibrary".
 FINAL SELF-CHECK: verify each still has (1) anchorId set, (2) slotRole set, (3) nicheCarryThrough set to the exact term present in both imagePrompt and subjectAction, (4) no two stills share a location family, (5) no generic fallback repeated more than once, (6) shotIntent + nicheCue + heroSubject are filled, (7) nicheCue names a specific niche object or action visible in the scene, (8) each still's location field contains a concrete keyword from its anchor's declared locationFamily — for a balcony anchor the word "balcony" must appear in the location field, not just "railing".
 `.trim();
 
-    const ctx = `
+  const ctx = `
 Campaign: ${campaign.name}
 Ship: ${getCanonicalShipName(campaign)}
 Ship Context: ${buildShipContext(campaign)}
-Destination: ${campaign.targetDestination ?? 'TBD'}
+Destination: ${campaign.targetDestination ?? "TBD"}
 Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
 Event Framing: ${buildEventFramingGuidance(campaign)}
-Community Promise: ${brief.communityExpression?.corePromise ?? ''}
-Belonging Signals: ${brief.communityExpression?.belongingSignals?.join('; ') ?? ''}
-Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrinciple ?? ''}
+Community Promise: ${brief.communityExpression?.corePromise ?? ""}
+Belonging Signals: ${brief.communityExpression?.belongingSignals?.join("; ") ?? ""}
+Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrinciple ?? ""}
 `.trim();
 
-    console.log(`[editors-room] generateLandingStillBible for ${campaign.id} (refPack=${refPackId})`);
-    const { object } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: BibleForGenerationSchema,
-        system,
-        prompt: ctx,
-        maxOutputTokens: 16000,
-        skipRepair: true,
-        operationName: `editors-room:landing-stills:${campaign.id}`,
-    });
+  console.log(
+    `[editors-room] generateLandingStillBible for ${campaign.id} (refPack=${refPackId})`,
+  );
+  const { object } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: BibleForGenerationSchema,
+    system,
+    prompt: ctx,
+    maxOutputTokens: 16000,
+    skipRepair: true,
+    operationName: `editors-room:landing-stills:${campaign.id}`,
+  });
 
-    return object as z.output<typeof BibleForGenerationSchema>;
+  return object as z.output<typeof BibleForGenerationSchema>;
 }
 
 // ── Step 3.1: Deterministic editorial composition normalizer ──────────────────
@@ -350,40 +409,55 @@ Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrincipl
 // so the compliance gate and lint both see corrected compositions.
 
 const INTIMATE_KEYWORD_REPLACEMENTS: [RegExp, string][] = [
-    [/\bintimate\b/gi, 'wide'],
-    [/\bclose-up\b/gi, 'medium'],
-    [/\bclose\b/gi, 'medium'],
-    [/\btight\b/gi, 'medium'],
-    [/\bdetailed\b/gi, 'environmental'],
-    [/\bdetail\b/gi, 'environmental'],
+  [/\bintimate\b/gi, "wide"],
+  [/\bclose-up\b/gi, "medium"],
+  [/\bclose\b/gi, "medium"],
+  [/\btight\b/gi, "medium"],
+  [/\bdetailed\b/gi, "environmental"],
+  [/\bdetail\b/gi, "environmental"],
 ];
 
-const EDITORIAL_WIDE_SYNONYM_KEYWORDS = ['broad', 'expansive', 'sweeping', 'open'];
+const EDITORIAL_WIDE_SYNONYM_KEYWORDS = [
+  "broad",
+  "expansive",
+  "sweeping",
+  "open",
+];
 
-export function normalizeEditorialCompositions(bible: LandingStillBible): LandingStillBible {
-    const EDITORIAL_WIDE_ROLES = new Set(['EDITORIAL_WIDE_A', 'EDITORIAL_WIDE_B']);
-    let changed = false;
-    const stillLibrary = bible.stillLibrary.map(still => {
-        if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole)) return still;
-        const compLC = still.composition.toLowerCase();
-        const hasExplicitWideToken = compLC.includes('wide') || compLC.includes('medium');
-        const needsIntimateFix = INTIMATE_KEYWORDS.some(kw => compLC.includes(kw));
-        const needsWideCanonicalization = !hasExplicitWideToken
-            && EDITORIAL_WIDE_SYNONYM_KEYWORDS.some(kw => compLC.includes(kw));
-        const needsFix = needsIntimateFix || needsWideCanonicalization;
-        if (!needsFix) return still;
-        let fixed = still.composition;
-        for (const [pattern, replacement] of INTIMATE_KEYWORD_REPLACEMENTS) {
-            fixed = fixed.replace(pattern, replacement);
-        }
-        if (needsWideCanonicalization) {
-            fixed = `Wide ${fixed.charAt(0).toLowerCase()}${fixed.slice(1)}`;
-        }
-        changed = true;
-        return { ...still, composition: fixed };
-    });
-    if (!changed) return bible;
-    return { ...bible, stillLibrary };
+export function normalizeEditorialCompositions(
+  bible: LandingStillBible,
+): LandingStillBible {
+  const EDITORIAL_WIDE_ROLES = new Set([
+    "EDITORIAL_WIDE_A",
+    "EDITORIAL_WIDE_B",
+  ]);
+  let changed = false;
+  const stillLibrary = bible.stillLibrary.map((still) => {
+    if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole))
+      return still;
+    const compLC = still.composition.toLowerCase();
+    const hasExplicitWideToken =
+      compLC.includes("wide") || compLC.includes("medium");
+    const needsIntimateFix = INTIMATE_KEYWORDS.some((kw) =>
+      compLC.includes(kw),
+    );
+    const needsWideCanonicalization =
+      !hasExplicitWideToken &&
+      EDITORIAL_WIDE_SYNONYM_KEYWORDS.some((kw) => compLC.includes(kw));
+    const needsFix = needsIntimateFix || needsWideCanonicalization;
+    if (!needsFix) return still;
+    let fixed = still.composition;
+    for (const [pattern, replacement] of INTIMATE_KEYWORD_REPLACEMENTS) {
+      fixed = fixed.replace(pattern, replacement);
+    }
+    if (needsWideCanonicalization) {
+      fixed = `Wide ${fixed.charAt(0).toLowerCase()}${fixed.slice(1)}`;
+    }
+    changed = true;
+    return { ...still, composition: fixed };
+  });
+  if (!changed) return bible;
+  return { ...bible, stillLibrary };
 }
 
 // ── Step 3.2: Deterministic editorial usage normalizer ──────────────────────
@@ -391,67 +465,147 @@ export function normalizeEditorialCompositions(bible: LandingStillBible): Landin
 // If the model generates a non-allowed usage (e.g. 'medium_wide', 'hero_primary')
 // for an editorial slot, normalize it to 'concept' before anchor compliance runs.
 
-const EDITORIAL_WIDE_ALLOWED_USAGES = new Set<LandingStillSpec['usage']>(['concept', 'email_header']);
+const EDITORIAL_WIDE_ALLOWED_USAGES = new Set<LandingStillSpec["usage"]>([
+  "concept",
+  "email_header",
+]);
 
-export function normalizeEditorialUsage(bible: LandingStillBible): LandingStillBible {
-    const EDITORIAL_WIDE_ROLES = new Set(['EDITORIAL_WIDE_A', 'EDITORIAL_WIDE_B']);
-    let changed = false;
-    const stillLibrary = bible.stillLibrary.map(still => {
-        if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole)) return still;
-        if (EDITORIAL_WIDE_ALLOWED_USAGES.has(still.usage)) return still;
-        changed = true;
-        return { ...still, usage: 'concept' as LandingStillSpec['usage'] };
-    });
-    if (!changed) return bible;
-    return { ...bible, stillLibrary };
+export function normalizeEditorialUsage(
+  bible: LandingStillBible,
+): LandingStillBible {
+  const EDITORIAL_WIDE_ROLES = new Set([
+    "EDITORIAL_WIDE_A",
+    "EDITORIAL_WIDE_B",
+  ]);
+  let changed = false;
+  const stillLibrary = bible.stillLibrary.map((still) => {
+    if (!still.slotRole || !EDITORIAL_WIDE_ROLES.has(still.slotRole))
+      return still;
+    if (EDITORIAL_WIDE_ALLOWED_USAGES.has(still.usage)) return still;
+    changed = true;
+    return { ...still, usage: "concept" as LandingStillSpec["usage"] };
+  });
+  if (!changed) return bible;
+  return { ...bible, stillLibrary };
+}
+
+// ── Step 3.3: Deterministic anchor compliance normalizer ──────────────────────
+// Embeds missing nicheSignal and nicheCarryThrough into imagePrompt and subjectAction
+// if the model dropped them, preventing rejection loops for minor text omissions.
+
+export function normalizeAnchorContent(
+  anchors: { anchorId: string; nicheSignal: string; locationFamily: string }[],
+  bible: LandingStillBible,
+): LandingStillBible {
+  const anchorMap = new Map(anchors.map((a) => [a.anchorId, a]));
+  let changed = false;
+
+  const stillLibrary = bible.stillLibrary.map((still) => {
+    if (!still.anchorId || !anchorMap.has(still.anchorId)) return still;
+    const anchor = anchorMap.get(still.anchorId)!;
+
+    let newImagePrompt = still.imagePrompt;
+    let newSubjectAction = still.subjectAction;
+    let updated = false;
+
+    const nicheLC = normalizeComparisonText(anchor.nicheSignal);
+
+    if (!normalizeComparisonText(newImagePrompt).includes(nicheLC)) {
+      newImagePrompt = `${newImagePrompt}, featuring ${anchor.nicheSignal}`;
+      updated = true;
+    }
+    if (!normalizeComparisonText(newSubjectAction).includes(nicheLC)) {
+      newSubjectAction = `${newSubjectAction}, including ${anchor.nicheSignal}`;
+      updated = true;
+    }
+
+    if (still.nicheCarryThrough) {
+      const carryLC = normalizeComparisonText(still.nicheCarryThrough);
+      if (!normalizeComparisonText(newImagePrompt).includes(carryLC)) {
+        newImagePrompt = `${newImagePrompt}, emphasizing ${still.nicheCarryThrough}`;
+        updated = true;
+      }
+      if (!normalizeComparisonText(newSubjectAction).includes(carryLC)) {
+        newSubjectAction = `${newSubjectAction}, showing ${still.nicheCarryThrough}`;
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      changed = true;
+      return {
+        ...still,
+        imagePrompt: newImagePrompt,
+        subjectAction: newSubjectAction,
+      };
+    }
+    return still;
+  });
+
+  if (!changed) return bible;
+  return { ...bible, stillLibrary };
 }
 
 // ── Step 3: Repair only the failing stills (one pass, isolated) ───────────────
 
 export async function repairFailingStills(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief,
-    currentBible: LandingStillBible,
-    failingStillIds: string[],
-    blockerIssues: ProductionBuildLintIssue[],
-    anchorViolationsBlock?: string,
-    options?: { instructions?: string },
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
+  currentBible: LandingStillBible,
+  failingStillIds: string[],
+  blockerIssues: ProductionBuildLintIssue[],
+  anchorViolationsBlock?: string,
+  options?: { instructions?: string },
 ): Promise<LandingStillSpec[]> {
-    const lintBlock = buildLintComplianceBlock(campaign, brief.communityExpression?.belongingSignals);
+  const lintBlock = buildLintComplianceBlock(
+    campaign,
+    brief.communityExpression?.belongingSignals,
+  );
 
-    const failingStills = currentBible.stillLibrary.filter(s => failingStillIds.includes(s.stillId));
-    const passingStills = currentBible.stillLibrary.filter(s => !failingStillIds.includes(s.stillId));
+  const failingStills = currentBible.stillLibrary.filter((s) =>
+    failingStillIds.includes(s.stillId),
+  );
+  const passingStills = currentBible.stillLibrary.filter(
+    (s) => !failingStillIds.includes(s.stillId),
+  );
 
-    const blockerSummary = blockerIssues
-        .map(i => `[${i.code}] ${i.message}`)
-        .join('\n');
+  const blockerSummary = blockerIssues
+    .map((i) => `[${i.code}] ${i.message}`)
+    .join("\n");
 
-    const passingContext = passingStills
-        .map(s => [
-            `stillId=${s.stillId} | slotRole=${s.slotRole ?? 'unknown'} | location=${s.location} | usage=${s.usage}`,
-            `  nicheCarryThrough: ${s.nicheCarryThrough ?? '(not set)'}`,
-        ].join('\n'))
-        .join('\n');
+  const passingContext = passingStills
+    .map((s) =>
+      [
+        `stillId=${s.stillId} | slotRole=${s.slotRole ?? "unknown"} | location=${s.location} | usage=${s.usage}`,
+        `  nicheCarryThrough: ${s.nicheCarryThrough ?? "(not set)"}`,
+      ].join("\n"),
+    )
+    .join("\n");
 
-    // ── Reference grounding for repair ───────────────────────────────────
-    const refPack = getReferencePack(campaign);
-    const refPackId = refPack?.referencePackId ?? 'none';
-    const slotRefBlocks = failingStills.map(s => {
-        if (!refPack || !s.slotRole) return '';
-        const bundle = getSlotReferenceBundle(refPack, s.slotRole);
-        return `\nREFERENCE FOR ${s.stillId} (${s.slotRole}):\n${formatReferenceBundleForPrompt(bundle)}`;
-    }).filter(Boolean).join('\n');
+  // ── Reference grounding for repair ───────────────────────────────────
+  const refPack = getReferencePack(campaign);
+  const refPackId = refPack?.referencePackId ?? "none";
+  const slotRefBlocks = failingStills
+    .map((s) => {
+      if (!refPack || !s.slotRole) return "";
+      const bundle = getSlotReferenceBundle(refPack, s.slotRole);
+      return `\nREFERENCE FOR ${s.stillId} (${s.slotRole}):\n${formatReferenceBundleForPrompt(bundle)}`;
+    })
+    .filter(Boolean)
+    .join("\n");
 
-    const failingContext = failingStills
-        .map(s => [
-            `stillId=${s.stillId} | slotRole=${s.slotRole ?? 'unknown'} | anchorId=${s.anchorId ?? 'unknown'} | location=${s.location} | usage=${s.usage}`,
-            `  imagePrompt: ${s.imagePrompt}`,
-            `  subjectAction: ${s.subjectAction}`,
-            `  nicheCarryThrough (current, failing): ${s.nicheCarryThrough ?? '(missing)'}`,
-        ].join('\n'))
-        .join('\n\n');
+  const failingContext = failingStills
+    .map((s) =>
+      [
+        `stillId=${s.stillId} | slotRole=${s.slotRole ?? "unknown"} | anchorId=${s.anchorId ?? "unknown"} | location=${s.location} | usage=${s.usage}`,
+        `  imagePrompt: ${s.imagePrompt}`,
+        `  subjectAction: ${s.subjectAction}`,
+        `  nicheCarryThrough (current, failing): ${s.nicheCarryThrough ?? "(missing)"}`,
+      ].join("\n"),
+    )
+    .join("\n\n");
 
-    const system = `
+  const system = `
 You are repairing specific failing landing stills for a niche cruise campaign.
 Rewrite ONLY the failing stills listed below. Return them with their original stillId values.
 Do not touch or describe passing stills.
@@ -470,15 +624,19 @@ AUDIT FIELDS — each repaired still must include:
 
 BLOCKERS TO RESOLVE:
 ${blockerSummary}
-${anchorViolationsBlock ? `\n${anchorViolationsBlock}\n` : ''}
+${anchorViolationsBlock ? `\n${anchorViolationsBlock}\n` : ""}
 PASSING STILLS (for reference — do not repeat their location families or niche terms):
 ${passingContext}
 ${slotRefBlocks}
 ${lintBlock}
-${options?.instructions ? `
+${
+  options?.instructions
+    ? `
 OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
-${options.instructions}` : ''}
+${options.instructions}`
+    : ""
+}
 
 For each repaired still:
 - CRITICAL: For niche_signal_dropped violations — copy the EXACT string from the "expected" field of the violation into BOTH imagePrompt AND subjectAction verbatim. Do NOT use inflected forms, synonyms, or paraphrases.
@@ -492,50 +650,56 @@ For each repaired still:
 - Use the reference examples as guides for niche-native imagery.
 `.trim();
 
-    const prompt = `
+  const prompt = `
 Campaign: ${campaign.name} | Ship: ${getCanonicalShipName(campaign)}
-Belonging signals: ${brief.communityExpression?.belongingSignals?.join('; ') ?? ''}
+Belonging signals: ${brief.communityExpression?.belongingSignals?.join("; ") ?? ""}
 
 FAILING STILLS TO REPAIR:
 ${failingContext}
 `.trim();
 
-    console.log(`[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(', ')} (refPack=${refPackId})`);
-    const { object } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: RepairResultSchema,
-        system,
-        prompt,
-        maxOutputTokens: 12000,
-        skipRepair: true,
-        operationName: `editors-room:repair-stills:${campaign.id}`,
-    });
-    return (object as z.output<typeof RepairResultSchema>).stills;
+  console.log(
+    `[editors-room] repairFailingStills for ${campaign.id}: ${failingStillIds.join(", ")} (refPack=${refPackId})`,
+  );
+  const { object } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: RepairResultSchema,
+    system,
+    prompt,
+    maxOutputTokens: 12000,
+    skipRepair: true,
+    operationName: `editors-room:repair-stills:${campaign.id}`,
+  });
+  return (object as z.output<typeof RepairResultSchema>).stills;
 }
 
 // ── Step 4: Generate production bible from validated stills ───────────────────
 
 export async function generateProductionBibleFromStills(
-    campaign: Campaign,
-    brief: CampaignAestheticBrief,
-    landingStillBible: LandingStillBible,
-    options?: { instructions?: string },
+  campaign: Campaign,
+  brief: CampaignAestheticBrief,
+  landingStillBible: LandingStillBible,
+  options?: { instructions?: string },
 ): Promise<z.infer<typeof ProductionBibleSchema>> {
-    const stillSummary = landingStillBible.stillLibrary
-        .map(s => `[${s.slotRole ?? s.usage}] ${s.location}: ${s.subjectAction}${s.nicheCarryThrough ? ` | niche="${s.nicheCarryThrough}"` : ''}`)
-        .join('\n');
+  const stillSummary = landingStillBible.stillLibrary
+    .map(
+      (s) =>
+        `[${s.slotRole ?? s.usage}] ${s.location}: ${s.subjectAction}${s.nicheCarryThrough ? ` | niche="${s.nicheCarryThrough}"` : ""}`,
+    )
+    .join("\n");
 
-    const visual = brief.visual;
-    const casting = visual?.humanRepresentation;
-    const plausibility = visual?.plausibilityFramework;
-    const communityExpression = brief.communityExpression;
-    const avoidList = brief.visual?.avoidList ?? [];
-    const avoidListBlock = avoidList.length > 0
-        ? `\n\nCAMPAIGN AVOID LIST — each of these MUST appear explicitly as a directive in the avoidDirectives array:\n${avoidList.map(item => `- ${item}`).join('\n')}`
-        : '';
+  const visual = brief.visual;
+  const casting = visual?.humanRepresentation;
+  const plausibility = visual?.plausibilityFramework;
+  const communityExpression = brief.communityExpression;
+  const avoidList = brief.visual?.avoidList ?? [];
+  const avoidListBlock =
+    avoidList.length > 0
+      ? `\n\nCAMPAIGN AVOID LIST — each of these MUST appear explicitly as a directive in the avoidDirectives array:\n${avoidList.map((item) => `- ${item}`).join("\n")}`
+      : "";
 
-    const musicBibleBlock = isMusicFestivalCampaign(campaign)
-        ? `
+  const musicBibleBlock = isMusicFestivalCampaign(campaign)
+    ? `
 MUSIC/FESTIVAL/OPEN-DECK CAMPAIGN — PRODUCTION BIBLE HARD REQUIREMENTS:
 This campaign requires sustained music identity across all scenes and storyboards.
 
@@ -555,11 +719,13 @@ ADDITIONAL avoidDirectives REQUIRED for this campaign:
   - "No open-deck wide shots that ignore sound system or crowd energy"
   - "No interior scenes that read as quiet luxury with zero music atmosphere"
   - "No storyboard where musicCue stays at ambient bed for all shots"`.trim()
-        : '';
+    : "";
 
-    const isBoardGamesAtSeaCampaign = campaign.id === 'board-games-at-sea' || /board games at sea/i.test(campaign.name);
-    const boardGamesSceneBlock = isBoardGamesAtSeaCampaign
-        ? `
+  const isBoardGamesAtSeaCampaign =
+    campaign.id === "board-games-at-sea" ||
+    /board games at sea/i.test(campaign.name);
+  const boardGamesSceneBlock = isBoardGamesAtSeaCampaign
+    ? `
 BOARD-GAMES-AT-SEA SCENE PRIORITIES:
 - Every scene must visibly earn the campaign title. A board-game prop or interaction should be legible in frame, not merely implied.
 - Prefer tabletop play, rules explanations, card shuffles, dice rolls, meeples, score sheets, game boxes, or hands arranging pieces.
@@ -567,10 +733,10 @@ BOARD-GAMES-AT-SEA SCENE PRIORITIES:
 - Limit pure cruise postcard scenes to at most 2 total; the rest should feel like board-game life happening aboard the ship.
 - If a scene is set in spa, theater, nightclub, or destination_port, it still needs a recognizable game cue or social play detail so the niche does not disappear.
 - A scene counts as clearly board-game themed only when the imagePrompt or subjectAction makes the play object or interaction visible; do not rely on generic "game" language alone.`
-        : '';
+    : "";
 
-    const boardGamesStoryboardBlock = isBoardGamesAtSeaCampaign
-        ? `
+  const boardGamesStoryboardBlock = isBoardGamesAtSeaCampaign
+    ? `
 BOARD-GAMES-AT-SEA STORYBOARD PRIORITIES:
 - The tiktok_seed storyboard must be exactly six shots in a hook -> build -> proof -> social -> peak -> payoff arc.
 - shotNumber values must be sequential starting at 1 and must match the array order.
@@ -578,9 +744,9 @@ BOARD-GAMES-AT-SEA STORYBOARD PRIORITIES:
 - Favor the most social, object-legible, and table-aware scenes when assigning tiktok_seed shots.
 - Do not fall back to generic cruise filler when a board-game scene is available.
 - Prefer this progression when it fits the available sceneLibrary: pool_deck or exterior hook, dining build, atrium proof, nightclub social, sports_deck peak, offboard_excursion or theater payoff.`
-        : '';
+    : "";
 
-    const system = `
+  const system = `
 You are the Creative Director generating a Production Bible for a niche cruise campaign.
 The landing still set is already validated. Use it as the community identity reference.
 
@@ -614,8 +780,8 @@ Each imagePrompt must use one of these low-risk, model-friendly human presence t
 - "hands in partial frame" — hands near props, placing pieces, or reaching across the table
 - "anonymous seated cluster" — small group around a table, faces soft or turned away
 Do NOT describe fully-posed groups, direct eye-contact portraits, or staged demonstration setups. The social energy must be implied through proximity and props — not performed for the camera.
-${boardGamesSceneBlock ? `${boardGamesSceneBlock}` : ''}
-${avoidListBlock}${musicBibleBlock ? `\n${musicBibleBlock}` : ''}
+${boardGamesSceneBlock ? `${boardGamesSceneBlock}` : ""}
+${avoidListBlock}${musicBibleBlock ? `\n${musicBibleBlock}` : ""}
 SCENE LIBRARY JSON STRUCTURE — use these EXACT field names (parser reads only these keys):
 Each scene object: { "sceneId": str (one of: exterior/pool_deck/dining/stateroom/atrium/nightclub/spa/destination_port/theater/sports_deck), "location": str, "timeOfDay": str, "lighting": str, "cameraAngle": str, "subjectAction": str, "environmentDetails": str, "mood": str, "imagePrompt": str (NON-EMPTY — see rules above), "referenceCategory": str }
 
@@ -632,354 +798,394 @@ STORYBOARD RULES:
 - transitionIn/transitionOut: hard cut, cross-dissolve, whip pan, match cut, fade from black, J-cut, L-cut
 - narrationSegment: premium travel documentary voiceover — warm, personal, aspirational
 - Do not design shots around walking toward camera, dancing, clinking, sipping, or hand-to-object choreography
-${boardGamesStoryboardBlock ? `${boardGamesStoryboardBlock}` : ''}
-${options?.instructions ? `
+${boardGamesStoryboardBlock ? `${boardGamesStoryboardBlock}` : ""}
+${
+  options?.instructions
+    ? `
 OPERATOR INSTRUCTIONS:
 Honor these user-supplied instructions unless they conflict with schema validity, safety, or cruise plausibility requirements.
-${options.instructions}` : ''}
+${options.instructions}`
+    : ""
+}
 `.trim();
 
-    const ctx = `
+  const ctx = `
 Campaign: ${campaign.name}
 Ship: ${getCanonicalShipName(campaign)}
 Ship Context: ${buildShipContext(campaign)}
-Destination: ${campaign.targetDestination ?? 'TBD'}
+Destination: ${campaign.targetDestination ?? "TBD"}
 Highlight Events: ${joinCampaignList(sanitizePromptList(campaign.highlightEvents))}
 Event Framing: ${buildEventFramingGuidance(campaign)}
-Aesthetic: ${visual?.aestheticLabel ?? ''}
-Imagery Mood: ${visual?.imageryMood ?? ''}
-Lighting: ${visual?.lightingStyle ?? ''}
-Casting Goal: ${casting?.castingGoal ?? ''}
-Age Range: ${casting?.ageRangeGuidance ?? ''}
-Community Promise: ${communityExpression?.corePromise ?? ''}
-Belonging Signals: ${communityExpression?.belongingSignals?.join('; ') ?? ''}
-Governing Principle: ${plausibility?.governingPrinciple ?? ''}
-Cruise-native moments: ${plausibility?.cruiseNativeMoments?.join('; ') ?? ''}
-Niche prop families: ${plausibility?.allowedProps?.join('; ') ?? ''}
-Niche-enhanced moments: ${plausibility?.nicheEnhancedMoments?.join('; ') ?? ''}
-Implausible bans: ${plausibility?.implausibleLiteralizations?.join('; ') ?? ''}
+Aesthetic: ${visual?.aestheticLabel ?? ""}
+Imagery Mood: ${visual?.imageryMood ?? ""}
+Lighting: ${visual?.lightingStyle ?? ""}
+Casting Goal: ${casting?.castingGoal ?? ""}
+Age Range: ${casting?.ageRangeGuidance ?? ""}
+Community Promise: ${communityExpression?.corePromise ?? ""}
+Belonging Signals: ${communityExpression?.belongingSignals?.join("; ") ?? ""}
+Governing Principle: ${plausibility?.governingPrinciple ?? ""}
+Cruise-native moments: ${plausibility?.cruiseNativeMoments?.join("; ") ?? ""}
+Niche prop families: ${plausibility?.allowedProps?.join("; ") ?? ""}
+Niche-enhanced moments: ${plausibility?.nicheEnhancedMoments?.join("; ") ?? ""}
+Implausible bans: ${plausibility?.implausibleLiteralizations?.join("; ") ?? ""}
 
 VALIDATED LANDING STILLS (reference for campaign identity):
 ${stillSummary}
 
 Video Deliverables:
-${VIDEO_DELIVERABLE_SPECS.map(d => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join('\n')}
+${VIDEO_DELIVERABLE_SPECS.map((d) => `- ${d.id}: "${d.title}" (${d.durationSeconds}s, ${d.shotCount} shots)`).join("\n")}
 `.trim();
 
-    console.log(`[editors-room] generateProductionBibleFromStills for ${campaign.id}`);
-    const { object } = await callGlobalGenerateObject({
-        modelName: ModelName.GPT_5_HIGH,
-        schema: LenientProductionBibleSchema,
-        system,
-        prompt: ctx,
-        maxOutputTokens: 16000,
-        timeoutMs: 240_000,
-        skipRepair: false,
-        operationName: `editors-room:production-bible:${campaign.id}`,
-    });
+  console.log(
+    `[editors-room] generateProductionBibleFromStills for ${campaign.id}`,
+  );
+  const { object } = await callGlobalGenerateObject({
+    modelName: ModelName.GPT_5_HIGH,
+    schema: LenientProductionBibleSchema,
+    system,
+    prompt: ctx,
+    maxOutputTokens: 16000,
+    timeoutMs: 240_000,
+    skipRepair: false,
+    operationName: `editors-room:production-bible:${campaign.id}`,
+  });
 
-    return object as z.output<typeof ProductionBibleSchema>;
+  return object as z.output<typeof ProductionBibleSchema>;
 }
 
 // ── Anchor compliance types ────────────────────────────────────────────────────
 
 type AnchorViolationType =
-    | 'missing_anchor_binding'
-    | 'niche_signal_dropped'
-    | 'niche_carry_mismatch'
-    | 'anchor_location_mismatch'
-    | 'duplicate_slot_role'
-    | 'slot_usage_mismatch'
-    | 'duplicate_location_family';
+  | "missing_anchor_binding"
+  | "niche_signal_dropped"
+  | "niche_carry_mismatch"
+  | "anchor_location_mismatch"
+  | "duplicate_slot_role"
+  | "slot_usage_mismatch"
+  | "duplicate_location_family";
 
 export interface AnchorViolation {
-    stillId: string;
-    violationType: AnchorViolationType;
-    message: string;
-    expected: string;
-    actual: string;
+  stillId: string;
+  violationType: AnchorViolationType;
+  message: string;
+  expected: string;
+  actual: string;
 }
 
 export interface AnchorComplianceResult {
-    violations: AnchorViolation[];
-    passed: boolean;
+  violations: AnchorViolation[];
+  passed: boolean;
 }
 
-const SLOT_ROLE_USAGE_MAP: Record<string, { allowedUsages: string[]; compositionRule?: 'intimate' | 'wide' }> = {
-    HERO_PRIMARY: { allowedUsages: ['hero_primary'] },
-    HERO_ALT: { allowedUsages: ['hero_alt'] },
-    EDITORIAL_WIDE_A: { allowedUsages: ['concept', 'email_header'], compositionRule: 'wide' },
-    EDITORIAL_WIDE_B: { allowedUsages: ['concept', 'email_header'], compositionRule: 'wide' },
-    INTIMATE: { allowedUsages: ['concept'], compositionRule: 'intimate' },
-    FLEX: { allowedUsages: ['hero_alt', 'concept', 'email_header', 'social_square'] },
+const SLOT_ROLE_USAGE_MAP: Record<
+  string,
+  { allowedUsages: string[]; compositionRule?: "intimate" | "wide" }
+> = {
+  HERO_PRIMARY: { allowedUsages: ["hero_primary"] },
+  HERO_ALT: { allowedUsages: ["hero_alt"] },
+  EDITORIAL_WIDE_A: {
+    allowedUsages: ["concept", "email_header"],
+    compositionRule: "wide",
+  },
+  EDITORIAL_WIDE_B: {
+    allowedUsages: ["concept", "email_header"],
+    compositionRule: "wide",
+  },
+  INTIMATE: { allowedUsages: ["concept"], compositionRule: "intimate" },
+  FLEX: {
+    allowedUsages: ["hero_alt", "concept", "email_header", "social_square"],
+  },
 };
 
-const INTIMATE_KEYWORDS = ['intimate', 'close', 'tight', 'detail'];
+const INTIMATE_KEYWORDS = ["intimate", "close", "tight", "detail"];
 
 const LOCATION_FAMILY_KEYWORDS: Array<[string[], string]> = [
-    // ── Most-specific named indoor/outdoor venues first ─────────────────────
-    // Ordering principle: more-specific named spaces beat less-specific or structural ones
-    // when both keywords appear in the same location text.
-    [['library', 'reading room'], 'library'],
-    [['theater', 'stage', 'auditorium'], 'theater'],
-    [['spa', 'solarium', 'thermal'], 'spa'],     // before pool — 'spa solarium by the pool' → spa
-    [['atrium', 'lobby', 'grand hall'], 'atrium'], // before balcony — 'Centrum balcony in the atrium' → atrium
-    [['dining', 'restaurant', 'meal'], 'dining'],          // 'table' removed — too generic (pool table, side table, bistro table, etc.)
-    [['bow', 'stern', 'promenade'], 'promenade'],
-    [['pool', 'lido'], 'pool_deck'],              // after spa — 'spa solarium near the pool' → spa
-    [['sports', 'court', 'track', 'pickleball', 'basketball'], 'sports_deck'],
-    // ── Private fixtures — explicit balcony should beat generic deck wording ─
-    [['balcony'], 'balcony'],                     // 'private cabin balcony with teak deck' → balcony
-    [['deck', 'outdoor'], 'deck'],
-    // ── Lower-specificity interior/social fixtures ──────────────────────────
-    [['lounge', 'bar'], 'lounge'],
-    [['cabin', 'stateroom', 'porthole'], 'cabin'],
-    [['pier', 'dock', 'harbor', 'shore', 'port'], 'port'], // after onboard fixtures — 'balcony with harbor view' stays balcony
-    // ── Structural/perimeter feature — last resort ───────────────────────────
-    [['rail', 'railing'], 'rail'],
+  // ── Most-specific named indoor/outdoor venues first ─────────────────────
+  // Ordering principle: more-specific named spaces beat less-specific or structural ones
+  // when both keywords appear in the same location text.
+  [["library", "reading room"], "library"],
+  [["theater", "stage", "auditorium"], "theater"],
+  [["spa", "solarium", "thermal"], "spa"], // before pool — 'spa solarium by the pool' → spa
+  [["atrium", "lobby", "grand hall"], "atrium"], // before balcony — 'Centrum balcony in the atrium' → atrium
+  [["dining", "restaurant", "meal"], "dining"], // 'table' removed — too generic (pool table, side table, bistro table, etc.)
+  [["bow", "stern", "promenade"], "promenade"],
+  [["pool", "lido"], "pool_deck"], // after spa — 'spa solarium near the pool' → spa
+  [["sports", "court", "track", "pickleball", "basketball"], "sports_deck"],
+  // ── Private fixtures — explicit balcony should beat generic deck wording ─
+  [["balcony"], "balcony"], // 'private cabin balcony with teak deck' → balcony
+  [["deck", "outdoor"], "deck"],
+  // ── Lower-specificity interior/social fixtures ──────────────────────────
+  [["lounge", "bar"], "lounge"],
+  [["cabin", "stateroom", "porthole"], "cabin"],
+  [["pier", "dock", "harbor", "shore", "port"], "port"], // after onboard fixtures — 'balcony with harbor view' stays balcony
+  // ── Structural/perimeter feature — last resort ───────────────────────────
+  [["rail", "railing"], "rail"],
 ];
 
 function inferLocationFamilyFromText(text: string): string {
-    const normalized = text.toLowerCase();
-    for (const [keywords, family] of LOCATION_FAMILY_KEYWORDS) {
-        if (keywords.some(keyword => normalized.includes(keyword))) {
-            return family;
-        }
+  const normalized = text.toLowerCase();
+  for (const [keywords, family] of LOCATION_FAMILY_KEYWORDS) {
+    if (keywords.some((keyword) => normalized.includes(keyword))) {
+      return family;
     }
-    return 'other';
+  }
+  return "other";
 }
 
-function inferLocationFamilyFromStillFields(location: string, environmentDetails: string): string {
-    const locationFamily = inferLocationFamilyFromText(location);
-    if (locationFamily !== 'other') {
-        return locationFamily;
-    }
-    return inferLocationFamilyFromText(environmentDetails);
+function inferLocationFamilyFromStillFields(
+  location: string,
+  environmentDetails: string,
+): string {
+  const locationFamily = inferLocationFamilyFromText(location);
+  if (locationFamily !== "other") {
+    return locationFamily;
+  }
+  return inferLocationFamilyFromText(environmentDetails);
 }
 
 function normalizeComparisonText(text: string): string {
-    return text
-        .toLowerCase()
-        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
-        .replace(/\s+/g, ' ')
-        .trim();
+  return text
+    .toLowerCase()
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ── Step 5: Deterministic anchor-compliance validation ─────────────────────────
 
 export function validateAnchorCompliance(
-    anchors: { anchorId: string; nicheSignal: string; locationFamily: string }[],
-    bible: LandingStillBible,
+  anchors: { anchorId: string; nicheSignal: string; locationFamily: string }[],
+  bible: LandingStillBible,
 ): AnchorComplianceResult {
-    const violations: AnchorViolation[] = [];
-    const anchorMap = new Map(anchors.map(a => [a.anchorId, a]));
-    const stills = bible.stillLibrary;
+  const violations: AnchorViolation[] = [];
+  const anchorMap = new Map(anchors.map((a) => [a.anchorId, a]));
+  const stills = bible.stillLibrary;
 
-    for (const still of stills) {
-        const imgLC = normalizeComparisonText(still.imagePrompt);
-        const actLC = normalizeComparisonText(still.subjectAction);
+  for (const still of stills) {
+    const imgLC = normalizeComparisonText(still.imagePrompt);
+    const actLC = normalizeComparisonText(still.subjectAction);
 
-        // ── Check 1: anchorId exists and maps to a real anchor ──────────
-        if (!still.anchorId || !anchorMap.has(still.anchorId)) {
-            violations.push({
-                stillId: still.stillId,
-                violationType: 'missing_anchor_binding',
-                message: `anchorId "${still.anchorId ?? '(empty)'}" does not match any generated anchor`,
-                expected: `one of: ${anchors.map(a => a.anchorId).join(', ')}`,
-                actual: still.anchorId ?? '(empty)',
-            });
-            continue; // skip niche checks — no anchor to compare against
-        }
-
-        const anchor = anchorMap.get(still.anchorId)!;
-
-        // ── Check 2: anchor's nicheSignal appears in imagePrompt + subjectAction ──
-        const nicheLC = normalizeComparisonText(anchor.nicheSignal);
-
-        if (!imgLC.includes(nicheLC) || !actLC.includes(nicheLC)) {
-            const missingIn: string[] = [];
-            if (!imgLC.includes(nicheLC)) missingIn.push('imagePrompt');
-            if (!actLC.includes(nicheLC)) missingIn.push('subjectAction');
-            violations.push({
-                stillId: still.stillId,
-                violationType: 'niche_signal_dropped',
-                message: `anchor nicheSignal "${anchor.nicheSignal}" missing from ${missingIn.join(' and ')}`,
-                expected: `"${anchor.nicheSignal}" in both imagePrompt and subjectAction`,
-                actual: `absent from: ${missingIn.join(', ')}`,
-            });
-        }
-
-        // ── Check 3: nicheCarryThrough accuracy ────────────────────────
-        if (still.nicheCarryThrough) {
-            const carryLC = normalizeComparisonText(still.nicheCarryThrough);
-            if (!imgLC.includes(carryLC) || !actLC.includes(carryLC)) {
-                const missingIn: string[] = [];
-                if (!imgLC.includes(carryLC)) missingIn.push('imagePrompt');
-                if (!actLC.includes(carryLC)) missingIn.push('subjectAction');
-                violations.push({
-                    stillId: still.stillId,
-                    violationType: 'niche_carry_mismatch',
-                    message: `nicheCarryThrough "${still.nicheCarryThrough}" not found in ${missingIn.join(' and ')}`,
-                    expected: `"${still.nicheCarryThrough}" in both fields`,
-                    actual: `absent from: ${missingIn.join(', ')}`,
-                });
-            }
-        }
-
-        const expectedLocationFamily = inferLocationFamilyFromText(anchor.locationFamily);
-        const actualLocationFamily = inferLocationFamilyFromStillFields(still.location, still.environmentDetails);
-        if (
-            expectedLocationFamily !== 'other'
-            && actualLocationFamily !== 'other'
-            && expectedLocationFamily !== actualLocationFamily
-        ) {
-            violations.push({
-                stillId: still.stillId,
-                violationType: 'anchor_location_mismatch',
-                message: `anchor locationFamily "${anchor.locationFamily}" drifted to still location family "${actualLocationFamily}"`,
-                expected: expectedLocationFamily,
-                actual: actualLocationFamily,
-            });
-        }
+    // ── Check 1: anchorId exists and maps to a real anchor ──────────
+    if (!still.anchorId || !anchorMap.has(still.anchorId)) {
+      violations.push({
+        stillId: still.stillId,
+        violationType: "missing_anchor_binding",
+        message: `anchorId "${still.anchorId ?? "(empty)"}" does not match any generated anchor`,
+        expected: `one of: ${anchors.map((a) => a.anchorId).join(", ")}`,
+        actual: still.anchorId ?? "(empty)",
+      });
+      continue; // skip niche checks — no anchor to compare against
     }
 
-    // ── Check 4: slotRole uniqueness ────────────────────────────────────
-    const slotRoleCounts = new Map<string, string[]>();
-    for (const still of stills) {
-        if (still.slotRole) {
-            const ids = slotRoleCounts.get(still.slotRole) ?? [];
-            ids.push(still.stillId);
-            slotRoleCounts.set(still.slotRole, ids);
-        }
-    }
-    for (const [role, ids] of slotRoleCounts) {
-        if (ids.length > 1) {
-            for (const id of ids) {
-                violations.push({
-                    stillId: id,
-                    violationType: 'duplicate_slot_role',
-                    message: `slotRole "${role}" assigned to ${ids.length} stills`,
-                    expected: 'unique slotRole per still',
-                    actual: `shared by: ${ids.join(', ')}`,
-                });
-            }
-        }
+    const anchor = anchorMap.get(still.anchorId)!;
+
+    // ── Check 2: anchor's nicheSignal appears in imagePrompt + subjectAction ──
+    const nicheLC = normalizeComparisonText(anchor.nicheSignal);
+
+    if (!imgLC.includes(nicheLC) || !actLC.includes(nicheLC)) {
+      const missingIn: string[] = [];
+      if (!imgLC.includes(nicheLC)) missingIn.push("imagePrompt");
+      if (!actLC.includes(nicheLC)) missingIn.push("subjectAction");
+      violations.push({
+        stillId: still.stillId,
+        violationType: "niche_signal_dropped",
+        message: `anchor nicheSignal "${anchor.nicheSignal}" missing from ${missingIn.join(" and ")}`,
+        expected: `"${anchor.nicheSignal}" in both imagePrompt and subjectAction`,
+        actual: `absent from: ${missingIn.join(", ")}`,
+      });
     }
 
-    // ── Check 5: slotRole ↔ usage mapping ──────────────────────────────
-    for (const still of stills) {
-        if (!still.slotRole) continue;
-        const rule = SLOT_ROLE_USAGE_MAP[still.slotRole];
-        if (!rule) continue;
-
-        if (!rule.allowedUsages.includes(still.usage)) {
-            violations.push({
-                stillId: still.stillId,
-                violationType: 'slot_usage_mismatch',
-                message: `slotRole=${still.slotRole} requires usage in [${rule.allowedUsages.join(', ')}], got "${still.usage}"`,
-                expected: rule.allowedUsages.join(' | '),
-                actual: still.usage,
-            });
-        }
-
-        // INTIMATE must have intimate composition keyword
-        if (rule.compositionRule === 'intimate') {
-            const compLC = still.composition.toLowerCase();
-            if (!INTIMATE_KEYWORDS.some(kw => compLC.includes(kw))) {
-                violations.push({
-                    stillId: still.stillId,
-                    violationType: 'slot_usage_mismatch',
-                    message: `slotRole=INTIMATE requires intimate/close/tight/detail in composition`,
-                    expected: 'intimate keyword in composition',
-                    actual: still.composition,
-                });
-            }
-        }
-
-        // EDITORIAL_WIDE must NOT have intimate composition keyword
-        if (rule.compositionRule === 'wide') {
-            const compLC = still.composition.toLowerCase();
-            if (INTIMATE_KEYWORDS.some(kw => compLC.includes(kw))) {
-                violations.push({
-                    stillId: still.stillId,
-                    violationType: 'slot_usage_mismatch',
-                    message: `slotRole=${still.slotRole} must NOT have intimate/close/tight/detail in composition`,
-                    expected: 'wide or medium composition',
-                    actual: still.composition,
-                });
-            }
-        }
+    // ── Check 3: nicheCarryThrough accuracy ────────────────────────
+    if (still.nicheCarryThrough) {
+      const carryLC = normalizeComparisonText(still.nicheCarryThrough);
+      if (!imgLC.includes(carryLC) || !actLC.includes(carryLC)) {
+        const missingIn: string[] = [];
+        if (!imgLC.includes(carryLC)) missingIn.push("imagePrompt");
+        if (!actLC.includes(carryLC)) missingIn.push("subjectAction");
+        violations.push({
+          stillId: still.stillId,
+          violationType: "niche_carry_mismatch",
+          message: `nicheCarryThrough "${still.nicheCarryThrough}" not found in ${missingIn.join(" and ")}`,
+          expected: `"${still.nicheCarryThrough}" in both fields`,
+          actual: `absent from: ${missingIn.join(", ")}`,
+        });
+      }
     }
 
-    // ── Check 6: location family uniqueness uses actual still text before anchor metadata ──
-    const locFamilyCounts = new Map<string, string[]>();
-    for (const still of stills) {
-        const anchor = still.anchorId ? anchorMap.get(still.anchorId) : undefined;
-        const actualFamily = inferLocationFamilyFromStillFields(still.location, still.environmentDetails);
-        const anchorFamily = anchor ? inferLocationFamilyFromText(anchor.locationFamily) : 'other';
-        const fam = actualFamily !== 'other'
-            ? actualFamily
-            : anchorFamily !== 'other'
-                ? anchorFamily
-                : still.location.toLowerCase();
-        const ids = locFamilyCounts.get(fam) ?? [];
-        ids.push(still.stillId);
-        locFamilyCounts.set(fam, ids);
+    const expectedLocationFamily = inferLocationFamilyFromText(
+      anchor.locationFamily,
+    );
+    const actualLocationFamily = inferLocationFamilyFromStillFields(
+      still.location,
+      still.environmentDetails,
+    );
+    if (
+      expectedLocationFamily !== "other" &&
+      actualLocationFamily !== "other" &&
+      expectedLocationFamily !== actualLocationFamily
+    ) {
+      violations.push({
+        stillId: still.stillId,
+        violationType: "anchor_location_mismatch",
+        message: `anchor locationFamily "${anchor.locationFamily}" drifted to still location family "${actualLocationFamily}"`,
+        expected: expectedLocationFamily,
+        actual: actualLocationFamily,
+      });
     }
-    for (const [fam, ids] of locFamilyCounts) {
-        if (ids.length > 1) {
-            for (const id of ids) {
-                violations.push({
-                    stillId: id,
-                    violationType: 'duplicate_location_family',
-                    message: `location family "${fam}" shared by ${ids.length} stills`,
-                    expected: 'unique location family per still',
-                    actual: `shared by: ${ids.join(', ')}`,
-                });
-            }
-        }
+  }
+
+  // ── Check 4: slotRole uniqueness ────────────────────────────────────
+  const slotRoleCounts = new Map<string, string[]>();
+  for (const still of stills) {
+    if (still.slotRole) {
+      const ids = slotRoleCounts.get(still.slotRole) ?? [];
+      ids.push(still.stillId);
+      slotRoleCounts.set(still.slotRole, ids);
+    }
+  }
+  for (const [role, ids] of slotRoleCounts) {
+    if (ids.length > 1) {
+      for (const id of ids) {
+        violations.push({
+          stillId: id,
+          violationType: "duplicate_slot_role",
+          message: `slotRole "${role}" assigned to ${ids.length} stills`,
+          expected: "unique slotRole per still",
+          actual: `shared by: ${ids.join(", ")}`,
+        });
+      }
+    }
+  }
+
+  // ── Check 5: slotRole ↔ usage mapping ──────────────────────────────
+  for (const still of stills) {
+    if (!still.slotRole) continue;
+    const rule = SLOT_ROLE_USAGE_MAP[still.slotRole];
+    if (!rule) continue;
+
+    if (!rule.allowedUsages.includes(still.usage)) {
+      violations.push({
+        stillId: still.stillId,
+        violationType: "slot_usage_mismatch",
+        message: `slotRole=${still.slotRole} requires usage in [${rule.allowedUsages.join(", ")}], got "${still.usage}"`,
+        expected: rule.allowedUsages.join(" | "),
+        actual: still.usage,
+      });
     }
 
-    return { violations, passed: violations.length === 0 };
+    // INTIMATE must have intimate composition keyword
+    if (rule.compositionRule === "intimate") {
+      const compLC = still.composition.toLowerCase();
+      if (!INTIMATE_KEYWORDS.some((kw) => compLC.includes(kw))) {
+        violations.push({
+          stillId: still.stillId,
+          violationType: "slot_usage_mismatch",
+          message: `slotRole=INTIMATE requires intimate/close/tight/detail in composition`,
+          expected: "intimate keyword in composition",
+          actual: still.composition,
+        });
+      }
+    }
+
+    // EDITORIAL_WIDE must NOT have intimate composition keyword
+    if (rule.compositionRule === "wide") {
+      const compLC = still.composition.toLowerCase();
+      if (INTIMATE_KEYWORDS.some((kw) => compLC.includes(kw))) {
+        violations.push({
+          stillId: still.stillId,
+          violationType: "slot_usage_mismatch",
+          message: `slotRole=${still.slotRole} must NOT have intimate/close/tight/detail in composition`,
+          expected: "wide or medium composition",
+          actual: still.composition,
+        });
+      }
+    }
+  }
+
+  // ── Check 6: location family uniqueness uses actual still text before anchor metadata ──
+  const locFamilyCounts = new Map<string, string[]>();
+  for (const still of stills) {
+    const anchor = still.anchorId ? anchorMap.get(still.anchorId) : undefined;
+    const actualFamily = inferLocationFamilyFromStillFields(
+      still.location,
+      still.environmentDetails,
+    );
+    const anchorFamily = anchor
+      ? inferLocationFamilyFromText(anchor.locationFamily)
+      : "other";
+    const fam =
+      actualFamily !== "other"
+        ? actualFamily
+        : anchorFamily !== "other"
+          ? anchorFamily
+          : still.location.toLowerCase();
+    const ids = locFamilyCounts.get(fam) ?? [];
+    ids.push(still.stillId);
+    locFamilyCounts.set(fam, ids);
+  }
+  for (const [fam, ids] of locFamilyCounts) {
+    if (ids.length > 1) {
+      for (const id of ids) {
+        violations.push({
+          stillId: id,
+          violationType: "duplicate_location_family",
+          message: `location family "${fam}" shared by ${ids.length} stills`,
+          expected: "unique location family per still",
+          actual: `shared by: ${ids.join(", ")}`,
+        });
+      }
+    }
+  }
+
+  return { violations, passed: violations.length === 0 };
 }
 
 // ── Utility: extract unique still IDs from anchor violations ───────────────────
 
-export function extractViolationStillIds(violations: AnchorViolation[]): string[] {
-    return [...new Set(violations.map(v => v.stillId))];
+export function extractViolationStillIds(
+  violations: AnchorViolation[],
+): string[] {
+  return [...new Set(violations.map((v) => v.stillId))];
 }
 
 // ── Utility: format anchor violations for repair prompt ────────────────────────
 
-export function formatViolationsForRepair(violations: AnchorViolation[]): string {
-    if (violations.length === 0) return '';
-    const lines = violations.map(v =>
-        `stillId=${v.stillId} | violation=${v.violationType} | expected: ${v.expected} | actual: ${v.actual}`
-    );
-    return `ANCHOR COMPLIANCE VIOLATIONS:\n${lines.join('\n')}`;
+export function formatViolationsForRepair(
+  violations: AnchorViolation[],
+): string {
+  if (violations.length === 0) return "";
+  const lines = violations.map(
+    (v) =>
+      `stillId=${v.stillId} | violation=${v.violationType} | expected: ${v.expected} | actual: ${v.actual}`,
+  );
+  return `ANCHOR COMPLIANCE VIOLATIONS:\n${lines.join("\n")}`;
 }
 
 // ── Utility: extract all failing still IDs from a lint report ─────────────────
 
-export function extractFailingStillIds(issues: ProductionBuildLintIssue[]): string[] {
-    const ids = new Set<string>();
-    for (const issue of issues) {
-        if (issue.affectedStillIds) {
-            issue.affectedStillIds.forEach(id => ids.add(id));
-        }
+export function extractFailingStillIds(
+  issues: ProductionBuildLintIssue[],
+): string[] {
+  const ids = new Set<string>();
+  for (const issue of issues) {
+    if (issue.affectedStillIds) {
+      issue.affectedStillIds.forEach((id) => ids.add(id));
     }
-    return [...ids];
+  }
+  return [...ids];
 }
 
 // ── Utility: merge repaired stills back into an existing bible ────────────────
 
 export function mergeRepairedStills(
-    bible: LandingStillBible,
-    repairedStills: LandingStillSpec[],
+  bible: LandingStillBible,
+  repairedStills: LandingStillSpec[],
 ): LandingStillBible {
-    const repairedMap = new Map(repairedStills.map(s => [s.stillId, s]));
-    return {
-        ...bible,
-        stillLibrary: bible.stillLibrary.map(s => repairedMap.get(s.stillId) ?? s),
-    };
+  const repairedMap = new Map(repairedStills.map((s) => [s.stillId, s]));
+  return {
+    ...bible,
+    stillLibrary: bible.stillLibrary.map(
+      (s) => repairedMap.get(s.stillId) ?? s,
+    ),
+  };
 }

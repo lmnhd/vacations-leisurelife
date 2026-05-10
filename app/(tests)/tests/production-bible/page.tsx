@@ -16,6 +16,7 @@ import type {
     ProductionBuildStillDiagnostic,
 } from "@/lib/campaigns/schema";
 import { ReviseRegenerateModal } from "./ReviseRegenerateModal";
+import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
 import {
     Loader2, BookOpen, Film, Image, Eye, RefreshCw,
     ChevronDown, ChevronRight, Play, Layers, Camera,
@@ -403,7 +404,10 @@ export default function ProductionBibleTestPage() {
             const res = await fetch(`/api/groups/campaign/${slug}/media/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ themeMusicSource: "default" }),
+                body: JSON.stringify({
+                    assetTypes: PRODUCTION_ALL_MEDIA_ASSET_TYPES,
+                    themeMusicSource: "default",
+                }),
             });
             const data = await readJsonResponse(res);
             if (!res.ok) throw new Error((data.error as string | undefined) ?? `HTTP ${res.status}`);

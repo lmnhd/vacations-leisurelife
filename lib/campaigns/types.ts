@@ -1,5 +1,35 @@
 import type { DiscoveryIterationState, RedTeamReview, VisualFlavor } from './schema';
 
+// ─── Inventory Health Types ────────────────────────────────────────────────────
+
+export type CampaignInventoryMode =
+    | 'GROUP_BLOCK_ACTIVE'
+    | 'GROUP_BACKUP_SWITCHED'
+    | 'RETAIL_MULTI_BOOKING'
+    | 'INVENTORY_FAILED_PAUSED';
+
+export type InventoryHealthStatus = 'UNVERIFIED' | 'HEALTHY' | 'DEGRADED' | 'FAILED';
+
+export interface CampaignInventoryCandidate {
+    rank: number;
+    source: 'CB_GROUP' | 'ODYSSEUS_RETAIL';
+    groupId?: string;
+    personalLink?: string;
+    retailLink?: string;
+    shipName: string;
+    sailDate: string;
+    departurePort?: string;
+    nights?: string;
+    startingPrice?: number;
+    priceSource: string;
+    matchScore: number;
+    priceDeltaFromPrimary?: number;
+    promiseDelta: 'NONE' | 'PRICE_ONLY' | 'AMENITIES_CHANGED' | 'SHIP_OR_DATE_CHANGED';
+    healthStatus: InventoryHealthStatus;
+    lastCheckedAt?: string;
+    failureReason?: string;
+}
+
 export interface Campaign {
     /**
      * DynamoDB Partition Key: `CAMPAIGN#${campaignId}`
@@ -257,6 +287,20 @@ export interface Campaign {
      * See: .github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION/LANDING_PAGE_CHAT/GUEST_PORTAL_REDESIGN.md
      */
     manualVisualFlavor?: VisualFlavor;
+
+    // ─── Inventory Health ──────────────────────────────────────────────────────
+
+    /** Active booking mode driven by inventory health transitions. */
+    activeBookingMode?: CampaignInventoryMode;
+
+    /** Rollup health status of the primary booking link. */
+    inventoryHealth?: InventoryHealthStatus;
+
+    /** Ranked list of CB group + retail booking candidates with per-candidate health. */
+    inventoryCandidates?: CampaignInventoryCandidate[];
+
+    /** ISO timestamp of the last inventory validation run. */
+    inventoryLastCheckedAt?: string;
 
     createdAt: string;
     updatedAt: string;

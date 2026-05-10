@@ -1,0 +1,109 @@
+{
+  "totalAssets": 61,
+  "completionStatus": "complete",
+  "generatedAt": "2026-05-10T15:21:04.874Z",
+  "heroes": [
+    {
+      "id": "img_hero_rev_5041d9c0",
+      "v": 2,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "img_hero_rev_e34024a4",
+      "v": 2,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "img_hero_rev_0886ec5a",
+      "v": 2,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "img_hero_rev_e752d338",
+      "v": 2,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "img_hero_rev_8097b2e0",
+      "v": 3,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "img_concept_rev_cd7cd87f",
+      "v": 2,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "img_concept_rev_8cc584fb",
+      "v": 3,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    }
+  ],
+  "ads": [
+    {
+      "id": "ad_quote_card_1x1",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "sharp"
+    },
+    {
+      "id": "ad_image_detail_191x100",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "sharp"
+    },
+    {
+      "id": "ad_type_hook_9x16",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "sharp"
+    },
+    {
+      "id": "ad_itinerary_toc_4x5",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "sharp"
+    }
+  ],
+  "docs": [
+    {
+      "id": "doc_detail_trust_photo_01",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "doc_detail_artifact_still_life_02",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "doc_detail_texture_plate_03",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "doc_detail_human_glimpse_04",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    },
+    {
+      "id": "doc_detail_motion_plate_05",
+      "v": 1,
+      "status": "needs_review",
+      "gen": "gemini3_flash"
+    }
+  ]
+}

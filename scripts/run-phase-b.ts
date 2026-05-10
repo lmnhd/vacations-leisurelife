@@ -15,19 +15,24 @@
  */
 
 import { loadEnvConfig } from "@next/env";
+import * as fs from "fs";
+import * as path from "path";
 import {
   scrapeGroupInventory,
   scrapeGroupPersonalLink,
 } from "./cb-inventory-scraper";
 import {
-  matchGroupInventoryToCampaign,
+  rankGroupInventoryCandidates,
   CbInventoryMatch,
 } from "../lib/campaigns/cb-inventory-matcher";
+import type { CampaignInventoryCandidate } from "../lib/campaigns/types";
 import {
   scanMatchedCampaigns,
   getCampaignBlueprint,
   upsertCampaignPricingMatch,
+  updateCampaignInventoryMode,
 } from "../lib/campaigns/campaign-store";
+import { validateBookingLink } from "../lib/campaigns/booking-link-validator";
 import { OdysseusEngine } from "../lib/services/odysseus/OdysseusEngine";
 
 loadEnvConfig(process.cwd());
@@ -160,59 +165,149 @@ async function runPhaseB(): Promise<void> {
     `[run-phase-b] Confirming ${campaigns.length} pre-matched campaign(s)...\n`,
   );
 
-  // 3. Confirm match against live inventory + write Odysseus retail link
+  // 3. Confirm match against live inventory + validate links + write Odysseus retail link
   const results: Array<{
     slug: string;
-    status: "CONFIRMED" | "MATCH_EXPIRED";
+    status: "CONFIRMED" | "BACKUP_PROMOTED" | "MATCH_EXPIRED" | "INVENTORY_FAILED";
     detail: string;
   }> = [];
 
   for (const campaign of campaigns) {
-    const confirmation = matchGroupInventoryToCampaign(campaign, inventory);
+    const candidates = rankGroupInventoryCandidates(campaign, inventory, 3);
 
-    if (confirmation) {
-      console.log(
-        `[run-phase-b] ✅ Match confirmed for "${campaign.id}" → ${confirmation.matchedShipName} (score: ${confirmation.matchScore})`,
-      );
-
-      // 3a. Extract the true Personal Link from the group details page
-      console.log(
-        `[run-phase-b] Fetching true Personal Booking Link for group ${confirmation.cbGroupId}...`,
-      );
-      const truePersonalLink = await scrapeGroupPersonalLink(
-        confirmation.cbGroupId,
-      );
-      if (truePersonalLink) {
-        confirmation.cbPersonalLink = truePersonalLink;
-      } else {
-        console.warn(
-          `[run-phase-b] ⚠️ Could not fetch true Personal Link for group ${confirmation.cbGroupId}. Link may be 404.`,
-        );
-      }
-
-      console.log(
-        `[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`,
-      );
-      confirmation.odysseusRetailBookingLink =
-        await generateOdysseusRetailLink(confirmation);
-
-      await upsertCampaignPricingMatch(campaign.id, confirmation);
-      results.push({
-        slug: campaign.id,
-        status: "CONFIRMED",
-        detail: `${confirmation.matchedShipName} — $${confirmation.computedStartingPrice}/pp (score: ${confirmation.matchScore})${confirmation.odysseusRetailBookingLink ? " + retail link" : ""}`,
-      });
-    } else {
-      // Match existed at discovery time but is no longer in live inventory — flag for review
+    if (candidates.length === 0) {
       console.warn(
-        `[run-phase-b] ⚠️ Match EXPIRED for "${campaign.id}" — was matched to "${campaign.matchedShipName ?? "unknown"}" but not found in current live inventory. Manual operator review needed.`,
+        `[run-phase-b] ⚠️ Match EXPIRED for "${campaign.id}" — was matched to "${campaign.matchedShipName ?? "unknown"}" but not found in current live inventory.`,
       );
       results.push({
         slug: campaign.id,
         status: "MATCH_EXPIRED",
         detail: `Previously matched to "${campaign.matchedShipName ?? "unknown"}" — no longer in live CB inventory`,
       });
+      continue;
     }
+
+    console.log(
+      `[run-phase-b] ${candidates.length} candidate(s) ranked for "${campaign.id}"`,
+    );
+
+    // 3a. Scrape personal links and validate each candidate in rank order
+    let primaryCandidate: CampaignInventoryCandidate | null = null;
+    const validatedCandidates: CampaignInventoryCandidate[] = [];
+
+    for (const candidate of candidates) {
+      // Only attempt Tier 1 (same ship/date/port) for auto-promotion
+      if (candidate.rank > 0 && candidate.promiseDelta !== "NONE" && candidate.promiseDelta !== "PRICE_ONLY") {
+        console.log(
+          `[run-phase-b] Skipping rank ${candidate.rank} candidate (promiseDelta=${candidate.promiseDelta}) — requires operator review.`,
+        );
+        validatedCandidates.push({ ...candidate, healthStatus: "UNVERIFIED" });
+        continue;
+      }
+
+      console.log(
+        `[run-phase-b] Fetching Personal Booking Link for group ${candidate.groupId} (rank ${candidate.rank})...`,
+      );
+      const personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
+      if (!personalLink) {
+        console.warn(
+          `[run-phase-b] ⚠️ No personal link found for group ${candidate.groupId}.`,
+        );
+        validatedCandidates.push({ ...candidate, healthStatus: "FAILED", failureReason: "Personal link not found on group page" });
+        continue;
+      }
+
+      console.log(`[run-phase-b] Validating link for group ${candidate.groupId}...`);
+      const validation = await validateBookingLink(personalLink);
+      const validated: CampaignInventoryCandidate = {
+        ...candidate,
+        personalLink,
+        healthStatus: validation.status,
+        lastCheckedAt: validation.checkedAt,
+        failureReason: validation.failureReason,
+      };
+      validatedCandidates.push(validated);
+
+      if (validation.status === "HEALTHY" && primaryCandidate === null) {
+        primaryCandidate = validated;
+        console.log(
+          `[run-phase-b] ✅ Healthy primary: rank ${candidate.rank}, ${candidate.shipName} (score: ${candidate.matchScore})`,
+        );
+        break;
+      }
+    }
+
+    if (!primaryCandidate) {
+      console.error(
+        `[run-phase-b] ❌ No healthy booking link found for "${campaign.id}". Marking INVENTORY_FAILED_PAUSED.`,
+      );
+      await updateCampaignInventoryMode(campaign.id, "INVENTORY_FAILED_PAUSED", "FAILED");
+      results.push({
+        slug: campaign.id,
+        status: "INVENTORY_FAILED",
+        detail: `All ${validatedCandidates.length} candidate(s) failed validation — operator review required`,
+      });
+      continue;
+    }
+
+    // 3b. Build CbInventoryMatch from the healthy primary candidate
+    const confirmation: CbInventoryMatch = {
+      cbGroupId: primaryCandidate.groupId!,
+      cbPersonalLink: primaryCandidate.personalLink!,
+      cbPriceAdvantage: 0,
+      rawGroupPrice: primaryCandidate.startingPrice
+        ? Math.round(primaryCandidate.startingPrice / 1.15)
+        : 0,
+      computedStartingPrice: primaryCandidate.startingPrice ?? 0,
+      priceSource: primaryCandidate.priceSource,
+      matchedShipName: primaryCandidate.shipName,
+      matchedSailDate: primaryCandidate.sailDate,
+      matchedDeparturePort: primaryCandidate.departurePort,
+      matchedNights: primaryCandidate.nights,
+      matchScore: primaryCandidate.matchScore,
+      odysseusRetailBookingLink: null,
+    };
+
+    // 3c. Generate + validate Odysseus retail link, add as an ODYSSEUS_RETAIL candidate
+    console.log(
+      `[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`,
+    );
+    const retailLink = await generateOdysseusRetailLink(confirmation);
+    confirmation.odysseusRetailBookingLink = retailLink;
+
+    if (retailLink) {
+      const retailValidation = await validateBookingLink(retailLink);
+      validatedCandidates.push({
+        rank: validatedCandidates.length,
+        source: "ODYSSEUS_RETAIL",
+        retailLink,
+        shipName: primaryCandidate.shipName,
+        sailDate: primaryCandidate.sailDate,
+        departurePort: primaryCandidate.departurePort,
+        nights: primaryCandidate.nights,
+        startingPrice: primaryCandidate.startingPrice,
+        priceSource: "ODYSSEUS_RETAIL",
+        matchScore: 0,
+        promiseDelta: "NONE",
+        healthStatus: retailValidation.status,
+        lastCheckedAt: retailValidation.checkedAt,
+        failureReason: retailValidation.failureReason,
+      });
+    }
+
+    const wasBackupPromoted = primaryCandidate.rank > 0;
+    await upsertCampaignPricingMatch(campaign.id, confirmation, {
+      inventoryCandidates: validatedCandidates,
+      activeBookingMode: wasBackupPromoted ? "GROUP_BACKUP_SWITCHED" : "GROUP_BLOCK_ACTIVE",
+      inventoryHealth: "HEALTHY",
+      inventoryLastCheckedAt: new Date().toISOString(),
+    });
+
+    results.push({
+      slug: campaign.id,
+      status: wasBackupPromoted ? "BACKUP_PROMOTED" : "CONFIRMED",
+      detail: `${confirmation.matchedShipName} — $${confirmation.computedStartingPrice}/pp (score: ${confirmation.matchScore}, rank: ${primaryCandidate.rank})${retailLink ? " + retail link" : ""}`,
+    });
   }
 
   // 4. Summary
@@ -223,12 +318,24 @@ async function runPhaseB(): Promise<void> {
   }
 
   const confirmedCount = results.filter((r) => r.status === "CONFIRMED").length;
-  const expiredCount = results.filter(
-    (r) => r.status === "MATCH_EXPIRED",
-  ).length;
+  const backupCount = results.filter((r) => r.status === "BACKUP_PROMOTED").length;
+  const expiredCount = results.filter((r) => r.status === "MATCH_EXPIRED").length;
+  const failedCount = results.filter((r) => r.status === "INVENTORY_FAILED").length;
   console.log(
-    `\n[run-phase-b] Done. ${confirmedCount}/${results.length} confirmed, ${expiredCount} need operator review.\n`,
+    `\n[run-phase-b] Done. ${confirmedCount} confirmed, ${backupCount} backup-promoted, ${expiredCount} expired, ${failedCount} failed validation.\n`,
   );
+
+  // Write result file for agent consumption (agents cannot poll localhost, but can read this file)
+  const resultPayload = {
+    completedAt: new Date().toISOString(),
+    summary: { confirmedCount, backupCount, expiredCount, failedCount },
+    results,
+  };
+  const outputDir = path.join(process.cwd(), "scripts", "agent", "output");
+  fs.mkdirSync(outputDir, { recursive: true });
+  const outputPath = path.join(outputDir, "phase-b-result.json");
+  fs.writeFileSync(outputPath, JSON.stringify(resultPayload, null, 2), "utf-8");
+  console.log(`[run-phase-b] Result written to ${outputPath}`);
 }
 
 runPhaseB().catch((error: unknown) => {

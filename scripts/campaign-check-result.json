@@ -1,0 +1,12 @@
+{
+  "exists": true,
+  "campaign": {
+    "id": "wellness-and-nature-cruise",
+    "name": "Wellness and Nature Cruise",
+    "pricingStatus": "CB_MATCHED",
+    "aestheticBriefStatus": null,
+    "shipTarget": "Icon of the Seas",
+    "targetDates": "2026-10-26",
+    "fetchUrl": "/api/groups/campaign/wellness-and-nature-cruise"
+  }
+}
