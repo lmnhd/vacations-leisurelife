@@ -18,6 +18,7 @@ interface PlannerOptions {
 interface PostDraft {
     platform: DistributionPlatform;
     assetId: string;
+    assetIds?: string[];
     copyVariant: string;
     scheduledAt: string;
     campaignStage: string;
@@ -29,6 +30,7 @@ function buildScheduledPost(draft: PostDraft): ScheduledPost {
         postId: `dist_${randomUUID().slice(0, 12)}`,
         platform: draft.platform,
         assetId: draft.assetId,
+        ...(draft.assetIds && draft.assetIds.length > 0 ? { assetIds: draft.assetIds } : {}),
         copyVariant: draft.copyVariant,
         scheduledAt: draft.scheduledAt,
         campaignStage: draft.campaignStage,
@@ -66,6 +68,42 @@ function selectDesignedAdAssetId(
         return loweredPreferred.some((tag) => tags.includes(tag));
     });
     return partial?.assetId ?? null;
+}
+
+function selectDesignedAdAssetIds(
+    manifest: CampaignMediaManifest,
+    preferredTagGroups: string[][],
+    maxCount: number,
+): string[] {
+    const ads = manifest.images.designedAdArtifacts ?? [];
+    if (ads.length === 0 || maxCount <= 0) {
+        return [];
+    }
+
+    const selected: string[] = [];
+    const seen = new Set<string>();
+
+    for (const preferredTags of preferredTagGroups) {
+        const loweredPreferred = preferredTags.map((tag) => tag.toLowerCase());
+        const matching = ads.filter((asset) => {
+            if (seen.has(asset.assetId)) {
+                return false;
+            }
+
+            const tags = asset.tags.map((tag) => tag.toLowerCase());
+            return loweredPreferred.every((tag) => tags.includes(tag));
+        });
+
+        for (const asset of matching) {
+            seen.add(asset.assetId);
+            selected.push(asset.assetId);
+            if (selected.length >= maxCount) {
+                return selected;
+            }
+        }
+    }
+
+    return selected;
 }
 
 function getEmailHeaderAssetId(manifest: CampaignMediaManifest): string | null {
@@ -112,6 +150,15 @@ export function buildDistributionSchedule(
     const instagramFeedAdAssetId = selectDesignedAdAssetId(manifest, ['instagram_feed'])
         ?? selectDesignedAdAssetId(manifest, ['instagram_square'])
         ?? squareFeedAssetId;
+    const instagramFeedCarouselAssetIds = selectDesignedAdAssetIds(
+        manifest,
+        [
+            ['instagram_feed'],
+            ['carousel'],
+            ['instagram_square'],
+        ],
+        4,
+    );
     const facebookAdAssetId = selectDesignedAdAssetId(manifest, ['facebook']) ?? primaryHeroAssetId;
     const googleDisplayAdAssetId = selectDesignedAdAssetId(manifest, ['google_display']) ?? primaryHeroAssetId;
     const defaultTikTokPlatform = resolveDefaultTikTokPlatform(options);
@@ -167,6 +214,7 @@ export function buildDistributionSchedule(
     addIfPresent(drafts, instagramFeedAdAssetId ? {
         platform: 'instagram_feed',
         assetId: instagramFeedAdAssetId,
+        ...(instagramFeedCarouselAssetIds.length > 1 ? { assetIds: instagramFeedCarouselAssetIds } : {}),
         copyVariant: 'carousel_day_3',
         scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         campaignStage: 'seed_day_3',

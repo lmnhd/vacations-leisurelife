@@ -20,7 +20,16 @@ interface RenderInput {
 function polaroidFrame(src: string | undefined, caption: string, rotation: number, w: number, frameH: number): React.ReactElement {
     return h('div', { style: { display: 'flex', flexDirection: 'column', background: '#fff', padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.15)', transform: `rotate(${rotation}deg)`, width: w, alignItems: 'center' } },
         h('div', { style: { width: w - 16, height: frameH - 16, background: src ? undefined : '#ddd', overflow: 'hidden' } },
-            src ? h('img', { src, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : h('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 } }, 'photo'),
+            src ? h('img', {
+                src,
+                style: {
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                    backgroundColor: '#fff',
+                },
+            }) : h('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 } }, 'photo'),
         ),
         h('div', { style: { fontFamily: 'Hand', fontSize: 12, color: PAPER_INK, marginTop: 6, textAlign: 'center' } }, caption),
     );

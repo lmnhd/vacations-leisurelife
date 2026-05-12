@@ -79,7 +79,12 @@ export function renderImageModule(
 
     return h('img', {
         src: imageBufferToDataUri(sourceImage.buffer, sourceImage.record.mimeType),
-        style: { ...style, objectFit: 'cover' },
+        style: {
+            ...style,
+            objectFit: 'contain',
+            objectPosition: 'center',
+            backgroundColor: 'rgba(0,0,0,0.08)',
+        },
     });
 }
 

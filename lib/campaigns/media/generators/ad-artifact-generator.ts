@@ -2,7 +2,7 @@ import type { AssetRecord, CampaignAestheticBrief } from '../../schema';
 import type { Campaign } from '../../types';
 import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService } from '../media-pipeline-config';
 import { storeAsset } from '../storage-client';
-import { saveAssetRecord } from '../media-store';
+import { getMediaManifest, saveAssetRecord } from '../media-store';
 import { generateImageFromPrompt } from './stability-generator';
 import { extractNicheTokens } from '../../design-system/niche-tokens';
 import { buildDocumentaryDetailSpecs } from '../../design-system/documentary-prompts';
@@ -54,6 +54,7 @@ export async function generateDesignedAdArtifactPack(
     brief: CampaignAestheticBrief,
     campaign: Campaign | null,
 ): Promise<AdArtifactGenerationResult> {
+    const existingManifest = await getMediaManifest(slug);
     const tokens = extractNicheTokens(brief, campaign);
     const detailSpecs = buildDocumentaryDetailSpecs(
         brief,
@@ -83,10 +84,18 @@ export async function generateDesignedAdArtifactPack(
 
     const designedAds: AssetRecord[] = [];
     const adFormatBias = brief.identityBlueprint?.adFormatBias ?? [];
-    for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails)) {
+    const trustImages = (existingManifest?.images.shipReferences ?? []).filter((record) => record.active && !!record.url);
+    for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails, trustImages)) {
         let sourceBuffer: Buffer | undefined;
         if (spec.sourceImage) {
             sourceBuffer = sourceBuffers.get(spec.sourceImage.assetId);
+            if (!sourceBuffer && spec.sourceImage.url) {
+                const response = await fetch(spec.sourceImage.url);
+                if (response.ok) {
+                    sourceBuffer = Buffer.from(await response.arrayBuffer());
+                    sourceBuffers.set(spec.sourceImage.assetId, sourceBuffer);
+                }
+            }
         }
 
         const buffer = await renderDesignedAdArtifact(spec, tokens, sourceBuffer);

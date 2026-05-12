@@ -40,11 +40,15 @@ export interface CroppedImage {
  */
 export async function generatePlatformCrops(
     sourceBuffer: Buffer,
-    sourceId: string
+    sourceId: string,
+    formats?: readonly ImageFormat[],
 ): Promise<CroppedImage[]> {
     const results: CroppedImage[] = [];
+    const cropsToGenerate = formats && formats.length > 0
+        ? PLATFORM_CROPS.filter((crop) => formats.includes(crop.format))
+        : PLATFORM_CROPS;
 
-    for (const crop of PLATFORM_CROPS) {
+    for (const crop of cropsToGenerate) {
         const croppedBuffer = await sharp(sourceBuffer)
             .resize(crop.width, crop.height, { fit: 'cover', position: 'attention' })
             .webp({ quality: 85 })

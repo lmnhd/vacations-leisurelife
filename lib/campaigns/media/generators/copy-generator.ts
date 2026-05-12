@@ -79,7 +79,7 @@ Campaign Context:
 - Belonging Signals: ${brief.communityExpression.belongingSignals.join(', ')}
 - Solitude Anti-Patterns: ${brief.communityExpression.solitudeAntiPatterns.join(', ')}
 - Copy Framing Rule: ${brief.communityExpression.copyFramingRule}
-- CTA Variants: Waitlist: "${brief.messaging.ctaVariants.waitlist}", Book: "${brief.messaging.ctaVariants.bookNow}"
+- CTA Variants: Waitlist: "${brief.messaging.ctaVariants.waitlist}", Join List: "${brief.messaging.ctaVariants.bookNow}"
 - Aesthetic: ${brief.visual.aestheticLabel}
 - TikTok Hook (reference): ${brief.socialConcepts.tiktokOrganic.hook}
 - Instagram Feed Caption (reference): ${brief.socialConcepts.instagramFeed.caption}

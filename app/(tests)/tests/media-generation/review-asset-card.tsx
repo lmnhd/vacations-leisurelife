@@ -314,27 +314,34 @@ function renderVoiceContext(asset: AssetRecord) {
     );
 }
 
-function renderIdentityContext(asset: AssetRecord, identityBlueprint?: CampaignIdentityBlueprint) {
-    if (!identityBlueprint) {
-        return null;
-    }
+function renderPromptSnippet(asset: AssetRecord) {
+    const prompt = asset.promptUsed?.trim();
+    if (!prompt) return null;
 
-    if (asset.assetType !== 'designed_ad_artifact' && asset.assetType !== 'documentary_detail_image') {
-        return null;
-    }
+    const SNIPPET_CHARS = 120;
+    const snippet = prompt.length > SNIPPET_CHARS
+        ? `${prompt.slice(0, SNIPPET_CHARS).trimEnd()}…`
+        : prompt;
+    const hasMore = prompt.length > SNIPPET_CHARS;
 
     return (
-        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-cyan-400">Campaign Identity</div>
-            <div className="text-[11px] text-slate-200">
-                {identityBlueprint.energyMode.replace(/_/g, ' ')} • {identityBlueprint.socialScale.replace(/_/g, ' ')}
+        <div className="relative group">
+            <div className="flex gap-2 rounded-lg border border-white/[0.06] bg-slate-900/40 px-2.5 py-2 cursor-default">
+                <span className="mt-px shrink-0 font-mono text-[9px] uppercase tracking-widest text-slate-600">
+                    Prompt
+                </span>
+                <p className="font-mono text-[10px] leading-relaxed text-slate-500 line-clamp-2 break-words">
+                    {snippet}
+                </p>
             </div>
-            <div className="text-[11px] text-slate-400">
-                {identityBlueprint.summary}
-            </div>
-            <div className="text-[11px] text-slate-500">
-                Avoid: {identityBlueprint.forbiddenDefaults.join(', ')}
-            </div>
+            {hasMore && (
+                <div className="invisible absolute left-0 top-full z-50 mt-1.5 w-[360px] rounded-lg border border-white/10 bg-slate-900 p-3 shadow-xl shadow-black/50 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100">
+                    <div className="mb-2 font-mono text-[9px] uppercase tracking-widest text-slate-600">Full prompt</div>
+                    <p className="max-h-48 overflow-y-auto font-mono text-[11px] leading-relaxed text-slate-300 whitespace-pre-wrap break-words">
+                        {prompt}
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
@@ -343,7 +350,7 @@ function renderIdentityContext(asset: AssetRecord, identityBlueprint?: CampaignI
 // ReviewAssetCard
 // ────────────────────────────────────────────────────────────────────────────
 
-export function ReviewAssetCard({ slug, asset, title, entryKey, identityBlueprint, onRefresh }: {
+export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     slug: string;
     asset: AssetRecord;
     title: string;
@@ -612,7 +619,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, identityBlueprin
                 <span>{new Date(asset.createdAt).toLocaleDateString()}</span>
             </div>
 
-            {renderIdentityContext(asset, identityBlueprint)}
+            {renderPromptSnippet(asset)}
             {renderReferenceContext(asset)}
             {renderVoiceContext(asset)}
 

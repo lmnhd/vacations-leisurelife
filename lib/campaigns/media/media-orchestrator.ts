@@ -49,6 +49,7 @@ import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from './default-asset-types';
+import { selectPreferredAssetForContext } from './image-selection';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
@@ -186,6 +187,75 @@ function mergeAssetRecords(
     }
 
     return Array.from(merged.values());
+}
+
+const SOCIAL_PLATFORM_CROP_FORMATS = new Set<ImageFormat>([
+    'hero_4x5',
+    'story_9x16',
+    'square_1x1',
+    'thumbnail',
+]);
+
+const PLATFORM_CROP_FORMATS: ImageFormat[] = [
+    'hero_16x9',
+    'hero_4x5',
+    'story_9x16',
+    'square_1x1',
+    'banner_3x1',
+    'email_header',
+    'og_image',
+    'thumbnail',
+];
+
+function getPlatformCropSelectionContext(format: ImageFormat) {
+    switch (format) {
+        case 'hero_4x5':
+        case 'og_image':
+            return 'meta_ad_creative' as const;
+        case 'story_9x16':
+        case 'square_1x1':
+        case 'thumbnail':
+            return 'instagram_cover' as const;
+        case 'banner_3x1':
+        case 'email_header':
+            return 'email_header' as const;
+        case 'hero_16x9':
+        default:
+            return 'landing_hero_alt' as const;
+    }
+}
+
+function uniqueActiveAssetPool(records: readonly AssetRecord[]): AssetRecord[] {
+    const seen = new Set<string>();
+    const pool: AssetRecord[] = [];
+
+    for (const record of records) {
+        if (!record.active || !record.url || seen.has(record.assetId)) {
+            continue;
+        }
+        seen.add(record.assetId);
+        pool.push(record);
+    }
+
+    return pool;
+}
+
+function selectPlatformCropSourceRecord(
+    format: ImageFormat,
+    sceneImages: readonly AssetRecord[],
+    heroImages: readonly AssetRecord[],
+    aestheticConcepts: readonly AssetRecord[],
+    manifest?: CampaignMediaManifest | null,
+): AssetRecord | null {
+    const sceneFirst = SOCIAL_PLATFORM_CROP_FORMATS.has(format);
+    const pool = sceneFirst
+        ? uniqueActiveAssetPool([...sceneImages, ...heroImages, ...aestheticConcepts])
+        : uniqueActiveAssetPool([...heroImages, ...sceneImages, ...aestheticConcepts]);
+    if (pool.length === 0) {
+        return null;
+    }
+
+    return selectPreferredAssetForContext(pool, getPlatformCropSelectionContext(format), manifest) ?? pool[0] ?? null;
 }
 
 function resolveSceneImageMode(options: GenerationOptions): 'all' | 'missing_only' {
@@ -696,34 +766,6 @@ export async function runMediaGeneration(
 
         const group2Promises: Promise<unknown>[] = [];
 
-        // Platform crops (from hero images)
-        if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes) && heroRecords.length > 0) {
-            for (const heroRec of heroRecords) {
-                group2Promises.push(
-                    (async () => {
-                        try {
-                            // Download the hero source for cropping
-                            const sourceResp = await fetch(heroRec.url);
-                            const sourceBuffer = Buffer.from(await sourceResp.arrayBuffer());
-                            const crops = await generatePlatformCrops(sourceBuffer, heroRec.assetId);
-                            for (const crop of crops) {
-                                const rec = await uploadAndRecord(
-                                    slug, crop.assetId, 'platform_crop', 'sharp',
-                                    `Crop of ${heroRec.assetId} to ${crop.format}`,
-                                    crop.buffer, crop.fileName, 'image/webp',
-                                    ['crop', crop.format, heroRec.assetId],
-                                    { width: crop.width, height: crop.height }
-                                );
-                                cropRecords.push(rec);
-                            }
-                        } catch (err) {
-                            errors.push(`[platform_crop/sharp] ${err instanceof Error ? err.message : String(err)}`);
-                        }
-                    })()
-                );
-            }
-        }
-
         // ── Scene image generation (Production Bible path) ──────────
         if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && !hasProductionBible) {
             errors.push(
@@ -770,6 +812,7 @@ export async function runMediaGeneration(
                         scenesToGenerate,
                         sceneReferenceCandidates,
                         campaign.shipTarget || 'TBD',
+                        brief,
                         brief?.visual.plausibilityFramework.allowedProps.slice(0, 5) ?? [],
                     );
                     const records: AssetRecord[] = [];
@@ -885,6 +928,53 @@ export async function runMediaGeneration(
         }
 
         await Promise.all(group2Promises);
+
+        if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes)) {
+            const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
+            const effectiveConcepts = mergeAssetRecords(existingManifest?.images.aestheticConcepts ?? [], conceptRecords);
+            const cropSelectionManifest: CampaignMediaManifest | null = existingManifest
+                ? {
+                    ...existingManifest,
+                    images: {
+                        ...existingManifest.images,
+                        hero: heroRecords,
+                        sceneImages: effectiveSceneImages,
+                        aestheticConcepts: effectiveConcepts,
+                    },
+                }
+                : null;
+
+            for (const format of PLATFORM_CROP_FORMATS) {
+                const sourceRecord = selectPlatformCropSourceRecord(
+                    format,
+                    effectiveSceneImages,
+                    heroRecords,
+                    effectiveConcepts,
+                    cropSelectionManifest,
+                );
+                if (!sourceRecord) {
+                    continue;
+                }
+
+                try {
+                    const sourceResp = await fetch(sourceRecord.url);
+                    const sourceBuffer = Buffer.from(await sourceResp.arrayBuffer());
+                    const crops = await generatePlatformCrops(sourceBuffer, sourceRecord.assetId, [format]);
+                    for (const crop of crops) {
+                        const rec = await uploadAndRecord(
+                            slug, crop.assetId, 'platform_crop', 'sharp',
+                            `Crop of ${sourceRecord.assetId} to ${crop.format}`,
+                            crop.buffer, crop.fileName, 'image/webp',
+                            ['crop', crop.format, sourceRecord.assetId],
+                            { width: crop.width, height: crop.height }
+                        );
+                        cropRecords.push(rec);
+                    }
+                } catch (err) {
+                    errors.push(`[platform_crop/sharp] ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
+        }
 
         // ── TikTok Promotion Synthesis ────────────────────────────────────────────
         // Runs before GROUP 3 so synthesized beat copy is available for the render.

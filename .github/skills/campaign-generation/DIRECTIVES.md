@@ -10,6 +10,8 @@ Surgical changes to specific campaign assets without re-running the full pipelin
 
 **Purpose:** The directive system lets an agent (or human) express editorial intent in natural language, resolve it to concrete field overrides, mark only the affected assets stale, and regenerate only those assets â€” without re-running the full ~100s brief pipeline.
 
+**Durability rule:** If the user wants a correction to keep applying across future regenerations, make the change in the directive or upstream brief first. Use a directive when the correction should survive later asset refreshes; use a one-off asset repair only when the fix is intentionally local to that single asset.
+
 **When to use it:**
 - A specific scene image needs a prop or lighting change (e.g. "Change scene_003 to show a vinyl record on the bar rail instead of dice").
 - A hero still needs a composition tweak (e.g. "Hero 2 should show the game box spine on the cafÃ© shelf, not generic dice").
@@ -77,6 +79,7 @@ Effective directives describe **what a camera would see or what an illustrator w
 - **Verify the patch scope** in the create response. If you asked for a scene change but `scope` does not include `scenes`, the resolution agent misunderstood â€” inspect the `patch` and either rephrase the directive or apply it manually via `PATCH /api/groups/campaign/[slug]/brief`.
 - **Poll the manifest after apply** the same way you poll after video generation. The apply route returns immediately with a jobId; generation runs in the background.
 - **One repair pass rule still applies:** If a directive apply does not fix the issue (e.g. scene still lacks niche signal after regeneration), stop and escalate to the user. Do not chain multiple directives silently.
+- **Do not use asset-only regeneration as the source of truth** for a recurring campaign rule. If the same fix would need to be repeated later, move it upstream now so later regenerations inherit it.
 
 ### When Directives Fail â€” Manual Scene Patch Fallback
 

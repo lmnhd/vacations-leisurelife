@@ -250,6 +250,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         activeContextPath: resolvedContext.activeContextPath,
         assistantMessage,
         userMessage,
+        displayName: input.displayName,
+        threadChannel: input.threadChannel,
         extractedFacts,
         toolCallsLog: toolDispatchResult.toolCallsLog as Array<Record<string, unknown>>,
     });

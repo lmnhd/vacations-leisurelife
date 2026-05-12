@@ -60,7 +60,7 @@ Every asset generated in Phase 2 has a defined destination. Distribution is trig
 |----------------|----------------|---------|
 | `DRAFT` → pre-launch setup | OG image, landing page hero, email header | Landing page live preview, internal dashboard |
 | `GATHERING_INTEREST` activated | TikTok seed video, hero images, ad creatives | Native draft creation for Meta Ads, Google ads, and the selected TikTok path |
-| Day 3 (nurture) | Carousel slides, countdown video (3 cabins remaining) | Instagram feed, email Stage 2 |
+| Day 3 (nurture) | Designed-ad feed sequence, countdown video (3 cabins remaining) | Instagram feed, email Stage 2 |
 | Day 7 (nurture) | Countdown video (2 remaining), social proof image | TikTok re-post, email Stage 3, SMS nudge |
 | Day 14 (nurture) | Countdown video (1 remaining) | TikTok re-post, Instagram Story, SMS |
 | `THRESHOLD_MET` | Threshold announcement video, hype clip, merch launch | Email "Trip is GO!", SMS, social blast, Discord pin |
@@ -326,6 +326,28 @@ POST /{ig-user-id}/media_publish
 
 This organic Instagram publishing path is separate from Meta paid ads. It should remain separate in code and UI.
 
+**Current implementation status:**
+
+1. `instagram_feed` is now planned as a real designed-ad sequence rather than a mislabeled single image.
+2. The schedule contract can carry a lead `assetId` plus `assetIds[]` for a multi-card Instagram feed payload.
+3. The current simulation payload exposes `mediaType: "CAROUSEL"` and `mediaUrls[]` when multiple designed-ad assets are present.
+4. Live Instagram publishing is still not implemented in this phase, so this is currently a planning and simulation contract only.
+
+**Current carousel composition rule:**
+
+1. Prefer a lead `instagram_feed` designed artifact.
+2. Append supporting `carousel` artifacts such as itinerary cards.
+3. Append `instagram_square` support cards such as quote cards when useful.
+4. Keep the feed sequence editorial: lead image first, supporting context second, quote or social proof third.
+
+**Important clarification for designed-ad cards:**
+
+- `itinerary_toc_card` is a supporting carousel card, not the entire campaign creative by itself.
+- `quote_card` is a companion square asset, not the primary acquisition image by itself.
+- `type_hook_card` is a static vertical support asset tagged for `story` / `tiktok`, but it is not yet the live delivery path for Instagram Reels or Stories.
+
+When the live Instagram adapter is built, it should honor the ordered `assetIds[]` contract for feed carousel publishing instead of collapsing the sequence back to one image.
+
 ---
 
 ### 3. Meta Ads (Facebook / Instagram Ads)
@@ -479,6 +501,21 @@ Recommended default:
 4. persist native review links where possible
 5. require explicit activation after review
 
+**Current implementation status:**
+
+1. The live Google draft helper now prefers a designed ad artifact tagged `google_display` instead of always uploading the raw hero image.
+2. The designed `image_detail_ad` is now the intended Google display creative shell.
+3. That display-style artifact can now pull from ship-reference or trust imagery rather than only documentary-detail modules.
+4. Google still needs the full targeting and review workflow described in the companion Google docs, but the creative handoff is now closer to the intended contract.
+
+**Creative routing note:**
+
+1. Select the best `google_display` designed artifact if available.
+2. Fall back to hero image only if no designed display artifact exists.
+3. Pair that image with generated ad copy inside a paused Responsive Display draft.
+
+This replaces the earlier hero-only behavior and should be treated as the new baseline when reviewing Google display creatives.
+
 Google should follow the same contract shape as Meta even if the provider API details differ.
 
 ---
@@ -603,6 +640,7 @@ interface ScheduledPost {
   platform: 'tiktok' | 'instagram_feed' | 'instagram_reels' | 'instagram_story' 
             | 'facebook_ad' | 'youtube' | 'pinterest' | 'discord' | 'sms' | 'email';
   assetId: string;             // References MEDIA#ASSET# record
+  assetIds?: string[];         // Optional ordered multi-asset sequence (eg, Instagram feed carousel)
   copyVariant: string;         // References copy.captions entry
   scheduledAt: string | 'ON_THRESHOLD' | 'ON_MANIFEST_SUBMIT' | 'ON_EXPIRY';
   campaignStage: string;       // 'seed_day_0' | 'seed_day_3' | etc.
@@ -612,6 +650,12 @@ interface ScheduledPost {
   providerDraftType?: 'organic_post' | 'paid_ad';
 }
 ```
+
+**Asset selection note:**
+
+- Social-oriented platform crops now prefer scene imagery first where possible, then hero/concept fallback.
+- Wider utility crops still allow hero/trust-first behavior when that better fits the surface.
+- This matters for Instagram and Meta creative review because the crop source is no longer assumed to be hero-only.
 
 The Distribution Schedule is the single source of truth for what has been posted, what is queued, and what needs human review. It's surfaced in the Campaign Media Studio UI.
 
@@ -721,6 +765,16 @@ Behavior:
 - Creates an Ad in **PAUSED** status for safety.
 - Persists `externalPostId` onto the distribution schedule post.
 
+### 4A) Instagram feed simulation contract
+
+Current simulated `instagram_feed` previews may now return:
+
+- `mediaType: "CAROUSEL"`
+- `mediaUrl` for the lead creative
+- `mediaUrls[]` for the ordered multi-card feed sequence
+
+This is the contract that the live Instagram adapter should honor when Instagram implementation begins.
+
 ## Implementation Plan For The Next Agent
 
 The next implementation agent should treat the ad phase as a native-draft system, not a one-click final publisher.
@@ -731,6 +785,7 @@ The next implementation agent should treat the ad phase as a native-draft system
 2. add provider connection validation for Meta
 3. persist draft metadata and native review URLs
 4. separate draft creation from activation
+5. preserve `instagram_feed` carousel sequencing during live Meta/Instagram implementation instead of flattening to one image
 
 ### Phase B: Google Ads Integration
 
@@ -738,6 +793,7 @@ The next implementation agent should treat the ad phase as a native-draft system
 2. add Google provider connection validation
 3. create paused native drafts and persist IDs
 4. expose native review links in the review UI and dashboard
+5. keep the `google_display` designed artifact as the primary image path, with hero-only fallback
 
 ### Phase C: TikTok Decision + Implementation
 

@@ -56,7 +56,11 @@ The agent must follow these steps linearly. At the end of each major phase, the 
    Check `brief.productionBible.sceneLibrary` in the readiness response. Every scene object must have a non-empty `imagePrompt` field. If all `imagePrompt` fields are empty strings, the production bible generation failed silently and scene images will be generic. Re-run the brief bundle before proceeding to media generation.
    - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
    - The same rule applies to any persistent warning in later phases: one auto-repair pass, then stop and ask for a decision. The agent is the glue between phases, not a substitute for the final call.
-4. **User Intervention Checkpoint:**
+4. **Persistence check for revisions:**
+   - If a user-requested change should survive future regenerations, put it in the upstream brief or directive source rather than only in one regenerated asset.
+   - Use asset-level regeneration for narrow cleanup only when the fix is intentionally local.
+   - If the same correction would probably need to be repeated the next time the brief, still bible, or production bible is regenerated, it belongs in the durable source of truth now.
+5. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
    - **Agent must explicitly tell user to open their browser and navigate to this URL to review the brief visually before proceeding to media generation.**
@@ -140,9 +144,13 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 
 **Surgical scene changes:** If only one or a few scenes need revision, use a **Campaign Directive** (see Â§1b) instead of `"all"`. Create a directive targeting the specific `sceneId`, apply it, and only the affected scenes regenerate. This is cheaper, faster, and preserves existing assets that are already correct.
 
+**Durability rule:** If the user is asking for a recurring style or content correction that should remain true across future regenerations, make the change in the directive or source brief first, then regenerate. Do not solve a persistent campaign rule only by fixing the visible asset once.
+
 **Important scope note:** A request to run "through scene images" stops here. It includes Step A (ship references), Step B (heroes + concepts), and Step C (scene images), but it does **not** include documentary detail modules or designed ads. Those belong to Step D and must be requested or executed explicitly if the goal is a full image pack.
 
 **Scene warning gate:** If the scene layer still produces `scene_niche_cue_missing` or `scene_human_presence_weak` after the first repair pass, stop the flow and present the user with a decision checkpoint. The agent may repair once automatically, but it may not silently continue through video generation while those warnings persist.
+
+**Probe policy:** Do not run `/media/probe` or the test-page probe buttons as a default campaign step. Probes spend preview-image and Claude-vision budget to validate direction, so only use them when the user explicitly asks for validation or when you are actively debugging a stubborn prompt-quality issue.
 
 **Agentic recovery pattern:** For any campaign layer that looks "almost right" but not quite:
 1. Inspect the actual source-of-truth artifact that feeds the next step.

@@ -152,8 +152,13 @@ function buildPropAllowanceRules(allowedProps: readonly string[]): string[] {
     ];
 }
 
-function buildGroupPresenceGuidance(): string {
-    return 'People count: 3-6 visible people when the frame is social or group-led; do not default to a couple or solo figure for a group theme';
+function buildGroupPresenceGuidance(brief: CampaignAestheticBrief): string {
+    const minimumVisiblePeople = brief.visual.humanRepresentation.minimumVisiblePeople ?? 3;
+    if (minimumVisiblePeople >= 3) {
+        return `People count: at least ${minimumVisiblePeople} visible people in every frame; keep them naturally active or socially engaged so the frame still reads when cropped`;
+    }
+
+    return `People count: at least ${minimumVisiblePeople} visible people when the frame is social or group-led; do not default to a couple or solo figure for a group theme`;
 }
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
@@ -221,7 +226,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-                buildGroupPresenceGuidance(),
+                buildGroupPresenceGuidance(brief),
                 `Casting goal: ${casting.castingGoal}`,
                 `Age guidance: ${casting.ageRangeGuidance}`,
                 `Diversity guidance: ${casting.diversityIntent}`,
@@ -271,7 +276,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-                buildGroupPresenceGuidance(),
+                buildGroupPresenceGuidance(brief),
                 allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
                 landscapeGuardrails.reality,
@@ -314,7 +319,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Prop rule: ${propAllowanceRules[index % propAllowanceRules.length]}`,
             `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
             `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
-            `${buildGroupPresenceGuidance()}; at least some prompts should feel softly social rather than isolated`,
+            `${buildGroupPresenceGuidance(brief)}; at least some prompts should feel softly social rather than isolated`,
             `Casting goal: ${casting.castingGoal}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
             `Diversity guidance: ${casting.diversityIntent}`,
@@ -538,7 +543,7 @@ function getConceptShotVariant(index: number): {
             label: 'editorial environment frame',
             framing: 'wide composition with architecture and horizon carrying the image before any one person does',
             compositionBias: 'prioritize place, atmosphere, and ship geometry over a single hero pose',
-            subjectStrategy: 'people are secondary and natural, appearing as part of the scene rather than the whole point of it',
+            subjectStrategy: 'at least one person should still be visible, but people remain secondary and natural, appearing as part of the scene rather than the whole point of it',
             environmentPriority: 'let sea, skyline, window light, or deck lines dominate the composition',
             paletteBias: 'lean into the broad mood of the palette through ambient light and material tones',
         },
@@ -562,7 +567,7 @@ function getConceptShotVariant(index: number): {
             label: 'destination mood postcard',
             framing: 'travel-poster-like square frame with destination atmosphere or sea relation strongly present',
             compositionBias: 'make the concept feel collectible and moodboard-worthy rather than headline-safe',
-            subjectStrategy: 'subjects can be small in frame or absent if the place itself is doing the work',
+            subjectStrategy: 'subjects can be small in frame, but at least one person should still be present if the place itself is doing the work',
             environmentPriority: 'destination air, harbor light, railings, or open sea should clearly differentiate this from the other concepts',
             paletteBias: 'use the palette through sky, water, and environmental color harmony',
         },
@@ -673,10 +678,10 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
     }
 
     const concepts = [
-        `${aestheticLabel}: cruise travel mood image with ${colorPalette.primary} accents and ${imageryMood} atmosphere`,
-        `${aestheticLabel} lifestyle essence through ${colorPalette.secondary} and ${colorPalette.accent} tones; niche cues kept subtle and believable`,
-        `${aestheticLabel} scene atmosphere, ${imageryMood}, grounded reality; ${lightingStyle}; ocean-forward composition`,
-        `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; calm travel editorial`,
+        `${aestheticLabel}: cruise travel mood image with ${colorPalette.primary} accents, ${imageryMood} atmosphere, and at least one visible person`,
+        `${aestheticLabel} lifestyle essence through ${colorPalette.secondary} and ${colorPalette.accent} tones; niche cues kept subtle, believable, and human-present`,
+        `${aestheticLabel} scene atmosphere, ${imageryMood}, grounded reality; ${lightingStyle}; ocean-forward composition with at least one person in frame`,
+        `${aestheticLabel} visual identity through color and mood: ${colorPalette.primary} dominant with ${colorPalette.background} clarity; calm travel editorial, not people-free`,
     ];
 
     return concepts.map((concept, index) => {
@@ -704,6 +709,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Diversity guidance: ${casting.diversityIntent}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
             `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
+            `Human presence rule: at least one visible person must appear in the frame; never leave the image empty of people`,
             `Prop rule: if any object appears, it must be incidental and secondary — never the main read of the frame`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
             landscapeGuardrails.reality,
@@ -790,16 +796,16 @@ function buildReferenceGroundedHeroPrompt(
         `Prop rule: ${propRule}`,
         resolvedStyle.allowPhotographicReinforcers ? `Mood and tone: ${imageryMood}, ${lightingStyle}` : '',
         resolvedStyle.style === 'sketched'
-            ? `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement`
-            : `Art direction: Feature the ${candidate.category.replace(/_/g, ' ')} ship environment as the subject; no dominant people or staged human activity`,
+            ? `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement, and at least one clearly visible person`
+            : `Art direction: Feature the ${candidate.category.replace(/_/g, ' ')} ship environment as the subject while keeping at least one person visible and naturally engaged`,
         `Believable niche expression: ${plausibleMomentsText || 'guided noticing, field notes, simple observation, conversational discovery'}`,
         `Variation bias: ${heroVariant.cameraBias}`,
         `Time-of-day bias: ${heroVariant.temporalBias}`,
         `Staging bias: ${heroVariant.stagingBias}`,
         `Hero simplicity constraints: keep composition minimal, no crowded decks, no visual noise, no collage-like storytelling`,
         resolvedStyle.style === 'sketched'
-            ? `Framing constraints: ${heroVariant.framing}, one focal plane, 3-6 visible people for group-led frames, background simplified and readable`
-            : `Framing constraints: one focal plane, ship-led composition, tiny background figures or silhouettes acceptable only if incidental`,
+            ? `Framing constraints: ${heroVariant.framing}, one focal plane, at least ${brief.visual.humanRepresentation.minimumVisiblePeople ?? 3} visible people, background simplified and readable`
+            : `Framing constraints: one focal plane, ship-led composition, at least one visible person, background figures only if incidental`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Environment integrity: preserve marine deck materials, railings, glazing, pool surfaces, and vessel architecture from the source reference; do not convert ship spaces into landscaped resort spaces`,
         landscapeGuardrails.reality,
@@ -1049,6 +1055,7 @@ export async function generateSceneImages(
     scenes: readonly SceneSpec[],
     shipReferences: readonly ShipReferenceCandidate[],
     shipName: string,
+    brief: CampaignAestheticBrief,
     themeAnchorProps: readonly string[] = [],
 ): Promise<GeneratedSceneImage[]> {
     const results: GeneratedSceneImage[] = [];
@@ -1086,7 +1093,7 @@ export async function generateSceneImages(
             `Framing: ${scene.cameraAngle}`,
             shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
             // Human presence: prefer low-risk social texture over total suppression
-            'If people appear: show 3 or more visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults',
+            `If people appear: show at least ${brief.visual.humanRepresentation.minimumVisiblePeople ?? 3} visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults`,
             'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
             'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
             landscapeGuardrails.reality,

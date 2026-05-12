@@ -57,7 +57,7 @@ export const PAID_VARIANT_TARGET_DURATION_SECONDS = PAID_VARIANT_SHOTS.reduce((s
 
 export function buildPaidVariantOverlayCards(brief: CampaignAestheticBrief, _storyboard?: Storyboard): TikTokOverlayCardSpec[] {
     const headline = brief.messaging.heroSlogan.trim();
-    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Book now';
+    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Join List';
     const { colorPalette, plausibilityFramework } = brief.visual;
     const placements = buildOverlayPlacements();
 
@@ -91,7 +91,7 @@ export function buildPaidVariantOverlayCards(brief: CampaignAestheticBrief, _sto
 
 export function buildPaidVariantShotPrompts(brief: CampaignAestheticBrief): string[] {
     const headline = brief.messaging.heroSlogan.trim();
-    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Book now';
+    const cta = brief.messaging.ctaVariants.bookNow.trim() || 'Join List';
     const { imageryMood, lightingStyle, colorPalette } = brief.visual;
     const { cruiseNativeMoments } = brief.visual.plausibilityFramework;
 

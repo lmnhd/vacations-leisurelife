@@ -88,6 +88,76 @@ async function main(): Promise<void> {
     assert.equal(typeof result.preview.mediaUrl, 'string');
     assert.ok(String(result.preview.mediaUrl).includes('ad_detail'));
 
+    const instagramManifest: CampaignMediaManifest = {
+        ...manifest,
+        images: {
+            ...manifest.images,
+            designedAdArtifacts: [
+                {
+                    assetId: 'ad_editorial_cover_4x5',
+                    assetType: 'designed_ad_artifact',
+                    url: 'https://example.com/ad_editorial.png',
+                    generator: 'sharp',
+                    promptUsed: 'designed',
+                    fileSizeBytes: 100,
+                    mimeType: 'image/png',
+                    tags: ['designed_ad', 'editorial_cover', 'instagram_feed'],
+                    createdAt: '2026-04-30T00:00:00.000Z',
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                },
+                {
+                    assetId: 'ad_itinerary_toc_4x5',
+                    assetType: 'designed_ad_artifact',
+                    url: 'https://example.com/ad_itinerary.png',
+                    generator: 'sharp',
+                    promptUsed: 'designed',
+                    fileSizeBytes: 100,
+                    mimeType: 'image/png',
+                    tags: ['designed_ad', 'itinerary', 'carousel'],
+                    createdAt: '2026-04-30T00:00:00.000Z',
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                },
+                {
+                    assetId: 'ad_quote_card_1x1',
+                    assetType: 'designed_ad_artifact',
+                    url: 'https://example.com/ad_quote.png',
+                    generator: 'sharp',
+                    promptUsed: 'designed',
+                    fileSizeBytes: 100,
+                    mimeType: 'image/png',
+                    tags: ['designed_ad', 'quote', 'instagram_square'],
+                    createdAt: '2026-04-30T00:00:00.000Z',
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                },
+            ],
+        },
+    };
+    const instagramPost: ScheduledPost = {
+        postId: 'post2',
+        platform: 'instagram_feed',
+        assetId: 'ad_editorial_cover_4x5',
+        assetIds: ['ad_editorial_cover_4x5', 'ad_itinerary_toc_4x5', 'ad_quote_card_1x1'],
+        copyVariant: 'carousel_day_3',
+        scheduledAt: new Date().toISOString(),
+        campaignStage: 'seed_day_3',
+        status: 'scheduled',
+        notes: [],
+    };
+    const instagramResult = await dispatchMarketingPost(campaign, instagramManifest, instagramPost, 'simulate');
+    assert.equal(instagramResult.status, 'draft_created');
+    assert.equal(instagramResult.preview.mediaType, 'CAROUSEL');
+    assert.deepEqual(instagramResult.preview.mediaUrls, [
+        'https://example.com/ad_editorial.png',
+        'https://example.com/ad_itinerary.png',
+        'https://example.com/ad_quote.png',
+    ]);
+
     console.log('distribution marketing designed ads tests passed');
 }
 

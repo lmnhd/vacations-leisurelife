@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type {
   AssetRecord,
   CampaignMediaManifest,
@@ -638,8 +638,6 @@ export default function MediaGenerationTestPage() {
     useState<GeneratorResult>(makeResult());
 
   // CDN URL of last uploaded hero image – passed to Sharp crops + video generators
-  const lastHeroCdnUrl = useRef<string>("");
-
   function applyPersistedState(nextState: PersistedTestPageState) {
     setThemeMusicSource(nextState.themeMusicSource);
     setHeroImageUrl(nextState.heroImageUrl);
@@ -657,8 +655,6 @@ export default function MediaGenerationTestPage() {
     setStoryboardVideoResult(nextState.storyboardVideoResult);
     setRunwayCountdownResult(nextState.runwayCountdownResult);
     setRunwayBrollResult(nextState.runwayBrollResult);
-    lastHeroCdnUrl.current =
-      nextState.heroResult.cdnUrl || nextState.heroImageUrl;
   }
   // User-editable heroImageUrl for video generators (can paste any CDN URL)
   const [heroImageUrl, setHeroImageUrl] = useState("");
@@ -1025,7 +1021,6 @@ export default function MediaGenerationTestPage() {
               { generator: "real_ship_hero" },
               (r) => {
                 if (r.cdnUrl) {
-                  lastHeroCdnUrl.current = r.cdnUrl;
                   setHeroImageUrl(r.cdnUrl);
                 }
                 setHeroResult(r);
@@ -1082,30 +1077,20 @@ export default function MediaGenerationTestPage() {
           title="Sharp — Platform Crops"
           icon={<Crop className="h-4 w-4" />}
           color="purple"
-          description="Crops the uploaded real-ship hero image into all 8 platform formats. Fetches source from R2 CDN and uploads all crops back to R2. Run after Real Ship Hero."
+          description="Builds all 8 platform crops from the best available manifest image, preferring scene imagery for social placements and falling back to hero/concept when needed."
           cost="free"
           apiKeys={["R2"]}
           result={cropResult}
           previewType="image"
-          onRun={() => {
-            if (!lastHeroCdnUrl.current) {
-              setCropResult({
-                state: "error",
-                data: null,
-                error: "Run Real Ship Hero first — need a CDN URL.",
-                cdnUrl: "",
-              });
-              return;
-            }
+          onRun={() =>
             runGenerator(
               `${base}/images`,
               {
                 generator: "sharp_crops",
-                sourceImageCdnUrl: lastHeroCdnUrl.current,
               },
               setCropResult,
-            );
-          }}
+            )
+          }
         />
 
         {/* ── Video: Hero Image URL input ──────────────────────── */}

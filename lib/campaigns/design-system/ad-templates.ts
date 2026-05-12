@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AssetRecord } from '../schema';
+import type { AssetRecord, CampaignAestheticBrief } from '../schema';
 import type { DesignedAdArtifactKind, DesignedAdRenderSpec, NicheTokens, VisualSystem } from './types';
 import { renderPngFromElement, type FontFamily } from './renderer/satori-renderer';
 import {
@@ -89,6 +89,7 @@ function fontsForSystem(system: VisualSystem): FontFamily[] {
 
 function defaultSpecsForSystem(
     system: VisualSystem,
+    brief: CampaignAestheticBrief | undefined,
     sourceImages: readonly AssetRecord[],
     trustImages: readonly AssetRecord[] = [],
 ): DesignedAdRenderSpec[] {
@@ -100,6 +101,32 @@ function defaultSpecsForSystem(
         record.assetId !== narrativePrimary?.assetId && record.assetId !== narrativeSecondary?.assetId,
     ) ?? narrativeSecondary ?? narrativePrimary;
     const trustPrimary = firstActive(trustImages) ?? narrativePrimary;
+    const humanBearingPrimary = sourceImages.find((record) =>
+        record.active
+        && !!record.url
+        && ['human_glimpse', 'motion_plate', 'trust_photo'].some((kind) =>
+            record.tags.some((tag) => tag.toLowerCase() === kind),
+        ),
+    ) ?? narrativeSecondary ?? narrativePrimary;
+    const denseHumanPrimary =
+        sourceImages.find((record) =>
+            record.active
+            && !!record.url
+            && record.tags.some((tag) => tag.toLowerCase() === 'motion_plate'),
+        )
+        ?? sourceImages.find((record) =>
+            record.active
+            && !!record.url
+            && record.tags.some((tag) => tag.toLowerCase() === 'trust_photo'),
+        )
+        ?? sourceImages.find((record) =>
+            record.active
+            && !!record.url
+            && record.tags.some((tag) => tag.toLowerCase() === 'human_glimpse'),
+        )
+        ?? humanBearingPrimary;
+    const minimumVisiblePeople = brief?.visual.humanRepresentation.minimumVisiblePeople ?? 3;
+    const displayPrimary = minimumVisiblePeople >= 3 ? denseHumanPrimary : humanBearingPrimary;
 
     switch (system) {
         case 'system_1_editorial':
@@ -109,7 +136,7 @@ function defaultSpecsForSystem(
                 { kind: 'itinerary_toc_card', assetId: 'ad_itinerary_toc_4x5', fileName: 'ads/itinerary_toc_4x5.png', width: 1080, height: 1350, tags: ['designed_ad', 'itinerary', 'carousel'] },
                 { kind: 'contributor_card', assetId: 'ad_contributor_card_1x1', fileName: 'ads/contributor_card_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'contributor', 'social'], sourceImage: narrativeTertiary },
                 { kind: 'type_hook_card', assetId: 'ad_type_hook_9x16', fileName: 'ads/type_hook_9x16.png', width: 1080, height: 1920, tags: ['designed_ad', 'type_hook', 'story', 'tiktok'] },
-                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: trustPrimary ?? narrativeSecondary },
+                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: displayPrimary ?? trustPrimary ?? narrativeSecondary },
             ];
         case 'system_2_nostalgia':
             return [
@@ -118,7 +145,7 @@ function defaultSpecsForSystem(
                 { kind: 'air_mail_social', assetId: 'ad_air_mail_1x1', fileName: 'ads/air_mail_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'air_mail', 'instagram_square'] },
                 { kind: 'boarding_pass', assetId: 'ad_boarding_pass_portrait', fileName: 'ads/boarding_pass_portrait.png', width: 1080, height: 1350, tags: ['designed_ad', 'boarding_pass', 'carousel'] },
                 { kind: 'baggage_tag', assetId: 'ad_baggage_tag_2x3', fileName: 'ads/baggage_tag_2x3.png', width: 720, height: 1080, tags: ['designed_ad', 'baggage_tag', 'social'] },
-                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: trustPrimary ?? narrativeSecondary },
+                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: displayPrimary ?? trustPrimary ?? narrativeSecondary },
             ];
         case 'system_3_zine':
             return [
@@ -127,14 +154,14 @@ function defaultSpecsForSystem(
                 { kind: 'sticker_sheet', assetId: 'ad_sticker_sheet', fileName: 'ads/sticker_sheet.png', width: 1080, height: 1080, tags: ['designed_ad', 'sticker_sheet', 'instagram_square'] },
                 { kind: 'quote_card', assetId: 'ad_quote_card_1x1', fileName: 'ads/quote_card_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'quote', 'instagram_square'] },
                 { kind: 'type_hook_card', assetId: 'ad_type_hook_9x16', fileName: 'ads/type_hook_9x16.png', width: 1080, height: 1920, tags: ['designed_ad', 'type_hook', 'story', 'tiktok'] },
-                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: trustPrimary ?? narrativeSecondary },
+                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: displayPrimary ?? trustPrimary ?? narrativeSecondary },
             ];
         case 'system_4_modular':
             return [
                 { kind: 'type_hook_card', assetId: 'ad_type_hook_9x16', fileName: 'ads/type_hook_9x16.png', width: 1080, height: 1920, tags: ['designed_ad', 'type_hook', 'story', 'tiktok'] },
                 { kind: 'quote_card', assetId: 'ad_quote_card_1x1', fileName: 'ads/quote_card_1x1.png', width: 1080, height: 1080, tags: ['designed_ad', 'quote', 'instagram_square'] },
                 { kind: 'itinerary_toc_card', assetId: 'ad_itinerary_toc_4x5', fileName: 'ads/itinerary_toc_4x5.png', width: 1080, height: 1350, tags: ['designed_ad', 'itinerary', 'carousel', 'instagram_feed'] },
-                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: trustPrimary ?? narrativePrimary },
+                { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: displayPrimary ?? trustPrimary ?? narrativePrimary },
             ];
     }
 }
@@ -144,8 +171,9 @@ export function buildDesignedAdRenderSpecs(
     adFormatBias: string[],
     sourceImages: readonly AssetRecord[],
     trustImages: readonly AssetRecord[] = [],
+    brief?: CampaignAestheticBrief,
 ): DesignedAdRenderSpec[] {
-    const all = defaultSpecsForSystem(tokens.system, sourceImages, trustImages);
+    const all = defaultSpecsForSystem(tokens.system, brief, sourceImages, trustImages);
     if (!adFormatBias || adFormatBias.length === 0) return all;
 
     const loweredBias = adFormatBias.map((b) => b.toLowerCase().replace(/_/g, ''));

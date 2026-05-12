@@ -22,6 +22,7 @@ import {
 } from "@/lib/campaigns/waitlist-store";
 import { extractNicheTokens } from "@/lib/campaigns/design-system/niche-tokens";
 import type { VisualSystem } from "@/lib/campaigns/design-system/types";
+import { selectPreferredAssetForContext } from "@/lib/campaigns/media/image-selection";
 
 export interface LandingLoaderOptions {
   includeDraftPreview?: boolean;
@@ -103,10 +104,14 @@ export interface LandingDesignSystem {
     signedOutMessage: string;
     /**
      * Multi-turn seeded conversation shown to every new visitor before real messages exist.
-     * Written in a chatty, short-response register — not marketing copy.
-     * guest_123 opens; Tour Conductor replies. Three exchanges max.
+     * Written in a short, human register — not marketing copy.
+     * Seeded across the landing chat channels so each room has a small starter thread.
      */
-    starterConversation: Array<{ role: 'user' | 'assistant'; content: string }>;
+    starterConversation: Array<{
+      role: 'user' | 'assistant';
+      content: string;
+      channel?: 'main' | 'ideas' | 'logistics' | 'meetups';
+    }>;
     endpoint: string;
   };
 }
@@ -241,7 +246,11 @@ function normalizeSectionLabels(labels: string[]): string[] {
 function buildStarterConversation(
   campaign: Campaign,
   brief: CampaignAestheticBrief | null,
-): Array<{ role: 'user' | 'assistant'; content: string }> {
+): Array<{
+  role: 'user' | 'assistant';
+  content: string;
+  channel?: 'main' | 'ideas' | 'logistics' | 'meetups';
+}> {
   // Source 1: brief engine generated the conversation — use it verbatim.
   // Present on briefs regenerated after this change; empty array on older briefs.
   const generated = brief?.messaging?.starterConversation;
@@ -271,12 +280,14 @@ function buildStarterConversation(
     .trim();
 
   return [
-    { role: 'user', content: 'What is this cruise about?' },
-    { role: 'assistant', content: `${pitchLine} — ${ship}, ${destination}, ${dates}.` },
-    { role: 'user', content: 'What does that look like on the ship?' },
-    { role: 'assistant', content: `${styleLine}. The group shapes itself — ask me anything, or suggest something for the itinerary.` },
-    { role: 'user', content: 'How do I get involved?' },
-    { role: 'assistant', content: "Fill in the form on this page. No payment today — you're just telling us you want in. We'll keep you posted as the group builds." },
+    { role: 'user', channel: 'main', content: 'What is this trip?' },
+    { role: 'assistant', channel: 'main', content: `${pitchLine} — ${ship}, ${destination}, ${dates}.` },
+    { role: 'user', channel: 'ideas', content: 'Do I have to join activities?' },
+    { role: 'assistant', channel: 'ideas', content: `${styleLine}. Nothing mandatory.` },
+    { role: 'user', channel: 'logistics', content: 'How do I get updates?' },
+    { role: 'assistant', channel: 'logistics', content: "Use the form on this page. No payment today." },
+    { role: 'user', channel: 'meetups', content: 'Will people actually meet up?' },
+    { role: 'assistant', channel: 'meetups', content: 'Yes — casually. Small meetups, easy drop-ins, no pressure.' },
   ];
 }
 
@@ -423,13 +434,19 @@ export function selectLandingHeroAsset(
     return null;
   }
 
-  // Landing heroes must come from the landing hero/concept pool.
-  // Scene images are storyboard/TikTok source frames and should not drive the page hero.
   const candidates = [
     ...(manifest.images.platformCrops.hero_16x9 ?? []),
     ...manifest.images.hero,
     ...manifest.images.aestheticConcepts,
   ];
+
+  const curatedPrimary =
+    selectPreferredAssetForContext(candidates, "landing_hero_primary", manifest) ??
+    selectPreferredAssetForContext(candidates, "landing_hero_alt", manifest);
+
+  if (curatedPrimary?.url) {
+    return curatedPrimary;
+  }
 
   return selectApprovedOrFirst(candidates);
 }
@@ -461,14 +478,15 @@ function buildGalleryImages(
     return heroImage?.url ? [heroImage] : [];
   }
 
-  const landingConceptCandidates = [
-    ...manifest.images.hero,
-    ...(manifest.images.platformCrops.hero_16x9 ?? []),
-    ...manifest.images.aestheticConcepts,
-  ];
+  const sceneCandidates = [...manifest.images.sceneImages];
   const trustCandidates = [
     ...manifest.images.shipReferences,
     ...manifest.images.documentaryDetails,
+  ];
+  const fallbackCandidates = [
+    ...manifest.images.hero,
+    ...(manifest.images.platformCrops.hero_16x9 ?? []),
+    ...manifest.images.aestheticConcepts,
   ];
 
   function collectApproved(candidates: AssetRecord[]): LandingImageAsset[] {
@@ -484,27 +502,18 @@ function buildGalleryImages(
     return out;
   }
 
-  const landingConcepts = collectApproved(landingConceptCandidates);
+  const scenes = collectApproved(sceneCandidates);
   const trust = collectApproved(trustCandidates);
+  const fallback = collectApproved(fallbackCandidates);
 
+  const ordered = [...scenes, ...trust, ...fallback];
   const mixed: LandingImageAsset[] = [];
-  const maxEach = Math.ceil(maxGalleryImages / 2);
-  for (let i = 0; i < maxEach; i++) {
-    if (landingConcepts[i]) mixed.push(landingConcepts[i]);
-    if (trust[i]) mixed.push(trust[i]);
+  const seenUrls = new Set<string>();
+  for (const image of ordered) {
+    if (seenUrls.has(image.url)) continue;
+    seenUrls.add(image.url);
+    mixed.push(image);
     if (mixed.length >= maxGalleryImages) break;
-  }
-
-  if (mixed.length < maxGalleryImages) {
-    for (
-      let i = Math.ceil(mixed.length / 2);
-      i < landingConcepts.length && mixed.length < maxGalleryImages;
-      i++
-    ) {
-      if (!mixed.some((m) => m.url === landingConcepts[i].url)) {
-        mixed.push(landingConcepts[i]);
-      }
-    }
   }
 
   if (mixed.length === 0 && heroImage?.url) {
@@ -608,7 +617,7 @@ function getBookingChoices(
   const waitlistLabel =
     brief?.messaging.ctaVariants.waitlist ?? "Join the list";
   const bookNowLabel =
-    brief?.messaging.ctaVariants.bookNow ?? "Book now";
+    brief?.messaging.ctaVariants.bookNow ?? "Join List";
 
   const waitDescription =
     campaign.status === "THRESHOLD_MET" || campaign.status === "CONVERTED"
@@ -831,7 +840,7 @@ function buildHowItWorks(
   const waitlistLabel =
     brief?.messaging.ctaVariants.waitlist ?? "Join the group list";
   const bookingLabel =
-    brief?.messaging.ctaVariants.bookNow ?? "Start the booking path";
+    brief?.messaging.ctaVariants.bookNow ?? "Join List";
 
   return [
     {

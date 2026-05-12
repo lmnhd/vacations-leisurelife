@@ -113,6 +113,7 @@ export const HumanRepresentationGuidanceSchema = z.object({
     pairingGuidance: z.string(),
     stylingGuidance: z.string(),
     antiStereotypeRules: z.array(z.string()),
+    minimumVisiblePeople: z.number().int().positive().optional(),
 });
 export type HumanRepresentationGuidance = z.infer<typeof HumanRepresentationGuidanceSchema>;
 
@@ -127,6 +128,7 @@ export const DEFAULT_HUMAN_REPRESENTATION_GUIDANCE = {
         'Do not make one background the default while others appear only as token exceptions.',
         'Do not use caricature, costume logic, or generic stock-photo diversity signaling.',
     ],
+    minimumVisiblePeople: 3,
 } satisfies HumanRepresentationGuidance;
 
 export function normalizeHumanRepresentationGuidance(
@@ -139,6 +141,7 @@ export function normalizeHumanRepresentationGuidance(
         pairingGuidance: input?.pairingGuidance?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.pairingGuidance,
         stylingGuidance: input?.stylingGuidance?.trim() || DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.stylingGuidance,
         antiStereotypeRules: input?.antiStereotypeRules?.length ? input.antiStereotypeRules : DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.antiStereotypeRules,
+        minimumVisiblePeople: input?.minimumVisiblePeople ?? DEFAULT_HUMAN_REPRESENTATION_GUIDANCE.minimumVisiblePeople,
     };
 }
 
@@ -1395,6 +1398,7 @@ export const ScheduledPostSchema = z.object({
     postId: z.string(),
     platform: DistributionPlatformEnum,
     assetId: z.string(),
+    assetIds: z.array(z.string()).optional(),
     copyVariant: z.string(),
     scheduledAt: z.union([z.string(), DistributionTriggerTokenEnum]),
     campaignStage: z.string(),

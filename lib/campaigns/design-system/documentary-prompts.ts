@@ -11,18 +11,18 @@ const PROMPT_RULES = [
 ].join('. ');
 
 const KIND_PROMPTS: Record<DocumentaryDetailKind, string> = {
-    trust_photo: 'Documentary cruise travel image module. A believable cruise ship deck, lounge, cabin detail, or port-facing ship space, with accurate railings, teak, glass, steel, sea horizon, and marine materials. One subtle niche cue may appear as a small personal object, never as an event. No stage, no performers, no posed group, no workshop.',
-    artifact_still_life: 'Close documentary still life. A small cluster of believable travel artifacts on a cruise cabin desk or lounge table: cabin key, folded itinerary paper, one niche-related personal object, warm porthole or window light, tactile paper and wood. Casual, specific, lived-in, not product photography, not staged.',
-    texture_plate: 'Cruise-native texture plate. Close view of sunlit teak deck, brass railing detail, sea-blue reflection, paper shadow, cabin textile, or varnished wood. Designed as a quiet background layer for typography. Low subject complexity, strong negative space.',
-    human_glimpse: 'Documentary travel detail, no full faces, no full-body posing. Cropped hands near a rail, a sleeve brushing a notebook, a shoulder silhouette by a ship window, or a quiet anonymous traveler detail. Human presence is felt but not performed. No staged activity, no props as the main subject.',
-    motion_plate: 'Cinematic cruise source frame. Ocean horizon through lounge glass, warm light moving across wood, one subtle niche object, premium atmosphere, environment-led composition. No people in foreground, no action, no event setup.',
+    trust_photo: 'Documentary cruise travel image module. A believable cruise ship deck, lounge, cabin detail, or port-facing ship space, with accurate railings, teak, glass, steel, sea horizon, and marine materials. People should read as natural guests in the space rather than a staged pose. One subtle niche cue may appear as a small personal object, never as an event. No stage, no performers, no posed group, no workshop.',
+    artifact_still_life: 'Close documentary still life. A small cluster of believable travel artifacts on a cruise cabin desk or lounge table: cabin key, folded itinerary paper, one niche-related personal object, warm porthole or window light, tactile paper and wood. Include at least one person nearby or partially visible to keep the scene human and lived-in. Casual, specific, not staged.',
+    texture_plate: 'Cruise-native texture plate. Close view of sunlit teak deck, brass railing detail, sea-blue reflection, paper shadow, cabin textile, or varnished wood. A person must still be present somewhere in the frame, even if only a cropped silhouette or blurred traveler shape. Designed as a quiet background layer for typography. Low subject complexity, strong negative space.',
+    human_glimpse: 'Documentary travel detail, no full faces, no full-body posing. Cropped hands near a rail, a sleeve brushing a notebook, a shoulder silhouette by a ship window, or a quiet anonymous traveler detail. Human presence is required, but it stays understated and unperformed. No staged activity, no props as the main subject.',
+    motion_plate: 'Cinematic cruise source frame. Ocean horizon through lounge glass, warm light moving across wood, one subtle niche object, premium atmosphere, environment-led composition. Include at least one person as a quiet background presence, reflection, or partial silhouette. No action, no event setup.',
 };
 
 const DEFAULT_KINDS: DocumentaryDetailKind[] = [
+    'human_glimpse',
     'trust_photo',
     'artifact_still_life',
     'texture_plate',
-    'human_glimpse',
     'motion_plate',
 ];
 
@@ -40,6 +40,18 @@ function buildThemeCue(tokens: NicheTokens, brief: CampaignAestheticBrief): stri
         momentSignals.length > 0 ? `World signal: ${momentSignals.join(' / ')}` : '',
         vocabulary.length > 0 ? `Niche vocabulary mood: ${vocabulary.join(', ')}` : '',
     ].filter(Boolean).join('. ');
+}
+
+function buildPresenceRule(brief: CampaignAestheticBrief, tokens: NicheTokens): string {
+    const minimumVisiblePeople = brief.visual.humanRepresentation.minimumVisiblePeople ?? 3;
+    if (minimumVisiblePeople >= 3) {
+        return [
+            `At least ${minimumVisiblePeople} visible people must appear in every image, even if only as partial figures or background travelers`,
+            'Those people should read as naturally active or socially engaged, not as seated reading props',
+        ].join('. ');
+    }
+
+    return 'At least one visible person must appear in every image, even if only as a subtle background traveler or partial human presence';
 }
 
 function looksLikeBoardGameCampaign(tokens: NicheTokens, brief: CampaignAestheticBrief, campaign: Campaign | null): boolean {
@@ -142,6 +154,7 @@ export function buildDocumentaryDetailPrompt(
         buildEnergyDirective(tokens),
         buildBoardGameDirective(tokens, brief, campaign),
         buildThemeCue(tokens, brief),
+        buildPresenceRule(brief, tokens),
         PROMPT_RULES,
     ].filter(Boolean).join('. ');
 }

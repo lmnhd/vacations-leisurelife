@@ -19,6 +19,7 @@ type ChatMessage = {
     displayName: string;
     content: string;
     createdAt: string;
+    channel?: 'main' | 'ideas' | 'logistics' | 'meetups';
     isStarterMessage?: boolean;
 };
 
@@ -38,12 +39,102 @@ interface ChatChannel {
     hint: string;
 }
 
+interface ChannelSidebarSection {
+    eyebrow: string;
+    title: string;
+    description: string;
+    items: string[];
+    factsTitle: string;
+}
+
 const CHANNELS: ChatChannel[] = [
     { id: 'main', label: '# voyage-main', hint: 'Everything goes here by default' },
     { id: 'ideas', label: '# ideas', hint: 'Onboard activities, get-togethers, projects' },
     { id: 'logistics', label: '# logistics', hint: 'Cabins, dates, pricing, booking' },
     { id: 'meetups', label: '# meetups', hint: 'Meet-ups + ports + plans' },
 ];
+
+function buildChannelSidebarSection(
+    landing: CampaignLandingViewModel,
+    activeChannel: ChatChannel['id'],
+): ChannelSidebarSection {
+    const guestIdeas = landing.story.guestInvitations.slice(0, 4);
+    const expectations = landing.story.whatToExpect.slice(0, 4);
+    const logisticsItems = [
+        `${landing.pricing.sourceLabel}: ${landing.pricing.startingPriceLabel}`,
+        landing.pricing.detail,
+        `${landing.threshold.joinedEntries} entries so far · ${landing.threshold.percentOfThreshold}% to launch`,
+        'Use the form on this page to save your spot and get updates.',
+    ];
+    const meetupItems = [
+        ...guestIdeas.slice(0, 2),
+        ...expectations.slice(0, 2),
+    ];
+
+    switch (activeChannel) {
+        case 'ideas':
+            return {
+                eyebrow: 'Idea board',
+                title: 'What should we do?',
+                description: 'Optional onboard moments and easy group energy.',
+                items: guestIdeas,
+                factsTitle: 'Channel cues',
+            };
+        case 'logistics':
+            return {
+                eyebrow: 'Logistics desk',
+                title: 'Key trip details',
+                description: 'Practical facts for booking and next steps.',
+                items: logisticsItems,
+                factsTitle: 'Voyage facts',
+            };
+        case 'meetups':
+            return {
+                eyebrow: 'Meetup board',
+                title: 'How people may connect',
+                description: 'Casual meetups, port plans, and low-pressure ways to join in.',
+                items: meetupItems,
+                factsTitle: 'Good to know',
+            };
+        case 'main':
+        default:
+            return {
+                eyebrow: 'Idea board',
+                title: 'What should we do?',
+                description: 'Group-suggested onboard moments. The Conductor pins the strongest ones.',
+                items: guestIdeas,
+                factsTitle: 'Voyage facts',
+            };
+    }
+}
+
+function getComposePlaceholder(activeChannel: ChatChannel['id'], label: string): string {
+    switch (activeChannel) {
+        case 'ideas':
+            return `Share an idea or ask about onboard fun (${label})...`;
+        case 'logistics':
+            return `Ask a trip question or booking detail (${label})...`;
+        case 'meetups':
+            return `Suggest a meetup or port-day plan (${label})...`;
+        case 'main':
+        default:
+            return `Ask the Tour Conductor (${label})...`;
+    }
+}
+
+function getComposeSendLabel(activeChannel: ChatChannel['id']): string {
+    switch (activeChannel) {
+        case 'ideas':
+            return 'Send to ideas';
+        case 'logistics':
+            return 'Send to logistics';
+        case 'meetups':
+            return 'Send to meetups';
+        case 'main':
+        default:
+            return 'Send to shared thread';
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // System theming — single source of truth, not duplicated components
@@ -349,29 +440,33 @@ function IdeaBoard({
     theme,
     accentHex,
     landing,
+    activeChannel,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
     landing: CampaignLandingViewModel;
+    activeChannel: ChatChannel['id'];
 }) {
-    // Use guestInvitations (invitation-register copy) not whatToExpect (which may include
-    // nicheEnhancedMoments written as camera-pose image cues).
+    const section = useMemo(
+        () => buildChannelSidebarSection(landing, activeChannel),
+        [landing, activeChannel],
+    );
     const seedIdeas = useMemo(
-        () => landing.story.guestInvitations.slice(0, 4).map((text, i) => ({
+        () => section.items.map((text, i) => ({
             id: `seed-${i}`,
             text,
             author: 'Tour Conductor',
         })),
-        [landing.story.guestInvitations],
+        [section.items],
     );
 
     return (
         <aside className={`hidden xl:flex w-[300px] shrink-0 flex-col ${theme.aside}`}>
             <div className="border-b border-current/10 p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-50">Idea board</p>
-                <p className={`${theme.displayFont} mt-2 text-lg font-bold leading-tight`}>What should we do?</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-50">{section.eyebrow}</p>
+                <p className={`${theme.displayFont} mt-2 text-lg font-bold leading-tight`}>{section.title}</p>
                 <p className={`mt-1 text-[11px] ${theme.softerText}`}>
-                    Group-suggested onboard moments. The Conductor pins the strongest ones.
+                    {section.description}
                 </p>
             </div>
 
@@ -386,7 +481,7 @@ function IdeaBoard({
                     ))}
                 </ul>
 
-                <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Voyage facts</p>
+                <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">{section.factsTitle}</p>
                 <ul className="flex flex-col gap-2">
                     {landing.facts.slice(0, 4).map((fact) => (
                         <li key={fact.label} className={`p-3 ${theme.pinCard}`}>
@@ -444,10 +539,10 @@ function ScrollToFormCTA({
                 <div className="max-w-xl">
                     <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-65">Join the room</p>
                     <p className={`${theme.displayFont} mt-1 text-lg font-bold leading-tight`}>
-                        Reading is free. To talk, fill in the form below.
+                        Join the list.
                     </p>
                     <p className="mt-2 text-sm leading-6 opacity-80">
-                        {landing.designSystem.chat.signedOutMessage}
+                        It only takes a moment.
                     </p>
                 </div>
                 <Button
@@ -456,7 +551,7 @@ function ScrollToFormCTA({
                     className="shrink-0 rounded-none px-6 py-5 text-sm font-bold"
                     style={{ backgroundColor: accentHex, color: '#0f172a' }}
                 >
-                    Save my spot · unlock chat ↓
+                    Join the list
                 </Button>
             </div>
         </div>
@@ -492,7 +587,7 @@ function ComposeBox({
                 <Textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={`Ask the Conductor or pitch an idea (${activeChannel.label})...`}
+                    placeholder={getComposePlaceholder(activeChannel.id, activeChannel.label)}
                     className={`min-h-[88px] rounded-none text-sm ${theme.input}`}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -503,14 +598,14 @@ function ComposeBox({
                 {error && <p className="text-xs text-red-500">{error}</p>}
                 <div className="flex items-center justify-end gap-2">
                     <Button
-                        type="button"
-                        disabled={sending || !message.trim()}
-                        onClick={onSend}
-                        className="rounded-none px-5 py-3 text-sm font-bold"
-                        style={{ backgroundColor: accentHex, color: '#0f172a' }}
-                    >
-                        {sending ? 'Conductor is writing...' : 'Send to shared thread'}
-                    </Button>
+                    type="button"
+                    disabled={sending || !message.trim()}
+                    onClick={onSend}
+                    className="rounded-none px-5 py-3 text-sm font-bold"
+                    style={{ backgroundColor: accentHex, color: '#0f172a' }}
+                >
+                    {sending ? 'Conductor is writing...' : getComposeSendLabel(activeChannel.id)}
+                </Button>
                 </div>
             </div>
         </div>
@@ -533,6 +628,7 @@ function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
         role: turn.role,
         displayName: turn.role === 'assistant' ? landing.designSystem.chat.title : 'guest_123',
         content: turn.content,
+        channel: turn.channel ?? 'main',
         createdAt: new Date(0).toISOString(),
         isStarterMessage: true,
     }));
@@ -579,11 +675,20 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [messages, activeChannel]);
 
     const activeChannelConfig = useMemo(
         () => CHANNELS.find((c) => c.id === activeChannel) ?? CHANNELS[0],
         [activeChannel],
+    );
+    const sidebarSection = useMemo(
+        () => buildChannelSidebarSection(landing, activeChannel),
+        [landing, activeChannel],
+    );
+
+    const visibleMessages = useMemo(
+        () => messages.filter((item) => (item.channel ?? 'main') === activeChannel),
+        [messages, activeChannel],
     );
 
     // "Active now" presence — derive from recent guest message authors so the
@@ -615,6 +720,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
             role: 'user',
             displayName: guestIdentity.displayName,
             content: trimmed,
+            channel: activeChannel,
             createdAt: new Date().toISOString(),
         };
 
@@ -702,7 +808,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                     <MessageThread
                         theme={theme}
                         accentHex={accentHex}
-                        messages={messages}
+                        messages={visibleMessages}
                         scrollRef={scrollRef}
                         headline={landing.designSystem.chat.title}
                         activeChannel={activeChannelConfig}
@@ -728,7 +834,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                 </div>
 
                 {/* Right rail — idea board */}
-                <IdeaBoard theme={theme} accentHex={accentHex} landing={landing} />
+                <IdeaBoard theme={theme} accentHex={accentHex} landing={landing} activeChannel={activeChannel} />
             </div>
 
             {/* ── Mobile: full-width single column (< lg) ──────────────── */}
@@ -739,7 +845,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                 <MessageThread
                     theme={theme}
                     accentHex={accentHex}
-                    messages={messages}
+                    messages={visibleMessages}
                     scrollRef={scrollRef}
                     headline={landing.designSystem.chat.title}
                     activeChannel={activeChannelConfig}
@@ -841,9 +947,9 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
 
                         {/* Pinned ideas + voyage facts */}
                         <div className="border-t border-current/10 px-4 py-4">
-                            <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">📌 Pinned ideas</p>
+                            <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">📌 {sidebarSection.eyebrow}</p>
                             <ul className="flex flex-col gap-2">
-                                {landing.story.guestInvitations.slice(0, 3).map((text, i) => (
+                                {sidebarSection.items.slice(0, 3).map((text, i) => (
                                     <li key={i} className={`p-3 ${theme.ideaCard}`}>
                                         <p className="text-sm leading-5">{text}</p>
                                     </li>
@@ -852,7 +958,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                         </div>
 
                         <div className="border-t border-current/10 px-4 py-4">
-                            <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Voyage facts</p>
+                            <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">{sidebarSection.factsTitle}</p>
                             <ul className="flex flex-col gap-2">
                                 {landing.facts.slice(0, 4).map((fact) => (
                                     <li key={fact.label} className={`p-3 ${theme.pinCard}`}>

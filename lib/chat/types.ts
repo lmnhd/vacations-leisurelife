@@ -181,6 +181,8 @@ export interface PipelineInput {
     sessionId: string;
     userId: string;
     channel: Channel;
+    threadChannel?: string;
+    displayName?: string;
     model?: string;
     startingContext?: string;
     contextBlock?: string;

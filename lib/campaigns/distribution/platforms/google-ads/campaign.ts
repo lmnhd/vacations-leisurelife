@@ -16,6 +16,17 @@ function cap(text: string, max: number): string {
     return text.length > max ? text.slice(0, max).trimEnd() : text;
 }
 
+function selectGoogleDisplayImage(manifest: CampaignMediaManifest) {
+    const designedDisplayImage = (manifest.images.designedAdArtifacts ?? []).find((asset) =>
+        asset.active && !!asset.url && asset.tags.some((tag) => tag.toLowerCase() === 'google_display'),
+    );
+    if (designedDisplayImage?.url) {
+        return designedDisplayImage;
+    }
+
+    return manifest.images.hero.find((asset) => asset.active && !!asset.url) ?? manifest.images.hero[0];
+}
+
 export async function createGoogleDisplayDraft(
     campaignSlug: string,
     post: ScheduledPost,
@@ -54,20 +65,23 @@ export async function createGoogleDisplayDraft(
     const adCopy = manifest.copy?.adVariants[variantIndex] ?? manifest.copy?.adVariants[0];
     if (!adCopy) throw new Error(`No ad copy variants in manifest for ${campaignSlug}`);
 
-    // Select hero image
-    const heroImage = manifest.images.hero.find((a) => a.active && !!a.url) ?? manifest.images.hero[0];
-    if (!heroImage?.url) throw new Error(`No active hero image in manifest for ${campaignSlug}`);
+    const googleDisplayImage = selectGoogleDisplayImage(manifest);
+    if (!googleDisplayImage?.url) {
+        throw new Error(`No active Google display image in manifest for ${campaignSlug}`);
+    }
 
     const finalUrl = `${(process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.leisurelifeinteractive.net').replace(/\/$/, '')}/groups/${campaignSlug}`;
     const campaignLabel = `[DRAFT] LeisureLife ${campaignSlug}`;
 
-    // Upload hero image as a Google Ads image asset
-    const imgResponse = await fetch(heroImage.url);
-    if (!imgResponse.ok) throw new Error(`Failed to fetch hero image: ${imgResponse.status} ${imgResponse.statusText}`);
+    // Upload the selected display creative image as a Google Ads asset.
+    const imgResponse = await fetch(googleDisplayImage.url);
+    if (!imgResponse.ok) {
+        throw new Error(`Failed to fetch Google display image: ${imgResponse.status} ${imgResponse.statusText}`);
+    }
     const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
 
     const assetRes = await customer.assets.create([{
-        name: `ll-${campaignSlug}-hero-${Date.now()}`,
+        name: `ll-${campaignSlug}-google-display-${Date.now()}`,
         type: enums.AssetType.IMAGE,
         image_asset: { data: imgBuffer },
     }]);

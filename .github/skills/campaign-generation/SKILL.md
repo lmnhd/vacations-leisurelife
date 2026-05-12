@@ -12,6 +12,16 @@ Agents using this skill must treat ad hoc user-driven workflow changes as import
 - **Why this exists:** This file is the shared memory layer for the campaign-development process across agents. It is meant to accumulate real-world implementation friction so the system can later be refactored with evidence instead of relying on memory or scattered thread history.
 - **How to write entries:** Add a dated note with a short title, the trigger or user request, the change that was made, and the broader lesson or refactor implication.
 
+### Persistence Rule
+
+When a user-requested change affects how a campaign should behave in future revisions, do not leave it as a one-off asset tweak. Prefer the most durable source of truth available in this order:
+
+1. campaign directive or brief patch when the change should survive later regenerations
+2. landing still bible / production bible when the change belongs in the visual plan
+3. asset-level regeneration only when the change is intentionally local to one asset
+
+If the change is meant to survive `regenerate all`, `regenerate with revision`, or later directive application, update the upstream brief or directive source instead of only editing the regenerated asset. Use asset-only revision notes for narrow fixes that should not redefine the campaign.
+
 ## 1. Core Philosophy & Pitfalls to Avoid
 
 Based on V2 Campaign Strategy and previous iterations, agents using this skill MUST adhere to the following:
@@ -22,6 +32,8 @@ Based on V2 Campaign Strategy and previous iterations, agents using this skill M
 - **Honest Readiness:** Do not mark a campaign as "Ready" if it still carries required fixes.
 - **Deduplication:** Gemini Deep Research MUST exclude already generated campaigns (the backend pipeline handles this by natively injecting the DynamoDB state into the prompt).
 - **Agentic Glue:** Treat the campaign builder as a control loop, not a one-shot generator. The agent should notice gaps, make one targeted repair pass, re-check the result, and escalate persistent uncertainty to the user instead of silently pushing forward.
+- **Durable Revisions:** When a user asks for a change that should keep applying across future regenerations, treat the brief/directive layer as the source of truth. Do not rely on a single asset regeneration if the same change will be needed again later.
+- **Probe Discipline:** Do not run probe previews or probe-render validation as a default step. Probes generate cheap preview images plus Claude vision scoring, so they still consume real model usage. Only run them when the user explicitly asks for direction validation, or when you are actively debugging a prompt-quality problem and need that extra signal.
 
 ## 2. Reading Guide
 

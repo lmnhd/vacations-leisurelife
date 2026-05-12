@@ -78,6 +78,34 @@ function makeManifest(): CampaignMediaManifest {
                     version: 1,
                     active: true,
                 },
+                {
+                    assetId: 'ad_itinerary_toc_4x5',
+                    assetType: 'designed_ad_artifact',
+                    url: 'https://example.com/ad_itinerary.png',
+                    generator: 'sharp',
+                    promptUsed: 'designed',
+                    fileSizeBytes: 100,
+                    mimeType: 'image/png',
+                    tags: ['designed_ad', 'itinerary', 'carousel'],
+                    createdAt: '2026-04-30T00:00:00.000Z',
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                },
+                {
+                    assetId: 'ad_quote_card_1x1',
+                    assetType: 'designed_ad_artifact',
+                    url: 'https://example.com/ad_quote.png',
+                    generator: 'sharp',
+                    promptUsed: 'designed',
+                    fileSizeBytes: 100,
+                    mimeType: 'image/png',
+                    tags: ['designed_ad', 'quote', 'instagram_square'],
+                    createdAt: '2026-04-30T00:00:00.000Z',
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                },
             ],
             platformCrops: {} as CampaignMediaManifest['images']['platformCrops'],
         },
@@ -108,6 +136,11 @@ function main(): void {
     const schedule = buildDistributionSchedule(campaign, manifest, { caller: 'agent' });
 
     assert.equal(postByPlatform(schedule.posts, 'instagram_feed')?.assetId, 'ad_editorial_cover_4x5');
+    assert.deepEqual(postByPlatform(schedule.posts, 'instagram_feed')?.assetIds, [
+        'ad_editorial_cover_4x5',
+        'ad_itinerary_toc_4x5',
+        'ad_quote_card_1x1',
+    ]);
     assert.equal(postByPlatform(schedule.posts, 'facebook_ad')?.assetId, 'ad_image_detail_191x100');
     assert.equal(postByPlatform(schedule.posts, 'google_display')?.assetId, 'ad_image_detail_191x100');
 

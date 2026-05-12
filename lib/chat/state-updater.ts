@@ -40,6 +40,8 @@ export async function updateState(input: {
     activeContextPath: string;
     assistantMessage: ChatMessage;
     userMessage: ChatMessage;
+    displayName?: string;
+    threadChannel?: string;
     extractedFacts: Record<string, unknown>;
     toolCallsLog: Array<Record<string, unknown>>;
 }): Promise<void> {
@@ -57,6 +59,8 @@ export async function updateState(input: {
             sessionId: input.sessionId,
             role: 'user',
             content: input.userMessage.content,
+            displayName: input.displayName,
+            threadChannel: input.threadChannel,
             resolvedContext: input.activeContextPath,
             extractedFacts: {},
             toolCallsLog: [],
@@ -67,6 +71,8 @@ export async function updateState(input: {
             sessionId: input.sessionId,
             role: 'assistant',
             content: input.assistantMessage.content,
+            displayName: 'Tour Conductor',
+            threadChannel: input.threadChannel,
             resolvedContext: input.activeContextPath,
             extractedFacts: input.extractedFacts,
             toolCallsLog: input.toolCallsLog,

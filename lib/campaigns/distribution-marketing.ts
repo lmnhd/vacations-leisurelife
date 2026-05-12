@@ -77,6 +77,19 @@ function resolveAssetUrl(
   );
 }
 
+function resolveAssetUrls(
+  manifest: CampaignMediaManifest,
+  assetIds: string[] | undefined,
+): string[] {
+  if (!assetIds || assetIds.length === 0) {
+    return [];
+  }
+
+  return assetIds
+    .map((assetId) => resolveAssetUrl(manifest, assetId))
+    .filter((url): url is string => Boolean(url));
+}
+
 function parseTrailingIndex(value: string): number | null {
   const match = value.match(/_(\d+)$/);
   if (!match) {
@@ -210,16 +223,21 @@ function buildPreviewPayload(
     post.platform === "instagram_reels" ||
     post.platform === "instagram_story"
   ) {
+    const mediaUrls = resolveAssetUrls(manifest, post.assetIds);
+    const isCarousel = post.platform === "instagram_feed" && mediaUrls.length > 1;
     return {
       endpoint: "/{ig-user-id}/media + /{ig-user-id}/media_publish",
       mediaType:
-        post.platform === "instagram_reels"
+        isCarousel
+          ? "CAROUSEL"
+          : post.platform === "instagram_reels"
           ? "REELS"
           : post.platform === "instagram_story"
             ? "STORY"
             : "IMAGE",
       caption: getInstagramCaption(manifest, campaign),
       mediaUrl: assetUrl,
+      ...(isCarousel ? { mediaUrls } : {}),
       campaignStage: post.campaignStage,
     };
   }
@@ -596,6 +614,7 @@ export async function dispatchMarketingPost(
         campaignSlug: campaign.id,
         postId: post.postId,
         assetId: post.assetId,
+        ...(post.assetIds && post.assetIds.length > 0 ? { assetIds: post.assetIds } : {}),
       },
     };
   }

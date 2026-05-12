@@ -111,7 +111,7 @@ function resolveCardContent(brief: CampaignAestheticBrief): ResolvedCardContent 
     const aestheticLabel   = n(brief.visual.aestheticLabel);
     const toneKeywords     = brief.messaging.toneKeywords.filter(Boolean);
     const narrativeTitle   = n(brief.socialConcepts.tiktokOrganic.narrative.title);
-    const bookNow          = first(brief.messaging.ctaVariants.bookNow, 'Book your seat');
+    const bookNow          = first(brief.messaging.ctaVariants.bookNow, 'Join List');
 
     // Hook subline: short atmospheric descriptor.
     // Use the first two tone keywords joined with ' · ' if available;
@@ -404,7 +404,7 @@ function buildCtaBeatFromPromotion(
 ): TikTokSequenceBeat {
     const accent = brief.visual.colorPalette.accent;
     const accentMuted = brief.visual.colorPalette.secondary;
-    const pillLabel = first(beat.cta ?? '', brief.messaging.ctaVariants.bookNow, 'Book your seat');
+    const pillLabel = first(beat.cta ?? '', brief.messaging.ctaVariants.bookNow, 'Join List');
     const spokenText = first(beat.spokenText, shotNarration, `${beat.headline}. ${pillLabel}.`);
     return {
         presetId: 'cta',

@@ -1017,7 +1017,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
         subSlogan: raw.messaging.subSlogan || "Your kind of cruise.",
         ctaVariants: {
           waitlist: raw.messaging.ctaWaitlist || "Join the List",
-          bookNow: raw.messaging.ctaBookNow || "Book Now",
+          bookNow: raw.messaging.ctaBookNow || "Join List",
           merch: raw.messaging.ctaMerch || "Shop the Look",
           share: raw.messaging.ctaShare || "Share This",
         },

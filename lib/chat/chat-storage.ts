@@ -102,6 +102,8 @@ export class ChatStorageService {
         sessionId: string;
         role: 'user' | 'assistant';
         content: string;
+        displayName?: string;
+        threadChannel?: string;
         resolvedContext: string;
         extractedFacts: Record<string, unknown>;
         toolCallsLog: Array<Record<string, unknown>>;
@@ -119,6 +121,8 @@ export class ChatStorageService {
                     sessionId: input.sessionId,
                     role: input.role,
                     content: input.content,
+                    displayName: input.displayName,
+                    threadChannel: input.threadChannel,
                     resolvedContext: input.resolvedContext,
                     extractedFacts: input.extractedFacts,
                     toolCallsLog: input.toolCallsLog,

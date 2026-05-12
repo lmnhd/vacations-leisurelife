@@ -15,6 +15,7 @@ type PublicChatMessage = {
     displayName: string;
     content: string;
     createdAt: string;
+    channel?: 'main' | 'ideas' | 'logistics' | 'meetups';
     isStarterMessage?: boolean;
 };
 
@@ -25,6 +26,7 @@ function starterMessages(slug: string, landing: CampaignLandingViewModel): Publi
         displayName: turn.role === 'assistant' ? landing.designSystem.chat.title : 'guest_123',
         content: turn.content,
         createdAt: new Date(0).toISOString(),
+        channel: turn.channel ?? 'main',
         isStarterMessage: true,
     }));
 }
@@ -44,6 +46,13 @@ function mapConversationTurn(turn: Record<string, unknown>): PublicChatMessage |
     const displayName = role === 'assistant'
         ? 'Tour Conductor'
         : (storedName || 'Guest');
+    const threadChannelRaw = typeof turn.threadChannel === 'string' ? turn.threadChannel : '';
+    const channel = (
+        threadChannelRaw === 'main' ||
+        threadChannelRaw === 'ideas' ||
+        threadChannelRaw === 'logistics' ||
+        threadChannelRaw === 'meetups'
+    ) ? threadChannelRaw : 'main';
 
     return {
         id,
@@ -51,6 +60,7 @@ function mapConversationTurn(turn: Record<string, unknown>): PublicChatMessage |
         displayName,
         content,
         createdAt,
+        channel,
     };
 }
 
@@ -98,6 +108,43 @@ function buildCampaignContext(landing: CampaignLandingViewModel): string {
         `Primary CTA: ${landing.ctas.primary.label}`,
         `Secondary CTA: ${landing.ctas.secondary.label}`,
     ].filter(Boolean).join('\n');
+}
+
+function buildChannelGuidance(
+    threadChannel: 'main' | 'ideas' | 'logistics' | 'meetups',
+): string {
+    switch (threadChannel) {
+        case 'ideas':
+            return [
+                'Channel guidance:',
+                '- This is the ideas room.',
+                '- Favor activity suggestions, onboard moments, and easy optional group ideas.',
+                '- Keep the tone light, social, and invitational.',
+                '- Do not drift into pricing or booking unless the guest explicitly asks.',
+            ].join('\n');
+        case 'logistics':
+            return [
+                'Channel guidance:',
+                '- This is the logistics room.',
+                '- Favor practical answers about dates, ship, destination, pricing, booking path, and next steps.',
+                '- Be direct and useful.',
+                '- Do not pad the answer with extra vibe language.',
+            ].join('\n');
+        case 'meetups':
+            return [
+                'Channel guidance:',
+                '- This is the meetups room.',
+                '- Favor casual meetup ideas, port-day plans, onboard gathering energy, and how people might connect.',
+                '- Keep expectations soft and optional, never mandatory.',
+            ].join('\n');
+        case 'main':
+        default:
+            return [
+                'Channel guidance:',
+                '- This is the main room.',
+                '- Give the best short general answer, then gently point people toward ideas, logistics, or meetups when helpful.',
+            ].join('\n');
+    }
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
@@ -165,17 +212,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const displayName = (typeof body.displayName === 'string' && body.displayName.trim())
         ? body.displayName.trim()
         : 'Guest';
+    const threadChannel = body.channel === 'ideas' || body.channel === 'logistics' || body.channel === 'meetups'
+        ? body.channel
+        : 'main';
 
     const campaignContext = buildCampaignContext(result.landing);
     const guestLine = displayName !== 'Guest' ? `\nGuest name: ${displayName}` : '';
+    const channelLine = `\nActive room channel: ${threadChannel}`;
+    const channelGuidance = `\n${buildChannelGuidance(threadChannel)}`;
 
     const chatResult = await handleChatRequest({
         message: body.message,
         sessionId: result.landing.designSystem.chat.sessionId,
         userId: body.guestToken ? `guest:${body.guestToken}` : `campaign-chat:${slug}`,
         channel: 'text',
+        threadChannel,
+        displayName,
         startingContext: 'campaign_landing_chat',
-        contextBlock: `${campaignContext}${guestLine}`,
+        contextBlock: `${campaignContext}${guestLine}${channelLine}${channelGuidance}`,
     });
 
     if (chatResult.status >= 400) {

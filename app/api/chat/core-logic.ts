@@ -13,6 +13,8 @@ const ChatRequestSchema = z.object({
     sessionId: z.string().min(1, 'Session ID is required'),
     userId: z.string().optional(),
     channel: z.enum(['text', 'voice', 'voice_hybrid']).default('text'),
+    threadChannel: z.string().max(64).optional(),
+    displayName: z.string().max(80).optional(),
     model: z.string().optional(),
     startingContext: z.string().optional(),
     contextBlock: z.string().max(12000).optional(),
@@ -33,7 +35,7 @@ export async function handleChatRequest(
         };
     }
 
-    const { message, sessionId, userId, channel, model, startingContext, contextBlock } = parsed.data;
+    const { message, sessionId, userId, channel, threadChannel, displayName, model, startingContext, contextBlock } = parsed.data;
     const resolvedUserId = userId ?? `anon:${sessionId}`;
 
     try {
@@ -42,6 +44,8 @@ export async function handleChatRequest(
             sessionId,
             userId: resolvedUserId,
             channel,
+            threadChannel,
+            displayName,
             model,
             startingContext,
             contextBlock,
