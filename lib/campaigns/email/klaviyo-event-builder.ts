@@ -48,6 +48,7 @@ export interface BuildKlaviyoEventInput {
         | 'manifestStatus'
         | 'bookingReference'
         | 'bookingConfirmedAt'
+        | 'verificationToken'
         | 'createdAt'
     >;
     summary: Pick<
@@ -153,6 +154,10 @@ export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBu
     const remainingCabins = Math.max(0, requiredCabins - summary.totalEntries);
 
     const stagePhase2: Record<string, string | number | boolean | undefined> = {};
+    if (stage === 'waitlist_confirmation' && lead.verificationToken) {
+        const verifyUrl = `${getCampaignLandingUrl(campaign.id).replace(/\/groups\/.*/, '')}/api/groups/campaign/${campaign.id}/verify?email=${encodeURIComponent(lead.email)}&token=${lead.verificationToken}`;
+        stagePhase2.verification_url = verifyUrl;
+    }
     if (stage === 'threshold_met') {
         stagePhase2.threshold_met_claim = THRESHOLD_MET_CLAIM;
     }
