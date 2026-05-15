@@ -251,10 +251,9 @@ npx tsx --env-file=.env.local scripts/test-verdict.ts
 
 ### Model Configuration
 
-- Primary: `gpt-4o` (OpenAI, 16k context)
-- Fallback: `gpt-5-mini` (when token limits exceeded)
 - Gateway: Central LLM routing in [lib/ai/llm-gateway/models.ts](../lib/ai/llm-gateway/models.ts)
-  - ✅ Recently fixed: `GPT_5_HIGH` now correctly maps to `gpt-4o` API ID
+- Model ids are resolved through the gateway registry; do not treat raw provider ids as repo policy.
+- `GPT_5_HIGH` is currently mapped in the gateway registry to a GPT-5-tier OpenAI model.
 
 ### Caching & Persistence
 

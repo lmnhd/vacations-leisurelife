@@ -33,6 +33,7 @@ import {
   sanitizePromptList,
   isMusicFestivalCampaign,
 } from "./aesthetic-engine";
+import { buildCampaignResearchDossierContext } from "./research-context";
 import {
   getReferencePack,
   formatReferencePackForGeneration,
@@ -384,6 +385,10 @@ Event Framing: ${buildEventFramingGuidance(campaign)}
 Community Promise: ${brief.communityExpression?.corePromise ?? ""}
 Belonging Signals: ${brief.communityExpression?.belongingSignals?.join("; ") ?? ""}
 Plausibility Principle: ${brief.visual?.plausibilityFramework?.governingPrinciple ?? ""}
+${buildCampaignResearchDossierContext(
+  brief.campaignResearchDossier ?? campaign.researchDossier,
+  "Secondary campaign research dossier (use to sharpen still framing and niche legibility):",
+)}
 `.trim();
 
   console.log(
@@ -745,6 +750,10 @@ BOARD-GAMES-AT-SEA STORYBOARD PRIORITIES:
 - Do not fall back to generic cruise filler when a board-game scene is available.
 - Prefer this progression when it fits the available sceneLibrary: pool_deck or exterior hook, dining build, atrium proof, nightclub social, sports_deck peak, offboard_excursion or theater payoff.`
     : "";
+  const researchContext = buildCampaignResearchDossierContext(
+    campaign.researchDossier ?? brief.campaignResearchDossier,
+    "SECONDARY CAMPAIGN RESEARCH DOSSIER (use to sharpen scene selection, narrative beats, and storyboard framing):",
+  );
 
   const system = `
 You are the Creative Director generating a Production Bible for a niche cruise campaign.
@@ -828,6 +837,8 @@ Cruise-native moments: ${plausibility?.cruiseNativeMoments?.join("; ") ?? ""}
 Niche prop families: ${plausibility?.allowedProps?.join("; ") ?? ""}
 Niche-enhanced moments: ${plausibility?.nicheEnhancedMoments?.join("; ") ?? ""}
 Implausible bans: ${plausibility?.implausibleLiteralizations?.join("; ") ?? ""}
+
+${researchContext}
 
 VALIDATED LANDING STILLS (reference for campaign identity):
 ${stillSummary}

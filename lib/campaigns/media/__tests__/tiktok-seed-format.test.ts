@@ -4,7 +4,7 @@
  */
 
 import assert from 'node:assert/strict';
-import type { CampaignAestheticBrief, ProductionBible, SceneSpec, Storyboard } from '../../../schema';
+import type { CampaignAestheticBrief, ProductionBible, SceneSpec, Storyboard } from '../../schema';
 import { buildOrganicSeedShotPrompts } from '../generators/tiktok-formats/organic-seed';
 
 async function main() {
@@ -348,7 +348,7 @@ async function main() {
                 globalDirectionNotes: '',
                 avoidDirectives: [],
             },
-        } as CampaignAestheticBrief;
+        } as unknown as CampaignAestheticBrief;
 
         const prompts = buildOrganicSeedShotPrompts(brief);
 

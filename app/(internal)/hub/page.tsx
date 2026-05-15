@@ -5,7 +5,7 @@ import {
     Search, BadgeDollarSign, Newspaper, PartyPopper,
     MessageSquare, ImageIcon, Music4, Code2,
     Palette, Radio, TrendingUp, Globe, FlaskConical,
-    ArrowUpRight, ChevronRight, LayoutDashboard,
+    ArrowUpRight, ChevronRight, LayoutDashboard, ClipboardCheck, AlertTriangle,
 } from 'lucide-react';
 
 // ─── Static link definitions ──────────────────────────────────────────────────
@@ -186,6 +186,20 @@ const SLUG_ROUTES: SlugRoute[] = [
         icon: FlaskConical,
         iconColor: 'text-cyan-400',
     },
+    {
+        label: 'Manual Booking',
+        pattern: (slug) => `/tests/manual-booking-entry?slug=${slug}`,
+        description: 'Daily CB Agent Tools reconciliation — mark leads converted with booking refs',
+        icon: ClipboardCheck,
+        iconColor: 'text-emerald-400',
+    },
+    {
+        label: 'Booking Changes',
+        pattern: (slug) => `/tests/booking-changes?slug=${slug}`,
+        description: 'Record ship/date/price/cancellation changes; track acknowledgments',
+        icon: AlertTriangle,
+        iconColor: 'text-rose-400',
+    },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -292,7 +306,7 @@ export default async function HubPage() {
                                 </div>
 
                                 {/* Slug route buttons */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y divide-white/5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 divide-x divide-y divide-white/5">
                                     {SLUG_ROUTES.map((route) => (
                                         <Link
                                             key={route.label}

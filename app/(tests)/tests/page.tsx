@@ -123,6 +123,21 @@ const GROUPS: TestGroup[] = [
         description: 'Preview a campaign landing page by slug — append /[slug] to the URL',
         badge: 'NEEDS SLUG',
       },
+      {
+        label: 'Klaviyo Email Preview',
+        href: '/tests/klaviyo-emails',
+        description: 'Preview/dispatch Phase 1 lifecycle emails — waitlist confirmation, day 3, day 7. Dry-run or live.',
+      },
+      {
+        label: 'Manual Booking Entry',
+        href: '/tests/manual-booking-entry',
+        description: 'Daily reconciliation against the CB Agent Tools dashboard — mark leads converted with booking refs.',
+      },
+      {
+        label: 'Booking Changes',
+        href: '/tests/booking-changes',
+        description: 'Record ship/date/price/cancellation changes — severity-routed email + critical SMS + ack tracking.',
+      },
     ],
   },
   {

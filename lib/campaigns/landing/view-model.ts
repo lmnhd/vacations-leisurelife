@@ -84,6 +84,17 @@ export interface LandingInventoryDisclosure {
   formAcknowledgement: string;
 }
 
+export interface LandingCampaignNotice {
+  eyebrow: string;
+  title: string;
+  body: string;
+  bullets: string[];
+  modalTitle: string;
+  modalBody: string;
+  modalBullets: string[];
+  dismissLabel: string;
+}
+
 export interface LandingDesignSystem {
   visualFlavor: VisualFlavor;
   system: VisualSystem;
@@ -179,6 +190,7 @@ export interface CampaignLandingViewModel {
     defaultMode: "GROUP_WAIT" | "BOOK_NOW";
   };
   inventoryDisclosure: LandingInventoryDisclosure;
+  campaignNotice: LandingCampaignNotice | null;
 }
 
 export interface CampaignLandingLoadResult {
@@ -600,13 +612,13 @@ function getThresholdCopy(
     return {
       headline: "Be among the first to join this sailing.",
       detail:
-        "If this trip feels like your pace, you can join the group list now and be first to hear when the next step opens.",
+        "If this trip feels like your pace, you can join the interest list now for free. We use early responses to decide whether this concept should become a real group offer.",
     };
   }
 
   return {
     headline: "The group is taking shape.",
-    detail: `Each cabin request moves this sailing closer to the ${targetCabins}-cabin launch target. You can either join the group list or tell us you want the earliest booking handoff.`,
+    detail: `Each cabin request helps us judge whether this sailing has enough real momentum to become a proper ${targetCabins}-cabin group launch with perks. Until that threshold is met, treat this as a forming campaign rather than a guaranteed departure.`,
   };
 }
 
@@ -622,11 +634,11 @@ function getBookingChoices(
   const waitDescription =
     campaign.status === "THRESHOLD_MET" || campaign.status === "CONVERTED"
       ? "Choose this if you want to stay close to the sailing, even if you are not ready to pick a cabin today."
-      : "Choose this if you want the shared group version of the trip and are happy to hear from us when the sailing opens further.";
+      : "Choose this if you want to help the shared group version form. We count your interest, keep you updated, and only move you forward when the trip is truly ready.";
 
   const bookDescription =
     campaign.status === "GATHERING_INTEREST"
-      ? "Choose this if you want the retail booking path now instead of waiting for the group block to mature."
+      ? "Choose this if you want the earliest possible booking handoff if the sailing stabilizes, even if the shared group version never fully comes together."
       : "Choose this if you are ready to move directly into booking now.";
 
   return [
@@ -810,23 +822,24 @@ function buildGuestInvitations(
 
 function buildWhyJoinNow(campaign: Campaign): string[] {
   const reasons = [
-    "Early interest helps shape which version of the group experience becomes real.",
-    "Joining now puts you first in line for the next booking step when the sailing opens further.",
+    "Joining is free and non-binding, so you can raise your hand early without locking yourself into a booking today.",
+    "Early interest helps us see whether this concept should become a real group sailing with shared perks and better coordination.",
+    "Signing up now also helps you meet like-minded guests and shape the version of the cruise that actually comes together.",
   ];
 
   if (campaign.pricingStatus === "CB_MATCHED" && campaign.startingPrice) {
     reasons.unshift(
-      `Current matched pricing starts around ${formatCurrency(campaign.startingPrice)}, so you are not evaluating this trip blind.`,
+      `Current matched pricing starts around ${formatCurrency(campaign.startingPrice)}, so you are not evaluating the concept blind even though the final group version may still shift.`,
     );
   } else if (campaign.startingPrice) {
     reasons.unshift(
-      `Current pricing is tracking around ${formatCurrency(campaign.startingPrice)}, which gives you a real budget signal early.`,
+      `Current pricing is tracking around ${formatCurrency(campaign.startingPrice)}, which gives you an early budget signal while the group version is still forming.`,
     );
   }
 
   if (campaign.expiresAt) {
     reasons.push(
-      "This campaign window is time-bound, so joining early matters if this sailing fits your pace.",
+      "This campaign window is time-bound, so joining early matters if you want updates before the concept is revised, paused, or closed.",
     );
   }
 
@@ -844,18 +857,18 @@ function buildHowItWorks(
 
   return [
     {
-      title: "1. Choose your pace",
-      body: `You can ${waitlistLabel.toLowerCase()} if you want the shared group version of the trip, or choose ${bookingLabel.toLowerCase()} if you want the earliest booking handoff.`,
+      title: "1. Raise your hand for a forming campaign",
+      body: `You can ${waitlistLabel.toLowerCase()} if you want to help this group version take shape, or choose ${bookingLabel.toLowerCase()} if you want the earliest possible booking handoff once the sailing is stable enough.`,
     },
     {
-      title: "2. We keep your place warm",
-      body: "We save your party size, cabin preference, and contact details so you hear the right next step as the sailing develops.",
+      title: "2. We gather interest and keep you updated",
+      body: "We save your party size, cabin preference, and contact details so we can measure real demand, connect the right guests, and send the right update as the concept develops.",
     },
     {
-      title: "3. Booking opens at the right moment",
+      title: "3. If it matures, we open the proper next step",
       body: campaign.cbagenttoolsBookingLink
-        ? "If direct booking is already ready for this sailing, we can move you there. Otherwise, we send the proper handoff as soon as your path opens."
-        : "When your path is ready, we send the proper booking handoff. You are not paying on this page today.",
+        ? "If enough interest forms and the booking path is healthy, we move guests into the correct handoff. If the trip changes, slips, or no longer makes sense, we update the page instead of pretending nothing changed."
+        : "When the right path opens, we send the proper handoff. If the concept does not come together cleanly, we may revise, postpone, or cancel this version rather than force a messy launch.",
     },
   ];
 }
@@ -877,13 +890,13 @@ function buildInventoryDisclosure(campaign: Campaign): LandingInventoryDisclosur
   const mode: CampaignInventoryMode = campaign.activeBookingMode ?? "GROUP_BLOCK_ACTIVE";
 
   const processNote =
-    "Cruise inventory can change while a group is forming. We verify the sailing before launch and keep checking it while interest builds. If the group block changes, we will either switch to a verified backup, offer an individual-booking path for the same sailing, or pause the campaign instead of sending you to a dead booking page.";
+    "This page represents a forming campaign, not a locked final package. Supplier inventory, pricing, dates, ship details, group perks, and the exact booking path can change while interest builds. We keep re-verifying the trip as momentum develops. If this version no longer makes sense, we may revise it, postpone it, or cancel it instead of sending guests into a confusing booking experience.";
 
   const formAcknowledgement =
-    "By joining, you are asking for updates on this sailing. Booking details may change if supplier inventory changes before the group is finalized.";
+    "By joining, you are asking for updates on a forming campaign. This step is free and non-binding. Sailing details may change before any booking step opens, and the campaign may be revised, postponed, or canceled if the group does not come together cleanly.";
 
   const trustBullet =
-    "Group pricing, cabin availability, and group amenities are subject to supplier inventory. If the official group block is no longer available, we will clearly mark the page before offering any alternate booking path.";
+    "This page is an interest-gathering step, not a confirmed reservation. Group pricing, cabin availability, perks, and even the final version of the sailing depend on supplier inventory and real guest momentum.";
 
   if (mode === "GROUP_BACKUP_SWITCHED") {
     return {
@@ -936,11 +949,11 @@ function buildTrustBullets(campaign: Campaign): string[] {
   const disclosure = buildInventoryDisclosure(campaign);
 
   return [
-    "You are not paying on this page. This step only saves your interest, party size, and cabin preference.",
-    `The sailing opens fully once ${targetCabins} cabins are represented, which helps support the group energy and shared perks.`,
+    "You are not paying on this page, reserving a cabin, or making a serious commitment. This step only saves your interest, party size, and cabin preference.",
+    `If enough guests raise their hands to represent about ${targetCabins} cabins, we can move toward a real group package with stronger coordination and shared perks.`,
     campaign.expiresAt
-      ? `If the cabin target is not reached by ${campaign.expiresAt}, this version of the sailing can close instead of drifting without a clear answer.`
-      : "If the cabin target is not reached in time, this version of the sailing can close instead of drifting without a clear answer.",
+      ? `If the cabin target is not reached by ${campaign.expiresAt}, this version of the sailing can be revised, postponed, or closed instead of drifting without a clear answer.`
+      : "If the cabin target is not reached in time, this version of the sailing can be revised, postponed, or closed instead of drifting without a clear answer.",
     disclosure.trustBullet,
   ];
 }
@@ -950,21 +963,60 @@ function buildFaq(campaign: Campaign): LandingFaqItem[] {
     {
       question: "What happens after I join the group list?",
       answer:
-        "We save your interest against the sailing target. Once the trip is ready for its next step, we email you the correct traveler-details and booking handoff.",
+        "We save your interest against the sailing target, keep your preferences on file, and update you as the concept develops. If the trip matures cleanly, we send the proper traveler-details and booking handoff.",
     },
     {
-      question: "What if I already know I want to go?",
+      question: "Is this already a confirmed group cruise?",
       answer:
-        "Choose the early booking path. That tells the team you want the fastest handoff once booking opens, even while the full group is still forming.",
+        "Not yet. This page is how we gather interest in a specific style of cruise. If enough interest forms, we turn it into a real group offer with group benefits. Until then, treat the sailing as actively forming.",
+    },
+    {
+      question: "What if the plan changes while the campaign is forming?",
+      answer:
+        "That can happen. Dates, pricing, inventory, group perks, and the exact booking path may change while we verify supply and guest momentum. If this version no longer makes sense, we will revise it, postpone it, or cancel it rather than quietly let it drift.",
+    },
+    {
+      question: "Why join early if it is not final yet?",
+      answer:
+        "Because it is free, non-binding, and useful. You get updates first, help us judge whether the concept should launch, and start connecting with other potential guests who want the same kind of trip.",
     },
     {
       question: "How should I read the listed price?",
       answer:
         campaign.pricingStatus === "CB_MATCHED"
-          ? "It reflects matched inventory and is the strongest booking-ready price currently attached to this sailing."
+          ? "It reflects the strongest matched inventory signal we currently have for this sailing. It is helpful, but it is not a promise that the final group version will launch unchanged."
           : "It is a directional price until live inventory is matched, which means it helps frame the trip without pretending booking is already finalized.",
     },
   ];
+}
+
+function buildCampaignNotice(campaign: Campaign): LandingCampaignNotice | null {
+  if (campaign.status !== "GATHERING_INTEREST") {
+    return null;
+  }
+
+  return {
+    eyebrow: "Before you join",
+    title: "This is a forming campaign, not a locked final cruise package.",
+    body:
+      "We are gathering free, no-obligation interest around a particular kind of sailing. If enough guests respond, we turn that interest into a real group offer with clearer benefits, better coordination, and the right booking handoff.",
+    bullets: [
+      "No payment and no serious commitment happen on this page.",
+      "Ship details, pricing, perks, timing, and the exact group shape may change while the campaign forms.",
+      "If the concept does not come together the right way, this version can be revised, postponed, or canceled.",
+      "Joining early still matters because it helps shape the trip and connects you with other potential guests.",
+    ],
+    modalTitle: "Campaign forming...",
+    modalBody:
+      "You are looking at a forming cruise campaign. We are testing real interest in a specific style of trip before treating it like a confirmed group departure.",
+    modalBullets: [
+      "This page is free and non-binding. No payments at this stage.",
+      "The group only activates if the waiting list threshold is met (8+ guests).",
+      "If supplier inventory or guest momentum shifts, the trip may change, slip, or close instead of launching exactly as first shown.",
+      "Joining now still helps: you get early updates, meet like-minded travelers, and help shape a more exciting final cruise.",
+    ],
+    dismissLabel: "I understand how this works",
+  };
 }
 
 function buildFacts(
@@ -1107,6 +1159,7 @@ function buildLandingViewModel(
       defaultMode: ctas.primary.mode,
     },
     inventoryDisclosure: buildInventoryDisclosure(campaign),
+    campaignNotice: buildCampaignNotice(campaign),
   };
 }
 

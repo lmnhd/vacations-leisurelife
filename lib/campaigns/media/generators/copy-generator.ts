@@ -6,6 +6,7 @@ import {
 } from '../../schema';
 import { callLLM } from '@/lib/ai/llm-gateway';
 import { MEDIA_LLM_CONFIG } from '../media-pipeline-config';
+import { buildCampaignResearchDossierContext } from '../../research-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Copy & Caption Generator
@@ -28,6 +29,10 @@ export async function generatePlatformCopy(
   brief: CampaignAestheticBrief
 ): Promise<GeneratedCopy> {
   const model = MEDIA_LLM_CONFIG.platformCopy;
+  const researchContext = buildCampaignResearchDossierContext(
+    brief.campaignResearchDossier,
+    'Secondary campaign research dossier (use to sharpen carousel, ad, caption, and email copy):',
+  );
 
   const systemPrompt = `You are the copywriter for Leisure Life Interactive, a boutique cruise campaign studio.
 You write platform-native copy that is sharp, niche-specific, and avoids generic cruise marketing language.
@@ -84,6 +89,8 @@ Campaign Context:
 - TikTok Hook (reference): ${brief.socialConcepts.tiktokOrganic.hook}
 - Instagram Feed Caption (reference): ${brief.socialConcepts.instagramFeed.caption}
 - Facebook Ad Headline (reference): ${brief.socialConcepts.facebookAd.headline}
+
+${researchContext}
 
 Generate copy that is niche-native, avoids generic cruise tropes, matches the ${brief.visual.aestheticLabel} aesthetic, frames group energy as drop-in/drop-out and welcoming, and avoids both workshop language and emotionally empty solo-retreat language.`;
 

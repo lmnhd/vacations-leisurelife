@@ -1,0 +1,7 @@
+To turn the scheduler on in production
+Set CRON_SECRET in the production environment.
+Add to vercel.json (or your scheduler of choice):
+
+{ "crons": [{ "path": "/api/cron/email-scheduler", "schedule": "0 13 * * *" }] }
+Walk through §6 of KLAVIYO_LIVE_TEST_PLAN.md — Phase 3 + scheduler test pass is now fully written, not a placeholder.
+Phases 4 (change notifications + critical-SMS) and 5 (post-cruise + alumni) remain.

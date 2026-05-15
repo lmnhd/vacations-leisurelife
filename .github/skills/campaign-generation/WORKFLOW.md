@@ -53,14 +53,19 @@ The agent must follow these steps linearly. At the end of each major phase, the 
    - **Check:** Does the visual plan include actual ship representation? Is it distinct from generic cruise marketing? Are the colors/vibes aligned with the niche without becoming costume parody?
    - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (Ã¢â€°Â¤4 tolerated content violations), it continues but flags downstream.
 3. **Verify the production bible before proceeding Ã¢â‚¬â€ this is mandatory.**
-   Check `brief.productionBible.sceneLibrary` in the readiness response. Every scene object must have a non-empty `imagePrompt` field. If all `imagePrompt` fields are empty strings, the production bible generation failed silently and scene images will be generic. Re-run the brief bundle before proceeding to media generation.
-   - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
-   - The same rule applies to any persistent warning in later phases: one auto-repair pass, then stop and ask for a decision. The agent is the glue between phases, not a substitute for the final call.
-4. **Persistence check for revisions:**
+    Check `brief.productionBible.sceneLibrary` in the readiness response. Every scene object must have a non-empty `imagePrompt` field. If all `imagePrompt` fields are empty strings, the production bible generation failed silently and scene images will be generic. Re-run the brief bundle before proceeding to media generation.
+    - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
+    - The same rule applies to any persistent warning in later phases: one auto-repair pass, then stop and ask for a decision. The agent is the glue between phases, not a substitute for the final call.
+4. **Generate the secondary campaign research dossier (mandatory before approval).**
+   - Once the brief bundle exists and the campaign has been selected, run the secondary research pass for the chosen campaign. Use the Generate/Regenerate Dossier control in Brief Studio at `http://localhost:3000/tests/brief-studio`, or call `POST /api/groups/campaign/[slug]/research-dossier`.
+   - The dossier is now split into `nicheResearch` and `cruiseTranslation`. Keep the niche research pure and use the cruise translation section only for onboard adaptation.
+   - The dossier must exist before the brief can be approved for media generation. If it is missing, the approval gate should block and the media page should refuse generation.
+   - Treat this as a lightweight depth pass, not a second discovery pass. It should capture current niche behavior, routines, signals, and downstream implications for brief/media/copy.
+5. **Persistence check for revisions:**
    - If a user-requested change should survive future regenerations, put it in the upstream brief or directive source rather than only in one regenerated asset.
    - Use asset-level regeneration for narrow cleanup only when the fix is intentionally local.
    - If the same correction would probably need to be repeated the next time the brief, still bible, or production bible is regenerated, it belongs in the durable source of truth now.
-5. **User Intervention Checkpoint:**
+6. **User Intervention Checkpoint:**
    - Direct the user to view the aesthetic brief and production bible at `http://localhost:3000/tests/brief-studio`.
    - Ask the user to approve the aesthetic brief before generating heavy media assets.
    - **Agent must explicitly tell user to open their browser and navigate to this URL to review the brief visually before proceeding to media generation.**
@@ -94,7 +99,7 @@ Also verify `brief.landingStillBible.stillLibrary` exists and has at least 4Ã¢
 
 #### 4.1 Ã¢â‚¬â€ Approve the brief for media generation
 
-The brief must be in `approved` status before any image generation can run. A brief in `revised` or `pending` status will cause the generate endpoint to return 422.
+The brief must be in `approved` status and the secondary research dossier must exist before any image generation can run. A brief in `revised` or `pending` status, or one missing the dossier, will cause the generate endpoint to return 422.
 
 **Use ONLY this endpoint:**
 ```bash

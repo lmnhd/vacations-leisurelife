@@ -1,5 +1,7 @@
 # AI ARCHITECT RULES — LLM Gateway v2.6
 
+> **Template note**: This document is a module template. If you are using it inside Leisure Life Interactive, read [AI_POLICY.md](../../AI_POLICY.md) first. The repo policy wins over any example text below.
+
 ## Core Law
 **ALL LLM calls must pass through `@/lib/ai/llm-gateway`.** No exceptions. No raw SDK clients in app code.
 

@@ -99,6 +99,61 @@ export async function upsertCampaignWaitlistEntry(
     return entry;
 }
 
+export interface MarkLeadAsBookedInput {
+    slug: string;
+    email: string;
+    bookingReference: string;
+    bookingConfirmedAt: string;
+    bookingAmount?: number;
+    bookingNotes?: string;
+    bookingEnteredBy?: string;
+}
+
+export interface MarkLeadAsBookedResult {
+    entry: CampaignWaitlistEntry;
+    /** True when this call flipped `converted` from false → true (first reconciliation). */
+    convertedNow: boolean;
+}
+
+/**
+ * Manual booking reconciliation. Sets `converted=true`, `notified=true`, and
+ * stamps the booking-reference metadata. Idempotent — calling twice with the
+ * same lead updates the metadata but only reports `convertedNow=true` on the
+ * initial flip so the caller can decide whether to write a ledger event /
+ * fire the booking-confirmed email exactly once.
+ */
+export async function markLeadAsBooked(
+    input: MarkLeadAsBookedInput,
+): Promise<MarkLeadAsBookedResult> {
+    const normalizedEmail = normalizeEmail(input.email);
+    const existing = await getCampaignWaitlistEntry(input.slug, normalizedEmail);
+    if (!existing) {
+        throw new Error(`[WaitlistStore] Lead not found for booking: ${normalizedEmail} in ${input.slug}`);
+    }
+
+    const wasConverted = existing.converted === true;
+    const now = new Date().toISOString();
+
+    const entry: CampaignWaitlistEntry = {
+        ...existing,
+        converted: true,
+        notified: true,
+        bookingReference: input.bookingReference.trim(),
+        bookingConfirmedAt: input.bookingConfirmedAt,
+        bookingAmount: input.bookingAmount,
+        bookingNotes: input.bookingNotes?.trim() || undefined,
+        bookingEnteredBy: input.bookingEnteredBy?.trim() || undefined,
+        updatedAt: now,
+    };
+
+    await chatDynamoDocumentClient.send(new PutCommand({
+        TableName: TABLE_NAME,
+        Item: entry,
+    }));
+
+    return { entry, convertedNow: !wasConverted };
+}
+
 export async function listCampaignWaitlistEntries(slug: string): Promise<CampaignWaitlistEntry[]> {
     const response = await chatDynamoDocumentClient.send(new QueryCommand({
         TableName: TABLE_NAME,

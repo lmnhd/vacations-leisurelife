@@ -1077,7 +1077,7 @@ export default function MediaGenerationTestPage() {
           title="Sharp — Platform Crops"
           icon={<Crop className="h-4 w-4" />}
           color="purple"
-          description="Builds all 8 platform crops from the best available manifest image, preferring scene imagery for social placements and falling back to hero/concept when needed."
+          description="Builds all 8 platform crops from a curated hero/scene/concept pool, choosing per format so different crops can come from different source images when possible."
           cost="free"
           apiKeys={["R2"]}
           result={cropResult}

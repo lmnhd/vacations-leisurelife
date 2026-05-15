@@ -165,9 +165,13 @@ export function CampaignWaitlistForm({
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
             <Card className="border-white/15 bg-slate-950/80 text-slate-50 shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Save Your Place In Line</CardTitle>
+                    <CardTitle className="text-2xl">
+                        {isGatheringInterest ? 'Join Free While This Cruise Forms' : 'Save Your Place In Line'}
+                    </CardTitle>
                     <CardDescription className="text-slate-300">
-                        Choose the path that matches your timing. No payment is taken on this page today.
+                        {isGatheringInterest
+                            ? 'This is a free, non-binding interest step. We use it to measure demand, connect potential guests, and decide whether this sailing should become a real group package.'
+                            : 'Choose the path that matches your timing. No payment is taken on this page today.'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -282,7 +286,9 @@ export function CampaignWaitlistForm({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GROUP_WAIT">Join the list</SelectItem>
-                                        <SelectItem value="BOOK_NOW">Book now</SelectItem>
+                                        <SelectItem value="BOOK_NOW">
+                                            {isGatheringInterest ? 'Fastest booking handoff' : 'Book now'}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -302,16 +308,18 @@ export function CampaignWaitlistForm({
 
                         {isGatheringInterest && bookingMode === 'BOOK_NOW' && (
                             <div className="px-4 py-3 text-sm border rounded-lg border-amber-400/30 bg-amber-500/10 text-amber-100">
-                                Booking independently now means you will secure your cabin immediately, but you may forfeit group-specific pricing and amenities. To guarantee the group experience, choose &ldquo;Join the list&rdquo; instead.
+                                This option does not promise an immediate confirmed booking. It tells us you want the earliest direct handoff if this sailing stabilizes. If the shared group version launches later, pricing, perks, or timing may differ.
                             </div>
                         )}
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <Button type="submit" size="lg" className="bg-slate-50 text-slate-950 hover:bg-white" disabled={!enabled || submitting}>
-                                {submitting ? 'Saving...' : 'Save my spot'}
+                                {submitting ? 'Saving...' : isGatheringInterest ? 'Join free' : 'Save my spot'}
                             </Button>
                             <div className="px-4 py-3 text-sm border rounded-lg border-white/10 bg-slate-900/80 text-slate-300">
-                                We will use your selection to send the right next step for this sailing. SMS alerts are optional and only used when you provide a phone number and consent.
+                                {isGatheringInterest
+                                    ? 'No payment, reservation, or serious commitment is created here. We use your selection to send the right update as the campaign forms. SMS alerts are optional and only used when you provide a phone number and consent.'
+                                    : 'We will use your selection to send the right next step for this sailing. SMS alerts are optional and only used when you provide a phone number and consent.'}
                             </div>
                         </div>
 
@@ -328,7 +336,9 @@ export function CampaignWaitlistForm({
                 <CardHeader>
                     <CardTitle className="text-2xl">What Happens Next</CardTitle>
                     <CardDescription>
-                        After you submit, this panel will show the next step for the path you chose.
+                        {isGatheringInterest
+                            ? 'After you submit, this panel will explain how your interest is being held and what the next real step would be if the campaign matures.'
+                            : 'After you submit, this panel will show the next step for the path you chose.'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 text-sm text-slate-700">
@@ -364,7 +374,9 @@ export function CampaignWaitlistForm({
                         </>
                     ) : (
                         <div className="px-4 py-3 border rounded-lg border-slate-200 bg-slate-50">
-                            Submit the form to see the next step for the current sailing state and the path you chose.
+                            {isGatheringInterest
+                                ? 'Submit the form to see how this forming campaign will handle your path and what happens if the sailing becomes booking-ready.'
+                                : 'Submit the form to see the next step for the current sailing state and the path you chose.'}
                         </div>
                     )}
                 </CardContent>

@@ -1,4 +1,18 @@
-import type { DiscoveryIterationState, RedTeamReview, VisualFlavor } from './schema';
+import type { CampaignResearchDossier, DiscoveryIterationState, RedTeamReview, VisualFlavor } from './schema';
+
+// ─── Guest Ideas ──────────────────────────────────────────────────────────────
+
+export interface GuestIdea {
+    id: string;
+    text: string;
+    rawInput: string;
+    guestName: string;
+    submittedAt: string;
+    likes: number;
+    dislikes: number;
+    likedBy: string[];
+    dislikedBy: string[];
+}
 
 // ─── Inventory Health Types ────────────────────────────────────────────────────
 
@@ -262,6 +276,15 @@ export interface Campaign {
     communityFitRationale?: string;
 
     /**
+     * Secondary campaign research dossier generated after a blueprint is approved
+     * and a specific campaign has been selected for deeper downstream use.
+     */
+    researchDossier?: CampaignResearchDossier;
+
+    /** Timestamp for when the current secondary research dossier was last generated. */
+    researchDossierGeneratedAt?: string;
+
+    /**
      * Low-pressure gatherings or rituals that make the group feel real without
      * turning the trip into a programmed event schedule.
      */
@@ -278,6 +301,12 @@ export interface Campaign {
      * socially hollow even if it remains aesthetically attractive.
      */
     solitudeRisks?: string[];
+
+    /**
+     * Guest-submitted ideas collected from the `#ideas` channel chat.
+     * Extracted and cleaned by the LLM after each `#ideas` turn.
+     */
+    guestIdeas?: GuestIdea[];
 
     /**
      * Operator-locked visual flavor override.
@@ -301,6 +330,24 @@ export interface Campaign {
 
     /** ISO timestamp of the last inventory validation run. */
     inventoryLastCheckedAt?: string;
+
+    // ─── Phase 3 (post-booking) — operator-published after booking opens ───
+
+    /**
+     * URL to the final group itinerary PDF or Notion/web page. Set by
+     * operator once the cruise-line liaison has confirmed the on-board
+     * schedule. Triggers `LLL Final Itinerary Published` email.
+     */
+    finalItineraryUrl?: string;
+
+    /**
+     * Name of the assigned Tour Conductor (human onboard host). Set when
+     * the TC is confirmed. Triggers `LLL Tour Conductor Announced` email.
+     */
+    tourConductorName?: string;
+
+    /** Optional short bio shown alongside the TC name in emails / dashboard. */
+    tourConductorBio?: string;
 
     createdAt: string;
     updatedAt: string;
@@ -379,6 +426,26 @@ export interface CampaignWaitlistEntry {
      */
     converted: boolean;
 
+    // ─── Manual booking reconciliation (set by /tests/manual-booking-entry) ─────
+    // The CB Agent Tools dashboard is the source of truth for group bookings;
+    // these fields are filled in by the operator during their daily check-in
+    // until / unless an automated inbound-email parser is wired up.
+
+    /** CB / Odysseus booking reference number captured during manual reconciliation. */
+    bookingReference?: string;
+
+    /** ISO timestamp when the booking was confirmed in CB. */
+    bookingConfirmedAt?: string;
+
+    /** Total amount charged on the booking (USD). Optional. */
+    bookingAmount?: number;
+
+    /** Free-form operator notes attached to the booking (cabin, dietary, etc.). */
+    bookingNotes?: string;
+
+    /** Email of the operator who entered the booking. Audit trail. */
+    bookingEnteredBy?: string;
+
     /**
      * First-party attribution captured at the moment of signup.
      */
@@ -429,7 +496,10 @@ export type LeadEventType =
     | 'booking_link_sent'
     | 'converted'
     | 'expired'
-    | 'lead_error';
+    | 'lead_error'
+    // Phase 4 — change notifications
+    | 'booking_change'
+    | 'booking_change_acknowledged';
 
 /**
  * Append-only lifecycle event record stored under the campaign partition.

@@ -71,6 +71,7 @@ export function normalizeAssetCuration(asset: AssetRecord): AssetCuration {
         suitabilityTags: existing?.suitabilityTags ?? [],
         antiTags: existing?.antiTags ?? [],
         downstreamLocked: existing?.downstreamLocked ?? false,
+        generationLocked: existing?.generationLocked ?? false,
         curatorNotes: existing?.curatorNotes,
         updatedAt: existing?.updatedAt ?? asset.reviewedAt ?? asset.createdAt,
     };

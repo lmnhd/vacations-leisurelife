@@ -1,6 +1,7 @@
 import { callLLM } from '@/lib/ai/llm-gateway';
 import { MEDIA_LLM_CONFIG } from '../media-pipeline-config';
 import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage } from '../../schema';
+import { buildCampaignResearchDossierContext } from '../../research-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // TikTok Promotion Synthesis
@@ -39,6 +40,10 @@ function buildSynthesisPrompt(brief: CampaignAestheticBrief, storyboard: Storybo
     const props = brief.visual.plausibilityFramework.allowedProps.slice(0, 4).join(', ');
     const nicheHints = brief.visual.plausibilityFramework.nicheEnhancedMoments.slice(0, 3).join('; ');
     const belongingSignals = brief.communityExpression.belongingSignals.slice(0, 3).join('; ');
+    const researchContext = buildCampaignResearchDossierContext(
+        brief.campaignResearchDossier,
+        'Secondary campaign research dossier (use to ground TikTok promotion beats in the niche trend and its specifics):',
+    );
 
     return `You are the head copywriter for a boutique cruise promotion studio.
 
@@ -60,6 +65,8 @@ Campaign:
 - Booking CTA: ${brief.messaging.ctaVariants.bookNow}
 - Niche props visible: ${props}
 - Niche moments: ${nicheHints}
+
+${researchContext}
 
 Storyboard narration (shot-specific copy already written for this campaign):
 ${shotNarrations}

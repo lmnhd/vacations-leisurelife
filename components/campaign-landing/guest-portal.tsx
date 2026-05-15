@@ -10,6 +10,14 @@ import type {
     LandingPathChoice,
 } from '@/lib/campaigns/landing/view-model';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { CampaignWaitlistForm, type GuestIdentity } from '@/components/campaign-landing/waitlist-form';
 import { GroupChatHall } from '@/components/campaign-landing/group-chat-hall';
 import { EditorialHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
@@ -301,6 +309,7 @@ function FaqList({ items, theme }: { items: LandingFaqItem[]; theme: SystemTheme
 
 const IDENTITY_KEY_PREFIX = 'chat-guest:';
 const IDENTITY_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const FORMING_NOTICE_KEY_PREFIX = 'campaign-forming-notice:v1:';
 
 interface StoredIdentity extends GuestIdentity {
     expiresAt: number;
@@ -342,12 +351,38 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     const images = landing.galleryImages.filter((img) => img.url.trim().length > 0);
 
     const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
+    const [isCampaignNoticeOpen, setIsCampaignNoticeOpen] = useState(false);
 
     // Restore identity from localStorage on mount (client-only).
     useEffect(() => {
         const stored = readStoredIdentity(landing.slug);
         if (stored) setGuestIdentity(stored);
     }, [landing.slug]);
+
+    useEffect(() => {
+        if (!landing.campaignNotice) {
+            setIsCampaignNoticeOpen(false);
+            return;
+        }
+
+        try {
+            const hasSeenNotice = localStorage.getItem(`${FORMING_NOTICE_KEY_PREFIX}${landing.slug}`);
+            if (!hasSeenNotice) {
+                setIsCampaignNoticeOpen(true);
+            }
+        } catch {
+            setIsCampaignNoticeOpen(true);
+        }
+    }, [landing.campaignNotice, landing.slug]);
+
+    function dismissCampaignNotice() {
+        try {
+            localStorage.setItem(`${FORMING_NOTICE_KEY_PREFIX}${landing.slug}`, '1');
+        } catch {
+            // localStorage unavailable — keep the dismissal in memory for this session.
+        }
+        setIsCampaignNoticeOpen(false);
+    }
 
     function handleGuestRegistered(identity: GuestIdentity) {
         writeStoredIdentity(landing.slug, identity);
@@ -358,6 +393,52 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
 
     return (
         <div className={`${promptFont.className} min-h-screen w-full ${theme.pageBg}`} style={pageStyle}>
+            {landing.campaignNotice && (
+                <Dialog
+                    open={isCampaignNoticeOpen}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            dismissCampaignNotice();
+                            return;
+                        }
+                        setIsCampaignNoticeOpen(true);
+                    }}
+                >
+                    <DialogContent
+                        size="medium"
+                        className="border-white/10 bg-[#0c0e14] text-white shadow-[0_30px_100px_rgba(0,0,0,0.45)]"
+                    >
+                        <DialogHeader>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>
+                                {landing.campaignNotice.eyebrow}
+                            </p>
+                            <DialogTitle className={`${theme.headingFont} text-2xl leading-tight text-white md:text-3xl`}>
+                                {landing.campaignNotice.modalTitle}
+                            </DialogTitle>
+                            <DialogDescription className="text-sm leading-7 text-white/75">
+                                {landing.campaignNotice.modalBody}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ul className="grid gap-3">
+                            {landing.campaignNotice.modalBullets.map((bullet, index) => (
+                                <li key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm leading-7 text-white/78">
+                                    {bullet}
+                                </li>
+                            ))}
+                        </ul>
+                        <DialogFooter className="sm:justify-start">
+                            <Button
+                                type="button"
+                                className="w-full sm:w-auto"
+                                style={{ backgroundColor: accentHex, color: theme.primaryBtnTextColor }}
+                                onClick={dismissCampaignNotice}
+                            >
+                                {landing.campaignNotice.dismissLabel}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
             {landing.preview && (
                 <div className="border-b border-yellow-500/40 bg-yellow-500/15 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.3em] text-yellow-700">
                     Draft preview · not yet public
@@ -366,6 +447,31 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
 
             {/* 1) Hero — system-themed, full bleed */}
             <HeroDispatcher landing={landing} primaryHref={primaryHref} secondaryHref={secondaryHref} />
+
+            {landing.campaignNotice && (
+                <section className={`w-full border-t border-b ${theme.rule} ${theme.sectionAlt}`}>
+                    <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr] md:px-8">
+                        <div>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>
+                                {landing.campaignNotice.eyebrow}
+                            </p>
+                            <h2 className={`${theme.headingFont} mt-3 text-2xl leading-tight md:text-3xl ${theme.pageText}`}>
+                                {landing.campaignNotice.title}
+                            </h2>
+                            <p className={`mt-4 max-w-2xl text-sm leading-7 ${theme.softText}`}>
+                                {landing.campaignNotice.body}
+                            </p>
+                        </div>
+                        <div className="grid gap-3">
+                            {landing.campaignNotice.bullets.map((bullet, index) => (
+                                <div key={index} className={`${theme.surface} p-4`}>
+                                    <p className={`text-sm leading-7 ${theme.softText}`}>{bullet}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Inventory status banner — shown only when group block has changed */}
             {landing.inventoryDisclosure.bannerVisible && (
@@ -444,7 +550,12 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             )}
 
             {/* 8) How it works + inventory process note */}
-            <BleedSection theme={theme} eyebrow="How it works" title="Three steps from interest to booking" accentHex={accentHex}>
+            <BleedSection
+                theme={theme}
+                eyebrow="How it works"
+                title={landing.state === 'GATHERING_INTEREST' ? 'Three steps from interest to possible booking' : 'Three steps from interest to booking'}
+                accentHex={accentHex}
+            >
                 <Itinerary
                     system={system}
                     steps={landing.story.howItWorks}
@@ -484,8 +595,10 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 <BleedSection
                     theme={theme}
                     eyebrow="Save your place"
-                    title="Hold a spot for this sailing"
-                    description="No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens."
+                    title={landing.state === 'GATHERING_INTEREST' ? 'Raise your hand for this forming sailing' : 'Hold a spot for this sailing'}
+                    description={landing.state === 'GATHERING_INTEREST'
+                        ? 'This step is free and non-binding. We save your party size, cabin preference, and the right to reach out if the campaign matures into the proper next step.'
+                        : 'No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens.'}
                     accentHex={accentHex}
                     contentMaxWidth="narrow"
                 >
@@ -511,7 +624,9 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                     <div>
                         <h2 className={`${theme.headingFont} text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{landing.designSystem.cta}</h2>
                         <p className={`mt-3 max-w-xl text-base leading-7 ${theme.softText}`}>
-                            The form below is where you tell us whether you want the shared group path or the faster booking path.
+                            {landing.state === 'GATHERING_INTEREST'
+                                ? 'The form below is where you tell us whether you want to help the shared group version form or simply want the earliest possible booking handoff if the trip stabilizes.'
+                                : 'The form below is where you tell us whether you want the shared group path or the faster booking path.'}
                         </p>
                     </div>
                     <div className="flex items-end">

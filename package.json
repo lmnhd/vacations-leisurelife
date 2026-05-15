@@ -20,7 +20,7 @@
     "@ai-sdk/openai": "^3.0.31",
     "@anthropic-ai/sdk": "^0.78.0",
     "@aws-sdk/client-dynamodb": "^3.997.0",
-    "@aws-sdk/client-s3": "^3.1002.0",
+    "@aws-sdk/client-s3": "^3.1045.0",
     "@aws-sdk/lib-dynamodb": "^3.997.0",
     "@clerk/nextjs": "^6.37.2",
     "@google/generative-ai": "^0.24.1",

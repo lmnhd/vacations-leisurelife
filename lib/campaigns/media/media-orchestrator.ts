@@ -49,7 +49,10 @@ import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video
 import { ShipReferenceCandidate } from '../schema';
 import { resolveVideoModelPresetId } from './video-model-preference';
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from './default-asset-types';
-import { selectPreferredAssetForContext } from './image-selection';
+import {
+    PLATFORM_CROP_FORMATS,
+    planPlatformCropSources,
+} from './platform-crop-selection';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
@@ -69,6 +72,10 @@ export class MediaReadinessError extends Error {
         super(message);
         this.name = 'MediaReadinessError';
     }
+}
+
+function describeUnknownError(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -168,6 +175,40 @@ function shouldRunDesignedAds(assetTypes?: AssetType[]): boolean {
     return assetTypes.includes('designed_ad_artifact') || assetTypes.includes('documentary_detail_image');
 }
 
+function isGenerationLocked(record: AssetRecord | null | undefined): boolean {
+    return record?.curation?.generationLocked === true;
+}
+
+/**
+ * Merges `incoming` new records while preserving any `existing` records that are
+ * generation-locked. Locked records from `existing` that share an assetId with a
+ * new record are kept (the new record is silently discarded for that slot).
+ * If `incoming` is empty, the full `existing` array is returned unchanged.
+ */
+function mergeKeepingLocked(existing: AssetRecord[], incoming: AssetRecord[]): AssetRecord[] {
+    if (incoming.length === 0) return existing;
+    const lockedExisting = existing.filter((r) => r.curation?.generationLocked === true);
+    if (lockedExisting.length === 0) return incoming;
+    const lockedIds = new Set(lockedExisting.map((r) => r.assetId));
+    // Preserve locked records; exclude new records that would overwrite a locked assetId
+    const filteredIncoming = incoming.filter((r) => !lockedIds.has(r.assetId));
+    return [...lockedExisting, ...filteredIncoming];
+}
+
+function isResearchDossierNewerThanBrief(campaign: { researchDossierGeneratedAt?: string | null }, brief?: { generatedAt?: string | null } | null): boolean {
+    if (!campaign.researchDossierGeneratedAt || !brief?.generatedAt) {
+        return false;
+    }
+
+    const researchAt = Date.parse(campaign.researchDossierGeneratedAt);
+    const briefAt = Date.parse(brief.generatedAt);
+    if (Number.isNaN(researchAt) || Number.isNaN(briefAt)) {
+        return false;
+    }
+
+    return researchAt > briefAt;
+}
+
 function getSceneImageSceneId(asset: AssetRecord): string | null {
     const taggedSceneId = asset.tags.find((tag) => tag !== 'scene' && tag !== 'scene_image');
     return taggedSceneId ?? null;
@@ -187,75 +228,6 @@ function mergeAssetRecords(
     }
 
     return Array.from(merged.values());
-}
-
-const SOCIAL_PLATFORM_CROP_FORMATS = new Set<ImageFormat>([
-    'hero_4x5',
-    'story_9x16',
-    'square_1x1',
-    'thumbnail',
-]);
-
-const PLATFORM_CROP_FORMATS: ImageFormat[] = [
-    'hero_16x9',
-    'hero_4x5',
-    'story_9x16',
-    'square_1x1',
-    'banner_3x1',
-    'email_header',
-    'og_image',
-    'thumbnail',
-];
-
-function getPlatformCropSelectionContext(format: ImageFormat) {
-    switch (format) {
-        case 'hero_4x5':
-        case 'og_image':
-            return 'meta_ad_creative' as const;
-        case 'story_9x16':
-        case 'square_1x1':
-        case 'thumbnail':
-            return 'instagram_cover' as const;
-        case 'banner_3x1':
-        case 'email_header':
-            return 'email_header' as const;
-        case 'hero_16x9':
-        default:
-            return 'landing_hero_alt' as const;
-    }
-}
-
-function uniqueActiveAssetPool(records: readonly AssetRecord[]): AssetRecord[] {
-    const seen = new Set<string>();
-    const pool: AssetRecord[] = [];
-
-    for (const record of records) {
-        if (!record.active || !record.url || seen.has(record.assetId)) {
-            continue;
-        }
-        seen.add(record.assetId);
-        pool.push(record);
-    }
-
-    return pool;
-}
-
-function selectPlatformCropSourceRecord(
-    format: ImageFormat,
-    sceneImages: readonly AssetRecord[],
-    heroImages: readonly AssetRecord[],
-    aestheticConcepts: readonly AssetRecord[],
-    manifest?: CampaignMediaManifest | null,
-): AssetRecord | null {
-    const sceneFirst = SOCIAL_PLATFORM_CROP_FORMATS.has(format);
-    const pool = sceneFirst
-        ? uniqueActiveAssetPool([...sceneImages, ...heroImages, ...aestheticConcepts])
-        : uniqueActiveAssetPool([...heroImages, ...sceneImages, ...aestheticConcepts]);
-    if (pool.length === 0) {
-        return null;
-    }
-
-    return selectPreferredAssetForContext(pool, getPlatformCropSelectionContext(format), manifest) ?? pool[0] ?? null;
 }
 
 function resolveSceneImageMode(options: GenerationOptions): 'all' | 'missing_only' {
@@ -412,12 +384,18 @@ export async function runMediaGeneration(
             ...(options ?? {}),
             assetTypes: options?.assetTypes ? [...options.assetTypes] : [...PRODUCTION_ALL_MEDIA_ASSET_TYPES],
             videoModelPresetId: await resolveVideoModelPresetId(options?.videoModelPresetId),
+            probeGate: options?.probeGate ?? 'ignore',
         };
         const activeVideoGeneratorService = getActiveVideoGeneratorService(resolvedOptions.videoModelPresetId);
         const existingManifest = await getMediaManifest(slug);
         const campaign = await getCampaignBlueprint(slug);
         if (!campaign) {
             throw new Error(`Campaign not found: ${slug}`);
+        }
+        if (!campaign.researchDossier) {
+            throw new MediaReadinessError(
+                `Secondary campaign research dossier missing for ${slug}. Generate the dossier on the brief page before any media generation.`,
+            );
         }
         const brief = await getAestheticBrief(slug);
         const requiresApprovedBrief = shouldRunAny([
@@ -652,7 +630,7 @@ export async function runMediaGeneration(
             );
         }
 
-        if (shouldRunAsset('ambient_narration', resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('ambient_narration', resolvedOptions.assetTypes) && !isGenerationLocked(existingManifest?.audio.ambientNarration)) {
             // Ambient narration
             group1Promises.push(
                 runWithJob(slug, 'ambient_narration', 'elevenlabs', 'ambient narration', async () => {
@@ -669,7 +647,7 @@ export async function runMediaGeneration(
 
         }
 
-        if (shouldRunAsset('hype_clip', resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('hype_clip', resolvedOptions.assetTypes) && !isGenerationLocked(existingManifest?.audio.hypeClip)) {
             // Hype clip
             group1Promises.push(
                 runWithJob(slug, 'hype_clip', 'elevenlabs', 'hype clip', async () => {
@@ -686,7 +664,7 @@ export async function runMediaGeneration(
 
         }
 
-        if (shouldRunAsset('theme_music', resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('theme_music', resolvedOptions.assetTypes) && !isGenerationLocked(existingManifest?.audio.themeMusic)) {
             // Theme music
             group1Promises.push(
                 runWithJob(slug, 'theme_music', resolvedOptions.themeMusicSource === 'default' ? 'default_library' : 'replicate', 'theme music', async () => {
@@ -732,21 +710,23 @@ export async function runMediaGeneration(
             } else {
                 try {
                     themeMusicBuffer = await downloadAssetBuffer(selectedThemeMusicRecord.url);
-                } catch (err) {
-                    warnings.push(`Theme music could not be loaded from the selected asset. Narrated storyboard and TikTok videos will be composed without background music. ${err instanceof Error ? err.message : String(err)}`);
+                } catch (err: unknown) {
+                    warnings.push(`Theme music could not be loaded from the selected asset. Narrated storyboard and TikTok videos will be composed without background music. ${describeUnknownError(err)}`);
                 }
             }
         }
 
-        // ── Scene probe gate — runs after GROUP 1 (brief loaded), before GROUP 2 spend ──
-        // runSceneProbeLoop generates cheap Stability probe images for every sceneLibrary
-        // entry, scores them with Claude vision, saves the result to DynamoDB, and returns
-        // a verdict. A blocked verdict stops generation before any full-resolution scene
-        // images are produced. Unconditional — does not require probeGate to be set.
-        if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && hasProductionBible) {
+        // ── Optional scene probe gate ────────────────────────────────────────
+        // Probes are opt-in. Default generation should skip them so a normal
+        // "Generate all media" run can complete without an early quality gate.
+        if (
+            shouldRunAsset('scene_image', resolvedOptions.assetTypes)
+            && hasProductionBible
+            && resolvedOptions.probeGate !== 'ignore'
+        ) {
             console.log(`[media-orchestrator] Running scene probe for ${slug} before scene image generation`);
             const sceneProbeResult = await runSceneProbeLoop(slug);
-            if (sceneProbeResult.verdict === 'blocked') {
+            if (sceneProbeResult.verdict === 'blocked' && resolvedOptions.probeGate === 'require_approved') {
                 throw new MediaReadinessError(
                     `Scene probe for ${slug} is blocked: ${sceneProbeResult.verdictReason}. ` +
                     `Fix the scene imagePrompts in the production bible (regenerate), then retry scene image generation.`
@@ -774,6 +754,14 @@ export async function runMediaGeneration(
         }
 
         if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && hasProductionBible) {
+            if (isResearchDossierNewerThanBrief(campaign, brief)) {
+                throw new MediaReadinessError(
+                    `Scene image generation is using a stale brief for ${slug}. ` +
+                    `The latest secondary research dossier was generated after the brief, so the scene library is out of date. ` +
+                    `Regenerate the brief in Brief Studio first, then rerun media generation so the production bible can absorb the newest research.`,
+                );
+            }
+
             group2Promises.push(
                 runWithJob(slug, 'scene_image', getMediaImageGeneratorService(), 'scene images from production bible', async () => {
                     const manifestReferenceRecords = [
@@ -793,16 +781,17 @@ export async function runMediaGeneration(
 
                     const sceneLibrary = brief!.productionBible!.sceneLibrary;
                     const sceneImageMode = resolveSceneImageMode(resolvedOptions);
-                    const scenesToGenerate = sceneImageMode === 'missing_only'
-                        ? sceneLibrary.filter((scene) => {
-                            const existingSceneRecord = (existingManifest?.images.sceneImages ?? []).find((record) => {
-                                if (!record.active) return false;
-                                return getSceneImageSceneId(record) === scene.sceneId;
-                            });
-
-                            return !existingSceneRecord;
-                        })
-                        : sceneLibrary;
+                    const scenesToGenerate = sceneLibrary.filter((scene) => {
+                        const existingSceneRecord = (existingManifest?.images.sceneImages ?? []).find((record) => {
+                            if (!record.active) return false;
+                            return getSceneImageSceneId(record) === scene.sceneId;
+                        });
+                        // Always skip generation-locked scenes regardless of sceneImageMode
+                        if (existingSceneRecord && isGenerationLocked(existingSceneRecord)) return false;
+                        // In missing_only mode, skip scenes that already have any active record
+                        if (sceneImageMode === 'missing_only' && existingSceneRecord) return false;
+                        return true;
+                    });
 
                     if (scenesToGenerate.length === 0) {
                         return [];
@@ -856,7 +845,7 @@ export async function runMediaGeneration(
                     );
                 }
 
-                if (shouldRunAsset('hero_explainer_video', resolvedOptions.assetTypes)) {
+                if (shouldRunAsset('hero_explainer_video', resolvedOptions.assetTypes) && !isGenerationLocked(existingManifest?.videos.heroExplainer)) {
                     group2Promises.push(
                         runWithJob(slug, 'hero_explainer_video', 'heygen', 'hero explainer', async () => {
                             const video = await generateHeroExplainer(brief!, firstHeroUrl);
@@ -930,48 +919,42 @@ export async function runMediaGeneration(
         await Promise.all(group2Promises);
 
         if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes)) {
+            const effectiveHeroImages = mergeAssetRecords(existingManifest?.images.hero ?? [], heroRecords);
             const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
             const effectiveConcepts = mergeAssetRecords(existingManifest?.images.aestheticConcepts ?? [], conceptRecords);
-            const cropSelectionManifest: CampaignMediaManifest | null = existingManifest
-                ? {
-                    ...existingManifest,
-                    images: {
-                        ...existingManifest.images,
-                        hero: heroRecords,
-                        sceneImages: effectiveSceneImages,
-                        aestheticConcepts: effectiveConcepts,
-                    },
-                }
-                : null;
+            const cropSelectionManifest = existingManifest;
+            const cropSourcePlan = planPlatformCropSources(
+                effectiveSceneImages,
+                effectiveHeroImages,
+                effectiveConcepts,
+                cropSelectionManifest,
+                PLATFORM_CROP_FORMATS,
+            );
 
             for (const format of PLATFORM_CROP_FORMATS) {
-                const sourceRecord = selectPlatformCropSourceRecord(
-                    format,
-                    effectiveSceneImages,
-                    heroRecords,
-                    effectiveConcepts,
-                    cropSelectionManifest,
-                );
+                const sourceRecord = cropSourcePlan.get(format);
                 if (!sourceRecord) {
                     continue;
                 }
 
+                const cropSourceRecord = sourceRecord!;
+
                 try {
-                    const sourceResp = await fetch(sourceRecord.url);
+                    const sourceResp = await fetch(cropSourceRecord.url);
                     const sourceBuffer = Buffer.from(await sourceResp.arrayBuffer());
-                    const crops = await generatePlatformCrops(sourceBuffer, sourceRecord.assetId, [format]);
+                    const crops = await generatePlatformCrops(sourceBuffer, cropSourceRecord.assetId, [format]);
                     for (const crop of crops) {
                         const rec = await uploadAndRecord(
                             slug, crop.assetId, 'platform_crop', 'sharp',
-                            `Crop of ${sourceRecord.assetId} to ${crop.format}`,
+                            `Crop of ${cropSourceRecord.assetId} to ${crop.format}`,
                             crop.buffer, crop.fileName, 'image/webp',
-                            ['crop', crop.format, sourceRecord.assetId],
+                            ['crop', crop.format, cropSourceRecord.assetId],
                             { width: crop.width, height: crop.height }
                         );
                         cropRecords.push(rec);
                     }
-                } catch (err) {
-                    errors.push(`[platform_crop/sharp] ${err instanceof Error ? err.message : String(err)}`);
+                } catch (err: unknown) {
+                    errors.push(`[platform_crop/sharp] ${describeUnknownError(err)}`);
                 }
             }
         }
@@ -1031,6 +1014,13 @@ export async function runMediaGeneration(
 
                 if (!shouldRunAsset(assetType, resolvedOptions.assetTypes)) continue;
                 if (!shouldRunStoryboardDeliverable(delivId, resolvedOptions.storyboardDeliverableIds)) continue;
+
+                // Hard skip for generation-locked single-slot video assets (ignores forceRegenerate)
+                const lockedSingleSlot = assetType === 'tiktok_seed_video' ? existingManifest?.videos.tiktokSeed
+                    : assetType === 'hero_explainer_video' ? existingManifest?.videos.heroExplainer
+                    : assetType === 'threshold_video' ? existingManifest?.videos.thresholdAnnouncement
+                    : null;
+                if (isGenerationLocked(lockedSingleSlot)) continue;
 
                 const forceRegenerateAsset = shouldForceRegenerateAsset(assetType, resolvedOptions.forceRegenerateAssetTypes);
                 const alreadyExists =
@@ -1105,9 +1095,9 @@ export async function runMediaGeneration(
 
         const mergedImages = {
             shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
-            hero: heroRecords.length > 0 ? heroRecords : (existingManifest?.images.hero ?? []),
+            hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
             sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
-            aestheticConcepts: conceptRecords.length > 0 ? conceptRecords : (existingManifest?.images.aestheticConcepts ?? []),
+            aestheticConcepts: mergeKeepingLocked(existingManifest?.images.aestheticConcepts ?? [], conceptRecords),
             documentaryDetails: mergeAssetRecords(existingManifest?.images.documentaryDetails ?? [], documentaryDetailRecords),
             designedAdArtifacts: mergeAssetRecords(existingManifest?.images.designedAdArtifacts ?? [], designedAdRecords),
             platformCrops: (Object.keys(cropsByFormat).length > 0
@@ -1119,8 +1109,8 @@ export async function runMediaGeneration(
             tiktokSeed: videoRecords.tiktokSeed ?? existingManifest?.videos.tiktokSeed ?? null,
             heroExplainer: videoRecords.heroExplainer ?? existingManifest?.videos.heroExplainer ?? null,
             thresholdAnnouncement: videoRecords.thresholdAnnouncement ?? existingManifest?.videos.thresholdAnnouncement ?? null,
-            countdown: videoRecords.countdown.length > 0 ? videoRecords.countdown : (existingManifest?.videos.countdown ?? []),
-            broll: videoRecords.broll.length > 0 ? videoRecords.broll : (existingManifest?.videos.broll ?? []),
+            countdown: mergeKeepingLocked(existingManifest?.videos.countdown ?? [], videoRecords.countdown),
+            broll: mergeKeepingLocked(existingManifest?.videos.broll ?? [], videoRecords.broll),
         };
 
         const mergedAudio = {
@@ -1130,7 +1120,7 @@ export async function runMediaGeneration(
         };
 
         const mergedMerch = {
-            designs: merchRecords.length > 0 ? merchRecords : (existingManifest?.merch.designs ?? []),
+            designs: mergeKeepingLocked(existingManifest?.merch.designs ?? [], merchRecords),
             mockups: existingManifest?.merch.mockups ?? [],
             printfulProductIds: existingManifest?.merch.printfulProductIds ?? [],
         };

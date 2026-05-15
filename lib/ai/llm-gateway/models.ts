@@ -87,11 +87,11 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_HIGH]: {
     provider: "openai",
-    apiId: "gpt-4o",
+    apiId: "gpt-5.2-chat-latest",
     maxTokens: 16_384,
     defaultTemp: 0.7,
     contextWindow: 128_000,
-    lastVerified: "2026-03-01",
+    lastVerified: "2026-05-13",
     scores: { coding: 80, logic: 93, speed: 40, context: 85 },
   },
 

@@ -6,13 +6,13 @@ import { PRODUCTION_BUILD_LINT_FAILURE_CODE } from '@/lib/campaigns/media/media-
 import { getMediaManifest, saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import type { AssetRecord, ImageFormat } from '@/lib/campaigns/schema';
 import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
-import { selectPreferredAssetForContext } from '@/lib/campaigns/media/image-selection';
 import {
     generateAestheticConcepts,
     generateSceneImages,
 } from '@/lib/campaigns/media/generators/stability-generator';
 import { generateDesignedAdArtifactPack } from '@/lib/campaigns/media/generators/ad-artifact-generator';
 import { generatePlatformCrops } from '@/lib/campaigns/media/generators/sharp-processor';
+import { PLATFORM_CROP_FORMATS, planPlatformCropSources } from '@/lib/campaigns/media/platform-crop-selection';
 import {
     discoverShipReferenceCandidates,
     importHeroAssetsFromReferences,
@@ -149,54 +149,94 @@ export async function POST(
 
         if (generator === 'sharp_crops') {
             const manifest = await getMediaManifest(slug);
-            const inferredSceneSource = manifest
-                ? selectPreferredAssetForContext(manifest.images.sceneImages, 'instagram_cover', manifest) ?? manifest.images.sceneImages[0]
-                : null;
-            const inferredHeroSource = manifest
-                ? selectPreferredAssetForContext(manifest.images.hero, 'landing_hero_alt', manifest) ?? manifest.images.hero[0]
-                : null;
-            const inferredConceptSource = manifest
-                ? selectPreferredAssetForContext(manifest.images.aestheticConcepts, 'general_moodboard', manifest) ?? manifest.images.aestheticConcepts[0]
-                : null;
-            const inferredSourceRecord = inferredSceneSource ?? inferredHeroSource ?? inferredConceptSource ?? null;
-            const resolvedSourceImageCdnUrl = sourceImageCdnUrl ?? inferredSourceRecord?.url;
+            const uploadedCrops: Array<{
+                format: ImageFormat;
+                width: number;
+                height: number;
+                fileSizeBytes: number;
+                cdnUrl: string;
+                record: AssetRecord;
+            }> = [];
 
-            if (!resolvedSourceImageCdnUrl) {
-                return NextResponse.json({
-                    error: 'No crop source found. Generate scene images, a hero, or a concept first.'
-                }, { status: 400 });
-            }
-            const sourceResponse = await fetch(resolvedSourceImageCdnUrl);
-            if (!sourceResponse.ok) {
-                return NextResponse.json({
-                    error: `Failed to fetch source image from CDN (${sourceResponse.status}): ${resolvedSourceImageCdnUrl}`
-                }, { status: 400 });
-            }
-            const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
-            const sourceHash = createHash('sha1').update(resolvedSourceImageCdnUrl).digest('hex').slice(0, 10);
-            const cropSourceId = inferredSourceRecord?.assetId ?? `crop_${sourceHash}_${Date.now()}`;
-            const crops = await generatePlatformCrops(sourceBuffer, cropSourceId);
+            if (sourceImageCdnUrl) {
+                const sourceResponse = await fetch(sourceImageCdnUrl);
+                if (!sourceResponse.ok) {
+                    return NextResponse.json({
+                        error: `Failed to fetch source image from CDN (${sourceResponse.status}): ${sourceImageCdnUrl}`
+                    }, { status: 400 });
+                }
+                const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
+                const sourceHash = createHash('sha1').update(sourceImageCdnUrl).digest('hex').slice(0, 10);
+                const cropSourceId = `crop_${sourceHash}_${Date.now()}`;
+                const crops = await generatePlatformCrops(sourceBuffer, cropSourceId);
 
-            const uploadedCrops = await Promise.all(crops.map(async (crop) => {
-                const cdnUrl = await uploadAsset(slug, crop.fileName, crop.buffer, 'image/webp');
-                const record: AssetRecord = {
-                    assetId: crop.assetId,
-                    assetType: 'platform_crop',
-                    url: cdnUrl,
-                    generator: 'sharp',
-                    promptUsed: `${crop.format} ${crop.width}x${crop.height}`,
-                    dimensions: { width: crop.width, height: crop.height },
-                    fileSizeBytes: crop.buffer.length,
-                    mimeType: 'image/webp',
-                    tags: ['crop', crop.format],
-                    createdAt: new Date().toISOString(),
-                    reviewStatus: 'auto_approved',
-                    version: 1,
-                    active: true,
-                };
-                await saveAssetRecord(slug, record);
-                return { format: crop.format, width: crop.width, height: crop.height, fileSizeBytes: crop.buffer.length, cdnUrl, record };
-            }));
+                for (const crop of crops) {
+                    const cdnUrl = await uploadAsset(slug, crop.fileName, crop.buffer, 'image/webp');
+                    const record: AssetRecord = {
+                        assetId: crop.assetId,
+                        assetType: 'platform_crop',
+                        url: cdnUrl,
+                        generator: 'sharp',
+                        promptUsed: `${crop.format} ${crop.width}x${crop.height}`,
+                        dimensions: { width: crop.width, height: crop.height },
+                        fileSizeBytes: crop.buffer.length,
+                        mimeType: 'image/webp',
+                        tags: ['crop', crop.format],
+                        createdAt: new Date().toISOString(),
+                        reviewStatus: 'auto_approved',
+                        version: 1,
+                        active: true,
+                    };
+                    await saveAssetRecord(slug, record);
+                    uploadedCrops.push({ format: crop.format, width: crop.width, height: crop.height, fileSizeBytes: crop.buffer.length, cdnUrl, record });
+                }
+            } else {
+                const cropSourcePlan = planPlatformCropSources(
+                    manifest?.images.sceneImages ?? [],
+                    manifest?.images.hero ?? [],
+                    manifest?.images.aestheticConcepts ?? [],
+                    manifest,
+                    PLATFORM_CROP_FORMATS,
+                );
+
+                for (const format of PLATFORM_CROP_FORMATS) {
+                    const sourceRecord = cropSourcePlan.get(format);
+                    if (!sourceRecord) {
+                        continue;
+                    }
+
+                    const sourceResponse = await fetch(sourceRecord.url);
+                    if (!sourceResponse.ok) {
+                        return NextResponse.json({
+                            error: `Failed to fetch source image from CDN (${sourceResponse.status}): ${sourceRecord.url}`
+                        }, { status: 400 });
+                    }
+
+                    const sourceBuffer = Buffer.from(await sourceResponse.arrayBuffer());
+                    const crops = await generatePlatformCrops(sourceBuffer, `${sourceRecord.assetId}_${format}`, [format]);
+
+                    for (const crop of crops) {
+                        const cdnUrl = await uploadAsset(slug, crop.fileName, crop.buffer, 'image/webp');
+                        const record: AssetRecord = {
+                            assetId: crop.assetId,
+                            assetType: 'platform_crop',
+                            url: cdnUrl,
+                            generator: 'sharp',
+                            promptUsed: `${crop.format} ${crop.width}x${crop.height}`,
+                            dimensions: { width: crop.width, height: crop.height },
+                            fileSizeBytes: crop.buffer.length,
+                            mimeType: 'image/webp',
+                            tags: ['crop', crop.format, sourceRecord.assetId],
+                            createdAt: new Date().toISOString(),
+                            reviewStatus: 'auto_approved',
+                            version: 1,
+                            active: true,
+                        };
+                        await saveAssetRecord(slug, record);
+                        uploadedCrops.push({ format: crop.format, width: crop.width, height: crop.height, fileSizeBytes: crop.buffer.length, cdnUrl, record });
+                    }
+                }
+            }
 
             const cropsByFormat = uploadedCrops.reduce((currentGroups, crop) => {
                 const nextGroups = { ...currentGroups };

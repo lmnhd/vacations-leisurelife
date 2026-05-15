@@ -1,6 +1,13 @@
 import { randomUUID } from 'crypto';
-import { CampaignAestheticBrief, LandingStillSpec, ShipReferenceCandidate, SceneSpec } from '../../schema';
+import {
+    CampaignAestheticBrief,
+    LandingStillSpec,
+    ShipReferenceCandidate,
+    SceneSpec,
+    normalizeCampaignResearchDossier,
+} from '../../schema';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
+import { buildCampaignResearchDossierContext } from '../../research-context';
 import sharp from 'sharp';
 import { buildShipLandscapeGuardrails } from '../ship-environment-profile';
 import { sceneHasVisiblePeople, stillHasVisiblePeople } from '../storyboard-motion-policy';
@@ -190,6 +197,10 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
         'use environmental or styling cues before object cues whenever possible',
     ];
     const propAllowanceRules = buildPropAllowanceRules(plausibility.allowedProps);
+    const researchContext = buildCampaignResearchDossierContext(
+        brief.campaignResearchDossier,
+        'Secondary campaign research dossier (use to keep hero imagery grounded in the niche trend and its specifics):',
+    );
 
     const landingStillSpecs = selectHeroLandingStillSpecs(brief);
     if (landingStillSpecs.length > 0) {
@@ -220,6 +231,7 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Plausibility rule: ${plausibility.governingPrinciple}`,
                 `Niche cue strategy: ${cueStrategy}`,
                 `Believable niche moment: ${nicheMoment}`,
+                researchContext,
                 `Hero shot type: ${heroVariant.label}`,
                 `Variation bias: ${heroVariant.cameraBias}`,
                 `Time-of-day bias: ${heroVariant.temporalBias}`,
@@ -591,6 +603,10 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
         'harbor haze, rail light, and destination atmosphere rather than any explicit prop',
     ];
     const stagedEventAvoidText = 'visible stages, risers, performance platforms, PA speakers, drum kits, full bands, formal concerts, organized demonstrations, workshops, staged activity setups, literal onboard niche events';
+    const researchContext = buildCampaignResearchDossierContext(
+        brief.campaignResearchDossier,
+        'Secondary campaign research dossier (use to keep concept imagery and framing grounded in the niche trend and its specifics):',
+    );
 
     const conceptSourceStills = selectConceptLandingStillSpecs(brief);
     if (conceptSourceStills.length > 0) {
@@ -621,6 +637,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Direction: ${travelFirstDirection}`,
             `Believable niche cue: ${nicheMoments[index % Math.max(nicheMoments.length, 1)] ?? 'subtle social or styling cue only'}`,
             `Signal priority: ${conceptSignalRotation[index % conceptSignalRotation.length]}`,
+            researchContext,
             `Casting goal: ${casting.castingGoal}`,
             `Diversity guidance: ${casting.diversityIntent}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
@@ -663,6 +680,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Direction: ${travelFirstDirection}`,
             `Believable niche cue: ${nicheMoments[index % Math.max(nicheMoments.length, 1)] ?? 'subtle social or styling cue only'}`,
             `Signal priority: ${conceptSignalRotation[index % conceptSignalRotation.length]}`,
+            researchContext,
             `Casting goal: ${casting.castingGoal}`,
             `Diversity guidance: ${casting.diversityIntent}`,
             `Age guidance: ${casting.ageRangeGuidance}`,
@@ -736,6 +754,10 @@ function buildReferenceGroundedHeroPrompt(
         ...(brief.landingStillBible?.avoidDirectives ?? []),
         ...(brief.productionBible?.avoidDirectives ?? []),
     ];
+    const researchContext = buildCampaignResearchDossierContext(
+        brief.campaignResearchDossier,
+        'Secondary campaign research dossier (use to keep hero imagery grounded in the niche trend and its specifics):',
+    );
 
     const avoidText = [
         ...(avoidList ?? []),
@@ -799,6 +821,7 @@ function buildReferenceGroundedHeroPrompt(
             ? `Art direction: Feature ${heroVariant.activity}, one dominant subject story beat, genuine human moment, clear subject engagement, and at least one clearly visible person`
             : `Art direction: Feature the ${candidate.category.replace(/_/g, ' ')} ship environment as the subject while keeping at least one person visible and naturally engaged`,
         `Believable niche expression: ${plausibleMomentsText || 'guided noticing, field notes, simple observation, conversational discovery'}`,
+        researchContext,
         `Variation bias: ${heroVariant.cameraBias}`,
         `Time-of-day bias: ${heroVariant.temporalBias}`,
         `Staging bias: ${heroVariant.stagingBias}`,
@@ -1051,6 +1074,150 @@ function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
     ].join('. ');
 }
 
+function buildWellnessSceneCategoryGuidance(scene: SceneSpec): string {
+    const categoryText = [scene.sceneId, scene.referenceCategory, scene.location].join(' ').toLowerCase();
+
+    if (/(theater|nightclub|lounge|bar)/.test(categoryText)) {
+        return [
+            'For entertainment-adjacent interiors, reinterpret the space as a low-pressure decompression or horizon-watching moment instead of a performance scene',
+            'Favor quiet conversation, herbal or mocktail ritual, reflective pause, or soft social stillness over spectacle, crowd energy, or obvious nightlife posing',
+        ].join('. ');
+    }
+
+    if (/(exterior|sports|pool|deck|rail|promenade)/.test(categoryText)) {
+        return [
+            'For open-deck scenes, make the wellness behavior visible through posture and rhythm: horizon-facing stretch, breathing pause, sunrise stillness, or a low-pressure rail-side reset',
+            'The image should read as ship life first and micro-ritual second, with the cue visible at a glance',
+        ].join('. ');
+    }
+
+    if (/(stateroom|cabin|balcony)/.test(categoryText)) {
+        return [
+            'For cabin or balcony scenes, favor tactile decompression details such as journaling, shawl layers, paper planning, tea, or a pause at the railing',
+            'Keep the mood intimate and lived-in rather than luxury-brochure empty',
+        ].join('. ');
+    }
+
+    if (/(dining|breakfast|terrace|cafe)/.test(categoryText)) {
+        return [
+            'For dining scenes, lean into soft-structured ritual culture through unhurried breakfast, herbal beverages, light journaling, or post-meditation conversation',
+            'Avoid making the frame read as generic cruise dining or formal service theater',
+        ].join('. ');
+    }
+
+    if (/(spa|thermal|relaxation)/.test(categoryText)) {
+        return [
+            'For spa or relaxation scenes, center nervous-system reset through stillness, ocean-facing rest, breath, warmth, and uncluttered quiet',
+            'Avoid turning the scene into a treatment demo or a generic luxury lounger shot',
+        ].join('. ');
+    }
+
+    if (/(atrium|garden|interior)/.test(categoryText)) {
+        return [
+            'For atrium or interior walk-through scenes, express wellness through breathable pacing, soft co-presence, and tactile calm rather than destination-lobby grandeur',
+            'Let any greenery or architecture support the ritual mood without turning the ship into a land-based resort',
+        ].join('. ');
+    }
+
+    if (/(destination|port|shore|beach|excursion)/.test(categoryText)) {
+        return [
+            'For port or shoreline scenes, emphasize nature observation, barefoot pause, sea-air regulation, or quiet companionship over tourist activity or excursion spectacle',
+            'The frame should feel like an optional reset moment, not a scheduled adventure beat',
+        ].join('. ');
+    }
+
+    return '';
+}
+
+export function buildSceneImagePrompt(
+    scene: SceneSpec,
+    shipName: string,
+    brief: CampaignAestheticBrief,
+    themeAnchorProps: readonly string[] = [],
+): string {
+    const landscapeGuardrails = buildShipLandscapeGuardrails(shipName);
+    const normalizedResearchDossier = normalizeCampaignResearchDossier(brief.campaignResearchDossier);
+    const researchContext = buildCampaignResearchDossierContext(
+        normalizedResearchDossier,
+        'Secondary campaign research dossier (use to keep scene imagery grounded in the niche and its visible behaviors):',
+    );
+    const nicheSignalHints = normalizedResearchDossier?.nicheResearch.allowedSignals ?? [];
+    const discouragedSignalHints = normalizedResearchDossier?.nicheResearch.discouragedSignals ?? [];
+    const audienceRoutineHints = normalizedResearchDossier?.nicheResearch.audienceRoutineInsights ?? [];
+    const nicheTranslationHints = normalizedResearchDossier?.cruiseTranslation.downstreamImplications.mediaGeneration ?? [];
+    const researchSignalGuidance = nicheSignalHints.length > 0
+        ? `Visible niche signals for scene imagery: ${nicheSignalHints.slice(0, 4).join(', ')}`
+        : '';
+    const discouragedSignalGuidance = discouragedSignalHints.length > 0
+        ? `Avoid niche drift into these discouraged signals: ${discouragedSignalHints.slice(0, 4).join(', ')}`
+        : '';
+    const researchRoutineGuidance = audienceRoutineHints.length > 0
+        ? `Audience routine anchors: ${audienceRoutineHints.slice(0, 3).join(' ')}`
+        : '';
+    const researchTranslationGuidance = nicheTranslationHints.length > 0
+        ? `Cruise translation guidance: ${nicheTranslationHints.slice(0, 3).join(' ')}`
+        : '';
+    const themeSpecificWellnessGuidance = /wellness|nature|yoga|meditation|mindful/i.test(
+        [
+            brief.themeName,
+            brief.messaging.heroSlogan,
+            brief.messaging.elevatorPitch,
+            brief.visual.aestheticLabel,
+        ].join(' '),
+    )
+        ? [
+            'For wellness or nature campaigns, the scene must show a visible wellness or mindfulness behavior, not just a calm cruise backdrop',
+            'Prefer yoga stretch, meditation pause, breathing, journaling, nature observation, herbal tea, walking meditation, or quiet reset moments that read immediately as wellness',
+            'Do not let the frame collapse into generic pool, dining, or horizon imagery unless a wellness behavior or cue is clearly visible in the same shot',
+        ].join('. ')
+        : '';
+    const resolvedStyle = resolveMediaStyle({
+        assetKind: 'scene',
+        hasPeople: sceneHasVisiblePeople(scene),
+        seed: scene.sceneId,
+        themeAnchorProps: themeAnchorProps.slice(0, 2),
+    });
+    const nicheVisibilityGuidance = themeAnchorProps.length > 0
+        ? `Niche prop visibility: at least one of these campaign props must be visible in the frame — ${themeAnchorProps.join(', ')} — placed incidentally on a table, in the foreground, or near a background figure`
+        : '';
+    const sceneActionGuidance = scene.subjectAction.trim()
+        ? `Primary scene action from the Production Bible: ${scene.subjectAction}`
+        : '';
+    const environmentGuidance = scene.environmentDetails.trim()
+        ? `Environmental detail anchors: ${scene.environmentDetails}`
+        : '';
+    const categoryGuidance = themeSpecificWellnessGuidance
+        ? buildWellnessSceneCategoryGuidance(scene)
+        : '';
+
+    return [
+        resolvedStyle.promptBlock,
+        `Mood: ${scene.mood}`,
+        researchContext,
+        researchSignalGuidance,
+        discouragedSignalGuidance,
+        researchRoutineGuidance,
+        researchTranslationGuidance,
+        themeSpecificWellnessGuidance,
+        categoryGuidance,
+        sceneActionGuidance,
+        environmentGuidance,
+        `Production Bible source frame: ${scene.imagePrompt}`,
+        buildStoryboardSafeSceneDirection(scene),
+        nicheVisibilityGuidance,
+        `Setting: ${scene.location}`,
+        `Time: ${scene.timeOfDay}`,
+        `Light: ${scene.lighting}`,
+        `Framing: ${scene.cameraAngle}`,
+        shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
+        `If people appear: show at least ${brief.visual.humanRepresentation.minimumVisiblePeople ?? 3} visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults`,
+        'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
+        'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
+        landscapeGuardrails.reality,
+        `Avoid ${landscapeGuardrails.avoid}`,
+    ].filter(Boolean).join('. ');
+}
+
 export async function generateSceneImages(
     scenes: readonly SceneSpec[],
     shipReferences: readonly ShipReferenceCandidate[],
@@ -1060,6 +1227,33 @@ export async function generateSceneImages(
 ): Promise<GeneratedSceneImage[]> {
     const results: GeneratedSceneImage[] = [];
     const landscapeGuardrails = buildShipLandscapeGuardrails(shipName);
+    const normalizedResearchDossier = normalizeCampaignResearchDossier(brief.campaignResearchDossier);
+    const researchContext = buildCampaignResearchDossierContext(
+        normalizedResearchDossier,
+        'Secondary campaign research dossier (use to keep scene imagery grounded in the niche and its visible behaviors):',
+    );
+    const nicheSignalHints = normalizedResearchDossier?.nicheResearch.allowedSignals ?? [];
+    const nicheTranslationHints = normalizedResearchDossier?.cruiseTranslation.downstreamImplications.mediaGeneration ?? [];
+    const researchSignalGuidance = nicheSignalHints.length > 0
+        ? `Visible niche signals for scene imagery: ${nicheSignalHints.slice(0, 4).join(', ')}`
+        : '';
+    const researchTranslationGuidance = nicheTranslationHints.length > 0
+        ? `Cruise translation guidance: ${nicheTranslationHints.slice(0, 3).join(' ')}`
+        : '';
+    const themeSpecificWellnessGuidance = /wellness|nature|yoga|meditation|mindful/i.test(
+        [
+            brief.themeName,
+            brief.messaging.heroSlogan,
+            brief.messaging.elevatorPitch,
+            brief.visual.aestheticLabel,
+        ].join(' '),
+    )
+        ? [
+            'For wellness or nature campaigns, the scene must show a visible wellness or mindfulness behavior, not just a calm cruise backdrop.',
+            'Prefer yoga stretch, meditation pause, breathing, journaling, nature observation, herbal tea, walking meditation, or quiet reset moments that read immediately as wellness.',
+            'Do not let the frame collapse into generic pool, dining, or horizon imagery unless a wellness behavior or cue is clearly visible in the same shot.',
+        ].join(' ')
+        : '';
 
     for (let i = 0; i < scenes.length; i++) {
         const scene = scenes[i];
@@ -1081,6 +1275,10 @@ export async function generateSceneImages(
             // Style + emotional framing FIRST — highest weight for image gen
             resolvedStyle.promptBlock,
             `Mood: ${scene.mood}`,
+            researchContext,
+            researchSignalGuidance,
+            researchTranslationGuidance,
+            themeSpecificWellnessGuidance,
             // Primary creative direction from Production Bible
             scene.imagePrompt,
             buildStoryboardSafeSceneDirection(scene),
@@ -1099,13 +1297,14 @@ export async function generateSceneImages(
             landscapeGuardrails.reality,
             `Avoid ${landscapeGuardrails.avoid}`,
         ].filter(Boolean).join('. ');
+        const correctedPrompt = buildSceneImagePrompt(scene, shipName, brief, themeAnchorProps) || enrichedPrompt;
 
         let buffer: Buffer;
         if (matchedReference) {
             const referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
             if (referenceImage) {
                 buffer = await generateNanoBananaImage(
-                    enrichedPrompt,
+                    correctedPrompt,
                     NANO_BANANA_CONFIG.heroAspectRatio,
                     NANO_BANANA_CONFIG.heroImageSize,
                     referenceImage.buffer,
@@ -1113,14 +1312,14 @@ export async function generateSceneImages(
                 );
             } else {
                 buffer = await generateNanoBananaImage(
-                    enrichedPrompt,
+                    correctedPrompt,
                     NANO_BANANA_CONFIG.heroAspectRatio,
                     NANO_BANANA_CONFIG.heroImageSize
                 );
             }
         } else {
             buffer = await generateNanoBananaImage(
-                enrichedPrompt,
+                correctedPrompt,
                 NANO_BANANA_CONFIG.heroAspectRatio,
                 NANO_BANANA_CONFIG.heroImageSize
             );
@@ -1129,7 +1328,7 @@ export async function generateSceneImages(
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
-            prompt: enrichedPrompt,
+            prompt: correctedPrompt,
             assetId: `img_scene_${scene.sceneId}_${idx}`,
             fileName: `images/scenes/${scene.sceneId}_${idx}.png`,
             sceneId: scene.sceneId,

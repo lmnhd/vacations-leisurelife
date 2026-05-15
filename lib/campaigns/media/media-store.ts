@@ -398,6 +398,7 @@ export async function updateAssetReview(
             suitabilityTags: existingRecord.curation?.suitabilityTags ?? [],
             antiTags: existingRecord.curation?.antiTags ?? [],
             downstreamLocked: existingRecord.curation?.downstreamLocked ?? false,
+            generationLocked: existingRecord.curation?.generationLocked ?? false,
             curatorNotes: existingRecord.curation?.curatorNotes,
             updatedAt: new Date().toISOString(),
         },
@@ -594,4 +595,75 @@ export async function getLatestSceneProbeRunRecord(slug: string): Promise<ProbeR
     }));
     const item = result.Items?.[0];
     return item ? (item as ProbeRunRecord) : null;
+}
+
+// ── Asset Version History ──────────────────────────────────────────────────
+
+/**
+ * Reads an asset record by ID without filtering on the `active` flag.
+ * Used by the restore flow to retrieve orphaned records that may have been
+ * deactivated or that are still active but no longer referenced by the manifest.
+ */
+export async function getRawAssetRecord(slug: string, assetId: string): Promise<AssetRecord | null> {
+    const result = await chatDynamoDocumentClient.send(new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: `MEDIA#ASSET#${assetId}` },
+        ConsistentRead: true,
+    }));
+    if (!result.Item) return null;
+    return result.Item as AssetRecord;
+}
+
+function collectManifestAssetIds(manifest: CampaignMediaManifest | null): Set<string> {
+    if (!manifest) return new Set();
+    const ids = new Set<string>();
+    const addAll = (records: AssetRecord[]) => records.forEach((r) => ids.add(r.assetId));
+    addAll(manifest.images.shipReferences);
+    addAll(manifest.images.hero);
+    addAll(manifest.images.sceneImages);
+    addAll(manifest.images.aestheticConcepts);
+    addAll(manifest.images.documentaryDetails ?? []);
+    addAll(manifest.images.designedAdArtifacts ?? []);
+    Object.values(manifest.images.platformCrops).forEach(addAll);
+    if (manifest.videos.tiktokSeed) ids.add(manifest.videos.tiktokSeed.assetId);
+    if (manifest.videos.heroExplainer) ids.add(manifest.videos.heroExplainer.assetId);
+    if (manifest.videos.thresholdAnnouncement) ids.add(manifest.videos.thresholdAnnouncement.assetId);
+    addAll(manifest.videos.countdown);
+    addAll(manifest.videos.broll);
+    if (manifest.audio.ambientNarration) ids.add(manifest.audio.ambientNarration.assetId);
+    if (manifest.audio.hypeClip) ids.add(manifest.audio.hypeClip.assetId);
+    if (manifest.audio.themeMusic) ids.add(manifest.audio.themeMusic.assetId);
+    addAll(manifest.merch.designs);
+    addAll(manifest.merch.mockups);
+    return ids;
+}
+
+/**
+ * Returns all asset records of the given type that are NOT currently
+ * referenced by the manifest — i.e., previously generated assets that were
+ * orphaned when the campaign was regenerated with new IDs.
+ *
+ * Sorted newest-first by `createdAt`. Does not filter on `active`.
+ */
+export async function getOrphanedAssetsByType(slug: string, assetType: AssetType): Promise<AssetRecord[]> {
+    const [queryResult, manifest] = await Promise.all([
+        chatDynamoDocumentClient.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+            FilterExpression: 'assetType = :assetType',
+            ExpressionAttributeValues: {
+                ':pk': `CAMPAIGN#${slug}`,
+                ':prefix': 'MEDIA#ASSET#',
+                ':assetType': assetType,
+            },
+        })),
+        getMediaManifest(slug),
+    ]);
+
+    const activeIds = collectManifestAssetIds(manifest);
+    const all = (queryResult.Items ?? []) as AssetRecord[];
+
+    return all
+        .filter((r) => !activeIds.has(r.assetId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

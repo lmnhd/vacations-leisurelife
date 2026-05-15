@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getCampaignBlueprint, deleteCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 import { VisualFlavorEnum } from '@/lib/campaigns/schema';
+import { dispatchEmailBroadcast } from '@/lib/campaigns/email/email-event-orchestrator';
 
 const CampaignPatchSchema = z.object({
     status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']).optional(),
@@ -18,12 +19,24 @@ const CampaignPatchSchema = z.object({
      * See: GUEST_PORTAL_REDESIGN.md §9 for copy format guidance.
      */
     optionalGatheringMoments: z.array(z.string().min(1).max(300)).min(1).max(10).optional(),
+    /**
+     * Phase 3 fields — setting these from null/empty triggers a broadcast to
+     * every converted lead on the campaign:
+     *   finalItineraryUrl   → `LLL Final Itinerary Published`
+     *   tourConductorName   → `LLL Tour Conductor Announced`
+     */
+    finalItineraryUrl: z.union([z.string().url(), z.null()]).optional(),
+    tourConductorName: z.union([z.string().trim().min(1).max(120), z.null()]).optional(),
+    tourConductorBio: z.union([z.string().trim().max(1000), z.null()]).optional(),
 }).refine(
     (value) =>
         value.status !== undefined
         || value.manualVisualFlavor !== undefined
-        || value.optionalGatheringMoments !== undefined,
-    { message: 'Patch must include at least one of: status, manualVisualFlavor, optionalGatheringMoments.' },
+        || value.optionalGatheringMoments !== undefined
+        || value.finalItineraryUrl !== undefined
+        || value.tourConductorName !== undefined
+        || value.tourConductorBio !== undefined,
+    { message: 'Patch must include at least one updatable field.' },
 );
 
 export async function GET(
@@ -79,6 +92,8 @@ export async function GET(
             allowedThemeSignals: campaign.allowedThemeSignals ?? [],
             discouragedThemeSignals: campaign.discouragedThemeSignals ?? [],
             communityFitRationale: campaign.communityFitRationale ?? null,
+            researchDossier: campaign.researchDossier ?? null,
+            researchDossierGeneratedAt: campaign.researchDossierGeneratedAt ?? null,
             optionalGatheringMoments: campaign.optionalGatheringMoments ?? [],
             optionalityStyle: campaign.optionalityStyle ?? null,
             solitudeRisks: campaign.solitudeRisks ?? [],
@@ -157,9 +172,50 @@ export async function PATCH(
         messages.push(`optionalGatheringMoments updated (${patch.optionalGatheringMoments.length} items).`);
     }
 
+    // Phase 3 — capture before/after for itinerary / TC fields so we can decide
+    // whether the change is the kind that should trigger a broadcast.
+    const finalItineraryUrlChanged = patch.finalItineraryUrl !== undefined
+        && (patch.finalItineraryUrl ?? null) !== (campaign.finalItineraryUrl ?? null);
+    const finalItineraryBecamePopulated = patch.finalItineraryUrl !== undefined
+        && !!patch.finalItineraryUrl
+        && !campaign.finalItineraryUrl;
+    if (patch.finalItineraryUrl !== undefined) {
+        if (patch.finalItineraryUrl === null) {
+            delete updatedCampaign.finalItineraryUrl;
+            messages.push('Cleared finalItineraryUrl.');
+        } else {
+            updatedCampaign.finalItineraryUrl = patch.finalItineraryUrl;
+            messages.push('finalItineraryUrl updated.');
+        }
+    }
+
+    const tourConductorBecameNamed = patch.tourConductorName !== undefined
+        && !!patch.tourConductorName
+        && !campaign.tourConductorName;
+    if (patch.tourConductorName !== undefined) {
+        if (patch.tourConductorName === null) {
+            delete updatedCampaign.tourConductorName;
+            messages.push('Cleared tourConductorName.');
+        } else {
+            updatedCampaign.tourConductorName = patch.tourConductorName;
+            messages.push(`Tour Conductor set to "${patch.tourConductorName}".`);
+        }
+    }
+    if (patch.tourConductorBio !== undefined) {
+        if (patch.tourConductorBio === null || patch.tourConductorBio === '') {
+            delete updatedCampaign.tourConductorBio;
+        } else {
+            updatedCampaign.tourConductorBio = patch.tourConductorBio;
+        }
+        messages.push('Tour Conductor bio updated.');
+    }
+
     const isUnchanged = updatedCampaign.status === campaign.status
         && updatedCampaign.manualVisualFlavor === campaign.manualVisualFlavor
-        && JSON.stringify(updatedCampaign.optionalGatheringMoments) === JSON.stringify(campaign.optionalGatheringMoments);
+        && JSON.stringify(updatedCampaign.optionalGatheringMoments) === JSON.stringify(campaign.optionalGatheringMoments)
+        && !finalItineraryUrlChanged
+        && updatedCampaign.tourConductorName === campaign.tourConductorName
+        && updatedCampaign.tourConductorBio === campaign.tourConductorBio;
 
     if (isUnchanged) {
         return NextResponse.json({
@@ -171,6 +227,45 @@ export async function PATCH(
 
     updatedCampaign.updatedAt = new Date().toISOString();
     await saveCampaignBlueprint(updatedCampaign);
+
+    // Phase 2 — broadcast lifecycle email on status transitions.
+    // Non-fatal: failures are logged but do not block the PATCH response.
+    if (patch.status !== undefined && patch.status !== campaign.status) {
+        if (patch.status === 'EXPIRED') {
+            void dispatchEmailBroadcast(slug, 'campaign_expired').catch((err) => {
+                console.error(`[CampaignPATCH] campaign_expired broadcast failed for ${slug}:`, err);
+            });
+        } else if (patch.status === 'THRESHOLD_MET') {
+            // Auto-promote-from-waitlist already fires this; only emit here for
+            // manual operator transitions (e.g. moving DRAFT → THRESHOLD_MET).
+            void dispatchEmailBroadcast(slug, 'threshold_met').catch((err) => {
+                console.error(`[CampaignPATCH] threshold_met broadcast failed for ${slug}:`, err);
+            });
+        }
+    }
+
+    // Phase 3 — broadcast Final Itinerary / Tour Conductor on first-population.
+    // Targets only converted leads (filter applied inside the broadcast helper).
+    if (finalItineraryBecamePopulated) {
+        void dispatchEmailBroadcast(
+            slug,
+            'final_itinerary_published',
+            {},
+            { shouldSend: (lead) => lead.converted === true },
+        ).catch((err) => {
+            console.error(`[CampaignPATCH] final_itinerary_published broadcast failed for ${slug}:`, err);
+        });
+    }
+    if (tourConductorBecameNamed) {
+        void dispatchEmailBroadcast(
+            slug,
+            'tour_conductor_announced',
+            {},
+            { shouldSend: (lead) => lead.converted === true },
+        ).catch((err) => {
+            console.error(`[CampaignPATCH] tour_conductor_announced broadcast failed for ${slug}:`, err);
+        });
+    }
 
     return NextResponse.json({
         success: true,

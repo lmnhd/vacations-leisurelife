@@ -312,6 +312,19 @@ function shouldRejectKnownBadImageUrl(imageUrl: string): boolean {
         return true;
     }
 
+    // TikTok image API endpoints require cookie auth and always 403 from a server-side fetch.
+    if (normalizedUrl.includes('tiktok.com/api/img/')) {
+        return true;
+    }
+
+    // Pinterest and Facebook use CDN token-signing that expires or is referrer-locked.
+    if (normalizedUrl.includes('pinimg.com') && normalizedUrl.includes('?')) {
+        return true;
+    }
+    if (normalizedUrl.includes('fbcdn.net')) {
+        return true;
+    }
+
     return false;
 }
 
@@ -336,6 +349,7 @@ function buildCurationFromCandidateAI(candidate: ShipReferenceCandidate): AssetC
         suitabilityTags: candidate.detectedTags ?? [],
         antiTags: candidate.antiTags ?? [],
         downstreamLocked: false,
+        generationLocked: false,
         curatorNotes: candidate.aiReasoning ? `[AI] ${candidate.aiReasoning}` : undefined,
         updatedAt: new Date().toISOString(),
     };

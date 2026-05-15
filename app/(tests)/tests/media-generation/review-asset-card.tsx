@@ -6,7 +6,7 @@ import type { AssetApprovalState, AssetRecord, AssetType, CampaignIdentityBluepr
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { metadataContainsKnownShipLandscapeFeature } from '@/lib/campaigns/media/ship-environment-profile';
-import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal, MoreHorizontal, X, Plus } from 'lucide-react';
+import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal, MoreHorizontal, X, Plus, Lock, Unlock } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Asset types that support delete / regenerate-with-revision
@@ -381,12 +381,14 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const [antiInput, setAntiInput] = useState('');
     const [curatorNotes, setCuratorNotes] = useState(initialCuration.curatorNotes ?? '');
     const [downstreamLocked, setDownstreamLocked] = useState(initialCuration.downstreamLocked);
+    const [generationLocked, setGenerationLocked] = useState(initialCuration.generationLocked);
+    const [lockSaving, setLockSaving] = useState(false);
     const [error, setError] = useState('');
 
     const deleteEndpoint = getDeleteEndpoint(slug, asset.assetType);
     const canRegen = isRegenerableType(asset.assetType);
     const allowsSharedVoiceRerender = AUDIO_ARTIFACT_TYPES.has(asset.assetType);
-    const isBusy = saving || deleting || regenerating || savingCuration;
+    const isBusy = saving || deleting || regenerating || savingCuration || lockSaving;
     const effectiveApprovalState = approvalState;
 
     useEffect(() => {
@@ -401,6 +403,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         setAntiTags(nextCuration.antiTags);
         setCuratorNotes(nextCuration.curatorNotes ?? '');
         setDownstreamLocked(nextCuration.downstreamLocked);
+        setGenerationLocked(nextCuration.generationLocked);
     }, [asset]);
 
     const addTag = (kind: 'suitability' | 'anti', rawValue: string) => {
@@ -535,6 +538,30 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         }
     };
 
+    // ── Generation Lock toggle ───────────────────────────────────────────────
+    const handleToggleLock = async () => {
+        setLockSaving(true);
+        setError('');
+        const next = !generationLocked;
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/curation`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assetId: asset.assetId, generationLocked: next }),
+            });
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload?.error ?? 'Failed to update lock');
+            }
+            setGenerationLocked(next);
+            await onRefresh();
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Lock update failed');
+        } finally {
+            setLockSaving(false);
+        }
+    };
+
     // ── Delete ───────────────────────────────────────────────────────────────
     const handleDelete = async () => {
         if (!deleteEndpoint) return;
@@ -603,8 +630,16 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         {asset.assetType} · {asset.generator} · v{asset.version ?? 1}
                     </div>
                 </div>
-                <div className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${approvalStateClasses(effectiveApprovalState)}`}>
-                    {approvalStateLabel(effectiveApprovalState)}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {generationLocked && (
+                        <div className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">
+                            <Lock className="h-2.5 w-2.5" />
+                            Locked
+                        </div>
+                    )}
+                    <div className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${approvalStateClasses(effectiveApprovalState)}`}>
+                        {approvalStateLabel(effectiveApprovalState)}
+                    </div>
                 </div>
             </div>
 
@@ -655,12 +690,28 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 </button>
             </div>
 
-            {/* ── Secondary actions: Curate + More ────────────────────── */}
+            {/* ── Secondary actions: Curate + Lock + More ─────────────── */}
             <div className="flex gap-1.5">
                 <button onClick={() => setShowCurationForm(!showCurationForm)} disabled={isBusy}
                     className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/5 px-2.5 py-1.5 text-[11px] text-fuchsia-300 hover:bg-fuchsia-500/15 transition disabled:opacity-40">
                     <SlidersHorizontal className="h-3 w-3" />
                     Curate
+                </button>
+                <button
+                    onClick={() => void handleToggleLock()}
+                    disabled={isBusy}
+                    title={generationLocked ? 'Unlock — this asset will be regenerated on the next run' : 'Lock — this asset will survive future regeneration runs'}
+                    className={`flex items-center justify-center gap-1 rounded-lg border px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
+                        generationLocked
+                            ? 'border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'
+                            : 'border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                    }`}
+                >
+                    {lockSaving
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : generationLocked
+                            ? <Lock className="h-3.5 w-3.5" />
+                            : <Unlock className="h-3.5 w-3.5" />}
                 </button>
                 <button onClick={() => setShowMoreActions(!showMoreActions)} disabled={isBusy}
                     className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-300 hover:text-white hover:bg-white/10 transition disabled:opacity-40">

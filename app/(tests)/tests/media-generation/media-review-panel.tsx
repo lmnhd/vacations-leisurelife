@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
+import { TAB_HISTORY_ASSET_TYPES } from '@/lib/campaigns/media/asset-manifest-section';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck, Newspaper } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck, Newspaper, Clock, RotateCcw } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -224,6 +225,13 @@ export function MediaReviewPanel(
     const [bulkApproving, setBulkApproving] = useState(false);
     const [bulkError, setBulkError] = useState('');
 
+    // ── Version History state ─────────────────────────────────────────────
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [historyItems, setHistoryItems] = useState<AssetRecord[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState('');
+    const [restoringId, setRestoringId] = useState<string | null>(null);
+
     const tabEntryMap = useMemo(() => {
         const map: Record<string, Array<{ entryKey: string; title: string; asset: AssetRecord }>> = {};
         for (const tab of TABS) {
@@ -262,6 +270,62 @@ export function MediaReviewPanel(
 
     const handleRefresh = async () => {
         await onManifestRefresh(slug);
+    };
+
+    // Reset history whenever the active tab changes
+    useEffect(() => {
+        setHistoryOpen(false);
+        setHistoryItems([]);
+        setHistoryError('');
+    }, [activeTab]);
+
+    const tabHistoryAssetTypes = TAB_HISTORY_ASSET_TYPES[activeTab] ?? [];
+    const tabSupportsHistory = tabHistoryAssetTypes.length > 0;
+
+    const handleToggleHistory = async () => {
+        if (historyOpen) {
+            setHistoryOpen(false);
+            return;
+        }
+        if (tabHistoryAssetTypes.length === 0) return;
+        setHistoryOpen(true);
+        setHistoryLoading(true);
+        setHistoryError('');
+        try {
+            const fetches = tabHistoryAssetTypes.map((assetType) =>
+                fetch(`/api/groups/campaign/${slug}/media/history?assetType=${encodeURIComponent(assetType)}`, { cache: 'no-store' })
+                    .then((r) => r.json() as Promise<{ assets?: AssetRecord[]; error?: string }>)
+            );
+            const results = await Promise.all(fetches);
+            const combined: AssetRecord[] = results.flatMap((r) => r.assets ?? []);
+            combined.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+            setHistoryItems(combined.slice(0, 20));
+        } catch {
+            setHistoryError('Failed to load version history.');
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleRestore = async (assetId: string) => {
+        if (restoringId) return;
+        setRestoringId(assetId);
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/history/restore`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assetId }),
+            });
+            const data = await res.json() as { error?: string };
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            // Remove restored item from history list and refresh manifest
+            setHistoryItems((prev) => prev.filter((a) => a.assetId !== assetId));
+            await handleRefresh();
+        } catch (err) {
+            setHistoryError(err instanceof Error ? err.message : 'Restore failed.');
+        } finally {
+            setRestoringId(null);
+        }
     };
 
     const handleBulkApprove = async () => {
@@ -450,6 +514,20 @@ export function MediaReviewPanel(
                             {activeEntries.length} assets in {activeTabDef.label}
                         </div>
                         <div className="flex items-center gap-2">
+                            {tabSupportsHistory && (
+                                <button
+                                    onClick={() => void handleToggleHistory()}
+                                    disabled={historyLoading}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] transition disabled:opacity-40 ${
+                                        historyOpen
+                                            ? 'border-violet-500/40 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25'
+                                            : 'border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
+                                    }`}
+                                >
+                                    {historyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5" />}
+                                    {historyOpen ? 'Hide History' : 'History'}
+                                </button>
+                            )}
                             {pendingApprovalEntries.length > 0 && (
                                 <button
                                     onClick={() => void handleBulkApprove()}
@@ -486,6 +564,87 @@ export function MediaReviewPanel(
                     {bulkError && (
                         <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
                             {bulkError}
+                        </div>
+                    )}
+
+                    {/* ── Version History Panel ──────────────────────── */}
+                    {historyOpen && (
+                        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
+                            <div className="flex items-center justify-between border-b border-violet-500/10 px-4 py-2.5">
+                                <div className="flex items-center gap-2 text-[11px] text-violet-200">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span className="font-medium uppercase tracking-widest">Previous Versions</span>
+                                    {!historyLoading && (
+                                        <span className="text-violet-400">— {historyItems.length} found</span>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-slate-500">Assets orphaned by prior generation runs. Restore adds them back to the manifest.</p>
+                            </div>
+
+                            {historyError && (
+                                <div className="px-4 py-2 text-[11px] text-red-300 border-b border-red-500/10 bg-red-500/5">
+                                    {historyError}
+                                </div>
+                            )}
+
+                            {historyLoading ? (
+                                <div className="flex items-center justify-center gap-2 py-8 text-slate-500 text-[11px]">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Loading history…
+                                </div>
+                            ) : historyItems.length === 0 ? (
+                                <div className="py-8 text-center text-[11px] text-slate-500">
+                                    No previous versions found for this tab.
+                                </div>
+                            ) : (
+                                <div className="grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-4">
+                                    {historyItems.map((asset) => (
+                                        <div
+                                            key={asset.assetId}
+                                            className="flex flex-col gap-2 rounded-lg border border-white/10 bg-slate-950/60 p-2"
+                                        >
+                                            {/* Preview */}
+                                            {asset.mimeType.startsWith('image/') ? (
+                                                <img
+                                                    src={`${asset.assetType === 'ship_reference_image' && asset.sourceThumbnailUrl ? asset.sourceThumbnailUrl : asset.url}?v=${encodeURIComponent(asset.createdAt)}`}
+                                                    alt={asset.assetId}
+                                                    className="h-32 w-full rounded-md object-cover"
+                                                />
+                                            ) : asset.mimeType.startsWith('video/') ? (
+                                                <video src={asset.url} className="h-32 w-full rounded-md bg-black object-cover" />
+                                            ) : asset.mimeType.startsWith('audio/') ? (
+                                                <div className="flex h-12 items-center justify-center rounded-md bg-slate-900 text-[10px] text-slate-400">
+                                                    Audio — {asset.assetType.replace(/_/g, ' ')}
+                                                </div>
+                                            ) : (
+                                                <div className="flex h-12 items-center justify-center rounded-md bg-slate-900 text-[10px] text-slate-400">
+                                                    {asset.assetType.replace(/_/g, ' ')}
+                                                </div>
+                                            )}
+
+                                            {/* Meta */}
+                                            <div className="space-y-0.5 px-0.5">
+                                                <p className="text-[10px] font-mono text-slate-400 truncate">{asset.assetId}</p>
+                                                <p className="text-[10px] text-slate-500">
+                                                    {new Date(asset.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                                                </p>
+                                            </div>
+
+                                            {/* Restore button */}
+                                            <button
+                                                onClick={() => void handleRestore(asset.assetId)}
+                                                disabled={restoringId !== null}
+                                                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-violet-500/25 bg-violet-500/10 py-1.5 text-[11px] text-violet-200 hover:bg-violet-500/20 transition disabled:opacity-40"
+                                            >
+                                                {restoringId === asset.assetId
+                                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    : <RotateCcw className="h-3.5 w-3.5" />}
+                                                {restoringId === asset.assetId ? 'Restoring…' : 'Restore'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 

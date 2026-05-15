@@ -4,6 +4,8 @@
 > into a new or existing Next.js / TypeScript project.
 > **Last updated**: March 2026
 
+> **Repo note**: If you are using this module inside Leisure Life Interactive, read [AI_POLICY.md](../../AI_POLICY.md) first. It is the canonical repo-wide policy and wins over local wrapper text.
+
 ---
 
 ## 1. Copy the Module

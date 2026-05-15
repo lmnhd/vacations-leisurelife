@@ -19,6 +19,7 @@ import {
   sendWaitlistConfirmation,
   sendThresholdSms,
 } from "@/lib/campaigns/nurture-orchestrator";
+import { dispatchEmailBroadcast } from "@/lib/campaigns/email/email-event-orchestrator";
 
 export const dynamic = "force-dynamic";
 
@@ -265,6 +266,13 @@ export async function POST(
           err,
         );
       });
+
+    // Phase 2 — Fire `LLL Threshold Met` email broadcast to every lead on the
+    // campaign. Non-fatal: failures are aggregated per-lead inside the
+    // broadcast helper; the waitlist response is unaffected.
+    void dispatchEmailBroadcast(slug, "threshold_met").catch((err) => {
+      console.error(`[Waitlist] threshold_met email broadcast failed for ${slug}:`, err);
+    });
   }
 
   // Fire waitlist confirmation email — non-fatal to the signup response

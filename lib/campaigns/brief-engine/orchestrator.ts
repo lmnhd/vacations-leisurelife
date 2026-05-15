@@ -653,6 +653,15 @@ async function computeReadiness(
   }
 
   if (effectiveBrief.humanReviewStatus === "approved") {
+    if (!campaign.researchDossier) {
+      return {
+        readiness: "needs_review",
+        brief: effectiveBrief,
+        issues: [],
+        summary: "Secondary campaign research dossier is missing. Generate it before approving the brief for media.",
+      };
+    }
+
     const validation = validateBrief(effectiveBrief, campaign);
     if (!validation.passed) {
       return {
@@ -1015,6 +1024,10 @@ export async function getReadiness(slug: string): Promise<ReadinessResult> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+function hasResearchDossier(campaign: Campaign): boolean {
+  return Boolean(campaign.researchDossier);
+}
+
 // 4. approve_for_media
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -1024,6 +1037,12 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
 
   const storedBrief = await getAestheticBrief(slug);
   if (!storedBrief) throw new Error(`No brief exists for ${slug}.`);
+  if (!hasResearchDossier(campaign)) {
+    throw new Error(
+      `Cannot approve: secondary campaign research dossier is missing for ${slug}. Generate the research dossier on the brief page before approving for media.`,
+    );
+  }
+
 
   // ── Structural validation gate ────────────────────────────────────
   const validation = validateBrief(storedBrief, campaign);

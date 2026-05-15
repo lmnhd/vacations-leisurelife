@@ -1,6 +1,6 @@
 **Name: Campaign Generation Orchestrator**
 
-**Description:** Orchestrates the end-to-end creation of a Leisure Life Interactive shadow group campaign. Use this skill to guide agents through discovery, inventory matching, aesthetic briefing, and final media generation while enforcing hard quality constraints and allowing user intervention.
+**Description:** Orchestrates the end-to-end creation of a Leisure Life Interactive shadow group campaign. Use this skill to guide agents through discovery, inventory matching, aesthetic briefing, secondary campaign research, and final media generation while enforcing hard quality constraints and allowing user intervention.
 
 ## 0. Shared Process Memory
 
@@ -70,8 +70,8 @@ This skill is split across sub-documents. Load only what you need for the curren
 | ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Phase 1: Discovery** | Gemini Deep Research → GPT-5 → Inventory match gate → DynamoDB | CB deals cache must be fresh; operator runs `scrape-cb-deals.ts`                      |
 | **Phase 2: Phase B**   | CB live scrape + link validation + Odysseus retail link        | Playwright — operator runs `run-phase-b.ts`; agent checks result via `scripts/agent/` |
-| **Phase 3: Brief**     | Aesthetic brief, landing still bible, production bible         | Verify production bible has non-empty `imagePrompt` fields before proceeding          |
-| **Phase 4: Media**     | Ships → heroes → scenes → designed ads → video/audio           | One asset type per call; never re-submit video on timeout — poll manifest instead     |
+| **Phase 3: Brief**     | Aesthetic brief, landing still bible, production bible, secondary research dossier (`nicheResearch` + `cruiseTranslation`) | Dossier must exist before approving the brief for media; use Brief Studio to generate or regenerate it; verify production bible has non-empty `imagePrompt` fields before proceeding to media generation |
+| **Phase 4: Media**     | Ships → heroes → scenes → designed ads → video/audio           | One asset type per call; never re-submit video on timeout — poll manifest instead; dossier is a hard gate |
 | **Phase 5: Publish**   | Landing page, ad distribution, go live                         | Brief must be approved; verify manifest before distribution plan                      |
 
 **Full step-by-step workflow:** [WORKFLOW.md](./WORKFLOW.md)

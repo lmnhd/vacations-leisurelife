@@ -9,9 +9,10 @@ import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-p
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
 import { MediaReviewPanel } from "./media-review-panel";
 import { CampaignSelector } from "./campaign-selector";
+import { ResearchContextPanel } from "../research-context-panel";
 import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
 import {
-    Loader2, Wand2, Image, Film, Music, Type, Shirt,
+    Loader2, Wand2, Image, Crop, Film, Music, Type, Shirt,
     Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink
 } from "lucide-react";
 
@@ -38,6 +39,18 @@ interface DiscoveryCampaignSnapshot {
     priceSource: string | null;
     pricingStatus: string | null;
     cbagenttoolsBookingLink: string | null;
+    researchRationale: string | null;
+    audienceSignals: string[];
+    vacationFitRationale: string | null;
+    communityFitRationale: string | null;
+    researchDossier?: Record<string, unknown> | null;
+    cruiseNativeMoments: string[];
+    optionalGatheringMoments: string[];
+    implausibleLiteralizations: string[];
+    allowedThemeSignals: string[];
+    discouragedThemeSignals: string[];
+    nicheExpressionMode: string | null;
+    researchDossierGeneratedAt?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -87,7 +100,9 @@ interface CategoryConfig {
 
 const CATEGORIES: readonly CategoryConfig[] = [
     { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
-    { key: "images", label: "Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept", "platform_crop"] },
+    { key: "images", label: "Hero Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept"] },
+    { key: "crops", label: "Crops", icon: Crop, color: "amber", types: ["platform_crop"] },
+    { key: "designedAds", label: "Designed Ads", icon: Wand2, color: "pink", types: ["designed_ad_artifact"] },
     { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
     { key: "tiktok", label: "TikTok Package", icon: Film, color: "purple", types: ["tiktok_seed_video"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
@@ -97,7 +112,9 @@ const CATEGORIES: readonly CategoryConfig[] = [
 
 const COST_ESTIMATES: Record<string, string> = {
     references: "~SerpAPI search + import only",
-    images: "~Nano-Banana × heroes + concepts + crops (uses approved refs)",
+    designedAds: "~Designed ad pack (Production Bible required)",
+    images: "~Nano-Banana × hero images + concepts (uses approved refs)",
+    crops: "~Sharp crops from curated hero and scene images",
     scenes: "~Nano-Banana × 8–12 scene images (Production Bible)",
     tiktok: "~Production Bible scenes + ElevenLabs",
     audio: "~$0.20 (ElevenLabs × 2 clips)",
@@ -271,6 +288,11 @@ export default function MediaGenerationTestPage() {
 
     // ── Quick Approve Brief (for test efficiency) ─────────────────────────
     const handleApproveBrief = async () => {
+        if (!researchDossierReady) {
+            setError("Generate the secondary research dossier in Brief Studio before media generation.");
+            return;
+        }
+
         setPageState("generating");
         setError("");
         try {
@@ -285,10 +307,20 @@ export default function MediaGenerationTestPage() {
     };
 
     const handleGenerate = async (assetTypes?: readonly AssetType[]) => {
+        if (!researchDossierReady) {
+            setError("Generate the secondary research dossier in Brief Studio before media generation.");
+            return;
+        }
+
         if (!slug.trim()) return;
 
         if (assetTypes?.includes('scene_image') && !hasProductionBible) {
             setError('Scene image generation requires a saved Production Bible. Open /tests/production-bible, regenerate the Production Bible, then retry Scene Images.');
+            return;
+        }
+
+        if (assetTypes?.includes('platform_crop') && !hasCropSources) {
+            setError('Crop generation requires at least one curated Hero Image, Scene Image, or Concept in the manifest. Generate Hero Images first, then retry Crops.');
             return;
         }
 
@@ -320,6 +352,10 @@ export default function MediaGenerationTestPage() {
             const body = JSON.stringify({
                 ...(assetTypes ? { assetTypes } : {}),
                 themeMusicSource,
+                // When the user explicitly targets scene_image, force 'all' mode so existing
+                // scenes are regenerated rather than silently skipped. Locked scenes are still
+                // protected individually by the orchestrator's generation-lock check.
+                ...(assetTypes?.includes('scene_image') ? { sceneImageMode: 'all' } : {}),
             });
             const res = await fetch(`/api/groups/campaign/${slug.trim()}/media/generate`, {
                 method: "POST",
@@ -365,11 +401,19 @@ export default function MediaGenerationTestPage() {
             + manifest.images.hero.length
             + manifest.images.aestheticConcepts.length
             + (manifest.images.sceneImages?.length ?? 0)
+            + Object.values(manifest.images.platformCrops ?? {}).flat().length
         : 0;
     const discoveryFactsReady = campaign !== null;
     const creativeReady = brief !== null;
     const outputsReady = manifest !== null;
     const briefApproved = brief?.humanReviewStatus === 'approved';
+    const researchDossierReady = Boolean(campaign?.researchDossier);
+    const hasCropSources = Boolean(
+        (manifest?.images.hero?.length ?? 0) > 0 ||
+        (manifest?.images.sceneImages?.length ?? 0) > 0 ||
+        (manifest?.images.aestheticConcepts?.length ?? 0) > 0
+    );
+
     const showBriefStudioHandoff = handoffSource === 'brief-studio' && briefApproved && slug.trim().length > 0;
 
     return (
@@ -464,6 +508,14 @@ export default function MediaGenerationTestPage() {
                         </p>
                     </div>
                 )}
+
+                <ResearchContextPanel
+                    campaign={campaign}
+                    brief={brief as Record<string, unknown> | null}
+                    title="Research Driving The Build"
+                    subtitle="This summarizes the niche intelligence that explains why the hero set, scenes, copy, and TikTok package are leaning the way they do."
+                    defaultExpanded={false}
+                />
 
                 <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -642,16 +694,25 @@ export default function MediaGenerationTestPage() {
                         {CATEGORIES.map((cat) => {
                             const Icon = cat.icon;
                             const isActive = activeCategory === cat.key;
-                            const requiresProductionBible = cat.types.includes('scene_image');
+                            const requiresProductionBible = cat.types.includes('scene_image') || cat.types.includes('tiktok_seed_video') || cat.types.includes('designed_ad_artifact');
+                            const requiresCropSource = cat.types.includes('platform_crop');
                             const requiresTikTokStoryboard = cat.types.includes('tiktok_seed_video');
-                            const isBlocked = (requiresProductionBible || requiresTikTokStoryboard) && !hasProductionBible;
+                            const isBlocked = (requiresProductionBible && !hasProductionBible) || (requiresCropSource && !hasCropSources);
                             return (
                                 <button
                                     key={cat.key}
                                     id={`btn-gen-${cat.key}`}
                                     onClick={() => handleGenerate(cat.types)}
                                     disabled={isBusy || !slug.trim() || isBlocked}
-                                    title={isBlocked ? (requiresTikTokStoryboard ? 'TikTok seed video requires a saved Production Bible and storyboard scene images.' : 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.') : ''}
+                                    title={isBlocked ? (
+                                        requiresCropSource && !hasCropSources
+                                            ? 'Crops require at least one curated Hero Image, Scene Image, or Concept in the manifest. Generate Hero Images first, then retry Crops.'
+                                            : requiresTikTokStoryboard
+                                                ? 'TikTok seed video requires a saved Production Bible and storyboard scene images.'
+                                                : cat.types.includes('designed_ad_artifact')
+                                                    ? 'Designed Ads require a saved Production Bible. Regenerate it from /tests/production-bible first.'
+                                                    : 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.'
+                                    ) : ''}
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}
                                 >
                                     {isActive

@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { handleChatRequest } from '@/app/api/chat/core-logic';
 import { getCampaignLandingBySlug, type CampaignLandingViewModel } from '@/lib/campaigns/landing/view-model';
+import { buildCampaignResearchDossierContext } from '@/lib/campaigns/research-context';
 import { chatStorageService } from '@/lib/chat/chat-storage';
+import { extractAndSaveIdea } from '@/lib/campaigns/guest-ideas';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,24 +119,29 @@ function buildChannelGuidance(
         case 'ideas':
             return [
                 'Channel guidance:',
-                '- This is the ideas room.',
-                '- Favor activity suggestions, onboard moments, and easy optional group ideas.',
-                '- Keep the tone light, social, and invitational.',
-                '- Do not drift into pricing or booking unless the guest explicitly asks.',
+                '- This is the ideas room. Guests drop ideas; you capture them.',
+                '- Acknowledge the idea in one sentence, confirm it is noted, then stop.',
+                '- HARD LIMIT: 1-2 sentences max. No lists. No questions.',
+                '- HARD LIMIT: Do not ask follow-up questions. Do not invite the guest to elaborate or keep talking.',
+                '- HARD LIMIT: Never invent excursion names, prices, durations, or port details not provided to you.',
+                '- If an idea is too vague to capture, name what you did capture and close. Do not probe for more.',
             ].join('\n');
         case 'logistics':
             return [
                 'Channel guidance:',
                 '- This is the logistics room.',
-                '- Favor practical answers about dates, ship, destination, pricing, booking path, and next steps.',
-                '- Be direct and useful.',
-                '- Do not pad the answer with extra vibe language.',
+                '- Answer the question directly using only confirmed campaign data. Then stop.',
+                '- HARD LIMIT: 1-3 sentences. No lists unless the guest asks for them.',
+                '- HARD LIMIT: Do not ask follow-up questions. Do not invite more conversation.',
+                '- If the answer is unknown, say so in one sentence and close.',
             ].join('\n');
         case 'meetups':
             return [
                 'Channel guidance:',
-                '- This is the meetups room.',
-                '- Favor casual meetup ideas, port-day plans, onboard gathering energy, and how people might connect.',
+                '- This is the meetups room. Guests post meetup intentions; you log them.',
+                '- Acknowledge in one sentence and close. Do not build on the idea or ask questions.',
+                '- HARD LIMIT: 1-2 sentences. No questions. No elaboration.',
+                '- HARD LIMIT: Do not invite the guest to keep talking.',
                 '- Keep expectations soft and optional, never mandatory.',
             ].join('\n');
         case 'main':
@@ -217,9 +224,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
         : 'main';
 
     const campaignContext = buildCampaignContext(result.landing);
+    const researchContext = buildCampaignResearchDossierContext(result.campaign.researchDossier);
     const guestLine = displayName !== 'Guest' ? `\nGuest name: ${displayName}` : '';
     const channelLine = `\nActive room channel: ${threadChannel}`;
     const channelGuidance = `\n${buildChannelGuidance(threadChannel)}`;
+    const contextSections = [campaignContext, researchContext].filter(Boolean).join('\n\n');
 
     const chatResult = await handleChatRequest({
         message: body.message,
@@ -229,11 +238,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
         threadChannel,
         displayName,
         startingContext: 'campaign_landing_chat',
-        contextBlock: `${campaignContext}${guestLine}${channelLine}${channelGuidance}`,
+        contextBlock: `${contextSections}${guestLine}${channelLine}${channelGuidance}`,
     });
 
     if (chatResult.status >= 400) {
         return NextResponse.json({ success: false, ...chatResult.data }, { status: chatResult.status });
+    }
+
+    // Schedule extraction to run after the response is sent so the serverless
+    // function stays alive long enough to complete the LLM call + DynamoDB write.
+    if (threadChannel === 'ideas' && typeof body.message === 'string' && body.message.trim()) {
+        const msgToExtract = body.message.trim();
+        after(async () => {
+            await extractAndSaveIdea(slug, msgToExtract, displayName).catch(() => {});
+        });
     }
 
     return NextResponse.json({

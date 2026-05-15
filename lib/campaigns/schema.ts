@@ -525,6 +525,95 @@ export function normalizeCommunityExpression(
 // Deterministic Aesthetic Modification — Schema Layer
 // ────────────────────────────────────────────────────────────────────────────
 
+export const CampaignResearchNicheResearchSchema = z.object({
+    nicheTitle: z.string(),
+    trendCycleSummary: z.string(),
+    whyThisTrendFeelsDistinctNow: z.string(),
+    audienceRoutineInsights: z.array(z.string()),
+    specificExamples: z.array(z.string()),
+    allowedSignals: z.array(z.string()),
+    discouragedSignals: z.array(z.string()),
+    sourceNotes: z.array(z.string()).optional(),
+});
+export type CampaignResearchNicheResearch = z.infer<typeof CampaignResearchNicheResearchSchema>;
+
+export const CampaignResearchCruiseTranslationSchema = z.object({
+    cruiseNativeTranslationNotes: z.array(z.string()),
+    downstreamImplications: z.object({
+        briefDirection: z.array(z.string()),
+        mediaGeneration: z.array(z.string()),
+        copyDirection: z.array(z.string()),
+    }),
+});
+export type CampaignResearchCruiseTranslation = z.infer<typeof CampaignResearchCruiseTranslationSchema>;
+
+export const CampaignResearchDossierCanonicalSchema = z.object({
+    nicheResearch: CampaignResearchNicheResearchSchema,
+    cruiseTranslation: CampaignResearchCruiseTranslationSchema,
+});
+export type CampaignResearchDossier = z.infer<typeof CampaignResearchDossierCanonicalSchema>;
+
+export const CampaignResearchDossierLegacySchema = z.object({
+    nicheTitle: z.string(),
+    trendCycleSummary: z.string(),
+    whyThisTrendFeelsDistinctNow: z.string(),
+    audienceRoutineInsights: z.array(z.string()),
+    specificExamples: z.array(z.string()),
+    cruiseNativeTranslationNotes: z.array(z.string()),
+    allowedSignals: z.array(z.string()),
+    discouragedSignals: z.array(z.string()),
+    downstreamImplications: z.object({
+        briefDirection: z.array(z.string()),
+        mediaGeneration: z.array(z.string()),
+        copyDirection: z.array(z.string()),
+    }),
+    sourceNotes: z.array(z.string()).optional(),
+});
+
+export const CampaignResearchDossierSchema = z.union([
+    CampaignResearchDossierCanonicalSchema,
+    CampaignResearchDossierLegacySchema,
+]);
+
+export type CampaignResearchDossierLike =
+    | CampaignResearchDossier
+    | z.infer<typeof CampaignResearchDossierLegacySchema>
+    | Record<string, unknown>
+    | null
+    | undefined;
+
+export function normalizeCampaignResearchDossier(input?: CampaignResearchDossierLike): CampaignResearchDossier | null {
+    if (!input) return null;
+
+    const canonical = CampaignResearchDossierCanonicalSchema.safeParse(input);
+    if (canonical.success) {
+        return canonical.data;
+    }
+
+    const legacy = CampaignResearchDossierLegacySchema.safeParse(input);
+    if (!legacy.success) {
+        return null;
+    }
+
+    const dossier = legacy.data;
+    return {
+        nicheResearch: {
+            nicheTitle: dossier.nicheTitle,
+            trendCycleSummary: dossier.trendCycleSummary,
+            whyThisTrendFeelsDistinctNow: dossier.whyThisTrendFeelsDistinctNow,
+            audienceRoutineInsights: dossier.audienceRoutineInsights,
+            specificExamples: dossier.specificExamples,
+            allowedSignals: dossier.allowedSignals,
+            discouragedSignals: dossier.discouragedSignals,
+            sourceNotes: dossier.sourceNotes,
+        },
+        cruiseTranslation: {
+            cruiseNativeTranslationNotes: dossier.cruiseNativeTranslationNotes,
+            downstreamImplications: dossier.downstreamImplications,
+        },
+    };
+}
+
 export const AestheticModifyModeEnum = z.enum(['preview', 'apply']);
 export type AestheticModifyMode = z.infer<typeof AestheticModifyModeEnum>;
 
@@ -893,6 +982,7 @@ export const CampaignAestheticBriefSchema = z.object({
     }),
 
     communityExpression: CommunityExpressionSchema,
+    campaignResearchDossier: CampaignResearchDossierSchema.optional(),
 
     socialConcepts: z.object({
         tiktokOrganic: TikTokConceptSetSchema,
@@ -1045,6 +1135,8 @@ export const AssetCurationSchema = z.object({
     suitabilityTags: z.array(z.string()).default([]),
     antiTags: z.array(z.string()).default([]),
     downstreamLocked: z.boolean().default(false),
+    /** When true, the orchestrator will not regenerate or replace this asset during media generation runs. */
+    generationLocked: z.boolean().default(false),
     curatorNotes: z.string().optional(),
     updatedAt: z.string(),
 });

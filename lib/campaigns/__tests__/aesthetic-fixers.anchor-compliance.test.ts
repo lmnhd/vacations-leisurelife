@@ -10,6 +10,8 @@ import { normalizeAnchorContent } from "../editors-room";
 function makeBible(stills: LandingStillSpec[]): LandingStillBible {
   return {
     stillLibrary: stills,
+    globalDirectionNotes: "Test bible direction.",
+    avoidDirectives: [],
   };
 }
 
@@ -23,6 +25,10 @@ function makeStill(
     subjectAction: "They are dancing.",
     location: "Pool deck",
     environmentDetails: "Sunny day",
+    timeOfDay: "afternoon",
+    lighting: "natural",
+    mood: "upbeat",
+    referenceCategory: "pool_deck",
     composition: "Wide shot",
     slotRole: "EDITORIAL_WIDE_A",
     usage: "concept",

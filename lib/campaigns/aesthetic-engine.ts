@@ -23,6 +23,7 @@ import {
   normalizeHumanRepresentationGuidance,
 } from "./schema";
 import { buildCampaignIdentityBlueprintAsync } from "./design-system/identity-blueprint";
+import { buildCampaignResearchDossierContext } from "./research-context";
 
 function buildMerchDallePrompt(
   productType: string,
@@ -693,6 +694,10 @@ function buildRefinementContext(campaign: Campaign): string {
     `Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}`,
     `Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}`,
     `Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}`,
+    buildCampaignResearchDossierContext(
+      campaign.researchDossier,
+      "Secondary campaign research dossier (use for niche-aware copy sharpening):",
+    ),
   ].join("\n");
 }
 
@@ -866,6 +871,10 @@ Community Fit Rationale: ${sanitizePromptText(campaign.communityFitRationale)}
 Optional Gathering Moments: ${joinCampaignList(sanitizePromptList(campaign.optionalGatheringMoments))}
 Optionality Style: ${sanitizePromptText(campaign.optionalityStyle)}
 Solitude Risks: ${joinCampaignList(sanitizePromptList(campaign.solitudeRisks))}
+${buildCampaignResearchDossierContext(
+  campaign.researchDossier,
+  "Secondary campaign research dossier (use to ground copy, concepts, and niche tone):",
+)}
 
 Visual Priority Rules:
 - For visual identity fields, prioritize durable cruise/travel truths that would still feel correct even if no niche activity is happening in frame.
@@ -950,6 +959,17 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 - For music/listening campaigns specifically, avoid making shared public playback the central mechanism of the experience. Use ship soundtrack mood, personal recommendations, side-by-side listening energy, and naturally shared taste rather than room-command or spotlight moments.
 - For reading/literary campaigns specifically, do not imply hosted salons, influencer talks, curated swap infrastructure, shared shelves, leave-one/take-one shelves, or reading-club management. Reading should feel self-directed, socially easy, and naturally embedded in sea days and port downtime.
 - For reading/literary campaigns specifically, never use shelf-based ambient infrastructure as the mechanism for discovery; recommendations should move person-to-person, book-to-hand, or remain purely atmospheric.
+
+AUDIO AND NARRATION RULES:
+- audio.voiceProfile should name the spoken voice for this campaign in plain language, grounded in the campaign's social tone and not in generic travel-ad voice.
+- audio.musicMood should describe an ambient sound bed that matches the campaign's niche mood, while staying cruise-first and not overly literal.
+- audio.ambientNarrationScript should read like a calm, vivid, spoken tour-conductor line that explains the campaign in one short breath.
+- audio.hypeClipScript should feel like a tighter, punchier version of the same campaign promise, suitable for a quick trailer beat or voice tag.
+- When the campaign includes a secondary campaign research dossier, use it to make the narration specific: mention routines, trend-cycle context, concrete niche behavior, or the way the niche shows up at sea.
+- Do not repeat the whole dossier. Fold the useful details into human narration that sounds like one person speaking naturally.
+- Keep both scripts cruise-first and avoid workshop, class, or program language.
+- For music/listening campaigns specifically, avoid language that implies a hosted salon, listening room, or public playback program in the narration itself. Favor atmosphere, recommendation culture, and guest-carried mood.
+- For reading/literary campaigns specifically, avoid narration that sounds like a formal club, hosted talk, or shelf-based system. Favor person-to-person discovery and quiet, easy reading energy.
 `.trim();
 
   const correctionSuffix = options?.correctionContext
@@ -1241,7 +1261,10 @@ PASS 2 GUARDRAILS:
   console.log(`[aesthetic-engine] Pass 2 platform concepts for ${campaign.id}`);
 
   const pass2Start = Date.now();
-  const pass2Prompt = `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}`;
+  const pass2Prompt = `Campaign Identity to apply:\n${JSON.stringify(coreAesthetic, null, 2)}\n\n${buildCampaignResearchDossierContext(
+    campaign.researchDossier,
+    "Secondary campaign research dossier (use to shape platform-native social and video concepts):",
+  )}`;
   const pass2System = systemPromptPass2 + instructionSuffix + correctionSuffix;
 
   const [{ object: socialConcepts }, { object: videoConcepts }] =
@@ -1361,12 +1384,17 @@ export async function generateVisualPlanningFromBrief(
   } as z.infer<typeof Pass2Schema>;
 
   const remediationContext = buildVisualPlanningRemediationContext(brief);
+  const researchContextBlock = buildCampaignResearchDossierContext(
+    brief.campaignResearchDossier ?? campaign.researchDossier,
+    "SECONDARY CAMPAIGN RESEARCH DOSSIER (use to translate niche trends into concrete scenes and storyboard choices):",
+  );
 
   return generateVisualPlanningBundle(
     campaign,
     coreAesthetic,
     platformConcepts,
     remediationContext,
+    researchContextBlock,
   );
 }
 
@@ -1639,6 +1667,7 @@ async function generateVisualPlanningBundle(
   coreAesthetic: z.infer<typeof Pass1Schema>,
   platformConcepts: z.infer<typeof Pass2Schema>,
   remediationContext: string,
+  researchContextBlock: string,
 ): Promise<VisualPlanningBundle> {
   const { visual, messaging, communityExpression, audio } = coreAesthetic;
   const plausibility = visual.plausibilityFramework;
@@ -1920,6 +1949,8 @@ Solitude Anti-Patterns: ${communityExpression.solitudeAntiPatterns.join("; ")}
 Visual Togetherness Notes: ${communityExpression.visualTogethernessNotes}
 Copy Framing Rule: ${communityExpression.copyFramingRule}
 Music Mood: ${audio.musicMood}
+
+${researchContextBlock}
 
 ${remediationContext}
 

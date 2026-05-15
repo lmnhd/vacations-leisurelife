@@ -13,6 +13,7 @@ const AssetCurationPatchRequestSchema = z.object({
     suitabilityTags: z.array(z.string()).optional(),
     antiTags: z.array(z.string()).optional(),
     downstreamLocked: z.boolean().optional(),
+    generationLocked: z.boolean().optional(),
     curatorNotes: z.string().max(2000).optional(),
 });
 

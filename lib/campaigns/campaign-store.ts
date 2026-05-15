@@ -6,6 +6,7 @@ import type { BookingLinkValidationResult } from './booking-link-validator';
 import {
     CampaignAestheticBrief,
     CampaignAestheticBriefSchema,
+    CampaignResearchDossier,
     normalizeCampaignIdentityBlueprint,
     normalizeCommunityExpression,
     normalizeHumanRepresentationGuidance,
@@ -244,6 +245,33 @@ export async function upsertCampaignPricingMatch(
         console.log(`[campaign-store] ✅ CB match written for campaign "${slug}"`);
     } catch (error) {
         console.error(`[campaign-store] Failed to write CB match for ${slug}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Persists the secondary campaign research dossier on the campaign METADATA
+ * record. Surgical update — does not rewrite unrelated fields. Used by Phase 1.5
+ * after the discovery blueprint is approved and a campaign has been selected.
+ */
+export async function upsertCampaignResearchDossier(
+    slug: string,
+    dossier: CampaignResearchDossier,
+): Promise<void> {
+    const params = {
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
+        UpdateExpression: 'SET researchDossier = :dossier, researchDossierGeneratedAt = :now, updatedAt = :now',
+        ExpressionAttributeValues: {
+            ':dossier': dossier,
+            ':now': new Date().toISOString(),
+        },
+    };
+
+    try {
+        await chatDynamoDocumentClient.send(new UpdateCommand(params));
+    } catch (error) {
+        console.error(`[campaign-store] Failed to upsert research dossier for ${slug}:`, error);
         throw error;
     }
 }

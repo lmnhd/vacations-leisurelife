@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { CampaignSelector } from '../media-generation/campaign-selector';
+import { ResearchContextPanel } from '../research-context-panel';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Local types mirroring orchestrator response shapes
@@ -71,6 +72,22 @@ interface ReadinessResult {
     issues: ValidationIssue[];
     summary: string;
     campaignName: string | null;
+}
+
+interface CampaignSnapshot {
+    researchRationale: string | null;
+    audienceSignals: string[];
+    vacationFitRationale: string | null;
+    communityFitRationale: string | null;
+    researchDossier?: Record<string, unknown> | null;
+    researchDossierGeneratedAt?: string | null;
+    cruiseNativeMoments: string[];
+    optionalGatheringMoments: string[];
+    implausibleLiteralizations: string[];
+    allowedThemeSignals: string[];
+    discouragedThemeSignals: string[];
+    nicheExpressionMode: string | null;
+    manualVisualFlavor: string | null;
 }
 
 interface ApprovalResult {
@@ -240,6 +257,7 @@ export default function BriefStudioPage() {
     const [action, setAction] = useState<string | null>(null);
     const [activeJob, setActiveJob] = useState<BriefJobPollState | null>(null);
     const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
+    const [campaign, setCampaign] = useState<CampaignSnapshot | null>(null);
     const [lastResult, setLastResult] = useState<BriefEngineResult | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -252,6 +270,8 @@ export default function BriefStudioPage() {
     const hasLandingStillBible = Boolean(activeBrief?.['landingStillBible']);
     const hasStoredBrief = Boolean(readiness?.brief);
     const storedReviewStatus = typeof activeBrief?.['humanReviewStatus'] === 'string' ? activeBrief['humanReviewStatus'] : null;
+    const hasResearchDossier = Boolean(campaign?.researchDossier);
+
 
     // ── Load readiness state ──────────────────────────────────────────
     const loadReadiness = useCallback(async () => {
@@ -260,10 +280,21 @@ export default function BriefStudioPage() {
         setAction('checking');
         setError(null);
         try {
-            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/brief/readiness`);
-            const data = await res.json() as (ReadinessResult & { error?: string });
-            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-            setReadiness(data);
+            const [readinessRes, campaignRes] = await Promise.all([
+                fetch(`/api/groups/campaign/${normalizedSlug}/brief/readiness`),
+                fetch(`/api/groups/campaign/${normalizedSlug}`),
+            ]);
+
+            const readinessData = await readinessRes.json() as (ReadinessResult & { error?: string });
+            if (!readinessRes.ok) throw new Error(readinessData.error ?? `HTTP ${readinessRes.status}`);
+            setReadiness(readinessData);
+
+            if (campaignRes.ok) {
+                const campaignData = await campaignRes.json() as { campaign?: CampaignSnapshot };
+                setCampaign(campaignData.campaign ?? null);
+            } else {
+                setCampaign(null);
+            }
             setLastResult(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load readiness');
@@ -273,7 +304,6 @@ export default function BriefStudioPage() {
         }
     }, [normalizedSlug]);
 
-    // ── Load history ────────────────────────────────────────────────
     const loadHistory = useCallback(async () => {
         if (!normalizedSlug) return;
         try {
@@ -285,7 +315,7 @@ export default function BriefStudioPage() {
         }
     }, [normalizedSlug]);
 
-    // ── Generate / refresh brief (async job path) ─────────────────────────────
+    // -- Generate / refresh brief (async job path) ---------------------------
     // POST enqueues a job and returns { jobId }. We then poll GET ?jobId= every 5s.
     // On completion we reload readiness so fresh brief state appears.
     const POLL_INTERVAL_MS = 5_000;
@@ -347,7 +377,7 @@ export default function BriefStudioPage() {
         }
     }, [hasStoredBrief, normalizedSlug, loadReadiness, loadHistory]);
 
-    // ── Approve for media ─────────────────────────────────────────────
+    // -- Approve for media ---------------------------------------------------
     const approve = useCallback(async () => {
         if (!normalizedSlug) return;
         setLoading(true);
@@ -367,6 +397,34 @@ export default function BriefStudioPage() {
         }
     }, [normalizedSlug]);
 
+    const handleGenerateResearchDossier = useCallback(async () => {
+        if (!normalizedSlug) return;
+        const confirmed = window.confirm(
+            hasResearchDossier
+                ? `Regenerate the secondary research dossier for "${normalizedSlug}"?`
+                : `Generate the secondary research dossier for "${normalizedSlug}" before approving the brief?`
+        );
+        if (!confirmed) return;
+        setLoading(true);
+        setAction('researching');
+        setError(null);
+        try {
+            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/research-dossier`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force: hasResearchDossier }),
+            });
+            const data = await res.json() as { success?: boolean; error?: string };
+            if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`);
+            await loadReadiness();
+            await loadHistory();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to generate research dossier');
+        } finally {
+            setLoading(false);
+            setAction(null);
+        }
+    }, [normalizedSlug, hasResearchDossier, loadReadiness, loadHistory]);
 
     const handleLoadCampaign = useCallback(async () => {
         await loadReadiness();
@@ -381,7 +439,11 @@ export default function BriefStudioPage() {
     const productionDiagnostics = productionBuildLint?.stillDiagnostics ?? [];
     const hasProductionLintIssues = productionBlockingIssues.length > 0 || productionWarnings.length > 0;
     const isReadyForMedia = readiness?.readiness === 'ready_for_media';
+
     const productionApprovalBlockReason = (() => {
+        if (!hasResearchDossier) {
+            return 'Generate the secondary research dossier before approving this brief.';
+        }
         if (!activeBrief) return null;
         if (!hasLandingStillBible || !productionBuildStatus) {
             return 'Production build has not been evaluated yet. Regenerate the brief bundle to run pre-media lint before approving.';
@@ -394,11 +456,12 @@ export default function BriefStudioPage() {
         }
         return null;
     })();
-    const canApprove = readiness?.readiness === 'needs_review' && blockers.length === 0 && !productionApprovalBlockReason;
+    const canApprove = readiness?.readiness === 'needs_review' && blockers.length === 0 && hasResearchDossier && !productionApprovalBlockReason;
     const mediaGenerationHref = normalizedSlug
         ? `/tests/media-generation?slug=${encodeURIComponent(normalizedSlug)}&from=brief-studio`
         : '/tests/media-generation';
     const approvalBlockedReason = (() => {
+        if (!hasResearchDossier) return 'Generate the secondary research dossier before approving this brief.';
         if (!readiness) return 'Load a brief first.';
         if (isReadyForMedia) return 'This brief is already approved and ready for media generation. Continue in the media-generation handoff link below.';
         if (blockers.length > 0) return blockers[0]?.message ?? 'Resolve blocker issues before approving.';
@@ -513,6 +576,21 @@ export default function BriefStudioPage() {
                         )}
 
                         <p className="text-xs text-slate-400">{lastResult?.summary ?? readiness.summary}</p>
+                        {!hasResearchDossier && (
+                            <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3 text-xs text-cyan-100">
+                                <strong>Secondary research required.</strong> Generate the research dossier before approving this brief or moving to media generation.
+                                <div className="mt-3">
+                                    <button
+                                        onClick={handleGenerateResearchDossier}
+                                        disabled={loading}
+                                        className="rounded-lg border border-cyan-400/30 bg-cyan-500/20 px-3 py-1.5 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        {action === 'researching' ? 'Generating dossier...' : 'Generate Research Dossier'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
 
                         {storedReviewStatus === 'approved' && readiness.readiness !== 'ready_for_media' && (
                             <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-200">
@@ -660,6 +738,17 @@ export default function BriefStudioPage() {
                 )}
 
                 {/* ── History ────────────────────────────────────────── */}
+                {(campaign || readiness?.brief) && (
+                    <ResearchContextPanel
+                        campaign={campaign}
+                        brief={readiness?.brief}
+                        title="Research Behind The Brief"
+                        subtitle="This is the niche context that explains why the brief emphasizes certain scenes, props, moods, and social cues."
+                        onRegenerateDossier={handleGenerateResearchDossier}
+                        isRegeneratingDossier={action === 'researching'}
+                    />
+                )}
+
                 {history.length > 0 && (
                     <div className="p-5 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
                         <h2 className="text-sm font-semibold text-slate-200">History</h2>

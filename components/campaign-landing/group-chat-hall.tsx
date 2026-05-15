@@ -23,6 +23,17 @@ type ChatMessage = {
     isStarterMessage?: boolean;
 };
 
+type GuestIdeaItem = {
+    id: string;
+    text: string;
+    guestName: string;
+    submittedAt: string;
+    likes: number;
+    dislikes: number;
+    likedBy: string[];
+    dislikedBy: string[];
+};
+
 type ChatHistoryResponse = {
     success?: boolean;
     messages?: ChatMessage[];
@@ -441,11 +452,19 @@ function IdeaBoard({
     accentHex,
     landing,
     activeChannel,
+    guestIdeas,
+    guestToken,
+    slug,
+    onIdeaVoted,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
     landing: CampaignLandingViewModel;
     activeChannel: ChatChannel['id'];
+    guestIdeas: GuestIdeaItem[];
+    guestToken: string | null;
+    slug: string;
+    onIdeaVoted: (ideas: GuestIdeaItem[]) => void;
 }) {
     const section = useMemo(
         () => buildChannelSidebarSection(landing, activeChannel),
@@ -460,8 +479,33 @@ function IdeaBoard({
         [section.items],
     );
 
+    // Local optimistic vote state: ideaId → 'like' | 'dislike' | null
+    const [myVotes, setMyVotes] = useState<Record<string, 'like' | 'dislike' | null>>({});
+
+    async function handleVote(ideaId: string, voteType: 'like' | 'dislike') {
+        if (!guestToken) return;
+        const prev = myVotes[ideaId] ?? null;
+        const next = prev === voteType ? null : voteType;
+        setMyVotes((v) => ({ ...v, [ideaId]: next }));
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/ideas/${ideaId}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voteType, voterToken: guestToken }),
+            });
+            const data = await res.json() as { success?: boolean; idea?: GuestIdeaItem };
+            if (res.ok && data.idea) {
+                onIdeaVoted(
+                    guestIdeas.map((i) => i.id === ideaId ? data.idea! : i),
+                );
+            }
+        } catch {
+            setMyVotes((v) => ({ ...v, [ideaId]: prev }));
+        }
+    }
+
     return (
-        <aside className={`hidden xl:flex w-[300px] shrink-0 flex-col ${theme.aside}`}>
+        <aside className={`hidden xl:flex w-[300px] shrink-0 flex-col min-h-0 ${theme.aside}`}>
             <div className="border-b border-current/10 p-5">
                 <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-50">{section.eyebrow}</p>
                 <p className={`${theme.displayFont} mt-2 text-lg font-bold leading-tight`}>{section.title}</p>
@@ -471,15 +515,75 @@ function IdeaBoard({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
-                <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Pinned</p>
-                <ul className="flex flex-col gap-2">
-                    {seedIdeas.map((idea) => (
-                        <li key={idea.id} className={`p-3 ${theme.ideaCard}`}>
-                            <p className="text-[11px] font-mono uppercase tracking-[0.18em] opacity-55">📌 {idea.author}</p>
-                            <p className="mt-1 text-sm leading-5">{idea.text}</p>
-                        </li>
-                    ))}
-                </ul>
+                {guestIdeas.length > 0 ? (
+                    <>
+                        <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">From guests</p>
+                        <ul className="flex flex-col gap-2">
+                            {guestIdeas.map((idea) => {
+                                const myVote = myVotes[idea.id] ?? null;
+                                return (
+                                    <li key={idea.id} className={`p-3 ${theme.ideaCard}`}>
+                                        <p className="mt-1 text-sm leading-5">{idea.text}</p>
+                                        <div className="mt-2 flex items-center justify-between">
+                                            <p className="text-[10px] font-mono opacity-45 truncate">{idea.guestName}</p>
+                                            {guestToken ? (
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVote(idea.id, 'like')}
+                                                        className="flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 transition-opacity"
+                                                        style={myVote === 'like' ? { color: accentHex } : { opacity: 0.5 }}
+                                                        title="Like this idea"
+                                                    >
+                                                        👍 {idea.likes}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVote(idea.id, 'dislike')}
+                                                        className="flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 transition-opacity"
+                                                        style={myVote === 'dislike' ? { color: '#ef4444' } : { opacity: 0.5 }}
+                                                        title="Pass on this idea"
+                                                    >
+                                                        👎 {idea.dislikes}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <p className={`text-[10px] font-mono ${theme.softerText}`}>
+                                                    👍 {idea.likes} · 👎 {idea.dislikes}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        {seedIdeas.length > 0 && (
+                            <>
+                                <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Pinned</p>
+                                <ul className="flex flex-col gap-2">
+                                    {seedIdeas.slice(0, 2).map((idea) => (
+                                        <li key={idea.id} className={`p-3 ${theme.ideaCard}`}>
+                                            <p className="text-[11px] font-mono uppercase tracking-[0.18em] opacity-55">📌 {idea.author}</p>
+                                            <p className="mt-1 text-sm leading-5">{idea.text}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <p className="px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Pinned</p>
+                        <ul className="flex flex-col gap-2">
+                            {seedIdeas.map((idea) => (
+                                <li key={idea.id} className={`p-3 ${theme.ideaCard}`}>
+                                    <p className="text-[11px] font-mono uppercase tracking-[0.18em] opacity-55">📌 {idea.author}</p>
+                                    <p className="mt-1 text-sm leading-5">{idea.text}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
 
                 <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">{section.factsTitle}</p>
                 <ul className="flex flex-col gap-2">
@@ -643,6 +747,9 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
     const [activeChannel, setActiveChannel] = useState<ChatChannel['id']>('main');
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [guestIdeas, setGuestIdeas] = useState<GuestIdeaItem[]>([]);
+
+    const ideasEndpoint = `/api/groups/campaign/${landing.slug}/ideas`;
 
     const isUnlocked = guestIdentity !== null;
     // The non-null assertion is a workaround for React 18 vs 19 ref typing —
@@ -670,6 +777,27 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
             window.clearInterval(interval);
         };
     }, [landing.designSystem.chat.endpoint]);
+
+    useEffect(() => {
+        let alive = true;
+        async function loadIdeas() {
+            try {
+                const res = await fetch(ideasEndpoint, { cache: 'no-store' });
+                const data = await res.json() as { success?: boolean; ideas?: GuestIdeaItem[] };
+                if (alive && res.ok && Array.isArray(data.ideas)) {
+                    setGuestIdeas(data.ideas);
+                }
+            } catch {
+                // Non-fatal — board shows seed ideas as fallback.
+            }
+        }
+        void loadIdeas();
+        const interval = window.setInterval(loadIdeas, 20000);
+        return () => {
+            alive = false;
+            window.clearInterval(interval);
+        };
+    }, [ideasEndpoint]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -746,6 +874,17 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                 }
                 if (data.messages?.length) {
                     setMessages(data.messages);
+                }
+                if (activeChannel === 'ideas') {
+                    // Delay to let extraction run server-side before polling.
+                    setTimeout(() => {
+                        fetch(ideasEndpoint, { cache: 'no-store' })
+                            .then((r) => r.json())
+                            .then((d: { success?: boolean; ideas?: GuestIdeaItem[] }) => {
+                                if (Array.isArray(d.ideas)) setGuestIdeas(d.ideas);
+                            })
+                            .catch(() => {});
+                    }, 3000);
                 }
             } catch (sendError) {
                 setError(sendError instanceof Error ? sendError.message : 'The Tour Conductor could not reply right now.');
@@ -834,7 +973,16 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                 </div>
 
                 {/* Right rail — idea board */}
-                <IdeaBoard theme={theme} accentHex={accentHex} landing={landing} activeChannel={activeChannel} />
+                <IdeaBoard
+                    theme={theme}
+                    accentHex={accentHex}
+                    landing={landing}
+                    activeChannel={activeChannel}
+                    guestIdeas={guestIdeas}
+                    guestToken={guestIdentity?.guestToken ?? null}
+                    slug={landing.slug}
+                    onIdeaVoted={setGuestIdeas}
+                />
             </div>
 
             {/* ── Mobile: full-width single column (< lg) ──────────────── */}
