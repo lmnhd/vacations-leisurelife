@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   getCampaignBlueprint,
-  saveCampaignBlueprint,
 } from "@/lib/campaigns/campaign-store";
 import {
   getPublicGroupCabinTarget,
@@ -10,16 +9,14 @@ import {
 } from "@/lib/campaigns/threshold-policy";
 import {
   getCampaignWaitlistSummary,
+  getVerifiedWaitlistSummary,
   upsertCampaignWaitlistEntry,
-  listCampaignWaitlistEntries,
 } from "@/lib/campaigns/waitlist-store";
 import { appendLeadEvent } from "@/lib/campaigns/conversion-store";
 import { normalizeAttribution } from "@/lib/campaigns/lead-attribution";
 import {
   sendWaitlistConfirmation,
-  sendThresholdSms,
 } from "@/lib/campaigns/nurture-orchestrator";
-import { dispatchEmailBroadcast } from "@/lib/campaigns/email/email-event-orchestrator";
 
 export const dynamic = "force-dynamic";
 
@@ -223,57 +220,11 @@ export async function POST(
     notes: `bookingMode=${parsed.data.bookingMode} passengers=${parsed.data.passengerCount}`,
   });
 
-  const summary = await getCampaignWaitlistSummary(slug);
+  // Use VERIFIED summary for threshold progress display — only email-confirmed
+  // entries count. Auto-promotion to THRESHOLD_MET is now handled exclusively
+  // by the /verify route after email confirmation, not at signup time.
+  const verifiedSummary = await getVerifiedWaitlistSummary(slug);
   const requiredCabins = getPublicGroupCabinTarget(campaign);
-  const shouldAutoPromote =
-    !previewCaller &&
-    campaign.status === "GATHERING_INTEREST" &&
-    summary.totalEntries >= requiredCabins;
-
-  const effectiveStatus = shouldAutoPromote ? "THRESHOLD_MET" : campaign.status;
-
-  if (shouldAutoPromote) {
-    await saveCampaignBlueprint({
-      ...campaign,
-      status: effectiveStatus,
-      updatedAt: new Date().toISOString(),
-    });
-
-    await appendLeadEvent({
-      campaignSlug: slug,
-      email: entry.email,
-      eventType: "threshold_met",
-      attribution,
-      notes: `Auto-promoted after entry ${summary.totalEntries} of ${requiredCabins} required`,
-    });
-
-    // Fire threshold SMS for all leads with phone numbers — non-fatal
-    void listCampaignWaitlistEntries(slug)
-      .then((allLeads) => {
-        const leadsWithPhone = allLeads.filter((l) => !!l.phoneNumber);
-        for (const lead of leadsWithPhone) {
-          void sendThresholdSms(slug, lead.email).catch((err) => {
-            console.error(
-              `[Waitlist] threshold SMS failed for ${lead.email}:`,
-              err,
-            );
-          });
-        }
-      })
-      .catch((err) => {
-        console.error(
-          "[Waitlist] Failed to load leads for threshold SMS:",
-          err,
-        );
-      });
-
-    // Phase 2 — Fire `LLL Threshold Met` email broadcast to every lead on the
-    // campaign. Non-fatal: failures are aggregated per-lead inside the
-    // broadcast helper; the waitlist response is unaffected.
-    void dispatchEmailBroadcast(slug, "threshold_met").catch((err) => {
-      console.error(`[Waitlist] threshold_met email broadcast failed for ${slug}:`, err);
-    });
-  }
 
   // Fire waitlist confirmation email — non-fatal to the signup response
   if (!previewCaller) {
@@ -286,7 +237,7 @@ export async function POST(
   }
 
   const nextStep = buildNextStep(
-    effectiveStatus,
+    campaign.status,
     parsed.data.bookingMode,
     campaign.cbagenttoolsBookingLink,
     campaign.odysseusRetailBookingLink,
@@ -298,30 +249,37 @@ export async function POST(
   const guestToken = Buffer.from(`${slug}:${entry.email}`).toString('base64url');
   const displayName = `${parsed.data.firstName} ${parsed.data.lastName.charAt(0)}.`;
 
+  // Use the total summary for display (so the guest sees all entries including
+  // unverified), but verifiedSummary is used for threshold percent.
+  const displaySummary = await getCampaignWaitlistSummary(slug);
+
   return NextResponse.json({
     success: true,
     campaign: {
       slug,
-      status: effectiveStatus,
-      autoPromotedToThreshold: shouldAutoPromote,
+      status: campaign.status,
     },
     waitlist: {
       email: entry.email,
       bookingMode: entry.bookingMode,
       manifestStatus: entry.manifestStatus,
+      emailVerified: entry.emailVerified,
     },
     progress: {
-      joinedEntries: summary.totalEntries,
-      joinedPassengers: summary.totalPassengers,
+      joinedEntries: displaySummary.totalEntries,
+      joinedPassengers: displaySummary.totalPassengers,
+      verifiedEntries: verifiedSummary.totalEntries,
       requiredCabins,
       percentOfThreshold: getPublicThresholdPercent(
         requiredCabins,
-        summary.totalEntries,
+        verifiedSummary.totalEntries,
       ),
     },
     nextStep,
     /** Persistent chat identity for this guest. Store in localStorage. */
     guestToken,
     displayName,
+    /** Verification token — used by the confirmation email link. */
+    verificationToken: entry.verificationToken,
   });
 }

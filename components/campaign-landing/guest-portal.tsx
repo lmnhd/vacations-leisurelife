@@ -28,6 +28,10 @@ interface GuestPortalProps {
     landing: CampaignLandingViewModel;
     primaryHref?: string;
     secondaryHref?: string;
+    /** True when the guest just arrived from the verification email link. */
+    emailJustVerified?: boolean;
+    /** True when the verification link failed. */
+    emailVerifyError?: boolean;
 }
 
 type SystemKey = CampaignLandingViewModel['designSystem']['system'];
@@ -342,7 +346,7 @@ function writeStoredIdentity(slug: string, identity: GuestIdentity) {
     }
 }
 
-export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp }: GuestPortalProps) {
+export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp, emailJustVerified, emailVerifyError }: GuestPortalProps) {
     const system = landing.designSystem.system;
     const theme = buildTheme(system);
     const accentHex = landing.designSystem.accentHex;
@@ -442,6 +446,16 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             {landing.preview && (
                 <div className="border-b border-yellow-500/40 bg-yellow-500/15 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.3em] text-yellow-700">
                     Draft preview · not yet public
+                </div>
+            )}
+            {emailJustVerified && (
+                <div className="border-b border-emerald-500/40 bg-emerald-500/15 px-4 py-3 text-center text-sm font-semibold text-emerald-200">
+                    ✓ Email verified — your interest now counts toward the group threshold.
+                </div>
+            )}
+            {emailVerifyError && (
+                <div className="border-b border-rose-500/40 bg-rose-500/15 px-4 py-3 text-center text-sm font-semibold text-rose-200">
+                    Verification link expired or invalid. Please re-submit the form to receive a new link.
                 </div>
             )}
 

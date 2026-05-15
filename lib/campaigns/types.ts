@@ -417,6 +417,19 @@ export interface CampaignWaitlistEntry {
     phoneNumber?: string;
 
     /**
+     * Whether the guest confirmed ownership of this email address by clicking
+     * the verification link in the waitlist confirmation email. Only verified
+     * entries count toward the 8-cabin threshold.
+     */
+    emailVerified: boolean;
+
+    /**
+     * HMAC-SHA256 token sent in the verification email. Cleared once the
+     * guest clicks through so the token is single-use.
+     */
+    verificationToken?: string;
+
+    /**
      * Indicates whether the user has been emailed the final CB Booking Link
      */
     notified: boolean;
@@ -486,6 +499,7 @@ export interface LeadAttribution {
 
 export type LeadEventType =
     | 'waitlist_submitted'
+    | 'email_verified'
     | 'provider_lead_ingested'
     | 'nurture_queued'
     | 'nurture_sent'

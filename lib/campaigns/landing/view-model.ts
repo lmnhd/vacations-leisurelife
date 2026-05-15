@@ -18,6 +18,7 @@ import {
 import type { Campaign, CampaignInventoryMode } from "@/lib/campaigns/types";
 import {
   getCampaignWaitlistSummary,
+  getVerifiedWaitlistSummary,
   type CampaignWaitlistSummary,
 } from "@/lib/campaigns/waitlist-store";
 import { extractNicheTokens } from "@/lib/campaigns/design-system/niche-tokens";
@@ -1073,6 +1074,7 @@ function buildLandingViewModel(
   waitlistSummary: CampaignWaitlistSummary,
   preview: boolean,
   flavorOverride?: VisualFlavor,
+  verifiedSummary?: CampaignWaitlistSummary,
 ): CampaignLandingViewModel {
   const targetCabins = getPublicGroupCabinTarget(campaign);
   const pricing = getPricingDetail(campaign);
@@ -1085,9 +1087,11 @@ function buildLandingViewModel(
   const heroImage = resolveHeroImage(campaign, brief, manifest);
   const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
   const trustImages = buildTrustImages(campaign, manifest, heroImage);
+  // Use verified entries for threshold progress when available.
+  const thresholdSource = verifiedSummary ?? waitlistSummary;
   const percentOfThreshold = getPublicThresholdPercent(
     targetCabins,
-    waitlistSummary.totalEntries,
+    thresholdSource.totalEntries,
   );
   const designSystem = buildLandingDesignSystem(
     campaign,
@@ -1177,10 +1181,11 @@ export async function getCampaignLandingBySlug(
     return null;
   }
 
-  const [brief, manifest, waitlistSummary] = await Promise.all([
+  const [brief, manifest, waitlistSummary, verifiedSummary] = await Promise.all([
     getAestheticBrief(slug),
     getMediaManifest(slug),
     getCampaignWaitlistSummary(slug),
+    getVerifiedWaitlistSummary(slug),
   ]);
 
   return {
@@ -1195,6 +1200,7 @@ export async function getCampaignLandingBySlug(
       waitlistSummary,
       preview,
       options.flavorOverride,
+      verifiedSummary,
     ),
   };
 }

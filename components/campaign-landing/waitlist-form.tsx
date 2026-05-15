@@ -52,9 +52,13 @@ interface WaitlistResponse {
     error?: string;
     guestToken?: string;
     displayName?: string;
+    waitlist?: {
+        emailVerified: boolean;
+    };
     progress?: {
         joinedEntries: number;
         joinedPassengers: number;
+        verifiedEntries: number;
         requiredCabins: number;
         percentOfThreshold: number;
     };
@@ -344,6 +348,12 @@ export function CampaignWaitlistForm({
                 <CardContent className="grid gap-4 text-sm text-slate-700">
                     {result?.nextStep ? (
                         <>
+                            {!result.waitlist?.emailVerified && (
+                                <div className="px-4 py-3 border rounded-lg border-sky-400/30 bg-sky-500/10 text-sky-100">
+                                    <p className="font-semibold text-sky-50">Check your inbox</p>
+                                    <p className="mt-1">We sent a verification link to your email. Please click it to confirm your interest — your entry will not count toward the group threshold until verified.</p>
+                                </div>
+                            )}
                             <div className={`px-4 py-3 border rounded-lg ${result.nextStep.kind === 'retail_booking_ready' ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
                                 <p className="font-semibold text-slate-950">{result.nextStep.title}</p>
                                 <p className="mt-2">{result.nextStep.detail}</p>
