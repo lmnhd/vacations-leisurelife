@@ -8,15 +8,15 @@ app/api/**/media/test/
 temp_unzip/
 tmp/
 
-# ── Root-level screenshots and debug files ──────────────────────────────────
-*.png
-*.html
-*.log
+# ── Root-level screenshots (not needed at runtime) ───────────────────────────
 cabin-selection-state.png
-campaign-landing-*.png
+campaign-landing-expect-tab-fix.png
+campaign-landing-preview-updated.png
+campaign-landing-preview.png
 category-page-state.png
 concept1.png
-hero1*.png
+hero1-card.png
+hero1.png
 hero2.png
 post-bypass-state.png
 reference1-full.png
@@ -24,6 +24,7 @@ scene1.png
 test-package-link.png
 404-error.html
 tiktok-ads-overview.html
+passenger-details-page.html
 
 # ── Root-level scratch/debug scripts ────────────────────────────────────────
 check-state.js
@@ -35,21 +36,25 @@ test-verdict.ts
 # ── Build/lint logs ──────────────────────────────────────────────────────────
 build.log
 lint.log
-dev-server*.log
+dev-server.log
+dev-server-err.log
 discovery-error.log
-brief-generation-*.log
-phase-b-*.log
+brief-generation-board-games.log
+phase-b-board-games.log
 tmp-brief-run.log
-tsc-*.log
+tsc-errors.log
+tsc-errors2.log
+tsc-filtered.log
+tsc-real.log
 npm-install.log
 cb-scrape-log.txt
 
 # ── Large data/state files not needed at runtime ─────────────────────────────
 odysseus-intercepted-payloads.json
-passenger-details-page.html
 sample-cruise-payload.json
 mubert.json
-tmp-*.json
-tmp-*.log
+tmp-campaign-list.json
+tmp-discovery-output.json
+tmp-media-gen.json
 board-games-current.json
 manifest.json
