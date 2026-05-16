@@ -1,0 +1,55 @@
+# ── Dev/test API routes (not deployed to production) ────────────────────────
+app/api/tests/
+app/api/dev/
+app/api/hello/
+app/api/**/media/test/
+
+# ── Local dev artifacts ──────────────────────────────────────────────────────
+temp_unzip/
+tmp/
+
+# ── Root-level screenshots and debug files ──────────────────────────────────
+*.png
+*.html
+*.log
+cabin-selection-state.png
+campaign-landing-*.png
+category-page-state.png
+concept1.png
+hero1*.png
+hero2.png
+post-bypass-state.png
+reference1-full.png
+scene1.png
+test-package-link.png
+404-error.html
+tiktok-ads-overview.html
+
+# ── Root-level scratch/debug scripts ────────────────────────────────────────
+check-state.js
+do-revision.ts
+get-campaign.ts
+parse-btns.js
+test-verdict.ts
+
+# ── Build/lint logs ──────────────────────────────────────────────────────────
+build.log
+lint.log
+dev-server*.log
+discovery-error.log
+brief-generation-*.log
+phase-b-*.log
+tmp-brief-run.log
+tsc-*.log
+npm-install.log
+cb-scrape-log.txt
+
+# ── Large data/state files not needed at runtime ─────────────────────────────
+odysseus-intercepted-payloads.json
+passenger-details-page.html
+sample-cruise-payload.json
+mubert.json
+tmp-*.json
+tmp-*.log
+board-games-current.json
+manifest.json

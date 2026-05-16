@@ -3,6 +3,7 @@ const nextConfig = {
   experimental: {
     proxyClientMaxBodySize: '50mb',
   },
+  serverExternalPackages: ['ffmpeg-static', 'sharp'],
   images: {
     remotePatterns: [
       {
