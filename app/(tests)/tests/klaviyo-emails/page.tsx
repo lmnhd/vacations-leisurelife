@@ -17,14 +17,17 @@ type Stage =
   | "final_countdown"
   | "final_itinerary_published"
   | "tour_conductor_announced"
-  | "booking_change";
+  | "booking_change"
+  | "post_cruise_welcome_home"
+  | "post_cruise_survey"
+  | "alumni_rebooking_invite";
 
 interface StageDef {
   id: Stage;
   label: string;
   metric: string;
   description: string;
-  phase: 1 | 2 | 3 | 4;
+  phase: 1 | 2 | 3 | 4 | 5;
   broadcast: boolean;
 }
 
@@ -43,6 +46,9 @@ const STAGES: StageDef[] = [
   { id: "final_itinerary_published", label: "Final Itinerary Published", metric: "LLL Final Itinerary Published", description: "Auto-fires when finalItineraryUrl is first set via campaign PATCH.", phase: 3, broadcast: true },
   { id: "tour_conductor_announced", label: "Tour Conductor Announced", metric: "LLL Tour Conductor Announced", description: "Auto-fires when tourConductorName is first set via campaign PATCH.", phase: 3, broadcast: true },
   { id: "booking_change", label: "Booking Change", metric: "LLL Booking Change", description: "Severity-routed change notice. Use /tests/booking-changes to record + broadcast.", phase: 4, broadcast: false },
+  { id: "post_cruise_welcome_home", label: "Welcome Home (scheduled)", metric: "LLL Post Cruise Welcome Home", description: "Scheduler fires 1 day after disembarkation.", phase: 5, broadcast: false },
+  { id: "post_cruise_survey", label: "Post-Cruise Survey (scheduled)", metric: "LLL Post Cruise Survey", description: "Scheduler fires 3 days after disembarkation.", phase: 5, broadcast: false },
+  { id: "alumni_rebooking_invite", label: "Alumni Rebooking Invite", metric: "LLL Alumni Rebooking Invite", description: "Use /tests/alumni-rebooking to fire from past campaigns to a new target.", phase: 5, broadcast: false },
 ];
 
 interface LeadRef {
@@ -398,7 +404,8 @@ export default function KlaviyoEmailsTestPage() {
                     s.phase === 1 ? "bg-sky-500/20 text-sky-200"
                       : s.phase === 2 ? "bg-violet-500/20 text-violet-200"
                       : s.phase === 3 ? "bg-cyan-500/20 text-cyan-200"
-                      : "bg-rose-500/20 text-rose-200"
+                      : s.phase === 4 ? "bg-rose-500/20 text-rose-200"
+                      : "bg-emerald-500/20 text-emerald-200"
                   }`}>P{s.phase}</span>
                 </div>
                 <span className="text-[10px] uppercase tracking-widest text-sky-300">{s.metric}</span>

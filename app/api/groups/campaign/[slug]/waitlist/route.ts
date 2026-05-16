@@ -226,14 +226,34 @@ export async function POST(
   const verifiedSummary = await getVerifiedWaitlistSummary(slug);
   const requiredCabins = getPublicGroupCabinTarget(campaign);
 
-  // Fire waitlist confirmation email — non-fatal to the signup response
+  let confirmationEmailSent = false;
+  let confirmationEmailError: string | undefined;
+
+  // Fire waitlist confirmation email — non-fatal to the signup response,
+  // but we now capture the failure so the UI can tell the guest what happened.
   if (!previewCaller) {
-    void sendWaitlistConfirmation(slug, entry.email).catch((err) => {
+    try {
+      await sendWaitlistConfirmation(slug, entry.email);
+      confirmationEmailSent = true;
+    } catch (err) {
+      confirmationEmailError = err instanceof Error ? err.message : String(err);
+      await appendLeadEvent({
+        campaignSlug: slug,
+        email: entry.email,
+        eventType: "lead_error",
+        attribution,
+        notes: `waitlist_confirmation email failed: ${confirmationEmailError}`,
+        metadata: {
+          stage: "waitlist_confirmation",
+          provider: "klaviyo",
+          error: confirmationEmailError,
+        },
+      });
       console.error(
         `[Waitlist] Confirmation email failed for ${entry.email}:`,
         err,
       );
-    });
+    }
   }
 
   const nextStep = buildNextStep(
@@ -281,5 +301,9 @@ export async function POST(
     displayName,
     /** Verification token — used by the confirmation email link. */
     verificationToken: entry.verificationToken,
+    confirmationEmail: {
+      sent: confirmationEmailSent,
+      error: confirmationEmailError,
+    },
   });
 }

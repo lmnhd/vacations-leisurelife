@@ -18,7 +18,7 @@ function test(label: string, fn: () => void): void {
     }
 }
 
-console.log('\nKlaviyo Payload Builders (Phase 1 + Phase 2 + Phase 3 + Phase 4)\n');
+console.log('\nKlaviyo Payload Builders (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5)\n');
 
 const baseCampaign: Pick<
     Campaign,
@@ -475,6 +475,99 @@ test('phase4 keys are NOT emitted on stages other than booking_change', () => {
     assert.equal(properties.previous_value, undefined);
     assert.equal(properties.new_value, undefined);
     assert.equal(properties.support_contact, undefined);
+});
+
+// ─── Phase 5 — post-cruise + alumni ────────────────────────────────────────
+
+test('post_cruise_welcome_home emits days_since_disembark + photo_share_url + afterglow visual', () => {
+    const { metricName, properties } = buildKlaviyoEvent({
+        stage: 'post_cruise_welcome_home',
+        campaign: baseCampaign,
+        lead: baseLead,
+        summary: { totalEntries: 9, totalPassengers: 18, convertedEntries: 9 },
+        requiredCabins: 8,
+        percentOfThreshold: 100,
+        phase5: {
+            daysSinceDisembark: 1,
+            scheduledOffset: 1,
+            photoShareUrl: 'https://example.com/share-photos',
+        },
+    });
+
+    assert.equal(metricName, 'LLL Post Cruise Welcome Home');
+    assert.equal(properties.visual_mode, 'afterglow');
+    assert.equal(properties.days_since_disembark, 1);
+    assert.equal(properties.scheduled_offset, 1);
+    assert.equal(properties.photo_share_url, 'https://example.com/share-photos');
+});
+
+test('post_cruise_survey emits survey_url + scheduled_offset', () => {
+    const { metricName, properties } = buildKlaviyoEvent({
+        stage: 'post_cruise_survey',
+        campaign: baseCampaign,
+        lead: baseLead,
+        summary: { totalEntries: 9, totalPassengers: 18, convertedEntries: 9 },
+        requiredCabins: 8,
+        percentOfThreshold: 100,
+        phase5: {
+            daysSinceDisembark: 3,
+            scheduledOffset: 3,
+            surveyUrl: 'https://example.com/survey',
+        },
+    });
+
+    assert.equal(metricName, 'LLL Post Cruise Survey');
+    assert.equal(properties.survey_url, 'https://example.com/survey');
+    assert.equal(properties.scheduled_offset, 3);
+});
+
+test('alumni_rebooking_invite carries target_* properties', () => {
+    const { metricName, properties } = buildKlaviyoEvent({
+        stage: 'alumni_rebooking_invite',
+        campaign: baseCampaign,
+        lead: baseLead,
+        summary: { totalEntries: 9, totalPassengers: 18, convertedEntries: 9 },
+        requiredCabins: 8,
+        percentOfThreshold: 100,
+        phase5: {
+            targetCampaignSlug: 'cat-lovers-2027',
+            targetCampaignName: 'Cat Lovers Cruise 2027',
+            targetLandingUrl: 'https://example.com/groups/cat-lovers-2027',
+            targetSailDate: '2027-04-15',
+            targetPitch: 'Same crowd, new theme.',
+            alumniWindow: 'Alumni-only for the first 48 hours.',
+        },
+    });
+
+    assert.equal(metricName, 'LLL Alumni Rebooking Invite');
+    assert.equal(properties.visual_mode, 'cinematic_invite');
+    assert.equal(properties.target_campaign_slug, 'cat-lovers-2027');
+    assert.equal(properties.target_campaign_name, 'Cat Lovers Cruise 2027');
+    assert.equal(properties.target_landing_url, 'https://example.com/groups/cat-lovers-2027');
+    assert.equal(properties.target_sail_date, '2027-04-15');
+    assert.equal(properties.target_pitch, 'Same crowd, new theme.');
+    assert.equal(properties.alumni_window, 'Alumni-only for the first 48 hours.');
+});
+
+test('phase5 keys are NOT emitted on stages other than Phase 5', () => {
+    const { properties } = buildKlaviyoEvent({
+        stage: 'waitlist_confirmation',
+        campaign: baseCampaign,
+        lead: baseLead,
+        summary: { totalEntries: 1, totalPassengers: 2, convertedEntries: 0 },
+        requiredCabins: 8,
+        percentOfThreshold: 13,
+        phase5: {
+            daysSinceDisembark: 5,
+            scheduledOffset: 3,
+            surveyUrl: 'https://example.com/survey',
+            targetCampaignSlug: 'something-else',
+        },
+    });
+
+    assert.equal(properties.days_since_disembark, undefined);
+    assert.equal(properties.survey_url, undefined);
+    assert.equal(properties.target_campaign_slug, undefined);
 });
 
 if (failed > 0) {

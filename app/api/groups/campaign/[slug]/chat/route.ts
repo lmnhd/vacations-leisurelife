@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { handleChatRequest } from '@/app/api/chat/core-logic';
 import { getCampaignLandingBySlug, type CampaignLandingViewModel } from '@/lib/campaigns/landing/view-model';
 import { buildCampaignResearchDossierContext } from '@/lib/campaigns/research-context';
+import { getCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 import { chatStorageService } from '@/lib/chat/chat-storage';
 import { extractAndSaveIdea } from '@/lib/campaigns/guest-ideas';
 
@@ -199,14 +200,35 @@ export async function POST(request: NextRequest, context: RouteContext) {
         signedUp?: boolean;
     };
 
-    // Accept either a real guestToken (new path) or the legacy signedUp boolean.
-    const hasValidToken = typeof body.guestToken === 'string' && !!decodeGuestToken(slug, body.guestToken);
+    // Chat access is now gated by a verified waitlist entry. The legacy
+    // signedUp flag is kept only so older clients fail closed instead of
+    // accidentally bypassing the check.
+    const decodedToken = typeof body.guestToken === 'string' ? decodeGuestToken(slug, body.guestToken) : null;
+    const hasValidToken = !!decodedToken;
     const hasLegacyFlag = body.signedUp === true;
 
     if (!hasValidToken && !hasLegacyFlag) {
         return NextResponse.json({
             success: false,
             error: 'Save your spot on this voyage to talk to the Tour Conductor.',
+        }, { status: 403 });
+    }
+
+    if (!hasValidToken) {
+        return NextResponse.json({
+            success: false,
+            error: 'Verify your email before talking to the Tour Conductor.',
+        }, { status: 403 });
+    }
+
+    const waitlistEntry = decodedToken
+        ? await getCampaignWaitlistEntry(slug, decodedToken.email)
+        : null;
+
+    if (!waitlistEntry?.emailVerified) {
+        return NextResponse.json({
+            success: false,
+            error: 'Verify your email before talking to the Tour Conductor.',
         }, { status: 403 });
     }
 

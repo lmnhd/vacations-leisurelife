@@ -85,6 +85,24 @@ export interface EmailEventOptions {
         supportContact?: string;
         operatorNote?: string;
     };
+    /**
+     * Phase 5 stage-specific extension data. Populated by the scheduler for
+     * `post_cruise_welcome_home` and `post_cruise_survey`, or by the alumni
+     * invite operator path for `alumni_rebooking_invite`.
+     */
+    phase5?: {
+        daysSinceDisembark?: number;
+        scheduledOffset?: number;
+        photoShareUrl?: string;
+        surveyUrl?: string;
+        targetCampaignSlug?: string;
+        targetCampaignName?: string;
+        targetLandingUrl?: string;
+        targetSailDate?: string;
+        targetPitch?: string;
+        alumniWindow?: string;
+        operatorNote?: string;
+    };
 }
 
 export interface BroadcastFilter {
@@ -173,6 +191,7 @@ export async function buildEmailEventPreview(
         phase2?: EmailEventOptions['phase2'];
         phase3?: EmailEventOptions['phase3'];
         phase4?: EmailEventOptions['phase4'];
+        phase5?: EmailEventOptions['phase5'];
     } = {},
 ): Promise<EmailEventPreview> {
     const { campaign, lead, summary, landing } = await resolveContext(campaignSlug, email, true);
@@ -191,6 +210,7 @@ export async function buildEmailEventPreview(
     };
     const phase3 = opts.phase3 ?? {};
     const phase4 = opts.phase4 ?? {};
+    const phase5 = opts.phase5 ?? {};
 
     const profile = buildKlaviyoProfile({ campaign, lead, landing });
     const { metricName, properties } = buildKlaviyoEvent({
@@ -203,6 +223,7 @@ export async function buildEmailEventPreview(
         phase2,
         phase3,
         phase4,
+        phase5,
     });
 
     const warnings: string[] = [];
@@ -266,8 +287,11 @@ export async function dispatchEmailEvent(
     // Build a stable metadata bag used by every ledger write for this send.
     // `scheduledOffset` is the scheduler's idempotency key; it MUST appear on
     // both the queued and the sent rows so the scheduler dedupe scan works
-    // regardless of which row it reads.
-    const scheduledOffset = opts.phase3?.scheduledOffset;
+    // regardless of which row it reads. Phase 3 stages supply it via
+    // `phase3.scheduledOffset` (pre-sail); Phase 5 post-cruise stages supply
+    // it via `phase5.scheduledOffset` (post-disembark). Either path lands in
+    // the same ledger metadata key.
+    const scheduledOffset = opts.phase3?.scheduledOffset ?? opts.phase5?.scheduledOffset;
     const baseMetadata: Record<string, string> = { stage, provider: 'klaviyo' };
     if (scheduledOffset !== undefined) {
         baseMetadata.scheduledOffset = String(scheduledOffset);
@@ -321,6 +345,7 @@ export async function dispatchEmailEvent(
     };
     const phase3 = opts.phase3 ?? {};
     const phase4 = opts.phase4 ?? {};
+    const phase5 = opts.phase5 ?? {};
 
     const profile = buildKlaviyoProfile({ campaign, lead, landing });
     const { metricName, properties } = buildKlaviyoEvent({
@@ -333,6 +358,7 @@ export async function dispatchEmailEvent(
         phase2,
         phase3,
         phase4,
+        phase5,
     });
 
     try {
@@ -697,6 +723,113 @@ export async function acknowledgeBookingChange(input: {
             acknowledgedBy: input.acknowledgedBy ?? 'unknown',
         },
     });
+}
+
+// ─── Phase 5 — Alumni Rebooking Invite ────────────────────────────────────
+
+export interface AlumniInviteSource {
+    /** Slug of a past campaign to draw alumni from. */
+    slug: string;
+    /** When true, only send to leads that are `converted=true` on the source campaign. Default true. */
+    convertedOnly?: boolean;
+}
+
+export interface SendAlumniInviteInput {
+    /** Slug of the NEW campaign being offered. The orchestrator pulls landing + sail info from this. */
+    targetCampaignSlug: string;
+    /** One or more past campaigns whose converted guests should receive the invite. */
+    sources: AlumniInviteSource[];
+    /** Operator-supplied pitch (one sentence). Optional. */
+    pitch?: string;
+    /** Alumni access window copy (e.g. "First 48 hours"). Optional. */
+    alumniWindow?: string;
+    /** Free-form operator note (max 500 chars). */
+    operatorNote?: string;
+    /** When true, write ledger rows but skip Klaviyo. */
+    dryRun?: boolean;
+}
+
+export interface AlumniInviteResult {
+    targetCampaignSlug: string;
+    sources: AlumniInviteSource[];
+    /** Union of unique recipient emails actually targeted. */
+    uniqueRecipients: number;
+    dispatched: number;
+    skippedDuplicateRecipient: number;
+    failed: number;
+    failures: Array<{ email: string; sourceSlug: string; error: string }>;
+}
+
+/**
+ * Send `LLL Alumni Rebooking Invite` from the named source campaign(s) to
+ * the target campaign. The invite carries the TARGET campaign's identity
+ * but is ledger-stamped against the SOURCE campaign (so each guest's
+ * conversion history stays scoped to where they originally sailed).
+ *
+ * De-duplicates recipients across source campaigns: a guest who sailed on
+ * two past campaigns gets one invite, not two.
+ */
+export async function sendAlumniInvite(
+    input: SendAlumniInviteInput,
+): Promise<AlumniInviteResult> {
+    const target = await getCampaignBlueprint(input.targetCampaignSlug);
+    if (!target) {
+        throw new Error(`[AlumniInvite] target campaign not found: ${input.targetCampaignSlug}`);
+    }
+
+    const targetLandingUrl = getCampaignLandingUrl(input.targetCampaignSlug);
+
+    const result: AlumniInviteResult = {
+        targetCampaignSlug: input.targetCampaignSlug,
+        sources: input.sources,
+        uniqueRecipients: 0,
+        dispatched: 0,
+        skippedDuplicateRecipient: 0,
+        failed: 0,
+        failures: [],
+    };
+
+    const seenEmails = new Set<string>();
+
+    for (const source of input.sources) {
+        const convertedOnly = source.convertedOnly ?? true;
+        const sourceLeads = await listCampaignWaitlistEntries(source.slug);
+        const eligible = convertedOnly ? sourceLeads.filter((l) => l.converted === true) : sourceLeads;
+
+        for (const lead of eligible) {
+            if (seenEmails.has(lead.email)) {
+                result.skippedDuplicateRecipient += 1;
+                continue;
+            }
+            seenEmails.add(lead.email);
+            result.uniqueRecipients += 1;
+
+            try {
+                await dispatchEmailEvent(source.slug, lead.email, 'alumni_rebooking_invite', {
+                    dryRun: input.dryRun,
+                    phase5: {
+                        targetCampaignSlug: target.id,
+                        targetCampaignName: target.name,
+                        targetLandingUrl,
+                        targetSailDate: target.matchedSailDate,
+                        targetPitch: input.pitch,
+                        alumniWindow: input.alumniWindow,
+                        operatorNote: input.operatorNote,
+                    },
+                });
+                result.dispatched += 1;
+            } catch (err) {
+                result.failed += 1;
+                result.failures.push({
+                    email: lead.email,
+                    sourceSlug: source.slug,
+                    error: err instanceof Error ? err.message : String(err),
+                });
+            }
+        }
+    }
+
+    return result;
 }
 
 export { KLAVIYO_METRIC_NAMES };

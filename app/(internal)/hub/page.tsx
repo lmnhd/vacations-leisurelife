@@ -5,7 +5,7 @@ import {
     Search, BadgeDollarSign, Newspaper, PartyPopper,
     MessageSquare, ImageIcon, Music4, Code2,
     Palette, Radio, TrendingUp, Globe, FlaskConical,
-    ArrowUpRight, ChevronRight, LayoutDashboard, ClipboardCheck, AlertTriangle,
+    ArrowUpRight, ChevronRight, LayoutDashboard, ClipboardCheck, AlertTriangle, Users,
 } from 'lucide-react';
 
 // ─── Static link definitions ──────────────────────────────────────────────────
@@ -200,6 +200,13 @@ const SLUG_ROUTES: SlugRoute[] = [
         icon: AlertTriangle,
         iconColor: 'text-rose-400',
     },
+    {
+        label: 'Alumni Invite',
+        pattern: (slug) => `/tests/alumni-rebooking?slug=${slug}`,
+        description: 'Invite past converted guests to THIS new campaign as the target',
+        icon: Users,
+        iconColor: 'text-violet-400',
+    },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -306,7 +313,7 @@ export default async function HubPage() {
                                 </div>
 
                                 {/* Slug route buttons */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 divide-x divide-y divide-white/5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 divide-x divide-y divide-white/5">
                                     {SLUG_ROUTES.map((route) => (
                                         <Link
                                             key={route.label}

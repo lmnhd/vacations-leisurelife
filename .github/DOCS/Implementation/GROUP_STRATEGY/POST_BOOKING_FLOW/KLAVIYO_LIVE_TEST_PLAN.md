@@ -206,12 +206,49 @@ For each severity in `critical → high → medium → low → positive`:
 
 ---
 
-## 8. Test Pass — Phase 5 (Post-Cruise / Alumni) *— placeholder*
+## 8. Test Pass — Phase 5 (Post-Cruise + Alumni)
 
-- [ ] `post_cruise_welcome_home` 24h after disembarkation simulated date.
-- [ ] `post_cruise_survey` 72h after.
-- [ ] `alumni_rebooking_invite` triggered by launching an adjacent niche campaign.
-- [ ] Verify the alumni segment filter excludes uncovered past guests.
+### 8.1 Disembark date math
+
+- [ ] Confirm the test campaign has both `matchedSailDate` and `matchedNights` populated. A campaign missing `matchedNights` skips all Phase 5 stages with `skippedReason='sail date in the past with no matchedNights set'` once sail is in the past.
+- [ ] Choose a `today` override one day past `(matchedSailDate + matchedNights)`. Hit `GET /api/cron/email-scheduler?dryRun=1&today=<YYYY-MM-DD>` with `Authorization: Bearer ${CRON_SECRET}`.
+- [ ] Confirm the response includes one plan per converted lead at `stage='post_cruise_welcome_home'`, `scheduledOffset=1`.
+- [ ] Step `today` to disembark + 2 (grace day). Confirm the same plan is `skippedAlreadySent` and no fresh `nurture_queued` rows are written.
+
+### 8.2 `post_cruise_welcome_home`
+
+- [ ] Switch to live (`dryRun=0`) at disembark + 1. Confirm one Klaviyo event arrived per converted seed lead.
+- [ ] Verify the email renders `{{ event.days_since_disembark }}` correctly (`1`).
+- [ ] If you configured `photo_share_url` operator-side, confirm the primary CTA points to it; otherwise confirm fallback to community channel.
+- [ ] Confirm the ledger row carries `metadata.stage=post_cruise_welcome_home` and `metadata.scheduledOffset=1`.
+
+### 8.3 `post_cruise_survey`
+
+- [ ] Advance `today` to disembark + 3. Run live. Confirm survey email arrives and the survey CTA opens.
+- [ ] Test the grace window: advance to disembark + 4 and + 5 before firing. Confirm the survey still goes out (grace = 2 days).
+- [ ] Advance to disembark + 6. Confirm no fire (past grace).
+
+### 8.4 Scheduler safety re-runs
+
+- [ ] Re-run the full cron sweep at disembark + 1 for a campaign that has already received both Phase 5 stages and Phase 3 stages historically. Confirm:
+  - [ ] `totals.dispatched = 0` (everything dedupes).
+  - [ ] No duplicate Klaviyo events in the workspace feed.
+
+### 8.5 `alumni_rebooking_invite`
+
+- [ ] Launch a NEW test target campaign (separate from the post-cruise campaign).
+- [ ] From `/tests/alumni-rebooking?slug=<target>`, add the past campaign as a source. Toggle "Converted only" on.
+- [ ] Dry-run. Confirm `uniqueRecipients = convertedCount(source)`, `dispatched = uniqueRecipients`, `failed = 0`.
+- [ ] Live-run. Confirm one email per converted past guest. Open the inbox: `{{ event.target_campaign_name }}` renders correctly; CTA `{{ event.target_landing_url }}` resolves; `{{ event.target_pitch }}` and `{{ event.alumni_window }}` render when operator-supplied.
+- [ ] Add a second past campaign that shares one guest with the first source. Re-fire live. Confirm `skippedDuplicateRecipient ≥ 1` and the shared guest received exactly ONE invite total (no duplicate inbox copies).
+- [ ] Confirm the ledger row is written against the SOURCE campaign (the guest's original sailing), with `metadata.stage=alumni_rebooking_invite` and the target campaign info readable via the event property metadata.
+
+### 8.6 Edge cases
+
+- [ ] Try to send `alumni_rebooking_invite` from a source equal to the target. Confirm 400 with "A campaign cannot invite alumni from itself."
+- [ ] Try to send with zero sources. Confirm 400.
+- [ ] Try to send with a target slug that does not exist. Confirm 404.
+- [ ] Mark all source-campaign leads as `converted=false`. Confirm `uniqueRecipients=0` and no Klaviyo events fire.
 
 ---
 

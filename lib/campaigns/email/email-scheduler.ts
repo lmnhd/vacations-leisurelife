@@ -36,7 +36,7 @@ import type { Campaign, CampaignLeadEvent, CampaignWaitlistEntry } from '@/lib/c
 import { dispatchEmailEvent } from './email-event-orchestrator';
 import {
     SCHEDULED_STAGE_POLICIES,
-    pickOffsetForDaysToSail,
+    pickOffsetForSweep,
     type ScheduledStagePolicy,
 } from './email-schedule-policy';
 
@@ -55,18 +55,30 @@ export interface SchedulerOptions {
     onlyCampaignSlug?: string;
 }
 
+/** Stages eligible for scheduler dispatch. Phase 3 (pre-sail) + Phase 5 (post-disembark). */
+export type ScheduledStageId =
+    | 'travel_prep'
+    | 'final_countdown'
+    | 'post_cruise_welcome_home'
+    | 'post_cruise_survey';
+
 export interface ScheduledSendPlan {
     campaignSlug: string;
     email: string;
-    stage: 'travel_prep' | 'final_countdown';
+    stage: ScheduledStageId;
     scheduledOffset: number;
+    /** Days remaining until sail. Negative once the ship has departed. */
     daysToSail: number;
+    /** Days elapsed since disembarkation, null when the cruise hasn't disembarked yet. */
+    daysSinceDisembark: number | null;
 }
 
 export interface CampaignSweepResult {
     campaignSlug: string;
     campaignName: string;
     daysToSail: number | null;
+    /** Days since `matchedSailDate + matchedNights`. Null when `matchedNights` is unknown or cruise hasn't disembarked. */
+    daysSinceDisembark: number | null;
     eligibleLeads: number;
     plans: ScheduledSendPlan[];
     /** Plans actually dispatched (live or dryRun queued). */
@@ -117,6 +129,35 @@ function computeDaysToSail(sailDateIso: string, todayYmd: string): number | null
     return Math.floor(ms / (24 * 60 * 60 * 1000));
 }
 
+/**
+ * Parse `matchedNights` (free-form string like "7", "7-Night", "7 nights")
+ * into an integer count. Returns null when the value is missing or
+ * unparseable — caller treats that as "post-disembark unknown".
+ */
+function parseNights(matchedNights: string | undefined): number | null {
+    if (!matchedNights) return null;
+    const match = /\d+/.exec(matchedNights);
+    if (!match) return null;
+    const n = Number(match[0]);
+    if (!Number.isFinite(n) || n <= 0 || n > 365) return null;
+    return n;
+}
+
+/**
+ * Days elapsed since disembarkation = today - (sailDate + nights). Returns
+ * null when nights are unknown (campaign hasn't been CB-matched fully)
+ * OR when the cruise hasn't disembarked yet (negative).
+ */
+function computeDaysSinceDisembark(
+    daysToSail: number,
+    matchedNights: string | undefined,
+): number | null {
+    const nights = parseNights(matchedNights);
+    if (nights === null) return null;
+    const daysSince = -daysToSail - nights;
+    return daysSince >= 0 ? daysSince : null;
+}
+
 function hasAlreadyBeenSent(
     events: CampaignLeadEvent[],
     email: string,
@@ -143,18 +184,20 @@ function buildPlansForLead(
     campaign: Campaign,
     lead: CampaignWaitlistEntry,
     daysToSail: number,
+    daysSinceDisembark: number | null,
     policies: ScheduledStagePolicy[],
 ): ScheduledSendPlan[] {
     const plans: ScheduledSendPlan[] = [];
     for (const policy of policies) {
-        const offset = pickOffsetForDaysToSail(policy, daysToSail);
+        const offset = pickOffsetForSweep(policy, { daysToSail, daysSinceDisembark });
         if (offset === null) continue;
         plans.push({
             campaignSlug: campaign.id,
             email: lead.email,
-            stage: policy.stage as 'travel_prep' | 'final_countdown',
+            stage: policy.stage as ScheduledStageId,
             scheduledOffset: offset,
             daysToSail,
+            daysSinceDisembark,
         });
     }
     return plans;
@@ -169,6 +212,7 @@ async function sweepCampaign(
         campaignSlug: campaign.id,
         campaignName: campaign.name,
         daysToSail: null,
+        daysSinceDisembark: null,
         eligibleLeads: 0,
         plans: [],
         dispatched: [],
@@ -188,8 +232,22 @@ async function sweepCampaign(
     if (daysToSail === null) {
         return { ...baseResult, skippedReason: `unparseable matchedSailDate "${campaign.matchedSailDate}"` };
     }
-    if (daysToSail < 0) {
-        return { ...baseResult, daysToSail, skippedReason: 'sail date in the past' };
+
+    // Phase 5: post_disembark stages need `matchedNights` to compute the
+    // disembark date. `daysSinceDisembark` is null when nights are unknown
+    // OR when the cruise hasn't disembarked yet.
+    const daysSinceDisembark = computeDaysSinceDisembark(daysToSail, campaign.matchedNights);
+
+    // Pre-sail stages (Phase 3) only fire when the cruise hasn't departed.
+    // Post-disembark stages (Phase 5) only fire when nights are known and
+    // disembark is in the past — `pickOffsetForSweep` enforces this per
+    // policy, so we let the policy filter rather than early-returning here.
+    if (daysToSail < 0 && daysSinceDisembark === null) {
+        return {
+            ...baseResult,
+            daysToSail,
+            skippedReason: 'sail date in the past with no matchedNights set — cannot schedule post-cruise stages',
+        };
     }
 
     const [leads, events] = await Promise.all([
@@ -201,13 +259,20 @@ async function sweepCampaign(
 
     const allPlans: ScheduledSendPlan[] = [];
     for (const lead of convertedLeads) {
-        const plans = buildPlansForLead(campaign, lead, daysToSail, SCHEDULED_STAGE_POLICIES);
+        const plans = buildPlansForLead(
+            campaign,
+            lead,
+            daysToSail,
+            daysSinceDisembark,
+            SCHEDULED_STAGE_POLICIES,
+        );
         allPlans.push(...plans);
     }
 
     const result: CampaignSweepResult = {
         ...baseResult,
         daysToSail,
+        daysSinceDisembark,
         eligibleLeads: convertedLeads.length,
         plans: allPlans,
     };
@@ -218,9 +283,26 @@ async function sweepCampaign(
             continue;
         }
         try {
+            // Phase 3 (pre-sail) stages get `phase3`; Phase 5 (post-disembark)
+            // get `phase5`. The orchestrator stamps `scheduledOffset` onto the
+            // ledger regardless of which bag carries it.
+            const isPostDisembark =
+                plan.stage === 'post_cruise_welcome_home' || plan.stage === 'post_cruise_survey';
             await dispatchEmailEvent(campaign.id, plan.email, plan.stage, {
                 dryRun,
-                phase3: { daysToSail: plan.daysToSail, scheduledOffset: plan.scheduledOffset },
+                ...(isPostDisembark
+                    ? {
+                          phase5: {
+                              daysSinceDisembark: plan.daysSinceDisembark ?? undefined,
+                              scheduledOffset: plan.scheduledOffset,
+                          },
+                      }
+                    : {
+                          phase3: {
+                              daysToSail: plan.daysToSail,
+                              scheduledOffset: plan.scheduledOffset,
+                          },
+                      }),
             });
             result.dispatched.push(plan);
         } catch (err) {
@@ -266,6 +348,7 @@ export async function runEmailScheduler(
                 campaignSlug: campaign.id,
                 campaignName: campaign.name,
                 daysToSail: null,
+                daysSinceDisembark: null,
                 eligibleLeads: 0,
                 plans: [],
                 dispatched: [],

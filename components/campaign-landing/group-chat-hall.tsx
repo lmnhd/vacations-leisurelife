@@ -629,10 +629,12 @@ function ScrollToFormCTA({
     theme,
     accentHex,
     landing,
+    pendingVerification = false,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
     landing: CampaignLandingViewModel;
+    pendingVerification?: boolean;
 }) {
     function scrollToForm() {
         document.getElementById('save-your-place')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -643,10 +645,12 @@ function ScrollToFormCTA({
                 <div className="max-w-xl">
                     <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-65">Join the room</p>
                     <p className={`${theme.displayFont} mt-1 text-lg font-bold leading-tight`}>
-                        Join the list.
+                        {pendingVerification ? 'Check your inbox to unlock chat.' : 'Join the list.'}
                     </p>
                     <p className="mt-2 text-sm leading-6 opacity-80">
-                        It only takes a moment.
+                        {pendingVerification
+                            ? 'Your signup is saved. Click the verification link we emailed you before posting here.'
+                            : 'It only takes a moment.'}
                     </p>
                 </div>
                 <Button
@@ -655,7 +659,7 @@ function ScrollToFormCTA({
                     className="shrink-0 rounded-none px-6 py-5 text-sm font-bold"
                     style={{ backgroundColor: accentHex, color: '#0f172a' }}
                 >
-                    Join the list
+                    {pendingVerification ? 'Back to signup' : 'Join the list'}
                 </Button>
             </div>
         </div>
@@ -722,7 +726,7 @@ function ComposeBox({
 
 interface GroupChatHallProps {
     landing: CampaignLandingViewModel;
-    /** Populated by GuestPortal once the guest has submitted the waitlist form. Unlocks compose. */
+    /** Populated by GuestPortal once the guest has submitted the waitlist form. Unlocks compose after verification. */
     guestIdentity: GuestIdentity | null;
 }
 
@@ -751,7 +755,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
 
     const ideasEndpoint = `/api/groups/campaign/${landing.slug}/ideas`;
 
-    const isUnlocked = guestIdentity !== null;
+    const isUnlocked = guestIdentity?.emailVerified === true;
     // The non-null assertion is a workaround for React 18 vs 19 ref typing —
     // RefObject<T> requires .current: T but we know the ref starts null.
     const scrollRef = useRef<HTMLDivElement>(null!);
@@ -957,6 +961,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                             theme={theme}
                             accentHex={accentHex}
                             landing={landing}
+                            pendingVerification={guestIdentity !== null && !guestIdentity.emailVerified}
                         />
                     ) : (
                         <ComposeBox
@@ -1003,6 +1008,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                         theme={theme}
                         accentHex={accentHex}
                         landing={landing}
+                        pendingVerification={guestIdentity !== null && !guestIdentity.emailVerified}
                     />
                 ) : (
                     <ComposeBox

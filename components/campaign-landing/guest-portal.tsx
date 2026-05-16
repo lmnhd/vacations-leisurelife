@@ -32,6 +32,8 @@ interface GuestPortalProps {
     emailJustVerified?: boolean;
     /** True when the verification link failed. */
     emailVerifyError?: boolean;
+    /** Optional guest token returned from the verification redirect. */
+    verifiedGuestToken?: string;
 }
 
 type SystemKey = CampaignLandingViewModel['designSystem']['system'];
@@ -328,7 +330,11 @@ function readStoredIdentity(slug: string): GuestIdentity | null {
             localStorage.removeItem(`${IDENTITY_KEY_PREFIX}${slug}`);
             return null;
         }
-        return { guestToken: stored.guestToken, displayName: stored.displayName };
+        return {
+            guestToken: stored.guestToken,
+            displayName: stored.displayName,
+            emailVerified: Boolean(stored.emailVerified),
+        };
     } catch {
         return null;
     }
@@ -346,7 +352,7 @@ function writeStoredIdentity(slug: string, identity: GuestIdentity) {
     }
 }
 
-export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp, emailJustVerified, emailVerifyError }: GuestPortalProps) {
+export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp, emailJustVerified, emailVerifyError, verifiedGuestToken }: GuestPortalProps) {
     const system = landing.designSystem.system;
     const theme = buildTheme(system);
     const accentHex = landing.designSystem.accentHex;
@@ -362,6 +368,30 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
         const stored = readStoredIdentity(landing.slug);
         if (stored) setGuestIdentity(stored);
     }, [landing.slug]);
+
+    useEffect(() => {
+        if (!emailJustVerified) return;
+
+        const stored = readStoredIdentity(landing.slug);
+        if (stored) {
+            const verifiedIdentity: GuestIdentity = {
+                ...stored,
+                emailVerified: true,
+            };
+            writeStoredIdentity(landing.slug, verifiedIdentity);
+            setGuestIdentity(verifiedIdentity);
+        } else if (verifiedGuestToken) {
+            const verifiedIdentity: GuestIdentity = {
+                guestToken: verifiedGuestToken,
+                displayName: 'Guest',
+                emailVerified: true,
+            };
+            writeStoredIdentity(landing.slug, verifiedIdentity);
+            setGuestIdentity(verifiedIdentity);
+        }
+
+        document.getElementById('group-chat-hall')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [emailJustVerified, verifiedGuestToken, landing.slug]);
 
     useEffect(() => {
         if (!landing.campaignNotice) {
@@ -391,8 +421,9 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     function handleGuestRegistered(identity: GuestIdentity) {
         writeStoredIdentity(landing.slug, identity);
         setGuestIdentity(identity);
-        // Scroll back up to the chat hall so the guest can start talking immediately.
-        document.getElementById('group-chat-hall')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (identity.emailVerified) {
+            document.getElementById('group-chat-hall')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     return (

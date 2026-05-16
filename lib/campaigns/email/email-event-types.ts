@@ -27,7 +27,11 @@ export type EmailEventStage =
     | 'final_itinerary_published'
     | 'tour_conductor_announced'
     // Phase 4 — change notifications
-    | 'booking_change';
+    | 'booking_change'
+    // Phase 5 — post-cruise + alumni
+    | 'post_cruise_welcome_home'
+    | 'post_cruise_survey'
+    | 'alumni_rebooking_invite';
 
 /**
  * Severity branches for `booking_change` events. The app fires identical
@@ -80,12 +84,20 @@ export const PHASE_4_STAGES: readonly EmailEventStage[] = [
     'booking_change',
 ] as const;
 
-/** All stages currently implemented (Phase 1 + Phase 2 + Phase 3 + Phase 4). */
+/** Phase 5 stages — post-cruise + alumni. */
+export const PHASE_5_STAGES: readonly EmailEventStage[] = [
+    'post_cruise_welcome_home',
+    'post_cruise_survey',
+    'alumni_rebooking_invite',
+] as const;
+
+/** All stages currently implemented (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5). */
 export const ALL_IMPLEMENTED_STAGES: readonly EmailEventStage[] = [
     ...PHASE_1_STAGES,
     ...PHASE_2_STAGES,
     ...PHASE_3_STAGES,
     ...PHASE_4_STAGES,
+    ...PHASE_5_STAGES,
 ] as const;
 
 /** Stable Klaviyo metric names. Editing these breaks the linked Klaviyo flows. */
@@ -104,6 +116,9 @@ export const KLAVIYO_METRIC_NAMES: Record<EmailEventStage, string> = {
     final_itinerary_published: 'LLL Final Itinerary Published',
     tour_conductor_announced: 'LLL Tour Conductor Announced',
     booking_change: 'LLL Booking Change',
+    post_cruise_welcome_home: 'LLL Post Cruise Welcome Home',
+    post_cruise_survey: 'LLL Post Cruise Survey',
+    alumni_rebooking_invite: 'LLL Alumni Rebooking Invite',
 };
 
 /** Visual mode hint sent to Klaviyo so templates can branch on layout. */
@@ -122,6 +137,9 @@ export const STAGE_VISUAL_MODES: Record<EmailEventStage, string> = {
     final_itinerary_published: 'celebration',
     tour_conductor_announced: 'celebration',
     booking_change: 'status_briefing',
+    post_cruise_welcome_home: 'afterglow',
+    post_cruise_survey: 'afterglow',
+    alumni_rebooking_invite: 'cinematic_invite',
 };
 
 /**
@@ -148,4 +166,7 @@ export const STAGE_LEDGER_SUCCESS_TYPE: Record<EmailEventStage, LeadEventType> =
     // critical-follow-up dashboard can scan by event type rather than scraping
     // metadata for stage names.
     booking_change: 'booking_change',
+    post_cruise_welcome_home: 'nurture_sent',
+    post_cruise_survey: 'nurture_sent',
+    alumni_rebooking_invite: 'nurture_sent',
 };

@@ -138,6 +138,11 @@ const GROUPS: TestGroup[] = [
         href: '/tests/booking-changes',
         description: 'Record ship/date/price/cancellation changes — severity-routed email + critical SMS + ack tracking.',
       },
+      {
+        label: 'Alumni Rebooking',
+        href: '/tests/alumni-rebooking',
+        description: 'Invite converted guests from past campaigns to a new sailing — de-duplicated across sources.',
+      },
     ],
   },
   {

@@ -62,6 +62,10 @@ export async function GET(
         // Redirect to the landing page with a verified flag.
         const landingUrl = new URL(`/groups/${slug}`, request.nextUrl.origin);
         landingUrl.searchParams.set("verified", "1");
+        landingUrl.searchParams.set(
+            "guest_token",
+            Buffer.from(`${slug}:${result.entry.email}`).toString("base64url"),
+        );
         return NextResponse.redirect(landingUrl, 303);
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

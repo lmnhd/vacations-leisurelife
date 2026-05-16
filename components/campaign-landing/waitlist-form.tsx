@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { CheckCircle2, MailCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,7 @@ interface CampaignWaitlistFormProps {
     enabled: boolean;
     defaultMode: 'GROUP_WAIT' | 'BOOK_NOW';
     isGatheringInterest?: boolean;
-    /** Called after a successful signup with the persistent chat identity. */
+    /** Called after a successful signup with the persistent chat identity, pending email verification. */
     onGuestRegistered?: (identity: GuestIdentity) => void;
 }
 
@@ -52,6 +53,10 @@ interface WaitlistResponse {
     error?: string;
     guestToken?: string;
     displayName?: string;
+    confirmationEmail?: {
+        sent: boolean;
+        error?: string;
+    };
     waitlist?: {
         emailVerified: boolean;
     };
@@ -73,6 +78,7 @@ interface WaitlistResponse {
 export interface GuestIdentity {
     guestToken: string;
     displayName: string;
+    emailVerified: boolean;
 }
 
 export function CampaignWaitlistForm({
@@ -100,6 +106,9 @@ export function CampaignWaitlistForm({
     useEffect(() => {
         attributionRef.current = captureFirstPartyAttribution();
     }, []);
+
+    const isAwaitingVerification = result !== null && result.waitlist?.emailVerified !== true;
+    const isVerified = result?.waitlist?.emailVerified === true;
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -155,6 +164,7 @@ export function CampaignWaitlistForm({
                 onGuestRegistered({
                     guestToken: payload.guestToken,
                     displayName: payload.displayName,
+                    emailVerified: payload.waitlist?.emailVerified ?? false,
                 });
             }
         } catch {
@@ -336,51 +346,125 @@ export function CampaignWaitlistForm({
                 </CardContent>
             </Card>
 
-            <Card className="border-white/15 bg-white/90 text-slate-950 shadow-[0_24px_80px_rgba(148,163,184,0.2)]">
+            <Card className={`border-white/15 shadow-[0_24px_80px_rgba(148,163,184,0.2)] ${isAwaitingVerification ? 'bg-slate-950 text-slate-50' : 'bg-white/90 text-slate-950'}`}>
                 <CardHeader>
-                    <CardTitle className="text-2xl">What Happens Next</CardTitle>
-                    <CardDescription>
-                        {isGatheringInterest
-                            ? 'After you submit, this panel will explain how your interest is being held and what the next real step would be if the campaign matures.'
-                            : 'After you submit, this panel will show the next step for the path you chose.'}
+                    <CardTitle className="text-2xl">
+                        {isAwaitingVerification ? 'Verify Your Email To Unlock Chat' : 'What Happens Next'}
+                    </CardTitle>
+                    <CardDescription className={isAwaitingVerification ? 'text-slate-300' : ''}>
+                        {isAwaitingVerification
+                            ? 'You have not joined the list yet. Your email must be verified before this entry counts and the next step unlocks.'
+                            : isGatheringInterest
+                                ? 'After you submit, this panel will explain how your interest is being held and what the next real step would be if the campaign matures.'
+                                : 'After you submit, this panel will show the next step for the path you chose.'}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 text-sm text-slate-700">
+                <CardContent className={`grid gap-4 text-sm ${isAwaitingVerification ? 'text-slate-100' : 'text-slate-700'}`}>
                     {result?.nextStep ? (
                         <>
-                            {!result.waitlist?.emailVerified && (
-                                <div className="px-4 py-3 border rounded-lg border-sky-400/30 bg-sky-500/10 text-sky-100">
-                                    <p className="font-semibold text-sky-50">Check your inbox</p>
-                                    <p className="mt-1">We sent a verification link to your email. Please click it to confirm your interest — your entry will not count toward the group threshold until verified.</p>
-                                </div>
-                            )}
-                            <div className={`px-4 py-3 border rounded-lg ${result.nextStep.kind === 'retail_booking_ready' ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
-                                <p className="font-semibold text-slate-950">{result.nextStep.title}</p>
-                                <p className="mt-2">{result.nextStep.detail}</p>
-                            </div>
-                            {result.nextStep.bookingLink ? (
-                                <Button asChild className={result.nextStep.kind === 'retail_booking_ready' ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-slate-950 text-slate-50 hover:bg-slate-800'}>
-                                    <a href={result.nextStep.bookingLink} target="_blank" rel="noreferrer">Open booking link</a>
-                                </Button>
-                            ) : null}
-                            {result.progress ? (
-                                <div className="grid gap-3 px-4 py-3 bg-white border rounded-lg border-slate-200">
-                                    <p className="font-semibold text-slate-950">Current pulse</p>
-                                    <div className="grid gap-2 md:grid-cols-2">
-                                        <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cabin Requests</p>
-                                            <p className="text-lg font-semibold text-slate-950">{result.progress.joinedEntries}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">People on the waitlist</p>
-                                            <p className="text-lg font-semibold text-slate-950">{result.progress.joinedPassengers}</p>
+                            {isAwaitingVerification ? (
+                                <div className="overflow-hidden rounded-2xl border border-sky-300/40 bg-slate-950 text-slate-50 shadow-[0_28px_80px_rgba(2,6,23,0.45)]">
+                                    <div className="border-b border-white/10 bg-gradient-to-r from-sky-500/25 via-cyan-500/10 to-transparent px-5 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-300/30 bg-sky-400/15 text-sky-100">
+                                                <MailCheck className="h-5 w-5" />
+                                            </span>
+                                            <div>
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/80">Step 1 of 2</p>
+                                                <p className="text-lg font-semibold text-white">Check your inbox</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <p>
-                                        {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin target is currently represented by saved cabin requests.
-                                    </p>
+                                    <div className="grid gap-4 px-5 py-5">
+                                        {result.confirmationEmail?.sent === false ? (
+                                            <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-4 text-rose-100">
+                                                <div className="flex items-start gap-3">
+                                                    <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-200" />
+                                                    <div>
+                                                        <p className="font-semibold text-rose-50">We could not send the verification email</p>
+                                                        <p className="mt-1 text-sm leading-6 text-rose-100/90">
+                                                            {result.confirmationEmail.error ?? 'The verification email did not go out. Please re-submit the form or contact support.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-xl border border-sky-300/20 bg-white/[0.04] p-4 text-slate-100">
+                                                <p className="font-semibold text-white">Your spot is saved, but you have not joined the list yet.</p>
+                                                <p className="mt-1 text-sm leading-6 text-slate-200/90">
+                                                    Click the confirmation link in your email to verify the address, join the list, and count this entry toward the threshold.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/70">What this means</p>
+                                            <p className="mt-2 text-sm leading-6 text-slate-200/90">
+                                                Until you verify, your submission is only saved as a pending request. Once you confirm the email, you join the list and the next step opens.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid gap-3 md:grid-cols-3">
+                                            {[
+                                                ['1', 'Open the email', 'Look for the waitlist confirmation message.'],
+                                                ['2', 'Confirm the link', 'Tap the verification button inside the email.'],
+                                                ['3', 'Join the list', 'Your email verifies and the next step becomes active.'],
+                                            ].map(([step, title, detail]) => (
+                                                <div key={step} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/80">Step {step}</p>
+                                                    <p className="mt-2 font-semibold text-white">{title}</p>
+                                                    <p className="mt-1 text-sm leading-6 text-slate-200/85">{detail}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            ) : null}
+                            ) : (
+                                <>
+                                    <div className={`px-4 py-3 border rounded-lg ${isVerified ? 'border-emerald-200 bg-emerald-50' : result.confirmationEmail?.sent === false ? 'border-rose-200 bg-rose-50' : 'border-sky-200 bg-sky-50'}`}>
+                                        <div className="flex items-start gap-3">
+                                            <span className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isVerified ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white'}`}>
+                                                {isVerified ? <CheckCircle2 className="h-4 w-4" /> : <MailCheck className="h-4 w-4" />}
+                                            </span>
+                                            <div>
+                                                <p className="font-semibold text-slate-950">{isVerified ? 'Email verified' : 'You have not joined the list yet'}</p>
+                                                <p className="mt-1 text-sm leading-6 text-slate-700">
+                                                    {isVerified
+                                                        ? 'Your entry now counts toward the group threshold.'
+                                                        : 'We sent a verification link to your email. Please click it to join the list before this entry counts toward the group threshold.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`px-4 py-3 border rounded-lg ${result.nextStep.kind === 'retail_booking_ready' ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                                        <p className="font-semibold text-slate-950">{result.nextStep.title}</p>
+                                        <p className="mt-2 leading-6 text-slate-700">{result.nextStep.detail}</p>
+                                    </div>
+                                    {result.nextStep.bookingLink ? (
+                                        <Button asChild className={result.nextStep.kind === 'retail_booking_ready' ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-slate-950 text-slate-50 hover:bg-slate-800'}>
+                                            <a href={result.nextStep.bookingLink} target="_blank" rel="noreferrer">Open booking link</a>
+                                        </Button>
+                                    ) : null}
+                                    {result.progress ? (
+                                        <div className="grid gap-3 px-4 py-3 bg-white border rounded-lg border-slate-200">
+                                            <p className="font-semibold text-slate-950">Current pulse</p>
+                                            <div className="grid gap-2 md:grid-cols-2">
+                                                <div>
+                                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cabin Requests</p>
+                                                    <p className="text-lg font-semibold text-slate-950">{result.progress.joinedEntries}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">People on the waitlist</p>
+                                                    <p className="text-lg font-semibold text-slate-950">{result.progress.joinedPassengers}</p>
+                                                </div>
+                                            </div>
+                                            <p className="leading-6 text-slate-700">
+                                                {result.progress.percentOfThreshold}% of the {result.progress.requiredCabins}-cabin target is currently represented by saved cabin requests.
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
                         </>
                     ) : (
                         <div className="px-4 py-3 border rounded-lg border-slate-200 bg-slate-50">

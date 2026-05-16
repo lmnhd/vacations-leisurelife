@@ -3,6 +3,8 @@ import {
     SCHEDULED_STAGE_POLICIES,
     getSchedulePolicy,
     pickOffsetForDaysToSail,
+    pickOffsetForDaysSinceDisembark,
+    pickOffsetForSweep,
 } from '../email-schedule-policy';
 
 let passed = 0;
@@ -22,9 +24,42 @@ function test(label: string, fn: () => void): void {
 
 console.log('\nEmail Schedule Policy\n');
 
-test('declares the two scheduled stages from the plan', () => {
+test('declares all scheduled stages from the plan (Phase 3 + Phase 5)', () => {
     const stages = SCHEDULED_STAGE_POLICIES.map((p) => p.stage).sort();
-    assert.deepEqual(stages, ['final_countdown', 'travel_prep']);
+    assert.deepEqual(stages, [
+        'final_countdown',
+        'post_cruise_survey',
+        'post_cruise_welcome_home',
+        'travel_prep',
+    ]);
+});
+
+test('pre_sail policies have reference="pre_sail"', () => {
+    const travelPrep = getSchedulePolicy('travel_prep');
+    const finalCountdown = getSchedulePolicy('final_countdown');
+    assert.equal(travelPrep?.reference, 'pre_sail');
+    assert.equal(finalCountdown?.reference, 'pre_sail');
+});
+
+test('post_disembark policies have reference="post_disembark"', () => {
+    const welcome = getSchedulePolicy('post_cruise_welcome_home');
+    const survey = getSchedulePolicy('post_cruise_survey');
+    assert.equal(welcome?.reference, 'post_disembark');
+    assert.equal(survey?.reference, 'post_disembark');
+});
+
+test('post_cruise_welcome_home is day 1 post-disembark with 1-day grace', () => {
+    const policy = getSchedulePolicy('post_cruise_welcome_home');
+    assert.ok(policy);
+    assert.deepEqual(policy!.offsetsDays, [1]);
+    assert.equal(policy!.graceDays, 1);
+});
+
+test('post_cruise_survey is day 3 post-disembark with 2-day grace', () => {
+    const policy = getSchedulePolicy('post_cruise_survey');
+    assert.ok(policy);
+    assert.deepEqual(policy!.offsetsDays, [3]);
+    assert.equal(policy!.graceDays, 2);
 });
 
 test('travel_prep offsets are 90/60/30 in descending order', () => {
@@ -71,6 +106,57 @@ test('final_countdown picks the next offset crossed in tight cadence', () => {
     assert.equal(pickOffsetForDaysToSail(policy, 2), 3);
     assert.equal(pickOffsetForDaysToSail(policy, 1), 1);
     assert.equal(pickOffsetForDaysToSail(policy, 0), 1); // grace for 1
+});
+
+test('pickOffsetForDaysSinceDisembark fires within [offset, offset + grace]', () => {
+    const welcome = getSchedulePolicy('post_cruise_welcome_home')!;
+    assert.equal(pickOffsetForDaysSinceDisembark(welcome, 0), null); // disembark day — too early
+    assert.equal(pickOffsetForDaysSinceDisembark(welcome, 1), 1);     // canonical day-1 send
+    assert.equal(pickOffsetForDaysSinceDisembark(welcome, 2), 1);     // grace day, still fires
+    assert.equal(pickOffsetForDaysSinceDisembark(welcome, 3), null);  // past grace window
+
+    const survey = getSchedulePolicy('post_cruise_survey')!;
+    assert.equal(pickOffsetForDaysSinceDisembark(survey, 2), null);
+    assert.equal(pickOffsetForDaysSinceDisembark(survey, 3), 3);
+    assert.equal(pickOffsetForDaysSinceDisembark(survey, 4), 3);
+    assert.equal(pickOffsetForDaysSinceDisembark(survey, 5), 3);      // 2-day grace
+    assert.equal(pickOffsetForDaysSinceDisembark(survey, 6), null);
+});
+
+test('pickOffsetForSweep routes per policy.reference', () => {
+    const travelPrep = getSchedulePolicy('travel_prep')!;
+    const welcome = getSchedulePolicy('post_cruise_welcome_home')!;
+
+    // pre_sail policy reads daysToSail
+    assert.equal(
+        pickOffsetForSweep(travelPrep, { daysToSail: 30, daysSinceDisembark: null }),
+        30,
+    );
+    // pre_sail policy ignores daysSinceDisembark
+    assert.equal(
+        pickOffsetForSweep(travelPrep, { daysToSail: null, daysSinceDisembark: 1 }),
+        null,
+    );
+    // post_disembark policy reads daysSinceDisembark
+    assert.equal(
+        pickOffsetForSweep(welcome, { daysToSail: null, daysSinceDisembark: 1 }),
+        1,
+    );
+    // post_disembark policy ignores daysToSail
+    assert.equal(
+        pickOffsetForSweep(welcome, { daysToSail: 30, daysSinceDisembark: null }),
+        null,
+    );
+});
+
+test('pickOffsetForDaysToSail rejects post_disembark policies', () => {
+    const welcome = getSchedulePolicy('post_cruise_welcome_home')!;
+    assert.equal(pickOffsetForDaysToSail(welcome, 1), null);
+});
+
+test('pickOffsetForDaysSinceDisembark rejects pre_sail policies', () => {
+    const travelPrep = getSchedulePolicy('travel_prep')!;
+    assert.equal(pickOffsetForDaysSinceDisembark(travelPrep, 1), null);
 });
 
 if (failed > 0) {

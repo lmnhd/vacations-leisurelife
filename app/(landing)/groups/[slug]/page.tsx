@@ -10,11 +10,11 @@ export default async function GroupCampaignLandingPage(
         searchParams,
     }: {
         params: Promise<{ slug: string }>;
-        searchParams: Promise<{ preview?: string; verified?: string; verify_error?: string }>;
+        searchParams: Promise<{ preview?: string; verified?: string; verify_error?: string; guest_token?: string }>;
     },
 ) {
     const { slug } = await params;
-    const { preview, verified, verify_error } = await searchParams;
+    const { preview, verified, verify_error, guest_token } = await searchParams;
 
     // The public route honors persisted `campaign.manualVisualFlavor` only.
     // URL-based audition (?flavor=...) is intentionally preview-only and applied
@@ -32,6 +32,7 @@ export default async function GroupCampaignLandingPage(
             landing={result.landing}
             emailJustVerified={verified === '1'}
             emailVerifyError={verify_error === '1'}
+            verifiedGuestToken={guest_token}
         />
     );
 }

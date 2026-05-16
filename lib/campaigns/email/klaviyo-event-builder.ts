@@ -118,6 +118,38 @@ export interface BuildKlaviyoEventInput {
         /** Free-form operator note (max 500 chars). */
         operatorNote?: string;
     };
+    /**
+     * Phase 5 extensions — post-cruise + alumni invite properties. Populated
+     * only when the firing stage is a Phase 5 stage.
+     */
+    phase5?: {
+        // Post-cruise (welcome_home / survey) — supplied by the scheduler.
+        /** Days elapsed since disembarkation. Powers the welcome / survey copy. */
+        daysSinceDisembark?: number;
+        /** Scheduler dedupe key, same as `phase3.scheduledOffset`. */
+        scheduledOffset?: number;
+        /** Optional photo-upload URL for the welcome-home email's primary CTA. */
+        photoShareUrl?: string;
+        /** Optional URL to the post-cruise survey form. */
+        surveyUrl?: string;
+
+        // Alumni rebooking invite — operator-supplied.
+        /** Slug of the NEW campaign being offered to past guests. */
+        targetCampaignSlug?: string;
+        /** Display name of the target campaign. */
+        targetCampaignName?: string;
+        /** Public landing URL for the target campaign. */
+        targetLandingUrl?: string;
+        /** Sail date of the target campaign (free-text or ISO). */
+        targetSailDate?: string;
+        /** Optional one-line pitch the operator wants to lead with. */
+        targetPitch?: string;
+        /** Optional alumni-only access window (e.g. "First 48 hours"). */
+        alumniWindow?: string;
+
+        /** Free-form operator note (max 500 chars). */
+        operatorNote?: string;
+    };
 }
 
 export interface KlaviyoEventBuildResult {
@@ -148,7 +180,7 @@ function buildShareInvite(campaignName: string): string {
 const THRESHOLD_MET_CLAIM = 'The internal demand threshold has been reached for this campaign.';
 
 export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBuildResult {
-    const { stage, campaign, lead, summary, requiredCabins, percentOfThreshold, phase2, phase3, phase4 } = input;
+    const { stage, campaign, lead, summary, requiredCabins, percentOfThreshold, phase2, phase3, phase4, phase5 } = input;
 
     const metricName = KLAVIYO_METRIC_NAMES[stage];
     const remainingCabins = Math.max(0, requiredCabins - summary.totalEntries);
@@ -217,6 +249,29 @@ export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBu
         stagePhase4.operator_note = phase4.operatorNote;
     }
 
+    const stagePhase5: Record<string, string | number | boolean | undefined> = {};
+    if (stage === 'post_cruise_welcome_home' || stage === 'post_cruise_survey') {
+        stagePhase5.days_since_disembark = phase5?.daysSinceDisembark;
+        stagePhase5.scheduled_offset = phase5?.scheduledOffset;
+    }
+    if (stage === 'post_cruise_welcome_home') {
+        stagePhase5.photo_share_url = phase5?.photoShareUrl;
+    }
+    if (stage === 'post_cruise_survey') {
+        stagePhase5.survey_url = phase5?.surveyUrl;
+    }
+    if (stage === 'alumni_rebooking_invite') {
+        stagePhase5.target_campaign_slug = phase5?.targetCampaignSlug;
+        stagePhase5.target_campaign_name = phase5?.targetCampaignName;
+        stagePhase5.target_landing_url = phase5?.targetLandingUrl;
+        stagePhase5.target_sail_date = phase5?.targetSailDate;
+        stagePhase5.target_pitch = phase5?.targetPitch;
+        stagePhase5.alumni_window = phase5?.alumniWindow;
+    }
+    if (phase5?.operatorNote) {
+        stagePhase5.operator_note = phase5.operatorNote;
+    }
+
     const properties = compact({
         // Stage routing
         stage,
@@ -263,6 +318,8 @@ export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBu
         ...stagePhase3,
         // Phase 4 stage-specific properties (booking_change only).
         ...stagePhase4,
+        // Phase 5 stage-specific properties (post-cruise + alumni).
+        ...stagePhase5,
     });
 
     return { metricName, properties };
