@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { reviseDiscoveryBlueprint } from '@/lib/campaigns/discovery-revision';
 import type { Campaign } from '@/lib/campaigns/types';
 
-export const maxDuration = 600; // 10 minutes
+export const maxDuration = 300; // Pro plan max
 
 const BulkReviseDiscoveryBlueprintRequestSchema = z.object({
     slugs: z.array(z.string().min(1)).min(1),
