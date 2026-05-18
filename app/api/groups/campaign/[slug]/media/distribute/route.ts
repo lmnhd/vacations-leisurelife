@@ -9,12 +9,14 @@ import {
     getDistributionSchedule,
     saveDistributionExecution,
     saveDistributionSchedule,
+    resetScheduledPostStatus,
     updateDistributionExecution,
     updateCampaignDistributionStatus,
     updateScheduledPostStatus,
 } from '@/lib/campaigns/distribution-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import type { Campaign } from '@/lib/campaigns/types';
+import { removeGoogleDisplayDraft } from '@/lib/campaigns/distribution/platforms/google-ads/campaign';
 import {
     DistributionCallerEnum,
     DistributionPlatformEnum,
@@ -66,6 +68,7 @@ async function dispatchSupportedPlatforms(
     providerMode: MarketingProviderMode,
     persistStatusUpdates: boolean,
     forceDispatch: boolean,
+    replaceExisting: boolean,
 ): Promise<{ dispatchedPosts: number; skippedPosts: number; warnings: string[]; previews: Array<{ postId: string; platform: string; payload: Record<string, unknown> }> }> {
     let dispatchedPosts = 0;
     let skippedPosts = 0;
@@ -87,6 +90,11 @@ async function dispatchSupportedPlatforms(
             || post.platform === 'facebook_ad'
             || post.platform === 'google_display'
         ) {
+            if (replaceExisting && providerMode === 'live' && post.platform === 'google_display' && post.externalPostId) {
+                await removeGoogleDisplayDraft(post.externalPostId);
+                await resetScheduledPostStatus(campaign.id, post.postId);
+            }
+
             const result = await dispatchMarketingPost(campaign, manifest, post, providerMode);
             previews.push({
                 postId: post.postId,
@@ -139,6 +147,7 @@ const DistributionRequestSchema = z.object({
     executionId: z.string().min(1).optional(),
     providerMode: z.enum(['simulate', 'live']).optional(),
     forceDispatch: z.boolean().optional(),
+    replaceExisting: z.boolean().optional(),
 });
 
 export async function POST(
@@ -168,6 +177,7 @@ export async function POST(
     const executionId = parsed.data.executionId ?? `dist_exec_${randomUUID().slice(0, 12)}`;
     const providerMode: MarketingProviderMode = parsed.data.providerMode ?? 'simulate';
     const forceDispatch = parsed.data.forceDispatch ?? false;
+    const replaceExisting = parsed.data.replaceExisting ?? false;
 
     try {
         const [campaign, manifest] = await Promise.all([
@@ -225,7 +235,7 @@ export async function POST(
         await saveDistributionExecution(record);
 
         if (mode === 'dispatch') {
-            const dispatchResult = await dispatchSupportedPlatforms(campaign, manifest, schedule, providerMode, !dryRun, forceDispatch);
+            const dispatchResult = await dispatchSupportedPlatforms(campaign, manifest, schedule, providerMode, !dryRun, forceDispatch, replaceExisting);
             record.status = 'completed';
             record.summary.dispatchedPosts = dispatchResult.dispatchedPosts;
             record.summary.skippedPosts = dispatchResult.skippedPosts;

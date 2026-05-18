@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { CampaignLandingViewModel } from '@/lib/campaigns/landing/view-model';
 import type { GuestIdentity } from '@/components/campaign-landing/waitlist-form';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { alfa_slab_one, orbitron, prompt as promptFont } from '@/lib/fonts';
 
@@ -630,17 +631,62 @@ function ScrollToFormCTA({
     accentHex,
     landing,
     pendingVerification = false,
+    onResumeGuest,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
     landing: CampaignLandingViewModel;
     pendingVerification?: boolean;
+    onResumeGuest?: (identity: GuestIdentity) => void;
 }) {
+    const [resumeEmail, setResumeEmail] = useState('');
+    const [resumeLoading, setResumeLoading] = useState(false);
+    const [resumeError, setResumeError] = useState('');
+
     function scrollToForm() {
         document.getElementById('save-your-place')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    async function handleResume(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        const email = resumeEmail.trim();
+        if (!email || resumeLoading) return;
+
+        setResumeLoading(true);
+        setResumeError('');
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${landing.slug}/resume`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const payload = await response.json() as {
+                success?: boolean;
+                error?: string;
+                guestToken?: string;
+                displayName?: string;
+                emailVerified?: boolean;
+            };
+
+            if (!response.ok || !payload.success || !payload.guestToken || !payload.displayName) {
+                throw new Error(payload.error ?? 'We could not find an active chat identity for that email.');
+            }
+
+            onResumeGuest?.({
+                guestToken: payload.guestToken,
+                displayName: payload.displayName,
+                emailVerified: payload.emailVerified === true,
+            });
+        } catch (error) {
+            setResumeError(error instanceof Error ? error.message : 'We could not find an active chat identity for that email.');
+        } finally {
+            setResumeLoading(false);
+        }
+    }
+
     return (
-        <div className={`p-4 md:p-5 ${theme.gate}`}>
+        <div className={`grid gap-4 p-4 md:p-5 ${theme.gate}`}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="max-w-xl">
                     <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-65">Join the room</p>
@@ -662,6 +708,38 @@ function ScrollToFormCTA({
                     {pendingVerification ? 'Back to signup' : 'Join the list'}
                 </Button>
             </div>
+
+            <form onSubmit={handleResume} className="grid gap-3 rounded-none border border-current/15 bg-black/10 p-4">
+                <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-end">
+                    <div className="grid gap-2">
+                        <label className="font-mono text-[10px] uppercase tracking-[0.28em] opacity-65" htmlFor="resume-email">
+                            Already joined?
+                        </label>
+                        <Input
+                            id="resume-email"
+                            type="email"
+                            value={resumeEmail}
+                            onChange={(event) => setResumeEmail(event.target.value)}
+                            placeholder="Enter the email you used"
+                            className={theme.input}
+                        />
+                    </div>
+                    <Button
+                        type="submit"
+                        disabled={resumeLoading || !resumeEmail.trim()}
+                        className="rounded-none px-5 py-5 text-sm font-bold"
+                        style={{ backgroundColor: accentHex, color: '#0f172a' }}
+                    >
+                        {resumeLoading ? 'Checking...' : 'Resume chat'}
+                    </Button>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <p className="text-xs leading-6 opacity-80">
+                        If that email is on file and verified, we will restore your chat access in this browser.
+                    </p>
+                    {resumeError ? <p className="text-xs font-semibold text-rose-300">{resumeError}</p> : null}
+                </div>
+            </form>
         </div>
     );
 }
@@ -728,6 +806,7 @@ interface GroupChatHallProps {
     landing: CampaignLandingViewModel;
     /** Populated by GuestPortal once the guest has submitted the waitlist form. Unlocks compose after verification. */
     guestIdentity: GuestIdentity | null;
+    onGuestIdentityRestored?: (identity: GuestIdentity) => void;
 }
 
 function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
@@ -742,7 +821,7 @@ function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
     }));
 }
 
-export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
+export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored }: GroupChatHallProps) {
     const theme = chatHallTheme(landing.designSystem.system, landing.designSystem.accentHex);
     const accentHex = landing.designSystem.accentHex;
     const [messages, setMessages] = useState<ChatMessage[]>(() => fallbackMessages(landing));
@@ -962,6 +1041,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                             accentHex={accentHex}
                             landing={landing}
                             pendingVerification={guestIdentity !== null && !guestIdentity.emailVerified}
+                            onResumeGuest={onGuestIdentityRestored}
                         />
                     ) : (
                         <ComposeBox
@@ -1009,6 +1089,7 @@ export function GroupChatHall({ landing, guestIdentity }: GroupChatHallProps) {
                         accentHex={accentHex}
                         landing={landing}
                         pendingVerification={guestIdentity !== null && !guestIdentity.emailVerified}
+                        onResumeGuest={onGuestIdentityRestored}
                     />
                 ) : (
                     <ComposeBox

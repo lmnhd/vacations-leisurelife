@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls -la /c/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/*/media/aesthetic/)"
+      "Bash(ls -la /c/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive/app/api/groups/campaign/*/media/aesthetic/)",
+      "Bash(node -e \"const x = require\\('google-ads-api'\\); const api = new x.GoogleAdsApi\\({client_id:'a', client_secret:'b', developer_token:'c'}\\); const cust = api.Customer\\({customer_id:'123', refresh_token:'rt'}\\); console.log\\('adGroupCriteria type:', typeof cust.adGroupCriteria\\); console.log\\('ops:', Object.keys\\(cust.adGroupCriteria || {}\\).slice\\(0,15\\)\\);\")"
     ]
   }
 }

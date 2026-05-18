@@ -243,6 +243,24 @@ function buildPreviewPayload(
   }
 
   const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant);
+
+  if (post.platform === "google_display") {
+    return {
+      endpoint:
+        "/customers/{id}/campaignBudgets + /campaigns + /adGroups + /adGroupAds + /adGroupCriteria",
+      workflow: "GOOGLE_DISPLAY_CONTEXTUAL_DRAFT",
+      providerDraftType: "display_contextual",
+      mediaUrl: assetUrl,
+      headline: adCopy.headline,
+      primaryText: adCopy.primaryText,
+      description: adCopy.description,
+      cta: adCopy.cta,
+      destinationUrl: getCampaignLandingUrl(campaign),
+      activationState: "paused",
+      campaignStage: post.campaignStage,
+    };
+  }
+
   return {
     endpoint: "/act_<ad-account-id>/adcreatives + /ads",
     mediaUrl: assetUrl,
@@ -272,6 +290,22 @@ function toGraphErrorMessage(payload: unknown): string {
       ? ` subcode=${errorPayload.error.error_subcode}`
       : "";
   return `${type}:${code}${subCode} ${message}`.trim();
+}
+
+function describeUnknownError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
 }
 
 function mapCtaType(rawCta: string): string {
@@ -682,9 +716,31 @@ export async function dispatchMarketingPost(
     if (post.platform === "google_display") {
       try {
         const { createGoogleDisplayDraft } = await import("./distribution/platforms/google-ads/campaign");
-        const blueprintSummary = "A themed group cruise vacation."; // Fallback summary
-        const googleResult = await createGoogleDisplayDraft(campaign.id, post, manifest, blueprintSummary);
-        
+        const { synthesizeGoogleTargeting } = await import("./distribution/platforms/google-ads/targeting");
+        const targeting = synthesizeGoogleTargeting(campaign);
+        const blueprintSummary = campaign.description ?? "A themed group cruise vacation.";
+        const googleResult = await createGoogleDisplayDraft(
+          campaign.id,
+          post,
+          manifest,
+          blueprintSummary,
+          targeting,
+        );
+
+        const enrichedPreview: Record<string, unknown> = {
+          ...preview,
+          googleTargeting: {
+            keywords: googleResult.targeting.keywords,
+            placements: googleResult.targeting.placements,
+            negativeKeywords: googleResult.targeting.negativeKeywords,
+            summary: googleResult.targeting.summary,
+            rationale: googleResult.targeting.rationale,
+            seedKeywords: googleResult.targeting.seedKeywords,
+            audienceSignals: googleResult.targeting.audienceSignals,
+          },
+          googleVerification: googleResult.verification,
+        };
+
         return {
           postId: post.postId,
           platform: post.platform,
@@ -692,16 +748,27 @@ export async function dispatchMarketingPost(
           externalPostId: googleResult.campaignId,
           externalReviewUrl: `https://ads.google.com/aw/campaigns?campaignId=${googleResult.campaignId}`,
           metadataNotes: [
-            `draftType=paid_lead_gen_ad`,
+            `draftType=display_contextual`,
             `campaign_id=${googleResult.campaignId}`,
             `ad_group_id=${googleResult.adGroupId}`,
             `ad_id=${googleResult.adId}`,
             `status=PAUSED`,
+            `keywords_requested=${googleResult.verification.requestedKeywords}`,
+            `keywords_applied=${googleResult.verification.appliedKeywords}`,
+            `placements_requested=${googleResult.verification.requestedPlacements}`,
+            `placements_applied=${googleResult.verification.appliedPlacements}`,
+            `negatives_requested=${googleResult.verification.requestedNegatives}`,
+            `negatives_applied=${googleResult.verification.appliedNegatives}`,
+            `verification_matches=${googleResult.verification.matches}`,
+            `targeting_summary=${googleResult.targeting.summary.replace(/\n/g, " | ")}`,
+            ...googleResult.verification.discrepancies.map(
+              (note) => `verification_discrepancy=${note}`,
+            ),
           ],
-          preview,
+          preview: enrichedPreview,
         };
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Unknown Google Ads live dispatch error";
+        const message = describeUnknownError(error);
         return {
           postId: post.postId,
           platform: post.platform,
@@ -749,21 +816,57 @@ export async function dispatchMarketingPost(
   }
 
   const externalPostId = `sim_${post.platform}_${Date.now()}`;
+  let simulatedPreview = preview;
+  const simulatedNotes: string[] = [
+    post.platform === "tiktok_paid"
+      ? "draftType=paid_lead_gen_ad"
+      : post.platform === "tiktok"
+        ? "draftType=organic_post"
+        : post.platform === "google_display"
+          ? "draftType=display_contextual"
+          : "simulation_only=true",
+    "simulation_only=true",
+    `simulated_at=${new Date().toISOString()}`,
+  ];
+
+  if (post.platform === "google_display") {
+    try {
+      const { synthesizeGoogleTargeting } = await import(
+        "./distribution/platforms/google-ads/targeting"
+      );
+      const targeting = synthesizeGoogleTargeting(campaign);
+      simulatedPreview = {
+        ...preview,
+        googleTargeting: {
+          keywords: targeting.keywords,
+          placements: targeting.placements,
+          negativeKeywords: targeting.negativeKeywords,
+          summary: targeting.summary,
+          rationale: targeting.rationale,
+          seedKeywords: targeting.seedKeywords,
+          audienceSignals: targeting.audienceSignals,
+        },
+      };
+      simulatedNotes.push(
+        `keywords_planned=${targeting.keywords.length}`,
+        `placements_planned=${targeting.placements.length}`,
+        `negatives_planned=${targeting.negativeKeywords.length}`,
+        `targeting_summary=${targeting.summary.replace(/\n/g, " | ")}`,
+      );
+    } catch (error: unknown) {
+      simulatedNotes.push(
+        `targeting_synthesis_warning=${describeUnknownError(error)}`,
+      );
+    }
+  }
+
   return {
     postId: post.postId,
     platform: post.platform,
     status: "draft_created",
     externalPostId,
-    metadataNotes: [
-      post.platform === "tiktok_paid"
-        ? "draftType=paid_lead_gen_ad"
-        : post.platform === "tiktok"
-          ? "draftType=organic_post"
-          : "simulation_only=true",
-      "simulation_only=true",
-      `simulated_at=${new Date().toISOString()}`,
-    ],
+    metadataNotes: simulatedNotes,
     warning: `Simulated dispatch only. No live API call was sent to ${post.platform}.`,
-    preview,
+    preview: simulatedPreview,
   };
 }

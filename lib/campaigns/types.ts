@@ -35,6 +35,8 @@ export interface CampaignInventoryCandidate {
     departurePort?: string;
     nights?: string;
     startingPrice?: number;
+    odysseusItinerarySummary?: string;
+    odysseusPortsOfCall?: string;
     priceSource: string;
     matchScore: number;
     priceDeltaFromPrimary?: number;
@@ -177,6 +179,18 @@ export interface Campaign {
     matchedDeparturePort?: string;
 
     matchedNights?: string;
+
+    /**
+     * Optional itinerary text captured from the Odysseus booking engine during
+     * Phase B. Used when a sailing publishes a route/ports summary.
+     */
+    odysseusItinerarySummary?: string;
+
+    /**
+     * Optional port-of-call string captured from the Odysseus booking engine.
+     * This may be empty when the sailing has not published the route yet.
+     */
+    odysseusPortsOfCall?: string;
 
     /**
      * Invite link to the campaign's private community channel (Discord, WhatsApp, Facebook Group).

@@ -65,6 +65,8 @@ export interface CbInventoryMatch {
   matchedSailDate: string;
   matchedDeparturePort?: string;
   matchedNights?: string;
+  odysseusItinerarySummary?: string;
+  odysseusPortsOfCall?: string;
   matchScore: number; // 0–100 confidence of the match
   odysseusRetailBookingLink: string | null;
 }
@@ -370,6 +372,7 @@ export function matchGroupInventoryToCampaign(
     matchedSailDate: bestItem.sailDate,
     matchedDeparturePort: bestItem.departurePort,
     matchedNights: bestItem.nights,
+    odysseusItinerarySummary: bestItem.itinerary?.trim() || undefined,
     matchScore: bestScore,
     odysseusRetailBookingLink: null,
   };

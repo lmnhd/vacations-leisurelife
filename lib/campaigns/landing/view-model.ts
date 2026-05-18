@@ -71,6 +71,14 @@ export interface LandingFaqItem {
   answer: string;
 }
 
+export interface LandingItinerarySummary {
+  routeSummary: string;
+  statusLabel: string;
+  summary: string;
+  details: string[];
+  notes: string[];
+}
+
 export interface LandingInventoryDisclosure {
   mode: CampaignInventoryMode;
   /** True when the page should show a visible banner (mode !== GROUP_BLOCK_ACTIVE). */
@@ -144,6 +152,7 @@ export interface CampaignLandingViewModel {
   surfaceColor: string;
   textColor: string;
   designSystem: LandingDesignSystem;
+  itinerary: LandingItinerarySummary;
   facts: LandingFact[];
   story: {
     whatItIs: LandingStorySection;
@@ -302,6 +311,56 @@ function buildStarterConversation(
     { role: 'user', channel: 'meetups', content: 'Will people actually meet up?' },
     { role: 'assistant', channel: 'meetups', content: 'Yes — casually. Small meetups, easy drop-ins, no pressure.' },
   ];
+}
+
+function buildItinerarySummary(campaign: Campaign): LandingItinerarySummary {
+  const ship = campaign.matchedShipName ?? campaign.shipTarget ?? campaign.name;
+  const destination = campaign.targetDestination?.trim() || '';
+  const nights = campaign.matchedNights?.trim() || '';
+  const odysseusItinerarySummary = campaign.odysseusItinerarySummary?.trim() || '';
+  const odysseusPortsOfCall = campaign.odysseusPortsOfCall?.trim() || '';
+  const departurePort = campaign.matchedDeparturePort?.trim()
+    ? formatDeparturePort(campaign.matchedDeparturePort)
+    : '';
+  const sailDate = campaign.matchedSailDate?.trim() || '';
+  const routeSummary = odysseusItinerarySummary
+    || [nights ? `${nights} nights` : '', destination]
+      .filter(Boolean)
+      .join(' · ')
+    || 'Itinerary still forming';
+  const details = [
+    sailDate ? `Sail date: ${sailDate}` : '',
+    departurePort ? `Departure port: ${departurePort}` : '',
+    destination ? `Region: ${destination}` : '',
+    nights ? `Duration: ${nights} nights` : '',
+    odysseusPortsOfCall ? `Ports of call: ${odysseusPortsOfCall}` : '',
+  ].filter(Boolean);
+  const notes = campaign.finalItineraryUrl
+    ? [
+        'A final itinerary link has been published for this sailing.',
+        'If the route is fully published elsewhere, that source should be treated as authoritative.',
+      ]
+    : odysseusPortsOfCall
+      ? [
+          'Odysseus has published a route summary for this sailing.',
+          'Use the port-of-call text from the booking engine as the best available itinerary detail.',
+        ]
+    : [
+        'Specific port stops have not been published yet.',
+        'We can only speak confidently to the ship, sail date, departure port, duration, and region until a final itinerary is posted.',
+      ];
+
+  return {
+    routeSummary,
+    statusLabel: campaign.finalItineraryUrl ? 'Itinerary published' : 'Itinerary still forming',
+    summary: campaign.finalItineraryUrl
+      ? `A final itinerary is available for ${ship}.`
+      : odysseusPortsOfCall
+        ? `Odysseus shows the route for ${ship}: ${odysseusPortsOfCall}.`
+      : `We can confirm the sailing direction, but the port-by-port route has not been published yet for ${ship}.`,
+    details,
+    notes,
+  };
 }
 
 /**
@@ -960,7 +1019,12 @@ function buildTrustBullets(campaign: Campaign): string[] {
 }
 
 function buildFaq(campaign: Campaign): LandingFaqItem[] {
+  const itinerary = buildItinerarySummary(campaign);
   return [
+    {
+      question: "What itinerary details are confirmed right now?",
+      answer: `${itinerary.summary} ${itinerary.notes[0]}`.trim(),
+    },
     {
       question: "What happens after I join the group list?",
       answer:
@@ -1025,6 +1089,7 @@ function buildFacts(
   waitlistSummary: CampaignWaitlistSummary,
 ): LandingFact[] {
   const targetCabins = getPublicGroupCabinTarget(campaign);
+  const itinerary = buildItinerarySummary(campaign);
 
   const facts: LandingFact[] = [
     { label: "Sailing", value: campaign.targetDates },
@@ -1036,6 +1101,7 @@ function buildFacts(
         campaign.targetDestination ??
         campaign.name,
     },
+    { label: "Itinerary", value: itinerary.routeSummary },
   ];
 
   if (campaign.matchedDeparturePort) {
@@ -1098,6 +1164,7 @@ function buildLandingViewModel(
     brief,
     flavorOverride,
   );
+  const itinerary = buildItinerarySummary(campaign);
 
   return {
     slug: campaign.id,
@@ -1124,6 +1191,7 @@ function buildLandingViewModel(
       "#F8FAFC",
     ),
     designSystem,
+    itinerary,
     facts: buildFacts(campaign, waitlistSummary),
     story: {
       whatItIs: buildWhatItIs(campaign, brief),

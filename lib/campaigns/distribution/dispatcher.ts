@@ -59,21 +59,44 @@ export async function dispatchPost(
                 break;
             case 'google_display': {
                 const { getMediaManifest } = await import('../media/media-store');
+                const { getCampaignBlueprint } = await import('../campaign-store');
+                const { synthesizeGoogleTargeting } = await import('./platforms/google-ads/targeting');
+
                 const manifest = await getMediaManifest(campaignSlug);
                 if (!manifest) throw new Error(`Manifest not found for ${campaignSlug}`);
-                
-                // Blueprint summary is required for targeting generation. For now, use a generic fallback.
-                const blueprintSummary = 'A themed group cruise vacation.';
-                const googleResult = await createGoogleDisplayDraft(campaignSlug, post, manifest, blueprintSummary);
-                
+
+                const campaign = await getCampaignBlueprint(campaignSlug);
+                if (!campaign) throw new Error(`Campaign not found for ${campaignSlug}`);
+
+                const targeting = synthesizeGoogleTargeting(campaign);
+                const blueprintSummary = campaign.description ?? 'A themed group cruise vacation.';
+                const googleResult = await createGoogleDisplayDraft(
+                    campaignSlug,
+                    post,
+                    manifest,
+                    blueprintSummary,
+                    targeting,
+                );
+
                 externalPostId = googleResult.campaignId;
                 externalReviewUrl = `https://ads.google.com/aw/campaigns?campaignId=${googleResult.campaignId}`;
                 metadataNotes = [
-                    `draftType=paid_lead_gen_ad`,
+                    `draftType=display_contextual`,
                     `campaign_id=${googleResult.campaignId}`,
                     `ad_group_id=${googleResult.adGroupId}`,
                     `ad_id=${googleResult.adId}`,
                     `status=PAUSED`,
+                    `keywords_requested=${googleResult.verification.requestedKeywords}`,
+                    `keywords_applied=${googleResult.verification.appliedKeywords}`,
+                    `placements_requested=${googleResult.verification.requestedPlacements}`,
+                    `placements_applied=${googleResult.verification.appliedPlacements}`,
+                    `negatives_requested=${googleResult.verification.requestedNegatives}`,
+                    `negatives_applied=${googleResult.verification.appliedNegatives}`,
+                    `verification_matches=${googleResult.verification.matches}`,
+                    `targeting_summary=${googleResult.targeting.summary.replace(/\n/g, ' | ')}`,
+                    ...googleResult.verification.discrepancies.map(
+                        (note) => `verification_discrepancy=${note}`,
+                    ),
                 ];
                 break;
             }

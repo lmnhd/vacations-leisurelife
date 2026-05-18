@@ -125,7 +125,7 @@ async function main(): Promise<void> {
 
         const body = JSON.parse(calls[0].init?.body as string) as Record<string, unknown>;
         assert.equal(body.advertiser_id, mockAdvertiserStatus.advertiserAccountId);
-        assert.equal(body.form_name, 'LLI-board-games-at-sea-lead-form');
+        assert.match(String(body.form_name), /^LLI-board-games-at-sea-lead-form-/);
         assert.equal(body.form_type, 'INSTANT_FORM');
         assert.equal(body.locale, 'en_US');
         assert.deepEqual(body.thank_you_page, {
@@ -209,6 +209,16 @@ async function main(): Promise<void> {
         assert.equal(calls[1].url, 'https://business-api.tiktok.com/open_api/v1.3/adgroup/create/');
         assert.equal(calls[2].url, 'https://business-api.tiktok.com/open_api/v1.3/file/video/ad/upload/');
         assert.equal(calls[3].url, 'https://business-api.tiktok.com/open_api/v1.3/ad/create/');
+
+        const adGroupBody = JSON.parse(calls[1].init?.body as string) as Record<string, unknown>;
+        assert.equal(adGroupBody.promotion_type, 'LEAD_GENERATION');
+        assert.equal(adGroupBody.promotion_target_type, 'INSTANT_PAGE');
+        assert.equal(adGroupBody.optimization_goal, 'LEADS');
+        assert.equal(adGroupBody.bid_type, 'BID_TYPE_CUSTOM');
+        assert.equal(adGroupBody.conversion_bid_price, 16);
+        assert.equal(adGroupBody.schedule_start_time, '2026-05-05T12:00:00.000Z');
+        assert.deepEqual(adGroupBody.location_ids, ['6252001']);
+        assert.deepEqual(adGroupBody.age_groups, ['AGE_18_24', 'AGE_25_34', 'AGE_35_44', 'AGE_45_54', 'AGE_55_100']);
 
         const uploadBody = JSON.parse(calls[2].init?.body as string) as Record<string, unknown>;
         assert.equal(uploadBody.advertiser_id, mockAdvertiserStatus.advertiserAccountId);

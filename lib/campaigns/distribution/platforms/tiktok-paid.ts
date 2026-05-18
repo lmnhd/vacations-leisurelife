@@ -49,6 +49,21 @@ function buildMarketingApiHeaders(accessToken: string): HeadersInit {
     };
 }
 
+function buildRunSuffix(nowIso: string): string {
+    const digits = nowIso.replace(/\D/g, '');
+    return digits.slice(-8) || Date.now().toString(36);
+}
+
+function resolveConversionBidPrice(dailyBudget: number | undefined): number {
+    const budget = dailyBudget ?? 20;
+    const target = Number((budget * 0.8).toFixed(2));
+    if (target > 0 && target < budget) {
+        return target;
+    }
+
+    return Number(Math.max(0.5, budget - 0.01).toFixed(2));
+}
+
 async function postMarketingApi<TData>(
     accessToken: string,
     path: string,
@@ -115,6 +130,7 @@ export async function createTikTokPaidLeadGenDraft(
     }
 
     console.log(`[TikTok-Paid] Creating lead-gen draft for campaign ${contract.campaignSlug}`);
+    const runSuffix = buildRunSuffix(now);
 
     // 1. Create paused Lead Generation campaign
     const campaignData = await postMarketingApi<TikTokCampaignCreateData>(
@@ -122,7 +138,7 @@ export async function createTikTokPaidLeadGenDraft(
         '/campaign/create/',
         {
             advertiser_id: advertiserAccountId,
-            campaign_name: `LLI-${contract.campaignSlug}-lead-gen`,
+            campaign_name: `LLI-${contract.campaignSlug}-lead-gen-${runSuffix}`,
             objective_type: 'LEAD_GENERATION',
             budget_mode: 'BUDGET_MODE_INFINITE',
             operation_status: 'DISABLE',
@@ -136,19 +152,23 @@ export async function createTikTokPaidLeadGenDraft(
     const adGroupBody: Record<string, unknown> = {
         advertiser_id: advertiserAccountId,
         campaign_id: campaignData.campaign_id,
-        adgroup_name: `LLI-${contract.campaignSlug}-adgroup`,
+        adgroup_name: `LLI-${contract.campaignSlug}-adgroup-${runSuffix}`,
         placement_type: 'PLACEMENT_TYPE_AUTOMATIC',
         budget_mode: 'BUDGET_MODE_DAY',
         budget: contract.dailyBudget ?? 20,
         schedule_type: 'SCHEDULE_FROM_NOW',
-        optimization_goal: 'LEAD',
+        schedule_start_time: contract.startAt ?? now,
+        promotion_type: 'LEAD_GENERATION',
+        promotion_target_type: 'INSTANT_PAGE',
+        optimization_goal: 'LEADS',
+        bid_type: 'BID_TYPE_CUSTOM',
+        conversion_bid_price: resolveConversionBidPrice(contract.dailyBudget),
+        location_ids: ['6252001'],
+        age_groups: ['AGE_18_24', 'AGE_25_34', 'AGE_35_44', 'AGE_45_54', 'AGE_55_100'],
         operation_status: 'DISABLE',
         billing_event: 'OCPM',
     };
 
-    if (contract.startAt) {
-        adGroupBody.schedule_start_time = contract.startAt;
-    }
     if (contract.endAt) {
         adGroupBody.schedule_end_time = contract.endAt;
     }
@@ -182,7 +202,7 @@ export async function createTikTokPaidLeadGenDraft(
     const adBody: Record<string, unknown> = {
         advertiser_id: advertiserAccountId,
         adgroup_id: adGroupData.adgroup_id,
-        ad_name: `LLI-${contract.campaignSlug}-ad`,
+        ad_name: `LLI-${contract.campaignSlug}-ad-${runSuffix}`,
         ad_format: 'SINGLE_VIDEO',
         video_id: videoUploadData.video_id,
         operation_status: 'DISABLE',
@@ -240,7 +260,7 @@ export async function createTikTokLeadForm(
         '/leadgen/form/create/',
         {
             advertiser_id: advertiserAccountId,
-            form_name: `LLI-${campaignSlug}-lead-form`,
+            form_name: `LLI-${campaignSlug}-lead-form-${buildRunSuffix(new Date().toISOString())}`,
             form_type: 'INSTANT_FORM',
             locale: 'en_US',
             thank_you_page: {

@@ -84,6 +84,11 @@ type DistributionActionResponse = {
         skippedPosts: number;
     };
     warnings: string[];
+    previews?: Array<{
+        postId: string;
+        platform: string;
+        payload: Record<string, unknown>;
+    }>;
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -120,6 +125,15 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 
 function stageLabel(stage: string): string {
     return stage.replaceAll("_", " ");
+}
+
+function getNoteValue(notes: string[] | undefined, key: string): string | undefined {
+    const prefix = `${key}=`;
+    return notes?.find((note) => note.startsWith(prefix))?.slice(prefix.length);
+}
+
+function findLatestGoogleDraft(posts: ScheduledPost[]): ScheduledPost | undefined {
+    return [...posts].reverse().find((post) => post.platform === "google_display");
 }
 
 export default function CampaignDistributionPage() {
@@ -290,6 +304,35 @@ export default function CampaignDistributionPage() {
         return accumulator;
     }, {});
 
+    const googleDraftPost = findLatestGoogleDraft(data?.schedule.posts ?? []);
+    const googleNotes = googleDraftPost?.notes ?? [];
+    const googleCampaignId = getNoteValue(googleNotes, "campaign_id");
+    const googleAdGroupId = getNoteValue(googleNotes, "ad_group_id");
+    const googleAdId = getNoteValue(googleNotes, "ad_id");
+    const googleVerificationMatches = getNoteValue(googleNotes, "verification_matches");
+    const googleKeywordsRequested = getNoteValue(googleNotes, "keywords_requested");
+    const googleKeywordsApplied = getNoteValue(googleNotes, "keywords_applied");
+    const googlePlacementsRequested = getNoteValue(googleNotes, "placements_requested");
+    const googlePlacementsApplied = getNoteValue(googleNotes, "placements_applied");
+    const googleNegativesRequested = getNoteValue(googleNotes, "negatives_requested");
+    const googleNegativesApplied = getNoteValue(googleNotes, "negatives_applied");
+    const googleTargetingSummary = getNoteValue(googleNotes, "targeting_summary");
+    const googleReviewUrl = googleDraftPost?.externalReviewUrl;
+    const googlePreview = preview?.previews?.find((entry) => entry.platform === "google_display")?.payload as
+        | {
+            googleTargeting?: {
+                keywords?: string[];
+                placements?: string[];
+                negativeKeywords?: string[];
+                summary?: string;
+                rationale?: string;
+                seedKeywords?: string[];
+                placementSources?: string[];
+            };
+        }
+        | undefined;
+    const googleTargeting = googlePreview?.googleTargeting;
+
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-50">
             <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
@@ -446,6 +489,103 @@ export default function CampaignDistributionPage() {
                                 <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Dispatched</div>
                                 <div className="mt-2 text-2xl font-semibold text-neutral-50">{preview?.summary.dispatchedPosts ?? 0}</div>
                             </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Google Draft Audit</CardTitle>
+                            <CardDescription className="text-neutral-400">Persisted proof of the last Google Display draft.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 text-sm text-neutral-300">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Campaign ID {googleCampaignId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad Group ID {googleAdGroupId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad ID {googleAdId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Verification {googleVerificationMatches ?? "n/a"}</div>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Keywords {googleKeywordsApplied ?? 0}/{googleKeywordsRequested ?? 0}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Placements {googlePlacementsApplied ?? 0}/{googlePlacementsRequested ?? 0}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Negatives {googleNegativesApplied ?? 0}/{googleNegativesRequested ?? 0}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    {googleReviewUrl ? (
+                                        <a href={googleReviewUrl} target="_blank" rel="noreferrer" className="text-cyan-300 hover:text-cyan-200">
+                                            Open native review
+                                        </a>
+                                    ) : (
+                                        "No native review URL"
+                                    )}
+                                </div>
+                            </div>
+                            {googleTargetingSummary ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Targeting Summary</div>
+                                    <pre className="mt-2 whitespace-pre-wrap text-xs text-neutral-200">{googleTargetingSummary}</pre>
+                                </div>
+                            ) : null}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Current Google Targeting</CardTitle>
+                            <CardDescription className="text-neutral-400">Live preview payload when you use Preview Google Targeting or a simulated dispatch.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm text-neutral-300">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Sources {googleTargeting?.placementSources?.join(" + ") ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Seed keywords {googleTargeting?.seedKeywords?.join(", ") ?? "n/a"}</div>
+                            </div>
+                            {googleTargeting?.summary ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Summary</div>
+                                    <pre className="mt-2 whitespace-pre-wrap text-xs text-neutral-200">{googleTargeting.summary}</pre>
+                                </div>
+                            ) : null}
+                            {googleTargeting?.keywords?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Keywords</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {googleTargeting.keywords.map((keyword) => (
+                                            <span key={keyword} className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs text-neutral-100">
+                                                {keyword}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {googleTargeting?.placements?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Placements</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {googleTargeting.placements.map((placement) => (
+                                            <span key={placement} className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs text-neutral-100">
+                                                {placement}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {googleTargeting?.negativeKeywords?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Negative Keywords</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {googleTargeting.negativeKeywords.map((keyword) => (
+                                            <span key={keyword} className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs text-rose-200">
+                                                {keyword}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {!googleTargeting ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4 text-neutral-400">
+                                    Run Preview Google Targeting or Rebuild Google Draft to surface the targeting payload here.
+                                </div>
+                            ) : null}
                         </CardContent>
                     </Card>
                 </div>

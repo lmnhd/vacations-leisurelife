@@ -426,6 +426,14 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
         }
     }
 
+    function handleGuestIdentityRestored(identity: GuestIdentity) {
+        writeStoredIdentity(landing.slug, identity);
+        setGuestIdentity(identity);
+        if (identity.emailVerified) {
+            document.getElementById('group-chat-hall')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
     return (
         <div className={`${promptFont.className} min-h-screen w-full ${theme.pageBg}`} style={pageStyle}>
             {landing.campaignNotice && (
@@ -530,17 +538,50 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             )}
 
             {/* 2) Group Chat Hall — full-width centerpiece */}
-            <GroupChatHall landing={landing} guestIdentity={guestIdentity} />
+            <GroupChatHall
+                landing={landing}
+                guestIdentity={guestIdentity}
+                onGuestIdentityRestored={handleGuestIdentityRestored}
+            />
 
             {/* 3) Status strip — compact pricing + threshold + facts */}
             <section className={`w-full border-t ${theme.rule} ${theme.sectionAlt}`}>
                 <StatusStrip landing={landing} theme={theme} accentHex={accentHex} />
             </section>
 
-            {/* 4) Atmospheric photo strip */}
+            {/* 4) Itinerary snapshot */}
+            <section className={`w-full border-t ${theme.rule}`}>
+                <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:px-8">
+                    <div>
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>
+                            Itinerary Snapshot
+                        </p>
+                        <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight ${theme.pageText}`}>
+                            {landing.itinerary.routeSummary}
+                        </h2>
+                        <p className={`mt-4 max-w-2xl text-sm leading-7 ${theme.softText}`}>
+                            {landing.itinerary.summary}
+                        </p>
+                    </div>
+                    <div className="grid gap-3">
+                        {landing.itinerary.details.map((detail) => (
+                            <div key={detail} className={`${theme.surface} p-4`}>
+                                <p className={`text-sm leading-7 ${theme.softText}`}>{detail}</p>
+                            </div>
+                        ))}
+                        {landing.itinerary.notes.map((note) => (
+                            <div key={note} className={`${theme.surface} p-4`}>
+                                <p className={`text-sm leading-7 ${theme.softText}`}>{note}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* 5) Atmospheric photo strip */}
             <PhotoStrip images={images} system={system} />
 
-            {/* 5) Voyage brief — what it is + why now */}
+            {/* 6) Voyage brief — what it is + why now */}
             <BleedSection theme={theme} eyebrow="Voyage Brief" title={landing.story.whatItIs.title} description={landing.story.whatItIs.body} accentHex={accentHex} contentMaxWidth="wide">
                 <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
                     {landing.story.whyJoinNow.map((reason, i) => (
@@ -562,7 +603,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </ul>
             </BleedSection>
 
-            {/* 6) On board */}
+            {/* 7) On board */}
             <BleedSection
                 theme={theme}
                 eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel}
@@ -573,7 +614,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
             </BleedSection>
 
-            {/* 7) Inline pull-quote on photo (if available) */}
+            {/* 8) Inline pull-quote on photo (if available) */}
             {images.length >= 2 && (
                 <div className={`relative h-56 w-full overflow-hidden border-t border-b ${theme.rule}`}>
                     <div
@@ -594,7 +635,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </div>
             )}
 
-            {/* 8) How it works + inventory process note */}
+            {/* 9) How it works + inventory process note */}
             <BleedSection
                 theme={theme}
                 eyebrow="How it works"
@@ -619,12 +660,12 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </p>
             </BleedSection>
 
-            {/* 9) FAQ */}
+            {/* 10) FAQ */}
             <BleedSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex} contentMaxWidth="narrow">
                 <FaqList items={landing.faq} theme={theme} />
             </BleedSection>
 
-            {/* 10) Trust */}
+            {/* 11) Trust */}
             <BleedSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} alt>
                 <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {landing.trustBullets.map((bullet, i) => (
@@ -635,7 +676,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </ul>
             </BleedSection>
 
-            {/* 11) Waitlist */}
+            {/* 12) Waitlist */}
             {(landing.form.enabled || landing.preview) && (
                 <BleedSection
                     theme={theme}
@@ -663,7 +704,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </BleedSection>
             )}
 
-            {/* 12) Final CTA strip */}
+            {/* 13) Final CTA strip */}
             <section className={`w-full border-t ${theme.rule}`}>
                 <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-8">
                     <div>

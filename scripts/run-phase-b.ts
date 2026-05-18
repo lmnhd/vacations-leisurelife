@@ -34,6 +34,7 @@ import {
 } from "../lib/campaigns/campaign-store";
 import { validateBookingLink } from "../lib/campaigns/booking-link-validator";
 import { OdysseusEngine } from "../lib/services/odysseus/OdysseusEngine";
+import type { CruiseResult } from "../lib/services/odysseus/types";
 
 loadEnvConfig(process.cwd());
 
@@ -55,9 +56,38 @@ function shiftDateByDays(mmDdYyyy: string, days: number): string {
   return `${newMm}/${newDd}/${d.getFullYear()}`;
 }
 
+function buildOdysseusItinerarySummary(result: CruiseResult): {
+  summary: string;
+  portsOfCall: string;
+} {
+  const itinerary = result.itinerary;
+  const duration = typeof itinerary?.duration === "number" && itinerary.duration > 0
+    ? `${itinerary.duration} nights`
+    : "Itinerary duration TBD";
+  const departure = itinerary?.departure?.code?.trim() || "";
+  const arrival = itinerary?.arrival?.code?.trim() || "";
+  const portsOfCall = itinerary?.normalizedPortsOfCall?.trim()
+    || itinerary?.portsOfCalls?.trim()
+    || "";
+  const routeParts = [
+    departure ? `Departing ${departure}` : "",
+    portsOfCall,
+    arrival ? `Arriving ${arrival}` : "",
+  ].filter(Boolean);
+
+  return {
+    summary: [duration, ...routeParts].filter(Boolean).join(" · "),
+    portsOfCall,
+  };
+}
+
 async function generateOdysseusRetailLink(
   match: CbInventoryMatch,
-): Promise<string | null> {
+): Promise<{
+  retailLink: string | null;
+  itinerarySummary: string | null;
+  portsOfCall: string | null;
+}> {
   const engine = new OdysseusEngine();
   try {
     await engine.init(true);
@@ -76,9 +106,11 @@ async function generateOdysseusRetailLink(
       console.log(
         `[run-phase-b] Odysseus returned no results for "${match.matchedShipName}" — skipping retail link.`,
       );
-      return null;
+      return { retailLink: null, itinerarySummary: null, portsOfCall: null };
     }
 
+    const itinerarySource = results[0];
+    const itinerarySummary = buildOdysseusItinerarySummary(itinerarySource);
     await engine.selectItinerary(0);
     const retailLink = await engine.bypassGuestInfoAndContinue();
 
@@ -86,17 +118,25 @@ async function generateOdysseusRetailLink(
       console.log(
         `[run-phase-b] Odysseus guest-info bypass failed for "${match.matchedShipName}" — skipping retail link.`,
       );
-      return null;
+      return {
+        retailLink: null,
+        itinerarySummary: itinerarySummary.summary,
+        portsOfCall: itinerarySummary.portsOfCall || null,
+      };
     }
 
     console.log(`[run-phase-b] ✅ Odysseus retail link: ${retailLink}`);
-    return retailLink;
+    return {
+      retailLink,
+      itinerarySummary: itinerarySummary.summary,
+      portsOfCall: itinerarySummary.portsOfCall || null,
+    };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.warn(
       `[run-phase-b] Odysseus retail link generation failed for "${match.matchedShipName}": ${msg}`,
     );
-    return null;
+    return { retailLink: null, itinerarySummary: null, portsOfCall: null };
   } finally {
     await engine.close();
   }
@@ -272,19 +312,23 @@ async function runPhaseB(): Promise<void> {
     console.log(
       `[run-phase-b] Generating Odysseus retail link for "${campaign.id}"...`,
     );
-    const retailLink = await generateOdysseusRetailLink(confirmation);
-    confirmation.odysseusRetailBookingLink = retailLink;
+    const odysseusResult = await generateOdysseusRetailLink(confirmation);
+    confirmation.odysseusRetailBookingLink = odysseusResult.retailLink;
+    confirmation.odysseusItinerarySummary = odysseusResult.itinerarySummary ?? undefined;
+    confirmation.odysseusPortsOfCall = odysseusResult.portsOfCall ?? undefined;
 
-    if (retailLink) {
-      const retailValidation = await validateBookingLink(retailLink);
+    if (odysseusResult.retailLink) {
+      const retailValidation = await validateBookingLink(odysseusResult.retailLink);
       validatedCandidates.push({
         rank: validatedCandidates.length,
         source: "ODYSSEUS_RETAIL",
-        retailLink,
+        retailLink: odysseusResult.retailLink,
         shipName: primaryCandidate.shipName,
         sailDate: primaryCandidate.sailDate,
         departurePort: primaryCandidate.departurePort,
         nights: primaryCandidate.nights,
+        odysseusItinerarySummary: odysseusResult.itinerarySummary ?? undefined,
+        odysseusPortsOfCall: odysseusResult.portsOfCall ?? undefined,
         startingPrice: primaryCandidate.startingPrice,
         priceSource: "ODYSSEUS_RETAIL",
         matchScore: 0,
@@ -306,7 +350,7 @@ async function runPhaseB(): Promise<void> {
     results.push({
       slug: campaign.id,
       status: wasBackupPromoted ? "BACKUP_PROMOTED" : "CONFIRMED",
-      detail: `${confirmation.matchedShipName} — $${confirmation.computedStartingPrice}/pp (score: ${confirmation.matchScore}, rank: ${primaryCandidate.rank})${retailLink ? " + retail link" : ""}`,
+      detail: `${confirmation.matchedShipName} — $${confirmation.computedStartingPrice}/pp (score: ${confirmation.matchScore}, rank: ${primaryCandidate.rank})${odysseusResult.retailLink ? " + retail link" : ""}`,
     });
   }
 

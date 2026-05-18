@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type ReviewState = 'DRAFT' | 'GATHERING_INTEREST' | 'THRESHOLD_MET' | 'CONVERTED' | 'EXPIRED';
 
@@ -81,12 +82,43 @@ interface GoogleAdsStatusResponse {
 
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
 
+interface GoogleTargetingPreviewPayload {
+    workflow?: string;
+    providerDraftType?: string;
+    googleTargeting?: {
+        keywords: string[];
+        placements: string[];
+        negativeKeywords: string[];
+        summary: string;
+        rationale: string;
+        seedKeywords?: string[];
+        audienceSignals?: string[];
+        placementSources?: string[];
+    };
+}
+
 interface StatusFlipResponse {
     message?: string;
     campaign?: {
         status: ReviewState;
     };
     error?: string;
+}
+
+function ActionTip({ label, description, children }: { label: string; description: string; children: ReactNode }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                {children}
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm border-amber-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-lg">
+                <div className="space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">{label}</div>
+                    <div className="leading-relaxed">{description}</div>
+                </div>
+            </TooltipContent>
+        </Tooltip>
+    );
 }
 
 export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
@@ -108,6 +140,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [validateMessage, setValidateMessage] = useState<string>('');
     const [plannedPosts, setPlannedPosts] = useState<PlannedPost[]>([]);
     const [dispatchPreviews, setDispatchPreviews] = useState<Array<{ postId: string; platform: string; payload: Record<string, unknown> }>>([]);
+    const [googleTargetingPreview, setGoogleTargetingPreview] = useState<GoogleTargetingPreviewPayload['googleTargeting'] | null>(null);
 
     const publicPreviewHref = useMemo(() => `/groups/${slug}?preview=1`, [slug]);
     const publicHref = useMemo(() => `/groups/${slug}`, [slug]);
@@ -284,6 +317,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     async function handlePreviewDispatch() {
         setPreviewing(true);
         setDispatchMessage('');
+        setGoogleTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -298,6 +332,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             }
 
             setDispatchPreviews(data.previews ?? []);
+            const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
+            const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
+            setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
             setDispatchMessage(`Simulation preview ready: ${(data.previews ?? []).length} payloads. No live TikTok upload or paid-ad API call was sent.`);
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview ad dispatch.');
@@ -306,9 +343,48 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
+    async function handlePreviewGoogleTargeting() {
+        setPreviewing(true);
+        setDispatchMessage('');
+        setGoogleTargetingPreview(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: true,
+                    providerMode: 'simulate',
+                    forceDispatch: true,
+                    platforms: ['google_display'],
+                }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to preview Google targeting.');
+            }
+
+            const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
+            const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
+            setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
+            setDispatchMessage(
+                googlePayload?.googleTargeting
+                    ? 'Google targeting preview loaded.'
+                    : 'Google targeting preview returned no targeting block.',
+            );
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview Google targeting.');
+        } finally {
+            setPreviewing(false);
+        }
+    }
+
     async function handleDispatchAds() {
         setDispatching(true);
         setDispatchMessage('');
+        setGoogleTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -323,6 +399,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             }
 
             setDispatchPreviews(data.previews ?? []);
+            const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
+            const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
+            setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
             setDispatchMessage(data.message ?? 'Simulated dispatch completed. No live provider API was called.');
             await loadAdPlan();
         } catch (error) {
@@ -332,15 +411,23 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
-    async function handleLiveDispatchAds() {
+    async function handleLiveDispatchAds(replaceExisting = false) {
         setLiveDispatching(true);
         setDispatchMessage('');
+        setGoogleTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: 'dispatch', dryRun: false, providerMode: 'live', forceDispatch: true }),
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: false,
+                    providerMode: 'live',
+                    forceDispatch: true,
+                    replaceExisting,
+                    ...(replaceExisting ? { platforms: ['google_display'] } : {}),
+                }),
             });
 
             const data = await response.json() as DistributionPlanResponse;
@@ -349,7 +436,16 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             }
 
             setDispatchPreviews(data.previews ?? []);
-            setDispatchMessage(data.message ?? 'LIVE dispatch completed.');
+            const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
+            const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
+            setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
+            setDispatchMessage(
+                data.message ?? (
+                    replaceExisting
+                        ? 'Existing Google draft replaced and rebuilt.'
+                        : 'LIVE dispatch completed.'
+                ),
+            );
             await loadAdPlan();
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to dispatch LIVE ads.');
@@ -359,7 +455,8 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     }
 
     return (
-        <Card className="border-amber-300 bg-white/80 shadow-sm">
+        <TooltipProvider delayDuration={150}>
+            <Card className="border-amber-300 bg-white/80 shadow-sm">
             <CardContent className="flex flex-col gap-4 p-4">
                 <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -375,6 +472,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             variant="outline"
                             className="border-amber-300 bg-white"
                             onClick={() => setCollapsed((value) => !value)}
+                            title={collapsed ? 'Expand the review controls and action buttons again.' : 'Collapse the review controls so you can inspect the landing page more cleanly.'}
                         >
                             {collapsed ? 'Show Review Panel' : 'Hide Review Panel'}
                         </Button>
@@ -383,42 +481,129 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                 {collapsed ? null : (
                     <>
                         <div className="flex flex-wrap gap-2">
-                            <Button asChild variant="outline" className="border-amber-300 bg-white">
-                                <a href={publicPreviewHref} target="_blank" rel="noreferrer">Open Main Preview</a>
-                            </Button>
-                            <Button asChild variant="outline" className="border-amber-300 bg-white">
-                                <a href={publicHref} target="_blank" rel="noreferrer">Open Public Route</a>
-                            </Button>
-                            <Button onClick={handlePublish} disabled={publishing || currentState !== 'DRAFT'}>
-                                {publishing ? 'Publishing...' : 'Publish Landing'}
-                            </Button>
-                            <Button onClick={handlePlanAds} disabled={planning} variant="secondary">
-                                {planning ? 'Planning Distribution...' : 'Plan Distribution'}
-                            </Button>
-                            <Button onClick={loadAdPlan} disabled={reviewing} variant="outline" className="border-amber-300 bg-white">
-                                {reviewing ? 'Loading Schedule...' : 'Review Schedule'}
-                            </Button>
-                            <Button onClick={handleValidateProviders} disabled={validating} variant="outline" className="border-amber-300 bg-white">
-                                {validating ? 'Validating...' : 'Validate Providers'}
-                            </Button>
-                            <Button onClick={handlePreviewDispatch} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
-                                {previewing ? 'Previewing...' : 'Preview Simulated Dispatch'}
-                            </Button>
-                            <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
-                                {dispatching ? 'Simulating...' : 'Run Simulated Dispatch'}
-                            </Button>
-                            <Button onClick={handleLiveDispatchAds} disabled={liveDispatching} variant="default" className="bg-red-600 text-white hover:bg-red-700">
-                                {liveDispatching ? 'Dispatching LIVE...' : 'Run LIVE Dispatch'}
-                            </Button>
-                            <Button onClick={handleSyncTikTokStatus} disabled={syncingTikTok} variant="outline" className="border-amber-300 bg-white">
-                                {syncingTikTok ? 'Syncing Organic TikTok...' : 'Sync Organic TikTok Status'}
-                            </Button>
+                            <ActionTip label="Open Main Preview" description="Open the draft landing page preview with the review overlay in a new tab.">
+                                <Button asChild variant="outline" className="border-amber-300 bg-white">
+                                    <a href={publicPreviewHref} target="_blank" rel="noreferrer">Open Main Preview</a>
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Open Public Route" description="Open the public campaign route exactly as a visitor would see it.">
+                                <Button asChild variant="outline" className="border-amber-300 bg-white">
+                                    <a href={publicHref} target="_blank" rel="noreferrer">Open Public Route</a>
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Publish Landing" description="PATCH the campaign into GATHERING_INTEREST so it is no longer draft-only.">
+                                <Button onClick={handlePublish} disabled={publishing || currentState !== 'DRAFT'}>
+                                    {publishing ? 'Publishing...' : 'Publish Landing'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Plan Distribution" description="Build or refresh the saved distribution schedule without calling any provider APIs.">
+                                <Button onClick={handlePlanAds} disabled={planning} variant="secondary">
+                                    {planning ? 'Planning Distribution...' : 'Plan Distribution'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Review Schedule" description="Reload the saved distribution schedule and execution history from the backend.">
+                                <Button onClick={loadAdPlan} disabled={reviewing} variant="outline" className="border-amber-300 bg-white">
+                                    {reviewing ? 'Loading Schedule...' : 'Review Schedule'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Validate Providers" description="Check whether TikTok, Meta, and Google integrations are configured and ready.">
+                                <Button onClick={handleValidateProviders} disabled={validating} variant="outline" className="border-amber-300 bg-white">
+                                    {validating ? 'Validating...' : 'Validate Providers'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Preview Google Targeting" description="Show the exact Google keywords, placements, and negatives that would be used for the draft, without creating or replacing anything.">
+                                <Button onClick={handlePreviewGoogleTargeting} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
+                                    {previewing ? 'Previewing...' : 'Preview Google Targeting'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Reconnect Google Ads" description="Start the Google OAuth reconnect flow so you can refresh the stored access and refresh token.">
+                                <Button asChild variant="outline" className="border-amber-300 bg-white">
+                                    <a href="/api/integrations/google/connect" target="_blank" rel="noreferrer">
+                                        Reconnect Google Ads
+                                    </a>
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Preview Simulated Dispatch" description="Run a dry preview of the full distribution payload without calling live providers.">
+                                <Button onClick={handlePreviewDispatch} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
+                                    {previewing ? 'Previewing...' : 'Preview Simulated Dispatch'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Run Simulated Dispatch" description="Run the simulated provider flow and persist the resulting draft metadata locally.">
+                                <Button onClick={handleDispatchAds} disabled={dispatching} variant="secondary">
+                                    {dispatching ? 'Simulating...' : 'Run Simulated Dispatch'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Run LIVE Dispatch" description="Send the current live Google draft flow without replacing the existing draft.">
+                                <Button onClick={() => void handleLiveDispatchAds(false)} disabled={liveDispatching} variant="default" className="bg-red-600 text-white hover:bg-red-700">
+                                    {liveDispatching ? 'Dispatching LIVE...' : 'Run LIVE Dispatch'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Rebuild Google Draft" description="Remove the existing Google draft for this campaign, reset its schedule entry, and rebuild it with the current targeting.">
+                                <Button onClick={() => void handleLiveDispatchAds(true)} disabled={liveDispatching} variant="outline" className="border-red-400 bg-white text-red-700 hover:bg-red-50">
+                                    {liveDispatching ? 'Rebuilding...' : 'Rebuild Google Draft'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Sync Organic TikTok Status" description="Ask TikTok whether the organic post has moved beyond its draft state yet.">
+                                <Button onClick={handleSyncTikTokStatus} disabled={syncingTikTok} variant="outline" className="border-amber-300 bg-white">
+                                    {syncingTikTok ? 'Syncing Organic TikTok...' : 'Sync Organic TikTok Status'}
+                                </Button>
+                            </ActionTip>
                         </div>
                         {statusMessage ? <p className="text-sm text-amber-950">{statusMessage}</p> : null}
                         {validateMessage ? <p className="text-sm text-slate-700">{validateMessage}</p> : null}
                         {planMessage ? <p className="text-sm text-slate-700">{planMessage}</p> : null}
                         {reviewMessage ? <p className="text-sm text-slate-700">{reviewMessage}</p> : null}
                         {dispatchMessage ? <p className="text-sm text-slate-700">{dispatchMessage}</p> : null}
+                        {googleTargetingPreview ? (
+                            <div className="grid gap-3 border border-cyan-200 bg-cyan-50 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-800">Google Targeting Preview</p>
+                                    {googleTargetingPreview.placementSources?.length ? (
+                                        <p className="text-[11px] text-cyan-700">
+                                            Sources: {googleTargetingPreview.placementSources.join(' + ')}
+                                        </p>
+                                    ) : null}
+                                </div>
+                                <p className="text-sm text-cyan-950">{googleTargetingPreview.summary}</p>
+                                <p className="text-xs text-cyan-800">{googleTargetingPreview.rationale}</p>
+                                {googleTargetingPreview.seedKeywords?.length ? (
+                                    <p className="text-xs text-cyan-800">
+                                        Seed keywords: {googleTargetingPreview.seedKeywords.join(', ')}
+                                    </p>
+                                ) : null}
+                                {googleTargetingPreview.keywords?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-cyan-700">Keywords</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {googleTargetingPreview.keywords.map((keyword) => (
+                                                <span key={keyword} className="rounded-full border border-cyan-300 bg-white px-2.5 py-1 text-xs text-cyan-950">
+                                                    {keyword}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {googleTargetingPreview.placements?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-cyan-700">Placements</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {googleTargetingPreview.placements.map((placement) => (
+                                                <span key={placement} className="rounded-full border border-cyan-300 bg-white px-2.5 py-1 text-xs text-cyan-950">
+                                                    {placement}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-cyan-800">No placements were derived. That is the upstream signal gap to fix.</p>
+                                )}
+                                {googleTargetingPreview.negativeKeywords?.length ? (
+                                    <p className="text-xs text-cyan-800">
+                                        Negative keywords: {googleTargetingPreview.negativeKeywords.join(', ')}
+                                    </p>
+                                ) : null}
+                            </div>
+                        ) : null}
                         {plannedPosts.length > 0 ? (
                             <div className="grid gap-2 border border-stone-200 bg-stone-50 p-3">
                                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Saved Distribution Schedule</p>
@@ -451,6 +636,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                     </>
                 )}
             </CardContent>
-        </Card>
+            </Card>
+        </TooltipProvider>
     );
 }

@@ -43,12 +43,14 @@ export default async function CampaignLandingPreviewPage(
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-slate-100">
-            <div className="sticky top-0 z-50 w-full">
+            <div className="relative z-20 w-full">
                 <div className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm md:px-6">
                     <div className="mx-auto w-full max-w-7xl">
                         <ReviewControls slug={slug} title={result.landing.title} state={result.landing.state} />
                     </div>
                 </div>
+            </div>
+            <div className="sticky top-0 z-30 w-full">
                 <FlavorAuditionToolbar
                     slug={slug}
                     persistedFlavor={persistedFlavor}

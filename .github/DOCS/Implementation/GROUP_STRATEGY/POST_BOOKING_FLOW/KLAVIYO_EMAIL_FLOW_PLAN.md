@@ -4,6 +4,8 @@
 
 This plan defines the complete Klaviyo email architecture for Shadow Group campaigns, replacing the basic starter emails with polished, campaign-personalized flows from first signup through post-cruise rebooking.
 
+For copy-ready template drafts across the 15 lifecycle emails, see [KLAVIYO_TEMPLATE_COPY_DECK.md](./KLAVIYO_TEMPLATE_COPY_DECK.md).
+
 ---
 
 ## 1. Current State

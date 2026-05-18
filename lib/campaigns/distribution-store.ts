@@ -134,6 +134,35 @@ export async function updateScheduledPostStatus(
     await saveDistributionSchedule(nextSchedule);
 }
 
+export async function resetScheduledPostStatus(
+    slug: string,
+    postId: string,
+): Promise<void> {
+    const schedule = await getDistributionSchedule(slug);
+    if (!schedule) {
+        throw new Error(`Distribution schedule not found for campaign ${slug}`);
+    }
+
+    const nextSchedule: DistributionSchedule = {
+        ...schedule,
+        posts: schedule.posts.map((post) => {
+            if (post.postId !== postId) {
+                return post;
+            }
+
+            const { externalPostId: _externalPostId, externalReviewUrl: _externalReviewUrl, providerDraftType: _providerDraftType, ...rest } = post;
+
+            return {
+                ...rest,
+                status: 'scheduled',
+                notes: [],
+            };
+        }),
+    };
+
+    await saveDistributionSchedule(nextSchedule);
+}
+
 export async function updateCampaignDistributionStatus(
     slug: string,
     status: 'not_started' | 'scheduled' | 'active' | 'halted',

@@ -4,8 +4,10 @@ import { loadEnvConfig } from '@next/env';
 
 import * as matcherModule from '../lib/campaigns/cb-inventory-matcher';
 import {
+    scanAllCampaigns,
     scanUnmatchedCampaigns,
     getCampaignBlueprint,
+    upsertCampaignItineraryBackfill,
     upsertCampaignPricingMatch,
 } from '../lib/campaigns/campaign-store';
 import type { CbGroupInventoryItem } from '../lib/campaigns/cb-inventory-types';
@@ -29,7 +31,14 @@ type CachedDealsFile = {
 
 type ParsedArgs = {
     apply: boolean;
+    all: boolean;
     slugs: string[];
+};
+
+type BackfillResult = {
+    odysseusItinerarySummary?: string;
+    odysseusPortsOfCall?: string;
+    matchedShipName?: string;
 };
 
 const matchGroupInventoryToCampaign = matcherModule.matchGroupInventoryToCampaign;
@@ -37,6 +46,7 @@ const matchGroupInventoryToCampaign = matcherModule.matchGroupInventoryToCampaig
 function parseArgs(argv: string[]): ParsedArgs {
     const slugs: string[] = [];
     let apply = false;
+    let all = false;
 
     for (let index = 0; index < argv.length; index += 1) {
         const value = argv[index];
@@ -45,6 +55,10 @@ function parseArgs(argv: string[]): ParsedArgs {
         }
         if (value === '--apply') {
             apply = true;
+            continue;
+        }
+        if (value === '--all') {
+            all = true;
             continue;
         }
         if (value === '--slug') {
@@ -56,7 +70,7 @@ function parseArgs(argv: string[]): ParsedArgs {
         }
     }
 
-    return { apply, slugs };
+    return { apply, all, slugs };
 }
 
 function parseNumericValue(rawValue?: string): number {
@@ -72,6 +86,36 @@ function extractDeparturePort(rawValue?: string): string | undefined {
 function extractNights(itinerary?: string): string | undefined {
     const match = itinerary?.match(/(\d+)\s+night/i);
     return match ? match[1] : undefined;
+}
+
+function findItineraryBackfill(
+    campaign: Campaign,
+    inventory: CbGroupInventoryItem[],
+): BackfillResult | null {
+    const candidateShipName = (campaign.matchedShipName ?? campaign.shipTarget ?? campaign.name).trim().toLowerCase();
+    const candidateDestination = (campaign.targetDestination ?? '').trim().toLowerCase();
+
+    const exactShipItems = inventory.filter(
+        (item) => item.shipName.trim().toLowerCase() === candidateShipName,
+    );
+
+    if (exactShipItems.length === 0) {
+        return null;
+    }
+
+    const preferredItem =
+        exactShipItems.find((item) => candidateDestination && item.itinerary.toLowerCase().includes(candidateDestination))
+        ?? exactShipItems[0];
+
+    const itinerarySummary = preferredItem.itinerary.trim();
+    if (!itinerarySummary) {
+        return null;
+    }
+
+    return {
+        matchedShipName: preferredItem.shipName,
+        odysseusItinerarySummary: itinerarySummary,
+    };
 }
 
 function extractActualSailDate(rawValue?: string): string {
@@ -122,7 +166,10 @@ function loadCachedInventory(): CbGroupInventoryItem[] {
         .filter((item): item is CbGroupInventoryItem => item !== null);
 }
 
-async function resolveCampaigns(targetSlugs: string[]): Promise<Campaign[]> {
+async function resolveCampaigns(targetSlugs: string[], includeAll: boolean): Promise<Campaign[]> {
+    if (includeAll) {
+        return scanAllCampaigns();
+    }
     if (targetSlugs.length === 0) {
         return scanUnmatchedCampaigns();
     }
@@ -139,23 +186,47 @@ async function resolveCampaigns(targetSlugs: string[]): Promise<Campaign[]> {
 async function main(): Promise<void> {
     const args = parseArgs(process.argv.slice(2));
     const inventory = loadCachedInventory();
-    const campaigns = await resolveCampaigns(args.slugs);
+    const campaigns = await resolveCampaigns(args.slugs, args.all);
 
     console.log('\n--- Phase B From Cache ---\n');
     console.log(`[cache-phase-b] Loaded ${inventory.length} cached inventory items.`);
     console.log(`[cache-phase-b] Processing ${campaigns.length} campaign(s).`);
+    console.log(`[cache-phase-b] Scope: ${args.all ? 'all campaigns' : args.slugs.length > 0 ? 'explicit slugs' : 'unmatched campaigns only'}`);
     console.log(`[cache-phase-b] Mode: ${args.apply ? 'apply' : 'dry-run'}\n`);
 
-    const results: Array<{ slug: string; status: 'MATCHED' | 'UNMATCHED'; detail: string }> = [];
+    const results: Array<{ slug: string; status: 'MATCHED' | 'BACKFILLED' | 'UNMATCHED'; detail: string }> = [];
 
     for (const campaign of campaigns) {
         const match = matchGroupInventoryToCampaign(campaign, inventory);
 
         if (!match) {
+            const itineraryBackfill = findItineraryBackfill(campaign, inventory);
+
+            if (args.apply && itineraryBackfill) {
+                const existingItinerary = (campaign.odysseusItinerarySummary ?? '').trim();
+                if (existingItinerary) {
+                    results.push({
+                        slug: campaign.id,
+                        status: 'BACKFILLED',
+                        detail: `Already had itinerary backfill: ${existingItinerary}`,
+                    });
+                    continue;
+                }
+                await upsertCampaignItineraryBackfill(campaign.id, itineraryBackfill);
+                results.push({
+                    slug: campaign.id,
+                    status: 'BACKFILLED',
+                    detail: `${itineraryBackfill.matchedShipName} | itinerary ${itineraryBackfill.odysseusItinerarySummary}`,
+                });
+                continue;
+            }
+
             results.push({
                 slug: campaign.id,
                 status: 'UNMATCHED',
-                detail: 'No qualifying cached CB group found',
+                detail: itineraryBackfill
+                    ? 'Cached itinerary available, but apply mode was not enabled'
+                    : 'No qualifying cached CB group found',
             });
             continue;
         }
@@ -178,7 +249,11 @@ async function main(): Promise<void> {
     }
 
     const matchedCount = results.filter((result) => result.status === 'MATCHED').length;
+    const backfilledCount = results.filter((result) => result.status === 'BACKFILLED').length;
     console.log(`\n[cache-phase-b] ${matchedCount}/${results.length} campaign(s) matched.`);
+    if (backfilledCount > 0) {
+        console.log(`[cache-phase-b] ${backfilledCount}/${results.length} campaign(s) itinerary-backfilled.`);
+    }
 }
 
 main().catch((error: unknown) => {

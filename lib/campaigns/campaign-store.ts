@@ -216,6 +216,8 @@ export async function upsertCampaignPricingMatch(
             'matchedSailDate = :matchedSailDate',
             'matchedDeparturePort = :matchedDeparturePort',
             'matchedNights = :matchedNights',
+            'odysseusItinerarySummary = :odysseusItinerarySummary',
+            'odysseusPortsOfCall = :odysseusPortsOfCall',
             'updatedAt = :now',
         ].join(', ') + retailLinkExpr + healthExpr,
         ExpressionAttributeValues: {
@@ -229,6 +231,8 @@ export async function upsertCampaignPricingMatch(
             ':matchedSailDate': match.matchedSailDate,
             ':matchedDeparturePort': match.matchedDeparturePort ?? '',
             ':matchedNights': match.matchedNights ?? '',
+            ':odysseusItinerarySummary': match.odysseusItinerarySummary ?? '',
+            ':odysseusPortsOfCall': match.odysseusPortsOfCall ?? '',
             ':now': new Date().toISOString(),
             ...(match.odysseusRetailBookingLink ? { ':retailLink': match.odysseusRetailBookingLink } : {}),
             ...(healthPayload ? {
@@ -245,6 +249,38 @@ export async function upsertCampaignPricingMatch(
         console.log(`[campaign-store] ✅ CB match written for campaign "${slug}"`);
     } catch (error) {
         console.error(`[campaign-store] Failed to write CB match for ${slug}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Persists itinerary-only Odysseus fields without touching pricing-match state.
+ * Used when we can recover route text from cached inventory, but the sailing is not
+ * eligible for a fresh CB pricing match under the current launch-window policy.
+ */
+export async function upsertCampaignItineraryBackfill(
+    slug: string,
+    itinerary: {
+        odysseusItinerarySummary?: string;
+        odysseusPortsOfCall?: string;
+    },
+): Promise<void> {
+    const params = {
+        TableName: TABLE_NAME,
+        Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
+        UpdateExpression: 'SET odysseusItinerarySummary = :odysseusItinerarySummary, odysseusPortsOfCall = :odysseusPortsOfCall, updatedAt = :now',
+        ExpressionAttributeValues: {
+            ':odysseusItinerarySummary': itinerary.odysseusItinerarySummary ?? '',
+            ':odysseusPortsOfCall': itinerary.odysseusPortsOfCall ?? '',
+            ':now': new Date().toISOString(),
+        },
+    };
+
+    try {
+        await chatDynamoDocumentClient.send(new UpdateCommand(params));
+        console.log(`[campaign-store] ✅ Itinerary backfill written for campaign "${slug}"`);
+    } catch (error) {
+        console.error(`[campaign-store] Failed to write itinerary backfill for ${slug}:`, error);
         throw error;
     }
 }
@@ -360,7 +396,7 @@ export async function markCampaignUnmatched(slug: string): Promise<void> {
         Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
         UpdateExpression: [
             'SET pricingStatus = :pricingStatus, updatedAt = :now',
-            'REMOVE cbagenttoolsGroupId, cbagenttoolsBookingLink, cbPriceAdvantage, priceSource, matchedShipName, matchedSailDate, matchedDeparturePort, matchedNights',
+            'REMOVE cbagenttoolsGroupId, cbagenttoolsBookingLink, cbPriceAdvantage, priceSource, matchedShipName, matchedSailDate, matchedDeparturePort, matchedNights, odysseusItinerarySummary, odysseusPortsOfCall',
         ].join(' '),
         ExpressionAttributeValues: {
             ':pricingStatus': 'UNMATCHED' as const,
