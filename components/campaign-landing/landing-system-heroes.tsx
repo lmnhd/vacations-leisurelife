@@ -38,6 +38,7 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
     const { before, italic, after } = splitItalicHeadline(landing.heroSlogan, landing.designSystem.italicWord);
     const trustImage = getImage(landing.trustImages, 0) ?? landing.heroImage;
     const accent = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
 
     return (
         <section className="relative overflow-hidden border-b border-white/10 bg-[#08090d]">
@@ -45,18 +46,22 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
                 className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full opacity-25 blur-3xl"
                 style={{ backgroundColor: accent }}
             />
+            <div
+                className="pointer-events-none absolute -left-40 top-40 h-[22rem] w-[22rem] rounded-full opacity-15 blur-3xl"
+                style={{ backgroundColor: palette.secondary }}
+            />
             <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 pb-16 pt-12 md:px-6 lg:grid-cols-[1.35fr_0.65fr] lg:gap-16 lg:px-8 lg:pt-20">
                 <div className="flex flex-col justify-between gap-10">
                     <div>
                         <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-white/45">
                             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
-                            <span>{landing.designSystem.issueLabel}</span>
+                            <span style={{ color: palette.primary }}>{landing.designSystem.issueLabel}</span>
                             <span className="text-white/20">/</span>
                             <span>{landing.stateLabel}</span>
                         </div>
                         <h1 className="mt-7 text-[3.25rem] font-black leading-[0.92] tracking-tight text-white md:text-[5.5rem] lg:text-[6.25rem]">
                             {before}
-                            <span className="font-serif italic" style={{ color: accent }}>{italic}</span>
+                            <span className="font-serif italic" style={{ color: palette.secondary }}>{italic}</span>
                             {after}
                         </h1>
                         <p className="mt-7 max-w-xl text-base leading-8 text-white/70 md:text-lg">{landing.subSlogan}</p>
@@ -83,11 +88,11 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
                 </div>
 
                 <aside className="flex flex-col gap-5">
-                    <div className="border border-white/10 bg-white/[0.03] p-5">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-white/45">VOYAGE BRIEF</p>
+                    <div className="border border-white/10 bg-white/[0.03] p-5" style={{ borderTopColor: palette.primary, borderTopWidth: 2 }}>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.32em]" style={{ color: palette.primary }}>VOYAGE BRIEF</p>
                         <p className="mt-3 text-sm leading-7 text-white/75">{landing.elevatorPitch}</p>
                     </div>
-                    <div className="border-l-2 pl-5" style={{ borderColor: accent }}>
+                    <div className="border-l-2 pl-5" style={{ borderColor: palette.secondary }}>
                         <p className="font-serif text-xl italic leading-8 text-white/85">&ldquo;{landing.designSystem.quote}&rdquo;</p>
                         <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.28em] text-white/40">— {landing.designSystem.quoteCite}</p>
                     </div>
@@ -101,12 +106,16 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
 
             <div className="border-t border-white/10 bg-black/30">
                 <div className="mx-auto grid w-full max-w-7xl grid-cols-2 px-4 md:grid-cols-4 md:px-6 lg:px-8">
-                    {landing.facts.slice(0, 4).map((fact, i) => (
-                        <div key={fact.label} className={`px-2 py-5 ${i > 0 ? 'border-l border-white/10' : ''}`}>
-                            <p className="font-mono text-[9px] uppercase tracking-[0.32em] text-white/40">{fact.label}</p>
-                            <p className="mt-2 text-base font-bold text-white">{fact.value}</p>
-                        </div>
-                    ))}
+                    {landing.facts.slice(0, 4).map((fact, i) => {
+                        // Alternate primary/secondary so each fact column carries its own fleck.
+                        const labelColor = i % 2 === 0 ? palette.primary : palette.secondary;
+                        return (
+                            <div key={fact.label} className={`px-2 py-5 ${i > 0 ? 'border-l border-white/10' : ''}`}>
+                                <p className="font-mono text-[9px] uppercase tracking-[0.32em]" style={{ color: labelColor }}>{fact.label}</p>
+                                <p className="mt-2 text-base font-bold text-white">{fact.value}</p>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </section>
@@ -120,6 +129,7 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
 export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps) {
     const heroImage = landing.heroImage;
     const accent = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
     const blurbs = [
         landing.designSystem.sectionLabels[0],
         landing.designSystem.sectionLabels[1],
@@ -153,7 +163,7 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                         </div>
                         <span
                             className={`${alfa_slab_one.className} absolute -left-2 top-6 -rotate-90 origin-top-left text-[10px] uppercase tracking-[0.4em]`}
-                            style={{ color: accent }}
+                            style={{ color: palette.primary }}
                         >
                             FEATURE — {landing.designSystem.sectionLabels[0]}
                         </span>
@@ -161,9 +171,9 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
 
                     <div className="flex flex-col gap-7">
                         <div>
-                            <p className="font-mono text-[10px] uppercase tracking-[0.32em]" style={{ color: accent }}>The Cover Story</p>
+                            <p className="font-mono text-[10px] uppercase tracking-[0.32em]" style={{ color: palette.primary }}>The Cover Story</p>
                             <h2 className="mt-3 font-serif text-4xl leading-[1.05] md:text-5xl">
-                                <span className="italic">{landing.designSystem.italicWord}</span>{' '}
+                                <span className="italic" style={{ color: palette.secondary }}>{landing.designSystem.italicWord}</span>{' '}
                                 <span>— {landing.heroSlogan.replace(landing.designSystem.italicWord, '').trim()}</span>
                             </h2>
                             <p className="mt-5 max-w-xl text-base leading-8 text-stone-700">{landing.subSlogan}</p>
@@ -172,14 +182,17 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                         <div className="border-y border-stone-400/50 py-5">
                             <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-stone-500">Inside this issue</p>
                             <ul className="mt-4 grid gap-3">
-                                {blurbs.map((blurb, i) => (
-                                    <li key={blurb} className="flex items-baseline gap-4">
-                                        <span className={`${alfa_slab_one.className} text-2xl`} style={{ color: accent }}>
-                                            {String(i + 1).padStart(2, '0')}
-                                        </span>
-                                        <span className="font-serif text-lg leading-7">{blurb}</span>
-                                    </li>
-                                ))}
+                                {blurbs.map((blurb, i) => {
+                                    const digitColor = i % 2 === 0 ? palette.primary : palette.secondary;
+                                    return (
+                                        <li key={blurb} className="flex items-baseline gap-4">
+                                            <span className={`${alfa_slab_one.className} text-2xl`} style={{ color: digitColor }}>
+                                                {String(i + 1).padStart(2, '0')}
+                                            </span>
+                                            <span className="font-serif text-lg leading-7">{blurb}</span>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
 
@@ -237,6 +250,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
         getImage(landing.galleryImages, 1) ??
         getImage(landing.trustImages, 0);
     const accent = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
 
     return (
         <section className="relative overflow-hidden bg-[#f6e4bf] py-12 text-amber-950 md:py-16">
@@ -265,10 +279,10 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         {/* Postage stamp */}
                         <div className="absolute -right-3 -top-3 rotate-[6deg] border-2 border-amber-900 bg-[#fff8e8] p-2" style={{ boxShadow: '0 0 0 4px #fff8e8, 0 0 0 5px #78491880' }}>
                             <div className="h-20 w-16 border border-dashed border-amber-900/50 px-1 py-2 text-center">
-                                <p className={`${alfa_slab_one.className} text-[8px] uppercase leading-tight`} style={{ color: accent }}>
+                                <p className={`${alfa_slab_one.className} text-[8px] uppercase leading-tight`} style={{ color: palette.primary }}>
                                     {landing.designSystem.issueLabel}
                                 </p>
-                                <p className="mt-1 font-serif text-[9px] italic leading-tight text-amber-950">{landing.designSystem.italicWord}</p>
+                                <p className="mt-1 font-serif text-[9px] italic leading-tight" style={{ color: palette.secondary }}>{landing.designSystem.italicWord}</p>
                                 <p className={`${alfa_slab_one.className} mt-1 text-[10px]`}>$1</p>
                             </div>
                         </div>
@@ -372,6 +386,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
 
 export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
     const accent = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
     const polaroids = [
         landing.heroImage,
         getImage(landing.galleryImages, 0),
@@ -459,7 +474,7 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                             {/* marker scribble */}
                             <p
                                 className="mt-3 inline-block -rotate-2 font-serif text-2xl italic"
-                                style={{ color: accent, textDecoration: `underline wavy ${accent}` }}
+                                style={{ color: palette.primary, textDecoration: `underline wavy ${palette.secondary}` }}
                             >
                                 {landing.designSystem.italicWord}!!
                             </p>
@@ -472,15 +487,18 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                                 <p className={`${orbitron.className} font-black uppercase tracking-widest text-[#fff9e8]`}>RUN OF SHOW</p>
                             </div>
                             <ul className="divide-y-2 divide-dashed divide-zinc-950/30">
-                                {landing.facts.slice(0, 4).map((fact, i) => (
-                                    <li key={fact.label} className="flex items-baseline gap-3 px-4 py-2.5">
-                                        <span className={`${orbitron.className} text-sm font-black`} style={{ color: accent }}>
-                                            {String(i + 1).padStart(2, '0')}.
-                                        </span>
-                                        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">{fact.label}</span>
-                                        <span className="ml-auto text-sm font-bold text-zinc-950">{fact.value}</span>
-                                    </li>
-                                ))}
+                                {landing.facts.slice(0, 4).map((fact, i) => {
+                                    const digitColor = i % 2 === 0 ? palette.primary : palette.secondary;
+                                    return (
+                                        <li key={fact.label} className="flex items-baseline gap-3 px-4 py-2.5">
+                                            <span className={`${orbitron.className} text-sm font-black`} style={{ color: digitColor }}>
+                                                {String(i + 1).padStart(2, '0')}.
+                                            </span>
+                                            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">{fact.label}</span>
+                                            <span className="ml-auto text-sm font-bold text-zinc-950">{fact.value}</span>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
 

@@ -8,8 +8,6 @@ type Stage =
   | "nurture_day3"
   | "nurture_day7"
   | "threshold_met"
-  | "manifest_requested"
-  | "manifest_reminder"
   | "booking_link_ready"
   | "campaign_expired"
   | "booking_confirmed"
@@ -33,11 +31,9 @@ interface StageDef {
 
 const STAGES: StageDef[] = [
   { id: "waitlist_confirmation", label: "Waitlist Confirmation", metric: "LLL Waitlist Confirmation", description: "Immediate confirmation on waitlist signup.", phase: 1, broadcast: false },
-  { id: "nurture_day3", label: "Day 3 Niche Deepener", metric: "LLL Nurture Day 3", description: "3 days post-signup, theme/community deepener.", phase: 1, broadcast: false },
-  { id: "nurture_day7", label: "Day 7 Momentum Check", metric: "LLL Nurture Day 7", description: "7 days post-signup, momentum + social proof.", phase: 1, broadcast: false },
+  { id: "nurture_day3", label: "Day 3 Niche Deepener", metric: "LLL Nurture Day 3", description: "Early progress check once the campaign has real activity.", phase: 1, broadcast: false },
+  { id: "nurture_day7", label: "Day 7 Momentum Check", metric: "LLL Nurture Day 7", description: "Milestone check that now waits for 4 sign-ups before sending.", phase: 1, broadcast: false },
   { id: "threshold_met", label: "Threshold Met", metric: "LLL Threshold Met", description: "Auto-fires when campaign hits threshold. Broadcast.", phase: 2, broadcast: true },
-  { id: "manifest_requested", label: "Manifest Requested", metric: "LLL Manifest Requested", description: "Operator-triggered when manifest collection opens.", phase: 2, broadcast: true },
-  { id: "manifest_reminder", label: "Manifest Reminder", metric: "LLL Manifest Reminder", description: "Operator-triggered. Defaults to PENDING-manifest leads only.", phase: 2, broadcast: true },
   { id: "booking_link_ready", label: "Booking Link Ready", metric: "LLL Booking Link Ready", description: "Operator-triggered once CB/Odysseus link is live.", phase: 2, broadcast: true },
   { id: "campaign_expired", label: "Campaign Expired", metric: "LLL Campaign Expired", description: "Auto-fires on EXPIRED status transition.", phase: 2, broadcast: true },
   { id: "booking_confirmed", label: "Booking Confirmed", metric: "LLL Booking Confirmed", description: "Auto-fires from /tests/manual-booking-entry on the first reconciliation.", phase: 3, broadcast: false },
@@ -87,16 +83,29 @@ export default function KlaviyoEmailsTestPage() {
   const [email, setEmail] = useState("");
   const [stage, setStage] = useState<Stage>("waitlist_confirmation");
 
-  // Phase 2 overrides
-  const [manifestDeadline, setManifestDeadline] = useState("");
-  const [manifestUrl, setManifestUrl] = useState("");
-  const [adjacentCampaignsUrl, setAdjacentCampaignsUrl] = useState("");
+  // Phase 2 overrides — defaults are realistic so test sends don't render blank
+  // variables in Klaviyo. Operators can still override per-send.
+  const [adjacentCampaignsUrl, setAdjacentCampaignsUrl] = useState("https://leisurelifeinteractive.net/groups");
   const [operatorNote, setOperatorNote] = useState("");
-  const [onlyPendingManifest, setOnlyPendingManifest] = useState(true);
 
   // Phase 3 overrides
   const [scheduledOffset, setScheduledOffset] = useState("30");
-  const [packingListUrl, setPackingListUrl] = useState("");
+  const [packingListUrl, setPackingListUrl] = useState("https://leisurelifeinteractive.net/packing-list");
+
+  // Operator override: bypass the nurture_day3 / nurture_day7 progress gate
+  // when testing on campaigns that haven't hit the production sign-up threshold.
+  const [bypassNurtureGate, setBypassNurtureGate] = useState(false);
+
+  // Phase 5 overrides
+  const [p5DaysSinceDisembark, setP5DaysSinceDisembark] = useState("1");
+  const [p5PhotoShareUrl, setP5PhotoShareUrl] = useState("https://leisurelifeinteractive.net/share-photos");
+  const [p5SurveyUrl, setP5SurveyUrl] = useState("https://leisurelifeinteractive.net/survey");
+  const [p5TargetCampaignSlug, setP5TargetCampaignSlug] = useState("");
+  const [p5TargetCampaignName, setP5TargetCampaignName] = useState("Next Reset by Sea");
+  const [p5TargetLandingUrl, setP5TargetLandingUrl] = useState("https://leisurelifeinteractive.net/groups");
+  const [p5TargetSailDate, setP5TargetSailDate] = useState("2027-03-15");
+  const [p5TargetPitch, setP5TargetPitch] = useState("A second look at the wellness format, with new ports.");
+  const [p5AlumniWindow, setP5AlumniWindow] = useState("First 48 hours");
 
   // Phase 4 overrides (just enough for the preview surface — the full recorder lives on /tests/booking-changes)
   const [p4Severity, setP4Severity] = useState<"critical" | "high" | "medium" | "low" | "positive">("high");
@@ -127,7 +136,7 @@ export default function KlaviyoEmailsTestPage() {
   const isPhase2 = currentStageDef.phase === 2;
   const isPhase3 = currentStageDef.phase === 3;
   const isPhase4 = currentStageDef.phase === 4;
-  const isManifestStage = stage === "manifest_requested" || stage === "manifest_reminder";
+  const isPhase5 = currentStageDef.phase === 5;
   const isScheduledStage = stage === "travel_prep" || stage === "final_countdown";
 
   // Fetch leads when slug changes
@@ -163,8 +172,6 @@ export default function KlaviyoEmailsTestPage() {
   }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const buildPhase2Body = () => ({
-    manifestDeadline: manifestDeadline.trim() || undefined,
-    manifestUrl: manifestUrl.trim() || undefined,
     adjacentCampaignsUrl: adjacentCampaignsUrl.trim() || undefined,
     operatorNote: operatorNote.trim() || undefined,
   });
@@ -188,6 +195,23 @@ export default function KlaviyoEmailsTestPage() {
     operatorNote: operatorNote.trim() || undefined,
   });
 
+  const buildPhase5Body = () => {
+    const daysRaw = p5DaysSinceDisembark.trim();
+    const daysNum = daysRaw === "" ? undefined : Number(daysRaw);
+    return {
+      daysSinceDisembark: daysNum !== undefined && !Number.isNaN(daysNum) ? daysNum : undefined,
+      photoShareUrl: p5PhotoShareUrl.trim() || undefined,
+      surveyUrl: p5SurveyUrl.trim() || undefined,
+      targetCampaignSlug: p5TargetCampaignSlug.trim() || undefined,
+      targetCampaignName: p5TargetCampaignName.trim() || undefined,
+      targetLandingUrl: p5TargetLandingUrl.trim() || undefined,
+      targetSailDate: p5TargetSailDate.trim() || undefined,
+      targetPitch: p5TargetPitch.trim() || undefined,
+      alumniWindow: p5AlumniWindow.trim() || undefined,
+      operatorNote: operatorNote.trim() || undefined,
+    };
+  };
+
   const runPreview = useCallback(async () => {
     if (!slug || !email) {
       setPreviewError("Pick a campaign and a lead first.");
@@ -198,8 +222,6 @@ export default function KlaviyoEmailsTestPage() {
     setPreviewLoading(true);
     try {
       const qs = new URLSearchParams({ email, stage });
-      if (manifestDeadline.trim()) qs.set("manifestDeadline", manifestDeadline.trim());
-      if (manifestUrl.trim()) qs.set("manifestUrl", manifestUrl.trim());
       if (adjacentCampaignsUrl.trim()) qs.set("adjacentCampaignsUrl", adjacentCampaignsUrl.trim());
       if (operatorNote.trim()) qs.set("operatorNote", operatorNote.trim());
       if (isScheduledStage && scheduledOffset.trim()) qs.set("scheduledOffset", scheduledOffset.trim());
@@ -210,6 +232,17 @@ export default function KlaviyoEmailsTestPage() {
         if (p4PreviousValue.trim()) qs.set("previousValue", p4PreviousValue.trim());
         if (p4NewValue.trim()) qs.set("newValue", p4NewValue.trim());
         if (p4Summary.trim()) qs.set("changeSummary", p4Summary.trim());
+      }
+      if (isPhase5) {
+        if (p5DaysSinceDisembark.trim()) qs.set("daysSinceDisembark", p5DaysSinceDisembark.trim());
+        if (p5PhotoShareUrl.trim()) qs.set("photoShareUrl", p5PhotoShareUrl.trim());
+        if (p5SurveyUrl.trim()) qs.set("surveyUrl", p5SurveyUrl.trim());
+        if (p5TargetCampaignSlug.trim()) qs.set("targetCampaignSlug", p5TargetCampaignSlug.trim());
+        if (p5TargetCampaignName.trim()) qs.set("targetCampaignName", p5TargetCampaignName.trim());
+        if (p5TargetLandingUrl.trim()) qs.set("targetLandingUrl", p5TargetLandingUrl.trim());
+        if (p5TargetSailDate.trim()) qs.set("targetSailDate", p5TargetSailDate.trim());
+        if (p5TargetPitch.trim()) qs.set("targetPitch", p5TargetPitch.trim());
+        if (p5AlumniWindow.trim()) qs.set("alumniWindow", p5AlumniWindow.trim());
       }
       const res = await fetch(`/api/groups/campaign/${slug}/email-preview?${qs.toString()}`);
       const data = await res.json();
@@ -223,7 +256,7 @@ export default function KlaviyoEmailsTestPage() {
     } finally {
       setPreviewLoading(false);
     }
-  }, [slug, email, stage, manifestDeadline, manifestUrl, adjacentCampaignsUrl, operatorNote, scheduledOffset, packingListUrl, isScheduledStage, isPhase4, p4Severity, p4ChangeType, p4PreviousValue, p4NewValue, p4Summary]);
+  }, [slug, email, stage, adjacentCampaignsUrl, operatorNote, scheduledOffset, packingListUrl, isScheduledStage, isPhase4, p4Severity, p4ChangeType, p4PreviousValue, p4NewValue, p4Summary, isPhase5, p5DaysSinceDisembark, p5PhotoShareUrl, p5SurveyUrl, p5TargetCampaignSlug, p5TargetCampaignName, p5TargetLandingUrl, p5TargetSailDate, p5TargetPitch, p5AlumniWindow]);
 
   const dispatchSingle = useCallback(
     async (mode: "dry" | "live") => {
@@ -241,9 +274,11 @@ export default function KlaviyoEmailsTestPage() {
             email,
             stage,
             dryRun: mode === "dry",
+            bypassNurtureGate,
             phase2: isPhase2 ? buildPhase2Body() : undefined,
             phase3: isPhase3 ? buildPhase3Body() : undefined,
             phase4: isPhase4 ? buildPhase4Body() : undefined,
+            phase5: isPhase5 ? buildPhase5Body() : undefined,
           }),
         });
         const data = await res.json();
@@ -263,7 +298,7 @@ export default function KlaviyoEmailsTestPage() {
         setDispatchStatus({ kind: "error", message: err instanceof Error ? err.message : "Dispatch failed." });
       }
     },
-    [slug, email, stage, isPhase2, isPhase3, isPhase4, manifestDeadline, manifestUrl, adjacentCampaignsUrl, operatorNote, scheduledOffset, packingListUrl, p4Severity, p4ChangeType, p4PreviousValue, p4NewValue, p4Summary],
+    [slug, email, stage, isPhase2, isPhase3, isPhase4, isPhase5, bypassNurtureGate, adjacentCampaignsUrl, operatorNote, scheduledOffset, packingListUrl, p4Severity, p4ChangeType, p4PreviousValue, p4NewValue, p4Summary, p5DaysSinceDisembark, p5PhotoShareUrl, p5SurveyUrl, p5TargetCampaignSlug, p5TargetCampaignName, p5TargetLandingUrl, p5TargetSailDate, p5TargetPitch, p5AlumniWindow],
   );
 
   const runSchedulerNow = useCallback(async () => {
@@ -317,10 +352,6 @@ export default function KlaviyoEmailsTestPage() {
             stage,
             dryRun: mode === "dry",
             phase2: buildPhase2Body(),
-            filter:
-              stage === "manifest_reminder"
-                ? { onlyPendingManifest }
-                : undefined,
           }),
         });
         const data = await res.json();
@@ -338,7 +369,7 @@ export default function KlaviyoEmailsTestPage() {
         setDispatchStatus({ kind: "error", message: err instanceof Error ? err.message : "Broadcast failed." });
       }
     },
-    [slug, stage, onlyPendingManifest, manifestDeadline, manifestUrl, adjacentCampaignsUrl, operatorNote],
+    [slug, stage, adjacentCampaignsUrl, operatorNote],
   );
 
   return (
@@ -419,35 +450,13 @@ export default function KlaviyoEmailsTestPage() {
         {isPhase2 && (
           <div className="space-y-3 rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-violet-300">Phase 2 inputs</p>
-            {isManifestStage && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-400">Manifest deadline</label>
-                  <input
-                    value={manifestDeadline}
-                    onChange={(e) => setManifestDeadline(e.target.value)}
-                    placeholder="2026-06-15 or 'Friday, June 14'"
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-400">Manifest URL override (defaults to {`{landing}/manifest`})</label>
-                  <input
-                    value={manifestUrl}
-                    onChange={(e) => setManifestUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
-                  />
-                </div>
-              </>
-            )}
             {stage === "campaign_expired" && (
               <div className="space-y-1">
                 <label className="text-xs text-slate-400">Adjacent campaigns URL</label>
                 <input
                   value={adjacentCampaignsUrl}
                   onChange={(e) => setAdjacentCampaignsUrl(e.target.value)}
-                  placeholder="https://leisurelifeinteractive.com/groups"
+                  placeholder="https://leisurelifeinteractive.net/groups"
                   className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </div>
@@ -461,16 +470,6 @@ export default function KlaviyoEmailsTestPage() {
                 className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
               />
             </div>
-            {stage === "manifest_reminder" && (
-              <label className="flex items-center gap-2 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={onlyPendingManifest}
-                  onChange={(e) => setOnlyPendingManifest(e.target.checked)}
-                />
-                Broadcast: skip leads whose manifest is already submitted
-              </label>
-            )}
           </div>
         )}
 
@@ -597,6 +596,133 @@ export default function KlaviyoEmailsTestPage() {
               SMS for critical, and ack tracking), use <span className="font-mono">/tests/booking-changes</span>.
             </p>
           </div>
+        )}
+
+        {/* Phase 5 inputs (post-cruise + alumni rebooking). Defaults are realistic so
+            Klaviyo template variables aren't blank during test sends — operators can override per send. */}
+        {isPhase5 && (
+          <div className="space-y-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-300">Phase 5 inputs</p>
+            {(stage === "post_cruise_welcome_home" || stage === "post_cruise_survey") && (
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">
+                  Days since disembark (scheduler supplies this in production)
+                </label>
+                <input
+                  type="number"
+                  value={p5DaysSinceDisembark}
+                  onChange={(e) => setP5DaysSinceDisembark(e.target.value)}
+                  className="w-32 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </div>
+            )}
+            {stage === "post_cruise_welcome_home" && (
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Photo share URL (event.photo_share_url)</label>
+                <input
+                  value={p5PhotoShareUrl}
+                  onChange={(e) => setP5PhotoShareUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </div>
+            )}
+            {stage === "post_cruise_survey" && (
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Survey URL (event.survey_url)</label>
+                <input
+                  value={p5SurveyUrl}
+                  onChange={(e) => setP5SurveyUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </div>
+            )}
+            {stage === "alumni_rebooking_invite" && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Target campaign slug</label>
+                  <input
+                    value={p5TargetCampaignSlug}
+                    onChange={(e) => setP5TargetCampaignSlug(e.target.value)}
+                    placeholder="reset-by-sea-2027"
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Target campaign name (event.target_campaign_name)</label>
+                  <input
+                    value={p5TargetCampaignName}
+                    onChange={(e) => setP5TargetCampaignName(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs text-slate-400">Target landing URL (event.target_landing_url)</label>
+                  <input
+                    value={p5TargetLandingUrl}
+                    onChange={(e) => setP5TargetLandingUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Target sail date (event.target_sail_date)</label>
+                  <input
+                    value={p5TargetSailDate}
+                    onChange={(e) => setP5TargetSailDate(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-400">Alumni window (event.alumni_window)</label>
+                  <input
+                    value={p5AlumniWindow}
+                    onChange={(e) => setP5AlumniWindow(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs text-slate-400">Target pitch (event.target_pitch)</label>
+                  <input
+                    value={p5TargetPitch}
+                    onChange={(e) => setP5TargetPitch(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-xs text-slate-400">Operator note (optional)</label>
+              <textarea
+                value={operatorNote}
+                onChange={(e) => setOperatorNote(e.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Operator escape hatch for the nurture progress gate. Only shown for
+            the two stages it affects so it doesn't clutter the rest. */}
+        {(stage === "nurture_day3" || stage === "nurture_day7") && (
+          <label className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+            <input
+              type="checkbox"
+              checked={bypassNurtureGate}
+              onChange={(e) => setBypassNurtureGate(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-semibold uppercase tracking-widest">Bypass nurture gate</span>
+              <span className="block text-[11px] text-amber-200/80">
+                <span className="font-mono">nurture_day3</span> normally waits for 1 sign-up;{" "}
+                <span className="font-mono">nurture_day7</span> waits for 4. Check this to test the template on a
+                campaign that hasn't met the gate. A ledger row is still written so the override is auditable.
+              </span>
+            </span>
+          </label>
         )}
 
         <div className="flex flex-wrap gap-2 pt-2">

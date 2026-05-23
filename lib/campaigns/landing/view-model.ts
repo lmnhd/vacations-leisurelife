@@ -112,6 +112,18 @@ export interface LandingDesignSystem {
   sectionLabels: string[];
   italicWord: string;
   accentHex: string;
+  /**
+   * Brief-derived palette woven into the landing surfaces as additional highlights.
+   * On dark `system_4_modular` the colors are passed through verbatim. On the light
+   * cream systems (1/2/3) each color is contrast-clamped against the system surface
+   * so a pale brief color does not vanish on cream paper.
+   */
+  palette: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    textOnLight: string;
+  };
   headline: string;
   subhead: string;
   quote: string;
@@ -227,6 +239,12 @@ const FALLBACK_DESIGN_SYSTEM: Omit<LandingDesignSystem, "chat"> = {
   sectionLabels: ["The Sailing", "The People", "The Moment"],
   italicWord: "Sea",
   accentHex: "#ff5a3d",
+  palette: {
+    primary: "#ff5a3d",
+    secondary: "#2962FF",
+    accent: "#ff5a3d",
+    textOnLight: "#0f172a",
+  },
   headline: "A Real Cruise, Designed Around A Shared Mood",
   subhead: "A public campaign page for a themed group sailing.",
   quote: "This is a real cruise, but it feels designed for people like me.",
@@ -409,6 +427,7 @@ export function buildLandingDesignSystem(
       visualFlavor: activeFlavor,
       system: fallbackSystem,
       issueLabel: issueLabelForSystem(fallbackSystem),
+      palette: buildPalette(null, fallbackSystem),
       chat: {
         ...chatBase,
         eyebrow: "Status Desk",
@@ -431,6 +450,7 @@ export function buildLandingDesignSystem(
     sectionLabels: normalizeSectionLabels(tokens.sectionLabels),
     italicWord: tokens.italicWord,
     accentHex: tokens.accentHex,
+    palette: buildPalette(brief, system),
     headline: tokens.headline,
     subhead: tokens.subhead,
     quote: tokens.quote,
@@ -442,6 +462,105 @@ export function buildLandingDesignSystem(
       signedOutMessage:
         "Join updates to unlock the Tour Conductor. The shared history stays visible so new guests can catch the group energy before speaking.",
     },
+  };
+}
+
+// Surface color each landing system renders against. Used to clamp brief-derived
+// palette colors so a near-cream brief color does not vanish on cream paper.
+const SYSTEM_SURFACE: Record<VisualSystem, string> = {
+  system_1_editorial: "#f2ead8",
+  system_2_nostalgia: "#f6e4bf",
+  system_3_zine: "#f3ead5",
+  system_4_modular: "#08090d",
+};
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = hex.replace("#", "").trim();
+  if (m.length !== 3 && m.length !== 6) return null;
+  const expanded = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  const r = parseInt(expanded.slice(0, 2), 16);
+  const g = parseInt(expanded.slice(2, 4), 16);
+  const b = parseInt(expanded.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return null;
+  return [r, g, b];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
+}
+
+function relLuminance([r, g, b]: [number, number, number]): number {
+  const linear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+function contrastRatio(a: string, b: string): number {
+  const aRgb = hexToRgb(a);
+  const bRgb = hexToRgb(b);
+  if (!aRgb || !bRgb) return 21;
+  const l1 = relLuminance(aRgb);
+  const l2 = relLuminance(bRgb);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+// Blend `color` toward black (on light surfaces) or white (on dark surfaces)
+// until the contrast ratio against `against` meets `min`. Preserves hue.
+function clampForSurface(
+  color: string,
+  against: string,
+  min = 3.0,
+): string {
+  if (contrastRatio(color, against) >= min) return color;
+  const rgb = hexToRgb(color);
+  const surfaceRgb = hexToRgb(against);
+  if (!rgb || !surfaceRgb) return color;
+  const surfaceIsLight = relLuminance(surfaceRgb) > 0.5;
+  const [r, g, b] = rgb;
+  const blend = (t: number): [number, number, number] => (
+    surfaceIsLight
+      ? [r * (1 - t), g * (1 - t), b * (1 - t)]
+      : [r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t]
+  );
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    const [nr, ng, nb] = blend(mid);
+    if (contrastRatio(rgbToHex(nr, ng, nb), against) >= min) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+  const [nr, ng, nb] = blend(hi);
+  return rgbToHex(nr, ng, nb);
+}
+
+function buildPalette(
+  brief: CampaignAestheticBrief | null,
+  system: VisualSystem,
+): LandingDesignSystem["palette"] {
+  const surface = SYSTEM_SURFACE[system];
+  // Modular keeps brief colors raw; the dark surface accepts almost any hue.
+  // Cream systems get clamped so pale/near-cream picks remain visible.
+  const isDark = system === "system_4_modular";
+  const adjust = (raw: string, fallback: string) => {
+    const normalized = normalizeColorToken(raw, fallback);
+    return isDark ? normalized : clampForSurface(normalized, surface, 3.0);
+  };
+  return {
+    primary: adjust(brief?.visual.colorPalette.primary ?? "", "#ff5a3d"),
+    secondary: adjust(brief?.visual.colorPalette.secondary ?? "", "#2962FF"),
+    accent: adjust(brief?.visual.colorPalette.accent ?? "", "#ff5a3d"),
+    textOnLight: adjust(
+      brief?.visual.colorPalette.textOnLight ?? "",
+      "#0f172a",
+    ),
   };
 }
 

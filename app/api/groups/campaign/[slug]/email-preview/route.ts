@@ -30,20 +30,13 @@ import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 
 export const dynamic = 'force-dynamic';
 
-const StageSchema = z.enum([
-    'waitlist_confirmation',
-    'nurture_day3',
-    'nurture_day7',
-    'threshold_met',
-    'manifest_requested',
-    'manifest_reminder',
-    'booking_link_ready',
-    'campaign_expired',
-]);
+// Derive from ALL_IMPLEMENTED_STAGES so this gate cannot drift behind the
+// orchestrator when new phases ship. zod needs a non-empty tuple of literals.
+const StageSchema = z.enum(
+    ALL_IMPLEMENTED_STAGES as unknown as [EmailEventStage, ...EmailEventStage[]],
+);
 
 const Phase2Schema = z.object({
-    manifestDeadline: z.string().trim().min(1).optional(),
-    manifestUrl: z.string().url().optional(),
     adjacentCampaignsUrl: z.string().url().optional(),
     operatorNote: z.string().trim().max(500).optional(),
 }).optional();
@@ -68,13 +61,32 @@ const Phase4Schema = z.object({
     operatorNote: z.string().trim().max(500).optional(),
 }).optional();
 
+const Phase5Schema = z.object({
+    daysSinceDisembark: z.number().int().optional(),
+    scheduledOffset: z.number().int().optional(),
+    photoShareUrl: z.string().url().optional(),
+    surveyUrl: z.string().url().optional(),
+    targetCampaignSlug: z.string().trim().min(1).max(120).optional(),
+    targetCampaignName: z.string().trim().min(1).max(160).optional(),
+    targetLandingUrl: z.string().url().optional(),
+    targetSailDate: z.string().trim().min(1).max(120).optional(),
+    targetPitch: z.string().trim().min(1).max(240).optional(),
+    alumniWindow: z.string().trim().min(1).max(120).optional(),
+    operatorNote: z.string().trim().max(500).optional(),
+}).optional();
+
 const PostBodySchema = z.object({
     email: z.string().email(),
     stage: StageSchema,
     dryRun: z.boolean().optional().default(false),
+    // Operator-only escape hatch for the nurture_day3 / nurture_day7 progress
+    // gate. Surfaced in the test page as a checkbox. Production paths must not
+    // set this.
+    bypassNurtureGate: z.boolean().optional().default(false),
     phase2: Phase2Schema,
     phase3: Phase3Schema,
     phase4: Phase4Schema,
+    phase5: Phase5Schema,
 });
 
 export async function GET(
@@ -135,8 +147,6 @@ export async function GET(
     // Phase 2 + Phase 3 overrides accepted as query params so the preview UI
     // can round-trip without a POST body. Unknown keys are ignored.
     const phase2 = {
-        manifestDeadline: request.nextUrl.searchParams.get('manifestDeadline') || undefined,
-        manifestUrl: request.nextUrl.searchParams.get('manifestUrl') || undefined,
         adjacentCampaignsUrl: request.nextUrl.searchParams.get('adjacentCampaignsUrl') || undefined,
         operatorNote: request.nextUrl.searchParams.get('operatorNote') || undefined,
     };
@@ -162,13 +172,34 @@ export async function GET(
         supportContact: request.nextUrl.searchParams.get('supportContact') || undefined,
         operatorNote: request.nextUrl.searchParams.get('operatorNote') || undefined,
     };
+    const rawDaysSinceDisembark = request.nextUrl.searchParams.get('daysSinceDisembark');
+    const daysSinceDisembark = rawDaysSinceDisembark && !Number.isNaN(Number(rawDaysSinceDisembark))
+        ? Number(rawDaysSinceDisembark)
+        : undefined;
+    const rawPhase5Offset = request.nextUrl.searchParams.get('phase5ScheduledOffset');
+    const phase5ScheduledOffset = rawPhase5Offset && !Number.isNaN(Number(rawPhase5Offset))
+        ? Number(rawPhase5Offset)
+        : undefined;
+    const phase5 = {
+        daysSinceDisembark,
+        scheduledOffset: phase5ScheduledOffset,
+        photoShareUrl: request.nextUrl.searchParams.get('photoShareUrl') || undefined,
+        surveyUrl: request.nextUrl.searchParams.get('surveyUrl') || undefined,
+        targetCampaignSlug: request.nextUrl.searchParams.get('targetCampaignSlug') || undefined,
+        targetCampaignName: request.nextUrl.searchParams.get('targetCampaignName') || undefined,
+        targetLandingUrl: request.nextUrl.searchParams.get('targetLandingUrl') || undefined,
+        targetSailDate: request.nextUrl.searchParams.get('targetSailDate') || undefined,
+        targetPitch: request.nextUrl.searchParams.get('targetPitch') || undefined,
+        alumniWindow: request.nextUrl.searchParams.get('alumniWindow') || undefined,
+        operatorNote: request.nextUrl.searchParams.get('operatorNote') || undefined,
+    };
 
     try {
         const preview = await buildEmailEventPreview(
             slug,
             email,
             stageParse.data as EmailEventStage,
-            { phase2, phase3, phase4 },
+            { phase2, phase3, phase4, phase5 },
         );
         return NextResponse.json({ success: true, preview });
     } catch (err) {
@@ -198,9 +229,11 @@ export async function POST(
     try {
         await dispatchEmailEvent(slug, parsed.data.email, parsed.data.stage, {
             dryRun: parsed.data.dryRun,
+            bypassNurtureGate: parsed.data.bypassNurtureGate,
             phase2: parsed.data.phase2,
             phase3: parsed.data.phase3,
             phase4: parsed.data.phase4,
+            phase5: parsed.data.phase5,
         });
         return NextResponse.json({
             success: true,

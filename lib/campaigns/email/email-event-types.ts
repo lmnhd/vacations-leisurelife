@@ -100,6 +100,19 @@ export const ALL_IMPLEMENTED_STAGES: readonly EmailEventStage[] = [
     ...PHASE_5_STAGES,
 ] as const;
 
+/**
+ * Stages that are fanned out to every (filtered) lead on a campaign via the
+ * operator broadcast endpoint. Single-send-only stages (nurture, booking_confirmed,
+ * travel_prep, scheduled and post-cruise series, etc.) are excluded.
+ */
+export const BROADCAST_STAGES: readonly EmailEventStage[] = [
+    'threshold_met',
+    'booking_link_ready',
+    'campaign_expired',
+    'final_itinerary_published',
+    'tour_conductor_announced',
+] as const;
+
 /** Stable Klaviyo metric names. Editing these breaks the linked Klaviyo flows. */
 export const KLAVIYO_METRIC_NAMES: Record<EmailEventStage, string> = {
     waitlist_confirmation: 'LLL Waitlist Confirmation',

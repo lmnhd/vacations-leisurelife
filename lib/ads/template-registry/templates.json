@@ -1,0 +1,107 @@
+{
+    "group_campaign": {
+        "travel_nostalgia": {
+            "story_reel": {
+                "templated_id": "b7e3e02a-aa6f-4c56-a95d-70ecf8c03f2e",
+                "templated_id_previous": null,
+                "dimensions": { "width": 1080, "height": 1920 },
+                "layout": {
+                    "description": "Vertical film strip collage: left stacked image strip, full-canvas atmospheric background, large hero image, oversized short theme headline on gray overlay, compact theme promise beneath, tiny sensory label near the lower overlay.",
+                    "slotDescriptors": [
+                        {
+                            "name": "microcopy",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "header",
+                            "maxChars": 22,
+                            "maxWords": 5,
+                            "maxLines": 1,
+                            "copyRole": "Tiny sensory caption.",
+                            "copyInstruction": "Use a 2-4 word theme-flavored label. No sentence. No logistics.",
+                            "disallow": ["date", "port", "ship", "route"]
+                        },
+                        {
+                            "name": "background-image",
+                            "type": "image",
+                            "visualOrder": 2,
+                            "zone": "hero",
+                            "copyRole": "Atmospheric canvas.",
+                            "copyInstruction": "Use broad mood or environment, not the same subject as hero_image.",
+                            "preferredAssetTypes": ["aesthetic_concept", "hero", "still"]
+                        },
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 3,
+                            "zone": "hero",
+                            "copyRole": "Primary human niche moment.",
+                            "copyInstruction": "Prioritize a person doing or preparing for the niche activity.",
+                            "preferredAssetTypes": ["hero", "scene_image", "still"]
+                        },
+                        {
+                            "name": "tile_image_1",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "tile_grid",
+                            "copyRole": "Niche action detail.",
+                            "copyInstruction": "Show the theme explicitly through a body, prop, ritual, or activity.",
+                            "preferredAssetTypes": ["scene_image", "still"]
+                        },
+                        {
+                            "name": "tile_image_2",
+                            "type": "image",
+                            "visualOrder": 5,
+                            "zone": "tile_grid",
+                            "copyRole": "Social or group cue.",
+                            "copyInstruction": "Show people sharing the theme lightly, not another solo deck view.",
+                            "preferredAssetTypes": ["scene_image", "hero", "still"]
+                        },
+                        {
+                            "name": "tile_image_3",
+                            "type": "image",
+                            "visualOrder": 6,
+                            "zone": "tile_grid",
+                            "copyRole": "Prop or texture close-up.",
+                            "copyInstruction": "Use a different visual scale from the hero: mat, journal, water, hands, breakfast, gear, or other theme cue.",
+                            "preferredAssetTypes": ["still", "aesthetic_concept", "scene_image"]
+                        },
+                        {
+                            "name": "tile_image_4",
+                            "type": "image",
+                            "visualOrder": 7,
+                            "zone": "tile_grid",
+                            "copyRole": "Cruise-native context.",
+                            "copyInstruction": "Show the vacation setting only after the niche is already visible elsewhere.",
+                            "preferredAssetTypes": ["ship_reference", "scene_image", "hero"]
+                        },
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 8,
+                            "zone": "overlay",
+                            "maxChars": 18,
+                            "maxWords": 3,
+                            "maxLines": 2,
+                            "copyRole": "Large red emotional hook.",
+                            "copyInstruction": "Use 1-2 punchy words if possible; 3 short words is the absolute maximum. Do not use dates, ports, ship names, route names, or sentence punctuation.",
+                            "disallow": ["date", "port", "ship", "route"]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 9,
+                            "zone": "overlay",
+                            "maxChars": 56,
+                            "maxWords": 10,
+                            "maxLines": 2,
+                            "copyRole": "Small supporting promise beneath the headline.",
+                            "copyInstruction": "Use one compact theme-led promise. No itinerary dump. Do not name the ship, cruise line, ports, or sail date.",
+                            "disallow": ["date", "port", "ship", "route"]
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "cb_deal": {}
+}

@@ -59,7 +59,8 @@ export async function POST(
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
+        const status = message.includes('gated until the campaign reaches at least') ? 409 : 500;
         console.error(`[Nurture] dispatch failed campaign=${slug} email=${email} stage=${stage}:`, err);
-        return NextResponse.json({ success: false, error: message }, { status: 500 });
+        return NextResponse.json({ success: false, error: message }, { status });
     }
 }

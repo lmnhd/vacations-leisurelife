@@ -47,6 +47,14 @@ export interface EmailEventOptions {
      */
     dryRun?: boolean;
     /**
+     * When true, skip the `nurture_day3` / `nurture_day7` progress gate so
+     * an operator can test the template on a campaign with fewer signups
+     * than the production gate requires. Off by default — production paths
+     * (scheduler, broadcast) must never pass this. Only the operator
+     * `/tests/klaviyo-emails` UI should set it.
+     */
+    bypassNurtureGate?: boolean;
+    /**
      * Phase 2 stage-specific extension data. Pass only when the firing stage
      * needs it (manifest_*, campaign_expired). Ignored for Phase 1 stages.
      */
@@ -143,6 +151,19 @@ function buildAttribution(campaignSlug: string): LeadAttribution {
     };
 }
 
+const NURTURE_PROGRESS_GATES: Partial<Record<'nurture_day3' | 'nurture_day7', number>> = {
+    nurture_day3: 1,
+    nurture_day7: 4,
+};
+
+function getNurtureProgressGateWarning(stage: EmailEventStage, totalEntries: number): string | null {
+    if (stage !== 'nurture_day3' && stage !== 'nurture_day7') return null;
+    const required = NURTURE_PROGRESS_GATES[stage];
+    if (!required) return null;
+    if (totalEntries >= required) return null;
+    return `[NurtureOrchestrator] ${stage} is gated until the campaign reaches at least ${required} sign-up${required === 1 ? '' : 's'}; current total is ${totalEntries}.`;
+}
+
 async function resolveContext(campaignSlug: string, email: string, includeLanding: boolean) {
     const [campaign, lead, summary] = await Promise.all([
         getCampaignBlueprint(campaignSlug),
@@ -232,6 +253,9 @@ export async function buildEmailEventPreview(
     if (!profile.booking_link_url) warnings.push('No booking_link_url — neither CB nor Odysseus link is set.');
     if (!profile.community_channel_url) warnings.push('No community_channel_url — populated at THRESHOLD_MET.');
 
+    const nurtureGateWarning = getNurtureProgressGateWarning(stage, summary.totalEntries);
+    if (nurtureGateWarning) warnings.push(nurtureGateWarning);
+
     // Phase 2 stage-specific warnings.
     if (stage === 'manifest_requested' || stage === 'manifest_reminder') {
         if (!phase2.manifestDeadline) warnings.push('No manifest_deadline — operator did not supply a deadline.');
@@ -309,6 +333,32 @@ export async function dispatchEmailEvent(
         if (opts.phase4.previousValue) baseMetadata.previousValue = opts.phase4.previousValue;
         if (opts.phase4.newValue) baseMetadata.newValue = opts.phase4.newValue;
         if (opts.phase4.summary) baseMetadata.changeSummary = opts.phase4.summary;
+    }
+
+    const nurtureGateWarning = getNurtureProgressGateWarning(stage, summary.totalEntries);
+    if (nurtureGateWarning && !opts.bypassNurtureGate) {
+        await appendLeadEvent({
+            campaignSlug,
+            email,
+            eventType: 'lead_error',
+            attribution,
+            notes: `Email send blocked: ${nurtureGateWarning}`,
+            metadata: { ...baseMetadata, error: nurtureGateWarning },
+        });
+        throw new Error(nurtureGateWarning);
+    }
+    // Bypass branch: record an audit ledger row so the override is visible in
+    // the lead's event history. Never silently skip — the row makes it obvious
+    // a test send went through despite the gate.
+    if (nurtureGateWarning && opts.bypassNurtureGate) {
+        await appendLeadEvent({
+            campaignSlug,
+            email,
+            eventType: 'nurture_queued',
+            attribution,
+            notes: `[bypassNurtureGate] ${nurtureGateWarning}`,
+            metadata: { ...baseMetadata, bypassedGate: 'true' },
+        });
     }
 
     if (opts.dryRun) {

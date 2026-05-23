@@ -1,0 +1,12 @@
+- I want to design (personally) a set of Canva templates that can be used by the orchestrator to generate the full set of media ads - replacing 'Designed Ads' with a more customized and predictable look.
+- The templates I design will have 3 to 5 'input' fields that the orchestrator can fill in with the appropriate copy and images to generate the final media ads. This 'Copy' will need to be clever and catchy per campaign!
+- I think we need to offload some of the 'Copy' decisions for ads to an independant process (AI) that can extract the most potent message and language from the Campaign brief and Dossier research for each templates that should provide at least 3 or 4 inputs for 'Catchy Lines' and image-placeholders to use in the ad templates that I have in mind. By offloading this process we can easily insert this phase into the workflow (replacing the current 'Designed Ads') without changing the upstream processes.
+- We should have a template for IG Square, FB/GOOGL, STORY/REELS, and Carousel for each campaign. Potentially more in the future.
+- This 'Canva' template process will also be used in a completely seperate workflow for promotiing Cruise Brothers 'Deals' rather than 'Groups' so this is more reason to 'Isolate' this process and make it more independant and flexible for use in multiple workflows.
+- I need assistance with researching the most applicable way to use Canva in this partly automated way, where I can create the template designs manually while implementing the correct 'input' variables that conform seamlessly with the media generation process we have currently in place. CanvaAI comes to mind, but I need solid research to guide my decision and direction. I am only certain that it can be done.
+
+
+
+Please help me with this research and with formulating a plan for the new system, and document everything in the following directory. 
+
+"C:\Users\cclem\Dropbox\Source\Projects-24\Leisure_Life_Interactive\.github\DOCS\Implementation\GROUP_STRATEGY\CAMPAIGN_MEDIA\PHASE_2_MEDIA_GENERATION\CANVA_TEMPLATE_BASED_ADS"

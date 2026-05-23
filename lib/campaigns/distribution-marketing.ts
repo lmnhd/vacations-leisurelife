@@ -135,7 +135,7 @@ function getCampaignLandingUrl(campaign: Campaign): string {
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     process.env.APP_URL?.trim() ||
-    "https://www.leisurelifeinteractive.com";
+    "https://leisurelifeinteractive.net";
 
   return `${configuredBaseUrl.replace(/\/$/, "")}/groups/${campaign.id}`;
 }

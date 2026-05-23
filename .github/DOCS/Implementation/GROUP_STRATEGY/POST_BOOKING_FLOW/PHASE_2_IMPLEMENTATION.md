@@ -12,10 +12,10 @@ Phase 2 adds the five pre-booking lifecycle events:
 
 | Stage (app) | Klaviyo metric | Visual mode | Trigger |
 |-------------|---------------|-------------|---------|
-| `threshold_met` | `LLL Threshold Met` | `celebration` | **Auto** — waitlist auto-promote + campaign PATCH (status → THRESHOLD_MET) |
+| `threshold_met` | `LLL Threshold Met` | `celebration` | **Auto** — waitlist auto-promote + campaign PATCH (status → THRESHOLD_MET); primary booking handoff once the booking path is verified |
 | `manifest_requested` | `LLL Manifest Requested` | `status_briefing` | **Operator** — broadcast endpoint |
 | `manifest_reminder` | `LLL Manifest Reminder` | `status_briefing` | **Operator** — broadcast endpoint, defaults to PENDING-manifest leads only |
-| `booking_link_ready` | `LLL Booking Link Ready` | `status_briefing` | **Operator** — broadcast endpoint, after CB/Odysseus link is live |
+| `booking_link_ready` | `LLL Booking Link Ready` | `status_briefing` | **Operator** — fallback-only broadcast endpoint if the threshold email could not safely include the booking link |
 | `campaign_expired` | `LLL Campaign Expired` | `field_note` | **Auto** — campaign PATCH (status → EXPIRED) |
 
 ### New / modified code
@@ -143,7 +143,9 @@ Per-lead failures do not block the rest of the broadcast — they accumulate in 
   2. Lead with the safe claim: `{{ event.threshold_met_claim }}` (do NOT replace with "your spot is secured" copy).
   3. What changes next — group block coordination, manifest collection coming up, expected timeline.
   4. Soft-CTA preview: manifest / booking path explained at a high level.
-- **Primary CTA:** "Open the campaign page" → `{{ person.landing_page_url }}`.
+- **Primary CTA:** "Open booking link" → `{{ event.booking_link_url }}`.
+
+**Relationship to `LLL Booking Link Ready`:** this is the normal booking handoff. Only use the fallback booking-link-ready email if this send had to be held back before the booking link was safe to include.
 
 ### `LLL Manifest Requested` (visual_mode `status_briefing`)
 
@@ -181,6 +183,8 @@ Per-lead failures do not block the rest of the broadcast — they accumulate in 
   4. Support contact for booking issues.
 - **Primary CTA:** "Open booking link" → `{{ event.booking_link_url }}`.
 
+**Relationship to `LLL Threshold Met`:** do not send both emails to the same guest unless the threshold send was intentionally held back.
+
 ### `LLL Campaign Expired` (visual_mode `field_note`)
 
 - **Subject A:** `This one won't sail as a group — but here's what's next`
@@ -190,7 +194,9 @@ Per-lead failures do not block the rest of the broadcast — they accumulate in 
   2. Honest close — sailing didn't reach threshold / became unavailable. Use `{{ event.operator_note }}` if present.
   3. What this means for the lead (no charges, no further action).
   4. Adjacent / similar campaigns block (template pulls a curated list, or links to `{{ event.adjacent_campaigns_url }}`).
-- **Primary CTA:** "Browse nearby sailings" → `{{ event.adjacent_campaigns_url }}` (falls back to `{{ person.landing_page_url }}` parent).
+- **Primary CTA:** "Browse nearby sailings" → `{{ event.adjacent_campaigns_url }}`.
+
+**Fallback rule:** if `{{ event.adjacent_campaigns_url }}` is not available yet, fall back to `{{ person.landing_page_url }}` so the guest still lands on the main Leisure Life page instead of a dead end.
 
 ---
 
@@ -198,7 +204,7 @@ Per-lead failures do not block the rest of the broadcast — they accumulate in 
 
 `/tests/klaviyo-emails` now shows all 8 stages with `P1` / `P2` phase badges. Selecting a Phase 2 stage reveals:
 
-- Manifest stages: `manifestDeadline`, `manifestUrl` (defaults to `${landing}/manifest`).
+- Manifest stages: `manifestDeadline`, `manifestUrl` (defaults to `${landing}/manifest`) for legacy-only setups.
 - `campaign_expired`: `adjacentCampaignsUrl`.
 - All Phase 2 stages: optional `operatorNote`.
 - `manifest_reminder`: a checkbox to scope the broadcast to PENDING manifests (defaults on).

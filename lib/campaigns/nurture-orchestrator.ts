@@ -85,7 +85,7 @@ async function sendTwilioThresholdSms(
         return;
     }
 
-    const smsBody = `Great news! The ${campaign.name} group cruise has hit its booking threshold — your spot is secured. Reply for booking details or visit leisurelifeinteractive.com.`;
+    const smsBody = `Great news! The ${campaign.name} group cruise has hit its booking threshold — your spot is secured. Reply for booking details or visit leisurelifeinteractive.net.`;
 
     try {
         const result = await sendSms({ to: lead.phoneNumber, body: smsBody });
@@ -169,9 +169,11 @@ export async function dispatchNurtureStage(
 ): Promise<void> {
     switch (stage) {
         case 'waitlist_confirmation':
-        case 'nurture_day3':
-        case 'nurture_day7':
             return dispatchEmailEvent(campaignSlug, email, stage, opts);
+        case 'nurture_day3':
+            return sendDay3Nurture(campaignSlug, email, opts);
+        case 'nurture_day7':
+            return sendDay7Nurture(campaignSlug, email, opts);
         case 'threshold_sms':
             return sendThresholdSms(campaignSlug, email, opts);
     }

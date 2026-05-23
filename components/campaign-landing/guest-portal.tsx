@@ -164,17 +164,19 @@ interface BleedSectionProps {
     children: ReactNode;
     alt?: boolean;
     accentHex: string;
+    /** Override the eyebrow color — used to weave in brief-palette flecks. Defaults to accentHex. */
+    eyebrowColor?: string;
     /** Cap content width inside the full-bleed shell. */
     contentMaxWidth?: 'narrow' | 'wide' | 'full';
 }
 
-function BleedSection({ theme, eyebrow, title, description, children, alt, accentHex, contentMaxWidth = 'wide' }: BleedSectionProps) {
+function BleedSection({ theme, eyebrow, title, description, children, alt, accentHex, eyebrowColor, contentMaxWidth = 'wide' }: BleedSectionProps) {
     const widthClass = contentMaxWidth === 'narrow' ? 'max-w-4xl' : contentMaxWidth === 'full' ? 'max-w-none' : 'max-w-7xl';
     return (
         <section className={`w-full ${alt ? theme.sectionAlt : ''} border-t ${theme.rule}`}>
             <div className={`mx-auto w-full ${widthClass} px-4 py-14 md:px-8 md:py-20`}>
                 <header className="max-w-2xl">
-                    <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>{eyebrow}</p>
+                    <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: eyebrowColor ?? accentHex }}>{eyebrow}</p>
                     <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{title}</h2>
                     {description && <p className={`mt-4 text-base leading-7 ${theme.softText}`}>{description}</p>}
                 </header>
@@ -207,10 +209,11 @@ function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: S
 
 function StatusStrip({ landing, theme, accentHex }: { landing: CampaignLandingViewModel; theme: SystemTheme; accentHex: string }) {
     const pct = Math.max(0, Math.min(100, landing.threshold.percentOfThreshold));
+    const palette = landing.designSystem.palette;
     return (
         <div className={`grid w-full grid-cols-1 gap-0 md:grid-cols-[2fr_1fr_1fr] divide-x ${theme.rule} divide-y md:divide-y-0`}>
             <div className="px-6 py-7 md:px-8">
-                <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>Group Status</p>
+                <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.primary }}>Group Status</p>
                 <h3 className={`mt-2 text-xl font-bold leading-tight md:text-2xl ${theme.pageText}`}>{landing.threshold.headline}</h3>
                 <p className={`mt-2 text-sm leading-6 ${theme.softText}`}>{landing.threshold.detail}</p>
                 <div className="mt-4">
@@ -356,6 +359,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     const system = landing.designSystem.system;
     const theme = buildTheme(system);
     const accentHex = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
     const pageStyle: CSSProperties = { ['--accent' as string]: accentHex };
     const { primaryHref, secondaryHref } = resolveCtaHrefs(landing, primaryHrefProp, secondaryHrefProp);
     const images = landing.galleryImages.filter((img) => img.url.trim().length > 0);
@@ -553,7 +557,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             <section className={`w-full border-t ${theme.rule}`}>
                 <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:px-8">
                     <div>
-                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
                             Itinerary Snapshot
                         </p>
                         <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight ${theme.pageText}`}>
@@ -578,11 +582,94 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </div>
             </section>
 
+            {/* 4b) Travel essentials — anchor target for Phase 3 `travel_prep`
+                 and `final_countdown` emails. Always rendered so the deeplink
+                 (`{landing}#travel`) never lands on a missing element. Content
+                 mirrors the email module list in KLAVIYO_TEMPLATE_COPY_DECK.md §8. */}
+            <section id="travel" className={`w-full border-t ${theme.rule} ${theme.sectionAlt}`}>
+                <div className="mx-auto w-full max-w-7xl px-4 py-12 md:px-8 md:py-16">
+                    <header className="max-w-2xl">
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.primary }}>
+                            Travel Essentials
+                        </p>
+                        <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>
+                            Get to the ship without the scramble
+                        </h2>
+                        <p className={`mt-4 text-base leading-7 ${theme.softText}`}>
+                            We are not booking your trip for you, but here is the short list of moves to make so the day-of is smooth.
+                            If you booked through us, these are the same prep notes the Travel Prep email walks through.
+                        </p>
+                    </header>
+
+                    <div className="mt-8 grid gap-4 md:grid-cols-2">
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                                Departure port
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                {landing.facts.find((f) => f.label === 'Departure Port')?.value
+                                    ?? landing.itinerary.routeSummary
+                                    ?? 'Confirmed once your sailing is finalized.'}
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Plan to arrive the day before whenever you can. A pre-cruise hotel night removes the
+                                single biggest source of missed-sailing stress.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                                Documents
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Passport, ID, vaccination card
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Check that your passport is valid for at least six months past
+                                {' '}{landing.facts.find((f) => f.label === 'Sailing')?.value ?? 'your sail date'}.
+                                Bring a physical ID even if your line accepts digital boarding passes.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                                Flights &amp; hotel
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Book wide on day-of windows
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Aim to be at the port no later than early afternoon on sail day. If your flight lands the same
+                                morning, give yourself a four-hour buffer minimum. A pre-night hotel near the port is the safer call.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                                Insurance
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Travel insurance is your safety net
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Trip-cancellation and medical coverage are inexpensive relative to the booking and protect you
+                                if weather, illness, or a flight cancellation forces a change.
+                            </p>
+                        </div>
+                    </div>
+
+                    <p className={`mt-6 text-xs leading-6 ${theme.softText} opacity-75`}>
+                        We do not sell or commission these pieces. Use whatever booking tools you already trust.
+                        The Travel Prep email links here so this list is always one click away.
+                    </p>
+                </div>
+            </section>
+
             {/* 5) Atmospheric photo strip */}
             <PhotoStrip images={images} system={system} />
 
             {/* 6) Voyage brief — what it is + why now */}
-            <BleedSection theme={theme} eyebrow="Voyage Brief" title={landing.story.whatItIs.title} description={landing.story.whatItIs.body} accentHex={accentHex} contentMaxWidth="wide">
+            <BleedSection theme={theme} eyebrow="Voyage Brief" title={landing.story.whatItIs.title} description={landing.story.whatItIs.body} accentHex={accentHex} eyebrowColor={palette.primary} contentMaxWidth="wide">
                 <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
                     {landing.story.whyJoinNow.map((reason, i) => (
                         <li key={i} className={`${theme.surface} relative overflow-hidden p-5`}>
@@ -609,6 +696,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel}
                 title={`On board: ${landing.designSystem.sectionLabels[0] ?? landing.title}`}
                 accentHex={accentHex}
+                eyebrowColor={palette.secondary}
                 alt
             >
                 <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
@@ -641,6 +729,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 eyebrow="How it works"
                 title={landing.state === 'GATHERING_INTEREST' ? 'Three steps from interest to possible booking' : 'Three steps from interest to booking'}
                 accentHex={accentHex}
+                eyebrowColor={palette.primary}
             >
                 <Itinerary
                     system={system}
@@ -661,12 +750,12 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             </BleedSection>
 
             {/* 10) FAQ */}
-            <BleedSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex} contentMaxWidth="narrow">
+            <BleedSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex} eyebrowColor={palette.secondary} contentMaxWidth="narrow">
                 <FaqList items={landing.faq} theme={theme} />
             </BleedSection>
 
             {/* 11) Trust */}
-            <BleedSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} alt>
+            <BleedSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} eyebrowColor={palette.primary} alt>
                 <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {landing.trustBullets.map((bullet, i) => (
                         <li key={i} className={`${theme.surface} p-5`}>
@@ -686,6 +775,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         ? 'This step is free and non-binding. We save your party size, cabin preference, and the right to reach out if the campaign matures into the proper next step.'
                         : 'No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens.'}
                     accentHex={accentHex}
+                    eyebrowColor={palette.secondary}
                     contentMaxWidth="narrow"
                 >
                     <div id="save-your-place" className={`${theme.surface} p-6 md:p-8`}>

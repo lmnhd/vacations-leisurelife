@@ -14,6 +14,50 @@ import { alfa_slab_one, orbitron, prompt as promptFont } from '@/lib/fonts';
 
 type SystemKey = CampaignLandingViewModel['designSystem']['system'];
 
+type TextScale = 'sm' | 'md' | 'lg';
+
+const TEXT_SCALE_STORAGE_KEY = 'group-chat-hall.text-scale';
+
+interface TextScaleTokens {
+    bubble: string;
+    bubblePad: string;
+    threadGap: string;
+    starterLabel: string;
+    nameBadge: string;
+    composeText: string;
+    composeMinH: string;
+}
+
+const TEXT_SCALE_TOKENS: Record<TextScale, TextScaleTokens> = {
+    sm: {
+        bubble: 'text-[12.5px] leading-[1.55]',
+        bubblePad: 'px-3 py-2',
+        threadGap: 'gap-2.5',
+        starterLabel: 'text-[9px]',
+        nameBadge: 'text-[8.5px] px-1.5 py-0.5',
+        composeText: 'text-[12.5px]',
+        composeMinH: 'min-h-[72px]',
+    },
+    md: {
+        bubble: 'text-[14px] leading-[1.6]',
+        bubblePad: 'px-3.5 py-2.5',
+        threadGap: 'gap-3',
+        starterLabel: 'text-[10px]',
+        nameBadge: 'text-[9px] px-2 py-0.5',
+        composeText: 'text-[14px]',
+        composeMinH: 'min-h-[88px]',
+    },
+    lg: {
+        bubble: 'text-[15.5px] leading-[1.7]',
+        bubblePad: 'px-4 py-3',
+        threadGap: 'gap-3.5',
+        starterLabel: 'text-[11px]',
+        nameBadge: 'text-[10px] px-2 py-0.5',
+        composeText: 'text-[15.5px]',
+        composeMinH: 'min-h-[104px]',
+    },
+};
+
 type ChatMessage = {
     id: string;
     role: 'user' | 'assistant';
@@ -388,23 +432,59 @@ function ChannelRail({
 function MessageThread({
     theme,
     accentHex,
+    palette,
     messages,
     scrollRef,
     headline,
     activeChannel,
+    backgroundImageUrl,
+    textScale,
+    isDarkSystem,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
+    palette: CampaignLandingViewModel['designSystem']['palette'];
     messages: ChatMessage[];
     scrollRef: React.RefObject<HTMLDivElement>;
     headline: string;
     activeChannel: ChatChannel;
+    backgroundImageUrl: string | null;
+    textScale: TextScale;
+    isDarkSystem: boolean;
 }) {
+    const tokens = TEXT_SCALE_TOKENS[textScale];
+    // Darker overlay for the dark "modular" system so text stays legible; lighter
+    // overlay on the light editorial/nostalgia/zine systems so the photo can breathe.
+    const overlayGradient = isDarkSystem
+        ? 'linear-gradient(180deg, rgba(8,9,13,0.78) 0%, rgba(8,9,13,0.84) 50%, rgba(8,9,13,0.92) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.78) 100%)';
     return (
-        <div ref={scrollRef} className={`flex-1 overflow-y-auto ${theme.panel} px-5 py-6 md:px-8`}>
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+        <div className={`relative flex flex-1 min-h-0 ${theme.panel}`}>
+            {backgroundImageUrl && (
+                <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={{
+                            backgroundImage: `url(${backgroundImageUrl})`,
+                            filter: 'blur(40px) saturate(1.25) brightness(0.92)',
+                            transform: 'scale(1.15)',
+                            opacity: isDarkSystem ? 0.55 : 0.45,
+                        }}
+                    />
+                    <div className="absolute inset-0" style={{ background: overlayGradient }} />
+                    {/* Accent halos — picked highlights echoed through the panel. */}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: `radial-gradient(60% 40% at 12% 18%, ${accentHex}26 0%, transparent 60%), radial-gradient(50% 35% at 88% 82%, ${accentHex}1f 0%, transparent 65%)`,
+                        }}
+                    />
+                </div>
+            )}
+            <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-5 py-6 md:px-8">
+            <div className={`mx-auto flex w-full max-w-3xl flex-col ${tokens.threadGap}`}>
                 <header className={`mb-2 border-b border-current/10 pb-3 ${theme.softText}`}>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.32em] opacity-55">{activeChannel.label}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.32em]" style={{ color: palette.secondary, opacity: 0.85 }}>{activeChannel.label}</p>
                     <p className="mt-1 text-sm">{activeChannel.hint}</p>
                 </header>
                 {messages.map((item) => {
@@ -414,6 +494,13 @@ function MessageThread({
                         : isAssistant
                             ? theme.bubbleAssistant
                             : theme.bubbleGuest;
+                    // Backdrop blur lets the hero image shimmer through assistant/starter
+                    // bubbles on the dark system without sacrificing readability.
+                    const bubbleExtra = backgroundImageUrl && isDarkSystem && !item.isStarterMessage && isAssistant
+                        ? 'backdrop-blur-md shadow-[0_8px_28px_rgba(0,0,0,0.35)]'
+                        : backgroundImageUrl && isDarkSystem && !isAssistant
+                            ? 'shadow-[0_8px_24px_rgba(0,0,0,0.4)]'
+                            : '';
                     return (
                         <div
                             key={item.id}
@@ -421,18 +508,24 @@ function MessageThread({
                         >
                             <div className="flex items-center gap-2">
                                 <span
-                                    className={`inline-flex items-center px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.24em] ${
+                                    className={`inline-flex items-center font-bold uppercase tracking-[0.24em] ${tokens.nameBadge} ${
                                         isAssistant ? theme.hostBadge : theme.guestBadge
                                     }`}
+                                    style={isAssistant ? { boxShadow: `0 0 0 1px ${accentHex}55, 0 0 12px ${accentHex}33` } : undefined}
                                 >
                                     {isAssistant ? 'Host · Tour Conductor' : item.displayName}
                                 </span>
                                 {item.isStarterMessage && (
-                                    <span className="text-[9px] font-mono uppercase tracking-[0.22em] opacity-55">starter</span>
+                                    <span
+                                        className={`font-mono uppercase tracking-[0.22em] ${tokens.starterLabel}`}
+                                        style={{ color: palette.secondary, opacity: 0.85 }}
+                                    >
+                                        starter
+                                    </span>
                                 )}
                             </div>
                             <div
-                                className={`max-w-[80%] px-4 py-3 text-sm leading-[1.65] ${bubble}`}
+                                className={`max-w-[80%] ${tokens.bubblePad} ${tokens.bubble} ${bubble} ${bubbleExtra}`}
                                 style={isAssistant ? { borderLeftWidth: 3, borderLeftColor: accentHex } : undefined}
                             >
                                 {item.content}
@@ -444,6 +537,7 @@ function MessageThread({
                     <p className={`text-sm ${theme.softText}`}>The thread is quiet so far. Say hi to {headline}.</p>
                 )}
             </div>
+            </div>
         </div>
     );
 }
@@ -451,6 +545,7 @@ function MessageThread({
 function IdeaBoard({
     theme,
     accentHex,
+    palette,
     landing,
     activeChannel,
     guestIdeas,
@@ -460,6 +555,7 @@ function IdeaBoard({
 }: {
     theme: ChatHallTheme;
     accentHex: string;
+    palette: CampaignLandingViewModel['designSystem']['palette'];
     landing: CampaignLandingViewModel;
     activeChannel: ChatChannel['id'];
     guestIdeas: GuestIdeaItem[];
@@ -586,19 +682,22 @@ function IdeaBoard({
                     </>
                 )}
 
-                <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">{section.factsTitle}</p>
+                <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em]" style={{ color: palette.primary, opacity: 0.85 }}>{section.factsTitle}</p>
                 <ul className="flex flex-col gap-2">
-                    {landing.facts.slice(0, 4).map((fact) => (
-                        <li key={fact.label} className={`p-3 ${theme.pinCard}`}>
-                            <p
-                                className="font-mono text-[9px] uppercase tracking-[0.32em]"
-                                style={{ color: accentHex }}
-                            >
-                                {fact.label}
-                            </p>
-                            <p className="mt-1 text-sm font-bold leading-tight">{fact.value}</p>
-                        </li>
-                    ))}
+                    {landing.facts.slice(0, 4).map((fact, i) => {
+                        const labelColor = i % 2 === 0 ? palette.primary : palette.secondary;
+                        return (
+                            <li key={fact.label} className={`p-3 ${theme.pinCard}`}>
+                                <p
+                                    className="font-mono text-[9px] uppercase tracking-[0.32em]"
+                                    style={{ color: labelColor }}
+                                >
+                                    {fact.label}
+                                </p>
+                                <p className="mt-1 text-sm font-bold leading-tight">{fact.value}</p>
+                            </li>
+                        );
+                    })}
                 </ul>
 
                 <p className="mt-5 px-1 pb-2 font-mono text-[9px] uppercase tracking-[0.32em] opacity-45">Group status</p>
@@ -753,6 +852,7 @@ function ComposeBox({
     error,
     onSend,
     activeChannel,
+    textScale,
 }: {
     theme: ChatHallTheme;
     accentHex: string;
@@ -762,7 +862,9 @@ function ComposeBox({
     error: string;
     onSend: () => void;
     activeChannel: ChatChannel;
+    textScale: TextScale;
 }) {
+    const tokens = TEXT_SCALE_TOKENS[textScale];
     return (
         <div className={`p-4 md:p-5 ${theme.compose}`}>
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
@@ -774,7 +876,7 @@ function ComposeBox({
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={getComposePlaceholder(activeChannel.id, activeChannel.label)}
-                    className={`min-h-[88px] rounded-none text-sm ${theme.input}`}
+                    className={`rounded-none ${tokens.composeMinH} ${tokens.composeText} ${theme.input}`}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                             onSend();
@@ -824,6 +926,11 @@ function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {
 export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored }: GroupChatHallProps) {
     const theme = chatHallTheme(landing.designSystem.system, landing.designSystem.accentHex);
     const accentHex = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
+    const isDarkSystem = landing.designSystem.system === 'system_4_modular';
+    const backgroundImageUrl = landing.heroImage?.url
+        ?? landing.galleryImages[0]?.url
+        ?? null;
     const [messages, setMessages] = useState<ChatMessage[]>(() => fallbackMessages(landing));
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -831,6 +938,26 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [guestIdeas, setGuestIdeas] = useState<GuestIdeaItem[]>([]);
+    const [textScale, setTextScale] = useState<TextScale>('sm');
+
+    // Restore the user's preferred text size across visits.
+    useEffect(() => {
+        try {
+            const saved = window.localStorage.getItem(TEXT_SCALE_STORAGE_KEY);
+            if (saved === 'sm' || saved === 'md' || saved === 'lg') setTextScale(saved);
+        } catch {
+            // localStorage unavailable — keep the small default.
+        }
+    }, []);
+
+    function changeTextScale(next: TextScale) {
+        setTextScale(next);
+        try {
+            window.localStorage.setItem(TEXT_SCALE_STORAGE_KEY, next);
+        } catch {
+            // Best-effort persistence.
+        }
+    }
 
     const ideasEndpoint = `/api/groups/campaign/${landing.slug}/ideas`;
 
@@ -1004,6 +1131,30 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                         <span className={`inline-flex items-center border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.28em] ${theme.badge}`}>
                             {activeMembers.length} active now
                         </span>
+                        <div
+                            role="group"
+                            aria-label="Chat text size"
+                            className={`inline-flex items-center border font-mono text-[10px] uppercase tracking-[0.28em] ${theme.badge}`}
+                        >
+                            {(['sm', 'md', 'lg'] as const).map((size, idx) => {
+                                const active = textScale === size;
+                                const label = size === 'sm' ? 'A' : size === 'md' ? 'A' : 'A';
+                                const sizeClass = size === 'sm' ? 'text-[10px]' : size === 'md' ? 'text-[12px]' : 'text-[14px]';
+                                return (
+                                    <button
+                                        key={size}
+                                        type="button"
+                                        onClick={() => changeTextScale(size)}
+                                        aria-pressed={active}
+                                        aria-label={`Text size ${size === 'sm' ? 'small' : size === 'md' ? 'medium' : 'large'}`}
+                                        className={`px-2.5 py-1 transition-colors ${sizeClass} ${idx > 0 ? 'border-l border-current/15' : ''} ${active ? '' : 'opacity-55 hover:opacity-90'}`}
+                                        style={active ? { backgroundColor: accentHex, color: '#0f172a' } : undefined}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1034,6 +1185,10 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                         scrollRef={scrollRef}
                         headline={landing.designSystem.chat.title}
                         activeChannel={activeChannelConfig}
+                        backgroundImageUrl={backgroundImageUrl}
+                        textScale={textScale}
+                        isDarkSystem={isDarkSystem}
+                        palette={palette}
                     />
                     {!isUnlocked ? (
                         <ScrollToFormCTA
@@ -1053,6 +1208,7 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                             error={error}
                             onSend={sendMessage}
                             activeChannel={activeChannelConfig}
+                            textScale={textScale}
                         />
                     )}
                 </div>
@@ -1061,6 +1217,7 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                 <IdeaBoard
                     theme={theme}
                     accentHex={accentHex}
+                    palette={palette}
                     landing={landing}
                     activeChannel={activeChannel}
                     guestIdeas={guestIdeas}
@@ -1082,6 +1239,10 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                     scrollRef={scrollRef}
                     headline={landing.designSystem.chat.title}
                     activeChannel={activeChannelConfig}
+                    backgroundImageUrl={backgroundImageUrl}
+                    textScale={textScale}
+                    isDarkSystem={isDarkSystem}
+                    palette={palette}
                 />
                 {!isUnlocked ? (
                     <ScrollToFormCTA
@@ -1101,6 +1262,7 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
                         error={error}
                         onSend={sendMessage}
                         activeChannel={activeChannelConfig}
+                        textScale={textScale}
                     />
                 )}
 

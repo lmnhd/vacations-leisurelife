@@ -3,13 +3,11 @@
  *
  * POST /api/groups/campaign/[slug]/email-broadcast
  *   body: {
- *     stage: 'threshold_met' | 'manifest_requested' | 'manifest_reminder'
- *          | 'booking_link_ready' | 'campaign_expired',
+ *     stage: 'threshold_met' | 'booking_link_ready' | 'campaign_expired',
  *     dryRun?: boolean,
- *     phase2?: { manifestDeadline?, manifestUrl?, adjacentCampaignsUrl?, operatorNote? },
- *     // Optional broadcast scoping. When omitted, defaults are stage-aware:
- *     //   - manifest_reminder defaults to only-pending manifests.
- *     filter?: { onlyPendingManifest?: boolean; onlyBookingMode?: 'GROUP_WAIT' | 'BOOK_NOW' }
+ *     phase2?: { adjacentCampaignsUrl?, operatorNote? },
+ *     // Optional broadcast scoping.
+ *     filter?: { onlyBookingMode?: 'GROUP_WAIT' | 'BOOK_NOW' }
  *   }
  *
  * Operator-triggered. Sends the same Klaviyo event to every (filtered) lead
@@ -28,28 +26,23 @@ import {
     dispatchEmailBroadcast,
     type BroadcastFilter,
 } from '@/lib/campaigns/email/email-event-orchestrator';
-import { PHASE_2_STAGES, type EmailEventStage } from '@/lib/campaigns/email/email-event-types';
+import { BROADCAST_STAGES, type EmailEventStage } from '@/lib/campaigns/email/email-event-types';
 import type { CampaignWaitlistEntry } from '@/lib/campaigns/types';
 
 export const dynamic = 'force-dynamic';
 
-const BroadcastStageSchema = z.enum([
-    'threshold_met',
-    'manifest_requested',
-    'manifest_reminder',
-    'booking_link_ready',
-    'campaign_expired',
-]);
+// Derive from BROADCAST_STAGES so this gate cannot drift behind the operator
+// UI when new broadcast-eligible stages ship. zod needs a non-empty tuple of literals.
+const BroadcastStageSchema = z.enum(
+    BROADCAST_STAGES as unknown as [EmailEventStage, ...EmailEventStage[]],
+);
 
 const Phase2Schema = z.object({
-    manifestDeadline: z.string().trim().min(1).optional(),
-    manifestUrl: z.string().url().optional(),
     adjacentCampaignsUrl: z.string().url().optional(),
     operatorNote: z.string().trim().max(500).optional(),
 }).optional();
 
 const FilterSchema = z.object({
-    onlyPendingManifest: z.boolean().optional(),
     onlyBookingMode: z.enum(['GROUP_WAIT', 'BOOK_NOW']).optional(),
 }).optional();
 
@@ -64,18 +57,14 @@ function buildFilter(
     stage: EmailEventStage,
     filterInput: z.infer<typeof FilterSchema>,
 ): BroadcastFilter {
-    // Stage-aware defaults applied when the operator omits a filter.
-    const onlyPendingManifest =
-        filterInput?.onlyPendingManifest ?? (stage === 'manifest_reminder');
     const onlyBookingMode = filterInput?.onlyBookingMode;
 
-    if (!onlyPendingManifest && !onlyBookingMode) {
+    if (!onlyBookingMode) {
         return {};
     }
 
     return {
         shouldSend: (lead: CampaignWaitlistEntry) => {
-            if (onlyPendingManifest && lead.manifestStatus === 'SUBMITTED') return false;
             if (onlyBookingMode && lead.bookingMode !== onlyBookingMode) return false;
             return true;
         },
@@ -107,7 +96,7 @@ export async function POST(
                 success: false,
                 error: 'Invalid broadcast request.',
                 issues: parsed.error.flatten(),
-                supportedStages: PHASE_2_STAGES,
+                supportedStages: BROADCAST_STAGES,
             },
             { status: 400 },
         );

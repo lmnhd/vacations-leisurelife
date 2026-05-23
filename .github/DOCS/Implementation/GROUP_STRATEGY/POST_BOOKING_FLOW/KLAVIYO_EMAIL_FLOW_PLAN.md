@@ -24,7 +24,7 @@ The current app integration is intentionally minimal.
 |-----------|---------------|-----------------|
 | `waitlist_confirmation` | `LLL Waitlist Confirmation` | Signup confirmation |
 | `nurture_day3` | `LLL Nurture Day 3` | Early waitlist nurture |
-| `nurture_day7` | `LLL Nurture Day 7` | Follow-up nurture |
+| `nurture_day7` | `LLL Nurture Day 7` | Milestone follow-up nurture |
 
 **Current SMS event:**
 
@@ -104,12 +104,12 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 | Event | Trigger | Purpose |
 |-------|---------|---------|
 | `LLL Waitlist Confirmation` | Immediately after valid waitlist signup | Confirm entry and deepen desire |
-| `LLL Nurture Day 3` | 3 days after signup, if not threshold/converted | Community and theme expansion |
-| `LLL Nurture Day 7` | 7 days after signup, if not threshold/converted | Urgency + social proof |
-| `LLL Threshold Met` | Campaign crosses threshold | Trip is viable; move guest to booking action |
+| `LLL Nurture Day 3` | Early progress check once the campaign has activity | Community and theme expansion |
+| `LLL Nurture Day 7` | Sent once the campaign reaches 4 sign-ups, if not threshold/converted | Urgency + social proof |
+| `LLL Threshold Met` | Campaign crosses threshold and booking path is verified | Trip is viable; move guest to booking action |
 | `LLL Manifest Requested` | Manifest collection opens | Collect guest details |
 | `LLL Manifest Reminder` | Manifest incomplete after delay | Complete manifest |
-| `LLL Booking Link Ready` | Booking link available | Send CB/Odysseus booking path |
+| `LLL Booking Link Ready` | Fallback only if the threshold email could not safely include the booking link | Send CB/Odysseus booking path |
 | `LLL Campaign Expired` | Campaign dies before threshold | Graceful close + adjacent campaign CTA |
 
 ### Post-Booking Events
@@ -152,7 +152,7 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 - **Modules:** Hero image, threshold explanation, what happens next, share/invite block.
 
 **Email 2: Day 3 Niche Deepener**
-- **Timing:** 3 days after signup if not converted/expired
+- **Timing:** Sent once the campaign has initial activity and is not yet converted/expired
 - **Subject ideas:**
   - `The kind of people this sailing is being built for`
   - `This is not a generic cruise crowd`
@@ -160,8 +160,8 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 - **Primary CTA:** Drop an idea in the campaign chat.
 - **Modules:** Theme story, guest idea prompt, sample onboard rituals.
 
-**Email 3: Day 7 Momentum Check**
-- **Timing:** 7 days after signup if not converted/expired
+**Email 3: Momentum Check**
+- **Timing:** Sent when the campaign reaches 4 sign-ups and is not yet converted/expired
 - **Subject ideas:**
   - `A quick status check on {{ campaign_name }}`
   - `Where this sailing stands right now`
@@ -185,7 +185,9 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 - `It's happening: {{ campaign_name }} reached the threshold`
 - `The group is real — next step inside`
 
-**CTA:** Complete manifest or move to booking path.
+**CTA:** Open the booking link.
+
+**Relationship to `LLL Booking Link Ready`:** this is the main booking handoff. Only use `LLL Booking Link Ready` if the threshold email had to be held back before the booking link was safe to send.
 
 **Important copy rule:** Say the group has reached the internal demand threshold. Do not imply cruise line space is permanently secured until booking path is live and confirmed.
 
@@ -205,9 +207,9 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 
 ### `LLL Booking Link Ready`
 
-**When:** CB/Odysseus booking link is available.
+**When:** CB/Odysseus booking link is available, but the threshold email could not safely include it.
 
-**Primary message:** Booking is now actionable.
+**Primary message:** Fallback booking handoff only.
 
 **Subject ideas:**
 - `Your booking path is ready`
@@ -216,6 +218,8 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 **CTA:** Open booking link.
 
 **Modules:** Booking path explanation, group vs independent booking clarification, support path.
+
+**Relationship to `LLL Threshold Met`:** do not send both emails to the same guest unless the threshold send was intentionally held back.
 
 ### `LLL Campaign Expired`
 
@@ -228,6 +232,8 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 - `An update on {{ campaign_name }}`
 
 **CTA:** View nearby/adjacent campaigns.
+
+**Fallback rule:** if a curated adjacent-campaign link exists, use it; otherwise fall back to `{{ person.landing_page_url }}` so the guest still lands on the main Leisure Life page.
 
 **Tone:** Honest, warm, not apologetic beyond what is appropriate.
 
@@ -421,7 +427,7 @@ Keep the current event-triggered Klaviyo architecture. The app owns truthful eve
 
 1. Upgrade `LLL Waitlist Confirmation` copy, layout, and event properties.
 2. Upgrade `LLL Nurture Day 3` as the niche/community deepener.
-3. Upgrade `LLL Nurture Day 7` as momentum/social proof/decision email.
+3. Upgrade `LLL Nurture Day 7` as the momentum/social-proof check once the campaign reaches four sign-ups.
 4. Add preview payload docs for each email.
 5. Add a `/tests` page or operator tool to send dry-run/test events for a selected campaign and email.
 
@@ -492,7 +498,7 @@ Start with **Phase 1 only**.
 
 **First implementation output should be:**
 - Updated event property payload for current three events.
-- A test/preview surface for `LLL Waitlist Confirmation`, `LLL Nurture Day 3`, and `LLL Nurture Day 7`.
+- A test/preview surface for `LLL Waitlist Confirmation`, `LLL Nurture Day 3`, and `LLL Nurture Day 7` with count-based gating for the latter stages.
 - Complete Klaviyo template briefs for the three current emails.
 - No new lifecycle states yet.
 

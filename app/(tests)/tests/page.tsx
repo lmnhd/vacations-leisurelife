@@ -98,6 +98,36 @@ const GROUPS: TestGroup[] = [
         href: '/tests/visual-system-sweep',
         description: 'Preview all 4 visual system template families side-by-side for regression testing',
       },
+      {
+        label: 'Canva Ads — Audition',
+        href: '/tests/canva-ads',
+        description: 'Copy Forge + quality gate — auditions ad copy + image directives for a campaign before Templated.io render (P1)',
+        badge: 'P1',
+      },
+      {
+        label: 'Canva Template Guide',
+        href: '/tests/canva-ads/templates',
+        description: 'One-stop registry worksheet for adding Canva/Templated templates to templates.json',
+        badge: 'NEW',
+      },
+      {
+        label: 'Board Games Sandbox',
+        href: '/tests/media-generation/board-games-sandbox',
+        description: 'Legacy TikTok/package visual sandbox for the Board Games at Sea reference campaign',
+        badge: 'SANDBOX',
+      },
+      {
+        label: 'Image Search Lab',
+        href: '/tests/media-generation/test',
+        description: 'Media-generation image candidate/search test bench used for source image exploration',
+        badge: 'LAB',
+      },
+      {
+        label: 'TikTok Style Playground',
+        href: '/tests/tiktok-style-playground',
+        description: 'Preview TikTok visual style treatments and motion package experiments outside the full campaign run',
+        badge: 'LAB',
+      },
     ],
   },
   {

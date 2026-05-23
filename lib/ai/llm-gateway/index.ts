@@ -11,6 +11,7 @@
 
 // Core call function + streaming
 export { callLLM, streamLLM } from './gateway';
+export { generateStructuredObject } from './structured';
 
 // Model enum, task map, config helpers
 export { ModelName, TASK_MODEL_MAP, modelForTask, getModelConfig, MODEL_METADATA } from './models';
@@ -25,6 +26,7 @@ export type {
   AgentResult,
   ProviderName,
 } from './types';
+export type { StructuredObjectOptions, StructuredObjectResult } from './structured';
 
 // Semantic agent wrappers
 export {
