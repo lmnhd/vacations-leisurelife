@@ -18,12 +18,12 @@ export enum ModelName {
   GEMINI_3_PRO = "gemini-3.1-pro",
 
   // TIER 2 · Balanced Utility & Tool-Use
-  GPT_5_MEDIUM = "gpt-5.2-medium",
+  GPT_5_MEDIUM = "gpt-5.4-medium",
   CLAUDE_4_SONNET = "claude-4.6-sonnet",
   GEMINI_3_FLASH = "gemini-3.1-flash",
 
   // TIER 3 · Micro-Tasks, Speed, Cost
-  GPT_5_INSTANT = "gpt-5.3-instant",
+  GPT_5_INSTANT = "gpt-5.4-instant",
   GEMINI_3_FLASH_LITE = "gemini-3-lite",
   LLAMA_4_MAVERICK = "llama-4-maverick",
 
