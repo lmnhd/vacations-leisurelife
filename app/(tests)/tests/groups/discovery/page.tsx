@@ -1840,9 +1840,23 @@ export default function DiscoveryTestPage() {
                 Show retired ({retiredCount})
               </label>
 
-              <span className="text-[10px] text-slate-600 ml-auto">
-                Showing {visibleBlueprints.length} of {activeCount} active{retiredCount > 0 ? ` (+${retiredCount} retired)` : ""}
-              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const allVisible = visibleBlueprints.map((bp) => bp.id);
+                    const allSelected = allVisible.every((id) => selectedBlueprintSlugs.includes(id));
+                    setSelectedBlueprintSlugs(allSelected ? [] : allVisible);
+                  }}
+                  className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border border-slate-600 text-slate-400 hover:text-white hover:border-white/30 transition-all"
+                >
+                  {visibleBlueprints.every((bp) => selectedBlueprintSlugs.includes(bp.id)) && visibleBlueprints.length > 0
+                    ? "Deselect All"
+                    : "Select All"}
+                </button>
+                <span className="text-[10px] text-slate-600">
+                  Showing {visibleBlueprints.length} of {activeCount} active{retiredCount > 0 ? ` (+${retiredCount} retired)` : ""}
+                </span>
+              </div>
             </div>
           )}
 
