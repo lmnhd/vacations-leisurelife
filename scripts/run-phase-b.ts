@@ -57,6 +57,27 @@ function shiftDateByDays(mmDdYyyy: string, days: number): string {
   return `${newMm}/${newDd}/${d.getFullYear()}`;
 }
 
+function normalizeComparableText(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function campaignBookingLinkMatchesCandidate(
+  campaign: Campaign,
+  candidate: CampaignInventoryCandidate,
+): boolean {
+  const storedShipName = normalizeComparableText(campaign.matchedShipName);
+  const candidateShipName = normalizeComparableText(candidate.shipName);
+  const storedSailDate = normalizeComparableText(campaign.matchedSailDate);
+  const candidateSailDate = normalizeComparableText(candidate.sailDate);
+
+  return storedShipName.length > 0 &&
+    candidateShipName.length > 0 &&
+    storedSailDate.length > 0 &&
+    candidateSailDate.length > 0 &&
+    storedShipName === candidateShipName &&
+    storedSailDate === candidateSailDate;
+}
+
 function buildOdysseusItinerarySummary(result: CruiseResult): {
   summary: string;
   portsOfCall: string;
@@ -340,17 +361,11 @@ async function runPhaseB(): Promise<void> {
         );
         personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
       }
-      // Fallback: use campaign-level stored link if the live scrape failed and group IDs match
-      console.log(
-        `[run-phase-b][debug] cbagenttoolsGroupId=${JSON.stringify(campaign.cbagenttoolsGroupId)} cbagenttoolsBookingLink=${JSON.stringify(campaign.cbagenttoolsBookingLink)} candidate.groupId=${JSON.stringify(candidate.groupId)}`,
-      );
-      if (!personalLink &&
-        campaign.cbagenttoolsGroupId?.trim() === candidate.groupId?.trim() &&
-        campaign.cbagenttoolsBookingLink
-      ) {
+      // Fallback: CB's detail group ID can differ from the stored booking package ID.
+      if (!personalLink && campaign.cbagenttoolsBookingLink && campaignBookingLinkMatchesCandidate(campaign, candidate)) {
         personalLink = campaign.cbagenttoolsBookingLink;
         console.warn(
-          `[run-phase-b] ⚠️ Live scrape failed — using stored campaign booking link for group ${candidate.groupId}: ${personalLink}`,
+          `[run-phase-b] ⚠️ Live scrape failed — using stored campaign booking link for ${candidate.shipName} on ${candidate.sailDate}: ${personalLink}`,
         );
       }
       if (!personalLink) {

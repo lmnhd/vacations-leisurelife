@@ -1,16 +1,76 @@
 {
-  "completedAt": "2026-05-25T03:15:05.809Z",
+  "completedAt": "2026-05-25T15:01:46.694Z",
   "summary": {
     "confirmedCount": 0,
     "backupCount": 0,
     "expiredCount": 0,
-    "failedCount": 1
+    "failedCount": 13
   },
   "results": [
+    {
+      "slug": "scandinavian-hygge",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 1 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "vintage-rock-n-roll",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "retro-gaming-cruise",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 2 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "board-games-at-sea",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "cosplay-at-sea",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 2 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "photography-journey",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 1 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "artisanal-culinary-adventure",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "wellness-and-nature-cruise",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 1 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "vintage-book-club",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 1 candidate(s) failed validation — operator review required"
+    },
     {
       "slug": "mystical-seas",
       "status": "INVENTORY_FAILED",
       "detail": "All 1 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "classic-literature-cruise",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "art-lovers-excursion",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
+    },
+    {
+      "slug": "sci-fi-adventure",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 3 candidate(s) failed validation — operator review required"
     }
   ]
 }
