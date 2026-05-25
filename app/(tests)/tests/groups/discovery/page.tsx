@@ -648,7 +648,7 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {c.inventoryHealth && <InventoryHealthBadge status={c.inventoryHealth} />}
-          <PricingBadge status={c.pricingStatus} />
+          <PricingBadge status={c.pricingStatus} inventoryHealth={c.inventoryHealth} />
           {hasCandidates && (
             open ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />
           )}
@@ -732,7 +732,23 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
 
 // ─── Pricing Badge ────────────────────────────────────────────────────────────
 
-function PricingBadge({ status }: { status: PricingStatus }) {
+function PricingBadge({ status, inventoryHealth }: { status: PricingStatus; inventoryHealth?: InventoryHealthStatus | null }) {
+  if (status === "CB_MATCHED" && inventoryHealth === "FAILED") {
+    return (
+      <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-red-500/15 border-red-500/30 text-red-300">
+        ⚠️ CB Validation Failed
+      </span>
+    );
+  }
+
+  if (status === "CB_MATCHED" && inventoryHealth === "HEALTHY") {
+    return (
+      <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-400">
+        ✅ CB Confirmed
+      </span>
+    );
+  }
+
   const styles: Record<PricingStatus, string> = {
     CB_MATCHED:
       "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400",
@@ -740,7 +756,7 @@ function PricingBadge({ status }: { status: PricingStatus }) {
     UNMATCHED: "bg-red-500/15 border border-red-500/30 text-red-400",
   };
   const labels: Record<PricingStatus, string> = {
-    CB_MATCHED: "✅ CB Matched",
+    CB_MATCHED: "CB Match Found",
     AI_ESTIMATE: "⚠️ AI Estimate",
     UNMATCHED: "❌ Unmatched",
   };
@@ -1908,6 +1924,7 @@ export default function DiscoveryTestPage() {
                               (bp.pricingStatus ??
                                 "AI_ESTIMATE") as PricingStatus
                             }
+                            inventoryHealth={bp.inventoryHealth}
                           />
                           <div className="flex flex-wrap justify-end gap-1">
                             {isStagnant && !isRetired && (
