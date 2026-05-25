@@ -17,7 +17,14 @@ import path from 'node:path';
 
 const CB_BASE_URL = 'https://www.cbagenttools.com';
 const TODAYS_PROMOS_URL = `${CB_BASE_URL}/marketing/todaysview/`;
+const ALL_GROUPS_URL = `${CB_BASE_URL}/groups/view_groups/`;
 const PRICE_ADVANTAGES_URL = `${CB_BASE_URL}/groups/view_groups/?price_advantage=on`;
+
+/** Maximum pages to paginate through during the all-groups scrape (≈25 rows/page). */
+const MAX_PAGES = 20;
+
+/** Minimum days out for a sailing to be included in the cache (matches MINIMUM_CAMPAIGN_LEAD_DAYS). */
+const MIN_LEAD_DAYS = 180;
 
 const STATE_FILE = path.join(process.cwd(), '.playwright-state.json');
 const OUTPUT_DIRECTORY = path.join(process.cwd(), '.github', 'data');
@@ -38,6 +45,9 @@ type PriceAdvantageDeal = {
     groupId: string;
     shipName: string;
     vendor: string;
+    itinerary: string;
+    departurePort: string;
+    nights: string;
     sailDate: string;
     startingPrice: string;
     priceAdvantage: string;
@@ -154,42 +164,106 @@ async function scrapeTodaysPromos(
     return promos;
 }
 
-// ─── Scrape Price Advantages ──────────────────────────────────────────────────
+// ─── Sail Date Filter ─────────────────────────────────────────────────────────
+
+/** Returns true if the sail date string is parseable and < MIN_LEAD_DAYS out. */
+function isTooClose(sailDateRaw: string, now: Date): boolean {
+    if (!sailDateRaw) return false;
+    const d = new Date(sailDateRaw);
+    if (isNaN(d.getTime())) return false;
+    const daysOut = (d.getTime() - now.getTime()) / 86400000;
+    return daysOut < MIN_LEAD_DAYS;
+}
+
+// ─── Scrape Group Inventory (paginated) ───────────────────────────────────────
+
+/**
+ * Scrapes the CB group inventory table with correct column mapping.
+ * Columns (0-indexed): groupId | ship | vendor | itinerary | port | nights | sailDate | priceFrom | priceAdvantage | personalLink
+ *
+ * @param url  Base URL to scrape (ALL_GROUPS_URL or PRICE_ADVANTAGES_URL)
+ * @param paginate  Whether to follow pagination links (up to MAX_PAGES)
+ */
+async function scrapeGroupInventory(
+    page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>,
+    url: string,
+    paginate: boolean,
+): Promise<PriceAdvantageDeal[]> {
+    const now = new Date();
+    const allResults: PriceAdvantageDeal[] = [];
+    const seenGroupIds = new Set<string>();
+    let currentUrl = url;
+    let pageNum = 0;
+
+    while (pageNum < MAX_PAGES) {
+        await page.goto(currentUrl, { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(2000);
+
+        const pageResults = await page.evaluate((sourceUrl: string) => {
+            type RowResult = {
+                groupId: string; shipName: string; vendor: string;
+                itinerary: string; departurePort: string; nights: string;
+                sailDate: string; startingPrice: string; priceAdvantage: string;
+                sourceUrl: string;
+            };
+            const rows = document.querySelectorAll('table tbody tr');
+            const results: RowResult[] = [];
+
+            rows.forEach((row) => {
+                const cells = row.querySelectorAll('td');
+                const cellTexts = Array.from(cells).map((cell) => cell.textContent?.trim() ?? '');
+                if (cellTexts.length < 3 || !cellTexts[0]) return;
+
+                results.push({
+                    groupId:       cellTexts[0] ?? '',
+                    shipName:      cellTexts[1] ?? '',
+                    vendor:        cellTexts[2] ?? '',
+                    itinerary:     cellTexts[3] ?? '',
+                    departurePort: cellTexts[4] ?? '',
+                    nights:        cellTexts[5] ?? '',
+                    sailDate:      cellTexts[6] ?? '',
+                    startingPrice: cellTexts[7] ?? '',
+                    priceAdvantage:cellTexts[8] ?? '',
+                    sourceUrl,
+                });
+            });
+            return results;
+        }, currentUrl);
+
+        let addedOnPage = 0;
+        for (const row of pageResults) {
+            if (!row.groupId || seenGroupIds.has(row.groupId)) continue;
+            if (isTooClose(row.sailDate, now)) continue;
+            seenGroupIds.add(row.groupId);
+            allResults.push(row);
+            addedOnPage++;
+        }
+
+        console.log(`[scrape-cb-deals] Page ${pageNum + 1}: ${pageResults.length} rows, ${addedOnPage} added (${allResults.length} total so far)`);
+
+        if (!paginate) break;
+
+        const nextUrl = await page.evaluate(() => {
+            const links = Array.from(document.querySelectorAll('a'));
+            const nextLink = links.find((a) => /next|\u203a|>>/.test(a.textContent ?? ''));
+            return nextLink?.href ?? null;
+        });
+
+        if (!nextUrl || nextUrl === currentUrl) break;
+        currentUrl = nextUrl;
+        pageNum++;
+    }
+
+    console.log(`[scrape-cb-deals] Finished scraping ${url} — ${allResults.length} groups across ${pageNum + 1} page(s).`);
+    return allResults;
+}
+
+// ─── Scrape Price Advantages (single-page enrichment) ────────────────────────
 
 async function scrapePriceAdvantages(
     page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>
 ): Promise<PriceAdvantageDeal[]> {
-    await page.goto(PRICE_ADVANTAGES_URL, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    const advantages = await page.evaluate((sourceUrl: string) => {
-        const rows = document.querySelectorAll('table tbody tr, .group-row, .list-group-item');
-        const results: PriceAdvantageDeal[] = [];
-
-        rows.forEach((row) => {
-            const cells = row.querySelectorAll('td, .col, span');
-            const cellTexts = Array.from(cells).map((cell) => cell.textContent?.trim() ?? '');
-
-            if (cellTexts.length < 3) {
-                return;
-            }
-
-            results.push({
-                groupId: cellTexts[0] ?? '',
-                shipName: cellTexts[1] ?? '',
-                vendor: cellTexts[2] ?? '',
-                sailDate: cellTexts[3] ?? '',
-                startingPrice: cellTexts[4] ?? '',
-                priceAdvantage: cellTexts[5] ?? '',
-                sourceUrl,
-            });
-        });
-
-        return results;
-    }, PRICE_ADVANTAGES_URL);
-
-    console.log(`[scrape-cb-deals] Scraped ${advantages.length} price advantages.`);
-    return advantages;
+    return scrapeGroupInventory(page, PRICE_ADVANTAGES_URL, false);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -199,19 +273,39 @@ async function runScraper(): Promise<void> {
 
     try {
         const promos = await scrapeTodaysPromos(page);
-        const priceAdvantages = await scrapePriceAdvantages(page);
+
+        // Primary pass: all groups (paginated, cross-line inventory)
+        console.log('[scrape-cb-deals] Starting primary all-groups scrape (paginated)...');
+        const allGroups = await scrapeGroupInventory(page, ALL_GROUPS_URL, true);
+
+        // Enrichment pass: price-advantage groups (single page, for priceAdvantage field)
+        console.log('[scrape-cb-deals] Starting price-advantage enrichment pass...');
+        const priceAdvantageGroups = await scrapePriceAdvantages(page);
+
+        // Merge: prefer price-advantage data when groupIds overlap
+        const priceAdvantageMap = new Map<string, PriceAdvantageDeal>(
+            priceAdvantageGroups.map((g) => [g.groupId, g]),
+        );
+        const mergedGroups = allGroups.map((g) => priceAdvantageMap.get(g.groupId) ?? g);
+
+        // Add any price-advantage-only entries not in the all-groups pass
+        for (const pg of priceAdvantageGroups) {
+            if (!mergedGroups.some((g) => g.groupId === pg.groupId)) {
+                mergedGroups.push(pg);
+            }
+        }
 
         const cache: DealsCache = {
             generatedAtIso: new Date().toISOString(),
             promos,
-            priceAdvantages,
+            priceAdvantages: mergedGroups,
         };
 
         await mkdir(OUTPUT_DIRECTORY, { recursive: true });
         await writeFile(OUTPUT_FILE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
 
         console.log(`[scrape-cb-deals] ✅ Cache written to: ${OUTPUT_FILE_PATH}`);
-        console.log(`[scrape-cb-deals] Promos: ${promos.length}, Price Advantages: ${priceAdvantages.length}`);
+        console.log(`[scrape-cb-deals] Promos: ${promos.length}, Groups: ${mergedGroups.length} (${allGroups.length} all-groups + ${priceAdvantageGroups.length} price-advantage)`);
     } finally {
         await browser.close();
     }

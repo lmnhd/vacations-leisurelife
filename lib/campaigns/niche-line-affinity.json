@@ -1,0 +1,157 @@
+{
+  "_comment": "Niche-to-cruise-line affinity knowledgebase. Vendor canonical names must match CB group inventory vendor strings (after normalization). affinityScore range: 20-60 (boost) | avoidLines receive -25 penalty.",
+  "vendorNormalization": [
+    { "canonical": "Royal Caribbean International", "prefixes": ["Royal Caribbean"] },
+    { "canonical": "Norwegian Cruise Line",         "prefixes": ["Norwegian Cruise"] },
+    { "canonical": "Celebrity Cruises",             "prefixes": ["Celebrity Cruises"] },
+    { "canonical": "Carnival Cruise Lines",         "prefixes": ["Carnival Cruise"] },
+    { "canonical": "MSC Cruises",                   "prefixes": ["MSC Cruises"] },
+    { "canonical": "Princess Cruises",              "prefixes": ["Princess Cruises"] },
+    { "canonical": "Cunard Line",                   "prefixes": ["Cunard Line"] },
+    { "canonical": "Holland America Line",          "prefixes": ["Holland America"] },
+    { "canonical": "Margaritaville at Sea",         "prefixes": ["Margaritaville"] },
+    { "canonical": "Regent Seven Seas Cruises",     "prefixes": ["Regent Seven Seas", "Regent Cruises"] }
+  ],
+  "nicheAffinities": [
+    {
+      "id": "wellness-nature-spa",
+      "labels": ["wellness", "yoga", "spa", "meditation", "mindfulness", "botanical", "garden", "nature", "healing", "breathwork", "sound bath", "holistic", "retreat", "serenity", "tranquil"],
+      "preferredLines": [
+        { "line": "Celebrity Cruises",    "affinityScore": 50, "rationale": "AquaClass spa cabins, Canyon Ranch partnership, sophisticated adult wellness programming" },
+        { "line": "Holland America Line", "affinityScore": 35, "rationale": "Greenhouse Spa, botanical garden deck, calm refined atmosphere" },
+        { "line": "Princess Cruises",     "affinityScore": 20, "rationale": "The Sanctuary adults-only retreat, wellness excursions" }
+      ],
+      "avoidLines": ["Carnival Cruise Lines", "Margaritaville at Sea"]
+    },
+    {
+      "id": "culinary-food-wine",
+      "labels": ["culinary", "food", "wine", "dining", "chef", "gastronomy", "cooking", "tasting", "sommelier", "mixology", "beer", "craft beer", "bourbon", "whiskey", "spirits", "farm to table", "epicurean", "foodie", "gourmet"],
+      "preferredLines": [
+        { "line": "Celebrity Cruises",    "affinityScore": 50, "rationale": "Internationally recognized culinary program, Le Voyage by Daniel Boulud" },
+        { "line": "Holland America Line", "affinityScore": 45, "rationale": "Culinary Arts Center, BB King's, renowned dining reputation" },
+        { "line": "Princess Cruises",     "affinityScore": 25, "rationale": "Chef's Table, Salty Dog Gastrobar, winemaker voyages" },
+        { "line": "Norwegian Cruise Line","affinityScore": 20, "rationale": "Extensive specialty dining venues across fleet" }
+      ],
+      "avoidLines": ["Margaritaville at Sea"]
+    },
+    {
+      "id": "arts-culture-heritage",
+      "labels": ["art", "culture", "history", "museum", "heritage", "crafts", "photography", "literature", "book", "architecture", "design", "antique", "collecting", "curator", "gallery", "scholar", "lecture"],
+      "preferredLines": [
+        { "line": "Holland America Line", "affinityScore": 55, "rationale": "Mariners Society, enrichment lecture series, extensive art collections, Culinary Arts Center partnerships" },
+        { "line": "Celebrity Cruises",    "affinityScore": 45, "rationale": "Curated art onboard, sophisticated programming, Design at Sea" },
+        { "line": "Cunard Line",          "affinityScore": 40, "rationale": "Insights enrichment program, transatlantic cultural heritage, Royal Court Theatre" },
+        { "line": "Princess Cruises",     "affinityScore": 30, "rationale": "Scholar at Sea, Discovery at Sea enrichment programs" }
+      ],
+      "avoidLines": ["Margaritaville at Sea", "Carnival Cruise Lines"]
+    },
+    {
+      "id": "music-entertainment-nightlife",
+      "labels": ["music", "band", "concert", "dj", "festival", "nightlife", "dance", "jazz", "rock", "edm", "party", "drag", "drag show", "performance", "comedy", "improv", "karaoke", "songwriter"],
+      "preferredLines": [
+        { "line": "Norwegian Cruise Line",       "affinityScore": 50, "rationale": "Broadway shows (Rock of Ages, Kinky Boots), freestyle nightlife, Hyde Away lounge" },
+        { "line": "Royal Caribbean International","affinityScore": 40, "rationale": "Major Broadway productions, AquaTheater, diverse music venues" },
+        { "line": "MSC Cruises",                 "affinityScore": 30, "rationale": "European entertainment vibe, lively social atmosphere" },
+        { "line": "Celebrity Cruises",           "affinityScore": 25, "rationale": "Evening shows, sophisticated lounge entertainment" }
+      ],
+      "avoidLines": ["Cunard Line"]
+    },
+    {
+      "id": "adventure-outdoor-expedition",
+      "labels": ["adventure", "hiking", "kayak", "kayaking", "expedition", "outdoor", "wilderness", "glacier", "safari", "extreme", "zip line", "rock climbing", "bungee", "thrilling", "adrenaline", "trekking", "diving", "snorkel"],
+      "preferredLines": [
+        { "line": "Holland America Line",        "affinityScore": 50, "rationale": "Alaska expedition specialists, enrichment naturalist programs, glacier landings" },
+        { "line": "Norwegian Cruise Line",       "affinityScore": 35, "rationale": "Action-packed amenities, adventure shore excursion focus" },
+        { "line": "Royal Caribbean International","affinityScore": 30, "rationale": "Rock climbing walls, FlowRider, zip lines on Icon/Wonder class" },
+        { "line": "Celebrity Cruises",           "affinityScore": 25, "rationale": "Edge class ships, adventure excursion programs in Alaska/Galapagos" }
+      ],
+      "avoidLines": []
+    },
+    {
+      "id": "family-kids-multigenerational",
+      "labels": ["family", "kids", "children", "teen", "teenager", "multigenerational", "water park", "kids club", "babysitting", "toddler", "grandparents", "reunion"],
+      "preferredLines": [
+        { "line": "Royal Caribbean International","affinityScore": 55, "rationale": "Supreme family entertainment: water parks, FlowRider, Adventure Ocean kids program, Perfect Day at CocoCay" },
+        { "line": "Carnival Cruise Lines",       "affinityScore": 45, "rationale": "Camp Ocean, Dr. Seuss at Sea, affordable family pricing" },
+        { "line": "Norwegian Cruise Line",       "affinityScore": 35, "rationale": "Splash Academy, youth programs across age groups" },
+        { "line": "MSC Cruises",                 "affinityScore": 30, "rationale": "Doremi kids program, family pricing structures" },
+        { "line": "Princess Cruises",            "affinityScore": 20, "rationale": "Camp Discovery, multigenerational itineraries" }
+      ],
+      "avoidLines": ["Cunard Line", "Regent Seven Seas Cruises"]
+    },
+    {
+      "id": "social-gaming-tabletop",
+      "labels": ["board game", "tabletop", "game", "gaming", "trivia", "puzzle", "social", "strategy", "rpg", "dungeons and dragons", "d&d", "dice", "cards", "card game", "esports", "chess", "game night"],
+      "preferredLines": [
+        { "line": "Norwegian Cruise Line",       "affinityScore": 45, "rationale": "Flexible social spaces, dedicated game areas on newer ships, freestyle socializing ethos" },
+        { "line": "Royal Caribbean International","affinityScore": 40, "rationale": "Wide variety of social venues, game shows, diverse communal spaces" },
+        { "line": "Celebrity Cruises",           "affinityScore": 30, "rationale": "Intelligent, relaxed atmosphere suits strategic gaming niches" },
+        { "line": "MSC Cruises",                 "affinityScore": 25, "rationale": "Social European vibe, communal spaces on new ships" }
+      ],
+      "avoidLines": []
+    },
+    {
+      "id": "luxury-premium-exclusive",
+      "labels": ["luxury", "upscale", "premium", "exclusive", "elite", "vip", "high-end", "bespoke", "curated", "refined", "white glove", "butler", "suite", "ultra-luxury", "first class", "discerning"],
+      "preferredLines": [
+        { "line": "Regent Seven Seas Cruises", "affinityScore": 60, "rationale": "Ultra-luxury all-inclusive, most spacious ships at sea, butler service" },
+        { "line": "Cunard Line",              "affinityScore": 50, "rationale": "White glove service heritage, formal elegance, Queen Mary 2 status" },
+        { "line": "Celebrity Cruises",        "affinityScore": 45, "rationale": "The Retreat luxury suites, premium brand positioning, Edge class design" },
+        { "line": "Holland America Line",     "affinityScore": 35, "rationale": "Upper-premium positioning, refined atmosphere, Pinnacle class ships" }
+      ],
+      "avoidLines": ["Carnival Cruise Lines", "Margaritaville at Sea"]
+    },
+    {
+      "id": "retro-nostalgia-vintage",
+      "labels": ["retro", "vintage", "nostalgia", "classic", "old school", "golden age", "mid-century", "antique", "throwback", "era", "bygone", "1950s", "1960s", "1970s", "1980s", "timeless", "traditional"],
+      "preferredLines": [
+        { "line": "Cunard Line",          "affinityScore": 55, "rationale": "Queen Mary 2 transatlantic heritage, formal dinners, ballroom dancing, classic voyage tradition" },
+        { "line": "Holland America Line", "affinityScore": 45, "rationale": "150+ years of history, classic cruise tradition, Ocean Bar, formal evenings" },
+        { "line": "Celebrity Cruises",    "affinityScore": 20, "rationale": "Modern takes on classic elegance, retro lounge nights" }
+      ],
+      "avoidLines": ["Carnival Cruise Lines", "Margaritaville at Sea"]
+    },
+    {
+      "id": "cottagecore-botanical-pastoral",
+      "labels": ["cottagecore", "botanical", "floral", "garden", "pastoral", "wildflower", "moss", "pressed flowers", "slow living", "handmade", "craft", "linen", "cozy", "cottage", "rustic", "foraging", "herbalism", "earthy"],
+      "preferredLines": [
+        { "line": "Celebrity Cruises",    "affinityScore": 45, "rationale": "Rooftop Garden Club, botanical spa gardens, sophisticated outdoor spaces" },
+        { "line": "Holland America Line", "affinityScore": 40, "rationale": "Floral deck programs, garden-inspired public spaces, calm unhurried pace" },
+        { "line": "Princess Cruises",     "affinityScore": 25, "rationale": "Relaxed Pacific atmosphere, garden-view spaces, Sanctuary deck" }
+      ],
+      "avoidLines": ["Carnival Cruise Lines", "Margaritaville at Sea"]
+    },
+    {
+      "id": "beach-party-fun-tropical",
+      "labels": ["beach party", "pool party", "fun", "salty", "tropical", "bahamas", "cocktails", "sun", "summer vibes", "spring break", "party boat", "tiki", "limbo", "reggae", "carefree", "easy going"],
+      "preferredLines": [
+        { "line": "Carnival Cruise Lines",       "affinityScore": 55, "rationale": "FunShips brand, sea-day parties, tropical entertainment, affordable fun" },
+        { "line": "Margaritaville at Sea",       "affinityScore": 50, "rationale": "Literal beach-party brand identity, Jimmy Buffett vibes, laid-back tropical" },
+        { "line": "Norwegian Cruise Line",       "affinityScore": 30, "rationale": "Pool deck parties, outdoor music, relaxed freestyle atmosphere" },
+        { "line": "Royal Caribbean International","affinityScore": 25, "rationale": "Perfect Day at CocoCay, pool deck entertainment, outdoor experiences" }
+      ],
+      "avoidLines": ["Cunard Line", "Regent Seven Seas Cruises"]
+    },
+    {
+      "id": "lgbtq-pride-inclusion",
+      "labels": ["lgbtq", "pride", "queer", "rainbow", "inclusive", "gay", "lesbian", "bisexual", "trans", "drag", "drag queen", "lgbtq+", "diversity", "celebrate", "acceptance"],
+      "preferredLines": [
+        { "line": "Norwegian Cruise Line",       "affinityScore": 50, "rationale": "Pride at Sea program, LGBTQ-specific sailings, relaxed freestyle culture" },
+        { "line": "Celebrity Cruises",           "affinityScore": 45, "rationale": "History of LGBTQ-welcoming sailings, sophisticated inclusive culture" },
+        { "line": "Royal Caribbean International","affinityScore": 30, "rationale": "Spectrum of the Seas LGBTQ-friendly, diverse guest base" },
+        { "line": "Holland America Line",        "affinityScore": 25, "rationale": "LGBTQ-friendly reputation, relaxed inclusive atmosphere" }
+      ],
+      "avoidLines": []
+    },
+    {
+      "id": "anime-fandom-pop-culture",
+      "labels": ["anime", "manga", "cosplay", "fandom", "pop culture", "geek", "comic", "sci-fi", "fantasy", "gaming", "convention", "nerd", "otaku", "collector", "merchandise", "fan art"],
+      "preferredLines": [
+        { "line": "Norwegian Cruise Line",       "affinityScore": 45, "rationale": "Younger demographic, flexible social spaces, no formal dress code, convention-friendly" },
+        { "line": "Royal Caribbean International","affinityScore": 35, "rationale": "Wide entertainment venues, diverse younger guest base, activity variety" },
+        { "line": "Carnival Cruise Lines",       "affinityScore": 25, "rationale": "Fun casual atmosphere, relaxed dress code, affordable for younger guests" }
+      ],
+      "avoidLines": ["Cunard Line", "Regent Seven Seas Cruises"]
+    }
+  ]
+}

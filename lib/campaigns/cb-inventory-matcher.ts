@@ -10,6 +10,7 @@
 import type { Campaign, CampaignInventoryCandidate } from "./types";
 import { CbGroupInventoryItem } from "./cb-inventory-types";
 import { getLaunchWindowAssessment } from "./launch-window";
+import { getNicheAffinityScore, describeNicheAffinityMatch } from "./niche-affinity";
 
 const CB_AGENT_SIID = process.env.CB_AGENT_SIID ?? "1049337";
 const THEME_FEE_MULTIPLIER = 1.15;
@@ -263,7 +264,11 @@ function scoreMatch(
     score -= 10;
   }
 
-  return Math.min(score, 100);
+  // ── Niche-to-cruise-line affinity ────────────────────────────────────────
+  // Boosts candidates whose line fits the campaign theme; penalises poor fits.
+  score += getNicheAffinityScore(campaign, item.vendor);
+
+  return Math.max(0, Math.min(score, 100));
 }
 
 // ─── Matcher ─────────────────────────────────────────────────────────────────
@@ -309,6 +314,11 @@ export function matchGroupInventoryToCampaign(
       matchedSailDate: item.sailDate,
       targetDates: campaign.targetDates,
     });
+    // Items with no parseable sail date are ineligible by default.
+    // Exception: price-advantage items may be holdback inventory without published dates.
+    if (leadTimeAssessment.meetsMinimumLeadTime === null && item.priceAdvantageNumber <= 0) {
+      continue;
+    }
     if (leadTimeAssessment.meetsMinimumLeadTime === false) {
       continue;
     }
@@ -357,8 +367,9 @@ export function matchGroupInventoryToCampaign(
   const cbPersonalLink = ""; // Will be populated by Phase B by scraping the group details page
   const computedStartingPrice = Math.round(rawPrice * THEME_FEE_MULTIPLIER);
 
+  const affinityDescription = describeNicheAffinityMatch(campaign, bestItem.vendor);
   console.log(
-    `[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice})`,
+    `[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice}, affinity: ${affinityDescription})`,
   );
 
   return {
@@ -456,6 +467,7 @@ export function rankGroupInventoryCandidates(
       matchedSailDate: item.sailDate,
       targetDates: campaign.targetDates,
     });
+    if (assessment.meetsMinimumLeadTime === null && item.priceAdvantageNumber <= 0) continue;
     if (assessment.meetsMinimumLeadTime === false) continue;
 
     const score = scoreMatch(campaign, item, exactShipRequired);

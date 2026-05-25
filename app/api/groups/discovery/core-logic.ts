@@ -48,12 +48,11 @@ type CbDealsCache = {
     }>;
 };
 
-const CB_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const CB_CACHE_MAX_AGE_MS = 72 * 60 * 60 * 1000;
 
-function warnIfCbCacheStale(now: Date = new Date()): void {
+function assertCbCacheFresh(now: Date = new Date()): void {
     if (!existsSync(CB_DEALS_CACHE_FILE)) {
-        console.warn('[discovery] CB deals cache not found — run scrape-cb-deals.ts first.');
-        return;
+        throw new Error('[discovery] CB deals cache not found — run scrape-cb-deals.ts first.');
     }
     try {
         const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
@@ -62,10 +61,11 @@ function warnIfCbCacheStale(now: Date = new Date()): void {
         const ageMs = now.getTime() - generatedAt.getTime();
         if (ageMs > CB_CACHE_MAX_AGE_MS) {
             const ageHours = Math.round(ageMs / (60 * 60 * 1000));
-            console.warn(`[discovery] CB deals cache is ${ageHours}h old (>24h). Run scrape-cb-deals.ts to refresh inventory before discovery.`);
+            throw new Error(`[discovery] CB deals cache is ${ageHours}h old (>72h). Run scrape-cb-deals.ts to refresh inventory before running discovery.`);
         }
-    } catch {
-        console.warn('[discovery] Failed to read CB deals cache for staleness check.');
+    } catch (err) {
+        if (err instanceof Error && err.message.startsWith('[discovery]')) throw err;
+        throw new Error('[discovery] Failed to read CB deals cache — file may be corrupted. Run scrape-cb-deals.ts.');
     }
 }
 
@@ -74,7 +74,7 @@ function loadCbInventoryFromCache(): CbGroupInventoryItem[] {
     try {
         const raw = readFileSync(CB_DEALS_CACHE_FILE, 'utf-8');
         const cache = JSON.parse(raw) as CbDealsCache;
-        return cache.priceAdvantages
+        const items = cache.priceAdvantages
             .filter((item) => item.groupId && item.shipName)
             .map((item) => ({
                 groupId: item.groupId,
@@ -89,6 +89,21 @@ function loadCbInventoryFromCache(): CbGroupInventoryItem[] {
                 departurePort: item.startingPrice, // startingPrice column holds departure port code
                 sourceUrl: item.sourceUrl ?? '',
             }));
+
+        // Log vendor distribution so inventory bias is immediately visible
+        const vendorCounts = items.reduce<Record<string, number>>((acc, item) => {
+            const vendor = item.vendor.replace(/[…\.]+$/, '').trim() || 'Unknown';
+            acc[vendor] = (acc[vendor] ?? 0) + 1;
+            return acc;
+        }, {});
+        const total = items.length;
+        const distribution = Object.entries(vendorCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([v, n]) => `${v}: ${Math.round((n / total) * 100)}%`)
+            .join(', ');
+        console.log(`[discovery] CB inventory loaded — ${total} items. Vendor distribution: ${distribution}`);
+
+        return items;
     } catch {
         return [];
     }
@@ -380,7 +395,7 @@ ${lines}`;
  */
 async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date }) {
     const { respin, now } = opts;
-    warnIfCbCacheStale(now);
+    assertCbCacheFresh(now);
     const cbInventoryContext = buildCbInventoryContext(now);
     const cachedInventory = loadCbInventoryFromCache();
     const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
@@ -657,7 +672,7 @@ async function runStep3AndPersist(args: Step3PersistArgs): Promise<DiscoveryPipe
 
     console.log('[generateDiscoveryBlueprints] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
     const cbInventoryHardConstraintBlock = cbInventoryContext
-        ? `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.`
+        ? `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.\n- targetDates MUST be at least 6 months (180 days) from today — sailings closer than that are ineligible.\n- PREFER ships from cruise lines that naturally fit the campaign niche: wellness/spa niches prefer Celebrity or Holland America; adventure niches prefer Holland America or Norwegian; luxury niches prefer Celebrity or Cunard; family niches prefer Royal Caribbean or Carnival; music/nightlife niches prefer Norwegian or Royal Caribbean. Do not default to Royal Caribbean unless the niche genuinely fits it best.`
         : '';
     const { object } = await callGlobalGenerateObject({
         schema: DiscoveryBlueprintBatchSchema,
