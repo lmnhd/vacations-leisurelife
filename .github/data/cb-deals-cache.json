@@ -1,5 +1,5 @@
 {
-  "generatedAtIso": "2026-05-25T01:24:50.264Z",
+  "generatedAtIso": "2026-05-25T02:05:56.249Z",
   "promos": [
     {
       "title": "ALG Vacations and Hyatt Inclusives - Save up to 25% off",
@@ -516,16 +516,28 @@
   ],
   "priceAdvantages": [
     {
-      "groupId": "6746425",
-      "shipName": "Hero of the Seas",
+      "groupId": "8467721",
+      "shipName": "Liberty of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "8 Night Western Caribbean Cruise",
+      "departurePort": "GLS",
+      "nights": "8",
+      "sailDate": "Aug. 20, 2027",
+      "startingPrice": "776.02",
+      "priceAdvantage": "$330",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+    },
+    {
+      "groupId": "441350",
+      "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
       "departurePort": "",
       "nights": "",
-      "sailDate": "Dec. 11, 2027",
-      "startingPrice": "1777.70",
-      "priceAdvantage": "$456",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+      "sailDate": "April 11, 2027",
+      "startingPrice": "1203.48",
+      "priceAdvantage": "$305",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
     },
     {
       "groupId": "6785830",
@@ -540,7 +552,19 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
     },
     {
-      "groupId": "3161894",
+      "groupId": "6746425",
+      "shipName": "Hero of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "Dec. 11, 2027",
+      "startingPrice": "1777.70",
+      "priceAdvantage": "$456",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "1568507",
       "shipName": "Navigator of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "17 Night Tokyo To Los Angeles Cruise",
@@ -549,19 +573,7 @@
       "sailDate": "May 12, 2027",
       "startingPrice": "1121.04",
       "priceAdvantage": "$1000",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
-    },
-    {
-      "groupId": "8467721",
-      "shipName": "Liberty of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "8 Night Western Caribbean Cruise",
-      "departurePort": "GLS",
-      "nights": "8",
-      "sailDate": "Aug. 20, 2027",
-      "startingPrice": "776.02",
-      "priceAdvantage": "$330",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
       "groupId": "443517",
@@ -573,7 +585,7 @@
       "sailDate": "April 18, 2027",
       "startingPrice": "1191.51",
       "priceAdvantage": "$305",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
       "groupId": "8910779",
@@ -588,19 +600,7 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4874027",
-      "shipName": "Celebrity Edge",
-      "vendor": "Celebrity Cruises",
-      "itinerary": "16 Night Tahitian Treasures Cruise",
-      "departurePort": "SYD",
-      "nights": "15",
-      "sailDate": "April 19, 2028",
-      "startingPrice": "2927.02",
-      "priceAdvantage": "$727",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "7118608",
+      "groupId": "1817624",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -612,7 +612,7 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "1817624",
+      "groupId": "7118608",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -660,7 +660,7 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "7155852",
+      "groupId": "1824434",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -672,7 +672,7 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "1824434",
+      "groupId": "7155852",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",

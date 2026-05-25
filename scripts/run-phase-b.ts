@@ -21,6 +21,7 @@ import {
   scrapeGroupInventory,
   scrapeGroupPersonalLink,
 } from "./cb-inventory-scraper";
+import { CbGroupInventoryItem } from "../lib/campaigns/cb-inventory-types";
 import {
   rankGroupInventoryCandidates,
   CbInventoryMatch,
@@ -144,7 +145,10 @@ async function generateOdysseusRetailLink(
 
 // ─── CLI argument parsing ────────────────────────────────────────────────────
 
+const CB_DEALS_CACHE_FILE = path.join(process.cwd(), ".github", "data", "cb-deals-cache.json");
+
 const args = process.argv.slice(2);
+const useCache = args.includes("--use-cache");
 const targetSlugs = args.reduce<string[]>(
   (collected: string[], value: string, index: number) => {
     if (value === "--slug") {
@@ -158,6 +162,62 @@ const targetSlugs = args.reduce<string[]>(
   [],
 );
 
+// ─── Cache-based inventory loader ───────────────────────────────────────────
+
+function loadInventoryFromCache(): CbGroupInventoryItem[] {
+  if (!fs.existsSync(CB_DEALS_CACHE_FILE)) {
+    throw new Error(
+      `[run-phase-b] CB deals cache not found at ${CB_DEALS_CACHE_FILE}. Run 'npm run scrape-cb-deals' first.`,
+    );
+  }
+
+  const raw = fs.readFileSync(CB_DEALS_CACHE_FILE, "utf-8");
+  const cache = JSON.parse(raw) as {
+    generatedAtIso: string;
+    priceAdvantages: Array<{
+      groupId: string;
+      shipName: string;
+      vendor: string;
+      itinerary: string;
+      departurePort: string;
+      nights: string;
+      sailDate: string;
+      startingPrice: string;
+      priceAdvantage: string;
+      sourceUrl: string;
+    }>;
+  };
+
+  const ageHours = Math.round(
+    (Date.now() - new Date(cache.generatedAtIso).getTime()) / 3600000,
+  );
+  console.log(
+    `[run-phase-b] Using cached inventory from ${cache.generatedAtIso} (${ageHours}h ago) — ${cache.priceAdvantages.length} items.`,
+  );
+
+  const parsePrice = (raw: string): number => {
+    const digits = raw.replace(/[^0-9.]/g, "");
+    return digits ? parseFloat(digits) : 0;
+  };
+
+  return cache.priceAdvantages
+    .filter((item) => item.groupId && item.shipName)
+    .map((item) => ({
+      groupId: item.groupId,
+      shipName: item.shipName,
+      vendor: item.vendor ?? "",
+      itinerary: item.itinerary ?? "",
+      departurePort: item.departurePort ?? "",
+      nights: item.nights ?? "",
+      sailDate: item.sailDate ?? "",
+      startingPrice: item.startingPrice ?? "",
+      startingPriceNumber: parsePrice(item.startingPrice ?? ""),
+      priceAdvantage: item.priceAdvantage ?? "",
+      priceAdvantageNumber: parsePrice(item.priceAdvantage ?? ""),
+      sourceUrl: item.sourceUrl ?? "",
+    }));
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function runPhaseB(): Promise<void> {
@@ -165,12 +225,17 @@ async function runPhaseB(): Promise<void> {
     "\n─── Phase B: CB Inventory Confirmation + Retail Link Generation ───\n",
   );
 
-  // 1. Scrape live CB group inventory (opens Playwright → requires saved session)
-  console.log(
-    "[run-phase-b] Scraping live CB view_groups for match confirmation...",
-  );
-  const inventory = await scrapeGroupInventory();
-  console.log(`[run-phase-b] ${inventory.length} inventory items scraped.\n`);
+  // 1. Load CB group inventory — from cache (fast) or live scrape (fresh)
+  let inventory: CbGroupInventoryItem[];
+  if (useCache) {
+    inventory = loadInventoryFromCache();
+  } else {
+    console.log(
+      "[run-phase-b] Scraping live CB view_groups for match confirmation...",
+    );
+    inventory = await scrapeGroupInventory();
+    console.log(`[run-phase-b] ${inventory.length} inventory items scraped.\n`);
+  }
 
   if (inventory.length === 0) {
     console.warn(

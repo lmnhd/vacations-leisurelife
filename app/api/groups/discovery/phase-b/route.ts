@@ -69,21 +69,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  * Preferred when calling from the test UI (allows body).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    const body = await request.json().catch(() => ({})) as { slug?: string; slugs?: string[] };
+    const body = await request.json().catch(() => ({})) as { slug?: string; slugs?: string[]; useCache?: boolean };
     const requestedSlugs = Array.isArray(body.slugs)
         ? body.slugs.filter((slug): slug is string => typeof slug === 'string' && slug.trim().length > 0)
         : [];
+    const useCache = body.useCache === true;
 
     if (requestedSlugs.length > 0) {
-        return triggerPhaseB(requestedSlugs);
+        return triggerPhaseB(requestedSlugs, useCache);
     }
 
-    return triggerPhaseB(body.slug ? [body.slug] : undefined);
+    return triggerPhaseB(body.slug ? [body.slug] : undefined, useCache);
 }
 
 // ─── Shared trigger logic ────────────────────────────────────────────────────
 
-function triggerPhaseB(slugs?: string[]): NextResponse {
+function triggerPhaseB(slugs?: string[], useCache = false): NextResponse {
     if (phaseBRunning) {
         return NextResponse.json(
             { success: false, error: 'Phase B is already running. Try again after the current run completes.' },
@@ -95,6 +96,9 @@ function triggerPhaseB(slugs?: string[]): NextResponse {
     const args = ['tsx', scriptPath];
     for (const slug of slugs ?? []) {
         args.push('--slug', slug);
+    }
+    if (useCache) {
+        args.push('--use-cache');
     }
 
     phaseBRunning = true;

@@ -790,6 +790,9 @@ export default function DiscoveryTestPage() {
   const [generateLoading, setGenerateLoading] = useState(false);
 
   // Phase B state
+  const [phaseBConfirmOpen, setPhaseBConfirmOpen] = useState(false);
+  const [phaseBUseCache, setPhaseBUseCache] = useState(true);
+  const [phaseBPendingMode, setPhaseBPendingMode] = useState<PhaseBRunMode | null>(null);
   const [phaseBLoading, setPhaseBLoading] = useState(false);
   const [phaseBCampaigns, setPhaseBCampaigns] = useState<PhaseBCampaignRef[]>(
     [],
@@ -1394,19 +1397,19 @@ export default function DiscoveryTestPage() {
     blueprints.some((bp) => bp.id === slug),
   );
 
-  const handleRunPhaseB = async (mode: PhaseBRunMode) => {
+  const handleRunPhaseB = (mode: PhaseBRunMode) => {
     const isSelectedRun = mode === "selected";
-    if (isSelectedRun && selectedPhaseBSlugs.length === 0) {
-      return;
-    }
+    if (isSelectedRun && selectedPhaseBSlugs.length === 0) return;
+    setPhaseBPendingMode(mode);
+    setPhaseBConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm(
-      `Phase B will open a Playwright browser, log into CB Agent Tools,\n` +
-        "scrape live group inventory, and match campaigns.\n\n" +
-        `${isSelectedRun ? `Target scope: ${selectedPhaseBSlugs.length} selected campaign(s).\n\n` : "Target scope: all campaigns needing inventory verification.\n\n"}` +
-        "Ensure CB_EMAIL and CB_PASSWORD are set in .env.local.\n\nContinue?",
-    );
-    if (!confirmed) return;
+  const confirmRunPhaseB = async () => {
+    const mode = phaseBPendingMode;
+    if (!mode) return;
+    const isSelectedRun = mode === "selected";
+    setPhaseBConfirmOpen(false);
+    setPhaseBPendingMode(null);
 
     setPhaseBLoading(true);
     setPhaseBError(null);
@@ -1415,12 +1418,14 @@ export default function DiscoveryTestPage() {
     try {
       clearPhaseBPollingInterval();
 
+      const body = isSelectedRun
+        ? { slugs: selectedPhaseBSlugs, useCache: phaseBUseCache }
+        : { useCache: phaseBUseCache };
+
       const response = await fetch("/api/groups/discovery/phase-b", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          isSelectedRun ? { slugs: selectedPhaseBSlugs } : {},
-        ),
+        body: JSON.stringify(body),
       });
       const data = (await response.json()) as {
         success?: boolean;
@@ -2056,6 +2061,54 @@ export default function DiscoveryTestPage() {
 
         {/* ─── Sonar Research ─────────────────────────────────────── */}
         {sonarResearch && <SonarResearchPanel research={sonarResearch} />}
+
+        {/* ─── Phase B Confirm Modal ───────────────────────────────── */}
+        {phaseBConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-200 mb-3">
+                Phase B — CB Inventory Match
+              </h3>
+              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                {phaseBPendingMode === "selected"
+                  ? `Target scope: ${selectedPhaseBSlugs.length} selected campaign(s).`
+                  : "Target scope: all campaigns needing inventory verification."}
+                <br />
+                Ensure <code className="text-sky-400">CB_EMAIL</code> and{" "}
+                <code className="text-sky-400">CB_PASSWORD</code> are set in{" "}
+                <code className="text-sky-400">.env.local</code>.
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer mb-5 group">
+                <input
+                  type="checkbox"
+                  checked={phaseBUseCache}
+                  onChange={(e) => setPhaseBUseCache(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-800 accent-sky-500 cursor-pointer"
+                />
+                <span className="text-xs text-slate-300 leading-relaxed">
+                  <span className="font-medium text-sky-300">Use existing cache</span>{" "}
+                  — skip live scrape and match against the cached inventory
+                  (<code className="text-slate-400">.github/data/cb-deals-cache.json</code>).
+                  Faster; uncheck to force a fresh CB scrape.
+                </span>
+              </label>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => { setPhaseBConfirmOpen(false); setPhaseBPendingMode(null); }}
+                  className="text-xs px-4 py-2 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => void confirmRunPhaseB()}
+                  className="text-xs px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-all"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ─── Phase B ─────────────────────────────────────────────── */}
         <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
