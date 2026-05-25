@@ -26,7 +26,7 @@ import {
   rankGroupInventoryCandidates,
   CbInventoryMatch,
 } from "../lib/campaigns/cb-inventory-matcher";
-import type { CampaignInventoryCandidate } from "../lib/campaigns/types";
+import type { Campaign, CampaignInventoryCandidate } from "../lib/campaigns/types";
 import {
   scanMatchedCampaigns,
   getCampaignBlueprint,
@@ -263,7 +263,7 @@ async function runPhaseB(): Promise<void> {
       return;
     }
 
-    campaigns = requestedCampaigns.filter((campaign: any) => campaign !== null);
+    campaigns = requestedCampaigns.filter((c): c is Campaign => c !== null);
   }
 
   console.log(
@@ -341,6 +341,9 @@ async function runPhaseB(): Promise<void> {
         personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
       }
       // Fallback: use campaign-level stored link if the live scrape failed and group IDs match
+      console.log(
+        `[run-phase-b][debug] cbagenttoolsGroupId=${JSON.stringify(campaign.cbagenttoolsGroupId)} cbagenttoolsBookingLink=${JSON.stringify(campaign.cbagenttoolsBookingLink)} candidate.groupId=${JSON.stringify(candidate.groupId)}`,
+      );
       if (!personalLink &&
         campaign.cbagenttoolsGroupId?.trim() === candidate.groupId?.trim() &&
         campaign.cbagenttoolsBookingLink
