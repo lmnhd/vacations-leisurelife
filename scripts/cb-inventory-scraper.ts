@@ -163,9 +163,47 @@ export async function scrapeGroupInventory(): Promise<CbGroupInventoryItem[]> {
   }
 }
 
+// Booking URL hostname fragments that indicate a real personal/retail link
+const BOOKING_HOST_PATTERNS = [
+  "swift",
+  "package",
+  "cruisingco",
+  "royalcaribbean",
+  "celebrity",
+  "ncl.com",
+  "carnival",
+  "hollandamerica",
+  "princess",
+  "msccruises",
+  "book",
+  "reserve",
+  "odysseus",
+];
+
+// Text content labels that indicate the link is a personal/booking link
+const BOOKING_TEXT_LABELS = [
+  "personal link",
+  "personal booking",
+  "booking link",
+  "book now",
+  "book this group",
+  "reserve",
+  "shareable link",
+  "share link",
+  "group link",
+];
+
 /**
  * Given a CBAT groupId (e.g. "44071"), visits the group detail page
  * and extracts the true Personal Link which contains the actual Odysseus package ID.
+ *
+ * Tries four strategies in order:
+ *   1. Anchor whose visible text matches a booking label
+ *   2. Anchor whose href matches a known booking URL pattern
+ *   3. Any input[type=text] / input[type=url] value that looks like an external URL
+ *   4. Any anchor pointing outside cbagenttools.com
+ *
+ * Always logs all found candidates when no strategy succeeds, to aid diagnosis.
  */
 export async function scrapeGroupPersonalLink(
   groupId: string,
@@ -174,33 +212,111 @@ export async function scrapeGroupPersonalLink(
   try {
     const url = `${CB_BASE_URL}/groups/view_group/${groupId}/`;
     console.log(
-      `[cb-inventory-scraper] Navigating to group details to extract personal link: ${url}`,
+      `[cb-inventory-scraper] Navigating to group details: ${url}`,
     );
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.goto(url, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
 
-    // Sometimes the link takes a moment to render or is just a static anchor
-    const personalLink = await page.evaluate(() => {
-      const anchors = Array.from(document.querySelectorAll("a"));
-      const link = anchors.find(
-        (a) =>
-          a.href.includes("swift") ||
-          a.href.includes("package") ||
-          a.innerText.includes("Personal Link"),
-      );
-      return link ? link.href : null;
-    });
+    type LinkCandidate = { strategy: string; href: string; text: string };
 
-    if (personalLink) {
+    const result = await page.evaluate(
+      ({
+        hostPatterns,
+        textLabels,
+        baseHost,
+      }: {
+        hostPatterns: string[];
+        textLabels: string[];
+        baseHost: string;
+      }): { found: string | null; debug: LinkCandidate[] } => {
+        const anchors = Array.from(document.querySelectorAll("a"));
+        const allExternal: LinkCandidate[] = anchors
+          .filter(
+            (a) =>
+              a.href &&
+              a.href.startsWith("http") &&
+              !a.href.includes(baseHost),
+          )
+          .map((a) => ({
+            strategy: "external-anchor",
+            href: a.href,
+            text: (a.textContent ?? "").trim().slice(0, 80),
+          }));
+
+        // Strategy 1 — text label match
+        for (const a of anchors) {
+          const text = (a.textContent ?? "").toLowerCase().trim();
+          if (textLabels.some((label) => text.includes(label)) && a.href) {
+            return {
+              found: a.href,
+              debug: [{ strategy: "text-label", href: a.href, text: (a.textContent ?? "").trim().slice(0, 80) }],
+            };
+          }
+        }
+
+        // Strategy 2 — href URL pattern match
+        for (const a of anchors) {
+          const href = (a.href ?? "").toLowerCase();
+          if (hostPatterns.some((p) => href.includes(p)) && !href.includes(baseHost)) {
+            return {
+              found: a.href,
+              debug: [{ strategy: "href-pattern", href: a.href, text: (a.textContent ?? "").trim().slice(0, 80) }],
+            };
+          }
+        }
+
+        // Strategy 3 — input field containing an external URL
+        const inputs = Array.from(
+          document.querySelectorAll('input[type="text"], input[type="url"], input:not([type])'),
+        ) as HTMLInputElement[];
+        for (const input of inputs) {
+          const val = (input.value ?? "").trim();
+          if (val.startsWith("http") && !val.includes(baseHost)) {
+            return {
+              found: val,
+              debug: [{ strategy: "input-value", href: val, text: input.name || input.id || "(input)" }],
+            };
+          }
+        }
+
+        // Strategy 4 — any external anchor (last resort)
+        if (allExternal.length > 0) {
+          return { found: allExternal[0].href, debug: allExternal };
+        }
+
+        // Nothing found — return all external links for diagnostics
+        return { found: null, debug: allExternal };
+      },
+      {
+        hostPatterns: BOOKING_HOST_PATTERNS,
+        textLabels: BOOKING_TEXT_LABELS,
+        baseHost: "cbagenttools.com",
+      },
+    );
+
+    if (result.found) {
       console.log(
-        `[cb-inventory-scraper] ✅ Found true Personal Link: ${personalLink}`,
+        `[cb-inventory-scraper] ✅ Personal Link (strategy=${result.debug[0]?.strategy ?? "?"}): ${result.found}`,
+      );
+      return result.found;
+    }
+
+    // Log everything we saw for diagnosis
+    console.warn(
+      `[cb-inventory-scraper] ⚠️ Could not find Personal Link on page ${url}`,
+    );
+    if (result.debug.length > 0) {
+      console.warn(
+        `[cb-inventory-scraper] External links found on page (${result.debug.length}):\n` +
+          result.debug.map((d) => `  ${d.href} | "${d.text}"`).join("\n"),
       );
     } else {
       console.warn(
-        `[cb-inventory-scraper] ⚠️ Could not find Personal Link on page ${url}`,
+        `[cb-inventory-scraper] No external links found on page at all — page may not have loaded correctly or session may be expired.`,
       );
     }
 
-    return personalLink;
+    return null;
   } catch (e) {
     console.error(
       `[cb-inventory-scraper] Error extracting personal link for group ${groupId}:`,

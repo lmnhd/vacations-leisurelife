@@ -1,0 +1,16 @@
+{
+  "completedAt": "2026-05-25T02:26:57.294Z",
+  "summary": {
+    "confirmedCount": 0,
+    "backupCount": 0,
+    "expiredCount": 0,
+    "failedCount": 1
+  },
+  "results": [
+    {
+      "slug": "mystical-seas",
+      "status": "INVENTORY_FAILED",
+      "detail": "All 1 candidate(s) failed validation — operator review required"
+    }
+  ]
+}
