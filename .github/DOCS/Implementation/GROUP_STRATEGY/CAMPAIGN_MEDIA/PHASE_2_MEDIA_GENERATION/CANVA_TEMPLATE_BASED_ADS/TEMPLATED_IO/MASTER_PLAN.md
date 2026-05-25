@@ -26,7 +26,25 @@ A system where:
 - A **render service** (Templated.io) receives the filled slots and returns production-ready PNG ads.
 - The finished PNGs are stored in the existing campaign media manifest, exactly as today, with zero changes to downstream distribution or review tooling.
 - The **same module** (Copy Forge + render service) can be called by a completely separate Cruise Brothers Deals workflow — with no duplication of logic.
-- Formats covered: **IG Square, FB/Google Display, Story/Reels, Carousel** (and extensible to more).
+- Formats covered for P4 static distribution: **Meta feed square, Meta feed portrait, Meta story/reel, Meta carousel square cards, Google Responsive Display landscape, Google Responsive Display square, and Google Responsive Display vertical** (plus legacy aliases retained while old templates migrate).
+
+Quality reference: [`GOLD_STANDARD_AD_REFERENCE.md`](./GOLD_STANDARD_AD_REFERENCE.md) captures the `Reset by Sea` image-detail ad from the older deterministic renderer. That artifact is the current premium benchmark for image mood, restrained composition, and promise-led copy. The Canva/Templated system should emulate that level of taste without preserving the old renderer as the long-term production path.
+
+### P4 Static Distribution Template Matrix
+
+Use these exact canvas sizes when creating Canva/Templated templates. Templated gallery thumbnails may show misleading scaled dimensions; the registry should record the intended output canvas size.
+
+| Format key | Platform | Placement | Ratio | Canva/Templated canvas |
+|---|---|---|---|---|
+| `meta_feed_square` | Meta | Feed square | 1:1 | 1080 × 1080 |
+| `meta_feed_portrait` | Meta | Feed portrait | 4:5 | 1080 × 1350 |
+| `meta_story_reel` | Meta | Story/Reel | 9:16 | 1080 × 1920 |
+| `meta_carousel_square` | Meta | Carousel card | 1:1 | 1080 × 1080 per card |
+| `google_display_landscape` | Google | Responsive Display landscape | 1.91:1 | 1200 × 628 |
+| `google_display_square` | Google | Responsive Display square | 1:1 | 1200 × 1200 |
+| `google_display_vertical` | Google | Responsive Display vertical | 9:16 | 900 × 1600 |
+
+Legacy format keys `ig_square`, `fb_google_display`, `story_reel`, and `carousel` still work for existing templates, but new P4 templates should use the precise keys above.
 
 ---
 
@@ -723,7 +741,7 @@ This page is the acceptance gate before each new template is promoted into the o
 | **P1** | `lib/ads/copy-forge/` scaffold + `/tests/canva-ads` showing copy + quality gate (no render) | None | Build Copy Forge + test page | Output is specific, non-generic, and passes the review rubric on 2 real campaigns |
 | **P2** | First template ready in Templated.io | Rename slots in `IG_temp_1`, confirm manual render passes, share template_id | Add registry entry | Manual render in Templated.io UI looks correct |
 | **P3** | `providers/templated.ts` + image uploader + end-to-end render in test page | Provide `TEMPLATED_API_KEY` env var | Implement provider | PNG returns in < 5s and selected assets respect manifest curation state |
-| **P4** | All 4 formats (1 visual system) | Design IG Square, FB/Google Display, Carousel templates | Wire all 4 into registry + test page | Full 4-format pack renders from one campaign with compatible downstream tags |
+| **P4** | Full static distribution matrix (1 visual system) | Design the 7 precise P4 canvases: Meta 1:1, Meta 4:5, Meta 9:16, Meta carousel 1:1, Google 1.91:1, Google 1:1, Google 9:16 | Wire all 7 precise format keys into registry + test page | Full static pack renders from one campaign with compatible downstream tags |
 | **P5** | Orchestrator integration | — | Swap `ad-artifact-generator.ts`, add `AD_RENDER_PROVIDER` flag, test full pipeline run | End-to-end campaign run produces Templated ads in review UI with truthful provenance |
 | **P6** | Additional visual systems (Systems 1, 3, 4) | Design remaining template families | Registry + test page | Visual-system-sweep regression page covers all |
 | **P7** | CB Deals adapter | — | `deal-to-brief.ts` adapter + `/tests/cb-deal-ads` page | One real CB deal renders all 4 formats |

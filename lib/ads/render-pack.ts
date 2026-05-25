@@ -291,12 +291,24 @@ export async function buildTemplatedRenderPacks(
         const slotPacks: SlotPack[] = Array.isArray(packValue) ? packValue : [packValue];
         const layoutSlots = templateRef.layout.slotDescriptors;
         const pageArtifacts: AdRenderPageArtifact[] = [];
-        const pages: Array<{ page: string; layers: Record<string, TemplatedLayerOverride> }> = [];
+
+        const baseRequest = {
+            template: templateRef.templatedId,
+            format: 'png' as const,
+            async: false,
+            transparent: false,
+            name: `${args.input.campaign.name} - ${format}`,
+            external_id: `${args.slug}:${format}`,
+        };
 
         if (slotPacks.length === 1) {
             const prepared = await buildLayerOverrides(layoutSlots, slotPacks[0], pool, args.slug, usedAssetIds, 0);
             pageArtifacts.push({
                 page: 'page-1',
+                request: {
+                    ...baseRequest,
+                    layers: prepared.layers,
+                },
                 layers: prepared.layers,
                 selectedImages: prepared.selectedImages,
             });
@@ -306,27 +318,22 @@ export async function buildTemplatedRenderPacks(
                 const pageName = `page-${pageIndex + 1}`;
                 pageArtifacts.push({
                     page: pageName,
+                    request: {
+                        ...baseRequest,
+                        name: `${args.input.campaign.name} - ${format} - ${pageName}`,
+                        external_id: `${args.slug}:${format}:${pageName}`,
+                        layers: prepared.layers,
+                    },
                     layers: prepared.layers,
                     selectedImages: prepared.selectedImages,
                 });
-                pages.push({ page: pageName, layers: prepared.layers });
             }
         }
-
-        const request = {
-            template: templateRef.templatedId,
-            format: 'png' as const,
-            async: false,
-            transparent: false,
-            name: `${args.input.campaign.name} - ${format}`,
-            external_id: `${args.slug}:${format}`,
-            ...(pageArtifacts.length > 1 ? { pages } : { layers: pageArtifacts[0].layers }),
-        };
 
         packs.push({
             format,
             templateRef,
-            request,
+            request: baseRequest,
             pages: pageArtifacts,
             selectedImages: pageArtifacts.flatMap((page) => page.selectedImages),
         });

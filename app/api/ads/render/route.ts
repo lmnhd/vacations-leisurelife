@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         const requestedFormats = Array.isArray(body.formats) ? body.formats.filter(isValidFormat) : [];
         if (requestedFormats.length === 0) {
             return NextResponse.json(
-                { error: 'Missing required field: formats[] (at least one of ig_square, fb_google_display, story_reel, carousel)' },
+                { error: `Missing required field: formats[] (at least one of ${AD_FORMATS.join(', ')})` },
                 { status: 400 },
             );
         }
@@ -96,19 +96,18 @@ export async function POST(req: NextRequest) {
 
         const renderedGroups: AdRenderResult[] = [];
         for (const pack of renderPacks) {
-            const response = await renderWithTemplated(pack.request);
-            const responsePages = Array.isArray(response) ? response : [response];
-            const responsePageMap = new Map(
-                responsePages.map((page, index) => [page.page ?? `page-${index + 1}`, page] as const),
-            );
-
-            const pages = pack.pages.map((page, index) => {
-                const render = responsePageMap.get(page.page) ?? responsePages[index];
+            const pages = [];
+            for (const page of pack.pages) {
+                // Carousel cards reuse one single-card template. Rendering each
+                // card independently avoids Templated creating blank synthetic
+                // pages when a `pages` array is sent to a one-page template.
+                const response = await renderWithTemplated(page.request);
+                const render = Array.isArray(response) ? response[0] : response;
                 if (!render) {
-                    throw new Error(`Templated returned fewer renders than expected for format "${pack.format}".`);
+                    throw new Error(`Templated returned no render for ${pack.format} ${page.page}.`);
                 }
-                return { ...page, render };
-            });
+                pages.push({ ...page, render });
+            }
 
             renderedGroups.push({
                 format: pack.format,

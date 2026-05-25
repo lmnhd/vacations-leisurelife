@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, Image as ImageIcon, Loader2, Sparkles, Type } from 'lucide-react';
 import { CampaignSelector } from '../media-generation/campaign-selector';
 
@@ -16,13 +17,21 @@ import { CampaignSelector } from '../media-generation/campaign-selector';
 // ────────────────────────────────────────────────────────────────────────────
 
 const ALL_FORMATS = [
-    { id: 'story_reel', label: 'Story / Reel', dims: '1080×1920' },
-    { id: 'ig_square', label: 'IG Square', dims: '1080×1080' },
-    { id: 'fb_google_display', label: 'FB / Google Display', dims: '1200×628' },
-    { id: 'carousel', label: 'Carousel', dims: '1080×1080 × N' },
+    { id: 'meta_feed_square', label: 'Meta Feed Square', dims: '1080×1080' },
+    { id: 'meta_feed_portrait', label: 'Meta Feed Portrait', dims: '1080×1350' },
+    { id: 'meta_story_reel', label: 'Meta Story / Reel', dims: '1080×1920' },
+    { id: 'meta_carousel_square', label: 'Meta Carousel Card', dims: '1080×1080 × N' },
+    { id: 'google_display_landscape', label: 'Google Display Landscape', dims: '1200×628' },
+    { id: 'google_display_square', label: 'Google Display Square', dims: '1200×1200' },
+    { id: 'google_display_vertical', label: 'Google Display Vertical', dims: '900×1600' },
+    { id: 'story_reel', label: 'Legacy Story / Reel', dims: '1080×1920' },
+    { id: 'ig_square', label: 'Legacy IG Square', dims: '1080×1080' },
+    { id: 'fb_google_display', label: 'Legacy FB / Google Display', dims: '1200×628' },
+    { id: 'carousel', label: 'Legacy Carousel', dims: '1080×1080 × N' },
 ] as const;
 
 type FormatId = (typeof ALL_FORMATS)[number]['id'];
+type EditableCopyField = 'headline' | 'subhead' | 'microcopy' | 'cta';
 
 interface SlotDescriptor {
     name: string;
@@ -192,13 +201,15 @@ const SEVERITY_STYLES: Record<'blocker' | 'warning', string> = {
     warning: 'border-amber-500/30 bg-amber-500/10 text-amber-100',
 };
 
+const STORAGE_KEY = 'lli:canva-ads:audition-state:v1';
+
 function isSlotPackArray(value: SlotPack | SlotPack[]): value is SlotPack[] {
     return Array.isArray(value);
 }
 
 export default function CanvaAdsPage() {
     const [slug, setSlug] = useState('');
-    const [selectedFormats, setSelectedFormats] = useState<FormatId[]>(['story_reel']);
+    const [selectedFormats, setSelectedFormats] = useState<FormatId[]>(['meta_story_reel']);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<CopyForgeResponse | null>(null);
     const [renderLoading, setRenderLoading] = useState(false);
@@ -206,6 +217,47 @@ export default function CanvaAdsPage() {
     const [renderError, setRenderError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [errorMeta, setErrorMeta] = useState<{ visualFlavor?: string } | null>(null);
+    const [copyDirty, setCopyDirty] = useState(false);
+    const [hydrated, setHydrated] = useState(false);
+    const renderPanelRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        try {
+            const raw = window.localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const saved = JSON.parse(raw) as {
+                    slug?: string;
+                    selectedFormats?: FormatId[];
+                    result?: CopyForgeResponse | null;
+                    renderResult?: RenderResponse | null;
+                    copyDirty?: boolean;
+                };
+                if (typeof saved.slug === 'string') setSlug(saved.slug);
+                if (Array.isArray(saved.selectedFormats) && saved.selectedFormats.length > 0) {
+                    setSelectedFormats(saved.selectedFormats);
+                }
+                if (saved.result) setResult(saved.result);
+                if (saved.renderResult) setRenderResult(saved.renderResult);
+                if (typeof saved.copyDirty === 'boolean') setCopyDirty(saved.copyDirty);
+            }
+        } catch {
+            window.localStorage.removeItem(STORAGE_KEY);
+        } finally {
+            setHydrated(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!hydrated) return;
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            slug,
+            selectedFormats,
+            result,
+            renderResult,
+            copyDirty,
+            savedAt: new Date().toISOString(),
+        }));
+    }, [copyDirty, hydrated, renderResult, result, selectedFormats, slug]);
 
     const toggleFormat = useCallback((id: FormatId) => {
         setSelectedFormats((prev) =>
@@ -228,6 +280,7 @@ export default function CanvaAdsPage() {
         setResult(null);
         setRenderResult(null);
         setRenderError(null);
+        setCopyDirty(false);
         try {
             const res = await fetch('/api/ads/copy-forge', {
                 method: 'POST',
@@ -242,6 +295,7 @@ export default function CanvaAdsPage() {
                 return;
             }
             setResult(data as CopyForgeResponse);
+            setCopyDirty(false);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Network error');
         } finally {
@@ -253,6 +307,10 @@ export default function CanvaAdsPage() {
         if (!result) return;
         if (!result.qualityGate.passed) {
             setRenderError('Copy Forge must pass the quality gate before rendering.');
+            return;
+        }
+        if (copyDirty) {
+            setRenderError('Copy was edited locally. Re-run the quality gate only before rendering.');
             return;
         }
 
@@ -275,12 +333,15 @@ export default function CanvaAdsPage() {
                 return;
             }
             setRenderResult(data as RenderResponse);
+            window.setTimeout(() => {
+                renderPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
         } catch (e) {
             setRenderError(e instanceof Error ? e.message : 'Network error');
         } finally {
             setRenderLoading(false);
         }
-    }, [result]);
+    }, [copyDirty, result]);
 
     const recheck = useCallback(async () => {
         if (!result) return;
@@ -300,6 +361,7 @@ export default function CanvaAdsPage() {
             const data = await parseApiPayload<{ qualityGate?: QualityGate }>(res);
             if (res.ok && !('error' in data) && data.qualityGate) {
                 setResult({ ...result, qualityGate: data.qualityGate });
+                setCopyDirty(false);
             } else if ('error' in data) {
                 setError(data.error);
             }
@@ -308,7 +370,51 @@ export default function CanvaAdsPage() {
         }
     }, [result]);
 
+    const updateCopyField = useCallback((
+        format: FormatId,
+        pageIndex: number,
+        field: EditableCopyField,
+        value: string,
+    ) => {
+        setResult((current) => {
+            if (!current) return current;
+
+            const currentPack = current.copySet.formats[format];
+            if (!currentPack) return current;
+
+            const nextFormats = { ...current.copySet.formats };
+            if (isSlotPackArray(currentPack)) {
+                nextFormats[format] = currentPack.map((pack, index) => (
+                    index === pageIndex ? { ...pack, [field]: value } : pack
+                ));
+            } else if (pageIndex === 0) {
+                nextFormats[format] = { ...currentPack, [field]: value };
+            }
+
+            return {
+                ...current,
+                copySet: {
+                    ...current.copySet,
+                    formats: nextFormats,
+                },
+            };
+        });
+        setCopyDirty(true);
+        setRenderResult(null);
+        setRenderError(null);
+    }, []);
+
     const generateDisabled = loading || !slug.trim() || selectedFormats.length === 0;
+
+    const clearSavedState = useCallback(() => {
+        window.localStorage.removeItem(STORAGE_KEY);
+        setResult(null);
+        setRenderResult(null);
+        setRenderError(null);
+        setError(null);
+        setErrorMeta(null);
+        setCopyDirty(false);
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-950 px-6 py-10 text-slate-200">
@@ -325,6 +431,20 @@ export default function CanvaAdsPage() {
                     loading={loading}
                     disabled={generateDisabled}
                 />
+
+                {result && (
+                    <ActionBar
+                        result={result}
+                        loading={loading}
+                        renderLoading={renderLoading}
+                        disabled={generateDisabled}
+                        copyDirty={copyDirty}
+                        onGenerate={generate}
+                        onRecheck={recheck}
+                        onRender={render}
+                        onClearSaved={clearSavedState}
+                    />
+                )}
 
                 {error && (
                     <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -353,13 +473,20 @@ export default function CanvaAdsPage() {
                 {result && (
                     <div className="space-y-6">
                         <RunSummary result={result} />
+                        {copyDirty && (
+                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                                Copy edited locally. Re-run the quality gate only before rendering so the pass/fail state reflects the current text.
+                            </div>
+                        )}
                         <QualityGatePanel gate={result.qualityGate} />
                         <CompositionIntent set={result.copySet} />
                         <RenderPanel
+                            ref={renderPanelRef}
                             result={result}
                             renderResult={renderResult}
                             renderError={renderError}
                             renderLoading={renderLoading}
+                            copyDirty={copyDirty}
                             onRender={render}
                         />
                         {result.supportedFormats.map((format) => {
@@ -373,6 +500,7 @@ export default function CanvaAdsPage() {
                                     pack={pack}
                                     layout={layout}
                                     templateRef={result.templateRefs[format] ?? null}
+                                    onCopyChange={updateCopyField}
                                 />
                             );
                         })}
@@ -478,6 +606,77 @@ function ControlPanel(props: {
     );
 }
 
+function ActionBar({
+    result,
+    loading,
+    renderLoading,
+    disabled,
+    copyDirty,
+    onGenerate,
+    onRecheck,
+    onRender,
+    onClearSaved,
+}: {
+    result: CopyForgeResponse;
+    loading: boolean;
+    renderLoading: boolean;
+    disabled: boolean;
+    copyDirty: boolean;
+    onGenerate: () => void;
+    onRecheck: () => void;
+    onRender: () => void;
+    onClearSaved: () => void;
+}) {
+    return (
+        <div className="sticky top-3 z-20 rounded-2xl border border-cyan-400/25 bg-slate-950/95 p-3 shadow-2xl shadow-slate-950/60 backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Audition controls</div>
+                    <div className="truncate text-sm text-slate-300">
+                        {result.slug} · {result.supportedFormats.length} format{result.supportedFormats.length === 1 ? '' : 's'} · gate {result.qualityGate.passed ? 'passed' : 'blocked'}
+                        {copyDirty ? ' · edited, needs recheck' : ''}
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        onClick={onGenerate}
+                        disabled={disabled}
+                        className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:border-cyan-400/60 hover:bg-cyan-500/15 disabled:opacity-40"
+                    >
+                        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        Run Copy Forge
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onRecheck}
+                        disabled={loading}
+                        className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-white/20 disabled:opacity-40"
+                    >
+                        Re-run quality gate only
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onRender}
+                        disabled={renderLoading || copyDirty || !result.qualityGate.passed}
+                        className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/15 disabled:opacity-40"
+                    >
+                        {renderLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        Render
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onClearSaved}
+                        className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-white/20 hover:text-slate-200"
+                    >
+                        Clear saved
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function RunSummary({ result }: { result: CopyForgeResponse }) {
     return (
         <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 space-y-3">
@@ -531,30 +730,73 @@ function Stat({ label, value }: { label: string; value: string }) {
     );
 }
 
-function QualityGatePanel({ gate }: { gate: QualityGate }) {
-    const verdictClass = gate.passed
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100'
-        : 'border-rose-500/30 bg-rose-500/10 text-rose-100';
+function CollapsibleSection({
+    title,
+    summary,
+    defaultOpen = false,
+    openWhen = false,
+    className = 'border-white/10 bg-slate-900/40',
+    children,
+}: {
+    title: string;
+    summary?: string;
+    defaultOpen?: boolean;
+    openWhen?: boolean;
+    className?: string;
+    children: ReactNode;
+}) {
+    const [open, setOpen] = useState(defaultOpen);
+    useEffect(() => {
+        if (openWhen) setOpen(true);
+    }, [openWhen]);
 
     return (
-        <div className={`rounded-2xl border p-5 ${verdictClass}`}>
+        <div className={`rounded-2xl border ${className}`}>
+            <button
+                type="button"
+                onClick={() => setOpen((value) => !value)}
+                className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left"
+            >
+                <div className="min-w-0">
+                    <div className="text-xs font-semibold uppercase tracking-widest text-slate-300">{title}</div>
+                    {summary && <div className="mt-1 truncate text-xs text-slate-500">{summary}</div>}
+                </div>
+                <span className="rounded-full border border-white/10 bg-slate-950 px-3 py-1 text-[10px] uppercase tracking-widest text-slate-400">
+                    {open ? 'Collapse' : 'Expand'}
+                </span>
+            </button>
+            {open && <div className="border-t border-white/5 p-5">{children}</div>}
+        </div>
+    );
+}
+
+function QualityGatePanel({ gate }: { gate: QualityGate }) {
+    const verdictClass = gate.passed
+        ? 'border-emerald-500/30 bg-emerald-500/10'
+        : 'border-rose-500/30 bg-rose-500/10';
+
+    return (
+        <CollapsibleSection
+            title={`Quality gate - ${gate.passed ? 'pass' : 'blocked'}`}
+            summary={`${gate.blockerCount} blocker${gate.blockerCount === 1 ? '' : 's'} | ${gate.warningCount} warning${gate.warningCount === 1 ? '' : 's'}`}
+            defaultOpen={!gate.passed}
+            className={verdictClass}
+        >
             <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     {gate.passed
                         ? <CheckCircle2 className="h-5 w-5" />
                         : <AlertTriangle className="h-5 w-5" />}
-                    <div className="text-sm font-semibold uppercase tracking-widest">
-                        Quality gate - {gate.passed ? 'pass' : 'blocked'}
-                    </div>
+                    <div className="text-sm font-semibold uppercase tracking-widest text-slate-100">Detailed checks</div>
                 </div>
-                <div className="text-xs">
+                <div className="text-xs text-slate-300">
                     {gate.blockerCount} blocker{gate.blockerCount === 1 ? '' : 's'} | {gate.warningCount} warning{gate.warningCount === 1 ? '' : 's'}
                 </div>
             </div>
             <div className="space-y-2">
-                {gate.checks.map((c) => (
+                {gate.checks.map((c, index) => (
                     <div
-                        key={c.key}
+                        key={`${c.key}-${index}`}
                         className={`rounded-xl border p-3 text-xs ${c.passed
                             ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-100'
                             : SEVERITY_STYLES[c.severity]
@@ -570,13 +812,17 @@ function QualityGatePanel({ gate }: { gate: QualityGate }) {
                     </div>
                 ))}
             </div>
-        </div>
+        </CollapsibleSection>
     );
 }
 
 function CompositionIntent({ set }: { set: AdCopySet }) {
     return (
-        <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-5">
+        <CollapsibleSection
+            title="Composition intent"
+            summary={set.creativeTerritory ? `Territory: ${set.creativeTerritory}` : set.compositionIntent.slice(0, 110)}
+            className="border-purple-500/20 bg-purple-500/5"
+        >
             <div className="mb-1 text-xs uppercase tracking-widest text-purple-300">Composition intent</div>
             {set.creativeTerritory && (
                 <div className="mb-2 text-[11px] text-purple-200/80">
@@ -584,7 +830,7 @@ function CompositionIntent({ set }: { set: AdCopySet }) {
                 </div>
             )}
             <p className="text-sm leading-relaxed text-purple-50/90">{set.compositionIntent}</p>
-        </div>
+        </CollapsibleSection>
     );
 }
 
@@ -593,15 +839,21 @@ function FormatPanel({
     pack,
     layout,
     templateRef,
+    onCopyChange,
 }: {
     format: FormatId;
     pack: SlotPack | SlotPack[];
     layout: TemplateLayout;
     templateRef: { templatedId: string; dimensions: { width: number; height: number } } | null;
+    onCopyChange: (format: FormatId, pageIndex: number, field: EditableCopyField, value: string) => void;
 }) {
     const packs: SlotPack[] = isSlotPackArray(pack) ? pack : [pack];
     return (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 space-y-4">
+        <CollapsibleSection
+            title={`Format: ${format}`}
+            summary={`${packs.length} page${packs.length === 1 ? '' : 's'}${templateRef ? ` | ${templateRef.dimensions.width} x ${templateRef.dimensions.height}` : ''}`}
+        >
+            <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <div className="text-xs uppercase tracking-widest text-slate-500">Format</div>
@@ -630,36 +882,85 @@ function FormatPanel({
                         <div>{p.compositionNote}</div>
                     </div>
 
-                    <CopySlots pack={p} />
+                    <CopySlots
+                        format={format}
+                        pageIndex={i}
+                        pack={p}
+                        onCopyChange={onCopyChange}
+                    />
                     <ImageDirectiveSlots pack={p} layout={layout} />
                 </div>
             ))}
-        </div>
+            </div>
+        </CollapsibleSection>
     );
 }
 
-function CopySlots({ pack }: { pack: SlotPack }) {
+function CopySlots({
+    format,
+    pageIndex,
+    pack,
+    onCopyChange,
+}: {
+    format: FormatId;
+    pageIndex: number;
+    pack: SlotPack;
+    onCopyChange: (format: FormatId, pageIndex: number, field: EditableCopyField, value: string) => void;
+}) {
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500">
                 <Type className="h-3.5 w-3.5" />
-                Copy
+                Editable copy
             </div>
             <div className="grid gap-2 md:grid-cols-2">
-                <CopyRow label={`Headline (${pack.headline.length}/50)`} value={pack.headline} />
-                <CopyRow label={`CTA (${pack.cta.length}/20)`} value={pack.cta} />
-                {pack.subhead && <CopyRow label={`Subhead (${pack.subhead.length}/80)`} value={pack.subhead} />}
-                {pack.microcopy && <CopyRow label={`Microcopy (${pack.microcopy.length}/30)`} value={pack.microcopy} />}
+                <CopyRow
+                    label={`Headline (${pack.headline.length}/50)`}
+                    value={pack.headline}
+                    onChange={(value) => onCopyChange(format, pageIndex, 'headline', value)}
+                />
+                <CopyRow
+                    label={`CTA (${pack.cta.length}/20)`}
+                    value={pack.cta}
+                    onChange={(value) => onCopyChange(format, pageIndex, 'cta', value)}
+                />
+                {pack.subhead !== undefined && (
+                    <CopyRow
+                        label={`Subhead (${pack.subhead.length}/80)`}
+                        value={pack.subhead}
+                        onChange={(value) => onCopyChange(format, pageIndex, 'subhead', value)}
+                    />
+                )}
+                {pack.microcopy !== undefined && (
+                    <CopyRow
+                        label={`Microcopy (${pack.microcopy.length}/30)`}
+                        value={pack.microcopy}
+                        onChange={(value) => onCopyChange(format, pageIndex, 'microcopy', value)}
+                    />
+                )}
             </div>
         </div>
     );
 }
 
-function CopyRow({ label, value }: { label: string; value: string }) {
+function CopyRow({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+}) {
     return (
         <div className="rounded-lg border border-white/5 bg-slate-900 p-3">
             <div className="text-[10px] uppercase tracking-widest text-slate-500">{label}</div>
-            <div className="mt-1 text-sm text-slate-100">{value}</div>
+            <textarea
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                rows={2}
+                className="mt-2 min-h-16 w-full resize-y rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm leading-snug text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
+            />
         </div>
     );
 }
@@ -714,21 +1015,31 @@ function ImageDirectiveSlots({ pack, layout }: { pack: SlotPack; layout: Templat
     );
 }
 
-function RenderPanel({
-    result,
-    renderResult,
-    renderError,
-    renderLoading,
-    onRender,
-}: {
+const RenderPanel = forwardRef<HTMLDivElement, {
     result: CopyForgeResponse;
     renderResult: RenderResponse | null;
     renderError: string | null;
     renderLoading: boolean;
+    copyDirty: boolean;
     onRender: () => void;
-}) {
+}>(function RenderPanel({
+    result,
+    renderResult,
+    renderError,
+    renderLoading,
+    copyDirty,
+    onRender,
+}, ref) {
     return (
-        <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-5 space-y-4">
+        <div ref={ref} className="scroll-mt-24">
+        <CollapsibleSection
+            title="P3 render"
+            summary={renderResult ? `${renderResult.renderGroups.length} rendered group${renderResult.renderGroups.length === 1 ? '' : 's'}` : 'Templated output and manifest-backed image resolution'}
+            defaultOpen={Boolean(renderResult || renderError || copyDirty)}
+            openWhen={Boolean(renderResult || renderError || copyDirty)}
+            className="border-cyan-500/20 bg-cyan-500/5"
+        >
+        <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <div className="text-xs uppercase tracking-widest text-cyan-300">P3 render</div>
@@ -739,7 +1050,7 @@ function RenderPanel({
                 <button
                     type="button"
                     onClick={onRender}
-                    disabled={renderLoading || !result.qualityGate.passed}
+                    disabled={renderLoading || copyDirty || !result.qualityGate.passed}
                     className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-400/60 hover:bg-cyan-500/15 disabled:opacity-40"
                 >
                     {renderLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -750,6 +1061,12 @@ function RenderPanel({
             {renderError && (
                 <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
                     {renderError}
+                </div>
+            )}
+
+            {copyDirty && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+                    Rendering is paused because the visible copy changed. Use "Re-run quality gate only" to validate the edited source without another Copy Forge call.
                 </div>
             )}
 
@@ -801,12 +1118,12 @@ function RenderPanel({
                                             href={page.render.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="block overflow-hidden rounded-lg border border-white/10 bg-slate-950"
+                                            className="mx-auto block max-h-[680px] max-w-[420px] overflow-hidden rounded-lg border border-white/10 bg-slate-950 md:max-w-[520px]"
                                         >
                                             <img
                                                 src={page.render.url}
                                                 alt={`${group.format} ${page.page}`}
-                                                className="h-auto w-full object-contain"
+                                                className="max-h-[680px] w-full object-contain"
                                             />
                                         </a>
                                         <div className="grid gap-2 text-[11px] text-slate-400 md:grid-cols-2">
@@ -833,22 +1150,56 @@ function RenderPanel({
                 </div>
             )}
         </div>
+        </CollapsibleSection>
+        </div>
     );
-}
+});
 
 function RawJsonPanel({ result }: { result: CopyForgeResponse }) {
     const [open, setOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
     const json = useMemo(() => JSON.stringify(result, null, 2), [result]);
+    const copyJson = useCallback(async () => {
+        await navigator.clipboard.writeText(json);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1600);
+    }, [json]);
+    const downloadJson = useCallback(() => {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${result.slug}-copy-forge.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }, [json, result.slug]);
     return (
         <div className="rounded-2xl border border-white/10 bg-slate-900/40">
-            <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center justify-between px-5 py-3 text-xs uppercase tracking-widest text-slate-400 hover:text-slate-200"
-            >
-                <span>Raw response JSON</span>
-                <span>{open ? 'hide' : 'show'}</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    className="text-xs uppercase tracking-widest text-slate-400 hover:text-slate-200"
+                >
+                    Raw response JSON · {open ? 'hide' : 'show'}
+                </button>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        onClick={copyJson}
+                        className="rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-[11px] uppercase tracking-widest text-slate-300 hover:border-white/20 hover:text-slate-100"
+                    >
+                        {copied ? 'Copied' : 'Copy JSON'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={downloadJson}
+                        className="rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-[11px] uppercase tracking-widest text-slate-300 hover:border-white/20 hover:text-slate-100"
+                    >
+                        Download JSON
+                    </button>
+                </div>
+            </div>
             {open && (
                 <pre className="max-h-[60vh] overflow-auto border-t border-white/5 px-5 py-4 text-[11px] text-slate-300">
                     {json}

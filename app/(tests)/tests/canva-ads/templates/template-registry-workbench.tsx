@@ -4,7 +4,18 @@ import { useMemo, useState } from 'react';
 
 type SlotKind = 'text' | 'image' | 'color';
 type SlotZone = 'header' | 'hero' | 'tile_grid' | 'body' | 'footer' | 'overlay';
-type AdFormat = 'ig_square' | 'fb_google_display' | 'story_reel' | 'carousel';
+type AdFormat =
+  | 'meta_feed_square'
+  | 'meta_feed_portrait'
+  | 'meta_story_reel'
+  | 'meta_carousel_square'
+  | 'google_display_landscape'
+  | 'google_display_square'
+  | 'google_display_vertical'
+  | 'ig_square'
+  | 'fb_google_display'
+  | 'story_reel'
+  | 'carousel';
 type Workflow = 'group_campaign' | 'cb_deal';
 type AssetType = 'scene_image' | 'ship_reference' | 'hero' | 'aesthetic_concept' | 'still' | 'merch';
 
@@ -34,6 +45,38 @@ interface TemplateAnalysis {
 const zones: SlotZone[] = ['header', 'hero', 'tile_grid', 'body', 'footer', 'overlay'];
 const slotTypes: SlotKind[] = ['text', 'image', 'color'];
 const assetTypes: AssetType[] = ['hero', 'scene_image', 'still', 'aesthetic_concept', 'ship_reference', 'merch'];
+
+const formatOptions: Array<{ id: AdFormat; label: string; legacy?: boolean }> = [
+  { id: 'meta_feed_square', label: 'Meta feed square 1:1' },
+  { id: 'meta_feed_portrait', label: 'Meta feed portrait 4:5' },
+  { id: 'meta_story_reel', label: 'Meta story/reel 9:16' },
+  { id: 'meta_carousel_square', label: 'Meta carousel square cards 1:1' },
+  { id: 'google_display_landscape', label: 'Google display landscape 1.91:1' },
+  { id: 'google_display_square', label: 'Google display square 1:1' },
+  { id: 'google_display_vertical', label: 'Google display vertical 9:16' },
+  { id: 'story_reel', label: 'Legacy story_reel', legacy: true },
+  { id: 'ig_square', label: 'Legacy ig_square', legacy: true },
+  { id: 'fb_google_display', label: 'Legacy fb_google_display', legacy: true },
+  { id: 'carousel', label: 'Legacy carousel', legacy: true },
+];
+
+const sizePresets: Array<{
+  format: AdFormat;
+  label: string;
+  platform: string;
+  ratio: string;
+  width: number;
+  height: number;
+  note: string;
+}> = [
+  { format: 'meta_feed_square', label: 'Meta feed square', platform: 'Meta', ratio: '1:1', width: 1080, height: 1080, note: 'Use for Facebook/Instagram feed square placements.' },
+  { format: 'meta_feed_portrait', label: 'Meta feed portrait', platform: 'Meta', ratio: '4:5', width: 1080, height: 1350, note: 'Use when you want more vertical feed real estate.' },
+  { format: 'meta_story_reel', label: 'Meta story/reel', platform: 'Meta', ratio: '9:16', width: 1080, height: 1920, note: 'Full-screen Stories/Reels canvas.' },
+  { format: 'meta_carousel_square', label: 'Meta carousel card', platform: 'Meta', ratio: '1:1', width: 1080, height: 1080, note: 'One square card in a carousel sequence.' },
+  { format: 'google_display_landscape', label: 'Google display landscape', platform: 'Google', ratio: '1.91:1', width: 1200, height: 628, note: 'Responsive Display horizontal image.' },
+  { format: 'google_display_square', label: 'Google display square', platform: 'Google', ratio: '1:1', width: 1200, height: 1200, note: 'Responsive Display square image.' },
+  { format: 'google_display_vertical', label: 'Google display vertical', platform: 'Google', ratio: '9:16', width: 900, height: 1600, note: 'Responsive Display vertical image.' },
+];
 
 const starterSlot: SlotDraft = {
   name: 'headline',
@@ -92,7 +135,7 @@ function cleanSlot(slot: SlotDraft): SlotDraft {
 export function TemplateRegistryWorkbench() {
   const [workflow, setWorkflow] = useState<Workflow>('group_campaign');
   const [visualFlavor, setVisualFlavor] = useState('travel_nostalgia');
-  const [format, setFormat] = useState<AdFormat>('story_reel');
+  const [format, setFormat] = useState<AdFormat>('meta_story_reel');
   const [templateId, setTemplateId] = useState('');
   const [width, setWidth] = useState(1080);
   const [height, setHeight] = useState(1920);
@@ -175,6 +218,19 @@ export function TemplateRegistryWorkbench() {
   }
 
   async function saveRegistry() {
+    if (!templateId.trim()) {
+      setError('Paste the Templated.io template id before saving. It is the UUID in the editor URL.');
+      return;
+    }
+    if (!description.trim()) {
+      setError('Add or generate a layout description before saving.');
+      return;
+    }
+    if (slots.some((slot) => !slot.name.trim())) {
+      setError('Every slot needs a layer name before saving.');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -191,7 +247,15 @@ export function TemplateRegistryWorkbench() {
         }),
       });
       const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error ?? 'Save failed.');
+      if (!res.ok) {
+        const issueText = Array.isArray(payload.issues)
+          ? ` ${payload.issues.map((issue: { path?: Array<string | number>; message?: string }) => {
+              const path = issue.path?.join('.') ?? 'payload';
+              return `${path}: ${issue.message ?? 'invalid'}`;
+            }).join('; ')}`
+          : '';
+        throw new Error(`${payload.error ?? 'Save failed.'}${issueText}`);
+      }
       setMessage(`${payload.mode === 'update' ? 'Updated' : 'Added'} ${workflow}.${visualFlavor}.${format} in templates.json.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed.');
@@ -208,6 +272,15 @@ export function TemplateRegistryWorkbench() {
     setSlots((current) => current.filter((_, i) => i !== index));
   }
 
+  function applyPreset(preset: (typeof sizePresets)[number]) {
+    setFormat(preset.format);
+    setWidth(preset.width);
+    setHeight(preset.height);
+    if (preset.format !== 'meta_carousel_square') {
+      setPages(undefined);
+    }
+  }
+
   return (
     <section
       className="space-y-6 rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-6 shadow-2xl shadow-cyan-950/20"
@@ -222,13 +295,63 @@ export function TemplateRegistryWorkbench() {
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
           Paste or upload a Templated.io screenshot. The model proposes the layout description and slot descriptors. You edit the fields here, then append or update `templates.json` from this page.
         </p>
+        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-emerald-50">
+            <strong className="text-emerald-100">Placeholder text is sizing evidence.</strong>
+            <p className="mt-1 leading-6 text-emerald-50/80">
+              Use nonsense or sample copy at the exact length you want final ads to hold. The analyzer uses visible wrapping and font size to estimate maxWords, maxChars, and maxLines.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-amber-50">
+            <strong className="text-amber-100">Static layers should stay out of JSON.</strong>
+            <p className="mt-1 leading-6 text-amber-50/80">
+              Decorative shapes, page corners, masks, fixed overlays, and hidden/crossed-out layers are not registry slots unless they will be replaced by campaign data.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white">Exact P4 Canvas Presets</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Use these numbers inside Canva/Templated. Ignore misleading thumbnail sizes on the template gallery.
+            </p>
+          </div>
+          <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">
+            width x height
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {sizePresets.map((preset) => (
+            <button
+              key={preset.format}
+              type="button"
+              onClick={() => applyPreset(preset)}
+              className={`rounded-2xl border p-4 text-left transition ${format === preset.format && width === preset.width && height === preset.height
+                ? 'border-cyan-300 bg-cyan-300/15'
+                : 'border-slate-800 bg-slate-950/70 hover:border-cyan-400/40 hover:bg-cyan-400/10'
+                }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold text-white">{preset.label}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{preset.platform} · {preset.ratio}</p>
+                </div>
+                <span className="font-mono text-sm font-bold text-cyan-200">{preset.width}x{preset.height}</span>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-slate-400">{preset.note}</p>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="space-y-4">
           <label className="block rounded-2xl border border-dashed border-cyan-400/30 bg-cyan-400/5 p-5 text-sm text-slate-300">
             <span className="block font-semibold text-cyan-100">Upload or paste screenshot</span>
-            <span className="mt-1 block text-xs text-slate-500">Best screenshot: canvas plus the Templated layer panel, like the editor screenshot with layer names visible on the right.</span>
+            <span className="mt-1 block text-xs text-slate-500">Best screenshot: canvas plus the Templated layer panel, like the editor screenshot with layer names and visibility eyeballs visible on the right.</span>
             <input
               type="file"
               accept="image/*"
@@ -247,7 +370,7 @@ export function TemplateRegistryWorkbench() {
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Optional notes for the model: layer names I already know, intended placement, text-fit concerns..."
+            placeholder="Optional notes for the model: hidden layers to ignore, decorative layers like shape/page-corner, layer names I already know, intended placement, text-fit concerns..."
             className="min-h-28 w-full rounded-2xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
           />
           <button
@@ -276,10 +399,11 @@ export function TemplateRegistryWorkbench() {
             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               Format
               <select value={format} onChange={(event) => setFormat(event.target.value as AdFormat)} className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm normal-case tracking-normal text-white">
-                <option value="story_reel">story_reel</option>
-                <option value="ig_square">ig_square</option>
-                <option value="fb_google_display">fb_google_display</option>
-                <option value="carousel">carousel</option>
+                {formatOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}{option.legacy ? ' (legacy)' : ''}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">

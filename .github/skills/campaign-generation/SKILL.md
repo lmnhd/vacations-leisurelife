@@ -90,6 +90,12 @@ $out = npx tsx scripts/agent/list-campaigns.ts 2>&1 ; Write-Host $out
 # Check if dev server is reachable (exits 0=RUNNING, 1=NOT_RUNNING)
 $out = npx tsx scripts/agent/check-server.ts 2>&1 ; Write-Host $out
 
+# Patch one generated Templated/Canva ad copy field without rerunning Copy Forge
+$out = npx tsx scripts/agent/ad-copyset-patch.ts <input-json> <output-json> <format> <page-index> <field> <value...> 2>&1 ; Write-Host $out
+
+# Re-run the deterministic Templated/Canva ad quality gate without HTTP or LLM spend
+$out = npx tsx scripts/agent/ad-copyset-recheck.ts <slug> <copyset-json> [format...] 2>&1 ; Write-Host $out
+
 # Read Phase B result after operator runs it
 # File: scripts/agent/output/phase-b-result.json (written by run-phase-b.ts)
 ```

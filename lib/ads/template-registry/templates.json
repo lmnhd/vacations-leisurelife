@@ -4,7 +4,10 @@
             "story_reel": {
                 "templated_id": "b7e3e02a-aa6f-4c56-a95d-70ecf8c03f2e",
                 "templated_id_previous": null,
-                "dimensions": { "width": 1080, "height": 1920 },
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1920
+                },
                 "layout": {
                     "description": "Vertical film strip collage: left stacked image strip, full-canvas atmospheric background, large hero image, oversized short theme headline on gray overlay, compact theme promise beneath, tiny sensory label near the lower overlay.",
                     "slotDescriptors": [
@@ -18,7 +21,12 @@
                             "maxLines": 1,
                             "copyRole": "Tiny sensory caption.",
                             "copyInstruction": "Use a 2-4 word theme-flavored label. No sentence. No logistics.",
-                            "disallow": ["date", "port", "ship", "route"]
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
                         },
                         {
                             "name": "background-image",
@@ -27,7 +35,11 @@
                             "zone": "hero",
                             "copyRole": "Atmospheric canvas.",
                             "copyInstruction": "Use broad mood or environment, not the same subject as hero_image.",
-                            "preferredAssetTypes": ["aesthetic_concept", "hero", "still"]
+                            "preferredAssetTypes": [
+                                "aesthetic_concept",
+                                "hero",
+                                "still"
+                            ]
                         },
                         {
                             "name": "hero_image",
@@ -36,7 +48,11 @@
                             "zone": "hero",
                             "copyRole": "Primary human niche moment.",
                             "copyInstruction": "Prioritize a person doing or preparing for the niche activity.",
-                            "preferredAssetTypes": ["hero", "scene_image", "still"]
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image",
+                                "still"
+                            ]
                         },
                         {
                             "name": "tile_image_1",
@@ -45,7 +61,10 @@
                             "zone": "tile_grid",
                             "copyRole": "Niche action detail.",
                             "copyInstruction": "Show the theme explicitly through a body, prop, ritual, or activity.",
-                            "preferredAssetTypes": ["scene_image", "still"]
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "still"
+                            ]
                         },
                         {
                             "name": "tile_image_2",
@@ -54,7 +73,11 @@
                             "zone": "tile_grid",
                             "copyRole": "Social or group cue.",
                             "copyInstruction": "Show people sharing the theme lightly, not another solo deck view.",
-                            "preferredAssetTypes": ["scene_image", "hero", "still"]
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero",
+                                "still"
+                            ]
                         },
                         {
                             "name": "tile_image_3",
@@ -63,7 +86,11 @@
                             "zone": "tile_grid",
                             "copyRole": "Prop or texture close-up.",
                             "copyInstruction": "Use a different visual scale from the hero: mat, journal, water, hands, breakfast, gear, or other theme cue.",
-                            "preferredAssetTypes": ["still", "aesthetic_concept", "scene_image"]
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept",
+                                "scene_image"
+                            ]
                         },
                         {
                             "name": "tile_image_4",
@@ -72,7 +99,11 @@
                             "zone": "tile_grid",
                             "copyRole": "Cruise-native context.",
                             "copyInstruction": "Show the vacation setting only after the niche is already visible elsewhere.",
-                            "preferredAssetTypes": ["ship_reference", "scene_image", "hero"]
+                            "preferredAssetTypes": [
+                                "ship_reference",
+                                "scene_image",
+                                "hero"
+                            ]
                         },
                         {
                             "name": "headline",
@@ -84,7 +115,12 @@
                             "maxLines": 2,
                             "copyRole": "Large red emotional hook.",
                             "copyInstruction": "Use 1-2 punchy words if possible; 3 short words is the absolute maximum. Do not use dates, ports, ship names, route names, or sentence punctuation.",
-                            "disallow": ["date", "port", "ship", "route"]
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
                         },
                         {
                             "name": "subhead",
@@ -96,7 +132,784 @@
                             "maxLines": 2,
                             "copyRole": "Small supporting promise beneath the headline.",
                             "copyInstruction": "Use one compact theme-led promise. No itinerary dump. Do not name the ship, cruise line, ports, or sail date.",
-                            "disallow": ["date", "port", "ship", "route"]
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "fb_google_display": {
+                "templated_id": "6fe7b057-ece6-4834-8076-c5170a48d138",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1080
+                },
+                "layout": {
+                    "description": "A collage-style layout with a top row of three tile images, a large hero image in the center with headline text overlay and a date badge, and a bottom row of three tile images.",
+                    "slotDescriptors": [
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "hero",
+                            "maxChars": 55,
+                            "maxWords": 10,
+                            "maxLines": 6,
+                            "copyRole": "Primary attention-grabbing headline overlaid on the hero image area",
+                            "copyInstruction": "Write an exciting, evocative multi-line headline that fills the left half of the hero zone. Use short punchy words that wrap naturally across 5-6 lines. Tone should be aspirational and energetic.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "hero",
+                            "maxChars": 18,
+                            "maxWords": 2,
+                            "maxLines": 2,
+                            "copyRole": "Date or short callout badge in the bottom-right of the hero area, styled in red uppercase text",
+                            "copyInstruction": "Provide a short 1-2 word temporal or promotional callout. Keep it punchy and uppercase-friendly.",
+                            "disallow": [
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 3,
+                            "zone": "hero",
+                            "copyRole": "Large central background image behind the headline text, filling the main hero area",
+                            "copyInstruction": "Use a wide scenic or atmospheric image that works well with text overlay on the left side. The right side should have visual interest but not be too busy.",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_1",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-left tile image in the lower row of three",
+                            "copyInstruction": "Detail or close-up lifestyle image that complements the overall theme. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_2",
+                            "type": "image",
+                            "visualOrder": 5,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-center tile image in the lower row of three",
+                            "copyInstruction": "Object or detail-focused image that adds variety to the collage. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_3",
+                            "type": "image",
+                            "visualOrder": 6,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-right tile image in the lower row of three",
+                            "copyInstruction": "Action or lifestyle image showing energy and movement. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_4",
+                            "type": "image",
+                            "visualOrder": 7,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-left tile image in the upper row of three",
+                            "copyInstruction": "Lifestyle or people-focused image that sets the mood. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_5",
+                            "type": "image",
+                            "visualOrder": 8,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-center tile image in the upper row of three, slightly wider than the others",
+                            "copyInstruction": "Vibrant, colorful lifestyle image with energy. Should work at a slightly wider tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_6",
+                            "type": "image",
+                            "visualOrder": 9,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-right tile image in the upper row of three",
+                            "copyInstruction": "Clean, simple detail or nature image that balances the collage. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "meta_feed_square": {
+                "templated_id": "6fe7b057-ece6-4834-8076-c5170a48d138",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1080
+                },
+                "layout": {
+                    "description": "Square Meta feed collage with a top row of three tile images, a large hero image in the center with headline text overlay and a short badge/callout, and a bottom row of three tile images.",
+                    "slotDescriptors": [
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "hero",
+                            "maxChars": 55,
+                            "maxWords": 10,
+                            "maxLines": 6,
+                            "copyRole": "Primary niche-forward headline overlaid on the hero image area",
+                            "copyInstruction": "Write a clever, compact niche slogan that fills the left half of the hero zone. Use short punchy words that wrap naturally across 5-6 lines. Avoid logistics.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "hero",
+                            "maxChars": 18,
+                            "maxWords": 3,
+                            "maxLines": 2,
+                            "copyRole": "Short callout badge in the bottom-right of the hero area",
+                            "copyInstruction": "Provide a short 1-3 word theme callout. Keep it punchy and uppercase-friendly. Do not use literal dates unless the campaign explicitly needs a date badge.",
+                            "disallow": [
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 3,
+                            "zone": "hero",
+                            "copyRole": "Large central background image behind the headline text, filling the main hero area",
+                            "copyInstruction": "Use a wide scenic or atmospheric image that works well with text overlay on the left side. The right side should have visual interest but not be too busy.",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_1",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-left tile image in the lower row of three",
+                            "copyInstruction": "Detail or close-up lifestyle image that complements the overall theme. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_2",
+                            "type": "image",
+                            "visualOrder": 5,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-center tile image in the lower row of three",
+                            "copyInstruction": "Object or detail-focused image that adds variety to the collage. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_3",
+                            "type": "image",
+                            "visualOrder": 6,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-right tile image in the lower row of three",
+                            "copyInstruction": "Action or lifestyle image showing energy and movement. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_4",
+                            "type": "image",
+                            "visualOrder": 7,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-left tile image in the upper row of three",
+                            "copyInstruction": "Lifestyle or people-focused image that sets the mood. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_5",
+                            "type": "image",
+                            "visualOrder": 8,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-center tile image in the upper row of three, slightly wider than the others",
+                            "copyInstruction": "Vibrant, colorful lifestyle image with energy. Should work at a slightly wider tile size.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_6",
+                            "type": "image",
+                            "visualOrder": 9,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-right tile image in the upper row of three",
+                            "copyInstruction": "Clean, simple detail or nature image that balances the collage. Should work at small tile size.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "aesthetic_concept"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "meta_feed_portrait": {
+                "templated_id": "98b90af0-ee1c-434b-adeb-46036e05762e",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1350
+                },
+                "layout": {
+                    "description": "A portrait collage grid with six tiled images arranged in three rows, a large centered headline overlay in the middle row, a date/event label in the mid-right area, and a full-width CTA banner at the bottom.",
+                    "slotDescriptors": [
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "body",
+                            "maxChars": 65,
+                            "maxWords": 10,
+                            "maxLines": 6,
+                            "copyRole": "Primary aspirational message overlaid on the center of the collage grid",
+                            "copyInstruction": "Write an evocative, leisurely lifestyle phrase that fits 6 short lines. Use casual, inviting tone. Do not mention specific dates or destinations.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "body",
+                            "maxChars": 18,
+                            "maxWords": 2,
+                            "maxLines": 2,
+                            "copyRole": "Short theme label positioned in the mid-right area of the collage",
+                            "copyInstruction": "Provide a short 1-3 word niche/theme label, not a date. Keep to two short lines and avoid ship, route, port, and sail-date logistics.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "cta",
+                            "type": "text",
+                            "visualOrder": 3,
+                            "zone": "footer",
+                            "maxChars": 35,
+                            "maxWords": 6,
+                            "maxLines": 2,
+                            "copyRole": "Call-to-action text in the black banner bar at the bottom of the design",
+                            "copyInstruction": "Write a short, action-oriented CTA phrase that invites the viewer to learn more or take action. Conversational and exciting tone.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "hero",
+                            "copyRole": "Background or base image behind the collage grid, partially visible",
+                            "copyInstruction": "Use a vibrant, warm-toned lifestyle or scenic image that works as a base layer behind tiled images.",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_1",
+                            "type": "image",
+                            "visualOrder": 5,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-left tile image showing a person or lifestyle scene",
+                            "copyInstruction": "Provide a vibrant lifestyle or action image suitable for a small square/rectangular tile crop.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "still"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_2",
+                            "type": "image",
+                            "visualOrder": 6,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-center tile image, wider format showing a colorful scene",
+                            "copyInstruction": "Provide a colorful, eye-catching lifestyle image for a wider rectangular tile crop.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "still"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_3",
+                            "type": "image",
+                            "visualOrder": 7,
+                            "zone": "tile_grid",
+                            "copyRole": "Top-right tile image showing a detail or nature close-up",
+                            "copyInstruction": "Provide a detail or close-up image with soft, warm tones for a small tile crop.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_4",
+                            "type": "image",
+                            "visualOrder": 8,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-left tile image showing feet, ground-level, or detail scene",
+                            "copyInstruction": "Provide a ground-level or detail lifestyle image for a small tile crop.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_5",
+                            "type": "image",
+                            "visualOrder": 9,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-center tile image showing a food, drink, or object detail",
+                            "copyInstruction": "Provide a warm-toned object or detail image for a small square tile crop.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_6",
+                            "type": "image",
+                            "visualOrder": 10,
+                            "zone": "tile_grid",
+                            "copyRole": "Bottom-right tile image showing an action or joyful lifestyle moment",
+                            "copyInstruction": "Provide an energetic, joyful lifestyle image for a small tile crop.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "meta_story_reel": {
+                "templated_id": "f0f1b7ea-c1fe-4c7e-8d97-6719c7e83953",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1920
+                },
+                "layout": {
+                    "description": "Full-bleed hero background image with a semi-transparent circular overlay containing centered multi-line headline text, two diamond-shaped tile images positioned at top-left and bottom-center, and a background title shape behind the headline.",
+                    "slotDescriptors": [
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 5,
+                            "zone": "hero",
+                            "copyRole": "Full-bleed background image that sets the overall mood and scene for the ad",
+                            "copyInstruction": "Use a vivid, immersive scene image that fills the entire 9:16 canvas. Should have enough visual breathing room in the center for overlaid white text.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        },
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 3,
+                            "zone": "overlay",
+                            "maxChars": 40,
+                            "maxWords": 7,
+                            "maxLines": 5,
+                            "copyRole": "Primary attention-grabbing headline centered on the frosted circle overlay",
+                            "copyInstruction": "Write a bold, short imperative or aspirational phrase in uppercase. Each line should be 1-2 words for dramatic stacking. Keep it punchy and action-oriented.",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "discount",
+                                "www"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_1",
+                            "type": "image",
+                            "visualOrder": 2,
+                            "zone": "header",
+                            "copyRole": "Diamond-shaped accent image in the upper-left area showing a detail or lifestyle moment",
+                            "copyInstruction": "Use a close-up or detail-oriented image that complements the hero. Image will be masked into a diamond/rotated square shape, so center the subject.",
+                            "preferredAssetTypes": [
+                                "still",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "tile_image_2",
+                            "type": "image",
+                            "visualOrder": 1,
+                            "zone": "footer",
+                            "copyRole": "Diamond-shaped accent image at the bottom-center featuring a person or energetic scene",
+                            "copyInstruction": "Use a vibrant, people-focused or action-oriented image. Will be masked into a diamond shape, so ensure the subject is centered and not cropped awkwardly at edges.",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image",
+                                "still"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "meta_carousel_square": {
+                "templated_id": "e67d01c4-e3b5-433b-938b-fd1d81e4cb2f",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1080,
+                    "height": 1080
+                },
+                "layout": {
+                    "description": "A square carousel card with a full-bleed hero image, a semi-transparent rectangular shape overlay on the left-center area, bold multi-line headline text centered over the overlay, and a CTA text element at the top.",
+                    "slotDescriptors": [
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "hero",
+                            "copyRole": "Full-bleed background image that sets the emotional scene for the card",
+                            "copyInstruction": "Use an aspirational, scenic, or lifestyle-oriented image that fills the entire square canvas. Should have enough visual breathing room on the left side for overlaid text.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero",
+                                "aesthetic_concept"
+                            ]
+                        },
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "overlay",
+                            "maxChars": 65,
+                            "maxWords": 12,
+                            "maxLines": 6,
+                            "copyRole": "Primary emotional hook or aspirational message displayed prominently over the hero image",
+                            "copyInstruction": "Write an evocative, lifestyle-oriented headline that inspires action or emotion. Use short punchy phrases that wrap naturally across 4-6 lines. Italic display style, so rhythm matters.",
+                            "disallow": [
+                                "discount",
+                                "percent",
+                                "free",
+                                "limited"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "google_display_landscape": {
+                "templated_id": "6fa39b1d-3879-4fe9-a713-ef47303fda06",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1200,
+                    "height": 628
+                },
+                "layout": {
+                    "description": "Landscape display ad with a full-bleed background image, a semi-transparent dark overlay on the left side containing a large two-line headline, a decorative divider line, microcopy text, a hashtag-style subhead, and a centered CTA button at the bottom.",
+                    "slotDescriptors": [
+                        {
+                            "name": "image-bg",
+                            "type": "image",
+                            "visualOrder": 7,
+                            "zone": "hero",
+                            "copyRole": "Full-bleed background image setting the aspirational scene",
+                            "copyInstruction": "Use a wide landscape-oriented lifestyle or scenic image that works with a dark overlay on the left third. Warm tones preferred.",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        },
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 3,
+                            "zone": "overlay",
+                            "maxChars": 22,
+                            "maxWords": 4,
+                            "maxLines": 2,
+                            "copyRole": "Primary attention-grabbing headline communicating the core value proposition",
+                            "copyInstruction": "Two-line uppercase headline with wide letter spacing. Each line should be 1-2 words. Keep it punchy and aspirational.",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "discount"
+                            ]
+                        },
+                        {
+                            "name": "microcopy",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "overlay",
+                            "maxChars": 25,
+                            "maxWords": 5,
+                            "maxLines": 2,
+                            "copyRole": "Short sensory or theme-supporting line below the headline",
+                            "copyInstruction": "Short lowercase phrase reinforcing the niche ritual or emotional promise. Avoid urgency, pricing, dates, and logistics. Appears in yellow/gold accent color.",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "discount",
+                                "limited"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 4,
+                            "zone": "overlay",
+                            "maxChars": 35,
+                            "maxWords": 5,
+                            "maxLines": 2,
+                            "copyRole": "Short tagline reinforcing the theme",
+                            "copyInstruction": "A compact theme descriptor or short tagline. Prefer plain words over long hashtags. Describes the experience category without logistics.",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "port",
+                                "ship",
+                                "route"
+                            ]
+                        },
+                        {
+                            "name": "cta",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "footer",
+                            "maxChars": 18,
+                            "maxWords": 3,
+                            "maxLines": 2,
+                            "copyRole": "Call-to-action button text driving clicks",
+                            "copyInstruction": "Short uppercase action phrase. Should convey exclusivity or next step (e.g., JOIN WAIT LIST, RESERVE NOW, LEARN MORE).",
+                            "disallow": [
+                                "price",
+                                "date"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "google_display_square": {
+                "templated_id": "d8af50c8-5934-4041-872a-834bece343d6",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 1200,
+                    "height": 1200
+                },
+                "layout": {
+                    "description": "Square display ad with a full-bleed hero image, a semi-transparent rounded rectangle overlay on the upper-left containing a bold multi-line headline, and a small subhead text element in the upper-right corner.",
+                    "slotDescriptors": [
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "overlay",
+                            "maxChars": 35,
+                            "maxWords": 6,
+                            "maxLines": 4,
+                            "copyRole": "Primary attention-grabbing headline conveying the core value proposition",
+                            "copyInstruction": "Write a short, evocative uppercase headline (4-6 words) that fits across 3-4 centered lines. Use aspirational, sensory language. End with a period for stylistic punch.",
+                            "disallow": [
+                                "discount",
+                                "percent",
+                                "free",
+                                "limited"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 1,
+                            "zone": "header",
+                            "maxChars": 18,
+                            "maxWords": 3,
+                            "maxLines": 2,
+                            "copyRole": "Small supporting theme label positioned in the upper-right corner",
+                            "copyInstruction": "Provide a brief niche/theme qualifier in 1-3 words. Do not use a date, ship name, route, price, or urgency claim. Keep very short to fit the small text box.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route",
+                                "price",
+                                "discount",
+                                "limited"
+                            ]
+                        },
+                        {
+                            "name": "hero_image",
+                            "type": "image",
+                            "visualOrder": 4,
+                            "zone": "hero",
+                            "copyRole": "Full-bleed background image setting the mood and scene for the ad",
+                            "copyInstruction": "Use a warm, naturally-lit lifestyle or scenic image that evokes relaxation and aspiration. The upper-left quadrant will be partially obscured by a frosted overlay, so key subject matter should be positioned center-right or lower portion.",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "google_display_vertical": {
+                "templated_id": "3057ce4d-9bd0-464d-b1c2-a9912ccf1fb4",
+                "templated_id_previous": null,
+                "dimensions": {
+                    "width": 900,
+                    "height": 1600
+                },
+                "layout": {
+                    "description": "Vertical post with a top hero image overlaid by a headline banner, a dark middle band containing microcopy and subhead text, a bottom hero image, and a circular CTA button in the lower-left corner.",
+                    "slotDescriptors": [
+                        {
+                            "name": "hero_image_1",
+                            "type": "image",
+                            "visualOrder": 6,
+                            "zone": "footer",
+                            "copyRole": "Bottom lifestyle/scene image filling the lower third of the canvas",
+                            "copyInstruction": "Use a warm, inviting scene image that complements the top hero and reinforces the campaign theme",
+                            "preferredAssetTypes": [
+                                "scene_image",
+                                "hero"
+                            ]
+                        },
+                        {
+                            "name": "hero_image_2",
+                            "type": "image",
+                            "visualOrder": 1,
+                            "zone": "hero",
+                            "copyRole": "Top hero image filling the upper portion of the canvas behind the headline banner",
+                            "copyInstruction": "Use an aspirational scene image that sets the mood; should work well with a semi-transparent text overlay",
+                            "preferredAssetTypes": [
+                                "hero",
+                                "scene_image"
+                            ]
+                        },
+                        {
+                            "name": "headline",
+                            "type": "text",
+                            "visualOrder": 2,
+                            "zone": "hero",
+                            "maxChars": 30,
+                            "maxWords": 5,
+                            "maxLines": 3,
+                            "copyRole": "Primary headline displayed in a gold-bordered banner over the top hero image",
+                            "copyInstruction": "Write a bold, aspirational headline in title case; keep it short and punchy to fit within the overlay banner across up to 3 lines",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "discount"
+                            ]
+                        },
+                        {
+                            "name": "microcopy",
+                            "type": "text",
+                            "visualOrder": 3,
+                            "zone": "body",
+                            "maxChars": 25,
+                            "maxWords": 4,
+                            "maxLines": 2,
+                            "copyRole": "Short sensory theme line on the dark navy band, left-aligned",
+                            "copyInstruction": "Write a brief theme-supporting phrase that signals the niche ritual or emotional promise. Avoid urgency, availability, pricing, dates, and logistics; use sentence case.",
+                            "disallow": [
+                                "date",
+                                "price",
+                                "discount",
+                                "limited"
+                            ]
+                        },
+                        {
+                            "name": "subhead",
+                            "type": "text",
+                            "visualOrder": 4,
+                            "zone": "body",
+                            "maxChars": 28,
+                            "maxWords": 5,
+                            "maxLines": 2,
+                            "copyRole": "Supporting tagline on the dark navy band, right-aligned",
+                            "copyInstruction": "Write a concise community or benefit-oriented phrase that complements the headline; use sentence case. Avoid dates, ports, ship names, route names, prices, and urgency claims.",
+                            "disallow": [
+                                "date",
+                                "port",
+                                "ship",
+                                "route",
+                                "price",
+                                "discount",
+                                "limited"
+                            ]
+                        },
+                        {
+                            "name": "cta",
+                            "type": "text",
+                            "visualOrder": 5,
+                            "zone": "footer",
+                            "maxChars": 16,
+                            "maxWords": 3,
+                            "maxLines": 2,
+                            "copyRole": "Call-to-action text inside a circular gold button in the lower-left area",
+                            "copyInstruction": "Write a short, direct CTA in uppercase that fits inside a small circular badge; two short words preferred"
                         }
                     ]
                 }

@@ -12,6 +12,7 @@ import { getCampaignBlueprint, getAestheticBrief } from '@/lib/campaigns/campaig
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import { buildCampaignAdInput } from '@/lib/campaigns/media/ad-pack-adapter';
 import { generateCopySet, runQualityGate } from '@/lib/ads/copy-forge';
+import type { AdCopySet, CopyForgeResult, QualityGateResult } from '@/lib/ads/types';
 import { AD_FORMATS, type AdFormat } from '@/lib/ads/types';
 import { lookupTemplate } from '@/lib/ads/template-registry';
 
@@ -22,6 +23,57 @@ interface CopyForgeRequestBody {
 
 function isValidFormat(value: unknown): value is AdFormat {
     return typeof value === 'string' && (AD_FORMATS as readonly string[]).includes(value);
+}
+
+function mergeCopyForgeResults(results: Array<{ format: AdFormat; result: CopyForgeResult }>): CopyForgeResult {
+    const first = results[0]?.result;
+    if (!first) {
+        throw new Error('Copy Forge did not return any format results.');
+    }
+
+    const copySet: AdCopySet = {
+        creativeTerritory: first.copySet.creativeTerritory,
+        compositionIntent: results
+            .map(({ format, result }) => `${format}: ${result.copySet.compositionIntent}`)
+            .join('\n\n'),
+        formats: {},
+    };
+
+    const checks: QualityGateResult['checks'] = [];
+    let blockerCount = 0;
+    let warningCount = 0;
+    const warnings = new Set<string>();
+    let regenerated = false;
+
+    for (const { format, result } of results) {
+        const pack = result.copySet.formats[format];
+        if (pack) {
+            copySet.formats[format] = pack;
+        }
+        for (const check of result.qualityGate.checks) {
+            checks.push({
+                ...check,
+                message: `[${format}] ${check.message}`,
+            });
+        }
+        blockerCount += result.qualityGate.blockerCount;
+        warningCount += result.qualityGate.warningCount;
+        result.warnings.forEach((warning) => warnings.add(warning));
+        regenerated ||= result.regenerated;
+    }
+
+    return {
+        copySet,
+        qualityGate: {
+            passed: blockerCount === 0,
+            blockerCount,
+            warningCount,
+            checks,
+        },
+        warnings: Array.from(warnings),
+        modelId: first.modelId,
+        regenerated,
+    };
 }
 
 export async function POST(req: NextRequest) {
@@ -35,7 +87,7 @@ export async function POST(req: NextRequest) {
         const requestedFormats = Array.isArray(body.formats) ? body.formats.filter(isValidFormat) : [];
         if (requestedFormats.length === 0) {
             return NextResponse.json(
-                { error: 'Missing required field: formats[] (at least one of ig_square, fb_google_display, story_reel, carousel)' },
+                { error: `Missing required field: formats[] (at least one of ${AD_FORMATS.join(', ')})` },
                 { status: 400 },
             );
         }
@@ -73,7 +125,20 @@ export async function POST(req: NextRequest) {
         const supportedFormats = requestedFormats.filter((f) => input.templateLayouts[f]);
         const resolvedInput = { ...input, formats: supportedFormats };
 
-        const result = await generateCopySet(resolvedInput);
+        const result = supportedFormats.length === 1
+            ? await generateCopySet(resolvedInput)
+            : mergeCopyForgeResults(await Promise.all(
+                supportedFormats.map(async (format) => ({
+                    format,
+                    result: await generateCopySet({
+                        ...resolvedInput,
+                        formats: [format],
+                        templateLayouts: {
+                            [format]: resolvedInput.templateLayouts[format],
+                        },
+                    }),
+                })),
+            ));
 
         const templateRefs = Object.fromEntries(
             supportedFormats.map((format) => {

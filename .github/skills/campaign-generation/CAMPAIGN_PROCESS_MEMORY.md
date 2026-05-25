@@ -58,3 +58,9 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** The campaign pipeline failed randomly due to `gpt-4o` either omitting the `role` field on `starterConversation` (schema violation) or dropping exact verbatim strings of `nicheSignal` and `nicheCarryThrough` in the generated `imagePrompt` and `subjectAction` fields (Anchor Compliance error limit exceeded).  
 **The Change / Rule:** Implemented a new deterministic fixer (`normalizeAnchorContent` in `editors-room.ts`) to inject the missing anchor strings into `imagePrompt` and `subjectAction` automatically before the compliance check. Also modified the `starterConversation` schema to coerce and supply the missing `role` field where applicable.  
 **Broader Lesson:** Do not rely purely on LLM strict substring compliance for complex artifacts when it's easily injectable. If it maps to a stable text pattern and can be injected safely without ruining creative context, write a deterministic fixer to normalize the output rather than failing the whole brief job.
+
+### 2026-05-23: Templated Copy Forge Surgical Repair Loop
+
+**Trigger / Context:** Copy Forge multi-format runs became expensive, and most failures were one or two visible-copy blockers after the generated set was already creatively close.  
+**The Change / Rule:** Agents should not rerun Copy Forge just to fix isolated Templated/Canva copy blockers. Edit the generated copy set directly in `/tests/canva-ads`, or patch a saved JSON copy set with `scripts/agent/ad-copyset-patch.ts`, then re-run the deterministic gate with `/tests/canva-ads` or `scripts/agent/ad-copyset-recheck.ts`.  
+**Broader Lesson:** High-cost creative generation should produce a draft source artifact; final fitting, niche-anchor, and CTA corrections should be handled as cheap deterministic repair steps whenever possible.

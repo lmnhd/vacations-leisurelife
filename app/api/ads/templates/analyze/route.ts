@@ -16,9 +16,76 @@ const SlotSuggestionSchema = z.object({
     preferredAssetTypes: z.array(z.enum(['scene_image', 'ship_reference', 'hero', 'aesthetic_concept', 'still', 'merch'])).optional(),
 });
 
+const ALLOWED_ASSET_TYPES = ['scene_image', 'ship_reference', 'hero', 'aesthetic_concept', 'still', 'merch'] as const;
+type AllowedAssetType = (typeof ALLOWED_ASSET_TYPES)[number];
+
+const ASSET_TYPE_ALIASES: Record<string, AllowedAssetType> = {
+    action: 'scene_image',
+    activity: 'scene_image',
+    candid: 'scene_image',
+    detail: 'still',
+    environment: 'aesthetic_concept',
+    landscape: 'aesthetic_concept',
+    lifestyle: 'scene_image',
+    mood: 'aesthetic_concept',
+    object: 'still',
+    portrait: 'hero',
+    product: 'merch',
+    scenery: 'aesthetic_concept',
+    scenic: 'aesthetic_concept',
+    texture: 'still',
+};
+
+function normalizePreferredAssetTypes(value: unknown): AllowedAssetType[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const normalized: AllowedAssetType[] = [];
+    for (const item of value) {
+        const raw = String(item ?? '').trim().toLowerCase();
+        const mapped = ALLOWED_ASSET_TYPES.includes(raw as AllowedAssetType)
+            ? raw as AllowedAssetType
+            : ASSET_TYPE_ALIASES[raw];
+        if (mapped && !normalized.includes(mapped)) {
+            normalized.push(mapped);
+        }
+    }
+    return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeAnalysisPayload(payload: unknown): unknown {
+    if (!payload || typeof payload !== 'object') return payload;
+    const record = payload as Record<string, unknown>;
+    if (!Array.isArray(record.slotDescriptors)) return payload;
+
+    return {
+        ...record,
+        slotDescriptors: record.slotDescriptors.map((slot) => {
+            if (!slot || typeof slot !== 'object') return slot;
+            const slotRecord = slot as Record<string, unknown>;
+            const preferredAssetTypes = normalizePreferredAssetTypes(slotRecord.preferredAssetTypes);
+            if (!preferredAssetTypes) return slot;
+            return {
+                ...slotRecord,
+                preferredAssetTypes,
+            };
+        }),
+    };
+}
+
 const TemplateAnalysisSchema = z.object({
     layoutDescription: z.string().min(20),
-    suggestedFormat: z.enum(['ig_square', 'fb_google_display', 'story_reel', 'carousel']).optional(),
+    suggestedFormat: z.enum([
+        'meta_feed_square',
+        'meta_feed_portrait',
+        'meta_story_reel',
+        'meta_carousel_square',
+        'google_display_landscape',
+        'google_display_square',
+        'google_display_vertical',
+        'ig_square',
+        'fb_google_display',
+        'story_reel',
+        'carousel',
+    ]).optional(),
     suggestedDimensions: z.object({
         width: z.number().int().positive(),
         height: z.number().int().positive(),
@@ -63,7 +130,7 @@ Inspect the screenshot and infer the reusable template metadata. The screenshot 
 Return ONLY JSON with this shape:
 {
   "layoutDescription": "one plain-English sentence describing the reusable layout anatomy, without campaign-specific niche names",
-  "suggestedFormat": "story_reel | ig_square | fb_google_display | carousel",
+  "suggestedFormat": "meta_feed_square | meta_feed_portrait | meta_story_reel | meta_carousel_square | google_display_landscape | google_display_square | google_display_vertical",
   "suggestedDimensions": { "width": 1080, "height": 1920 },
   "visualFlavorNotes": "short reusable style notes",
   "slotDescriptors": [
@@ -89,9 +156,25 @@ Rules:
 - Stable variable names are preferred: headline, subhead, microcopy, cta, background-image, hero_image, tile_image_1.
 - If the layer panel shows exact names, use those exact names.
 - If exact layer names are not visible, suggest sensible names and add a warning.
+- Treat visible placeholder text as intentional sizing guidance. Infer maxChars, maxWords, and maxLines from the placeholder text length, wrapping, font size, and available box size. The placeholder words are sizing examples, not campaign copy to preserve.
+- Avoid budgets that are much smaller than the visible placeholder unless the text is visibly overflowing. Avoid budgets that are larger than the placeholder can safely hold.
+- Only include slots that the renderer needs to replace: variable text, variable image, or variable color layers.
+- Ignore decorative/static template layers such as shapes, page curls/corners, masks, frames, background decorations, overlays, lockups, and other fixed design elements unless they are explicitly intended to be replaced by data.
+- Be wary of layer-panel visibility icons. If a layer appears hidden/crossed out, do not include it as a slot unless the operator notes say it should be used.
+- If a visible layer name is decorative, such as "shape-1" or "page-corner", do not include it in slotDescriptors; mention it in warnings only if it might confuse the operator.
 - Make text budgets conservative based on visual size.
 - For image slots, include copyRole, copyInstruction, and preferredAssetTypes.
+- preferredAssetTypes must use ONLY these manifest asset pool names: scene_image, ship_reference, hero, aesthetic_concept, still, merch.
+- Do not use descriptive labels like landscape, lifestyle, portrait, detail, product, or action in preferredAssetTypes. Put those concepts in copyRole or copyInstruction instead.
 - For text slots, include maxChars, maxWords, maxLines, copyRole, copyInstruction, and disallow where relevant.
+- Use these precise canvas sizes when inferring format/dimensions:
+  - meta_feed_square: 1080 x 1080 (1:1)
+  - meta_feed_portrait: 1080 x 1350 (4:5)
+  - meta_story_reel: 1080 x 1920 (9:16)
+  - meta_carousel_square: 1080 x 1080 (1:1 card)
+  - google_display_landscape: 1200 x 628 (1.91:1)
+  - google_display_square: 1200 x 1200 (1:1)
+  - google_display_vertical: 900 x 1600 (9:16)
 
 Operator context:
 ${JSON.stringify(body.context ?? {}, null, 2)}`;
@@ -103,10 +186,16 @@ ${JSON.stringify(body.context ?? {}, null, 2)}`;
             images: [body.image],
         });
 
-        const parsed = TemplateAnalysisSchema.parse(extractJsonObject(response.content));
+        const parsed = TemplateAnalysisSchema.parse(normalizeAnalysisPayload(extractJsonObject(response.content)));
         return NextResponse.json({ analysis: parsed, modelId: response.model });
     } catch (error) {
         console.error('[ads:templates:analyze]', error);
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({
+                error: 'Template analysis returned invalid metadata.',
+                issues: error.issues,
+            }, { status: 400 });
+        }
         const message = error instanceof Error ? error.message : 'Template screenshot analysis failed.';
         return NextResponse.json({ error: message }, { status: 500 });
     }

@@ -13,11 +13,21 @@ const templateChecklist = [
 const metadataFields = [
   { field: 'workflow', example: 'group_campaign', note: 'Top-level registry bucket. Current values: group_campaign or cb_deal.' },
   { field: 'visualFlavor', example: 'travel_nostalgia', note: 'Creative family. This is reusable style language, not the campaign niche.' },
-  { field: 'format', example: 'story_reel', note: 'Ad placement shape. Current values: story_reel, ig_square, fb_google_display, carousel.' },
+  { field: 'format', example: 'meta_feed_portrait', note: 'Precise ad placement shape. Prefer the P4 keys below; legacy keys still work for older templates.' },
   { field: 'templated_id', example: 'b7e3e02a-aa6f-4c56-a95d-70ecf8c03f2e', note: 'Templated.io template id from the editor URL.' },
   { field: 'dimensions', example: '{ "width": 1080, "height": 1920 }', note: 'Pixel dimensions of the rendered output.' },
   { field: 'pages', example: '4', note: 'Only needed for carousel or multi-page templates.' },
   { field: 'layout.description', example: 'Vertical film strip collage...', note: 'One plain-English anatomy sentence used by Copy Forge.' },
+];
+
+const p4SizePresets = [
+  { format: 'meta_feed_square', platform: 'Meta', placement: 'Feed square', ratio: '1:1', size: '1080 x 1080' },
+  { format: 'meta_feed_portrait', platform: 'Meta', placement: 'Feed portrait', ratio: '4:5', size: '1080 x 1350' },
+  { format: 'meta_story_reel', platform: 'Meta', placement: 'Story/Reel', ratio: '9:16', size: '1080 x 1920' },
+  { format: 'meta_carousel_square', platform: 'Meta', placement: 'Carousel card', ratio: '1:1', size: '1080 x 1080' },
+  { format: 'google_display_landscape', platform: 'Google', placement: 'Responsive Display landscape', ratio: '1.91:1', size: '1200 x 628' },
+  { format: 'google_display_square', platform: 'Google', placement: 'Responsive Display square', ratio: '1:1', size: '1200 x 1200' },
+  { format: 'google_display_vertical', platform: 'Google', placement: 'Responsive Display vertical', ratio: '9:16', size: '900 x 1600' },
 ];
 
 const textSlotFields = [
@@ -57,7 +67,7 @@ const slotNames = [
 ];
 
 const sampleJson = `{
-  "story_reel": {
+  "meta_story_reel": {
     "templated_id": "PASTE_TEMPLATE_ID_HERE",
     "templated_id_previous": null,
     "dimensions": { "width": 1080, "height": 1920 },
@@ -183,6 +193,34 @@ export default function CanvaTemplateGuidePage() {
       <section className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Registry Metadata</h2>
         <FieldTable rows={metadataFields} />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">P4 Exact Canvas Sizes</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-900/90 text-xs uppercase tracking-[0.18em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Format Key</th>
+                <th className="px-4 py-3">Platform</th>
+                <th className="px-4 py-3">Placement</th>
+                <th className="px-4 py-3">Ratio</th>
+                <th className="px-4 py-3">Canvas Size</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {p4SizePresets.map((preset) => (
+                <tr key={preset.format}>
+                  <td className="px-4 py-3 font-mono text-cyan-200">{preset.format}</td>
+                  <td className="px-4 py-3 text-slate-300">{preset.platform}</td>
+                  <td className="px-4 py-3 text-slate-300">{preset.placement}</td>
+                  <td className="px-4 py-3 font-mono text-emerald-200">{preset.ratio}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-white">{preset.size}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="space-y-4">

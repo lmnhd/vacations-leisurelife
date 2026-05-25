@@ -178,6 +178,22 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/test/images 
 
 **Agent default:** If the user asks for the campaign to be rerun from the brief through the complete image pipeline, or asks for "landing page images and others," include Step D by default unless they explicitly say to stop at scene images only.
 
+**Templated/Canva Copy Forge repair loop (cost-control rule):**
+
+When `/tests/canva-ads` has already produced a mostly passing copy set, do **not** rerun Copy Forge just to fix one or two visible-copy blockers. Treat the generated copy set as the source under review.
+
+1. Edit the visible copy directly in `http://localhost:3000/tests/canva-ads`.
+2. Click **Re-run quality gate only**. This calls the deterministic gate and does not spend another LLM call.
+3. Render with Templated only after the edited copy passes.
+4. If an external campaign-building agent is making the repair, export or save the raw Copy Forge JSON, patch only the failed field, then run the local no-HTTP gate:
+
+```powershell
+$out = npx tsx scripts/agent/ad-copyset-patch.ts <input-json> <output-json> <format> <page-index> <field> <value...> 2>&1 ; Write-Host $out
+$out = npx tsx scripts/agent/ad-copyset-recheck.ts <slug> <output-json> [format...] 2>&1 ; Write-Host $out
+```
+
+For carousel formats, `page-index` is zero-based. For single-page formats, use `0`. Prefer narrow repairs such as replacing a CTA with `Find Your Reset` or adding a missing niche anchor to one carousel card. Only rerun Copy Forge when deterministic edits cannot preserve the creative idea.
+
 **Step E Ã¢â‚¬â€ Audio, video, merch (optional, heavy):**
 
 **Prerequisites before running video generation:**

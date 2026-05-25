@@ -55,7 +55,8 @@ export const HISTORY_SUPPORTED_ASSET_TYPES = Object.keys(ASSET_TYPE_TO_SECTION) 
 /** Per-tab primary asset types used by the history panel to scope its fetch. */
 export const TAB_HISTORY_ASSET_TYPES: Record<string, AssetType[]> = {
     references:   ['ship_reference_image'],
-    designed_ads: ['designed_ad_artifact', 'documentary_detail_image'],
+    designed_ads: ['designed_ad_artifact'],
+    documentary_details: ['documentary_detail_image'],
     heroes:       ['hero_image', 'aesthetic_concept'],
     scenes:       ['scene_image'],
     video:        ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'],

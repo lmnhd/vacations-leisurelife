@@ -10,12 +10,32 @@ import type { VisualFlavor } from '@/lib/campaigns/schema';
 // ─── Format catalog ──────────────────────────────────────────────────────────
 
 export type AdFormat =
+    | 'meta_feed_square'
+    | 'meta_feed_portrait'
+    | 'meta_story_reel'
+    | 'meta_carousel_square'
+    | 'google_display_landscape'
+    | 'google_display_square'
+    | 'google_display_vertical'
     | 'ig_square'
     | 'fb_google_display'
     | 'story_reel'
     | 'carousel';
 
-export const AD_FORMATS: readonly AdFormat[] = ['ig_square', 'fb_google_display', 'story_reel', 'carousel'] as const;
+export const AD_FORMATS: readonly AdFormat[] = [
+    'meta_feed_square',
+    'meta_feed_portrait',
+    'meta_story_reel',
+    'meta_carousel_square',
+    'google_display_landscape',
+    'google_display_square',
+    'google_display_vertical',
+    // Legacy aliases retained while the first templates migrate to precise P4 keys.
+    'ig_square',
+    'fb_google_display',
+    'story_reel',
+    'carousel',
+] as const;
 
 export type AdWorkflow = 'group_campaign' | 'cb_deal';
 
@@ -265,6 +285,7 @@ export interface AdRenderImageSelection {
 
 export interface AdRenderPageArtifact {
     page: string;
+    request: TemplatedRenderRequest;
     layers: Record<string, TemplatedLayerOverride>;
     selectedImages: AdRenderImageSelection[];
 }

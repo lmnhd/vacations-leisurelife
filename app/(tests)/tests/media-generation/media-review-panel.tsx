@@ -5,7 +5,7 @@ import type { AssetRecord, CampaignAestheticBrief, CampaignMediaManifest } from 
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { TAB_HISTORY_ASSET_TYPES } from '@/lib/campaigns/media/asset-manifest-section';
 import { ReviewAssetCard } from './review-asset-card';
-import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck, Newspaper, Clock, RotateCcw } from 'lucide-react';
+import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, Loader2, CheckCheck, Newspaper, Clock, RotateCcw, FileText } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab definitions
@@ -14,6 +14,7 @@ import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, L
 const TABS = [
     { id: 'references', label: 'References', icon: Search },
     { id: 'designed_ads', label: 'Designed Ads', icon: Newspaper },
+    { id: 'documentary_details', label: 'Documentary Details', icon: FileText },
     { id: 'heroes',     label: 'Heroes & Concepts', icon: ImageIcon },
     { id: 'crops',      label: 'Crops', icon: Crop },
     { id: 'scenes',     label: 'Scenes', icon: Layers },
@@ -98,6 +99,9 @@ function getTabEntries(
             (manifest.images.designedAdArtifacts ?? []).forEach((asset, i) => {
                 entries.push({ entryKey: `designed::${i}::${asset.assetId}`, title: formatDesignedAdTitle(asset, i), asset });
             });
+            break;
+
+        case 'documentary_details':
             (manifest.images.documentaryDetails ?? []).forEach((asset, i) => {
                 entries.push({ entryKey: `detail::${i}::${asset.assetId}`, title: formatSourceDetailTitle(asset), asset });
             });
@@ -165,18 +169,7 @@ function sortEntriesForDisplay(
     tabId: string,
     entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>,
 ): Array<{ entryKey: string; title: string; asset: AssetRecord }> {
-    if (tabId !== 'designed_ads') {
-        return entries;
-    }
-
-    return [...entries].sort((left, right) => {
-        const leftIsDesigned = left.asset.assetType === 'designed_ad_artifact';
-        const rightIsDesigned = right.asset.assetType === 'designed_ad_artifact';
-        if (leftIsDesigned !== rightIsDesigned) {
-            return leftIsDesigned ? -1 : 1;
-        }
-        return 0;
-    });
+    return entries;
 }
 
 function countDesignedAdArtifacts(entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>): number {
@@ -185,6 +178,13 @@ function countDesignedAdArtifacts(entries: Array<{ entryKey: string; title: stri
 
 function countDesignedAdSources(entries: Array<{ entryKey: string; title: string; asset: AssetRecord }>): number {
     return entries.filter((entry) => entry.asset.assetType === 'documentary_detail_image').length;
+}
+
+function formatPackageTimestamp(value: string | undefined): string {
+    if (!value) return 'Unknown time';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString();
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -260,6 +260,8 @@ export function MediaReviewPanel(
     );
     const activeTabDef = TABS.find(t => t.id === activeTab) ?? TABS[0];
     const ActiveIcon = activeTabDef.icon;
+    const showTikTokPromotionPackage = activeTab === 'video' && Boolean(manifest.tiktokPromotionPackage);
+    const activeTabHasContent = activeEntries.length > 0 || showTikTokPromotionPackage;
     const removableEntries = activeEntries.filter((entry) => getDeleteEndpoint(slug, entry.asset.assetType) !== null);
     const removableUnapprovedEntries = removableEntries.filter((entry) => !isHumanApproved(entry.asset));
     
@@ -502,7 +504,7 @@ export function MediaReviewPanel(
             </div>
 
             {/* ── Tab content ──────────────────────────────────────────── */}
-            {activeEntries.length === 0 ? (
+            {!activeTabHasContent ? (
                 <div className="flex flex-col items-center gap-2 py-16 text-slate-600">
                     <ActiveIcon className="h-10 w-10 opacity-40" />
                     <span className="text-xs">No {activeTabDef.label.toLowerCase()} assets generated yet</span>
@@ -568,6 +570,44 @@ export function MediaReviewPanel(
                     )}
 
                     {/* ── Version History Panel ──────────────────────── */}
+                    {showTikTokPromotionPackage && manifest.tiktokPromotionPackage && (
+                        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] uppercase tracking-widest text-cyan-300">TikTok Promotion Package</div>
+                                    <p className="mt-1 max-w-3xl text-xs text-slate-300">{manifest.tiktokPromotionPackage.strategySummary}</p>
+                                </div>
+                                <div className="rounded-full border border-white/10 bg-slate-950 px-3 py-1 text-[10px] text-slate-400">
+                                    {manifest.tiktokPromotionPackage.beats.length} beats | {formatPackageTimestamp(manifest.tiktokPromotionPackage.synthesizedAt)}
+                                </div>
+                            </div>
+
+                            {manifest.tiktokPromotionPackage.extractionNotes.length > 0 && (
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    {manifest.tiktokPromotionPackage.extractionNotes.slice(0, 4).map((note, index) => (
+                                        <span key={`${index}:${note}`} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-100">
+                                            {note}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                {manifest.tiktokPromotionPackage.beats.map((beat, index) => (
+                                    <div key={`${index}:${beat.headline}`} className="rounded-lg border border-white/10 bg-slate-950/70 p-3">
+                                        <div className="mb-1 text-[10px] uppercase tracking-widest text-slate-500">Beat {index + 1}</div>
+                                        <div className="text-xs font-semibold text-slate-100">{beat.headline}</div>
+                                        <div className="mt-1 text-[11px] text-cyan-100">{beat.subline}</div>
+                                        <p className="mt-1 text-[11px] text-slate-400">{beat.spokenText}</p>
+                                        {beat.sceneHint && (
+                                            <div className="mt-2 text-[10px] text-slate-500">{beat.sceneHint}</div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {historyOpen && (
                         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
                             <div className="flex items-center justify-between border-b border-violet-500/10 px-4 py-2.5">
@@ -671,8 +711,14 @@ export function MediaReviewPanel(
                     {activeTab === 'designed_ads' && (
                         <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 text-[11px] text-slate-300">
                             <span className="font-medium text-fuchsia-200">Designed Ads review:</span>{' '}
-                            {designedAdArtifactCount} template-rendered ads, {designedAdSourceCount} documentary source modules.
-                            Source modules are shown in this tab for traceability and appear after the final ads.
+                            {designedAdArtifactCount} template-rendered ads. Documentary source modules now have their own tab for traceability.
+                        </div>
+                    )}
+
+                    {activeTab === 'documentary_details' && (
+                        <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 text-[11px] text-slate-300">
+                            <span className="font-medium text-fuchsia-200">Documentary Details review:</span>{' '}
+                            {designedAdSourceCount} source modules used as still/detail ingredients for designed ads and template rendering.
                         </div>
                     )}
 

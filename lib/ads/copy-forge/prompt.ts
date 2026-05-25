@@ -64,7 +64,7 @@ function formatsForPrompt(
             format,
             layout_description: layout.description,
             slots: layout.slotDescriptors,
-            isCarousel: format === 'carousel',
+            isCarousel: format === 'carousel' || format === 'meta_carousel_square',
         });
     }
     return out;
@@ -177,7 +177,7 @@ export function assembleCopyForgePrompt(input: CopyForgeInput): AssembledPrompt 
                         },
                     },
                 },
-                'carousel (if requested)': 'an ARRAY of slot packs — one per page, reading as a visual sequence',
+                'carousel or meta_carousel_square (if requested)': 'an ARRAY of slot packs — one per page, reading as a visual sequence',
             },
         },
     };
