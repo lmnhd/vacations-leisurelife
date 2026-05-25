@@ -798,6 +798,7 @@ export default function DiscoveryTestPage() {
     null,
   );
   const [revisionMessage, setRevisionMessage] = useState<string | null>(null);
+  const [bulkRemoveLoading, setBulkRemoveLoading] = useState(false);
   const [retireLoadingSlug, setRetireLoadingSlug] = useState<string | null>(null);
 
   // Two-stage pipeline (research / generate split)
@@ -1376,6 +1377,48 @@ export default function DiscoveryTestPage() {
     }
   };
 
+  const handleRemoveSelectedBlueprints = async () => {
+    if (selectedBlueprintSlugs.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Remove ${selectedBlueprintSlugs.length} selected campaign(s) from the active discovery list?\n\n` +
+        "They will be retired/hidden by default, but kept in the database for deduplication and history.",
+    );
+    if (!confirmed) return;
+
+    setBulkRemoveLoading(true);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const selectedSlugs = [...selectedBlueprintSlugs];
+      const results = await Promise.all(
+        selectedSlugs.map(async (slug) => {
+          const response = await fetch(`/api/groups/discovery/retire/${slug}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: "Removed from active discovery list by operator." }),
+          });
+          const data = (await response.json()) as { success?: boolean; error?: string; campaign?: Campaign };
+          if (!response.ok || !data.success || !data.campaign) {
+            throw new Error(data.error ?? `Remove failed for ${slug}`);
+          }
+          return data.campaign;
+        }),
+      );
+      const retiredCampaigns = new Map(results.map((campaign) => [campaign.id, campaign]));
+      setBlueprints((current) =>
+        current.map((item) => retiredCampaigns.get(item.id) ?? item),
+      );
+      setSelectedBlueprintSlugs([]);
+      setRevisionMessage(`Removed ${results.length} selected campaign(s) from the active discovery list.`);
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Remove selected failed");
+    } finally {
+      setBulkRemoveLoading(false);
+    }
+  };
+
   // ─── Phase B ─────────────────────────────────────────────────────────────
 
   const pollPhaseBStatus = useCallback(async () => {
@@ -1700,6 +1743,20 @@ export default function DiscoveryTestPage() {
                       )}
                     </button>
                   )}
+                  <button
+                    onClick={() => void handleRemoveSelectedBlueprints()}
+                    disabled={bulkRemoveLoading || selectedBlueprintSlugs.length === 0}
+                    title="Remove Selected: Retires checked campaigns from the active discovery list. Records stay in the database for deduplication and history."
+                    className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-300 hover:text-red-200 hover:border-red-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {bulkRemoveLoading ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" /> Removing…
+                      </>
+                    ) : (
+                      `Remove Selected${selectedBlueprintSlugs.length > 0 ? ` (${selectedBlueprintSlugs.length})` : ""}`
+                    )}
+                  </button>
                 </div>
               )}
 
