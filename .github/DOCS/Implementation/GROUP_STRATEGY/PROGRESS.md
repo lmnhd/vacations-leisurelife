@@ -3,6 +3,7 @@
 **Branch**: `feature/shadow-groups`  
 **Last Updated**: 2026-03-04  
 **Strategy Reference**: [GROUP_CAMPAIGN_STRATEGY.md](./GROUP_CAMPAIGN_STRATEGY.md)  
+**Discovery & Inventory Match Process**: [DISCOVERY_INVENTORY_MATCH/README.md](./DISCOVERY_INVENTORY_MATCH/README.md)  
 **Campaign Media Sub-Pipeline**: [CAMPAIGN_MEDIA/README.md](./CAMPAIGN_MEDIA/README.md)  
 **API Endpoint Reference**: [API_REFERENCE.md](./API_REFERENCE.md) ← **All endpoints MUST be documented here**
 
