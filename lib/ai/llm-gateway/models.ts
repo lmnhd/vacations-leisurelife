@@ -13,7 +13,7 @@ import type { ModelConfig } from "./types";
 
 export enum ModelName {
   // TIER 1 · Heavy Reasoning & Architecture
-  GPT_5_HIGH = "gpt-5.2-high",
+  GPT_5_HIGH = "gpt-5.4-high",
   CLAUDE_4_OPUS = "claude-4.6-opus",
   GEMINI_3_PRO = "gemini-3.1-pro",
 
@@ -87,12 +87,12 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_HIGH]: {
     provider: "openai",
-    apiId: "gpt-5.2-chat-latest",
+    apiId: "gpt-5.4",
     maxTokens: 16_384,
     defaultTemp: 0.7,
     contextWindow: 128_000,
-    lastVerified: "2026-05-13",
-    scores: { coding: 80, logic: 93, speed: 40, context: 85 },
+    lastVerified: "2026-05-25",
+    scores: { coding: 84, logic: 95, speed: 35, context: 88 },
   },
 
   [ModelName.CLAUDE_4_OPUS]: {
