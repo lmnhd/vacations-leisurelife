@@ -340,6 +340,16 @@ async function runPhaseB(): Promise<void> {
         );
         personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
       }
+      // Fallback: use campaign-level stored link if the live scrape failed and group IDs match
+      if (!personalLink &&
+        campaign.cbagenttoolsGroupId?.trim() === candidate.groupId?.trim() &&
+        campaign.cbagenttoolsBookingLink
+      ) {
+        personalLink = campaign.cbagenttoolsBookingLink;
+        console.warn(
+          `[run-phase-b] ⚠️ Live scrape failed — using stored campaign booking link for group ${candidate.groupId}: ${personalLink}`,
+        );
+      }
       if (!personalLink) {
         console.warn(
           `[run-phase-b] ⚠️ No personal link found for group ${candidate.groupId}.`,
