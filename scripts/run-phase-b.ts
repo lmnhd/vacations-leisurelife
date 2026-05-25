@@ -310,17 +310,28 @@ async function runPhaseB(): Promise<void> {
         continue;
       }
 
-      // When using cache, reuse any previously-scraped personal link for this group
+      // When using cache, reuse any previously-scraped personal link for this group.
+      // Check two sources in order:
+      //   1. inventoryCandidates — set by a prior successful Phase B run
+      //   2. campaign-level cbagenttoolsBookingLink — set by upsertCampaignPricingMatch
       let personalLink: string | null = null;
-      if (useCache && campaign.inventoryCandidates) {
-        const stored = campaign.inventoryCandidates.find(
-          (c) => c.groupId === candidate.groupId && c.personalLink,
+      if (useCache) {
+        const storedInCandidate = campaign.inventoryCandidates?.find(
+          (c) => c.groupId?.trim() === candidate.groupId?.trim() && c.personalLink,
         );
-        if (stored?.personalLink) {
+        if (storedInCandidate?.personalLink) {
+          personalLink = storedInCandidate.personalLink;
           console.log(
-            `[run-phase-b] Reusing stored personal link for group ${candidate.groupId} (cache mode): ${stored.personalLink}`,
+            `[run-phase-b] Reusing candidate-stored link for group ${candidate.groupId}: ${personalLink}`,
           );
-          personalLink = stored.personalLink;
+        } else if (
+          campaign.cbagenttoolsGroupId?.trim() === candidate.groupId?.trim() &&
+          campaign.cbagenttoolsBookingLink
+        ) {
+          personalLink = campaign.cbagenttoolsBookingLink;
+          console.log(
+            `[run-phase-b] Reusing campaign-level booking link for group ${candidate.groupId} (cache mode): ${personalLink}`,
+          );
         }
       }
       if (!personalLink) {
