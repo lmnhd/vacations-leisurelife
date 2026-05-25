@@ -41,8 +41,11 @@ type CbDealsCache = {
         groupId: string;
         shipName: string;
         vendor: string;
-        sailDate: string;      // actually itinerary text, e.g. "7 Night Alaska Inside Passage Cruise"
-        startingPrice?: string; // actually departure port code, e.g. "YVR"
+        itinerary?: string;
+        departurePort?: string;
+        nights?: string;
+        sailDate: string;
+        startingPrice?: string;
         priceAdvantage?: string;
         sourceUrl?: string;
     }>;
@@ -69,6 +72,13 @@ function assertCbCacheFresh(now: Date = new Date()): void {
     }
 }
 
+function parseCurrencyNumber(value?: string): number {
+    if (!value) return 0;
+    const normalized = value.replace(/[^0-9.]/g, '');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function loadCbInventoryFromCache(): CbGroupInventoryItem[] {
     if (!existsSync(CB_DEALS_CACHE_FILE)) return [];
     try {
@@ -80,13 +90,14 @@ function loadCbInventoryFromCache(): CbGroupInventoryItem[] {
                 groupId: item.groupId,
                 shipName: item.shipName,
                 vendor: item.vendor ?? '',
-                itinerary: item.sailDate ?? '',    // sailDate column holds itinerary text
-                sailDate: '',                      // actual sail date not captured in this cache
-                startingPrice: '',
-                startingPriceNumber: 0,
+                itinerary: item.itinerary ?? '',
+                sailDate: item.sailDate ?? '',
+                startingPrice: item.startingPrice ?? '',
+                startingPriceNumber: parseCurrencyNumber(item.startingPrice),
                 priceAdvantage: item.priceAdvantage ?? '',
-                priceAdvantageNumber: Number(item.priceAdvantage) || 0,
-                departurePort: item.startingPrice, // startingPrice column holds departure port code
+                priceAdvantageNumber: parseCurrencyNumber(item.priceAdvantage),
+                departurePort: item.departurePort,
+                nights: item.nights,
                 sourceUrl: item.sourceUrl ?? '',
             }));
 
