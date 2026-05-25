@@ -290,7 +290,7 @@ export async function scrapeGroupPersonalLink(
       {
         hostPatterns: BOOKING_HOST_PATTERNS,
         textLabels: BOOKING_TEXT_LABELS,
-        baseHost: "cbagenttools.com",
+        baseHost: "www.cbagenttools.com",
       },
     );
 

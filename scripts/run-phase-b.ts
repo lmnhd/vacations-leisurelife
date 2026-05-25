@@ -310,10 +310,25 @@ async function runPhaseB(): Promise<void> {
         continue;
       }
 
-      console.log(
-        `[run-phase-b] Fetching Personal Booking Link for group ${candidate.groupId} (rank ${candidate.rank})...`,
-      );
-      const personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
+      // When using cache, reuse any previously-scraped personal link for this group
+      let personalLink: string | null = null;
+      if (useCache && campaign.inventoryCandidates) {
+        const stored = campaign.inventoryCandidates.find(
+          (c) => c.groupId === candidate.groupId && c.personalLink,
+        );
+        if (stored?.personalLink) {
+          console.log(
+            `[run-phase-b] Reusing stored personal link for group ${candidate.groupId} (cache mode): ${stored.personalLink}`,
+          );
+          personalLink = stored.personalLink;
+        }
+      }
+      if (!personalLink) {
+        console.log(
+          `[run-phase-b] Fetching Personal Booking Link for group ${candidate.groupId} (rank ${candidate.rank})...`,
+        );
+        personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
+      }
       if (!personalLink) {
         console.warn(
           `[run-phase-b] ⚠️ No personal link found for group ${candidate.groupId}.`,
