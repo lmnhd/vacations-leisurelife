@@ -789,15 +789,14 @@ Output must be a single JSON object with a top-level "blueprints" array containi
         })),
         now,
     );
-
+    const invalidLaunchWindowIds = new Set(launchWindowViolations.map((violation) => violation.candidate.id));
     if (launchWindowViolations.length > 0) {
         const details = launchWindowViolations.map((violation) => violation.message).join('; ');
-        console.error(`[generateDiscoveryBlueprints] Step 3: Rejected generated blueprints before campaign creation: ${details}`);
-        throw new Error(`Discovery generated ineligible sailings before campaign creation: ${details}`);
+        console.warn(`[generateDiscoveryBlueprints] Step 3: Discarding ${launchWindowViolations.length} ineligible blueprint(s): ${details}`);
     }
-
+    const launchEligibleBlueprints = object.blueprints.filter((blueprint) => !invalidLaunchWindowIds.has(blueprint.id));
     assertLaunchWindowCompliance(
-        object.blueprints.map((blueprint) => ({
+        launchEligibleBlueprints.map((blueprint) => ({
             id: blueprint.id,
             name: blueprint.name,
             targetDates: blueprint.targetDates,
@@ -807,7 +806,7 @@ Output must be a single JSON object with a top-level "blueprints" array containi
 
     // ── Inventory Match Gate ──────────────────────────────────────────────────
     // Discard any blueprint that cannot be matched to CB inventory before saving.
-    const allCampaigns: Campaign[] = object.blueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
+    const allCampaigns: Campaign[] = launchEligibleBlueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
     const matchedCampaigns: Campaign[] = [];
 
     if (cachedInventory.length === 0) {
@@ -818,7 +817,22 @@ Output must be a single JSON object with a top-level "blueprints" array containi
             const match = matchGroupInventoryToCampaign(campaign, cachedInventory);
             if (match) {
                 console.log(`[generateDiscoveryBlueprints] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
-                matchedCampaigns.push(campaign);
+                matchedCampaigns.push({
+                    ...campaign,
+                    cbagenttoolsGroupId: match.cbGroupId,
+                    cbagenttoolsBookingLink: match.cbPersonalLink,
+                    cbPriceAdvantage: match.cbPriceAdvantage,
+                    startingPrice: match.computedStartingPrice,
+                    priceSource: match.priceSource,
+                    pricingStatus: 'CB_MATCHED',
+                    matchedShipName: match.matchedShipName,
+                    matchedSailDate: match.matchedSailDate,
+                    matchedDeparturePort: match.matchedDeparturePort,
+                    matchedNights: match.matchedNights,
+                    odysseusItinerarySummary: match.odysseusItinerarySummary,
+                    odysseusPortsOfCall: match.odysseusPortsOfCall,
+                    updatedAt: new Date().toISOString(),
+                });
             } else {
                 console.warn(`[generateDiscoveryBlueprints] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
             }
@@ -832,7 +846,8 @@ Output must be a single JSON object with a top-level "blueprints" array containi
     if (matchedCampaigns.length === 0) {
         const ships = allCampaigns.map(c => `"${c.shipTarget ?? 'unknown'}"`).join(', ');
         throw new Error(
-            `All ${allCampaigns.length} generated blueprints failed the inventory match gate. ` +
+            `No generated blueprints are saveable after validation. ` +
+            `Launch-window discarded: ${invalidLaunchWindowIds.size}; inventory-gate evaluated: ${allCampaigns.length}. ` +
             `CB inventory may be too narrow for the requested niche space. ` +
             `Requested ships: ${ships}. ` +
             `Suggest: re-scrape CB inventory or re-spin with relaxed destination constraints.`

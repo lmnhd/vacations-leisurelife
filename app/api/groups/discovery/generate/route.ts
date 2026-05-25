@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDiscoveryBlueprints } from '../core-logic';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 let isRunning = false;
 

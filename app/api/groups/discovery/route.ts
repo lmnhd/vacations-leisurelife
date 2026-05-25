@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runGroupDiscoveryPipeline } from './core-logic';
 import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * In-process lock: prevents concurrent discovery runs from the OpenClaw scheduler
