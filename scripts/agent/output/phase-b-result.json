@@ -1,10 +1,10 @@
 {
-  "completedAt": "2026-05-25T15:01:46.694Z",
+  "completedAt": "2026-05-25T15:13:02.757Z",
   "summary": {
-    "confirmedCount": 0,
+    "confirmedCount": 4,
     "backupCount": 0,
     "expiredCount": 0,
-    "failedCount": 13
+    "failedCount": 9
   },
   "results": [
     {
@@ -44,23 +44,23 @@
     },
     {
       "slug": "wellness-and-nature-cruise",
-      "status": "INVENTORY_FAILED",
-      "detail": "All 1 candidate(s) failed validation — operator review required"
+      "status": "CONFIRMED",
+      "detail": "Icon of the Seas — $1973/pp (score: 100, rank: 0) + retail link"
     },
     {
       "slug": "vintage-book-club",
-      "status": "INVENTORY_FAILED",
-      "detail": "All 1 candidate(s) failed validation — operator review required"
+      "status": "CONFIRMED",
+      "detail": "Symphony of the Seas — $834/pp (score: 100, rank: 0) + retail link"
     },
     {
       "slug": "mystical-seas",
-      "status": "INVENTORY_FAILED",
-      "detail": "All 1 candidate(s) failed validation — operator review required"
+      "status": "CONFIRMED",
+      "detail": "Icon of the Seas — $1973/pp (score: 100, rank: 0) + retail link"
     },
     {
       "slug": "classic-literature-cruise",
-      "status": "INVENTORY_FAILED",
-      "detail": "All 3 candidate(s) failed validation — operator review required"
+      "status": "CONFIRMED",
+      "detail": "Brilliance of the Seas — $1122/pp (score: 100, rank: 0) + retail link"
     },
     {
       "slug": "art-lovers-excursion",

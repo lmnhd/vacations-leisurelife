@@ -593,6 +593,13 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
   const hasCandidates = candidates.length > 0;
   const cbCandidates = candidates.filter((cand) => cand.source === "CB_GROUP");
   const retailCandidate = candidates.find((cand) => cand.source === "ODYSSEUS_RETAIL");
+  const primaryCandidate = cbCandidates.find((cand) => cand.rank === 0) ?? cbCandidates[0];
+  const displayedShipName = primaryCandidate?.shipName ?? c.matchedShipName;
+  const displayedSailDate = primaryCandidate?.sailDate ?? c.matchedSailDate;
+  const displayedStartingPrice = primaryCandidate?.startingPrice ?? c.startingPrice;
+  const displayedLaunchWindow = getLaunchWindowAssessment({
+    matchedSailDate: displayedSailDate,
+  });
 
   return (
     <div className="border rounded-lg border-white/10 overflow-hidden">
@@ -621,21 +628,21 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
               </span>
             )}
           </div>
-          {c.matchedShipName && (
+          {displayedShipName && (
             <div className="text-[10px] text-slate-500 mt-0.5">
-              {c.matchedShipName}
-              {c.matchedSailDate ? ` · ${c.matchedSailDate}` : ""}
-              {c.startingPrice ? ` · From $${c.startingPrice.toLocaleString()}/pp` : ""}
+              {displayedShipName}
+              {displayedSailDate ? ` · ${displayedSailDate}` : ""}
+              {displayedStartingPrice ? ` · From $${displayedStartingPrice.toLocaleString()}/pp` : ""}
             </div>
           )}
-          {c.meetsMinimumLeadTime === false && (
+          {displayedLaunchWindow.meetsMinimumLeadTime === false && (
             <div className="text-[10px] text-red-300 mt-1">
-              Too close to launch normally: {c.daysUntilSail} days until sail.
+              Too close to launch normally: {displayedLaunchWindow.daysUntilSail} days until sail.
             </div>
           )}
-          {c.isTightLeadTime && (
+          {displayedLaunchWindow.isTightLeadTime && (
             <div className="text-[10px] text-amber-300 mt-1">
-              Tight launch window: {c.daysUntilSail} days until sail.
+              Tight launch window: {displayedLaunchWindow.daysUntilSail} days until sail.
             </div>
           )}
         </div>
@@ -1491,8 +1498,11 @@ export default function DiscoveryTestPage() {
 
   function matchesLaunchFilter(bp: Campaign): boolean {
     if (launchFilter === "all") return true;
+    const primaryInventoryCandidate = bp.inventoryCandidates
+      ?.filter((candidate) => candidate.source === "CB_GROUP")
+      .sort((a, b) => a.rank - b.rank)[0];
     const assessment = getLaunchWindowAssessment({
-      matchedSailDate: bp.matchedSailDate,
+      matchedSailDate: primaryInventoryCandidate?.sailDate ?? bp.matchedSailDate,
       targetDates: bp.targetDates,
     });
     const days = assessment.daysUntilSail;
@@ -1845,10 +1855,13 @@ export default function DiscoveryTestPage() {
                 {visibleBlueprints.map((bp, i) => {
                   const isMatched = bp.pricingStatus === "CB_MATCHED";
                   const isUnmatched = bp.pricingStatus === "UNMATCHED";
+                  const primaryInventoryCandidate = bp.inventoryCandidates
+                    ?.filter((candidate) => candidate.source === "CB_GROUP")
+                    .sort((a, b) => a.rank - b.rank)[0];
                   const displayedShip =
-                    bp.matchedShipName ?? bp.shipTarget ?? "TBD";
+                    primaryInventoryCandidate?.shipName ?? bp.matchedShipName ?? bp.shipTarget ?? "TBD";
                   const launchWindow = getLaunchWindowAssessment({
-                    matchedSailDate: bp.matchedSailDate,
+                    matchedSailDate: primaryInventoryCandidate?.sailDate ?? bp.matchedSailDate,
                     targetDates: bp.targetDates,
                   });
                   const isRetired = !!bp.discoveryIteration?.retiredAt;
