@@ -15,13 +15,13 @@ export const DiscoveryBlueprintSchema = z.object({
     startingPrice: z.number().describe('Estimated starting price (use 1000 if unknown)'),
     priceSource: z.string().describe("Source of the price, e.g. 'AI Estimate'"),
     researchRationale: z.string().describe(
-        'Why this niche was selected: reference the specific community data, platform signals, or trend observations from the research that identified this theme as viable. Be specific — name subreddits, hashtag metrics, Discord server sizes, etc.'
+        'Why this niche was selected: reference specific community-native data from the research that identified this theme as viable. Be specific — name subreddits, hashtag metrics, Discord server sizes, forums, creator ecosystems, clubs, tools, gear habits, rituals, or spend signals. Travel-sector trend labels are supporting context only, not lead niche proof.'
     ),
     successLogic: z.string().describe(
         'The commercial and psychological reasoning this niche+cruise pairing will convert: explain audience spending willingness, the IRL meetup pull factor, what market gap this fills, and why a relaxed cruise vacation is uniquely suited to this community.'
     ),
     audienceSignals: z.array(z.string()).min(2).max(4).describe(
-        "2-4 concrete, specific data signals from the research that validate this niche. Each should be a single-sentence fact, e.g. 'r/solotravel recorded 15k+ upvotes on an IRL meetup thread in Jan 2026', or 'TikTok #darkacademia has 3.2B views with >60% Gen-Z engagement'."
+        "2-4 concrete, specific data signals from the research that validate this niche. At least 2 should be community-native and non-travel, such as platform behavior, tools/apps, gear, clubs, creator activity, meetups, spending patterns, rituals, jargon, or social psychology. Each should be a single-sentence fact, e.g. 'r/solotravel recorded 15k+ upvotes on an IRL meetup thread in Jan 2026', or 'TikTok #darkacademia has 3.2B views with >60% Gen-Z engagement'."
     ),
     vacationFitRationale: z.string().describe(
         'Explain why this theme feels like a great cruise vacation rather than a retreat, workshop, residency, lab, or conference.'

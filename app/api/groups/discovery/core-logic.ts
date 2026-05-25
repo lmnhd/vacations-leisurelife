@@ -18,7 +18,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
 // ─── Research Cache ─────────────────────────────────────────────────────────
-// Persists each Perplexity step result to disk so a mid-pipeline failure can
+// Persists each Gemini research step result to disk so a mid-pipeline failure can
 // resume without re-paying for completed steps. Cache key = YYYY-MM-DD.
 // Delete .github/data/discovery-research-cache.json to force a fresh run.
 
@@ -33,7 +33,7 @@ type ResearchCache = {
     aestheticData?: string;
 };
 
-const DISCOVERY_PROMPT_VERSION = '2026-03-15-launch-window-v2';
+const DISCOVERY_PROMPT_VERSION = '2026-05-25-community-native-niche-evidence-v1';
 
 type CbDealsCache = {
     generatedAtIso: string;
@@ -186,6 +186,7 @@ function buildCbInventoryContext(now: Date = new Date()): string {
 }
 
 const CRUISE_REALISM_GOVERNING_PRINCIPLE = 'A valid group cruise theme must feel like a desirable vacation first, and only secondarily like a niche identity expression.';
+const COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE = `A valid niche is a community, taste world, fandom, hobby, identity cluster, or shared ritual culture that exists independently of travel. Travel sectors, itinerary categories, destination trends, and tourism market labels are venue context only; they are not niche proof. Evidence must come primarily from community-native behavior: Reddit/Discord/forum patterns, creator ecosystems, hashtags, meetups, clubs, tools/apps, gear, spending habits, jargon, rituals, or documented social psychology.`;
 
 
 interface DiscoveryPipelineResult {
@@ -565,6 +566,10 @@ function buildPsychographicPrompt(blocks: {
     ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
     The primary deliverable is the VACATION EXPERIENCE. The niche community is what makes it self-select and feel socially alive — it is the seasoning, not the meal. Do not start from a niche and then figure out how to fit it on a cruise. Start from the cruise vacation and identify which niche community would naturally be drawn to it.
 
+    COMMUNITY-NATIVE NICHE EVIDENCE RULE:
+    ${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
+    Do not validate a concept primarily by citing travel-sector growth such as astrotourism, culinary tourism, adventure travel, wellness tourism, experiential travel, or destination demand. Those signals may explain why the ship or itinerary is plausible, but the niche itself must be validated by non-travel community behavior and shared identity.
+
     Identify 5 distinctive cruise vacation experiences where a specific niche community naturally self-selects and gathers — not because the cruise is built for them, but because the cruise is already the right vibe.
 
     Secondary filters (apply after defining the vacation experience):
@@ -590,10 +595,11 @@ function buildPsychographicPrompt(blocks: {
     For each vacation experience, describe in this order:
     1. The cruise vacation experience itself: what kind of ship energy, destinations, deck life, port-day rhythms, and social atmosphere define it — before naming any niche
     2. Which niche community would be disproportionately drawn to THIS vacation (not the reverse) — and why the fit feels natural rather than forced
-    3. How the niche identity acts as thin ambient social flavoring: discoverable by those who care, optional for those who don't, never scheduled as the operational center
-    4. Why a casual participant or non-enthusiast would still rate the trip as a great vacation even if they barely engaged with the niche angle
-    5. What low-pressure, drop-in social signals would make the niche visible and connecting without becoming mandatory programming
-    6. What spend and market signals show this community actively books experiential vacations
+    3. What non-travel evidence proves this is a real community: platforms, tools, gear, creators, meetups, vocabulary, buying behavior, rituals, or social dynamics
+    4. How the niche identity acts as thin ambient social flavoring: discoverable by those who care, optional for those who don't, never scheduled as the operational center
+    5. Why a casual participant or non-enthusiast would still rate the trip as a great vacation even if they barely engaged with the niche angle
+    6. What low-pressure, drop-in social signals would make the niche visible and connecting without becoming mandatory programming
+    7. What spend and market signals show this community can convert, with travel-market data used only as secondary support
 
     Do not optimize for the most intense or industrial niche. Optimize for the best blend of vacation desirability, cruise plausibility, laid-back social chemistry, ambient community potential, and ownable aesthetic.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
@@ -613,6 +619,10 @@ ${psychographicData}
 
     ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
     Remember: the vacation experience comes first. The niche community is the seasoning, not the meal.
+
+    COMMUNITY-NATIVE NICHE EVIDENCE RULE:
+    ${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
+    In this step, separate "niche proof" from "travel/ship fit." Travel trend data belongs only in ship or itinerary plausibility. The niche proof must name community-native behavior and artifacts that existed before the cruise concept.
 
     For each vacation experience identified above, deepen the picture in this order:
 
@@ -640,6 +650,7 @@ ${psychographicData}
     - technical demonstration areas
 
     For each theme, return insight on:
+    - community-native niche proof, clearly separated from travel-sector or itinerary signals
     - cruise-native moments
     - niche-enhanced moments
     - plausible props or aesthetic signals
@@ -699,10 +710,14 @@ ${aestheticData}
 
 Write a structured JSON detailing exactly 5 fully vetted, high-value Theme Cruise Blueprints based on this research.
 
+COMMUNITY-NATIVE NICHE EVIDENCE RULE:
+${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
+Travel-sector evidence can support destination or ship plausibility, but it cannot be the lead proof that a niche exists or will convert. For example, "astrotourism is growing" is not enough; stronger niche proof would cite astronomy clubs, star-map apps, binocular preferences, creator communities, dark-sky meetups, or group awe behavior. Apply the same standard to every blueprint.
+
 CRITICAL REQUIREMENTS for each blueprint:
-1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, or metrics the research data surfaced. Do not generalise.
+1. researchRationale: Cite SPECIFIC findings from the research above — name the exact communities, subreddits, hashtags, forums, Discords, tools, gear habits, creator ecosystems, meetups, rituals, or metrics the research data surfaced. Do not lead with travel-sector trend labels.
 2. successLogic: Explain the commercial + psychological case for why this niche will convert to bookings. Include spend willingness signals, the IRL pull factor, and what market gap this fills.
-3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available).
+3. audienceSignals: Provide 2-4 concrete, specific data points directly from the research (with platform, metric, and date context where available). At least 2 signals must be community-native and non-travel: examples include apps/tools, gear, clubs, creators, hashtags, meetups, forum/subreddit behavior, spending patterns, jargon, rituals, or social psychology. Do not use broad travel-sector growth as the first signal.
 4. vacationFitRationale: Prove that this concept feels like a desirable cruise vacation, not a retreat, class, residency, lab, or conference.
 5. cruiseNativeMoments: Name 3-5 believable shipboard moments that make the theme feel pleasurable and cruise-native. Each moment MUST include at least one specific physical prop, texture, or environmental detail that a photographer could capture or an illustrator could draw. Avoid generic event names. Instead of "game night," write "a half-finished Azul game on a teak table with coffee cups and morning light through a lounge window." Instead of "poolside demo," write "a brightly illustrated game box propped open on a pool chair armrest, dice drying on a towel."
 6. nicheExpressionMode: Explain HOW the niche remains ambient and optional throughout the trip. Name specifically what a non-enthusiast guest does on day 1, day 3, and at a port stop — and why they are having a great time regardless of niche participation. If the answer is "they feel left out," reject this concept and choose a different one.

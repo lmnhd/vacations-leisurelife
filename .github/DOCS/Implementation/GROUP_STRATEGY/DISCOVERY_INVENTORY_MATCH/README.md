@@ -47,6 +47,14 @@ Flow:
 8. Apply the inventory match gate before saving.
 9. Save only eligible, inventory-matched campaigns to DynamoDB.
 
+Discovery evidence rule:
+
+- The discovery pipeline is vacation-first, but niche proof must be community-first. A viable niche is a community, taste world, fandom, hobby, identity cluster, or shared ritual culture that exists independently of travel.
+- Travel sectors, itinerary categories, destination trends, and tourism market labels are venue context only. They can support ship or destination plausibility, but they should not be the lead proof that the niche exists or will convert.
+- `researchRationale` and `audienceSignals` should cite community-native evidence first: subreddits, Discords, forums, clubs, creator ecosystems, hashtags, apps/tools, gear, meetups, rituals, jargon, spend signals, or social psychology.
+- Example: for a stargazing concept, "astrotourism is growing" is only itinerary context. Stronger niche signals are offline star-map apps, binocular preferences, astronomy-club behavior, creator/forum patterns, dark-sky meetups, and shared-awe psychology.
+- Prompt cache version `2026-05-25-community-native-niche-evidence-v1` invalidates older cached research so new runs do not keep reusing travel-sector-led evidence.
+
 Current high-tier GPT routing:
 
 - `ModelName.GPT_5_HIGH` → `gpt-5.4`

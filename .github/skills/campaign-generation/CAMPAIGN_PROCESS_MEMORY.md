@@ -64,3 +64,9 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** Copy Forge multi-format runs became expensive, and most failures were one or two visible-copy blockers after the generated set was already creatively close.  
 **The Change / Rule:** Agents should not rerun Copy Forge just to fix isolated Templated/Canva copy blockers. Edit the generated copy set directly in `/tests/canva-ads`, or patch a saved JSON copy set with `scripts/agent/ad-copyset-patch.ts`, then re-run the deterministic gate with `/tests/canva-ads` or `scripts/agent/ad-copyset-recheck.ts`.  
 **Broader Lesson:** High-cost creative generation should produce a draft source artifact; final fitting, niche-anchor, and CTA corrections should be handled as cheap deterministic repair steps whenever possible.
+
+### 2026-05-25: Discovery Niche Evidence Must Be Community-Native
+
+**Trigger / Context:** The user observed that discovery still felt biased toward travel niches, with outputs using travel-sector evidence such as astrotourism growth ahead of true community proof.  
+**The Change / Rule:** Discovery prompts and schema descriptions now require niche evidence to be community-native first. Travel sectors, itinerary categories, destination trends, and tourism labels may support ship or route plausibility, but `researchRationale` and `audienceSignals` should lead with non-travel signals such as platforms, tools, gear, clubs, creators, meetups, rituals, jargon, spend behavior, or social psychology.  
+**Broader Lesson:** "Vacation first" should protect cruise realism without turning niche discovery into travel-market discovery. The durable split is: community evidence proves the niche; travel evidence explains the venue fit.
