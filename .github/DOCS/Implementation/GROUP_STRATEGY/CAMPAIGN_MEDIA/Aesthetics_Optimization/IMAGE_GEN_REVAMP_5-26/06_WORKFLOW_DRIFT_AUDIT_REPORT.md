@@ -312,6 +312,30 @@ Some prompt rules still appear shaped by older image-to-video concerns. Those ru
 
 ---
 
+### 11. Curation Preferences Are Not Consistently Enforced Across All Image Selectors
+
+**Bucket:** Reject  
+**Pipeline Stage:** Image Selection / Ad Rendering / Landing Page Selection  
+**Files:** `lib/campaigns/media/image-selection.ts`, `lib/ads/render-pack.ts`, `components/campaign-landing/landing-page-visual-system.tsx`
+
+The curation system provides comprehensive preference controls: `globalPriority`, `contextPriorities`, `approvedContexts`, `blockedContexts`, `suitabilityTags`, and `antiTags`. The `image-selection.ts` module correctly honors these preferences.
+
+However, the ad rendering path in `render-pack.ts` only uses `globalPriority` and basic tag matching. It does not respect `contextPriorities`, `approvedContexts`, `blockedContexts`, `suitabilityTags`, or `antiTags`.
+
+**Why it matters:** When an operator curates an image for specific use cases (e.g., "only for landing hero, blocked from Facebook ads"), that preference should be authoritative across every downstream selector. Currently, an image marked as inappropriate for ads can still be selected by the Canva/Templated ad generator.
+
+**Current workflow gaps:**
+- Setting `approvedContexts = ["landing_hero_primary"]` works for landing page selection but not for ad generation
+- Setting `blockedContexts = ["meta_ad_creative"]` works for some selectors but not others
+- Context-specific priorities are ignored by ad rendering
+- Tags are not consistently mapped between UI curation slots and Copy Forge `preferTags`
+
+**Future rule:** Every image selector must honor the complete curation contract. No selector should bypass operator preferences.
+
+**Priority:** High
+
+---
+
 ## Field Lineage Map
 
 | Stage | Primary Inputs | Adds / Rewrites | Downstream Source Fields | Drift Risk |
@@ -356,6 +380,7 @@ Some prompt rules still appear shaped by older image-to-video concerns. Those ru
 | legacy video motion safety vs still image energy | storyboard rules | dull human action | treat videos as animated type layouts using static images |
 | destination/offboard requirement vs operator preference | scene rules | low-value port/rail scenes | make destination scene conditional |
 | broad asset types vs usage eligibility | render pack | wrong source family selected | introduce source/final roles |
+| curation preferences vs inconsistent selector enforcement | image selection vs ad rendering | operator preferences bypassed | make all selectors honor complete curation contract |
 
 ---
 
@@ -468,9 +493,10 @@ Treatments should be role-aware. Main hero/ad source stays believable photograph
 6. **Bind ship references to generation outputs.** Require reference IDs, categories, and preserved features per generated image.
 7. **Add visual metadata to source assets.** peopleCount, compositionFamily, timeOfDay, shipLocationFamily, themeLegibilityScore, groupActionScore, treatment.
 8. **Make Copy Forge consume visual metadata.** It should select by role and quality, not only asset type and tags.
-9. **Add hard no-final-as-source enforcement.** Designed/templated ads must never feed source image pools.
-10. **Update `/tests/media-generation` review lanes.** Show source, final, alternate, and reference artifacts separately.
-11. **Add visual compass lint.** Gate against rail/table repetition, weak group action, weak theme legibility, all-daylight sets, and demographic monotony.
+9. **Enforce curation preferences across all selectors.** Every image selector (landing, ads, templated rendering) must honor `contextPriorities`, `approvedContexts`, `blockedContexts`, `suitabilityTags`, and `antiTags`.
+10. **Add hard no-final-as-source enforcement.** Designed/templated ads must never feed source image pools.
+11. **Update `/tests/media-generation` review lanes.** Show source, final, alternate, and reference artifacts separately.
+12. **Add visual compass lint.** Gate against rail/table repetition, weak group action, weak theme legibility, all-daylight sets, and demographic monotony.
 
 ---
 
