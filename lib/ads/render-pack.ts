@@ -128,7 +128,7 @@ function poolForAssetType(pool: ManifestImagePool, assetType: string): AssetReco
         case 'aesthetic_concept':
             return [...pool.aestheticConcepts, ...pool.documentaryDetails, ...pool.platformCrops, ...pool.hero, ...pool.sceneImages];
         case 'still':
-            return [...pool.documentaryDetails, ...pool.platformCrops, ...pool.sceneImages, ...pool.hero, ...pool.aestheticConcepts, ...pool.designedAdArtifacts];
+            return [...pool.documentaryDetails, ...pool.platformCrops, ...pool.sceneImages, ...pool.hero, ...pool.aestheticConcepts];
         case 'merch':
             return [...pool.merchDesigns, ...pool.merchMockups];
         default:

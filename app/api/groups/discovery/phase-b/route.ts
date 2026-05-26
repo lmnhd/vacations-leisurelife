@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 import path from 'path';
 import { scanAllCampaigns } from '@/lib/campaigns/campaign-store';
 import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
+import type { Campaign } from '@/lib/campaigns/types';
 
 export const maxDuration = 60;
 
 let phaseBRunning = false;
+let phaseBChild: ChildProcessWithoutNullStreams | null = null;
+let phaseBStartedAt: number | null = null;
+let phaseBLastExit: { code: number | null; completedAt: string } | null = null;
+let phaseBLastError: string | null = null;
+
+const PHASE_B_WATCHDOG_MS = 12 * 60 * 1000;
+
+function isCampaignRetired(campaign: Campaign): boolean {
+    return !!campaign.discoveryIteration?.retiredAt
+        || campaign.discoveryIteration?.recommendedNextAction === 'retire';
+}
 
 /**
  * GET /api/groups/discovery/phase-b
@@ -29,14 +41,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Status-only response
     try {
         const campaigns = await scanAllCampaigns();
-        const sortedCampaigns = [...campaigns].sort((left, right) => left.name.localeCompare(right.name));
+        const activeCampaigns = campaigns.filter((campaign) => !isCampaignRetired(campaign));
+        const sortedCampaigns = [...activeCampaigns].sort((left, right) => left.name.localeCompare(right.name));
         const unmatchedCount = sortedCampaigns.filter(c => c.pricingStatus !== 'CB_MATCHED').length;
         const matchedCount = sortedCampaigns.filter(c => c.pricingStatus === 'CB_MATCHED').length;
+        const retiredCount = campaigns.length - activeCampaigns.length;
 
         return NextResponse.json({
             running: phaseBRunning,
+            startedAt: phaseBStartedAt ? new Date(phaseBStartedAt).toISOString() : null,
+            lastExit: phaseBLastExit,
+            lastError: phaseBLastError,
             unmatchedCount,
             matchedCount,
+            activeCount: activeCampaigns.length,
+            retiredCount,
             campaigns: sortedCampaigns.map(c => ({
                 ...getLaunchWindowAssessment({ matchedSailDate: c.matchedSailDate, targetDates: c.targetDates }),
                 slug: c.id,
@@ -102,6 +121,9 @@ function triggerPhaseB(slugs?: string[], useCache = false): NextResponse {
     }
 
     phaseBRunning = true;
+    phaseBStartedAt = Date.now();
+    phaseBLastExit = null;
+    phaseBLastError = null;
     console.log(
         `[phase-b route] Spawning run-phase-b.ts${slugs && slugs.length > 0 ? ` for slugs: ${slugs.join(', ')}` : ' for all campaigns'}...`
     );
@@ -111,6 +133,16 @@ function triggerPhaseB(slugs?: string[], useCache = false): NextResponse {
         stdio: 'pipe',
         shell: true,
     });
+    phaseBChild = child;
+    const watchdog = setTimeout(() => {
+        if (!phaseBRunning || phaseBChild !== child) return;
+        phaseBLastError = `Phase B exceeded ${Math.round(PHASE_B_WATCHDOG_MS / 60000)} minutes and was stopped.`;
+        console.error(`[phase-b route] ${phaseBLastError}`);
+        child.kill('SIGTERM');
+        phaseBRunning = false;
+        phaseBChild = null;
+        phaseBStartedAt = null;
+    }, PHASE_B_WATCHDOG_MS);
 
     child.stdout?.on('data', (data: Buffer) => {
         console.log(`[phase-b] ${data.toString().trim()}`);
@@ -120,8 +152,21 @@ function triggerPhaseB(slugs?: string[], useCache = false): NextResponse {
         console.error(`[phase-b err] ${data.toString().trim()}`);
     });
 
-    child.on('close', (code: number | null) => {
+    child.on('error', (error: Error) => {
+        clearTimeout(watchdog);
         phaseBRunning = false;
+        phaseBChild = null;
+        phaseBStartedAt = null;
+        phaseBLastError = error.message;
+        console.error(`[phase-b route] Process error: ${error.message}`);
+    });
+
+    child.on('close', (code: number | null) => {
+        clearTimeout(watchdog);
+        phaseBRunning = false;
+        phaseBChild = null;
+        phaseBStartedAt = null;
+        phaseBLastExit = { code, completedAt: new Date().toISOString() };
         console.log(`[phase-b route] Process exited with code ${code}`);
     });
 

@@ -13,7 +13,7 @@ import { Search, Image as ImageIcon, Layers, Film, Music, Shirt, Crop, Trash2, L
 
 const TABS = [
     { id: 'references', label: 'References', icon: Search },
-    { id: 'designed_ads', label: 'Designed Ads', icon: Newspaper },
+    { id: 'designed_ads', label: 'Canva Ads', icon: Newspaper },
     { id: 'documentary_details', label: 'Documentary Details', icon: FileText },
     { id: 'heroes',     label: 'Heroes & Concepts', icon: ImageIcon },
     { id: 'crops',      label: 'Crops', icon: Crop },
@@ -68,7 +68,9 @@ function getTabEntries(
         if (has('type_hook')) return 'Story/Reels · Type Hook';
         if (has('image_detail')) return 'FB/Google · Image Detail';
         if (has('baggage_tag')) return 'Social · Baggage Tag';
-        return `Designed Ad ${index + 1}`;
+        const formatTag = tags.find((tag) => tag.startsWith('format:'))?.replace('format:', '');
+        if (formatTag) return `Canva/Templated - ${formatTag.replace(/_/g, ' ')}`;
+        return `Canva Ad ${index + 1}`;
     };
 
     const formatSourceDetailTitle = (asset: AssetRecord): string => {
@@ -710,15 +712,15 @@ export function MediaReviewPanel(
 
                     {activeTab === 'designed_ads' && (
                         <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 text-[11px] text-slate-300">
-                            <span className="font-medium text-fuchsia-200">Designed Ads review:</span>{' '}
-                            {designedAdArtifactCount} template-rendered ads. Documentary source modules now have their own tab for traceability.
+                            <span className="font-medium text-fuchsia-200">Canva Ads review:</span>{' '}
+                            {designedAdArtifactCount} final static ads. This includes Templated renders plus any preserved premium legacy display template.
                         </div>
                     )}
 
                     {activeTab === 'documentary_details' && (
                         <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-3 text-[11px] text-slate-300">
                             <span className="font-medium text-fuchsia-200">Documentary Details review:</span>{' '}
-                            {designedAdSourceCount} source modules used as still/detail ingredients for designed ads and template rendering.
+                            {designedAdSourceCount} optional source modules used as still/detail ingredients for legacy audit and template debugging.
                         </div>
                     )}
 

@@ -415,6 +415,8 @@ Validators contributing to the ledger:
 
 Important: red team should no longer be responsible for inventing all fix mechanics. It should identify issues, classify severity, and attach evidence. The orchestration layer maps those issues into remediation modes.
 
+Note: `production-build-lint` does not yet feed a unified issue ledger, but it already has a finite enum of typed rule codes and can host targeted fixes independently via `FixContract` + `runTargetedLintFixTrial()`. When the unified ledger is introduced, production-build-lint issues can be onboarded by mapping each rule code to an existing or new `FixContract` entry — no architectural changes required.
+
 ### Phase 3 - Remediation
 
 Run remediation in this order:
@@ -522,6 +524,14 @@ Responsibilities:
 To prevent deep path hallucination, the engine must derive a request-scoped finite path enum from `ALLOWED_OPERATION_PATHS` (from `registry.ts`) based on the active artifact and issue set. The structured output schema must force the LLM to select only from that narrowed enum subset rather than inventing arbitrary dot-notation or touching unrelated sibling fields.
 
 This replaces `reviseAestheticBrief` as the default repair engine.
+
+**Current implementation foothold (2026-05-26):**
+A production-build-lint-scoped early implementation of this design is live in:
+
+- [`lib/campaigns/media/lint-fix-contracts.ts`](lib/campaigns/media/lint-fix-contracts.ts) — per-rule `FixContract` definitions mapping directly to the `AestheticPatchRequest` shape described above (`mutableFields` ↔ `allowedPaths`, `frozenFields` ↔ forbidden drift zones, `successPredicate` ↔ `closureChecks`, `buildHint` ↔ `instructions`)
+- [`lib/campaigns/media/targeted-lint-fix.ts`](lib/campaigns/media/targeted-lint-fix.ts) — `runTargetedLintFixTrial()` + `applyTargetedLintFixPatches()` implementing the trial→apply two-step with 5 server-side gates (schema parse, affected-still presence, frozen-field guard, contract success predicate, full-lint regression check)
+
+This covers `repeated_composition_family` on the landing still bible only. It is scoped to `production-build-lint` rules today and does not yet plug into the unified issue ledger described in Phase 2. The contract and trial engine are the correct abstraction and can be extended to additional rule codes without architectural changes.
 
 ### 5. Revision Route Replacement
 
@@ -698,6 +708,8 @@ Extend targeted patching to productionBible and landingStillBible.
 Deliverable:
 
 - reviser can actually close downstream planning issues instead of preserving them unchanged
+
+**Status (2026-05-26):** Partially implemented for `production-build-lint` rules on the landing still bible. The `FixContract` + `runTargetedLintFixTrial()` pipeline in `lib/campaigns/media/` covers `repeated_composition_family`. Expansion to additional rule codes and to `productionBible` fields is the remaining work for this step.
 
 ### Step 5
 

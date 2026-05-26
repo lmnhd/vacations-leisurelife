@@ -11,6 +11,7 @@ Surgical changes to specific campaign assets without re-running the full pipelin
 **Purpose:** The directive system lets an agent (or human) express editorial intent in natural language, resolve it to concrete field overrides, mark only the affected assets stale, and regenerate only those assets â€” without re-running the full ~100s brief pipeline.
 
 **Durability rule:** If the user wants a correction to keep applying across future regenerations, make the change in the directive or upstream brief first. Use a directive when the correction should survive later asset refreshes; use a one-off asset repair only when the fix is intentionally local to that single asset.
+**Dossier sequencing rule:** If the request depends on deeper niche grounding, generate the secondary research dossier first when possible, then regenerate the brief or Production Bible so the new research can influence the actual creative artifacts. Do not spend directive effort trying to patch a production bible that is simply missing upstream research context.
 
 **When to use it:**
 - A specific scene image needs a prop or lighting change (e.g. "Change scene_003 to show a vinyl record on the bar rail instead of dice").
@@ -20,6 +21,7 @@ Surgical changes to specific campaign assets without re-running the full pipelin
 
 **When NOT to use it:**
 - The production bible itself is missing or has empty `imagePrompt` fields â€” fix upstream via brief re-generation first.
+- The campaign needs the dossier to shape the first Production Bible â€” generate the dossier first, then regenerate the brief or Production Bible.
 - The campaign needs a full aesthetic pivot (energy mode, color palette, slogan) â€” re-run the brief engine instead.
 
 ### Two-Step API Flow
@@ -46,8 +48,8 @@ The apply step merges all previously applied directives into a single patch, pat
 | `heroes` | `manifest.images.hero` | `generateHeroImages()` |
 | `concepts` | `manifest.images.aestheticConcepts` | `generateAestheticConcepts()` |
 | `scenes` | `manifest.images.sceneImages` | `generateSceneImages()` |
-| `documentary_details` | `manifest.images.documentaryDetails` | documentary prompt builder + designed-ad source modules |
-| `designed_ads` | `manifest.images.designedAdArtifacts` | ad template renderer (and its documentary detail ingredients) |
+| `documentary_details` | `manifest.images.documentaryDetails` | optional documentary/source-module generator for audit or legacy repair |
+| `designed_ads` | `manifest.images.designedAdArtifacts` | Canva/Templated ad renderer plus the preserved premium legacy display template |
 | `still_bible` | `manifest.images.hero` | `generateHeroImages()` with patched stills |
 | `prop_families` | heroes + concepts + documentary_details | all three generators |
 

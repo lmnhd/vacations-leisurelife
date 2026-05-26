@@ -187,17 +187,286 @@ function getProductionIssueRepairHint(issue: ProductionBuildLintIssue): string {
     }
 }
 
+// Rules currently supported by the targeted-fix backend. Keep in sync with
+// lib/campaigns/media/lint-fix-contracts.ts FIX_CONTRACTS.
+const TARGETED_FIX_RULE_CODES = new Set<string>([
+    'repeated_composition_family',
+]);
+
+interface StillSpecLike {
+    stillId: string;
+    location?: string;
+    environmentDetails?: string;
+    composition?: string;
+    subjectAction?: string;
+    framingMode?: string;
+    cameraDistance?: string;
+    imagePrompt?: string;
+    [key: string]: unknown;
+}
+
+interface StillDiff {
+    stillId: string;
+    before: StillSpecLike;
+    after: StillSpecLike;
+    mutatedFields: string[];
+}
+
+interface FixTrialResponse {
+    status: 'ok' | 'rejected';
+    rejectReason?: string;
+    rejectDetail?: string;
+    patches?: Array<{ stillId: string; [field: string]: string | undefined }>;
+    rationale?: string;
+    beforeLint?: { verdict: string; blockerCount: number; warningCount: number };
+    afterLint?: { verdict: string; blockerCount: number; warningCount: number };
+    diffs?: StillDiff[];
+}
+
+interface AppliedFixSummary {
+    ruleCode: string;
+    appliedStillIds: string[];
+    familyTransitions: Array<{ stillId: string; before: string; after: string }>;
+    beforeVerdict: string;
+    beforeBlockerCount: number;
+    beforeWarningCount: number;
+    newVerdict: string;
+    newBlockerCount: number;
+    newWarningCount: number;
+}
+
+function TargetedFixModal({
+    slug,
+    issue,
+    onClose,
+    onApplied,
+}: {
+    slug: string;
+    issue: ProductionBuildLintIssue;
+    onClose: () => void;
+    onApplied: (summary: AppliedFixSummary) => void;
+}) {
+    const [guidance, setGuidance] = useState('');
+    const [trialing, setTrialing] = useState(false);
+    const [applying, setApplying] = useState(false);
+    const [trialResult, setTrialResult] = useState<FixTrialResponse | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const requestTrial = useCallback(async () => {
+        setTrialing(true);
+        setErrorMessage(null);
+        setTrialResult(null);
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/brief/fix-issue`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ruleCode: issue.code,
+                    affectedStillIds: issue.affectedStillIds,
+                    issueMessage: issue.message,
+                    issueSeverity: issue.severity,
+                    issueDetails: issue.details,
+                    operatorGuidance: guidance.trim() || undefined,
+                }),
+            });
+            const data = (await res.json()) as FixTrialResponse & { error?: string };
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            setTrialResult(data);
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : 'Trial failed.');
+        } finally {
+            setTrialing(false);
+        }
+    }, [slug, issue, guidance]);
+
+    const applyPatch = useCallback(async () => {
+        if (!trialResult || trialResult.status !== 'ok' || !trialResult.patches) return;
+        setApplying(true);
+        setErrorMessage(null);
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/brief/fix-issue/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ruleCode: issue.code,
+                    patches: trialResult.patches,
+                    operatorGuidance: guidance.trim() || undefined,
+                }),
+            });
+            const data = (await res.json()) as { success?: boolean; error?: string } & Partial<AppliedFixSummary>;
+            if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`);
+            onApplied({
+                ruleCode: data.ruleCode ?? issue.code,
+                appliedStillIds: data.appliedStillIds ?? [],
+                familyTransitions: data.familyTransitions ?? [],
+                beforeVerdict: data.beforeVerdict ?? "unknown",
+                beforeBlockerCount: data.beforeBlockerCount ?? 0,
+                beforeWarningCount: data.beforeWarningCount ?? 0,
+                newVerdict: data.newVerdict ?? "unknown",
+                newBlockerCount: data.newBlockerCount ?? 0,
+                newWarningCount: data.newWarningCount ?? 0,
+            });
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : 'Apply failed.');
+        } finally {
+            setApplying(false);
+        }
+    }, [slug, issue, trialResult, guidance, onApplied]);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-widest text-cyan-300">
+                            Fix Issue — {issue.code}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1">{issue.message}</p>
+                        <p className="text-[10px] text-slate-500 mt-1">
+                            Affected: {issue.affectedStillIds.join(', ')}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-slate-500 hover:text-white text-xs"
+                        disabled={trialing || applying}
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Operator guidance input — always available, even after a trial */}
+                <div className="mb-4">
+                    <label className="block text-[10px] uppercase tracking-widest text-slate-500 mb-1.5">
+                        Optional guidance (steer the agent)
+                    </label>
+                    <textarea
+                        value={guidance}
+                        onChange={(e) => setGuidance(e.target.value.slice(0, 500))}
+                        disabled={trialing || applying}
+                        placeholder="e.g. move still-02 to a dining context, keep still-01 on the deck"
+                        rows={3}
+                        className="w-full rounded-md border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/40 focus:outline-none resize-y"
+                    />
+                    <p className="text-[10px] text-slate-600 mt-1">
+                        {guidance.length}/500 — operator guidance supplements (does not override) the lint contract.
+                    </p>
+                </div>
+
+                {errorMessage && (
+                    <div className="mb-4 px-3 py-2 text-xs text-rose-300 border border-rose-500/30 bg-rose-500/10 rounded">
+                        {errorMessage}
+                    </div>
+                )}
+
+                {trialResult?.status === 'rejected' && (
+                    <div className="mb-4 px-3 py-2 text-xs text-amber-200 border border-amber-500/30 bg-amber-500/10 rounded space-y-1">
+                        <p className="font-semibold uppercase tracking-widest text-[10px]">
+                            Fix rejected: {trialResult.rejectReason}
+                        </p>
+                        <p>{trialResult.rejectDetail}</p>
+                        <p className="text-[10px] text-amber-300/70">
+                            Try again with different guidance, or close and use Regenerate Brief.
+                        </p>
+                    </div>
+                )}
+
+                {trialResult?.status === 'ok' && (
+                    <div className="mb-4 space-y-3">
+                        <div className="px-3 py-2 text-xs text-emerald-200 border border-emerald-500/30 bg-emerald-500/10 rounded">
+                            <p className="font-semibold uppercase tracking-widest text-[10px] mb-1">
+                                Proposed fix passed all contract gates
+                            </p>
+                            <p>{trialResult.rationale}</p>
+                            {trialResult.beforeLint && trialResult.afterLint && (
+                                <p className="text-[10px] text-emerald-300/80 mt-1">
+                                    Lint: {trialResult.beforeLint.verdict} ({trialResult.beforeLint.blockerCount}b/{trialResult.beforeLint.warningCount}w) → {trialResult.afterLint.verdict} ({trialResult.afterLint.blockerCount}b/{trialResult.afterLint.warningCount}w)
+                                </p>
+                            )}
+                        </div>
+
+                        {trialResult.diffs?.map((diff) => (
+                            <div key={diff.stillId} className="rounded border border-white/10 bg-slate-950/60 p-3 space-y-2">
+                                <p className="text-[11px] font-mono text-cyan-300">{diff.stillId}</p>
+                                {diff.mutatedFields.length === 0 ? (
+                                    <p className="text-[10px] text-slate-500">No fields changed.</p>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {diff.mutatedFields.map((field) => (
+                                            <div key={field} className="text-[10px]">
+                                                <p className="text-slate-500">{field}</p>
+                                                <p className="text-rose-300/80 line-through truncate">
+                                                    {String(diff.before[field] ?? '')}
+                                                </p>
+                                                <p className="text-emerald-300">
+                                                    {String(diff.after[field] ?? '')}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                    <button
+                        onClick={onClose}
+                        disabled={trialing || applying}
+                        className="rounded border border-white/10 text-xs text-slate-400 px-4 py-2 hover:text-white hover:border-white/30 disabled:opacity-40"
+                    >
+                        Cancel
+                    </button>
+                    {trialResult?.status !== 'ok' ? (
+                        <button
+                            onClick={requestTrial}
+                            disabled={trialing || applying}
+                            className="flex-1 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs text-cyan-300 px-4 py-2 font-semibold hover:bg-cyan-500/30 disabled:opacity-40"
+                        >
+                            {trialing ? 'Generating fix…' : trialResult?.status === 'rejected' ? 'Try Again' : 'Generate Fix →'}
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                onClick={requestTrial}
+                                disabled={trialing || applying}
+                                className="rounded border border-white/10 text-xs text-slate-300 px-4 py-2 hover:border-white/30 disabled:opacity-40"
+                            >
+                                {trialing ? 'Re-rolling…' : 'Re-roll'}
+                            </button>
+                            <button
+                                onClick={applyPatch}
+                                disabled={applying || trialing}
+                                className="flex-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-xs text-emerald-300 px-4 py-2 font-semibold hover:bg-emerald-500/30 disabled:opacity-40"
+                            >
+                                {applying ? 'Applying…' : 'Apply Fix'}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function ProductionLintIssueRow({
     issue,
     diagnostics,
+    slug,
+    onFixApplied,
 }: {
     issue: ProductionBuildLintIssue;
     diagnostics: ProductionBuildStillDiagnostic[];
+    slug: string;
+    onFixApplied: (summary: AppliedFixSummary) => void;
 }) {
     const severityCls = issue.severity === 'blocker'
         ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
         : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
     const affectedDiagnostics = diagnostics.filter((diagnostic) => issue.affectedStillIds.includes(diagnostic.stillId));
+    const isFixable = TARGETED_FIX_RULE_CODES.has(issue.code);
+    const [modalOpen, setModalOpen] = useState(false);
 
     return (
         <div className="space-y-3 rounded-lg border border-white/5 bg-slate-900/30 p-4">
@@ -213,6 +482,15 @@ function ProductionLintIssueRow({
                     )}
                     <p className="text-xs text-cyan-300">{getProductionIssueRepairHint(issue)}</p>
                 </div>
+                {isFixable && slug && (
+                    <button
+                        onClick={() => setModalOpen(true)}
+                        title="Run a targeted LLM fix that only changes the affected stills, with optional operator guidance. Cheaper than regenerating the whole brief."
+                        className="shrink-0 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-[10px] uppercase tracking-widest px-2.5 py-1 hover:bg-cyan-500/20"
+                    >
+                        Fix This Issue
+                    </button>
+                )}
             </div>
 
             {issue.affectedStillIds.length > 0 && (
@@ -243,6 +521,18 @@ function ProductionLintIssueRow({
                     )}
                 </div>
             )}
+
+            {modalOpen && (
+                <TargetedFixModal
+                    slug={slug}
+                    issue={issue}
+                    onClose={() => setModalOpen(false)}
+                    onApplied={(summary) => {
+                        setModalOpen(false);
+                        onFixApplied(summary);
+                    }}
+                />
+            )}
         </div>
     );
 }
@@ -261,6 +551,7 @@ export default function BriefStudioPage() {
     const [lastResult, setLastResult] = useState<BriefEngineResult | null>(null);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [lastAppliedFix, setLastAppliedFix] = useState<(AppliedFixSummary & { appliedAt: string }) | null>(null);
 
     const normalizedSlug = slug.trim();
     const activeBrief = (lastResult?.brief ?? readiness?.brief) as Record<string, unknown> | null;
@@ -616,6 +907,45 @@ export default function BriefStudioPage() {
                             </div>
                         )}
 
+                        {/* ── Last-applied targeted fix banner ─────────── */}
+                        {lastAppliedFix && (
+                            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-200 space-y-1.5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <p>
+                                        <strong>Fix applied at {new Date(lastAppliedFix.appliedAt).toLocaleTimeString()}.</strong>{' '}
+                                        Rule <code className="font-mono text-emerald-100">{lastAppliedFix.ruleCode}</code> patched on{' '}
+                                        {lastAppliedFix.appliedStillIds.join(', ')}.
+                                    </p>
+                                    <button
+                                        onClick={() => setLastAppliedFix(null)}
+                                        className="shrink-0 text-emerald-300/80 hover:text-emerald-100 text-[10px]"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                                <p className="text-emerald-300/80 text-[10px]">
+                                    Lint verdict: <span className="font-mono">{lastAppliedFix.beforeVerdict}</span>{' '}
+                                    ({lastAppliedFix.beforeBlockerCount}b/{lastAppliedFix.beforeWarningCount}w) →{' '}
+                                    <span className="font-mono">{lastAppliedFix.newVerdict}</span>{' '}
+                                    ({lastAppliedFix.newBlockerCount}b/{lastAppliedFix.newWarningCount}w).
+                                </p>
+                                {lastAppliedFix.familyTransitions.length > 0 && (
+                                    <ul className="text-[10px] text-emerald-300/80 space-y-0.5 pl-2">
+                                        {lastAppliedFix.familyTransitions.map((t) => (
+                                            <li key={t.stillId} className="font-mono">
+                                                {t.stillId}: <span className="text-rose-300/70 line-through">{t.before}</span> → <span className="text-emerald-100">{t.after}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {(lastAppliedFix.newBlockerCount + lastAppliedFix.newWarningCount) > 0 && (
+                                    <p className="text-amber-300/80 text-[10px]">
+                                        Note: lint still shows {lastAppliedFix.newBlockerCount + lastAppliedFix.newWarningCount} issue(s). This is normal — each pass only addresses the stills explicitly listed in one issue; adjacent stills sharing the same family may now surface as a new lint instance below.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* ── Corrective reprompt banner ──────────────── */}
                         {lastResult?.correctiveRepromptUsed && (
                             <div className="p-3 text-xs border rounded-lg bg-violet-500/10 border-violet-500/20 text-violet-300">
@@ -691,6 +1021,11 @@ export default function BriefStudioPage() {
                                         key={`blocker-${issue.code}-${issue.affectedStillIds.join('-')}`}
                                         issue={issue}
                                         diagnostics={productionDiagnostics}
+                                        slug={normalizedSlug}
+                                        onFixApplied={(summary) => {
+                                            setLastAppliedFix({ ...summary, appliedAt: new Date().toISOString() });
+                                            void handleLoadCampaign();
+                                        }}
                                     />
                                 ))}
 
@@ -699,6 +1034,11 @@ export default function BriefStudioPage() {
                                         key={`warning-${issue.code}-${issue.affectedStillIds.join('-')}`}
                                         issue={issue}
                                         diagnostics={productionDiagnostics}
+                                        slug={normalizedSlug}
+                                        onFixApplied={(summary) => {
+                                            setLastAppliedFix({ ...summary, appliedAt: new Date().toISOString() });
+                                            void handleLoadCampaign();
+                                        }}
                                     />
                                 ))}
                             </div>

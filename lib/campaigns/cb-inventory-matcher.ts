@@ -490,7 +490,7 @@ export function rankGroupInventoryCandidates(
       rank,
       source: "CB_GROUP",
       groupId: item.groupId,
-      personalLink: "",
+      personalLink: item.personalLink ?? "",
       shipName: item.shipName,
       sailDate: item.sailDate,
       departurePort: item.departurePort,

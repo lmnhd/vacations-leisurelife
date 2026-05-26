@@ -9,6 +9,9 @@ import {
   ChevronDown,
   ChevronUp,
   FlaskConical,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
 } from "lucide-react";
 import type { Campaign, CampaignInventoryCandidate, CampaignInventoryMode, InventoryHealthStatus } from "@/lib/campaigns/types";
 import { getLaunchWindowAssessment } from "@/lib/campaigns/launch-window";
@@ -41,6 +44,7 @@ interface PhaseBCampaignRef {
 }
 
 type PhaseBRunMode = "all" | "selected";
+type PhaseBStatusFilter = "needs_attention" | "pending" | "confirmed" | "all";
 
 interface BulkRedTeamSummary {
   total: number;
@@ -103,6 +107,17 @@ function mergePhaseBStatusIntoBlueprints(
       cbagenttoolsBookingLink:
         phaseBStatus.cbagenttoolsBookingLink ??
         blueprint.cbagenttoolsBookingLink,
+      // Inventory-health state must mirror Phase B exactly — otherwise the
+      // Phase A card shows "CB Match Found" while Phase B shows the campaign
+      // as INVENTORY_FAILED_PAUSED.
+      activeBookingMode:
+        phaseBStatus.activeBookingMode ?? blueprint.activeBookingMode,
+      inventoryHealth:
+        phaseBStatus.inventoryHealth ?? blueprint.inventoryHealth,
+      inventoryLastCheckedAt:
+        phaseBStatus.inventoryLastCheckedAt ?? blueprint.inventoryLastCheckedAt,
+      inventoryCandidates:
+        phaseBStatus.inventoryCandidates ?? blueprint.inventoryCandidates,
     };
   });
 }
@@ -648,7 +663,7 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {c.inventoryHealth && <InventoryHealthBadge status={c.inventoryHealth} />}
-          <PricingBadge status={c.pricingStatus} inventoryHealth={c.inventoryHealth} />
+          <PricingBadge status={c.pricingStatus} inventoryHealth={c.inventoryHealth} activeBookingMode={c.activeBookingMode} />
           {hasCandidates && (
             open ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />
           )}
@@ -732,11 +747,25 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
 
 // ─── Pricing Badge ────────────────────────────────────────────────────────────
 
-function PricingBadge({ status, inventoryHealth }: { status: PricingStatus; inventoryHealth?: InventoryHealthStatus | null }) {
+function PricingBadge({ status, inventoryHealth, activeBookingMode }: { status: PricingStatus; inventoryHealth?: InventoryHealthStatus | null; activeBookingMode?: CampaignInventoryMode | null }) {
   if (status === "CB_MATCHED" && inventoryHealth === "FAILED") {
     return (
       <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-red-500/15 border-red-500/30 text-red-300">
         ⚠️ CB Validation Failed
+      </span>
+    );
+  }
+
+  // Retail fallback writes inventoryHealth=HEALTHY too, so we need
+  // activeBookingMode to tell apart a real CB group match from a campaign
+  // that's only bookable via the Odysseus retail flow.
+  if (status === "CB_MATCHED" && inventoryHealth === "HEALTHY" && activeBookingMode === "RETAIL_MULTI_BOOKING") {
+    return (
+      <span
+        title="No agent-issued CB group personal link was found (likely a House-owned group). Bookable only via the Odysseus retail flow — CB group price advantage may not apply."
+        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-amber-500/15 border-amber-500/30 text-amber-300"
+      >
+        🛟 Retail Confirmed
       </span>
     );
   }
@@ -823,6 +852,8 @@ export default function DiscoveryTestPage() {
   );
   const [phaseBError, setPhaseBError] = useState<string | null>(null);
   const [phaseBRunning, setPhaseBRunning] = useState(false);
+  const [phaseBStatusFilter, setPhaseBStatusFilter] =
+    useState<PhaseBStatusFilter>("needs_attention");
   const phaseBPollingIntervalRef = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
@@ -1426,6 +1457,7 @@ export default function DiscoveryTestPage() {
     const data = (await res.json()) as {
       campaigns?: PhaseBCampaignRef[];
       running?: boolean;
+      lastError?: string | null;
       error?: string;
     };
 
@@ -1438,6 +1470,9 @@ export default function DiscoveryTestPage() {
     setBlueprints((current) =>
       mergePhaseBStatusIntoBlueprints(current, campaigns),
     );
+    if (data.lastError) {
+      setPhaseBError(data.lastError);
+    }
     if (!data.running) {
       clearPhaseBPollingInterval();
       setPhaseBRunning(false);
@@ -1460,7 +1495,12 @@ export default function DiscoveryTestPage() {
   }, [clearPhaseBPollingInterval, pollPhaseBStatus]);
 
   const selectedPhaseBSlugs = selectedBlueprintSlugs.filter((slug) =>
-    blueprints.some((bp) => bp.id === slug),
+    blueprints.some(
+      (bp) =>
+        bp.id === slug &&
+        !isCampaignRetired(bp) &&
+        bp.pricingStatus === "CB_MATCHED",
+    ),
   );
 
   const handleRunPhaseB = (mode: PhaseBRunMode) => {
@@ -1588,6 +1628,46 @@ export default function DiscoveryTestPage() {
 
   const retiredCount = blueprints.filter(isCampaignRetired).length;
   const activeCount = blueprints.length - retiredCount;
+  const phaseBMatchedCount = phaseBCampaigns.filter(
+    (campaign) => campaign.pricingStatus === "CB_MATCHED",
+  ).length;
+  const phaseBConfirmedCount = phaseBCampaigns.filter(
+    (campaign) => campaign.inventoryHealth === "HEALTHY",
+  ).length;
+  const phaseBPendingCount = phaseBCampaigns.filter(
+    (campaign) =>
+      campaign.pricingStatus === "CB_MATCHED" && !campaign.inventoryHealth,
+  ).length;
+  const phaseBNeedsAttentionCount = phaseBCampaigns.filter(
+    (campaign) =>
+      campaign.inventoryHealth === "FAILED" ||
+      campaign.pricingStatus === "UNMATCHED" ||
+      campaign.meetsMinimumLeadTime === false,
+  ).length;
+  const phaseBFilteredCampaigns = phaseBCampaigns.filter((campaign) => {
+    if (phaseBStatusFilter === "all") return true;
+    if (phaseBStatusFilter === "confirmed") {
+      return campaign.inventoryHealth === "HEALTHY";
+    }
+    if (phaseBStatusFilter === "pending") {
+      return campaign.pricingStatus === "CB_MATCHED" && !campaign.inventoryHealth;
+    }
+    return (
+      campaign.inventoryHealth === "FAILED" ||
+      campaign.pricingStatus === "UNMATCHED" ||
+      campaign.meetsMinimumLeadTime === false
+    );
+  });
+  const phaseBFilters: Array<{
+    key: PhaseBStatusFilter;
+    label: string;
+    count: number;
+  }> = [
+    { key: "needs_attention", label: "Attention", count: phaseBNeedsAttentionCount },
+    { key: "pending", label: "Pending", count: phaseBPendingCount },
+    { key: "confirmed", label: "Confirmed", count: phaseBConfirmedCount },
+    { key: "all", label: "All active", count: phaseBCampaigns.length },
+  ];
 
   return (
     <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
@@ -1990,13 +2070,30 @@ export default function DiscoveryTestPage() {
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          <PricingBadge
-                            status={
-                              (bp.pricingStatus ??
-                                "AI_ESTIMATE") as PricingStatus
-                            }
-                            inventoryHealth={bp.inventoryHealth}
-                          />
+                          <div className="flex items-center gap-1.5">
+                            {bp.inventoryHealth && (
+                              <InventoryHealthBadge status={bp.inventoryHealth} />
+                            )}
+                            <PricingBadge
+                              status={
+                                (bp.pricingStatus ??
+                                  "AI_ESTIMATE") as PricingStatus
+                              }
+                              inventoryHealth={bp.inventoryHealth}
+                              activeBookingMode={bp.activeBookingMode}
+                            />
+                          </div>
+                          {bp.activeBookingMode &&
+                            bp.activeBookingMode !== "GROUP_BLOCK_ACTIVE" && (
+                              <span
+                                title={`Active booking mode is ${bp.activeBookingMode}. Inventory transitioned away from the original group block.`}
+                                className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300"
+                              >
+                                {bp.activeBookingMode
+                                  .replace(/_/g, " ")
+                                  .toLowerCase()}
+                              </span>
+                            )}
                           <div className="flex flex-wrap justify-end gap-1">
                             {isStagnant && !isRetired && (
                               <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-amber-500/15 border-amber-500/30 text-amber-300">
@@ -2173,7 +2270,7 @@ export default function DiscoveryTestPage() {
               <p className="text-xs text-slate-400 mb-4 leading-relaxed">
                 {phaseBPendingMode === "selected"
                   ? `Target scope: ${selectedPhaseBSlugs.length} selected campaign(s).`
-                  : "Target scope: all campaigns needing inventory verification."}
+                  : "Target scope: all active CB-matched campaigns needing inventory verification."}
                 <br />
                 Ensure <code className="text-sky-400">CB_EMAIL</code> and{" "}
                 <code className="text-sky-400">CB_PASSWORD</code> are set in{" "}
@@ -2213,17 +2310,17 @@ export default function DiscoveryTestPage() {
 
         {/* ─── Phase B ─────────────────────────────────────────────── */}
         <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-            <div>
-              <span className="text-sm font-medium tracking-widest uppercase text-slate-300">
-                Phase B — CB Inventory Match
-              </span>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Playwright CBAT scrape · Requires CB_EMAIL + CB_PASSWORD in
-                .env.local
-              </p>
-            </div>
-            <div className="flex gap-2">
+          <div className="px-4 py-4 border-b border-white/5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <span className="text-sm font-medium tracking-widest uppercase text-slate-300">
+                  Phase B - Active Inventory Queue
+                </span>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Active campaigns only. Retired records are excluded from status and runs.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleLoadPhaseBStatus}
                 className="text-xs px-3 py-1.5 rounded border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all"
@@ -2237,7 +2334,7 @@ export default function DiscoveryTestPage() {
               >
                 {phaseBRunning ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching...
                   </>
                 ) : (
                   `Match Selected${selectedPhaseBSlugs.length > 0 ? ` (${selectedPhaseBSlugs.length})` : ""}`
@@ -2250,19 +2347,54 @@ export default function DiscoveryTestPage() {
               >
                 {phaseBRunning ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Matching...
                   </>
                 ) : (
-                  "Match All"
+                  "Match Active"
                 )}
               </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-4 md:grid-cols-4">
+              <div className="rounded border border-white/10 bg-slate-950/40 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-slate-500">
+                  <GitBranch className="w-3 h-3" /> Active
+                </div>
+                <div className="mt-1 text-lg font-semibold text-slate-200">
+                  {phaseBCampaigns.length || activeCount}
+                </div>
+              </div>
+              <div className="rounded border border-cyan-500/20 bg-cyan-500/10 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-cyan-300">
+                  <Clock3 className="w-3 h-3" /> Pending
+                </div>
+                <div className="mt-1 text-lg font-semibold text-cyan-200">
+                  {phaseBPendingCount}
+                </div>
+              </div>
+              <div className="rounded border border-emerald-500/20 bg-emerald-500/10 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-emerald-300">
+                  <CheckCircle2 className="w-3 h-3" /> Confirmed
+                </div>
+                <div className="mt-1 text-lg font-semibold text-emerald-200">
+                  {phaseBConfirmedCount}
+                </div>
+              </div>
+              <div className="rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-amber-300">
+                  <AlertTriangle className="w-3 h-3" /> Attention
+                </div>
+                <div className="mt-1 text-lg font-semibold text-amber-200">
+                  {phaseBNeedsAttentionCount}
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="p-4">
             {hasPhaseAResults && (
               <div className="px-3 py-2 mb-3 text-xs border rounded bg-sky-500/10 border-sky-500/20 text-sky-200">
-                <strong>This is a status overview of every campaign in the database</strong> — it always shows all campaigns, not just the ones you matched. Use the blueprint checkboxes above to target a selected-only Phase B run; "Match All" refreshes everything. Click a matched row to see ranked backup candidates and link health.
+                Phase B now shows active campaigns only. Select active CB-matched cards above for a narrow run, or use Match Active to refresh every active CB match. Retired campaigns remain stored for deduplication but are skipped here.
               </div>
             )}
             {phaseBError && (
@@ -2278,17 +2410,47 @@ export default function DiscoveryTestPage() {
               </div>
             )}
 
-            {phaseBCampaigns.length > 0 ? (
-              <div className="space-y-2">
-                {phaseBCampaigns.map((c) => (
-                  <PhaseBCampaignRow key={c.slug} campaign={c} />
-                ))}
+            {phaseBCampaigns.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div className="flex flex-wrap gap-1">
+                  {phaseBFilters.map((filter) => (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setPhaseBStatusFilter(filter.key)}
+                      className={`px-3 py-1.5 rounded border text-[10px] uppercase tracking-widest transition-all ${
+                        phaseBStatusFilter === filter.key
+                          ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
+                          : "border-white/10 text-slate-500 hover:text-slate-200 hover:border-white/30"
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-600">
+                  {phaseBMatchedCount} CB matched active
+                </div>
               </div>
+            )}
+
+            {phaseBCampaigns.length > 0 ? (
+              phaseBFilteredCampaigns.length > 0 ? (
+                <div className="space-y-2">
+                  {phaseBFilteredCampaigns.map((c) => (
+                    <PhaseBCampaignRow key={c.slug} campaign={c} />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-xs text-center text-slate-600">
+                  No active campaigns match this Phase B filter.
+                </div>
+              )
             ) : (
               !phaseBRunning && (
                 <div className="py-8 text-xs text-center text-slate-600">
                   Click "Load Status" to check existing campaigns, "Match
-                  Selected" to target checked cards, or "Match All" to start a
+                  Selected" to target checked cards, or "Match Active" to start a
                   full Phase B run.
                 </div>
               )

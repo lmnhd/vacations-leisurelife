@@ -4,6 +4,8 @@
  * Campaigns now arrive at Phase B already matched (inventory gate runs during discovery).
  * Phase B re-scrapes live CB inventory to confirm the match still holds, then generates
  * the Odysseus retail booking link and writes the final result to DynamoDB.
+ * When the best CB backup would materially change the promise, Phase B can fall back
+ * to retail-only multi-booking instead of forcing a bad CB validation path.
  *
  * If the live scrape shows the match is gone (inventory sold/expired), the campaign is
  * logged for operator review but left in CB_MATCHED state.
@@ -76,6 +78,11 @@ function campaignBookingLinkMatchesCandidate(
     candidateSailDate.length > 0 &&
     storedShipName === candidateShipName &&
     storedSailDate === candidateSailDate;
+}
+
+function isCampaignRetired(campaign: Campaign): boolean {
+  return !!campaign.discoveryIteration?.retiredAt ||
+    campaign.discoveryIteration?.recommendedNextAction === "retire";
 }
 
 function buildOdysseusItinerarySummary(result: CruiseResult): {
@@ -205,6 +212,8 @@ function loadInventoryFromCache(): CbGroupInventoryItem[] {
       sailDate: string;
       startingPrice: string;
       priceAdvantage: string;
+      detailUrl?: string;
+      personalLink?: string;
       sourceUrl: string;
     }>;
   };
@@ -235,6 +244,8 @@ function loadInventoryFromCache(): CbGroupInventoryItem[] {
       startingPriceNumber: parsePrice(item.startingPrice ?? ""),
       priceAdvantage: item.priceAdvantage ?? "",
       priceAdvantageNumber: parsePrice(item.priceAdvantage ?? ""),
+      detailUrl: item.detailUrl,
+      personalLink: item.personalLink,
       sourceUrl: item.sourceUrl ?? "",
     }));
 }
@@ -266,7 +277,7 @@ async function runPhaseB(): Promise<void> {
   }
 
   // 2. Get campaigns to process (only CB_MATCHED campaigns — matching was done during discovery)
-  let campaigns = await scanMatchedCampaigns();
+  let campaigns = (await scanMatchedCampaigns()).filter((campaign) => !isCampaignRetired(campaign));
 
   if (targetSlugs.length > 0) {
     const requestedCampaigns = await Promise.all(
@@ -284,7 +295,19 @@ async function runPhaseB(): Promise<void> {
       return;
     }
 
-    campaigns = requestedCampaigns.filter((c): c is Campaign => c !== null);
+    const foundCampaigns = requestedCampaigns.filter((c): c is Campaign => c !== null);
+    const retiredCampaigns = foundCampaigns.filter(isCampaignRetired);
+    if (retiredCampaigns.length > 0) {
+      console.warn(
+        `[run-phase-b] Skipping retired campaign(s): ${retiredCampaigns.map((campaign) => campaign.id).join(", ")}`,
+      );
+    }
+
+    campaigns = foundCampaigns.filter((campaign) => !isCampaignRetired(campaign));
+    if (campaigns.length === 0) {
+      console.warn("[run-phase-b] No active requested campaigns to confirm.");
+      return;
+    }
   }
 
   console.log(
@@ -294,7 +317,12 @@ async function runPhaseB(): Promise<void> {
   // 3. Confirm match against live inventory + validate links + write Odysseus retail link
   const results: Array<{
     slug: string;
-    status: "CONFIRMED" | "BACKUP_PROMOTED" | "MATCH_EXPIRED" | "INVENTORY_FAILED";
+    status:
+      | "CONFIRMED"
+      | "BACKUP_PROMOTED"
+      | "RETAIL_MULTI_BOOKING"
+      | "MATCH_EXPIRED"
+      | "INVENTORY_FAILED";
     detail: string;
   }> = [];
 
@@ -336,7 +364,13 @@ async function runPhaseB(): Promise<void> {
       //   1. inventoryCandidates — set by a prior successful Phase B run
       //   2. campaign-level cbagenttoolsBookingLink — set by upsertCampaignPricingMatch
       let personalLink: string | null = null;
-      if (useCache) {
+      if (candidate.personalLink) {
+        personalLink = candidate.personalLink;
+        console.log(
+          `[run-phase-b] Reusing inventory-row personal link for group ${candidate.groupId}: ${personalLink}`,
+        );
+      }
+      if (!personalLink && useCache) {
         const storedInCandidate = campaign.inventoryCandidates?.find(
           (c) => c.groupId?.trim() === candidate.groupId?.trim() && c.personalLink,
         );
@@ -397,6 +431,71 @@ async function runPhaseB(): Promise<void> {
     }
 
     if (!primaryCandidate) {
+      const retailFallbackSource = candidates[0];
+      if (retailFallbackSource) {
+        console.warn(
+          `[run-phase-b] No healthy CB booking link found for "${campaign.id}". Attempting retail fallback from rank ${retailFallbackSource.rank} (${retailFallbackSource.shipName}).`,
+        );
+
+        const retailConfirmation: CbInventoryMatch = {
+          cbGroupId: retailFallbackSource.groupId!,
+          cbPersonalLink: "",
+          cbPriceAdvantage: 0,
+          rawGroupPrice: retailFallbackSource.startingPrice
+            ? Math.round(retailFallbackSource.startingPrice / 1.15)
+            : 0,
+          computedStartingPrice: retailFallbackSource.startingPrice ?? 0,
+          priceSource: "ODYSSEUS_RETAIL",
+          matchedShipName: retailFallbackSource.shipName,
+          matchedSailDate: retailFallbackSource.sailDate,
+          matchedDeparturePort: retailFallbackSource.departurePort,
+          matchedNights: retailFallbackSource.nights,
+          matchScore: retailFallbackSource.matchScore,
+          odysseusRetailBookingLink: null,
+        };
+
+        const odysseusResult = await generateOdysseusRetailLink(retailConfirmation);
+        if (odysseusResult.retailLink) {
+          const retailValidation = await validateBookingLink(odysseusResult.retailLink);
+          if (retailValidation.status === "HEALTHY") {
+            const retailCandidate: CampaignInventoryCandidate = {
+              rank: validatedCandidates.length,
+              source: "ODYSSEUS_RETAIL",
+              retailLink: odysseusResult.retailLink,
+              shipName: retailFallbackSource.shipName,
+              sailDate: retailFallbackSource.sailDate,
+              departurePort: retailFallbackSource.departurePort,
+              nights: retailFallbackSource.nights,
+              odysseusItinerarySummary: odysseusResult.itinerarySummary ?? undefined,
+              odysseusPortsOfCall: odysseusResult.portsOfCall ?? undefined,
+              startingPrice: retailFallbackSource.startingPrice,
+              priceSource: "ODYSSEUS_RETAIL",
+              matchScore: retailFallbackSource.matchScore,
+              promiseDelta: retailFallbackSource.promiseDelta,
+              healthStatus: retailValidation.status,
+              lastCheckedAt: retailValidation.checkedAt,
+              failureReason: retailValidation.failureReason,
+            };
+
+            validatedCandidates.push(retailCandidate);
+
+            await upsertCampaignPricingMatch(campaign.id, retailConfirmation, {
+              inventoryCandidates: validatedCandidates,
+              activeBookingMode: "RETAIL_MULTI_BOOKING",
+              inventoryHealth: "HEALTHY",
+              inventoryLastCheckedAt: new Date().toISOString(),
+            });
+
+            results.push({
+              slug: campaign.id,
+              status: "RETAIL_MULTI_BOOKING",
+              detail: `${retailConfirmation.matchedShipName} — retail fallback + retail link`,
+            });
+            continue;
+          }
+        }
+      }
+
       console.error(
         `[run-phase-b] ❌ No healthy booking link found for "${campaign.id}". Marking INVENTORY_FAILED_PAUSED.`,
       );
@@ -482,16 +581,17 @@ async function runPhaseB(): Promise<void> {
 
   const confirmedCount = results.filter((r) => r.status === "CONFIRMED").length;
   const backupCount = results.filter((r) => r.status === "BACKUP_PROMOTED").length;
+  const retailCount = results.filter((r) => r.status === "RETAIL_MULTI_BOOKING").length;
   const expiredCount = results.filter((r) => r.status === "MATCH_EXPIRED").length;
   const failedCount = results.filter((r) => r.status === "INVENTORY_FAILED").length;
   console.log(
-    `\n[run-phase-b] Done. ${confirmedCount} confirmed, ${backupCount} backup-promoted, ${expiredCount} expired, ${failedCount} failed validation.\n`,
+    `\n[run-phase-b] Done. ${confirmedCount} confirmed, ${backupCount} backup-promoted, ${retailCount} retail-fallback, ${expiredCount} expired, ${failedCount} failed validation.\n`,
   );
 
   // Write result file for agent consumption (agents cannot poll localhost, but can read this file)
   const resultPayload = {
     completedAt: new Date().toISOString(),
-    summary: { confirmedCount, backupCount, expiredCount, failedCount },
+    summary: { confirmedCount, backupCount, retailCount, expiredCount, failedCount },
     results,
   };
   const outputDir = path.join(process.cwd(), "scripts", "agent", "output");

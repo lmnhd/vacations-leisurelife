@@ -48,7 +48,11 @@ This folder turns those observations into a planned refactor instead of a pile o
 
    The operator's visual review of the current campaign should define what is worth preserving, rejecting, or standardizing before the system is rewritten.
 
-6. **The campaign-generation skill must be updated before external agents rely on this path.**
+6. **The research dossier should precede the brief bundle when possible.**
+
+   If the dossier can be generated before the first brief run, do it. That gives the Production Bible a chance to inherit the niche research instead of learning about it only at approval time.
+
+7. **The campaign-generation skill must be updated before external agents rely on this path.**
 
    Agents need explicit Canva Ads knowledge, the no-ad-in-ad guardrail, and the preserved premium display template requirement.
 

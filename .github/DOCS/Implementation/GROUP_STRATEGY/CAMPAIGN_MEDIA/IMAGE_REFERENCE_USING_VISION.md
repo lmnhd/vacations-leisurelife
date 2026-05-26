@@ -349,6 +349,7 @@ Only if the team decides to make multimodal vision evaluation a first-class gate
 - Use `CLAUDE_4_SONNET` for all deep spatial/context vision evaluation tasks.
 - Evaluate strictly per category, never globally across mixed sets.
 - Apply to all reference categories universally.
+- Ship reference vision evaluation is on by default. Set `ENABLE_REFERENCE_VISION_EVALUATION=false` only when deliberately falling back to text/metadata ranking.
 - Keep human review operator authoritative: AI only primes pending queues.
 - Use explicit, hardened controlled tag vocabularies across the stack.
 - Strongly integrate with exclusion-based reference iteration loops.

@@ -1,5 +1,5 @@
 {
-  "generatedAtIso": "2026-05-25T02:05:56.249Z",
+  "generatedAtIso": "2026-05-25T18:42:31.183Z",
   "promos": [
     {
       "title": "ALG Vacations and Hyatt Inclusives - Save up to 25% off",
@@ -516,31 +516,7 @@
   ],
   "priceAdvantages": [
     {
-      "groupId": "8467721",
-      "shipName": "Liberty of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "8 Night Western Caribbean Cruise",
-      "departurePort": "GLS",
-      "nights": "8",
-      "sailDate": "Aug. 20, 2027",
-      "startingPrice": "776.02",
-      "priceAdvantage": "$330",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
-    },
-    {
-      "groupId": "441350",
-      "shipName": "Jewel of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "April 11, 2027",
-      "startingPrice": "1203.48",
-      "priceAdvantage": "$305",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
-    },
-    {
-      "groupId": "6785830",
+      "groupId": "55173",
       "shipName": "Hero of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -549,34 +525,11 @@
       "sailDate": "April 8, 2028",
       "startingPrice": "2145.43",
       "priceAdvantage": "$481",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55173/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
     },
     {
-      "groupId": "6746425",
-      "shipName": "Hero of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 11, 2027",
-      "startingPrice": "1777.70",
-      "priceAdvantage": "$456",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "1568507",
-      "shipName": "Navigator of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "17 Night Tokyo To Los Angeles Cruise",
-      "departurePort": "TYO",
-      "nights": "16",
-      "sailDate": "May 12, 2027",
-      "startingPrice": "1121.04",
-      "priceAdvantage": "$1000",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "443517",
+      "groupId": "50468",
       "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -585,22 +538,37 @@
       "sailDate": "April 18, 2027",
       "startingPrice": "1191.51",
       "priceAdvantage": "$305",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50468/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "8910779",
-      "shipName": "Icon of the Seas",
+      "groupId": "52428",
+      "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
-      "itinerary": "7 Night Eastern Caribbean & Perfect Day",
-      "departurePort": "MIA",
-      "nights": "6",
-      "sailDate": "Nov. 21, 2026",
-      "startingPrice": "1715.37",
-      "priceAdvantage": "$495",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "April 11, 2027",
+      "startingPrice": "1203.48",
+      "priceAdvantage": "$305",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52428/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+    },
+    {
+      "groupId": "53432",
+      "shipName": "Navigator of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "17 Night Tokyo To Los Angeles Cruise",
+      "departurePort": "TYO",
+      "nights": "16",
+      "sailDate": "May 12, 2027",
+      "startingPrice": "1121.04",
+      "priceAdvantage": "$1000",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/53432/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "1817624",
+      "groupId": "42330",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -609,10 +577,11 @@
       "sailDate": "Nov. 22, 2026",
       "startingPrice": "$976",
       "priceAdvantage": "$287",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42330/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "7118608",
+      "groupId": "42714",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -621,10 +590,11 @@
       "sailDate": "Nov. 22, 2026",
       "startingPrice": "$976",
       "priceAdvantage": "$287",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42714/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2978577",
+      "groupId": "52295",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -633,10 +603,11 @@
       "sailDate": "Nov. 22, 2026",
       "startingPrice": "$628",
       "priceAdvantage": "$130",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52295/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4797215",
+      "groupId": "51012",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -645,10 +616,11 @@
       "sailDate": "Nov. 23, 2026",
       "startingPrice": "$535",
       "priceAdvantage": "$28",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51012/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4800913",
+      "groupId": "51013",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -657,10 +629,11 @@
       "sailDate": "Nov. 27, 2026",
       "startingPrice": "$456",
       "priceAdvantage": "$30",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51013/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "1824434",
+      "groupId": "42716",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -669,10 +642,11 @@
       "sailDate": "Nov. 29, 2026",
       "startingPrice": "$785",
       "priceAdvantage": "$227",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42716/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "7155852",
+      "groupId": "47352",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -681,10 +655,11 @@
       "sailDate": "Nov. 29, 2026",
       "startingPrice": "$785",
       "priceAdvantage": "$227",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/47352/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4802684",
+      "groupId": "51014",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -693,10 +668,11 @@
       "sailDate": "Nov. 30, 2026",
       "startingPrice": "$486",
       "priceAdvantage": "$50",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51014/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4804906",
+      "groupId": "51015",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -705,10 +681,11 @@
       "sailDate": "Dec. 4, 2026",
       "startingPrice": "$386",
       "priceAdvantage": "$32",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51015/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "1841218",
+      "groupId": "42724",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -717,10 +694,11 @@
       "sailDate": "Dec. 6, 2026",
       "startingPrice": "$775",
       "priceAdvantage": "$195",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42724/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2439610",
+      "groupId": "50250",
       "shipName": "Freedom of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -729,10 +707,11 @@
       "sailDate": "Dec. 7, 2026",
       "startingPrice": "$601",
       "priceAdvantage": "$276",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50250/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4806774",
+      "groupId": "51016",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -741,10 +720,11 @@
       "sailDate": "Dec. 7, 2026",
       "startingPrice": "$463",
       "priceAdvantage": "$113",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51016/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4808393",
+      "groupId": "51017",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -753,10 +733,11 @@
       "sailDate": "Dec. 11, 2026",
       "startingPrice": "$386",
       "priceAdvantage": "$32",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51017/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2211152",
+      "groupId": "42808",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -765,10 +746,11 @@
       "sailDate": "Dec. 13, 2026",
       "startingPrice": "$784",
       "priceAdvantage": "$172",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42808/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4809591",
+      "groupId": "51018",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -777,10 +759,11 @@
       "sailDate": "Dec. 14, 2026",
       "startingPrice": "$426",
       "priceAdvantage": "$40",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51018/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4814388",
+      "groupId": "51019",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -789,10 +772,11 @@
       "sailDate": "Dec. 18, 2026",
       "startingPrice": "$396",
       "priceAdvantage": "$61",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51019/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2981056",
+      "groupId": "50336",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -801,22 +785,11 @@
       "sailDate": "Dec. 20, 2026",
       "startingPrice": "$1475",
       "priceAdvantage": "$256",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50336/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2928205",
-      "shipName": "Norwegian Gem",
-      "vendor": "Norwegian Cruise…",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 27, 2026",
-      "startingPrice": "$1161",
-      "priceAdvantage": "$192",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "A2867554",
+      "groupId": "44696",
       "shipName": "Norwegian Gem",
       "vendor": "Norwegian Cruise…",
       "itinerary": "7 Nights Caribbean -",
@@ -825,10 +798,24 @@
       "sailDate": "Dec. 27, 2026",
       "startingPrice": "$1161",
       "priceAdvantage": "$192",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/44696/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2983731",
+      "groupId": "49651",
+      "shipName": "Norwegian Gem",
+      "vendor": "Norwegian Cruise…",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "Dec. 27, 2026",
+      "startingPrice": "$1161",
+      "priceAdvantage": "$192",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/49651/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "50337",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -837,10 +824,11 @@
       "sailDate": "Dec. 28, 2026",
       "startingPrice": "$966",
       "priceAdvantage": "$175",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50337/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "9949038",
+      "groupId": "43595",
       "shipName": "Symphony of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Western Caribbean Cruise",
@@ -849,10 +837,11 @@
       "sailDate": "Jan. 3, 2027",
       "startingPrice": "$725",
       "priceAdvantage": "$231",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43595/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2233066",
+      "groupId": "42817",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -861,10 +850,11 @@
       "sailDate": "Jan. 3, 2027",
       "startingPrice": "$860",
       "priceAdvantage": "$110",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42817/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4817822",
+      "groupId": "51020",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -873,10 +863,11 @@
       "sailDate": "Jan. 4, 2027",
       "startingPrice": "$444",
       "priceAdvantage": "$19",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51020/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2990453",
+      "groupId": "50339",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -885,10 +876,11 @@
       "sailDate": "Jan. 7, 2027",
       "startingPrice": "$381",
       "priceAdvantage": "$120",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50339/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "813797",
+      "groupId": "50178",
       "shipName": "Explorer of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -897,10 +889,11 @@
       "sailDate": "Jan. 8, 2027",
       "startingPrice": "$648",
       "priceAdvantage": "$130",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50178/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4918275",
+      "groupId": "43352",
       "shipName": "Radiance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -909,10 +902,11 @@
       "sailDate": "Jan. 9, 2027",
       "startingPrice": "$749",
       "priceAdvantage": "$130",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43352/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "5709785",
+      "groupId": "50824",
       "shipName": "Rhapsody of The Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -921,10 +915,11 @@
       "sailDate": "Jan. 9, 2027",
       "startingPrice": "$732",
       "priceAdvantage": "$23",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50824/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2239394",
+      "groupId": "42822",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -933,10 +928,11 @@
       "sailDate": "Jan. 10, 2027",
       "startingPrice": "$733",
       "priceAdvantage": "$90",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42822/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2992952",
+      "groupId": "50340",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -945,10 +941,11 @@
       "sailDate": "Jan. 11, 2027",
       "startingPrice": "$428",
       "priceAdvantage": "$132",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50340/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4822516",
+      "groupId": "51023",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -957,10 +954,11 @@
       "sailDate": "Jan. 15, 2027",
       "startingPrice": "$470",
       "priceAdvantage": "$12",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51023/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4927749",
+      "groupId": "43353",
       "shipName": "Radiance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -969,10 +967,11 @@
       "sailDate": "Jan. 16, 2027",
       "startingPrice": "$764",
       "priceAdvantage": "$45",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43353/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "409544",
+      "groupId": "50460",
       "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -981,10 +980,11 @@
       "sailDate": "Jan. 17, 2027",
       "startingPrice": "$1260",
       "priceAdvantage": "$165",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50460/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "5711780",
+      "groupId": "50825",
       "shipName": "Rhapsody of The Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -993,10 +993,11 @@
       "sailDate": "Jan. 17, 2027",
       "startingPrice": "$558",
       "priceAdvantage": "$25",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50825/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4826858",
+      "groupId": "51024",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1005,10 +1006,11 @@
       "sailDate": "Jan. 18, 2027",
       "startingPrice": "$524",
       "priceAdvantage": "$9",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51024/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2998170",
+      "groupId": "50342",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1017,10 +1019,11 @@
       "sailDate": "Jan. 21, 2027",
       "startingPrice": "$381",
       "priceAdvantage": "$120",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50342/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2789287",
+      "groupId": "50260",
       "shipName": "Freedom of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1029,10 +1032,11 @@
       "sailDate": "Jan. 23, 2027",
       "startingPrice": "$525",
       "priceAdvantage": "$110",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50260/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "415513",
+      "groupId": "50461",
       "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1041,10 +1045,11 @@
       "sailDate": "Jan. 24, 2027",
       "startingPrice": "$1127",
       "priceAdvantage": "$280",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50461/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2299279",
+      "groupId": "42831",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1053,10 +1058,11 @@
       "sailDate": "Jan. 24, 2027",
       "startingPrice": "$733",
       "priceAdvantage": "$90",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42831/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2999505",
+      "groupId": "50343",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1065,10 +1071,11 @@
       "sailDate": "Jan. 25, 2027",
       "startingPrice": "$428",
       "priceAdvantage": "$124",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50343/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4834488",
+      "groupId": "51026",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1077,10 +1084,11 @@
       "sailDate": "Jan. 25, 2027",
       "startingPrice": "$408",
       "priceAdvantage": "$24",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51026/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4837633",
+      "groupId": "51027",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1089,10 +1097,11 @@
       "sailDate": "Jan. 29, 2027",
       "startingPrice": "$367",
       "priceAdvantage": "$8",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51027/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "418117",
+      "groupId": "50462",
       "shipName": "Jewel of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1101,10 +1110,11 @@
       "sailDate": "Jan. 31, 2027",
       "startingPrice": "$1272",
       "priceAdvantage": "$165",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50462/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2311466",
+      "groupId": "42835",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1113,10 +1123,11 @@
       "sailDate": "Jan. 31, 2027",
       "startingPrice": "$710",
       "priceAdvantage": "$150",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42835/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "3005407",
+      "groupId": "50345",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1125,10 +1136,11 @@
       "sailDate": "Feb. 4, 2027",
       "startingPrice": "$411",
       "priceAdvantage": "$124",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50345/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4841280",
+      "groupId": "51029",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1137,10 +1149,11 @@
       "sailDate": "Feb. 5, 2027",
       "startingPrice": "$387",
       "priceAdvantage": "$7",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51029/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4948212",
+      "groupId": "43356",
       "shipName": "Radiance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1149,10 +1162,11 @@
       "sailDate": "Feb. 6, 2027",
       "startingPrice": "$749",
       "priceAdvantage": "$196",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43356/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "5719453",
+      "groupId": "50828",
       "shipName": "Rhapsody of The Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1161,10 +1175,11 @@
       "sailDate": "Feb. 6, 2027",
       "startingPrice": "$775",
       "priceAdvantage": "$41",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50828/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2319327",
+      "groupId": "42839",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1173,10 +1188,11 @@
       "sailDate": "Feb. 7, 2027",
       "startingPrice": "$734",
       "priceAdvantage": "$150",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42839/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "3008052",
+      "groupId": "50346",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1185,10 +1201,11 @@
       "sailDate": "Feb. 8, 2027",
       "startingPrice": "$468",
       "priceAdvantage": "$136",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50346/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4842799",
+      "groupId": "51030",
       "shipName": "Vision of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1197,10 +1214,11 @@
       "sailDate": "Feb. 8, 2027",
       "startingPrice": "$472",
       "priceAdvantage": "$7",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51030/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "4953144",
+      "groupId": "43357",
       "shipName": "Radiance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1209,10 +1227,11 @@
       "sailDate": "Feb. 13, 2027",
       "startingPrice": "$758",
       "priceAdvantage": "$64",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43357/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "2328686",
+      "groupId": "42841",
       "shipName": "Brilliance of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "7 Night Southern Caribbean Cruise",
@@ -1221,10 +1240,11 @@
       "sailDate": "Feb. 14, 2027",
       "startingPrice": "$775",
       "priceAdvantage": "$130",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42841/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "5722320",
+      "groupId": "50829",
       "shipName": "Rhapsody of The Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1233,10 +1253,11 @@
       "sailDate": "Feb. 14, 2027",
       "startingPrice": "$578",
       "priceAdvantage": "$38",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50829/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "3012649",
+      "groupId": "50348",
       "shipName": "Grandeur of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1245,10 +1266,11 @@
       "sailDate": "Feb. 18, 2027",
       "startingPrice": "$411",
       "priceAdvantage": "$124",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50348/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "891807",
+      "groupId": "50187",
       "shipName": "Explorer of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
@@ -1257,6 +1279,7 @@
       "sailDate": "Feb. 19, 2027",
       "startingPrice": "$612",
       "priceAdvantage": "$117",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50187/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     }
   ]

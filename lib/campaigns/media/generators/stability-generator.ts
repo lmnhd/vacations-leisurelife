@@ -1070,7 +1070,7 @@ function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
     return [
         'Storyboard source frame direction: keep human subjects secondary to ship and sea — never the dominant foreground focal point',
         'Prefer visible group presence: 3 or more people around a table or at the rail, with blurred background figures only as support; avoid couples-as-default, solo portraits, close-up faces, eye-contact portraits, or staged group poses',
-        'Capture a settled social moment: people at rest around a table or at the rail, game or props visible, no walking, no sipping, no object hand-offs in motion',
+        'Capture a settled social moment: people at rest around a table or at the rail, with one readable campaign prop or personal item visible, no walking, no sipping, no object hand-offs in motion',
     ].join('. ');
 }
 

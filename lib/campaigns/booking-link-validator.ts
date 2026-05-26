@@ -52,6 +52,9 @@ export async function validateBookingLink(
             finalUrl = page.url();
             pageTitle = await page.title();
         } catch {
+            console.warn(
+                `[booking-link-validator] FAILED (timeout) url=${url}`,
+            );
             return {
                 status: "FAILED",
                 checkedAt,
@@ -67,12 +70,16 @@ export async function validateBookingLink(
 
         const bodyText: string = await page.innerText("body").catch(() => "");
         const excerpt = bodyText.slice(0, 3000);
+        const bodyPreview = bodyText.replace(/\s+/g, " ").trim().slice(0, 200);
 
         // Login redirect loop
         const isLoginRedirect =
             finalUrl !== url &&
             (finalUrl.includes("/login") || finalUrl.includes("/signin"));
         if (isLoginRedirect) {
+            console.warn(
+                `[booking-link-validator] FAILED (login-redirect)\n  url=${url}\n  finalUrl=${finalUrl}\n  title=${pageTitle}\n  body[0..200]=${bodyPreview}`,
+            );
             return {
                 status: "FAILED",
                 checkedAt,
@@ -85,18 +92,26 @@ export async function validateBookingLink(
 
         // Error content on page
         if (FAILURE_PATTERNS.test(pageTitle) || FAILURE_PATTERNS.test(excerpt)) {
+            const titleHit = pageTitle.match(FAILURE_PATTERNS)?.[0];
+            const bodyHit = excerpt.match(FAILURE_PATTERNS)?.[0];
+            console.warn(
+                `[booking-link-validator] FAILED (error-content)\n  url=${url}\n  finalUrl=${finalUrl}\n  title=${pageTitle}\n  matched=${titleHit ?? bodyHit}\n  body[0..200]=${bodyPreview}`,
+            );
             return {
                 status: "FAILED",
                 checkedAt,
                 url,
                 finalUrl,
                 pageTitle,
-                failureReason: "Error content detected on page",
+                failureReason: `Error content detected on page (matched: ${titleHit ?? bodyHit ?? "unknown"})`,
             };
         }
 
         // Page loaded but no bookable content visible
         if (!BOOKABLE_CONTENT_PATTERNS.test(excerpt)) {
+            console.warn(
+                `[booking-link-validator] DEGRADED (no-bookable-content)\n  url=${url}\n  finalUrl=${finalUrl}\n  title=${pageTitle}\n  bodyLen=${bodyText.length}\n  body[0..200]=${bodyPreview}`,
+            );
             return {
                 status: "DEGRADED",
                 checkedAt,
@@ -117,11 +132,15 @@ export async function validateBookingLink(
             screenshotPath: opts?.screenshotPath,
         };
     } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown validation error";
+        console.warn(
+            `[booking-link-validator] FAILED (exception)\n  url=${url}\n  error=${message}`,
+        );
         return {
             status: "FAILED",
             checkedAt,
             url,
-            failureReason: err instanceof Error ? err.message : "Unknown validation error",
+            failureReason: message,
         };
     } finally {
         await browser?.close();

@@ -1079,7 +1079,7 @@ export const GeneratorServiceEnum = z.enum([
     // Audio generators
     'elevenlabs', 'openai_tts', 'replicate', 'udio', 'default_library',
     // Image processing
-    'sharp',
+    'sharp', 'templated',
     // OpenAI LLM
     'gpt4o',
     // Anthropic LLM

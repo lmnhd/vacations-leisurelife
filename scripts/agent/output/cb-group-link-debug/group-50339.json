@@ -1,0 +1,124 @@
+{
+  "found": null,
+  "debug": [
+    {
+      "strategy": "external-anchor",
+      "href": "https://www.expediataap.com/TAAP-Agent?key=48bb861d-2847-46f3-beaa-8fa4596f1503",
+      "text": "Hotels"
+    },
+    {
+      "strategy": "external-anchor",
+      "href": "https://shop.spreadshirt.com/the-cruise-brothers/all",
+      "text": "LogoWear"
+    }
+  ],
+  "finalUrl": "https://www.cbagenttools.com/groups/view_group/50339/",
+  "title": "2990453 | Grandeur of the Seas | 01/07/2027",
+  "bodyExcerpt": "Skip to main content\nTrips\nBooking Engine\nCommissions\nGroups\nClients\nTraining / Resources\nVendors\nPromotions\nMy Site\nAccount\nRoyal Caribbean International\nGroup 2990453 on Grandeur of the Seas PUBLIC\nJan. 7, 2027\nGroup Info\nGroup ID\t2990453\nGroup Contact\tHouse\nGroup Itinerary\t\nShip\tGrandeur of the Seas\nVendor\tRoyal Caribbean International\nPort\t\nNights\tNone\nSail Date\tJan. 7, 2027\nGroup Amenities\t\n\n\n\nGroup Inventory & Price Advantages*\nType\tCategory\tVendor Price\t-\tOur Price\t=\tPrice Advantage\nOceanview\t2N\t$557.46\t-\t$481.46\t=\t$76.00\nOceanview\t4N\t$536.46\t-\t$421.46\t=\t$115.00\nInterior\t2V\t$508.46\t-\t$441.46\t=\t$67.00\nInterior\t4V\t$501.46\t-\t$381.46\t=\t$120.00\n\n* All group pricing must be verified with the Cruise Line's group department before quoting a client.",
+  "anchorCount": 50,
+  "buttonCount": 4,
+  "inputCount": 5,
+  "formCount": 3,
+  "internalLinks": [
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_group/50339/#main-content",
+      "text": "Skip to main content"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/home/",
+      "text": ""
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_group/50339/#",
+      "text": "Trips"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/search_trip/?checkbox=on&start_date_departed=2026-01-25",
+      "text": "Search All Trips"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/input_reservation/contact/",
+      "text": "Add Reservation"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/reports_home/",
+      "text": "Reports"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/modification-requests/",
+      "text": "Modification Requests"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/modification-requests/?request_type=payment",
+      "text": "Payments"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_group/50339/#",
+      "text": "Booking Engine"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/odysseus/booking/",
+      "text": "Cruise Engine"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/bookings/odysseus/admin/",
+      "text": "Cruise Engine Admin"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_group/50339/#",
+      "text": "Commissions"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/accounting/commission_home/23379/",
+      "text": "Commission Dashboard"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/accounting/agentcommissions/",
+      "text": "Commission Status Report"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/accounting/commissions/?searchType=pending&name=23379&fullname=Nathaniel%20Orange%20Jr.",
+      "text": "Pending Commissions"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/accounting/commissions/?name=23379&fullname=Nathaniel%20Orange%20Jr.",
+      "text": "Commission Payments"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_group/50339/#",
+      "text": "Groups"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_groups/",
+      "text": "View All Groups"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on",
+      "text": "View Price Advantages"
+    },
+    {
+      "strategy": "internal-anchor",
+      "href": "https://www.cbagenttools.com/groups/view_campaigns/",
+      "text": "View Campaigns"
+    }
+  ]
+}

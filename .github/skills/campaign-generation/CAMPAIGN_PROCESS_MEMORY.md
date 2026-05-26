@@ -70,3 +70,27 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** The user observed that discovery still felt biased toward travel niches, with outputs using travel-sector evidence such as astrotourism growth ahead of true community proof.  
 **The Change / Rule:** Discovery prompts and schema descriptions now require niche evidence to be community-native first. Travel sectors, itinerary categories, destination trends, and tourism labels may support ship or route plausibility, but `researchRationale` and `audienceSignals` should lead with non-travel signals such as platforms, tools, gear, clubs, creators, meetups, rituals, jargon, spend behavior, or social psychology.  
 **Broader Lesson:** "Vacation first" should protect cruise realism without turning niche discovery into travel-market discovery. The durable split is: community evidence proves the niche; travel evidence explains the venue fit.
+
+### 2026-05-25: Phase B Should Operate on Active Campaigns Only
+
+**Trigger / Context:** The Phase B discovery UI and runner were still showing or matching retired campaigns, making the inventory section hard to navigate and operationally noisy.  
+**The Change / Rule:** Phase B status and default runs now exclude campaigns with `discoveryIteration.retiredAt` or `recommendedNextAction === "retire"`. The UI should present Phase B as an active inventory queue with attention, pending, confirmed, and all-active filters rather than a database-wide status wall.  
+**Broader Lesson:** Retired campaigns should remain available for deduplication and history, but operational work queues should default to active records only.
+
+### 2026-05-25: Discovery Match Is Not Booking-Link Proof
+
+**Trigger / Context:** Phase A/Discovery successfully pre-matched new campaigns to CB inventory rows, but Phase B failed most of them because it could not recover Personal Booking Links from the CB group detail pages.  
+**The Change / Rule:** Treat CB row matching and booking-link validation as separate gates. Cache refresh should preserve row-level `detailUrl` and `personalLink` whenever CB exposes them, matching should carry `personalLink` into Phase B candidates, and Phase B should write debug artifacts when detail-page extraction fails.  
+**Broader Lesson:** A campaign is not operationally confirmed until the handoff link has been retained or validated. Inventory match confidence should not be interpreted as booking readiness.
+
+### 2026-05-25: Dossier Should Precede Brief When It Can
+
+**Trigger / Context:** The user noticed the Production Bible is created during the brief process and asked how the dossier was being used to improve it.  
+**The Change / Rule:** When the campaign research dossier can be generated before the brief bundle, do that first so the dossier can influence the landing still bible and Production Bible. If the brief was already created, regenerate the Production Bible or full brief bundle after the dossier exists before approving for media.  
+**Broader Lesson:** The dossier is not only a gate. It is upstream creative input, and sequencing determines whether it shapes the first pass or merely validates the result afterward.
+
+### 2026-05-26: Canva Ads Become Default Static Ad Path
+
+**Trigger / Context:** The user found an "ad inside an ad" failure where a finished legacy designed ad was selected as source imagery for a Canva/Templated carousel page, and requested the media-generation baseline path be checked before the image-system revamp.  
+**The Change / Rule:** Treat `designed_ad_artifact` as the Canva/Templated static ad pack by default, plus the one preserved premium legacy display template. Keep `documentary_detail_image` as a separate source/audit layer in the normal all-media bundle, and never allow final designed ads to be selected as source images for another ad.  
+**Broader Lesson:** Static ads are final distribution artifacts, not reusable still-image ingredients. The pipeline should keep source imagery, optional audit modules, and final rendered ads visibly separated to prevent recursive creative drift.

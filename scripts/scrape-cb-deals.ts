@@ -51,6 +51,8 @@ type PriceAdvantageDeal = {
     sailDate: string;
     startingPrice: string;
     priceAdvantage: string;
+    detailUrl?: string;
+    personalLink?: string;
     sourceUrl: string;
 };
 
@@ -199,36 +201,71 @@ async function scrapeGroupInventory(
         await page.goto(currentUrl, { waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(2000);
 
-        const pageResults = await page.evaluate((sourceUrl: string) => {
-            type RowResult = {
-                groupId: string; shipName: string; vendor: string;
-                itinerary: string; departurePort: string; nights: string;
-                sailDate: string; startingPrice: string; priceAdvantage: string;
-                sourceUrl: string;
-            };
-            const rows = document.querySelectorAll('table tbody tr');
-            const results: RowResult[] = [];
+        const pageResults = await page.evaluate(
+            ({ sourceUrl, baseUrl }) => {
+                const rows = document.querySelectorAll('table tbody tr');
+                const results: Array<{
+                    groupId: string; shipName: string; vendor: string; itinerary: string;
+                    departurePort: string; nights: string; sailDate: string;
+                    startingPrice: string; priceAdvantage: string;
+                    detailUrl?: string; personalLink?: string; sourceUrl: string;
+                }> = [];
 
-            rows.forEach((row) => {
-                const cells = row.querySelectorAll('td');
-                const cellTexts = Array.from(cells).map((cell) => cell.textContent?.trim() ?? '');
-                if (cellTexts.length < 3 || !cellTexts[0]) return;
+                rows.forEach((row) => {
+                    const cells = row.querySelectorAll('td');
+                    const cellTexts = Array.from(cells).map((cell) => cell.textContent?.trim() ?? '');
+                    if (cellTexts.length < 3 || !cellTexts[0]) return;
+                    const firstCellLink = cells[0]?.querySelector('a');
+                    const firstCellHref = firstCellLink?.getAttribute('href') ?? '';
+                    let detailUrl: string | undefined;
+                    if (/view_group\/[0-9]+/.test(firstCellHref)) {
+                        try {
+                            detailUrl = new URL(firstCellHref, baseUrl).href;
+                        } catch {
+                            detailUrl = undefined;
+                        }
+                    }
+                    const hrefGroupId = firstCellHref.match(/view_group\/([0-9]+)/)?.[1];
+                    let personalLink: string | undefined;
+                    for (const anchor of Array.from(row.querySelectorAll('a'))) {
+                        const rawHref = anchor.getAttribute('href') ?? '';
+                        let absolute = '';
+                        try {
+                            absolute = new URL(rawHref, baseUrl).href;
+                        } catch {
+                            absolute = '';
+                        }
+                        if (!absolute.startsWith('http')) continue;
+                        if (
+                            !absolute.includes('cbagenttools.com') ||
+                            absolute.includes('bookings.cbagenttools.com') ||
+                            absolute.includes('/swift/') ||
+                            absolute.includes('/web/cruises/')
+                        ) {
+                            personalLink = absolute;
+                            break;
+                        }
+                    }
 
-                results.push({
-                    groupId:       cellTexts[0] ?? '',
-                    shipName:      cellTexts[1] ?? '',
-                    vendor:        cellTexts[2] ?? '',
-                    itinerary:     cellTexts[3] ?? '',
-                    departurePort: cellTexts[4] ?? '',
-                    nights:        cellTexts[5] ?? '',
-                    sailDate:      cellTexts[6] ?? '',
-                    startingPrice: cellTexts[7] ?? '',
-                    priceAdvantage:cellTexts[8] ?? '',
-                    sourceUrl,
+                    results.push({
+                        groupId:       hrefGroupId ?? cellTexts[0] ?? '',
+                        shipName:      cellTexts[1] ?? '',
+                        vendor:        cellTexts[2] ?? '',
+                        itinerary:     cellTexts[3] ?? '',
+                        departurePort: cellTexts[4] ?? '',
+                        nights:        cellTexts[5] ?? '',
+                        sailDate:      cellTexts[6] ?? '',
+                        startingPrice: cellTexts[7] ?? '',
+                        priceAdvantage: cellTexts[8] ?? '',
+                        detailUrl,
+                        personalLink,
+                        sourceUrl,
+                    });
                 });
-            });
-            return results;
-        }, currentUrl);
+                return results;
+            },
+            { sourceUrl: currentUrl, baseUrl: CB_BASE_URL },
+        );
 
         let addedOnPage = 0;
         for (const row of pageResults) {
@@ -282,11 +319,23 @@ async function runScraper(): Promise<void> {
         console.log('[scrape-cb-deals] Starting price-advantage enrichment pass...');
         const priceAdvantageGroups = await scrapePriceAdvantages(page);
 
-        // Merge: prefer price-advantage data when groupIds overlap
+        // Merge: preserve the richer all-groups row, then overlay price advantage
+        // fields that are unique to the price-advantage view.
         const priceAdvantageMap = new Map<string, PriceAdvantageDeal>(
             priceAdvantageGroups.map((g) => [g.groupId, g]),
         );
-        const mergedGroups = allGroups.map((g) => priceAdvantageMap.get(g.groupId) ?? g);
+        const mergedGroups = allGroups.map((g) => {
+            const priceAdvantage = priceAdvantageMap.get(g.groupId);
+            if (!priceAdvantage) return g;
+            return {
+                ...g,
+                priceAdvantage: priceAdvantage.priceAdvantage || g.priceAdvantage,
+                startingPrice: priceAdvantage.startingPrice || g.startingPrice,
+                detailUrl: g.detailUrl || priceAdvantage.detailUrl,
+                personalLink: g.personalLink || priceAdvantage.personalLink,
+                sourceUrl: priceAdvantage.sourceUrl || g.sourceUrl,
+            };
+        });
 
         // Add any price-advantage-only entries not in the all-groups pass
         for (const pg of priceAdvantageGroups) {

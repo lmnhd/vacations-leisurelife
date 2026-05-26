@@ -102,7 +102,8 @@ const CATEGORIES: readonly CategoryConfig[] = [
     { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
     { key: "images", label: "Hero Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept"] },
     { key: "crops", label: "Crops", icon: Crop, color: "amber", types: ["platform_crop"] },
-    { key: "designedAds", label: "Designed Ads", icon: Wand2, color: "pink", types: ["designed_ad_artifact"] },
+    { key: "documentaryDetails", label: "Documentary Details", icon: BookOpen, color: "teal", types: ["documentary_detail_image"] },
+    { key: "designedAds", label: "Canva Ads", icon: Wand2, color: "pink", types: ["designed_ad_artifact"] },
     { key: "scenes", label: "Scene Images", icon: Layers, color: "teal", types: ["scene_image"] },
     { key: "tiktok", label: "TikTok Package", icon: Film, color: "purple", types: ["tiktok_seed_video"] },
     { key: "audio", label: "Audio", icon: Music, color: "emerald", types: ["ambient_narration", "hype_clip", "theme_music"] },
@@ -112,7 +113,8 @@ const CATEGORIES: readonly CategoryConfig[] = [
 
 const COST_ESTIMATES: Record<string, string> = {
     references: "~SerpAPI search + import only",
-    designedAds: "~Designed ad pack (Production Bible required)",
+    designedAds: "~Canva/Templated ads + preserved premium display (Production Bible required)",
+    documentaryDetails: "~Nano-Banana × source/detail modules (Production Bible required)",
     images: "~Nano-Banana × hero images + concepts (uses approved refs)",
     crops: "~Sharp crops from curated hero and scene images",
     scenes: "~Nano-Banana × 8–12 scene images (Production Bible)",
@@ -120,7 +122,7 @@ const COST_ESTIMATES: Record<string, string> = {
     audio: "~$0.20 (ElevenLabs × 2 clips)",
     copy: "~$0.05 (GPT-4o single call)",
     merch: "~$0.40 (Nano-Banana × 3–5 designs)",
-    all: "~full pipeline (storyboard path if Production Bible exists)",
+    all: "~full pipeline: images, Canva ads, TikTok package, audio/copy/merch",
 };
 
 const LS_SLUG_KEY = "mediaGen_slug";
@@ -319,23 +321,34 @@ export default function MediaGenerationTestPage() {
             return;
         }
 
-        if (assetTypes?.includes('platform_crop') && !hasCropSources) {
+        const isCropOnlyRequest = assetTypes?.length === 1 && assetTypes[0] === 'platform_crop';
+        if (isCropOnlyRequest && !hasCropSources) {
             setError('Crop generation requires at least one curated Hero Image, Scene Image, or Concept in the manifest. Generate Hero Images first, then retry Crops.');
             return;
         }
 
         const VIDEO_ASSET_TYPES: readonly AssetType[] = ['tiktok_seed_video'];
         const willGenerateVideo = !assetTypes || assetTypes.some(t => VIDEO_ASSET_TYPES.includes(t));
+        const requestIncludesAudio = !assetTypes || assetTypes.some((t) => ['ambient_narration', 'hype_clip', 'theme_music'].includes(t));
         const hasMusicTrack = !!(manifest?.audio?.themeMusic);
 
-        if (willGenerateVideo && !hasMusicTrack) {
+        if (willGenerateVideo && !hasMusicTrack && !requestIncludesAudio) {
             const proceedWithoutMusic = window.confirm(
                 `⚠️ No music track in manifest\n\nVideos will be generated without music.\n\nTo add music first, cancel and generate the Audio category.\n\nProceed without music?`
             );
             if (!proceedWithoutMusic) return;
         }
 
-        const categoryLabel = assetTypes ? CATEGORIES.find(c => c.types.some(t => assetTypes.includes(t)))?.key || "targeted" : "all";
+        const isProductionAllRequest = Boolean(
+            assetTypes &&
+            assetTypes.length === PRODUCTION_ALL_MEDIA_ASSET_TYPES.length &&
+            PRODUCTION_ALL_MEDIA_ASSET_TYPES.every((type) => assetTypes.includes(type)),
+        );
+        const categoryLabel = isProductionAllRequest
+            ? "all"
+            : assetTypes
+                ? CATEGORIES.find(c => c.types.some(t => assetTypes.includes(t)))?.key || "targeted"
+                : "all";
         const costStr = COST_ESTIMATES[categoryLabel] || COST_ESTIMATES["all"];
 
         const confirmed = window.confirm(
@@ -694,10 +707,11 @@ export default function MediaGenerationTestPage() {
                         {CATEGORIES.map((cat) => {
                             const Icon = cat.icon;
                             const isActive = activeCategory === cat.key;
-                            const requiresProductionBible = cat.types.includes('scene_image') || cat.types.includes('tiktok_seed_video') || cat.types.includes('designed_ad_artifact');
+                            const requiresProductionBible = cat.types.includes('scene_image') || cat.types.includes('tiktok_seed_video') || cat.types.includes('designed_ad_artifact') || cat.types.includes('documentary_detail_image');
                             const requiresCropSource = cat.types.includes('platform_crop');
+                            const isCropOnlyRequest = requiresCropSource && cat.types.length === 1;
                             const requiresTikTokStoryboard = cat.types.includes('tiktok_seed_video');
-                            const isBlocked = (requiresProductionBible && !hasProductionBible) || (requiresCropSource && !hasCropSources);
+                            const isBlocked = (requiresProductionBible && !hasProductionBible) || (isCropOnlyRequest && !hasCropSources);
                             return (
                                 <button
                                     key={cat.key}
@@ -705,12 +719,14 @@ export default function MediaGenerationTestPage() {
                                     onClick={() => handleGenerate(cat.types)}
                                     disabled={isBusy || !slug.trim() || isBlocked}
                                     title={isBlocked ? (
-                                        requiresCropSource && !hasCropSources
+                                        isCropOnlyRequest && !hasCropSources
                                             ? 'Crops require at least one curated Hero Image, Scene Image, or Concept in the manifest. Generate Hero Images first, then retry Crops.'
                                             : requiresTikTokStoryboard
                                                 ? 'TikTok seed video requires a saved Production Bible and storyboard scene images.'
                                                 : cat.types.includes('designed_ad_artifact')
-                                                    ? 'Designed Ads require a saved Production Bible. Regenerate it from /tests/production-bible first.'
+                                                    ? 'Canva Ads require a saved Production Bible. Regenerate it from /tests/production-bible first.'
+                                                    : cat.types.includes('documentary_detail_image')
+                                                        ? 'Documentary Details require a saved Production Bible. Regenerate it from /tests/production-bible first.'
                                                     : 'Scene Images require a saved Production Bible. Regenerate it from /tests/production-bible first.'
                                     ) : ''}
                                     className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-medium ${colorClass(cat.color, "bg")} border ${colorClass(cat.color, "border")} ${colorClass(cat.color, "text")} hover:brightness-125 transition-all disabled:opacity-40 disabled:pointer-events-none`}
@@ -722,7 +738,9 @@ export default function MediaGenerationTestPage() {
                                     <span>{isActive ? "Generating..." : cat.label}</span>
                                     <span className="text-[9px] opacity-60">{COST_ESTIMATES[cat.key]}</span>
                                     {isBlocked && (
-                                        <span className="text-[9px] opacity-80 text-amber-300">Production Bible required</span>
+                                        <span className="text-[9px] opacity-80 text-amber-300">
+                                            {isCropOnlyRequest && !hasCropSources ? 'Hero/scene source required' : 'Production Bible required'}
+                                        </span>
                                     )}
                                 </button>
                             );

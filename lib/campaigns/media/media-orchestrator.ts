@@ -27,7 +27,8 @@ import type { TikTokPromotionPackage } from '../schema';
 import { generateCountdownVideos, generateBrollClips } from './generators/runway-generator';
 import { generateAmbientNarration, generateHypeClip } from './generators/elevenlabs-generator';
 import { generateThemeMusic } from './generators/replicate-music-generator';
-import { generateDesignedAdArtifactPack } from './generators/ad-artifact-generator';
+import { generateDesignedAdArtifactPack, generateLegacyPremiumDisplayAd } from './generators/ad-artifact-generator';
+import { generateTemplatedAdArtifactPack } from './generators/templated-ad-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { scoreTikTokVideoReadiness } from './lint/video-lint';
 import { inferTikTokFormat } from './generators/tiktok-formats/index';
@@ -411,6 +412,8 @@ export async function runMediaGeneration(
             'ambient_narration',
             'hype_clip',
             'theme_music',
+            'designed_ad_artifact',
+            'documentary_detail_image',
             'ad_creative',
             'carousel_slide',
             'email_header',
@@ -517,13 +520,14 @@ export async function runMediaGeneration(
         // ── GROUP 1: Independent generators (parallel) ────────────────
         const group1Promises: Promise<unknown>[] = [];
 
-        if (shouldRunDesignedAds(resolvedOptions.assetTypes)) {
+        if (shouldRunAsset('documentary_detail_image', resolvedOptions.assetTypes)) {
             group1Promises.push(
-                runWithJob(slug, 'designed_ad_artifact', 'sharp', 'designed static ad artifact pack', async () => {
-                    const result = await generateDesignedAdArtifactPack(slug, brief!, campaign);
+                runWithJob(slug, 'documentary_detail_image', getMediaImageGeneratorService(), 'documentary detail image modules', async () => {
+                    const result = await generateDesignedAdArtifactPack(slug, brief!, campaign, {
+                        includeDesignedAds: false,
+                    });
                     documentaryDetailRecords.push(...result.documentaryDetails);
-                    designedAdRecords.push(...result.designedAds);
-                    return [...result.documentaryDetails, ...result.designedAds];
+                    return result.documentaryDetails;
                 }, errors)
             );
         }
@@ -918,6 +922,8 @@ export async function runMediaGeneration(
 
         await Promise.all(group2Promises);
 
+        const cropsByFormat: Record<string, AssetRecord[]> = {};
+
         if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes)) {
             const effectiveHeroImages = mergeAssetRecords(existingManifest?.images.hero ?? [], heroRecords);
             const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
@@ -952,11 +958,85 @@ export async function runMediaGeneration(
                             { width: crop.width, height: crop.height }
                         );
                         cropRecords.push(rec);
+                        const formatRecords = cropsByFormat[crop.format] ?? [];
+                        formatRecords.push(rec);
+                        cropsByFormat[crop.format] = formatRecords;
                     }
                 } catch (err: unknown) {
                     errors.push(`[platform_crop/sharp] ${describeUnknownError(err)}`);
                 }
             }
+        }
+
+        if (shouldRunDesignedAds(resolvedOptions.assetTypes)) {
+            const effectivePlatformCrops = (Object.keys(cropsByFormat).length > 0
+                ? cropsByFormat
+                : (existingManifest?.images.platformCrops ?? {})) as Record<ImageFormat, AssetRecord[]>;
+            const adSourceManifest: CampaignMediaManifest = {
+                slug,
+                generatedAt: new Date().toISOString(),
+                totalAssets: 0,
+                completionStatus: 'partial',
+                images: {
+                    shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
+                    hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
+                    sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
+                    aestheticConcepts: mergeKeepingLocked(existingManifest?.images.aestheticConcepts ?? [], conceptRecords),
+                    documentaryDetails: mergeAssetRecords(existingManifest?.images.documentaryDetails ?? [], documentaryDetailRecords),
+                    designedAdArtifacts: existingManifest?.images.designedAdArtifacts ?? [],
+                    platformCrops: effectivePlatformCrops,
+                },
+                videos: existingManifest?.videos ?? {
+                    tiktokSeed: null,
+                    heroExplainer: null,
+                    thresholdAnnouncement: null,
+                    countdown: [],
+                    broll: [],
+                },
+                audio: existingManifest?.audio ?? {
+                    ambientNarration: null,
+                    hypeClip: null,
+                    themeMusic: null,
+                },
+                merch: existingManifest?.merch ?? {
+                    designs: [],
+                    mockups: [],
+                    printfulProductIds: [],
+                },
+                copy: existingManifest?.copy ?? null,
+                governance: existingManifest?.governance,
+                tiktokPromotionPackage: existingManifest?.tiktokPromotionPackage,
+            };
+
+            await runWithJob(slug, 'designed_ad_artifact', 'templated', 'Canva/Templated static ad pack', async () => {
+                const result = await generateTemplatedAdArtifactPack({
+                    slug,
+                    brief: brief!,
+                    campaign,
+                    manifest: adSourceManifest,
+                });
+                warnings.push(...result.warnings.map((warning) => `[templated-ads] ${warning}`));
+                designedAdRecords.push(...result.designedAds);
+                return result.designedAds;
+            }, errors);
+
+            await runWithJob(slug, 'designed_ad_artifact', 'sharp', 'preserved legacy premium display ad', async () => {
+                const sourceImages = [
+                    ...adSourceManifest.images.documentaryDetails,
+                    ...adSourceManifest.images.sceneImages,
+                    ...adSourceManifest.images.hero,
+                    ...adSourceManifest.images.aestheticConcepts,
+                ];
+                const legacyAds = await generateLegacyPremiumDisplayAd(
+                    slug,
+                    brief!,
+                    campaign,
+                    sourceImages,
+                    adSourceManifest.images.shipReferences,
+                );
+                designedAdRecords.push(...legacyAds);
+                return legacyAds;
+            }, errors);
         }
 
         // ── TikTok Promotion Synthesis ────────────────────────────────────────────
@@ -1081,17 +1161,6 @@ export async function runMediaGeneration(
         }
 
         // ── Build manifest ────────────────────────────────────────────
-
-        const cropsByFormat: Record<string, AssetRecord[]> = {};
-        for (const crop of cropRecords) {
-            const formatTag = crop.tags.find((tag) =>
-                ['hero_16x9', 'hero_4x5', 'story_9x16', 'square_1x1', 'banner_3x1', 'email_header', 'og_image', 'thumbnail'].includes(tag)
-            ) || 'unknown';
-            if (!cropsByFormat[formatTag]) {
-                cropsByFormat[formatTag] = [];
-            }
-            cropsByFormat[formatTag].push(crop);
-        }
 
         const mergedImages = {
             shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),

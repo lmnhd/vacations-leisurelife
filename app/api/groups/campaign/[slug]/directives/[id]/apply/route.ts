@@ -4,7 +4,8 @@ import { getMediaManifest, saveMediaManifest, upsertManifestAssetSection } from 
 import { getDirective, updateDirectiveStatus } from '@/lib/campaigns/directive-store';
 import { listDirectives } from '@/lib/campaigns/directive-store';
 import { patchBriefForDirective, mergeActiveDirectivePatches } from '@/lib/campaigns/directive-patch';
-import { generateDesignedAdArtifactPack } from '@/lib/campaigns/media/generators/ad-artifact-generator';
+import { generateDesignedAdArtifactPack, generateLegacyPremiumDisplayAd } from '@/lib/campaigns/media/generators/ad-artifact-generator';
+import { generateTemplatedAdArtifactPack } from '@/lib/campaigns/media/generators/templated-ad-generator';
 import { generateHeroImages, generateAestheticConcepts } from '@/lib/campaigns/media/generators/stability-generator';
 import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
@@ -123,15 +124,50 @@ export async function POST(
             }
         }
 
-        if ((scope.has('documentary_details') || scope.has('designed_ads') || scope.has('prop_families')) && staleIds.size > 0) {
+        if ((scope.has('documentary_details') || scope.has('prop_families')) && staleIds.size > 0) {
             try {
-                const result = await generateDesignedAdArtifactPack(slug, patchedBrief, campaign);
+                const result = await generateDesignedAdArtifactPack(slug, patchedBrief, campaign, {
+                    includeDesignedAds: false,
+                });
                 await upsertManifestAssetSection(slug, 'documentaryDetails', result.documentaryDetails);
-                await upsertManifestAssetSection(slug, 'designedAdArtifacts', result.designedAds);
-                regenerated.push(...result.documentaryDetails, ...result.designedAds);
-                console.log(`[directives:apply] Regenerated ${result.documentaryDetails.length} documentary detail(s) and ${result.designedAds.length} designed ad(s)`);
+                regenerated.push(...result.documentaryDetails);
+                console.log(`[directives:apply] Regenerated ${result.documentaryDetails.length} documentary detail(s)`);
             } catch (error) {
-                console.error('[directives:apply] Documentary detail / designed ad generation failed:', error);
+                console.error('[directives:apply] Documentary detail generation failed:', error);
+            }
+        }
+
+        if (scope.has('designed_ads') && staleIds.size > 0) {
+            try {
+                if (!manifest) {
+                    throw new Error('Cannot regenerate Canva/Templated ads without an existing media manifest.');
+                }
+                const designManifest = await getMediaManifest(slug) ?? manifest;
+                const templatedResult = await generateTemplatedAdArtifactPack({
+                    slug,
+                    brief: patchedBrief,
+                    campaign,
+                    manifest: designManifest,
+                });
+                const sourceImages = [
+                    ...(designManifest.images.documentaryDetails ?? []),
+                    ...(designManifest.images.sceneImages ?? []),
+                    ...(designManifest.images.hero ?? []),
+                    ...(designManifest.images.aestheticConcepts ?? []),
+                ];
+                const legacyAds = await generateLegacyPremiumDisplayAd(
+                    slug,
+                    patchedBrief,
+                    campaign,
+                    sourceImages,
+                    designManifest.images.shipReferences ?? [],
+                );
+                const ads = [...templatedResult.designedAds, ...legacyAds];
+                await upsertManifestAssetSection(slug, 'designedAdArtifacts', ads);
+                regenerated.push(...ads);
+                console.log(`[directives:apply] Regenerated ${ads.length} Canva/designed ad artifact(s)`);
+            } catch (error) {
+                console.error('[directives:apply] Canva/designed ad generation failed:', error);
             }
         }
 

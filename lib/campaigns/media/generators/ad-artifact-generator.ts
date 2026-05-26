@@ -53,6 +53,7 @@ export async function generateDesignedAdArtifactPack(
     slug: string,
     brief: CampaignAestheticBrief,
     campaign: Campaign | null,
+    options: { includeDesignedAds?: boolean } = {},
 ): Promise<AdArtifactGenerationResult> {
     const existingManifest = await getMediaManifest(slug);
     const tokens = extractNicheTokens(brief, campaign);
@@ -83,36 +84,83 @@ export async function generateDesignedAdArtifactPack(
     }
 
     const designedAds: AssetRecord[] = [];
-    const adFormatBias = brief.identityBlueprint?.adFormatBias ?? [];
-    const trustImages = (existingManifest?.images.shipReferences ?? []).filter((record) => record.active && !!record.url);
-    for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails, trustImages)) {
-        let sourceBuffer: Buffer | undefined;
-        if (spec.sourceImage) {
-            sourceBuffer = sourceBuffers.get(spec.sourceImage.assetId);
-            if (!sourceBuffer && spec.sourceImage.url) {
-                const response = await fetch(spec.sourceImage.url);
-                if (response.ok) {
-                    sourceBuffer = Buffer.from(await response.arrayBuffer());
-                    sourceBuffers.set(spec.sourceImage.assetId, sourceBuffer);
+    if (options.includeDesignedAds !== false) {
+        const adFormatBias = brief.identityBlueprint?.adFormatBias ?? [];
+        const trustImages = (existingManifest?.images.shipReferences ?? []).filter((record) => record.active && !!record.url);
+        for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails, trustImages)) {
+            let sourceBuffer: Buffer | undefined;
+            if (spec.sourceImage) {
+                sourceBuffer = sourceBuffers.get(spec.sourceImage.assetId);
+                if (!sourceBuffer && spec.sourceImage.url) {
+                    const response = await fetch(spec.sourceImage.url);
+                    if (response.ok) {
+                        sourceBuffer = Buffer.from(await response.arrayBuffer());
+                        sourceBuffers.set(spec.sourceImage.assetId, sourceBuffer);
+                    }
                 }
             }
-        }
 
-        const buffer = await renderDesignedAdArtifact(spec, tokens, sourceBuffer);
-        const record = await storeGeneratedRecord(slug, {
-            assetId: spec.assetId,
-            assetType: 'designed_ad_artifact',
-            generator: 'sharp',
-            promptUsed: `Rendered ${spec.kind} from deterministic designed-media template. Source image: ${spec.sourceImage?.assetId ?? 'none'}`,
-            buffer,
-            fileName: spec.fileName,
-            mimeType: 'image/png',
-            tags: [...spec.tags, tokens.system],
-            dimensions: { width: spec.width, height: spec.height },
-            sourceImageUrl: spec.sourceImage?.url,
-        });
-        designedAds.push(record);
+            const buffer = await renderDesignedAdArtifact(spec, tokens, sourceBuffer);
+            const record = await storeGeneratedRecord(slug, {
+                assetId: spec.assetId,
+                assetType: 'designed_ad_artifact',
+                generator: 'sharp',
+                promptUsed: `Rendered ${spec.kind} from deterministic designed-media template. Source image: ${spec.sourceImage?.assetId ?? 'none'}`,
+                buffer,
+                fileName: spec.fileName,
+                mimeType: 'image/png',
+                tags: [...spec.tags, tokens.system],
+                dimensions: { width: spec.width, height: spec.height },
+                sourceImageUrl: spec.sourceImage?.url,
+            });
+            designedAds.push(record);
+        }
     }
 
     return { documentaryDetails, designedAds, tokens };
+}
+
+export async function generateLegacyPremiumDisplayAd(
+    slug: string,
+    brief: CampaignAestheticBrief,
+    campaign: Campaign | null,
+    sourceImages: readonly AssetRecord[],
+    trustImages: readonly AssetRecord[] = [],
+): Promise<AssetRecord[]> {
+    const tokens = extractNicheTokens(brief, campaign);
+    const spec = buildDesignedAdRenderSpecs(
+        tokens,
+        ['image_detail'],
+        sourceImages,
+        trustImages,
+        brief,
+    ).find((candidate) => candidate.kind === 'image_detail_ad');
+
+    if (!spec) {
+        return [];
+    }
+
+    let sourceBuffer: Buffer | undefined;
+    if (spec.sourceImage?.url) {
+        const response = await fetch(spec.sourceImage.url);
+        if (response.ok) {
+            sourceBuffer = Buffer.from(await response.arrayBuffer());
+        }
+    }
+
+    const buffer = await renderDesignedAdArtifact(spec, tokens, sourceBuffer);
+    const record = await storeGeneratedRecord(slug, {
+        assetId: spec.assetId,
+        assetType: 'designed_ad_artifact',
+        generator: 'sharp',
+        promptUsed: `Rendered preserved legacy premium display template (${spec.kind}). Source image: ${spec.sourceImage?.assetId ?? 'none'}`,
+        buffer,
+        fileName: spec.fileName,
+        mimeType: 'image/png',
+        tags: [...spec.tags, tokens.system, 'legacy_premium_display', 'preserved_template'],
+        dimensions: { width: spec.width, height: spec.height },
+        sourceImageUrl: spec.sourceImage?.url,
+    });
+
+    return [record];
 }

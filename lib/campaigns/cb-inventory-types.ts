@@ -10,5 +10,7 @@ export type CbGroupInventoryItem = {
     priceAdvantageNumber: number;
     departurePort?: string;
     nights?: string;
+    detailUrl?: string;
+    personalLink?: string;
     sourceUrl: string;
 };

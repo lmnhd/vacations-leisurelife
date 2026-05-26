@@ -33,6 +33,7 @@ Based on V2 Campaign Strategy and previous iterations, agents using this skill M
 - **Deduplication:** Gemini Deep Research MUST exclude already generated campaigns (the backend pipeline handles this by natively injecting the DynamoDB state into the prompt).
 - **Agentic Glue:** Treat the campaign builder as a control loop, not a one-shot generator. The agent should notice gaps, make one targeted repair pass, re-check the result, and escalate persistent uncertainty to the user instead of silently pushing forward.
 - **Durable Revisions:** When a user asks for a change that should keep applying across future regenerations, treat the brief/directive layer as the source of truth. Do not rely on a single asset regeneration if the same change will be needed again later.
+- **Dossier-first when possible:** The secondary research dossier is not just approval paperwork. If it can be generated before the brief bundle, do that so it can shape the landing still bible and production bible. If the dossier arrives later, regenerate the brief bundle or production bible before approval so the new research actually influences the creative system.
 - **Probe Discipline:** Do not run probe previews or probe-render validation as a default step. Probes generate cheap preview images plus Claude vision scoring, so they still consume real model usage. Only run them when the user explicitly asks for direction validation, or when you are actively debugging a prompt-quality problem and need that extra signal.
 
 ## 2. Reading Guide
@@ -70,8 +71,8 @@ This skill is split across sub-documents. Load only what you need for the curren
 | ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Phase 1: Discovery** | Gemini Deep Research → GPT-5 → Inventory match gate → DynamoDB | CB deals cache must be fresh; operator runs `scrape-cb-deals.ts`                      |
 | **Phase 2: Phase B**   | CB live scrape + link validation + Odysseus retail link        | Playwright — operator runs `run-phase-b.ts`; agent checks result via `scripts/agent/` |
-| **Phase 3: Brief**     | Aesthetic brief, landing still bible, production bible, secondary research dossier (`nicheResearch` + `cruiseTranslation`) | Dossier must exist before approving the brief for media; use Brief Studio to generate or regenerate it; verify production bible has non-empty `imagePrompt` fields before proceeding to media generation |
-| **Phase 4: Media**     | Ships → heroes → scenes → designed ads → video/audio           | One asset type per call; never re-submit video on timeout — poll manifest instead; dossier is a hard gate |
+| **Phase 3: Brief**     | Aesthetic brief, landing still bible, production bible, secondary research dossier (`nicheResearch` + `cruiseTranslation`) | Best practice: generate the dossier before the brief bundle so it can inform the Production Bible; dossier must exist before approving the brief for media; verify production bible has non-empty `imagePrompt` fields before proceeding to media generation |
+| **Phase 4: Media**     | Ships → heroes → scenes → Canva/Templated ads + preserved premium display → video/audio | One asset type per call; never re-submit video on timeout — poll manifest instead; dossier is a hard gate |
 | **Phase 5: Publish**   | Landing page, ad distribution, go live                         | Brief must be approved; verify manifest before distribution plan                      |
 
 **Full step-by-step workflow:** [WORKFLOW.md](./WORKFLOW.md)

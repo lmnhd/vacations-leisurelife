@@ -143,7 +143,7 @@ const COMPOSITION_CLUSTER_MAP: Array<[string[], string[], string]> = [
     [['lounge', 'bar'], ['drink', 'sip', 'cocktail', 'chat', 'talk'], 'lounge_social'],
 ];
 
-function extractCompositionFamily(still: LandingStillSpec): string {
+export function extractCompositionFamily(still: LandingStillSpec): string {
     const locationText = still.location.toLowerCase();
     const environmentText = still.environmentDetails.toLowerCase();
     const actionText = `${still.subjectAction} ${still.composition}`.toLowerCase();

@@ -46,6 +46,8 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 ### Phase 3: Aesthetic Brief Generation
 
+**Dossier timing matters:** If the secondary research dossier is already available, or can be generated before the brief bundle, do that first. The dossier feeds the creative system best when it exists before the Production Bible is written.
+
 1. **Visual Strategy:** Trigger generation of the aesthetic brief via the agent job orchestrator.
    - Run: `npx tsx scripts/enqueue-and-run-brief.ts <slug>` (uses `campaign_brief_generate` workflow, `stopBeforeMedia: true`)
    - This auto-generates the aesthetic bundle, action anchors, landing still bible, and production bible.
@@ -57,10 +59,11 @@ The agent must follow these steps linearly. At the end of each major phase, the 
     - If the scene library exists but still carries `scene_niche_cue_missing` or `scene_human_presence_weak` after one repair pass, stop and escalate to the user before any image spend. Do not treat that as a soft warning during an agentic campaign flow.
     - The same rule applies to any persistent warning in later phases: one auto-repair pass, then stop and ask for a decision. The agent is the glue between phases, not a substitute for the final call.
 4. **Generate the secondary campaign research dossier (mandatory before approval).**
-   - Once the brief bundle exists and the campaign has been selected, run the secondary research pass for the chosen campaign. Use the Generate/Regenerate Dossier control in Brief Studio at `http://localhost:3000/tests/brief-studio`, or call `POST /api/groups/campaign/[slug]/research-dossier`.
+   - If it was not generated before the brief bundle, run the secondary research pass for the chosen campaign now. Use the Generate/Regenerate Dossier control in Brief Studio at `http://localhost:3000/tests/brief-studio`, or call `POST /api/groups/campaign/[slug]/research-dossier`.
    - The dossier is now split into `nicheResearch` and `cruiseTranslation`. Keep the niche research pure and use the cruise translation section only for onboard adaptation.
    - The dossier must exist before the brief can be approved for media generation. If it is missing, the approval gate should block and the media page should refuse generation.
    - Treat this as a lightweight depth pass, not a second discovery pass. It should capture current niche behavior, routines, signals, and downstream implications for brief/media/copy.
+   - If the brief bundle was already generated without the dossier present, regenerate the Production Bible or the full brief bundle after the dossier is saved so the new research can actually influence scene prompts and downstream copy.
 5. **Persistence check for revisions:**
    - If a user-requested change should survive future regenerations, put it in the upstream brief or directive source rather than only in one regenerated asset.
    - Use asset-level regeneration for narrow cleanup only when the fix is intentionally local.
@@ -151,7 +154,7 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 
 **Durability rule:** If the user is asking for a recurring style or content correction that should remain true across future regenerations, make the change in the directive or source brief first, then regenerate. Do not solve a persistent campaign rule only by fixing the visible asset once.
 
-**Important scope note:** A request to run "through scene images" stops here. It includes Step A (ship references), Step B (heroes + concepts), and Step C (scene images), but it does **not** include documentary detail modules or designed ads. Those belong to Step D and must be requested or executed explicitly if the goal is a full image pack.
+**Important scope note:** A request to run "through scene images" stops here. It includes Step A (ship references), Step B (heroes + concepts), and Step C (scene images), but it does **not** include documentary detail source modules, Canva/Templated ads, or the preserved premium display ad. Those belong to Step D and must be requested or executed explicitly if the goal is a full image pack.
 
 **Scene warning gate:** If the scene layer still produces `scene_niche_cue_missing` or `scene_human_presence_weak` after the first repair pass, stop the flow and present the user with a decision checkpoint. The agent may repair once automatically, but it may not silently continue through video generation while those warnings persist.
 
@@ -163,13 +166,16 @@ curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
 3. Re-run the downstream check.
 4. If the same mismatch survives, stop and escalate to the user with a concrete choice.
 
-**Step D Ã¢â‚¬â€ Documentary details + designed ads (together):**
+**Step D Ã¢â‚¬â€ Documentary details + Canva/Templated ads + preserved premium display:**
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/generate \
   -H "Content-Type: application/json" \
   -d '{"assetTypes":["documentary_detail_image","designed_ad_artifact"]}'
 ```
-Or use the test endpoint for designed ads specifically:
+
+`documentary_detail_image` generates source/audit modules only. `designed_ad_artifact` runs the forward Canva/Templated ad renderer and also preserves the one premium legacy image-detail display template as a first-class Google-style ad. The old full designed-ad pack should not be resurrected as the default path.
+
+Legacy diagnostic endpoint for documentary-detail/source-module debugging only:
 ```bash
 curl -X POST http://localhost:3000/api/groups/campaign/[slug]/media/test/images \
   -H "Content-Type: application/json" \
@@ -273,7 +279,7 @@ The codebase documentation states RunwayML Gen-3 Turbo as the primary video prov
 
 **Generation time expectation:** Each video deliverable submits multiple shots to the active provider sequentially. Allow **5Ã¢â‚¬â€œ15 minutes per deliverable** depending on queue depth. The API call may HTTP-timeout after 120s while the server continues processing in the background Ã¢â‚¬â€ check the manifest afterward instead of re-submitting.
 
-**Important pipeline note:** Designed ad artifacts (`designed_ad_artifact`, `documentary_detail_image`) are **additive** Ã¢â‚¬â€ they run alongside the production all-media bundle, not instead of it. A generation request with no explicit `assetTypes` uses the curated production bundle: references, hero/concept/scene/crop images, designed ads, the single `tiktok_seed_video` package, audio, copy, and merch. It does **not** implicitly include `hero_explainer_video`, `threshold_video`, `countdown_video`, or `broll_clip`. The `DESIGNED_MEDIA_MODE` env var only gates whether designed ads are included; it does not suppress the rest of the production bundle.
+**Important pipeline note:** `designed_ad_artifact` is additive and now means the Canva/Templated static ad pack plus the preserved premium legacy display template. A generation request with no explicit `assetTypes` uses the curated production bundle: references, hero/concept/scene/crop images, documentary detail source modules, Canva/Templated ads, the preserved premium display ad, the single `tiktok_seed_video` package, audio, copy, and merch. It does **not** implicitly include `hero_explainer_video`, `threshold_video`, `countdown_video`, or `broll_clip`. The `DESIGNED_MEDIA_MODE` env var only gates whether static ad artifacts are included; it does not suppress the rest of the production bundle.
 
 **TikTok planning note:** The TikTok refactor plan in `.github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_2_MEDIA_GENERATION/TIKTOK_VIDEO_PRODUCTION/TIKTOK_VIDEO_REFACTOR_PLAN.md` is the implementation guide for maintaining the production TikTok package system. Agents should treat it as the current roadmap for scene intent, storyboard assembly, linting, and the paid vs organic split.
 **Text overlay note:** The TikTok path now renders explicit overlay cards into the final MP4. Prompt text is still important, but it is no longer the only text layer. If the rendered video reads as clip-only or the overlay cards are missing, repair the render before treating the asset as complete.
@@ -296,8 +302,8 @@ Check each tab systematically:
 - **References** Ã¢â‚¬â€ ship reference photos present? Correct ship?
 - **Heroes & Concepts** Ã¢â‚¬â€ images reflect the niche (not generic cruise)? Are the hero/concept assets visually distinct from the realistic scene layer?
 - **Scenes** Ã¢â‚¬â€ scene images reflect specific locations (pool deck, atrium, dining, etc.)? Do they carry any niche cues?
-- **Designed Ads** Ã¢â‚¬â€ ad templates rendered? Multiple placements (1:1, 4:5, 9:16)?
-  - Remember this tab includes both final designed ads and their source modules. The actual template coverage lives in `manifest.images.designedAdArtifacts`.
+- **Canva Ads / Designed Ad Artifacts** Ã¢â‚¬â€ Templated ads rendered? Multiple placements (1:1, 4:5, 9:16, carousel) plus the preserved premium display ad?
+  - The actual template coverage lives in `manifest.images.designedAdArtifacts`. Final designed ads must never be selected back into another ad as source imagery.
 - **Crops, Video, Audio, Merch** Ã¢â‚¬â€ as applicable
 
 When an output feels technically correct but emotionally flat, compare it against [CAMPAIGN_EXAMPLES.md](../../DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/CAMPAIGN_EXAMPLES.md) before you change the whole pipeline. The examples page shows the difference between generic cruise imagery and campaign-specific imagery that carries the niche in-frame.
@@ -325,7 +331,7 @@ If scene images look generic (no niche props, just standard cruise locations), t
 
 #### 4.5 Ã¢â‚¬â€ Landing page
 
-Once heroes, scenes, and designed ads are in the manifest:
+Once heroes, scenes, and Canva/designed ad artifacts are in the manifest:
 ```
 http://localhost:3000/tests/campaign-landing/[slug]
 ```
