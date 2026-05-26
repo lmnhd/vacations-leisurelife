@@ -89,6 +89,7 @@ This folder turns those observations into a planned refactor instead of a pile o
 - [03 Ad System Merge Plan](./03_AD_SYSTEM_MERGE_PLAN.md)
 - [04 Failure Cases And Guardrails](./04_FAILURE_CASES_AND_GUARDRAILS.md)
 - [05 Skill Update Plan](./05_SKILL_UPDATE_PLAN.md)
+- [06 Workflow Drift Audit Report](./06_WORKFLOW_DRIFT_AUDIT_REPORT.md)
 
 ## Related Reference
 
