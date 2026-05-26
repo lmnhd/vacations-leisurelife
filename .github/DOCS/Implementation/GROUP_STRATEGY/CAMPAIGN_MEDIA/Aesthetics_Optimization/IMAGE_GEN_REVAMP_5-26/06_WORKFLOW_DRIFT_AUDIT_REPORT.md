@@ -11,7 +11,7 @@
 
 The media pipeline already contains many of the right ideas: niche retention, ship plausibility, production-build linting, scene libraries, manifest sections, asset curation, Copy Forge, and Canva/Templated rendering.
 
-The problem is not that the system has no visual intelligence. The problem is that the strongest visual rules are inconsistent across phases and are later diluted by conflicting contracts, broad asset pools, conservative still-image rules, video-driven prompt compromises, and weak source/final artifact separation.
+The problem is not that the system has no visual intelligence. The problem is that the strongest visual rules are inconsistent across phases and are later diluted by conflicting contracts, broad asset pools, conservative still-image rules, legacy video assumptions, and weak source/final artifact separation.
 
 The operator's visual audit is correct: the system is producing plausible cruise imagery but not enough campaign-defining imagery.
 
@@ -54,7 +54,7 @@ This directly conflicts with the Intake compass, where group action should usual
 
 **Why it matters:** The current system is structurally biased toward solo/pair images before the image generator ever runs. This explains why heroes/concepts feel lonely or couple-centric, while the stronger 10-scene outputs feel closer to the desired direction.
 
-**Future rule:** Split still-image and video constraints. Video may require fewer foreground humans because animation models struggle with motion. Still images and ad source imagery should default to visible group action.
+**Future rule:** Remove legacy image-to-video motion constraints from still/ad source planning. Campaign videos are animated type videos using static images; the system no longer animates people inside generated images. Still images and ad source imagery should default to visible group action.
 
 **Priority:** High
 
@@ -85,7 +85,7 @@ These are useful for headline-safe hero images, but they should not govern the e
 - `campaign_action_still`: group-driven, theme-legible, ad source eligible
 - `documentary_detail`: tight texture and proof cues
 - `alternate_art`: watercolor/illustration/experimental
-- `scene_image`: storyboard/video-compatible environmental frame
+- `scene_image`: campaign scene source image, usable by ads and animated-type video layouts as static imagery
 
 **Priority:** High
 
@@ -290,22 +290,23 @@ Some of these may be valid for specific campaigns, but they should not be defaul
 
 ---
 
-### 10. Video Constraints Are Bleeding Into Still Image Quality
+### 10. Legacy Video Constraints Are Bleeding Into Still Image Quality
 
 **Bucket:** Investigate  
 **Pipeline Stage:** Production Bible / Storyboard / Scene Images  
 **Files:** `lib/campaigns/aesthetic-engine.ts`, `lib/campaigns/media/generators/tiktok-seed-generator.ts`
 
-The system correctly notes that video models struggle with human motion, hands, limbs, props, and close-up interactions. It therefore pushes storyboard shots toward environment-led frames.
+The current campaign video direction is animated type videos with static images. The system no longer needs to script around image-to-video people animation, human motion, hands, limbs, prop choreography, or close-up interactions inside generated images.
 
-That is appropriate for video, but harmful if the same scene/image pool becomes the default source pool for ads and still marketing.
+Some prompt rules still appear shaped by older image-to-video concerns. Those rules push scene images toward environment-led frames and away from human activity.
 
-**Why it matters:** The strongest ad source images need people, activity, group energy, and theme-specific action. Video safety rules make images safer but duller.
+**Why it matters:** The strongest ad source images need people, activity, group energy, and theme-specific action. Legacy video safety rules make images safer but duller, even though people are no longer animated in-image.
 
-**Future rule:** Separate video-safe scene images from still/ad source images:
+**Future rule:** Treat video as a layout/composition consumer of static images, not as a motion-generation constraint on the image itself:
 
-- `scene_video_plate`: environment-led, motion-safe
 - `scene_campaign_action`: human-rich, still/ad source eligible
+- `scene_static_video_image`: static image chosen for animated type video layout
+- `final.animated_type_video`: final video deliverable, not reusable source imagery
 
 **Priority:** High
 
@@ -320,7 +321,7 @@ That is appropriate for video, but harmful if the same scene/image pool becomes 
 | Research dossier | approved discovery context | niche examples, allowed/discouraged signals | `campaign.researchDossier`, `brief.campaignResearchDossier` | generated too late or not absorbed by brief |
 | Aesthetic brief | campaign + dossier | visual palette, messaging, plausibility framework, identity | `brief.visual`, `brief.messaging`, `identityBlueprint` | free-text contradictions enter visual prompts |
 | Landing still bible | brief + campaign | 6 still specs | `landingStillBible` | hero-safe rules suppress group/action imagery |
-| Production bible | brief + campaign | 10 scene specs, storyboards, avoid directives | `productionBible.sceneLibrary` | video-safe rules suppress human activity |
+| Production bible | brief + campaign | 10 scene specs, storyboards, avoid directives | `productionBible.sceneLibrary` | legacy video-safe rules suppress human activity despite static-image video direction |
 | Ship references | matched ship / ship target | reference candidates/assets | `manifest.images.shipReferences` | references not bound strongly to generated scenes |
 | Image generation | still specs, scenes, references | rendered source imagery | manifest image sections | prompt conflicts become visual sameness |
 | Copy Forge | campaign, brief, dossier, available image counts | copy set + imageSlotDirectives | `AdCopySet` | cannot see visual quality metadata |
@@ -331,13 +332,12 @@ That is appropriate for video, but harmful if the same scene/image pool becomes 
 
 ## Asset Eligibility Matrix Recommendation
 
-| Role | Examples | Can Feed Ads? | Can Feed Hero? | Can Feed Video? | Notes |
+| Role | Examples | Can Feed Ads? | Can Feed Hero? | Can Feed Animated Type Video? | Notes |
 |---|---|---:|---:|---:|---|
 | `source.hero_clean` | headline-safe hero still | Yes | Yes | Maybe | lower density, clean copy space |
-| `source.group_action` | 4-10 people doing theme activity | Yes | Maybe | No by default | should become primary ad pool |
+| `source.group_action` | 4-10 people doing theme activity | Yes | Maybe | Yes | should become primary ad pool and can support static video layouts |
 | `source.theme_detail` | objects, gestures, documentary details | Yes | No | Maybe | strong for supporting slots |
 | `source.ship_context` | actual ship spaces, architecture | Yes | Maybe | Yes | should preserve reference ids |
-| `source.video_plate` | environment-led scenes | No by default | No | Yes | not primary ad source |
 | `alternate_art` | watercolor, illustration, stylized art | Only explicit | Only explicit | No | separate UI section |
 | `final.ad_artifact` | designed/templated rendered ads | No | No | No | distribution only |
 | `final.channel_deliverable` | final crops/videos/audio | No | No | Distribution | not reusable source |
@@ -349,11 +349,11 @@ That is appropriate for video, but harmful if the same scene/image pool becomes 
 
 | Conflict | Location | Current Effect | Required Fix |
 |---|---|---|---|
-| group warmth vs solo/pair cap | `aesthetic-engine.ts` production prompt | suppresses group action | split still/ad rules from video rules |
+| group warmth vs solo/pair cap | `aesthetic-engine.ts` production prompt | suppresses group action | remove legacy image-to-video constraints from still/ad source rules |
 | hero-safe stills vs ad source needs | landing still bible | calm/bland imagery | add campaign action still role |
 | niche keywords vs visual theme legibility | lint/prompt fields | keyword compliance without visual specificity | require visual action proof |
 | ship plausibility vs generic cruise fallback | scene/image prompts | rail/deck/window sameness | bind references by category and feature |
-| video motion safety vs still image energy | storyboard rules | dull human action | separate video plates from ad stills |
+| legacy video motion safety vs still image energy | storyboard rules | dull human action | treat videos as animated type layouts using static images |
 | destination/offboard requirement vs operator preference | scene rules | low-value port/rail scenes | make destination scene conditional |
 | broad asset types vs usage eligibility | render pack | wrong source family selected | introduce source/final roles |
 
@@ -414,7 +414,7 @@ For each campaign source-image generation pass:
 | Documentary/theme detail | 2 | hands/objects/gestures, not final ads |
 | Clean hero-safe still | 2 | headline-safe, not all rails/windows |
 | Alternate artistic treatment | 1-2 optional | isolated alternate-art lane only |
-| Video-safe plates | separate pass | not primary ad source |
+| Animated-type video image candidates | selected from source pool | static images only, no in-image people animation |
 
 ---
 
@@ -461,7 +461,7 @@ Treatments should be role-aware. Main hero/ad source stays believable photograph
 ## Fix Path For Final Overhaul Plan
 
 1. **Separate visual roles from asset types.** Add source/final/alternate/reference eligibility roles.
-2. **Split still/ad prompts from video prompts.** Stop video safety constraints from suppressing still image energy.
+2. **Remove legacy image-to-video constraints from still/ad prompts.** Videos use animated type over static images, so still imagery should not be dulled for human-motion safety.
 3. **Create a group-action still generator path.** Use 4-6 people by default with theme-specific activity.
 4. **Promote 10-scene strengths into core image planning.** Use it as the baseline for vivid scene articulation.
 5. **Replace default scene slots with conditional scene taxonomy.** Theater, nightclub, and destination slots require campaign-fit justification.
