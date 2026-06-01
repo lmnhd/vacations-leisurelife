@@ -14,7 +14,7 @@ type Interaction = {
     error?: string;
 };
 
-export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promise<string> {
+export async function callGeminiDeepResearch(prompt: string, attempt = 1, existingInteractionId?: string): Promise<string> {
     const MAX_ATTEMPTS = 3;
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
@@ -22,27 +22,34 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
         throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is not set');
     }
 
+    let interactionId = existingInteractionId;
+
     try {
-        console.log(`[callGeminiDeepResearch] Starting (attempt ${attempt}/${MAX_ATTEMPTS})...`);
+        if (!interactionId) {
+            console.log(`[callGeminiDeepResearch] Starting (attempt ${attempt}/${MAX_ATTEMPTS})...`);
 
-        const createRes = await fetch(`${INTERACTIONS_BASE}?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                input: prompt,
-                agent: 'deep-research-preview-04-2026',
-                background: true,
-                store: true,
-            }),
-        });
+            const createRes = await fetch(`${INTERACTIONS_BASE}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    input: prompt,
+                    agent: 'deep-research-preview-04-2026',
+                    background: true,
+                    store: true,
+                }),
+            });
 
-        if (!createRes.ok) {
-            const errorBody = await createRes.text();
-            throw new Error(`Gemini Deep Research create failed (${createRes.status}): ${errorBody}`);
+            if (!createRes.ok) {
+                const errorBody = await createRes.text();
+                throw new Error(`Gemini Deep Research create failed (${createRes.status}): ${errorBody}`);
+            }
+
+            const interaction = (await createRes.json()) as Interaction;
+            interactionId = interaction.id;
+            console.log(`[callGeminiDeepResearch] Interaction started: ${interactionId}`);
+        } else {
+            console.log(`[callGeminiDeepResearch] Resuming existing interaction ${interactionId} (attempt ${attempt}/${MAX_ATTEMPTS})...`);
         }
-
-        const interaction = (await createRes.json()) as Interaction;
-        console.log(`[callGeminiDeepResearch] Interaction started: ${interaction.id}`);
 
         const MAX_POLL_MS = 20 * 60 * 1000;
         const pollStart = Date.now();
@@ -52,10 +59,10 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
 
             const elapsed = Date.now() - pollStart;
             if (elapsed > MAX_POLL_MS) {
-                throw new Error(`Gemini Deep Research timed out after ${Math.round(elapsed / 60000)}min. Interaction ID: ${interaction.id}`);
+                throw new Error(`Gemini Deep Research timed out after ${Math.round(elapsed / 60000)}min. Interaction ID: ${interactionId}`);
             }
 
-            const pollRes = await fetch(`${INTERACTIONS_BASE}/${interaction.id}?key=${apiKey}`);
+            const pollRes = await fetch(`${INTERACTIONS_BASE}/${interactionId}?key=${apiKey}`);
 
             if (!pollRes.ok) {
                 const errorBody = await pollRes.text();
@@ -95,7 +102,7 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
             const delayMs = attempt * 5000;
             console.warn(`[callGeminiDeepResearch] Retryable error on attempt ${attempt}: ${error instanceof Error ? error.message : 'unknown'}. Retrying in ${delayMs / 1000}s...`);
             await new Promise(resolve => setTimeout(resolve, delayMs));
-            return callGeminiDeepResearch(prompt, attempt + 1);
+            return callGeminiDeepResearch(prompt, attempt + 1, interactionId ?? undefined);
         }
 
         throw error;
