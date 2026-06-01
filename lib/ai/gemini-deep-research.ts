@@ -44,8 +44,16 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
         const interaction = (await createRes.json()) as Interaction;
         console.log(`[callGeminiDeepResearch] Interaction started: ${interaction.id}`);
 
+        const MAX_POLL_MS = 20 * 60 * 1000;
+        const pollStart = Date.now();
+
         while (true) {
             await new Promise(resolve => setTimeout(resolve, 10000));
+
+            const elapsed = Date.now() - pollStart;
+            if (elapsed > MAX_POLL_MS) {
+                throw new Error(`Gemini Deep Research timed out after ${Math.round(elapsed / 60000)}min. Interaction ID: ${interaction.id}`);
+            }
 
             const pollRes = await fetch(`${INTERACTIONS_BASE}/${interaction.id}?key=${apiKey}`);
 
