@@ -58,9 +58,10 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
 
             if (result.status === 'completed') {
                 const outputs = result.outputs ?? [];
-                const text = outputs[outputs.length - 1]?.text;
+                const text = outputs.filter(o => o.text?.trim()).pop()?.text;
                 if (!text || !text.trim()) {
-                    throw new Error('Gemini Deep Research returned empty output.');
+                    console.warn(`[callGeminiDeepResearch] Completed but no text output found. Output types: ${outputs.map(o => o.type ?? 'unknown').join(', ')}`);
+                    throw new Error('Gemini Deep Research returned empty output (retryable).');
                 }
                 console.log(`[callGeminiDeepResearch] Completed.`);
                 return text.trim();
@@ -78,6 +79,7 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1): Promi
             error.message.includes('fetch failed') ||
             error.message.includes('timeout') ||
             error.message.includes('network') ||
+            error.message.includes('empty output (retryable)') ||
             error.name === 'AbortError'
         );
 
