@@ -2,15 +2,21 @@ const INTERACTIONS_BASE = 'https://generativelanguage.googleapis.com/v1beta/inte
 
 type InteractionStatus = 'in_progress' | 'completed' | 'failed';
 
-type InteractionOutput = {
-    text?: string;
+type InteractionContentItem = {
     type?: string;
+    text?: string;
+};
+
+type InteractionStep = {
+    type?: string;
+    content?: InteractionContentItem[];
+    summary?: InteractionContentItem[];
 };
 
 type Interaction = {
     id: string;
     status: InteractionStatus;
-    outputs?: InteractionOutput[];
+    steps?: InteractionStep[];
     error?: string;
 };
 
@@ -72,10 +78,17 @@ export async function callGeminiDeepResearch(prompt: string, attempt = 1, existi
             const result = (await pollRes.json()) as Interaction;
 
             if (result.status === 'completed') {
-                const outputs = result.outputs ?? [];
-                const text = outputs.filter(o => o.text?.trim()).pop()?.text;
-                if (!text || !text.trim()) {
-                    console.warn(`[callGeminiDeepResearch] Completed but no text output found. Output types: ${outputs.map(o => o.type ?? 'unknown').join(', ')}`);
+                const steps = result.steps ?? [];
+                const stepTypes = steps.map(s => s.type ?? 'unknown').join(', ');
+                const modelOutputSteps = steps.filter(s => s.type === 'model_output');
+                const text = modelOutputSteps
+                    .flatMap(s => s.content ?? [])
+                    .filter((c: InteractionContentItem) => c.type === 'text' && c.text?.trim())
+                    .map((c: InteractionContentItem) => c.text ?? '')
+                    .join('\n\n')
+                    .trim();
+                if (!text) {
+                    console.warn(`[callGeminiDeepResearch] Completed but no model_output text found. Step types: ${stepTypes}`);
                     throw new Error('Gemini Deep Research returned empty output (retryable).');
                 }
                 console.log(`[callGeminiDeepResearch] Completed.`);
