@@ -418,6 +418,8 @@ async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date })
         : buildExistingThemesBlock(existingCampaigns);
     const approvedCandidatesBlock = respin ? buildApprovedCandidatesBlock(priorCampaignContext) : '';
     const respinFeedbackBlock = respin ? await buildDiscoveryRespinFeedback(priorCampaignContext) : '';
+    // Lightweight exclusion block for Gemini Deep Research — names only, no verbose review details
+    const lightExclusionBlock = buildExistingThemesBlock(existingCampaigns);
     return {
         cbInventoryContext,
         cachedInventory,
@@ -425,6 +427,7 @@ async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date })
         existingThemesBlock,
         approvedCandidatesBlock,
         respinFeedbackBlock,
+        lightExclusionBlock,
         existingCampaignsCount: existingCampaigns.length,
     };
 }
@@ -444,8 +447,8 @@ export async function runDiscoveryResearch(opts: DiscoveryResearchOptions = {}):
     const cache = force ? { date: today, promptVersion: DISCOVERY_PROMPT_VERSION } : readResearchCache();
 
     const ctx = await buildDiscoveryPromptContext({ respin, now });
-    const { launchWindowPromptGuidance, cbInventoryContext, existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock, existingCampaignsCount } = ctx;
-    console.log(`[runDiscoveryResearch] ${existingCampaignsCount} existing campaign(s) found — injecting exclusion list${respin ? ' and re-spin feedback' : ''} into prompts.`);
+    const { launchWindowPromptGuidance, cbInventoryContext, existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock, lightExclusionBlock, existingCampaignsCount } = ctx;
+    console.log(`[runDiscoveryResearch] ${existingCampaignsCount} existing campaign(s) found — injecting lightweight exclusion list into Gemini prompts${respin ? ', full review context reserved for Step 3' : ''}.`);
 
     let psychographicData: string;
     let psychographicFromCache = false;
@@ -455,7 +458,7 @@ export async function runDiscoveryResearch(opts: DiscoveryResearchOptions = {}):
         psychographicFromCache = true;
     } else {
         console.log('[runDiscoveryResearch] Step 1: Psychographic Discovery');
-        const psychographicPrompt = buildPsychographicPrompt({ existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock });
+        const psychographicPrompt = buildPsychographicPrompt({ existingThemesBlock: lightExclusionBlock, approvedCandidatesBlock: '', respinFeedbackBlock: '' });
         psychographicData = await callGeminiDeepResearch(psychographicPrompt);
         cache.psychographicData = psychographicData;
         writeResearchCache(cache);
@@ -474,8 +477,8 @@ export async function runDiscoveryResearch(opts: DiscoveryResearchOptions = {}):
             psychographicData,
             launchWindowPromptGuidance,
             cbInventoryContext,
-            approvedCandidatesBlock,
-            respinFeedbackBlock,
+            approvedCandidatesBlock: '',
+            respinFeedbackBlock: '',
         });
         aestheticData = await callGeminiDeepResearch(aestheticPrompt);
         cache.aestheticData = aestheticData;
