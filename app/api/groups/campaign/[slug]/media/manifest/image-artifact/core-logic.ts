@@ -22,9 +22,11 @@ function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
     return [
         ...manifest.images.shipReferences,
         ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
         ...(manifest.images.documentaryDetails ?? []),
+        ...(manifest.images.alternateArt ?? []),
         ...(manifest.images.designedAdArtifacts ?? []),
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
@@ -56,6 +58,22 @@ function removeImageAssetFromManifest(
                 totalAssets: 0,
                 completionStatus: 'partial',
                 images: { ...manifest.images, hero },
+            },
+        };
+    }
+
+    // flyerImages
+    const flyerImages = (manifest.images.flyerImages ?? []).filter(r => r.assetId !== assetId);
+    if (flyerImages.length !== (manifest.images.flyerImages ?? []).length) {
+        return {
+            removed: true,
+            slot: 'flyerImages',
+            updatedManifest: {
+                ...manifest,
+                generatedAt: new Date().toISOString(),
+                totalAssets: 0,
+                completionStatus: 'partial',
+                images: { ...manifest.images, flyerImages },
             },
         };
     }
@@ -144,7 +162,32 @@ function removeImageAssetFromManifest(
         };
     }
 
+    const alternateArt = (manifest.images.alternateArt ?? []).filter(r => r.assetId !== assetId);
+    if (alternateArt.length !== (manifest.images.alternateArt ?? []).length) {
+        return {
+            removed: true,
+            slot: 'alternateArt',
+            updatedManifest: {
+                ...manifest,
+                generatedAt: new Date().toISOString(),
+                totalAssets: 0,
+                completionStatus: 'partial',
+                images: { ...manifest.images, alternateArt },
+            },
+        };
+    }
+
     return { removed: false, slot: '', updatedManifest: manifest };
+}
+
+function clearImageSelectionsForAsset(
+    manifest: CampaignMediaManifest,
+    assetId: string,
+): CampaignMediaManifest {
+    const imageSelections = Object.fromEntries(
+        Object.entries(manifest.imageSelections ?? {}).filter(([, selectedAssetId]) => selectedAssetId !== assetId),
+    );
+    return { ...manifest, imageSelections };
 }
 
 export async function handleDeleteImageArtifactRequest(
@@ -179,7 +222,8 @@ export async function handleDeleteImageArtifactRequest(
         }
 
         const finalizedManifest: CampaignMediaManifest = {
-            ...removalResult.updatedManifest,
+            ...clearImageSelectionsForAsset(removalResult.updatedManifest, parsedBody.data.assetId),
+            imageSlotControls: removalResult.updatedManifest.imageSlotControls ?? {},
             totalAssets: calculateManifestAssetTotal(removalResult.updatedManifest),
         };
 

@@ -1,7 +1,17 @@
 # Canva-Style Template-Based Ads — Overview
 
-**Status:** Research + planning (replaces Phase 2.3 `designed_ad_artifact` for static ads)
+**Status:** ✅ Implemented — HTML + Playwright path active (see `HTML_PLAYWRIGHT/`)
 **Scope:** Group campaigns + Cruise Brothers deals (shared module)
+
+> **Implementation note (2026-05-29):** The render step evolved from the Canva/Templated.io
+> plan below to an HTML + Playwright approach. Copy Forge, the template registry, slot names,
+> and manifest integration are all unchanged. Only the render provider changed. See:
+> - [`HTML_PLAYWRIGHT/MASTER_PLAN.md`](./HTML_PLAYWRIGHT/MASTER_PLAN.md) — current system
+> - [`HTML_PLAYWRIGHT/TEMPLATE_REFERENCE.md`](./HTML_PLAYWRIGHT/TEMPLATE_REFERENCE.md) — all 8 templates
+> - [`HTML_PLAYWRIGHT/DISTRIBUTION_INTEGRATION.md`](./HTML_PLAYWRIGHT/DISTRIBUTION_INTEGRATION.md) — distribution layer
+> - [`TEMPLATED_IO/MASTER_PLAN.md`](./TEMPLATED_IO/MASTER_PLAN.md) — original plan (still valid as fallback path)
+
+---
 
 ---
 

@@ -144,6 +144,7 @@ const manifestWithSceneFirst = {
         documentaryDetails: [
             makeAsset('doc_1', 'documentary_detail_image', 'https://example.com/doc.png', 'auto_approved'),
         ],
+        alternateArt: [],
         designedAdArtifacts: [],
         platformCrops: {
             hero_16x9: [],

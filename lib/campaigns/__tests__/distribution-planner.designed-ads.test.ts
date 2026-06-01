@@ -32,6 +32,7 @@ function makeManifest(): CampaignMediaManifest {
         completionStatus: 'partial',
         images: {
             shipReferences: [],
+            flyerImages: [],
             hero: [{
                 assetId: 'img_hero_1',
                 assetType: 'hero_image',
@@ -49,6 +50,7 @@ function makeManifest(): CampaignMediaManifest {
             sceneImages: [],
             aestheticConcepts: [],
             documentaryDetails: [],
+            alternateArt: [],
             designedAdArtifacts: [
                 {
                     assetId: 'ad_editorial_cover_4x5',

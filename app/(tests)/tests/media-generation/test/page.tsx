@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Film,
   Newspaper,
+  Sparkles,
 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -613,6 +614,7 @@ export default function MediaGenerationTestPage() {
   const [shipReferenceResult, setShipReferenceResult] =
     useState<GeneratorResult>(makeResult());
   const [heroResult, setHeroResult] = useState<GeneratorResult>(makeResult());
+  const [flyerResult, setFlyerResult] = useState<GeneratorResult>(makeResult());
   const [conceptResult, setConceptResult] =
     useState<GeneratorResult>(makeResult());
   const [designedAdsResult, setDesignedAdsResult] =
@@ -815,6 +817,61 @@ export default function MediaGenerationTestPage() {
   }
 
   const base = `/api/groups/campaign/${slug}/media/test`;
+  const generateBase = `/api/groups/campaign/${slug}/media/generate`;
+
+  // Runs one or more asset types through the same orchestrator path as Generate All.
+  // After generation, fetches the manifest to extract a preview CDN URL if available.
+  async function runViaOrchestrator(
+    assetTypes: string[],
+    setter: (r: GeneratorResult) => void,
+    afterSuccess?: (manifest: CampaignMediaManifest) => void,
+  ) {
+    setter({ state: "loading", data: null, error: "", cdnUrl: "" });
+    try {
+      const res = await fetch(generateBase, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assetTypes }),
+      });
+      const data = (await res.json()) as Record<string, unknown>;
+      if (!res.ok) {
+        setter({ state: "error", data, error: (data.error as string) ?? `HTTP ${res.status}`, cdnUrl: "" });
+        return;
+      }
+
+      // Fetch manifest to find a preview URL for the generated asset type
+      let cdnUrl = "";
+      try {
+        const manifestRes = await fetch(`/api/groups/campaign/${slug}/media/manifest`);
+        if (manifestRes.ok) {
+          const manifest = (await manifestRes.json()) as CampaignMediaManifest;
+          if (assetTypes.includes("hero_image")) {
+            const heroes = manifest.images.hero ?? [];
+            cdnUrl = heroes[heroes.length - 1]?.url ?? "";
+          } else if (assetTypes.includes("aesthetic_concept")) {
+            const concepts = manifest.images.aestheticConcepts ?? [];
+            cdnUrl = concepts[concepts.length - 1]?.url ?? "";
+          } else if (assetTypes.includes("platform_crop")) {
+            const allCrops = Object.values(manifest.images.platformCrops ?? {}).flat();
+            cdnUrl = allCrops[allCrops.length - 1]?.url ?? "";
+          } else if (assetTypes.includes("scene_image")) {
+            const scenes = manifest.images.sceneImages ?? [];
+            cdnUrl = scenes[scenes.length - 1]?.url ?? "";
+          }
+          afterSuccess?.(manifest);
+        }
+      } catch { /* manifest fetch failure is non-fatal — preview just won't show */ }
+
+      setter({ state: "success", data, error: "", cdnUrl });
+    } catch (err) {
+      setter({
+        state: "error",
+        data: null,
+        error: err instanceof Error ? err.message : "Unknown error",
+        cdnUrl: "",
+      });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
@@ -1010,23 +1067,39 @@ export default function MediaGenerationTestPage() {
           title="Nano-Banana — Real Ship Hero Image (×1)"
           icon={<Image className="h-4 w-4" />}
           color="cyan"
-          description="Discovers real ship references with SerpAPI, then uses Nano-Banana to transform the best match into a niche-coded hero image. CDN URL auto-filled into the video generator inputs below."
+          description="Runs the same hero generation path as Generate All: uses existing approved references from the manifest, then transforms with Nano-Banana. CDN URL auto-filled below."
           cost="~search + import"
           apiKeys={["SERPAPI", "GOOGLE", "R2"]}
           result={heroResult}
           previewType="image"
-          onRun={async () => {
-            await runGenerator(
-              `${base}/images`,
-              { generator: "real_ship_hero" },
-              (r) => {
-                if (r.cdnUrl) {
-                  setHeroImageUrl(r.cdnUrl);
-                }
-                setHeroResult(r);
+          onRun={() =>
+            runViaOrchestrator(
+              ["hero_image"],
+              setHeroResult,
+              (manifest) => {
+                const heroes = manifest.images.hero ?? [];
+                const url = heroes[heroes.length - 1]?.url ?? "";
+                if (url) setHeroImageUrl(url);
               },
-            );
-          }}
+            )
+          }
+        />
+
+        {/* ── Nano-Banana Flyers ───────────────────────────────── */}
+        <GeneratorCard
+          id="gen-flyers"
+          keyStatus={keyStatus}
+          title={`Nano-Banana — Flyer Images (×${6})`}
+          icon={<Sparkles className="h-4 w-4" />}
+          color="violet"
+          description="Slug-prompt single-image 'flyers' with the finalized negation rules + 6 variation axes. Stored in the Flyers section; never auto-used by ads — selectable per use point."
+          cost="~6 images"
+          apiKeys={["GOOGLE", "R2"]}
+          result={flyerResult}
+          previewType="image"
+          onRun={() =>
+            runViaOrchestrator(["flyer_image"], setFlyerResult)
+          }
         />
 
         {/* ── Nano-Banana Concepts ─────────────────────────────── */}
@@ -1036,17 +1109,13 @@ export default function MediaGenerationTestPage() {
           title="Nano-Banana — Aesthetic Concept (×1)"
           icon={<Image className="h-4 w-4" />}
           color="cyan"
-          description="Generates abstract mood/concept art with Nano-Banana. This is separate from the ship-faithful hero path. Uploaded to R2."
+          description="Runs the same concept generation path as Generate All. Uploaded to R2."
           cost="~$0.05"
           apiKeys={["GOOGLE", "R2"]}
           result={conceptResult}
           previewType="image"
           onRun={() =>
-            runGenerator(
-              `${base}/images`,
-              { generator: "stability_concepts" },
-              setConceptResult,
-            )
+            runViaOrchestrator(["aesthetic_concept"], setConceptResult)
           }
         />
 
@@ -1056,17 +1125,13 @@ export default function MediaGenerationTestPage() {
           title="Designed Ad Artifact Pack"
           icon={<Newspaper className="h-4 w-4" />}
           color="purple"
-          description="Generates documentary detail image modules, then renders structured static ads in code for feed, story, carousel, and display placements."
+          description="Runs the same designed-ad pipeline as Generate All: documentary detail images then structured static ads for feed, story, carousel, and display placements."
           cost="~5 images + render"
           apiKeys={["GOOGLE", "R2"]}
           result={designedAdsResult}
           previewType="json"
           onRun={() =>
-            runGenerator(
-              `${base}/images`,
-              { generator: "designed_ad_artifacts" },
-              setDesignedAdsResult,
-            )
+            runViaOrchestrator(["documentary_detail_image", "designed_ad_artifact"], setDesignedAdsResult)
           }
         />
 
@@ -1077,19 +1142,13 @@ export default function MediaGenerationTestPage() {
           title="Sharp — Platform Crops"
           icon={<Crop className="h-4 w-4" />}
           color="purple"
-          description="Builds all 8 platform crops from a curated hero/scene/concept pool, choosing per format so different crops can come from different source images when possible."
+          description="Runs the same crop pipeline as Generate All: builds all 8 platform crops from the curated hero/scene/concept pool."
           cost="free"
           apiKeys={["R2"]}
           result={cropResult}
           previewType="image"
           onRun={() =>
-            runGenerator(
-              `${base}/images`,
-              {
-                generator: "sharp_crops",
-              },
-              setCropResult,
-            )
+            runViaOrchestrator(["platform_crop"], setCropResult)
           }
         />
 
@@ -1114,17 +1173,13 @@ export default function MediaGenerationTestPage() {
           title="Nano-Banana — Scene Images (Production Bible)"
           icon={<Layers className="h-4 w-4" />}
           color="teal"
-          description="Generates one Nano-Banana image per scene in the Production Bible scene library (8–12 images). Each uses a different ship reference category as seed. Requires brief with Production Bible."
+          description="Runs the same scene generation path as Generate All: one image per Production Bible scene with reference grounding, reference status tagging, and sourceQuality scoring."
           cost="~Nano-Banana × scenes"
           apiKeys={["GOOGLE", "R2"]}
           result={sceneImagesResult}
           previewType="json"
           onRun={() =>
-            runGenerator(
-              `${base}/images`,
-              { generator: "scene_images" },
-              setSceneImagesResult,
-            )
+            runViaOrchestrator(["scene_image"], setSceneImagesResult)
           }
         />
 

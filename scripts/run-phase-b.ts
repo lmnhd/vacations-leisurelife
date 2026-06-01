@@ -59,6 +59,73 @@ function shiftDateByDays(mmDdYyyy: string, days: number): string {
   return `${newMm}/${newDd}/${d.getFullYear()}`;
 }
 
+function normalizeDateKey(rawDate?: string | null): string {
+  const value = rawDate?.trim();
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseNightCount(rawValue?: string | null): number | null {
+  if (!rawValue) return null;
+  const match = rawValue.match(/(\d+)/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function getCruiseResultStartDate(result: CruiseResult): string {
+  return normalizeDateKey(result.packages?.[0]?.startDateTime);
+}
+
+function getCruiseResultNightCount(result: CruiseResult): number | null {
+  if (typeof result.itinerary?.duration === "number" && result.itinerary.duration > 0) {
+    return result.itinerary.duration;
+  }
+  const packageDuration = result.packages?.[0]?.cruiseDuration;
+  return typeof packageDuration === "number" && packageDuration > 0 ? packageDuration : null;
+}
+
+function findMatchingOdysseusResult(
+  results: CruiseResult[],
+  match: CbInventoryMatch,
+): { result: CruiseResult; index: number } | null {
+  const expectedDate = normalizeDateKey(match.matchedSailDate);
+  const expectedNights = parseNightCount(match.matchedNights);
+
+  const scored = results
+    .map((result, index) => {
+      const resultDate = getCruiseResultStartDate(result);
+      const resultNights = getCruiseResultNightCount(result);
+      const dateMatches = expectedDate && resultDate ? expectedDate === resultDate : false;
+      const nightsMatch =
+        expectedNights !== null && resultNights !== null
+          ? expectedNights === resultNights
+          : false;
+
+      return {
+        result,
+        index,
+        score: (dateMatches ? 4 : 0) + (nightsMatch ? 3 : 0),
+        dateMatches,
+        nightsMatch,
+        resultDate,
+        resultNights,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const winner = scored[0];
+  if (!winner) return null;
+
+  if (expectedDate && !winner.dateMatches) return null;
+  if (expectedNights !== null && !winner.nightsMatch) return null;
+
+  return { result: winner.result, index: winner.index };
+}
+
 function normalizeComparableText(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
@@ -93,20 +160,29 @@ function buildOdysseusItinerarySummary(result: CruiseResult): {
   const duration = typeof itinerary?.duration === "number" && itinerary.duration > 0
     ? `${itinerary.duration} nights`
     : "Itinerary duration TBD";
-  const departure = itinerary?.departure?.code?.trim() || "";
-  const arrival = itinerary?.arrival?.code?.trim() || "";
-  const portsOfCall = itinerary?.normalizedPortsOfCall?.trim()
+  const departureCode = itinerary?.departure?.code?.trim() || "";
+  const arrivalCode = itinerary?.arrival?.code?.trim() || "";
+
+  // Prefer normalizedPortsOfCall from the booking engine; fall back to raw codes
+  const rawPortsOfCall = itinerary?.normalizedPortsOfCall?.trim()
     || itinerary?.portsOfCalls?.trim()
     || "";
+
+  // Resolve port codes to human-readable names so the stored strings are
+  // guest-ready and don't require view-layer decoding.
+  const { formatPortsOfCall: fmtPorts, formatDepartureLeg: fmtLeg } =
+    require("@/lib/campaigns/landing/port-codes") as typeof import("@/lib/campaigns/landing/port-codes");
+
+  const resolvedPortsOfCall = rawPortsOfCall ? (fmtPorts(rawPortsOfCall) ?? rawPortsOfCall) : "";
   const routeParts = [
-    departure ? `Departing ${departure}` : "",
-    portsOfCall,
-    arrival ? `Arriving ${arrival}` : "",
+    departureCode ? `Departing ${fmtLeg(departureCode)}` : "",
+    resolvedPortsOfCall,
+    arrivalCode ? `Arriving ${fmtLeg(arrivalCode)}` : "",
   ].filter(Boolean);
 
   return {
     summary: [duration, ...routeParts].filter(Boolean).join(" · "),
-    portsOfCall,
+    portsOfCall: resolvedPortsOfCall,
   };
 }
 
@@ -138,9 +214,16 @@ async function generateOdysseusRetailLink(
       return { retailLink: null, itinerarySummary: null, portsOfCall: null };
     }
 
-    const itinerarySource = results[0];
-    const itinerarySummary = buildOdysseusItinerarySummary(itinerarySource);
-    await engine.selectItinerary(0);
+    const selectedItinerary = findMatchingOdysseusResult(results, match);
+    if (!selectedItinerary) {
+      console.warn(
+        `[run-phase-b] Odysseus returned ${results.length} result(s) for "${match.matchedShipName}", but none matched date "${match.matchedSailDate}" and nights "${match.matchedNights ?? "unknown"}" â€” skipping retail link and itinerary enrichment.`,
+      );
+      return { retailLink: null, itinerarySummary: null, portsOfCall: null };
+    }
+
+    const itinerarySummary = buildOdysseusItinerarySummary(selectedItinerary.result);
+    await engine.selectItinerary(selectedItinerary.index);
     const retailLink = await engine.bypassGuestInfoAndContinue();
 
     if (!retailLink) {
@@ -455,6 +538,9 @@ async function runPhaseB(): Promise<void> {
         };
 
         const odysseusResult = await generateOdysseusRetailLink(retailConfirmation);
+        retailConfirmation.odysseusRetailBookingLink = odysseusResult.retailLink;
+        retailConfirmation.odysseusItinerarySummary = odysseusResult.itinerarySummary ?? undefined;
+        retailConfirmation.odysseusPortsOfCall = odysseusResult.portsOfCall ?? undefined;
         if (odysseusResult.retailLink) {
           const retailValidation = await validateBookingLink(odysseusResult.retailLink);
           if (retailValidation.status === "HEALTHY") {

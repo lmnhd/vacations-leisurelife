@@ -4,7 +4,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { FILM_GRADES, resolveMediaStyle } from '../style-prompts';
+import { resolveMediaStyle } from '../style-prompts';
 
 async function main() {
     let passedCount = 0;
@@ -73,7 +73,7 @@ async function main() {
         assert.match(resolved.promptBlock, /Documentary-grade cruise photography/i);
     });
 
-    await test('film grade selection is deterministic by seed', () => {
+    await test('realistic promptBlock is stable across identical inputs', () => {
         const first = resolveMediaStyle({
             assetKind: 'scene',
             hasPeople: false,
@@ -86,7 +86,9 @@ async function main() {
         });
 
         assert.equal(first.promptBlock, second.promptBlock);
-        assert.ok(FILM_GRADES.some((grade) => first.promptBlock.includes(grade)));
+        assert.match(first.promptBlock, /Documentary-grade cruise photography/i);
+        // Film grades are no longer injected into prompts — they live in image-filter-registry.ts
+        assert.doesNotMatch(first.promptBlock, /Kodachrome|Ektachrome|Polaroid|cross-processed/i);
     });
 
     if (failedCount > 0) {

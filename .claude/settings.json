@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:api.templated.io)"
+      "WebFetch(domain:api.templated.io)",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -12,9 +12,11 @@ import type { AssetType } from '../schema';
 export type ManifestAssetSection =
     | 'shipReferences'
     | 'hero'
+    | 'flyerImages'
     | 'aestheticConcepts'
     | 'sceneImages'
     | 'documentaryDetails'
+    | 'alternateArt'
     | 'designedAdArtifacts'
     | 'tiktokSeed'
     | 'heroExplainer'
@@ -30,9 +32,11 @@ export type ManifestAssetSection =
 const ASSET_TYPE_TO_SECTION: Partial<Record<AssetType, ManifestAssetSection>> = {
     ship_reference_image:      'shipReferences',
     hero_image:                'hero',
+    flyer_image:               'flyerImages',
     aesthetic_concept:         'aestheticConcepts',
     scene_image:               'sceneImages',
     documentary_detail_image:  'documentaryDetails',
+    alternate_art:             'alternateArt',
     designed_ad_artifact:      'designedAdArtifacts',
     tiktok_seed_video:         'tiktokSeed',
     hero_explainer_video:      'heroExplainer',
@@ -57,7 +61,9 @@ export const TAB_HISTORY_ASSET_TYPES: Record<string, AssetType[]> = {
     references:   ['ship_reference_image'],
     designed_ads: ['designed_ad_artifact'],
     documentary_details: ['documentary_detail_image'],
+    alternate_art: ['alternate_art'],
     heroes:       ['hero_image', 'aesthetic_concept'],
+    flyers:       ['flyer_image'],
     scenes:       ['scene_image'],
     video:        ['tiktok_seed_video', 'hero_explainer_video', 'threshold_video', 'countdown_video', 'broll_clip'],
     audio:        ['ambient_narration', 'hype_clip', 'theme_music'],

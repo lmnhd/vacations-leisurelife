@@ -167,12 +167,18 @@ function createEmptyManifest(slug: string): CampaignMediaManifest {
         selections: {
             images: {},
         },
+        imageSelections: {},
+        imageSlotControls: {},
+        copySelections: {},
+        modelVersionSelections: {},
         images: {
             shipReferences: [],
             hero: [],
+            flyerImages: [],
             sceneImages: [],
             aestheticConcepts: [],
             documentaryDetails: [],
+            alternateArt: [],
             designedAdArtifacts: [],
             platformCrops: { ...EMPTY_PLATFORM_CROPS },
         },
@@ -201,9 +207,11 @@ function calculateManifestAssetTotal(manifest: CampaignMediaManifest): number {
     return [
         ...manifest.images.shipReferences,
         ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
         ...(manifest.images.documentaryDetails ?? []),
+        ...(manifest.images.alternateArt ?? []),
         ...(manifest.images.designedAdArtifacts ?? []),
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
@@ -224,15 +232,21 @@ function finalizeManifest(manifest: CampaignMediaManifest): CampaignMediaManifes
         ...manifest,
         generatedAt: new Date().toISOString(),
         totalAssets: calculateManifestAssetTotal(manifest),
+        selections: manifest.selections ?? { images: {} },
+        imageSelections: manifest.imageSelections ?? {},
+        imageSlotControls: manifest.imageSlotControls ?? {},
+        copySelections: manifest.copySelections ?? {},
     };
 }
 
 type ManifestAssetSection =
     | 'shipReferences'
     | 'hero'
+    | 'flyerImages'
     | 'aestheticConcepts'
     | 'sceneImages'
     | 'documentaryDetails'
+    | 'alternateArt'
     | 'designedAdArtifacts'
     | 'platformCrops'
     | 'tiktokSeed'
@@ -255,7 +269,7 @@ export async function upsertManifestAssetSection(
     const baseManifest = existingManifest ?? createEmptyManifest(slug);
     let updatedManifest: CampaignMediaManifest;
 
-    if (section === 'shipReferences' || section === 'hero' || section === 'aestheticConcepts' || section === 'sceneImages' || section === 'documentaryDetails' || section === 'designedAdArtifacts') {
+    if (section === 'shipReferences' || section === 'hero' || section === 'flyerImages' || section === 'aestheticConcepts' || section === 'sceneImages' || section === 'documentaryDetails' || section === 'alternateArt' || section === 'designedAdArtifacts') {
         const newRecords = records as AssetRecord[];
         updatedManifest = {
             ...baseManifest,
@@ -336,6 +350,163 @@ export async function upsertManifestCopy(slug: string, copy: GeneratedCopy): Pro
     return finalizedManifest;
 }
 
+export async function updateManifestImageSelections(
+    slug: string,
+    changes: Record<string, string | null>,
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const nextSelections = { ...(existingManifest.imageSelections ?? {}) };
+    for (const [key, assetId] of Object.entries(changes)) {
+        if (!key.trim()) continue;
+        if (assetId === null || assetId === '') {
+            delete nextSelections[key];
+        } else {
+            nextSelections[key] = assetId;
+        }
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        imageSelections: nextSelections,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function updateManifestImageSlotControls(
+    slug: string,
+    changes: Record<string, NonNullable<CampaignMediaManifest['imageSlotControls']>[string] | null>,
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const nextControls = { ...(existingManifest.imageSlotControls ?? {}) };
+    for (const [key, control] of Object.entries(changes)) {
+        if (!key.trim()) continue;
+        if (!control || Object.keys(control).length === 0) {
+            delete nextControls[key];
+        } else {
+            nextControls[key] = control;
+        }
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        imageSlotControls: nextControls,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function updateManifestCopySelections(
+    slug: string,
+    changes: Record<string, string | null>,
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const nextSelections = { ...(existingManifest.copySelections ?? {}) };
+    for (const [key, source] of Object.entries(changes)) {
+        if (!key.trim()) continue;
+        if (source === null || source === '') {
+            delete nextSelections[key];
+        } else {
+            nextSelections[key] = source;
+        }
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        copySelections: nextSelections,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function updateManifestLandingImageSets(
+    slug: string,
+    changes: { gallery?: string[] | null; trust?: string[] | null },
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const next = { ...(existingManifest.landingImageSets ?? {}) };
+    const clean = (ids: string[]) => ids.map((s) => s.trim()).filter(Boolean);
+    if (changes.gallery !== undefined) {
+        if (changes.gallery === null || changes.gallery.length === 0) delete next.gallery;
+        else next.gallery = clean(changes.gallery);
+    }
+    if (changes.trust !== undefined) {
+        if (changes.trust === null || changes.trust.length === 0) delete next.trust;
+        else next.trust = clean(changes.trust);
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        landingImageSets: Object.keys(next).length > 0 ? next : undefined,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function updateManifestModelVersionSelections(
+    slug: string,
+    changes: Record<string, string | null>,
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const next = { ...(existingManifest.modelVersionSelections ?? {}) };
+    for (const [groupId, generator] of Object.entries(changes)) {
+        if (!groupId.trim()) continue;
+        if (generator === null || generator === '') {
+            delete next[groupId];
+        } else {
+            next[groupId] = generator;
+        }
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        modelVersionSelections: next,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
+export async function updateManifestFlyerControls(
+    slug: string,
+    controls: { negations: string[]; axes: string[]; models?: string[] },
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        flyerControls: {
+            negations: controls.negations.map((s) => s.trim()).filter(Boolean),
+            axes: controls.axes.map((s) => s.trim()).filter(Boolean),
+            ...(controls.models ? { models: controls.models.map((s) => s.trim()).filter(Boolean) } : {}),
+        },
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
 function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: AssetRecord): CampaignMediaManifest {
     return {
         ...manifest,
@@ -343,9 +514,11 @@ function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: A
             ...manifest.images,
             shipReferences: updateAssetInCollection(manifest.images.shipReferences, updatedRecord),
             hero: updateAssetInCollection(manifest.images.hero, updatedRecord),
+            flyerImages: updateAssetInCollection(manifest.images.flyerImages ?? [], updatedRecord),
             sceneImages: updateAssetInCollection(manifest.images.sceneImages, updatedRecord),
             aestheticConcepts: updateAssetInCollection(manifest.images.aestheticConcepts, updatedRecord),
             documentaryDetails: updateAssetInCollection(manifest.images.documentaryDetails ?? [], updatedRecord),
+            alternateArt: updateAssetInCollection(manifest.images.alternateArt ?? [], updatedRecord),
             designedAdArtifacts: updateAssetInCollection(manifest.images.designedAdArtifacts ?? [], updatedRecord),
             platformCrops: Object.fromEntries(
                 Object.entries(manifest.images.platformCrops).map(([formatKey, records]) => [
@@ -448,6 +621,21 @@ export async function updateAssetCuration(
 
 // ── Media Manifest ─────────────────────────────────────────────────────────
 
+export async function updateAssetRecord(
+    slug: string,
+    updatedRecord: AssetRecord,
+): Promise<AssetRecord> {
+    await saveAssetRecord(slug, updatedRecord);
+
+    const existingManifest = await getMediaManifest(slug);
+    if (existingManifest) {
+        const updatedManifest = updateAssetInManifest(existingManifest, updatedRecord);
+        await saveMediaManifest(updatedManifest);
+    }
+
+    return updatedRecord;
+}
+
 export async function saveMediaManifest(manifest: CampaignMediaManifest): Promise<void> {
     await chatDynamoDocumentClient.send(new PutCommand({
         TableName: TABLE_NAME,
@@ -469,7 +657,25 @@ export async function getMediaManifest(slug: string): Promise<CampaignMediaManif
         ConsistentRead: true,
     }));
     if (!result.Item) return null;
-    return JSON.parse(result.Item.manifestJson as string) as CampaignMediaManifest;
+    const manifest = JSON.parse(result.Item.manifestJson as string) as CampaignMediaManifest;
+    return {
+        ...manifest,
+        selections: manifest.selections ?? { images: {} },
+        imageSelections: manifest.imageSelections ?? {},
+        imageSlotControls: manifest.imageSlotControls ?? {},
+        copySelections: manifest.copySelections ?? {},
+        images: {
+            ...manifest.images,
+            flyerImages: manifest.images.flyerImages ?? [],
+            documentaryDetails: manifest.images.documentaryDetails ?? [],
+            alternateArt: manifest.images.alternateArt ?? [],
+            designedAdArtifacts: manifest.images.designedAdArtifacts ?? [],
+            platformCrops: {
+                ...EMPTY_PLATFORM_CROPS,
+                ...(manifest.images.platformCrops ?? {}),
+            },
+        },
+    };
 }
 
 // ── Asset Binary Storage (DynamoDB fallback when R2 is unavailable) ───────
@@ -624,6 +830,7 @@ function collectManifestAssetIds(manifest: CampaignMediaManifest | null): Set<st
     addAll(manifest.images.aestheticConcepts);
     addAll(manifest.images.documentaryDetails ?? []);
     addAll(manifest.images.designedAdArtifacts ?? []);
+    addAll(manifest.images.alternateArt ?? []);
     Object.values(manifest.images.platformCrops).forEach(addAll);
     if (manifest.videos.tiktokSeed) ids.add(manifest.videos.tiktokSeed.assetId);
     if (manifest.videos.heroExplainer) ids.add(manifest.videos.heroExplainer.assetId);

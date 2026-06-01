@@ -97,6 +97,20 @@ export interface AvailableImageInventory {
     merch: number;
 }
 
+// Phase 3 (IMAGE_GEN_REVAMP_5-26): Copy Forge can now see aggregate source-pool
+// quality so it can write narrative roles aligned with what the pool actually
+// contains (group action vs hero-clean, daylight-only vs varied time-of-day,
+// etc.). Optional — pre-Phase-3 manifests have no metadata to summarize.
+export interface SourcePoolQualitySummary {
+    sampleSize: number;
+    averagePeopleCount: number;
+    bestGroupActionScore: number;
+    bestThemeLegibilityScore: number;
+    compositionFamilyBreakdown: Record<string, number>;
+    timeOfDayBreakdown: Record<string, number>;
+    artisticTreatmentBreakdown: Record<string, number>;
+}
+
 // ─── Copy Forge: input ──────────────────────────────────────────────────────
 
 export interface CopyForgeBriefSlice {
@@ -137,6 +151,8 @@ export interface NormalizedAdInput {
     dossier: CopyForgeDossierSlice | null;
     templateLayouts: Partial<Record<AdFormat, TemplateLayout>>;
     availableImages: AvailableImageInventory;
+    /** Phase 3: aggregate source-pool quality summary. Optional. */
+    sourcePoolQuality?: SourcePoolQualitySummary;
 }
 
 export type CopyForgeInput = NormalizedAdInput;

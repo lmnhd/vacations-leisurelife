@@ -439,11 +439,132 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
     .default({}),
 });
 
+// Stopwords filtered from slug-derived keyword lists. Pure connectors and
+// generic cruise-industry filler are never useful as hard slogan anchors.
+const SLUG_STOPWORDS = new Set([
+  'the', 'a', 'an', 'of', 'and', 'or', 'in', 'at', 'on', 'by', 'for', 'with', 'to',
+  'cruise', 'cruises', 'trip', 'trips', 'voyage', 'voyages', 'sailing', 'sailings',
+]);
+
+const CONTEXTUAL_SEASON_WORDS = new Set([
+  'winter',
+  'spring',
+  'summer',
+  'autumn',
+  'fall',
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+]);
+
+const WARM_WATER_DESTINATION_WORDS = [
+  'caribbean',
+  'bahamas',
+  'mexico',
+  'cancun',
+  'cozumel',
+  'jamaica',
+  'aruba',
+  'curaçao',
+  'curacao',
+  'puerto rico',
+  'san juan',
+  'st maarten',
+  'st. maarten',
+  'tortola',
+];
+
+/**
+ * Extract niche-bearing words from a campaign slug. These are the tokens the
+ * hero slogan MUST anchor to so the ad sells the activity, not "another nice
+ * cruise". For "glass-observatory-winter-sea-watchers" → glass, observatory,
+ * winter, sea, watchers.
+ */
+export function extractSlugContentWords(slug: string): string[] {
+  return slug
+    .split(/[-_]/)
+    .map(w => w.toLowerCase().trim())
+    .filter(w => w.length >= 3 && !SLUG_STOPWORDS.has(w) && !/^\d+$/.test(w));
+}
+
+function campaignHasWarmWaterRoute(campaign: Campaign): boolean {
+  const corpus = [
+    campaign.targetDestination,
+    campaign.matchedDeparturePort,
+    campaign.odysseusItinerarySummary,
+    campaign.odysseusPortsOfCall,
+    campaign.vacationFitRationale,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return WARM_WATER_DESTINATION_WORDS.some((word) => corpus.includes(word));
+}
+
+function seasonIsExplicitCampaignPromise(campaign: Campaign, seasonWord: string): boolean {
+  const promiseCorpus = [
+    campaign.aesthetic,
+    ...(campaign.allowedThemeSignals ?? []),
+    ...(campaign.highlightEvents ?? []),
+    ...(campaign.targetingKeywords ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return promiseCorpus.includes(seasonWord);
+}
+
+function extractCampaignSloganAnchorWords(campaign: Campaign): string[] {
+  const slugWords = extractSlugContentWords(campaign.id);
+  if (!campaignHasWarmWaterRoute(campaign)) {
+    return slugWords;
+  }
+
+  const filtered = slugWords.filter((word) => (
+    !CONTEXTUAL_SEASON_WORDS.has(word) || seasonIsExplicitCampaignPromise(campaign, word)
+  ));
+
+  return filtered.length > 0 ? filtered : slugWords;
+}
+
+/**
+ * Stem-match: a slug word is "present" in a slogan if any word in the slogan
+ * shares its first 4 characters (or full word for short slugs). Handles
+ * plurals and verb forms — "watchers" matches "watch"/"watching"/"watcher".
+ */
+function sloganContainsSlugWord(slogan: string, slugWord: string): boolean {
+  // Tokenize on non-alpha chars to avoid regex escaping fragility.
+  // A slug word matches if any slogan token equals it exactly (short words)
+  // or starts with its 4-char stem (longer words — covers plurals/verb forms).
+  const tokens = slogan.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  const word = slugWord.toLowerCase();
+  const stem = word.length > 4 ? word.slice(0, 4) : word;
+  return tokens.some((t) =>
+    word.length <= 4 ? t === word : t.startsWith(stem),
+  );
+}
+
+// Magic prefix for slug-anchor failures so the caller can treat them as
+// non-tolerable separately from the soft cliché / decisiveness checks.
+const SLUG_ANCHOR_FAILURE_PREFIX = 'SLUG_ANCHOR:';
+
 function checkSloganQuality(
   heroSlogan: string,
   subSlogan: string,
   nicheKeywords: string[] = [],
   isMusicFestival: boolean = false,
+  slugWords: string[] = [],
 ): string[] {
   const failures: string[] = [];
   const lowerSlogans = `${heroSlogan.toLowerCase()} ${subSlogan.toLowerCase()}`;
@@ -515,6 +636,19 @@ function checkSloganQuality(
     failures.push(
       "Hero slogan is too ambient — needs a verb, contrast, or identity anchor beyond soft adjectives",
     );
+  }
+
+  // Check 3.5: Slug anchor — HARD requirement. The hero slogan MUST contain at
+  // least one niche-bearing word from the campaign slug (stem-matched). This
+  // forces the slogan to sell the activity, not generic cruise vibes.
+  // Failures here are prefixed and treated as non-tolerable by the caller.
+  if (slugWords.length > 0) {
+    const matchedSlugWord = slugWords.find((w) => sloganContainsSlugWord(heroSlogan, w));
+    if (!matchedSlugWord) {
+      failures.push(
+        `${SLUG_ANCHOR_FAILURE_PREFIX} heroSlogan must contain at least one word from the campaign slug (stem-matched). Required one of: ${slugWords.join(', ')}.`,
+      );
+    }
   }
 
   // Check 4: Niche anchor — at least one keyword or synonym should appear in combined slogans
@@ -759,6 +893,7 @@ SPECIFIC QUALITY BAR:
 - It must contain a verb, contrast, or identity marker beyond soft adjectives.
 - A slogan like "Soft greens, open seas" is too ambient. "Sail first, spot the green." is the benchmark.
 - The slogan must be ownable by this exact campaign and not interchangeable with generic cruise marketing.
+- CRITICAL: heroSlogan must keep at least one approved slug anchor word from Pass 1. If the existing draft heroSlogan already contains a durable niche word (e.g. "glass", "sea", "watchers"), do NOT change it to a generic window/view slogan. Do not preserve contextual season words when the route/destination makes them misleading.
 - Sub-slogan must sell fast. It should read like a one-breath conversion line, not a literary description written for review.
 - If the sub-slogan sounds more like a magazine deck than a social-media caption, tighten it.
 - ALL SUPPORT COPY (elevator pitch, social captions, ad lines, email subjects) must match the hero line's level of sharpness and ownability. If a phrase could appear in any cruise marketing (e.g., "Botanical vibes, ocean-first"), it is not sharp enough. Rework it until it names or implies this specific audience.
@@ -851,7 +986,16 @@ Leisure Life Interactive Brand Guidelines:
 - Do NOT use generic cruise marketing copy ("Your Adventure Starts Here", "Sail Away").
     `.trim();
 
-  const baseContext = `
+  const slugContentWords = extractCampaignSloganAnchorWords(campaign);
+  const slugAnchorDirective = slugContentWords.length > 0
+    ? `\n!!! HARD REQUIREMENT — SLUG ANCHOR WORDS !!!
+Campaign slug: "${campaign.id}"
+Slug content words: ${slugContentWords.join(", ")}
+heroSlogan MUST contain at least one of these words (stem-matched: "watchers" satisfies via "watch"/"watching"). Two is better. This is the most-enforced rule in the entire brief — the slogan exists to name the niche, not describe a generic cruise. A slogan that fails this check is rejected and the brief is regenerated. Examples of what passes for this campaign: "Glass-side mornings at sea." / "Sea watchers, take the window." / "Observatory light, open water."
+\n`
+    : "";
+
+  const baseContext = `${slugAnchorDirective}
 Theme: ${campaign.name}
 Aesthetic Request: ${campaign.aesthetic || "Determine best fit"}
 Target Audience/Keywords: ${(campaign.targetingKeywords || []).join(", ")}
@@ -945,6 +1089,8 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 - At least some niche expression should come from interpersonal chemistry, posture, wardrobe, or tiny carry-on cues, not only handheld props.
 - Do not let every visual idea rely on the same object repeated over and over; vary between object cue, wardrobe cue, conversational cue, and environmental cue.
 - At least half of the social/video concepts should signal the niche through non-object cues such as seat choice, eye contact, body angle, outfit detail, timing, architecture, or harbor atmosphere rather than a visible game object.
+- messaging.ctaVariants MUST use waitlist-forward language — never booking verbs. ctaBookNow is the primary ad CTA; it must feel like "get on the list", not "buy a ticket". Banned: "Book Now", "Book the Sailing", "Book the Trip", "Reserve a Cabin", "Buy Now", or any phrase implying an open-sale transaction. Preferred: "Get First Access", "Join the Waitlist", "Save My Spot", "Reserve Your Spot", "Claim Your Cabin". The same rule applies to ctaWaitlist.
+- messaging.heroSlogan MUST anchor to the campaign slug content words listed above. Pull one — ideally two — approved niche-bearing words into the heroSlogan, stem-matched (so "watchers" → "watch"/"watching"/"watcher" is fine). Do not force contextual season words when the route/destination makes them misleading. The slogan should make the niche audience feel named and pulled, not sold a generic cruise vibe.
 - If an object cue is used in one concept, the next concepts should deliberately pivot to a different signal family instead of repeating cards, dice, tokens, scorepads, or pins.
 - Preserve calm and restraint, but do not make the campaign feel emotionally empty or solitary; include believable low-pressure human-togetherness where appropriate.
 - If route context exists, lightly use destination or port-day atmosphere where it naturally strengthens the campaign; do not ignore the itinerary completely.
@@ -952,6 +1098,7 @@ CRITICAL MESSAGING AND SOCIAL RULES:
 - Do not invent specific excursions or port details unless the provided route context genuinely supports them.
 - Do not let a real itinerary event, holiday, or seasonal phenomenon quietly hijack the campaign identity unless it is explicitly the core product. Event context may influence atmosphere, but should not override the niche and cruise promise.
 - If an event is referenced, frame it as contextual backdrop rather than a promised onboard experience.
+- If the sailing is in a warm-water destination, never translate calendar winter into ice, snow, alpine cold, polar scenery, heavy winter gear, or cold-weather destination mood unless the route itself supports it.
 - Keep lanyards, table tents, carts, or explicit matching systems out of the aesthetic center unless they are minimized to near-invisible background texture.
 - Avoid naming semi-managed features like borrow shelves, quiet nooks for game selection, or teach-and-play moments as if they are programmed amenities.
 - Prefer language where the niche appears through guests, not infrastructure: a game suggested by a friend, a card passed after dessert, a pocket deck surfacing by the window, a soft laugh over one shared turn.
@@ -1208,13 +1355,19 @@ AUDIO AND NARRATION RULES:
       `[aesthetic-engine:pass1-attempt] END attempt=${attempts} campaign=${campaign.id} elapsedMs=${attemptElapsedMs}`,
     );
 
+    const slugWords = extractCampaignSloganAnchorWords(campaign);
     const sloganFailures = checkSloganQuality(
       normalizedObject.messaging.heroSlogan,
       normalizedObject.messaging.subSlogan,
       campaign.targetingKeywords,
       isMusicFestivalCampaign(campaign),
+      slugWords,
     );
-    if (sloganFailures.length < 2) {
+    // Slug-anchor failures are non-tolerable — the slogan must reference the
+    // activity. Other soft failures (cliché, length, ambient) still tolerate
+    // one slip-through to avoid infinite retry loops on edge briefs.
+    const hasSlugAnchorFailure = sloganFailures.some((f) => f.startsWith(SLUG_ANCHOR_FAILURE_PREFIX));
+    if (!hasSlugAnchorFailure && sloganFailures.length < 2) {
       console.log(
         `[aesthetic-engine] Pass 1 accepted for ${campaign.id} on attempt ${attempts}`,
       );
@@ -1230,6 +1383,31 @@ AUDIO AND NARRATION RULES:
 
   // Fallback if it failed 3 times, keep last result
   const coreAesthetic = pass1Result!.object;
+
+  // Deterministic safety net: if all 3 attempts still produced a heroSlogan
+  // that fails the slug-anchor check, programmatically rewrite it so the
+  // brief NEVER ships a slogan that doesn't name the niche. We prefer to
+  // leave the model's voice intact and only step in as a last resort.
+  {
+    const slugWords = extractCampaignSloganAnchorWords(campaign);
+    if (slugWords.length > 0) {
+      const currentHero = coreAesthetic.messaging.heroSlogan ?? "";
+      const hasAnchor = slugWords.some((w) => sloganContainsSlugWord(currentHero, w));
+      if (!hasAnchor) {
+        // Use the two most distinctive slug words (last two are usually the
+        // niche specifier, e.g. "sea watchers", "sky watchers", "bar club").
+        const headWords = slugWords.slice(-2).map((w) => w.charAt(0).toUpperCase() + w.slice(1));
+        const rewritten = `${headWords.join(" ")}. ${currentHero.trim().replace(/\.$/, "")}.`.trim();
+        // Hard cap at 6 words to preserve the slogan length rule.
+        const trimmed = rewritten.split(/\s+/).slice(0, 6).join(" ").replace(/[.,;:]+$/, "") + ".";
+        console.warn(
+          `[aesthetic-engine] heroSlogan failed slug-anchor after 3 attempts for ${campaign.id}; deterministic rewrite: "${currentHero}" -> "${trimmed}"`,
+        );
+        coreAesthetic.messaging.heroSlogan = trimmed;
+      }
+    }
+  }
+
   options?.recordStageTiming?.("aesthetic-pass1-core", Date.now() - pass1Start);
 
   // PASS 2: Platform Extrapolations
@@ -1325,6 +1503,37 @@ PASS 2 GUARDRAILS:
     "aesthetic-refinement",
     Date.now() - refinementStart,
   );
+
+  // Safety net: refinement must not undo a passing slug anchor that PASS 1
+  // accepted. If refinement stripped the slug word back to a generic slogan,
+  // restore the pre-refinement heroSlogan — it was already quality-gated.
+  {
+    const slugWords = extractCampaignSloganAnchorWords(campaign);
+    if (slugWords.length > 0) {
+      const refined = refinedBrief.messaging.heroSlogan ?? '';
+      const refined_passes = slugWords.some((w) => sloganContainsSlugWord(refined, w));
+      if (!refined_passes) {
+        const pre_refinement = draftBrief.messaging.heroSlogan ?? '';
+        const pre_passes = slugWords.some((w) => sloganContainsSlugWord(pre_refinement, w));
+        if (pre_passes) {
+          console.warn(
+            `[aesthetic-engine] Refinement downgraded heroSlogan from slug-anchored "${pre_refinement}" to generic "${refined}" — restoring pre-refinement slogan.`,
+          );
+          refinedBrief.messaging.heroSlogan = pre_refinement;
+        } else {
+          // Neither passes — apply deterministic rewrite as last resort.
+          const headWords = slugWords.slice(-2).map((w) => w.charAt(0).toUpperCase() + w.slice(1));
+          const rewritten = (headWords.join(' ') + '. ' + refined.trim().replace(/\.$/, '') + '.').trim();
+          const trimmed = rewritten.split(/\s+/).slice(0, 6).join(' ').replace(/[.,;:]+$/, '') + '.';
+          console.warn(
+            `[aesthetic-engine] Refinement heroSlogan "${refined}" fails slug anchor; deterministic rewrite: "${trimmed}"`,
+          );
+          refinedBrief.messaging.heroSlogan = trimmed;
+        }
+      }
+    }
+  }
+
   return refinedBrief;
 }
 
@@ -1517,8 +1726,53 @@ function buildStoryboardCouplingBlock(
   ].join("\n");
 }
 
-// Detect music/festival/open-deck campaign types from keywords or name so we can
-// inject hard niche-identity rules that ban the known generic fallback patterns.
+const EXPLICIT_MUSIC_FESTIVAL_TERMS = [
+  "music",
+  "festival",
+  "band",
+  "concert",
+  "dj",
+  "live music",
+  "vinyl",
+  "playlist",
+  "album",
+  "karaoke",
+  "jazz",
+  "blues",
+  "rock",
+  "roll",
+  "dance",
+  "dancing",
+  "bass",
+  "beat",
+  "groove",
+  "rhythm",
+  "stage",
+  "sound system",
+];
+
+const OPEN_DECK_MUSIC_TERMS = [
+  "deck party",
+  "open deck party",
+  "open-deck party",
+  "dancing on deck",
+  "deck dancing",
+  "deck concert",
+  "open-deck concert",
+  "open deck festival",
+  "open-deck festival",
+  "open deck music",
+  "open-deck music",
+];
+
+function containsMusicTerm(haystack: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(haystack);
+}
+
+// Detect explicit music/festival campaign types from keywords or name so we can
+// inject hard niche-identity rules without contaminating quiet deck/observation
+// campaigns that only mention listening, sound, or open deck as cruise context.
 export function isMusicFestivalCampaign(campaign: Campaign): boolean {
   const haystack = [
     campaign.name,
@@ -1527,18 +1781,10 @@ export function isMusicFestivalCampaign(campaign: Campaign): boolean {
   ]
     .join(" ")
     .toLowerCase();
-  return [
-    "music",
-    "festival",
-    "open deck",
-    "open-deck",
-    "band",
-    "concert",
-    "dj",
-    "live music",
-    "vinyl",
-    "listening",
-  ].some((term) => haystack.includes(term));
+  return (
+    EXPLICIT_MUSIC_FESTIVAL_TERMS.some((term) => containsMusicTerm(haystack, term))
+    || OPEN_DECK_MUSIC_TERMS.some((term) => containsMusicTerm(haystack, term))
+  );
 }
 
 const MUSIC_FESTIVAL_LINT_KEYWORDS = [
@@ -1636,10 +1882,10 @@ export function buildLintComplianceBlock(
     "",
     "1. NICHE KEYWORD INJECTION (prevents weak_niche_signal and identity_legibility_too_low failures):",
     `   Campaign niche keywords: ${kwDisplay}`,
-    '   HARD RULE: At least 4 of the 6 landing stills MUST embed at least one of these keywords (or a direct synonym) inside the "imagePrompt" field OR the "subjectAction" field.',
-    '   The remaining 2 stills must include a niche keyword in either "environmentDetails" OR "composition".',
-    "   Zero-keyword stills (no niche term in any of the 4 fields) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.",
-    `   Self-check per still: does imagePrompt OR subjectAction contain at least one of: ${kwDisplay}?`,
+    '   HARD RULE: At least 4 of the 6 landing stills MUST embed at least one of these keywords (or a direct synonym) directly inside the "imagePrompt" field. The "subjectAction" field must ALSO contain a niche term for those same stills — it cannot substitute for imagePrompt.',
+    '   The remaining 2 stills must include a niche keyword in "subjectAction" AND at least one of "environmentDetails" or "composition".',
+    "   Zero-keyword stills (no niche term in imagePrompt) are acceptable for AT MOST 2 of the 6 stills. More than 2 causes a blocking failure.",
+    `   Self-check per still: does imagePrompt itself (not just subjectAction) contain at least one of: ${kwDisplay}?`,
     ...vocabularyLines,
     "",
     "2. STILL USAGE FIELD DISTRIBUTION (prevents missing_role_coverage failure):",
@@ -1737,7 +1983,7 @@ The niche does not need to dominate the frame, but it must be present and identi
 For this campaign, niche presence means: ${communityExpression.belongingSignals.join("; ")}.
 If a scene cannot include at least one of those signals naturally, replace that scene with one that can.
 A scene that reads as "any luxury cruise" rather than "this specific community's cruise" has failed.
-FIELD-LEVEL REQUIREMENT: For every landing still spec, the niche identity must appear in the "imagePrompt" field OR the "subjectAction" field — not just in supporting fields. An automated scanner reads imagePrompt and subjectAction first; stills that carry niche identity only in supplementary fields still register as weak or absent. Embed a campaign-specific term, behavior, or belonging signal directly in imagePrompt and subjectAction.
+FIELD-LEVEL REQUIREMENT: For every landing still spec, the niche identity must appear in the "imagePrompt" field itself — not just in subjectAction or supporting fields. An automated scanner reads imagePrompt first; a niche term present only in subjectAction still registers as weak. Embed a campaign-specific term, behavior, or belonging signal in imagePrompt first, then mirror or extend it in subjectAction.
 
 ## SOCIAL WARMTH FLOOR
 - At least 6 of the 10 scenes must show TWO OR MORE people in relaxed proximity — not just silhouettes or tiny figures.
@@ -1789,8 +2035,10 @@ You are not generating from a blank slate. The unresolved remediation constraint
 - These are NOT storyboard shots. They are conversion-oriented still-image blueprints.
 - Every still must read instantly as a desirable cruise vacation image even with no motion and no sequence context.
 - Prioritize headline-safe composition, clean focal hierarchy, and breathing room for copy.
-- Keep activity density low. One dominant emotional beat only.
-- Prefer 1-3 people max. No dense crowds. No multi-action scenes.
+- HERO stills (HERO_PRIMARY, HERO_ALT): headline-safe, activity density low, one dominant emotional beat, 1–3 people, clean copy space — these serve the hero-image pool.
+- CAMPAIGN ACTION stills (CAMPAIGN_ACTION, EDITORIAL_WIDE_A, EDITORIAL_WIDE_B): 4–6 people in theme-specific group activity, visible niche legibility required — these are the primary ad-source pool. Activity density may be higher.
+- DOCUMENTARY DETAIL stills (DOCUMENTARY_DETAIL, INTIMATE): tight texture, hands, objects, gestures, proof cues — 1–3 people or no people.
+- SCENE IMAGE stills (SCENE_IMAGE, FLEX): broad group scene, 4–6 people, eligible as static imagery for animated-type video layouts.
 - At least half of the stills should communicate paired or small-cluster togetherness rather than pure solitude.
 - Across the still set, vary ages, skin tones, facial features, and pairings in a natural way that fits the campaign's intended audience.
 - At least 2 stills must be clearly suitable for primary or alternate landing-page hero use. Assign these usage = "hero_primary" or usage = "hero_alt".
@@ -1821,13 +2069,13 @@ IMPORTANT: do not write all 6 stills then retroactively patch niche terms. Embed
 
 ## LANDING STILL ROLE SCAFFOLD — GENERATE IN THIS SLOT ORDER
 
-Generate exactly 6 landing stills in this slot order. Each slot specifies the required usage value and composition constraint:
-- Slot 1 (HERO_PRIMARY): usage="hero_primary" — wide composition — niche term required in imagePrompt and subjectAction — no cabin/window setup
-- Slot 2 (HERO_ALT): usage="hero_alt" — wide or medium composition — niche term required in imagePrompt and subjectAction — use a different location family than Slot 1
-- Slot 3 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required in both fields — must NOT use railing, balcony, or horizon-gaze fallback
-- Slot 4 (EDITORIAL_WIDE): usage="concept" or "email_header" — composition must NOT contain intimate/close/tight/detail — niche term required in both fields — must use a different location family and social unit than Slot 3
-- Slot 5 (INTIMATE): usage="concept" — composition MUST contain "intimate", "close", "tight", or "detail" — niche term required in both fields — must NOT be a candlelit dining fallback
-- Slot 6 (FLEX): usage="hero_alt", "email_header", "social_square", or "concept" — niche term required in imagePrompt or subjectAction — choose the least-used location family so far and avoid repeating the dominant composition family
+Generate exactly 6 landing stills in this slot order. Each slot specifies the slotRole, required usage value, people count, and composition constraint:
+- Slot 1 (HERO_PRIMARY): slotRole="HERO_PRIMARY" — usage="hero_primary" — 1–3 people — wide composition — niche term required in imagePrompt and subjectAction — no cabin/window setup
+- Slot 2 (HERO_ALT): slotRole="HERO_ALT" — usage="hero_alt" — 1–3 people — wide or medium composition — niche term required in imagePrompt and subjectAction — use a different location family than Slot 1
+- Slot 3 (CAMPAIGN_ACTION): slotRole="CAMPAIGN_ACTION" — usage="concept" or "social_square" — 4–6 people in visible theme-specific group activity — composition must NOT contain intimate/close/tight/detail — niche legibility required in both fields — must NOT use railing, balcony, or horizon-gaze fallback — this still is the primary ad-source candidate
+- Slot 4 (CAMPAIGN_ACTION): slotRole="CAMPAIGN_ACTION" — usage="concept" or "email_header" — 4–6 people — different activity, location family, and social energy than Slot 3 — niche legibility required in both fields — must NOT repeat the composition family from Slot 3
+- Slot 5 (DOCUMENTARY_DETAIL): slotRole="DOCUMENTARY_DETAIL" — usage="concept" — 1–3 people or no people — composition MUST contain "intimate", "close", "tight", or "detail" — tight texture or proof cue — niche cue must be the reason the frame exists — must NOT be a candlelit dining fallback
+- Slot 6 (SCENE_IMAGE): slotRole="SCENE_IMAGE" — usage="hero_alt", "email_header", "social_square", or "concept" — 4–6 people in a broad group scene — eligible as static still for animated-type video layouts — niche term required in imagePrompt or subjectAction — choose the least-used location family so far
 
 ## SCENE RULES
 - mood field: name the VACATION emotion (e.g. "sunset wonder", "playful discovery", "golden hour magic"), never a work emotion (e.g. "focused", "rigorous", "purposeful")
@@ -1840,20 +2088,23 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - Rotate cue families across the scene library: interpersonal chemistry, posture, wardrobe detail, architectural framing, harbor atmosphere, and only occasional lightweight object cues.
 - At least half of the scene library should communicate the niche without requiring a visible niche object as the center of the frame.
 - At least half of the scene library should show ambient togetherness, shared attention, or easy companionship rather than isolated solo presence.
-- SOLO/PAIR GRAMMAR: The default social unit for this campaign is ONE or TWO people. Solos and pairs are the campaign's natural scale. Trios and larger groups are the exception, not the rule.
-- Allow a maximum of 2 scenes across the entire set (scenes + stills combined) to show 3 or more people together. All other specs must use solo or pair framing.
-- Specifically ban from scene descriptions: "a small group," "small trio," "a cluster of friends," "cabana-friend-group," "groups smiling and pointing." These read as general vacation marketing, not this campaign's low-pressure recognition system.
-- One family-adjacent moment (parent-teen pair, mixed-age pair) is allowed and may count as one of the pair slots. It should feel incidental and organic, not like a demographic inclusion marker.
+- GROUP ACTION GRAMMAR: The default social unit for source images and scene-library shots is 4–6 people doing something specific to this campaign's niche. At least one scene should use a larger social frame — up to 10 people — showing group atmosphere and energy. Solo and pair frames are allowed but capped: no more than 3 of the combined 16 specs (10 scenes + 6 stills) should use solo or pair framing as the dominant visual grammar.
+- ANIMATED TYPE VIDEO RULE: Campaign videos use animated type layouts over static source images. The system does not animate people inside generated images. Do not write scene descriptions to be motion-safe. People may be foreground, active, gesturing, and expressive.
+- A family-adjacent or mixed-age cluster is welcome and should feel organic and theme-native, not like a demographic inclusion marker.
+- Each image set must include planned age and ethnic variety across all 16 specs. A single repeated couple archetype appearing in more than 3 specs is a blocker.
 - Across the scene library, vary who appears in frame so the campaign does not imply one narrow default guest identity.
 - If one scene uses a card, die, token, notebook, pin, or similar object cue, the next scene should pivot away from that family and let people, ship space, or destination atmosphere carry the scene.
 - Favor easy social recognition, seat choice, timing, clothing texture, rail-side pauses, and window-side intimacy over repeated prop beats.
 - Camera angles vary: wide establishing, low-angle hero, overhead crane, eye-level tracking, intimate close-up, dutch angle, POV.
-- For VIDEO scene-library use, humans should not be the ONLY subject — ship, sea, and architecture should share or lead the frame.
-- However, backgrounded pairs or small clusters of relaxed guests ARE allowed and encouraged. The goal is "people enjoying a ship," not "empty ship."
-- Avoid handheld hero props in video-oriented scenes: no mugs, cups, cocktails, glasses, notebooks, binoculars, or small objects held close to camera when the scene is likely to be animated.
-- PHONE EXCEPTION: A phone held at mid-distance showing a plant photo to a friend is an allowed still-image cue. For video-oriented scenes, the phone should be static and backgrounded, not animated.
+- ANIMATED TYPE VIDEO RULE: Campaign videos use animated type layouts over static source images. The system does not animate people inside a generated image. Scene images may lead with people, active groups, gesturing hands, and foreground activity. Do not mute image energy for motion safety.
+- Props and objects (mugs, glasses, phones, notebooks, binoculars) are allowed in scene images. The previous handheld-prop ban applied only to image-to-video animation, which is no longer the campaign video format.
 - referenceCategory must be one of: ${SHIP_REFERENCE_CATEGORIES.join(", ")}. Spread scenes across at least 6 different categories.
-- DESTINATION OFFBOARD RULE: If the user provided a specific Destination below, YOU MUST include at least one still image and one storyboard scene using 'offboard_excursion' that captures the essence of that specific location (e.g. tourist exploring a ruin, beautiful recognizable beach, local culture, mountain, port city skyline). Do not use 'offboard_excursion' for generic ocean waves - it MUST be land or local culture focused.
+- CAMPAIGN-FIT GATES: certain scene categories are conditional on being theme-native or visually specific. Do not include them by habit.
+  - 'theater' scenes are only included if the campaign is theme-native to performance, music, dance, or storytelling. For general campaigns, skip 'theater' entirely.
+  - 'nightclub' scenes are only included if the campaign is theme-native to nightlife, music, or after-hours culture. For general campaigns, skip 'nightclub' entirely.
+  - 'offboard_excursion' scenes are only included if the destination is visually specific and campaign-relevant (e.g. a recognizable ruin, beach, mountain, port city, or local culture moment). Skip 'offboard_excursion' if the destination is generic ocean, unspecified, or not visually distinctive — do not pad the set with generic shoreline imagery.
+- RAIL/TABLE/WINDOW CAP: rail-side, balcony, window, and table-side compositions are cruise-native but become repetitive. No more than 3 of the combined 16 specs (10 scenes + 6 stills) may use rail, balcony, window, or table-side as the dominant composition family.
+- GROUP-ACTION FLOOR: at least 4 of the 10 scenes must be group-action scenes — 4–6 people in theme-specific shared activity that makes the niche visible. These are the primary ad-source candidates.
 - Cruise-native moments to preserve: ${plausibility.cruiseNativeMoments.join("; ") || "sunset deck observation; rail-side conversation; ocean-facing stillness; shared discovery at the horizon"}.
 - Believable niche-enhanced moments: ${plausibility.nicheEnhancedMoments.join("; ") || "guided noticing; simple field notes; one lightweight sample jar; binocular or notebook level cues"}.
 - Implausible literalizations to ban: ${plausibility.implausibleLiteralizations.join("; ") || "microscope lab on open deck; classroom workshop staging; equipment-heavy field station setups; conference-style demos"}.
@@ -1870,7 +2121,7 @@ Generate exactly 6 landing stills in this slot order. Each slot specifies the re
 - Prefer non-object signals first: eye contact, movement, spacing, clothing detail, architecture, harbor color, sea air, timing, and emotional cadence.
 - If an object cue is used, it must be incidental and must not be repeated as the signature beat of consecutive scenes.
 - For scene-library prompts intended for storyboard video, avoid foreground hands, close handheld objects, mugs, cups, glasses, and face-dominant portrait framing.
-- Style suffix to include in every prompt: "observational travel photography, natural available light, 35mm film grain, Fuji Velvia warmth, casual editorial, mid-distance candid framing"
+- Style suffix to include in every prompt: "observational travel photography, natural available light, casual editorial, mid-distance candid framing"
 - Ship-specific visual language: polished teak promenade rails, curved ship-hull portholes with sea light, Windjammer Café window-side seating, Centrum atrium glass elevators, pool deck sun loungers with ocean beyond. Reference these to anchor images in ship reality rather than generic cruise or resort visual language.
 - AVOID in style suffix and prompts: "aspirational," "cinematic bokeh," "f/1.8," "golden hour warmth" as defaults. These push output toward generic premium-travel finish. Use natural mid-day ship light, overcast sea light, or late-afternoon deck light instead.
 - BANNED WORDS in imagePrompt: "participant", "conduct", "deploy", "adjust", "conference", "training", "corporate", "business", "focus", "analyze", "study", "examine", "monitor", "record", "clipboard", "whiteboard", "presentation", "organized", "structured", "planter", "hanging greenery", "tropical foliage", "resort pool", "palm-lined".

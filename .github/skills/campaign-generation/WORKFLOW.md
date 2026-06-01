@@ -51,6 +51,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 1. **Visual Strategy:** Trigger generation of the aesthetic brief via the agent job orchestrator.
    - Run: `npx tsx scripts/enqueue-and-run-brief.ts <slug>` (uses `campaign_brief_generate` workflow, `stopBeforeMedia: true`)
    - This auto-generates the aesthetic bundle, action anchors, landing still bible, and production bible.
+   - **IMPORTANT — two different "Regenerate" actions exist:** The "Regenerate Brief" button inside the pre-media lint panel only regenerates the 6 landing stills (calls `regenerateLandingStills`). It does NOT touch `messaging.heroSlogan`, `ctaVariants`, or any other core aesthetic field. To regenerate the full brief (messaging, colors, identity), you must run `npx tsx scripts/enqueue-and-run-brief.ts <slug>` or use the full brief generation flow in Brief Studio — not the lint panel button.
 2. **Brief Engine Auto-Lint:** The orchestrator validates the brief internally.
    - **Check:** Does the visual plan include actual ship representation? Is it distinct from generic cruise marketing? Are the colors/vibes aligned with the niche without becoming costume parody?
    - If `blockerCount > 0` or structural anchor violations exist, generation aborts. If `warningCount > 0` (Ã¢â€°Â¤4 tolerated content violations), it continues but flags downstream.

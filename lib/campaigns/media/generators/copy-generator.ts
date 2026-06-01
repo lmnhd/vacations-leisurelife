@@ -96,13 +96,33 @@ Generate copy that is niche-native, avoids generic cruise tropes, matches the ${
 
   const { content } = await callLLM(model, userPrompt, {
     systemPrompt,
-    maxTokens: 4000,
+    maxTokens: 8000,
     temperature: 0.8,
   });
 
-  // Parse the JSON response — strip any markdown fencing if present
+  // Parse the JSON response — strip any markdown fencing if present, then
+  // attempt basic repair for the most common LLM JSON formatting error:
+  // a missing comma between adjacent string array elements.
   const jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  const parsed = JSON.parse(jsonStr) as GeneratedCopy;
+  let parsed: GeneratedCopy;
+  try {
+    parsed = JSON.parse(jsonStr) as GeneratedCopy;
+  } catch (firstErr) {
+    // Repair: "item1" "item2" (missing comma) → "item1","item2"
+    const repaired = jsonStr
+      .replace(/"([ \t\r\n]+)"/g, '","')   // adjacent quoted strings
+      .replace(/,(\s*[}\]])/g, '$1');        // trailing commas before } or ]
+    try {
+      console.warn('[copy-generator] Applied JSON repair after parse failure:', firstErr instanceof Error ? firstErr.message : String(firstErr));
+      parsed = JSON.parse(repaired) as GeneratedCopy;
+    } catch {
+      throw new Error(
+        `[copy-generator] Failed to parse platform copy JSON even after repair. ` +
+        `Original error: ${firstErr instanceof Error ? firstErr.message : String(firstErr)}. ` +
+        `First 200 chars: ${jsonStr.slice(0, 200)}`,
+      );
+    }
+  }
 
   return parsed;
 }

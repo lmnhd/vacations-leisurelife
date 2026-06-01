@@ -30,16 +30,16 @@ import {
 const MODEL_TO_GENERATOR: Record<ModelName, GeneratorService> = {
     [ModelName.CLAUDE_4_OPUS]: 'claude4_opus',
     [ModelName.CLAUDE_4_SONNET]: 'claude4_sonnet',
-    [ModelName.GPT_5_HIGH]: 'gpt4o',
-    [ModelName.GPT_5_MEDIUM]: 'gpt4o',
-    [ModelName.GPT_5_INSTANT]: 'gpt4o',
+    [ModelName.GPT_5_HIGH]: 'gpt5',
+    [ModelName.GPT_5_MEDIUM]: 'gpt5_mini',
+    [ModelName.GPT_5_INSTANT]: 'gpt5_mini',
     [ModelName.GEMINI_3_PRO]: 'gemini3_pro',
     [ModelName.GEMINI_3_FLASH]: 'gemini3_flash',
     [ModelName.GEMINI_3_FLASH_LITE]: 'gemini3_flash_lite',
     [ModelName.LLAMA_4_MAVERICK]: 'llama4',
-    [ModelName.LEGACY_CHAT]: 'gpt4o',
-    [ModelName.LEGACY_EXTRACTION]: 'gpt4o',
-    [ModelName.LEGACY_FALLBACK]: 'gpt4o',
+    [ModelName.LEGACY_CHAT]: 'gpt5_mini',
+    [ModelName.LEGACY_EXTRACTION]: 'gpt5_mini',
+    [ModelName.LEGACY_FALLBACK]: 'gpt5_mini',
 };
 
 /**
@@ -184,6 +184,31 @@ export const DALLE_CONFIG = {
     quality: 'hd' as const,
     style: 'natural' as const,
     responseFormat: 'b64_json' as const,
+} as const;
+
+// ── OpenAI gpt-image-2 Settings ──────────────────────────────────────────────
+// Second image backend (alongside Nano-Banana). Square flyers render at 1024²
+// for economy (decision 2026-05-31). Aspect → pixel size below; quality/response
+// are config knobs because the exact gpt-image-2 enums are still being confirmed
+// against the live API.
+
+export const GPT_IMAGE_2_CONFIG = {
+    apiBase: 'https://api.openai.com/v1',
+    endpoint: '/images/generations',
+    model: 'gpt-image-2' as const,
+    // Quality enum is the gpt-image-1 lineage: 'low' | 'medium' | 'high' | 'auto'
+    // (NOT 'standard'/'high' as some 3rd-party docs claim — verified 2026-05-31).
+    // Observed 1024² latency: low ≈ 40s, medium ≈ 61s, high > 110s. 'medium' is
+    // the quality/latency balance for flyer comparison; bump to 'high' if needed.
+    quality: 'medium' as const,
+    // Pipeline aspect vocabulary → gpt-image-2 supported pixel sizes.
+    sizeForAspect: {
+        '1:1': '1024x1024',
+        '16:9': '1792x1024',
+        '9:16': '1024x1792',
+    } as Record<string, string>,
+    maxAttempts: 3,
+    retryDelayMs: 1500,
 } as const;
 
 // ── Replicate API Settings (MusicGen) ───────────────────────────────────────────

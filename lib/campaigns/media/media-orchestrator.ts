@@ -7,7 +7,9 @@ import {
     CampaignMediaManifest,
     MediaGenerationJob,
     ImageFormat,
+    ProductionBuildLintIssue,
 } from '../schema';
+import type { GeneratorService } from '../schema';
 import {
     saveMediaJob,
     updateMediaJobStatus,
@@ -18,6 +20,8 @@ import {
 } from './media-store';
 import { storeAsset, getAssetUrl } from './storage-client';
 import { generateAestheticConcepts, generateSceneImages } from './generators/stability-generator';
+import { generateFlyerImages } from './generators/flyer-generator';
+import { deriveBriefAnchors, DEFAULT_FLYER_NEGATIONS, DEFAULT_FLYER_VARIATION_AXES } from './generators/flyer-prompt';
 import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
@@ -29,6 +33,7 @@ import { generateAmbientNarration, generateHypeClip } from './generators/elevenl
 import { generateThemeMusic } from './generators/replicate-music-generator';
 import { generateDesignedAdArtifactPack, generateLegacyPremiumDisplayAd } from './generators/ad-artifact-generator';
 import { generateTemplatedAdArtifactPack } from './generators/templated-ad-generator';
+import { generateHtmlAdArtifacts } from './generators/html-ad-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { scoreTikTokVideoReadiness } from './lint/video-lint';
 import { inferTikTokFormat } from './generators/tiktok-formats/index';
@@ -42,8 +47,12 @@ import {
     importHeroAssetsFromReferences,
     importShipReferenceAssets,
 } from './ship-reference-service';
+import { bindReferencesToScenes } from './scene-reference-binding';
+import { computeSourceQuality, computeSourceQualityForAsset } from './source-quality';
+import { migrateManifestRoles } from './asset-role-migration';
+import { lintVisualCompass } from './visual-compass-lint';
 import { randomUUID } from 'crypto';
-import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService } from './media-pipeline-config';
+import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService, modelNameToGeneratorService, MEDIA_LLM_CONFIG } from './media-pipeline-config';
 import { assertProbeGateReady } from './probe-gate';
 import { runSceneProbeLoop } from './probe-engine';
 import { type VideoModelPresetId, getActiveVideoGeneratorService } from './video-models';
@@ -77,6 +86,11 @@ export class MediaReadinessError extends Error {
 
 function describeUnknownError(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+}
+
+function summarizeVisualCompassIssue(issue: ProductionBuildLintIssue): string {
+    const details = issue.details ? ` ${issue.details}` : '';
+    return `[visual-compass/${issue.severity}] ${issue.code}: ${issue.message}${details}`;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -313,14 +327,18 @@ async function uploadAndRecord(
     mimeType: string,
     tags: string[],
     dims?: { width: number; height: number },
-    duration?: number
+    duration?: number,
+    // Phase 2 (IMAGE_GEN_REVAMP_5-26): optional record extras for fields not
+    // covered by the positional API (e.g., preservedFeaturesReported).
+    extras?: Partial<AssetRecord>,
 ): Promise<AssetRecord> {
     // storeAsset routes to R2 when configured, falls back to DynamoDB or placeholder.
     const url = await storeAsset(slug, assetId, fileName, buffer, mimeType);
-    const record = makeAssetRecord(
+    const base = makeAssetRecord(
         assetId, assetType, url, generator, prompt,
         buffer.length, mimeType, tags, dims, duration
     );
+    const record: AssetRecord = extras ? { ...base, ...extras } : base;
     await saveAssetRecord(slug, record);
     return record;
 }
@@ -333,6 +351,13 @@ async function downloadAssetBuffer(url: string): Promise<Buffer> {
 
     return Buffer.from(await response.arrayBuffer());
 }
+
+// How many flyer images (slug-prompt single-image "flyers") to generate per run.
+// Set AD_FLYER_COUNT=0 to disable the flyer path entirely.
+const AD_FLYER_COUNT = (() => {
+    const raw = Number(process.env.AD_FLYER_COUNT);
+    return Number.isFinite(raw) && raw >= 0 ? Math.floor(raw) : 6;
+})();
 
 async function runWithJob(
     slug: string,
@@ -482,6 +507,7 @@ export async function runMediaGeneration(
         const warnings: string[] = [];
         const shipReferenceRecords: AssetRecord[] = [];
         const heroRecords: AssetRecord[] = [];
+        const flyerRecords: AssetRecord[] = [];
         const sceneImageRecords: AssetRecord[] = [];
         const conceptRecords: AssetRecord[] = [];
         const documentaryDetailRecords: AssetRecord[] = [];
@@ -526,8 +552,23 @@ export async function runMediaGeneration(
                     const result = await generateDesignedAdArtifactPack(slug, brief!, campaign, {
                         includeDesignedAds: false,
                     });
-                    documentaryDetailRecords.push(...result.documentaryDetails);
-                    return result.documentaryDetails;
+                    const stampedRecords = await Promise.all(result.documentaryDetails.map(async (record) => {
+                        const next: AssetRecord = {
+                            ...record,
+                            eligibilityRole: record.eligibilityRole ?? 'source.theme_detail',
+                            sourceQuality: record.sourceQuality ?? computeSourceQualityForAsset({
+                                assetId: record.assetId,
+                                promptUsed: record.promptUsed,
+                                tags: record.tags,
+                                brief,
+                                roleHint: 'documentary detail theme proof',
+                            }),
+                        };
+                        await saveAssetRecord(slug, next);
+                        return next;
+                    }));
+                    documentaryDetailRecords.push(...stampedRecords);
+                    return stampedRecords;
                 }, errors)
             );
         }
@@ -569,8 +610,68 @@ export async function runMediaGeneration(
                             ? await importHeroAssetsFromReferences(slug, campaign, brief!, availableReferenceCandidates, 5)
                             : await importHeroAssetsFromReferences(slug, campaign, brief!, [], 5);
 
-                    heroRecords.push(...selectedHeroRecords);
-                    return selectedHeroRecords;
+                    const stampedHeroRecords = await Promise.all(selectedHeroRecords.map(async (record) => {
+                        const next: AssetRecord = {
+                            ...record,
+                            eligibilityRole: record.eligibilityRole ?? 'source.hero_clean',
+                            sourceQuality: record.sourceQuality ?? computeSourceQualityForAsset({
+                                assetId: record.assetId,
+                                promptUsed: record.promptUsed,
+                                tags: record.tags,
+                                brief,
+                                roleHint: 'headline-safe hero image',
+                            }),
+                        };
+                        await saveAssetRecord(slug, next);
+                        return next;
+                    }));
+
+                    heroRecords.push(...stampedHeroRecords);
+                    return stampedHeroRecords;
+                }, errors)
+            );
+        }
+
+        // Flyer images — the slug-prompt single-image "flyer" pool. First-class
+        // section (manifest.images.flyerImages), never auto-used by ads; the
+        // operator selects them per use point. Generated with the finalized
+        // negation rules + variation axes from /tests/flyer-lab.
+        if (AD_FLYER_COUNT > 0 && shouldRunAsset('flyer_image', resolvedOptions.assetTypes)) {
+            group1Promises.push(
+                runWithJob(slug, 'flyer_image', getMediaImageGeneratorService(), 'slug-prompt flyer images', async () => {
+                    // Per-campaign flyer controls edited in /tests/media-generation;
+                    // fall back to the finalized code defaults when unset.
+                    const controls = existingManifest?.flyerControls;
+                    const axes = controls?.axes?.length ? controls.axes : DEFAULT_FLYER_VARIATION_AXES;
+                    const negations = controls?.negations?.length ? controls.negations : DEFAULT_FLYER_NEGATIONS;
+                    // MULTI_MODEL_IMAGES: active image models (per-campaign). Omitted
+                    // ⇒ primary backend only (single-model, unchanged behavior).
+                    const models = controls?.models as GeneratorService[] | undefined;
+                    const anchors = deriveBriefAnchors({
+                        themeName: brief?.themeName,
+                        visual: { aestheticLabel: brief?.visual?.aestheticLabel },
+                    }).map((a) => a.text);
+                    const { images, warnings } = await generateFlyerImages(slug, {
+                        count: axes.length, // one variant group per variation axis
+                        anchors,
+                        axes,
+                        negations,
+                        models,
+                    });
+                    const records: AssetRecord[] = [];
+                    for (const img of images) {
+                        const rec = await uploadAndRecord(
+                            slug, img.assetId, 'flyer_image', img.generator,
+                            img.prompt, img.buffer, img.fileName, 'image/png',
+                            ['flyer', 'single_image'], { width: 1080, height: 1080 },
+                            undefined,
+                            { eligibilityRole: 'source.flyer', variantGroupId: img.variantGroupId },
+                        );
+                        records.push(rec);
+                    }
+                    if (warnings.length > 0) errors.push(...warnings);
+                    flyerRecords.push(...records);
+                    return records;
                 }, errors)
             );
         }
@@ -584,7 +685,18 @@ export async function runMediaGeneration(
                         const rec = await uploadAndRecord(
                             slug, img.assetId, 'aesthetic_concept', getMediaImageGeneratorService(),
                             img.prompt, img.buffer, img.fileName, 'image/png',
-                            ['concept', 'moodboard'], { width: 1080, height: 1080 }
+                            ['concept', 'moodboard'], { width: 1080, height: 1080 },
+                            undefined,
+                            {
+                                eligibilityRole: 'source.editorial_alt',
+                                sourceQuality: computeSourceQualityForAsset({
+                                    assetId: img.assetId,
+                                    promptUsed: img.prompt,
+                                    tags: ['concept', 'moodboard'],
+                                    brief,
+                                    roleHint: 'editorial alternate concept',
+                                }),
+                            },
                         );
                         records.push(rec);
                     }
@@ -615,7 +727,7 @@ export async function runMediaGeneration(
 
         if (shouldRunAny(['ad_creative', 'carousel_slide', 'email_header'], resolvedOptions.assetTypes)) {
             group1Promises.push(
-                runWithJob(slug, 'ad_creative', 'gpt4o', 'platform copy', async () => {
+                runWithJob(slug, 'ad_creative', modelNameToGeneratorService(MEDIA_LLM_CONFIG.platformCopy), 'platform copy', async () => {
                     const generatedCopy = await generatePlatformCopy(brief!);
                     copyCarouselSlides = generatedCopy.carouselSlides;
                     copyAdVariants = generatedCopy.adVariants;
@@ -625,7 +737,7 @@ export async function runMediaGeneration(
                     // Store copy as a JSON asset
                     const copyBuffer = Buffer.from(JSON.stringify(generatedCopy, null, 2));
                     const rec = await uploadAndRecord(
-                        slug, 'copy_platform_set', 'ad_creative', 'gpt4o',
+                        slug, 'copy_platform_set', 'ad_creative', modelNameToGeneratorService(MEDIA_LLM_CONFIG.platformCopy),
                         'platform copy batch', copyBuffer, 'copy/platform_captions.json',
                         'application/json', ['copy', 'captions']
                     );
@@ -801,23 +913,88 @@ export async function runMediaGeneration(
                         return [];
                     }
 
-                    const sceneImages = await generateSceneImages(
+                    // Phase 2 (IMAGE_GEN_REVAMP_5-26): bind specific reference asset IDs
+                    // and must-preserve ship features to each scene before generation.
+                    // Idempotent — scenes that already carry referenceAssetIds are left alone.
+                    const boundScenes = bindReferencesToScenes(
                         scenesToGenerate,
+                        sceneReferenceCandidates,
+                        manifestReferenceRecords,
+                    );
+
+                    const sceneImages = await generateSceneImages(
+                        boundScenes,
                         sceneReferenceCandidates,
                         campaign.shipTarget || 'TBD',
                         brief,
                         brief?.visual.plausibilityFramework.allowedProps.slice(0, 5) ?? [],
+                        manifestReferenceRecords,
                     );
+                    // Phase 2: map each generated image back to its bound scene so
+                    // preservedFeaturesReported can be stamped declaratively on the record.
+                    // Phase 5 visual-compass lint will replace this declarative value with
+                    // a vision-verified subset.
+                    // Phase 3: also compute SourceQualityMetadata from the scene + brief
+                    // and stamp it onto the AssetRecord. Drives Copy Forge selection and
+                    // production-build lint.
+                    const sceneById = new Map(boundScenes.map((s) => [s.sceneId, s]));
                     const records: AssetRecord[] = [];
+                    // Phase 8 (IMAGE_GEN_REVAMP_5-26): track reference-fetch failures
+                    // across the whole batch so we can mark the manifest partial and
+                    // make the gap visible to the operator + visual-compass lint.
+                    const referenceFetchFailures: Array<{ sceneId: string; error: string }> = [];
                     for (const img of sceneImages) {
+                        const bound = sceneById.get(img.sceneId);
+                        const baseTags = ['scene', img.sceneId];
+                        const referenceTag =
+                            img.referenceStatus === 'reference_applied' ? 'reference_applied' :
+                            img.referenceStatus === 'reference_fetch_failed' ? 'reference_unavailable' :
+                            'no_reference_available';
+                        const tags = [...baseTags, referenceTag];
+                        if (img.referenceStatus === 'reference_fetch_failed') {
+                            referenceFetchFailures.push({
+                                sceneId: img.sceneId,
+                                error: img.referenceFetchError ?? 'unknown',
+                            });
+                        }
+                        const preservedFeaturesReported = bound?.mustPreserveShipFeatures;
+                        const sourceQuality = bound && brief
+                            ? computeSourceQuality({
+                                scene: bound,
+                                brief,
+                                promptUsed: img.prompt,
+                                tags,
+                            })
+                            : undefined;
+                        const extras: Partial<AssetRecord> = {
+                            eligibilityRole: 'source.group_action',
+                        };
+                        if (preservedFeaturesReported && preservedFeaturesReported.length > 0) {
+                            extras.preservedFeaturesReported = preservedFeaturesReported;
+                        }
+                        if (sourceQuality) extras.sourceQuality = sourceQuality;
                         const rec = await uploadAndRecord(
                             slug, img.assetId, 'scene_image', getMediaImageGeneratorService(),
                             img.prompt, img.buffer, img.fileName, 'image/png',
-                            ['scene', img.sceneId], { width: 1920, height: 1080 }
+                            tags, { width: 1920, height: 1080 },
+                            undefined,
+                            Object.keys(extras).length > 0 ? extras : undefined,
                         );
                         records.push(rec);
                     }
                     sceneImageRecords.push(...records);
+                    // Phase 8: surface reference fetch failures loudly. Each
+                    // failure is also recorded on the AssetRecord (via the
+                    // `reference_unavailable` tag), so the visual-compass lint
+                    // and review UI can pick them up downstream.
+                    if (referenceFetchFailures.length > 0) {
+                        const summary = referenceFetchFailures
+                            .map((f) => `${f.sceneId}: ${f.error}`)
+                            .join(' | ');
+                        const message = `[scene_image/${getMediaImageGeneratorService()}] ${referenceFetchFailures.length} scene image(s) generated WITHOUT their ship reference. Output may look generic. Details: ${summary}`;
+                        console.error(message);
+                        errors.push(message);
+                    }
                     return records;
                 }, errors)
             );
@@ -980,9 +1157,11 @@ export async function runMediaGeneration(
                 images: {
                     shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
                     hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
+                    flyerImages: mergeKeepingLocked(existingManifest?.images.flyerImages ?? [], flyerRecords),
                     sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
                     aestheticConcepts: mergeKeepingLocked(existingManifest?.images.aestheticConcepts ?? [], conceptRecords),
                     documentaryDetails: mergeAssetRecords(existingManifest?.images.documentaryDetails ?? [], documentaryDetailRecords),
+                    alternateArt: existingManifest?.images.alternateArt ?? [],
                     designedAdArtifacts: existingManifest?.images.designedAdArtifacts ?? [],
                     platformCrops: effectivePlatformCrops,
                 },
@@ -1005,20 +1184,38 @@ export async function runMediaGeneration(
                 },
                 copy: existingManifest?.copy ?? null,
                 governance: existingManifest?.governance,
+                selections: existingManifest?.selections,
+                imageSelections: existingManifest?.imageSelections ?? {},
+                imageSlotControls: existingManifest?.imageSlotControls ?? {},
+                copySelections: existingManifest?.copySelections ?? {},
                 tiktokPromotionPackage: existingManifest?.tiktokPromotionPackage,
             };
 
-            await runWithJob(slug, 'designed_ad_artifact', 'templated', 'Canva/Templated static ad pack', async () => {
-                const result = await generateTemplatedAdArtifactPack({
-                    slug,
-                    brief: brief!,
-                    campaign,
-                    manifest: adSourceManifest,
-                });
-                warnings.push(...result.warnings.map((warning) => `[templated-ads] ${warning}`));
-                designedAdRecords.push(...result.designedAds);
-                return result.designedAds;
-            }, errors);
+            const adRenderProvider = process.env.AD_RENDER_PROVIDER ?? 'html_screenshot';
+
+            if (adRenderProvider === 'html_screenshot') {
+                await runWithJob(slug, 'designed_ad_artifact', 'html_screenshot', 'HTML screenshot ad pack', async () => {
+                    const result = await generateHtmlAdArtifacts({ slug });
+                    warnings.push(...result.warnings.map((w) => `[html-ads] ${w}`));
+                    if (result.skippedFormats.length > 0) {
+                        warnings.push(`[html-ads] Skipped formats: ${result.skippedFormats.join(', ')}`);
+                    }
+                    designedAdRecords.push(...result.designedAds);
+                    return result.designedAds;
+                }, errors);
+            } else {
+                await runWithJob(slug, 'designed_ad_artifact', 'templated', 'Canva/Templated static ad pack', async () => {
+                    const result = await generateTemplatedAdArtifactPack({
+                        slug,
+                        brief: brief!,
+                        campaign,
+                        manifest: adSourceManifest,
+                    });
+                    warnings.push(...result.warnings.map((warning) => `[templated-ads] ${warning}`));
+                    designedAdRecords.push(...result.designedAds);
+                    return result.designedAds;
+                }, errors);
+            }
 
             await runWithJob(slug, 'designed_ad_artifact', 'sharp', 'preserved legacy premium display ad', async () => {
                 const sourceImages = [
@@ -1165,9 +1362,11 @@ export async function runMediaGeneration(
         const mergedImages = {
             shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
             hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
+            flyerImages: mergeKeepingLocked(existingManifest?.images.flyerImages ?? [], flyerRecords),
             sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
             aestheticConcepts: mergeKeepingLocked(existingManifest?.images.aestheticConcepts ?? [], conceptRecords),
             documentaryDetails: mergeAssetRecords(existingManifest?.images.documentaryDetails ?? [], documentaryDetailRecords),
+            alternateArt: existingManifest?.images.alternateArt ?? [],
             designedAdArtifacts: mergeAssetRecords(existingManifest?.images.designedAdArtifacts ?? [], designedAdRecords),
             platformCrops: (Object.keys(cropsByFormat).length > 0
                 ? cropsByFormat
@@ -1209,6 +1408,7 @@ export async function runMediaGeneration(
             ...mergedImages.sceneImages,
             ...mergedImages.aestheticConcepts,
             ...mergedImages.documentaryDetails,
+            ...mergedImages.alternateArt,
             ...mergedImages.designedAdArtifacts,
             ...Object.values(mergedImages.platformCrops).flat(),
             ...(mergedVideos.tiktokSeed ? [mergedVideos.tiktokSeed] : []),
@@ -1223,17 +1423,30 @@ export async function runMediaGeneration(
             ...mergedMerch.mockups,
         ];
 
-        const manifest: CampaignMediaManifest = {
+        let manifest: CampaignMediaManifest = {
             slug,
             generatedAt: new Date().toISOString(),
             totalAssets: allRecords.length,
-            completionStatus: errors.length > 0 ? 'partial' : 'complete',
+            completionStatus: 'partial',
             images: mergedImages,
             videos: mergedVideos,
             audio: mergedAudio,
             merch: mergedMerch,
             copy: mergedCopy,
+            selections: existingManifest?.selections,
+            imageSelections: existingManifest?.imageSelections ?? {},
+            imageSlotControls: existingManifest?.imageSlotControls ?? {},
+            copySelections: existingManifest?.copySelections ?? {},
             tiktokPromotionPackage: tiktokPromotionPackage ?? existingManifest?.tiktokPromotionPackage,
+        };
+
+        manifest = migrateManifestRoles(manifest);
+        const visualCompass = lintVisualCompass(manifest);
+        warnings.push(...visualCompass.warnings.map(summarizeVisualCompassIssue));
+        errors.push(...visualCompass.blockingIssues.map(summarizeVisualCompassIssue));
+        manifest = {
+            ...manifest,
+            completionStatus: errors.length > 0 ? 'partial' : 'complete',
         };
 
         await saveMediaManifest(manifest);

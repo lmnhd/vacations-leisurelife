@@ -45,8 +45,34 @@ function addIfPresent(posts: PostDraft[], draft: PostDraft | null): void {
     }
 }
 
+function findManifestAssetId(manifest: CampaignMediaManifest, assetId: string | undefined): string | null {
+    if (!assetId) return null;
+    const assets = [
+        ...manifest.images.shipReferences,
+        ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
+        ...manifest.images.sceneImages,
+        ...manifest.images.aestheticConcepts,
+        ...(manifest.images.documentaryDetails ?? []),
+        ...Object.values(manifest.images.platformCrops ?? {}).flat(),
+        ...(manifest.images.designedAdArtifacts ?? []),
+        ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
+        ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),
+        ...(manifest.videos.thresholdAnnouncement ? [manifest.videos.thresholdAnnouncement] : []),
+        ...manifest.videos.countdown,
+        ...manifest.videos.broll,
+        ...manifest.merch.mockups,
+    ];
+    const selected = assets.find((asset) => asset.assetId === assetId);
+    if (!selected || selected.active === false || selected.curation?.approvalState === 'rejected') return null;
+    return selected.assetId;
+}
+
 function getPrimaryHeroAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.hero[0]?.assetId ?? manifest.images.platformCrops.hero_16x9?.[0]?.assetId ?? null;
+    return findManifestAssetId(manifest, manifest.imageSelections?.['section:landingHero:primary'])
+        ?? manifest.images.hero[0]?.assetId
+        ?? manifest.images.platformCrops.hero_16x9?.[0]?.assetId
+        ?? null;
 }
 
 function selectDesignedAdAssetId(
@@ -57,13 +83,26 @@ function selectDesignedAdAssetId(
     if (ads.length === 0) return null;
 
     const loweredPreferred = preferredTags.map((tag) => tag.toLowerCase());
+
+    // Prefer HTML screenshot ads (the current render provider) over legacy
+    // satori/templated artifacts. Both share the platform tags (meta,
+    // google_display, etc.) but only the new ones carry provider:html_screenshot.
+    const isHtmlScreenshot = (asset: (typeof ads)[number]) =>
+        asset.tags.some((t) => t.toLowerCase() === 'provider:html_screenshot');
+
     const exact = ads.find((asset) => {
+        const tags = asset.tags.map((tag) => tag.toLowerCase());
+        return loweredPreferred.every((tag) => tags.includes(tag)) && isHtmlScreenshot(asset);
+    }) ?? ads.find((asset) => {
         const tags = asset.tags.map((tag) => tag.toLowerCase());
         return loweredPreferred.every((tag) => tags.includes(tag));
     });
     if (exact) return exact.assetId;
 
     const partial = ads.find((asset) => {
+        const tags = asset.tags.map((tag) => tag.toLowerCase());
+        return loweredPreferred.some((tag) => tags.includes(tag)) && isHtmlScreenshot(asset);
+    }) ?? ads.find((asset) => {
         const tags = asset.tags.map((tag) => tag.toLowerCase());
         return loweredPreferred.some((tag) => tags.includes(tag));
     });
@@ -107,11 +146,15 @@ function selectDesignedAdAssetIds(
 }
 
 function getEmailHeaderAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.platformCrops.email_header?.[0]?.assetId ?? null;
+    return findManifestAssetId(manifest, manifest.imageSelections?.['crop:email_header'])
+        ?? manifest.images.platformCrops.email_header?.[0]?.assetId
+        ?? null;
 }
 
 function getOgImageAssetId(manifest: CampaignMediaManifest): string | null {
-    return manifest.images.platformCrops.og_image?.[0]?.assetId ?? null;
+    return findManifestAssetId(manifest, manifest.imageSelections?.['crop:og_image'])
+        ?? manifest.images.platformCrops.og_image?.[0]?.assetId
+        ?? null;
 }
 
 function resolveDefaultTikTokPlatform(options: PlannerOptions): DistributionPlatform {
@@ -159,7 +202,10 @@ export function buildDistributionSchedule(
         ],
         4,
     );
-    const facebookAdAssetId = selectDesignedAdAssetId(manifest, ['facebook']) ?? primaryHeroAssetId;
+    // Try meta tag first (HTML screenshot ads), fall back to legacy facebook tag
+    const facebookAdAssetId = selectDesignedAdAssetId(manifest, ['meta'])
+        ?? selectDesignedAdAssetId(manifest, ['facebook'])
+        ?? primaryHeroAssetId;
     const googleDisplayAdAssetId = selectDesignedAdAssetId(manifest, ['google_display']) ?? primaryHeroAssetId;
     const defaultTikTokPlatform = resolveDefaultTikTokPlatform(options);
 

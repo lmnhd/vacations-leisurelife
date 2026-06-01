@@ -128,6 +128,17 @@ const GROUPS: TestGroup[] = [
         description: 'Preview TikTok visual style treatments and motion package experiments outside the full campaign run',
         badge: 'LAB',
       },
+      {
+        label: 'Ad Image Studio',
+        href: '/tests/canva-templates',
+        description: 'Live ad preview for all 8 HTML templates — hero/flyer toggle, per-slot image picker, produce renders',
+      },
+      {
+        label: 'Flyer Image Lab',
+        href: '/tests/flyer-lab',
+        description: 'Sandbox for tuning flyer negation rules and variation axes — generate and compare without saving to the manifest',
+        badge: 'LAB',
+      },
     ],
   },
   {
@@ -152,6 +163,11 @@ const GROUPS: TestGroup[] = [
         href: '/tests/campaign-landing',
         description: 'Preview a campaign landing page by slug — append /[slug] to the URL',
         badge: 'NEEDS SLUG',
+      },
+      {
+        label: 'Landing Image Studio',
+        href: '/tests/landing-studio',
+        description: 'Manually set the landing page hero and curate the gallery image set — visual thumbnail picker with live preview',
       },
       {
         label: 'Klaviyo Email Preview',

@@ -1,4 +1,5 @@
 import type {
+    CompositionFamily,
     LandingStillBible,
     LandingStillSpec,
     ProductionBible,
@@ -7,7 +8,17 @@ import type {
     ProductionBuildLintVerdict,
     ProductionBuildPatternSummary,
     ProductionBuildStillDiagnostic,
+    SceneSpec,
+    TimeOfDay,
+    CampaignMediaManifest,
 } from '../schema';
+import {
+    inferCompositionFamily,
+    inferPeopleCount,
+    inferTimeOfDay,
+    scoreGroupAction,
+} from './source-quality';
+import { lintVisualCompass } from './visual-compass-lint';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Production Build Lint — Structural Spend Gate
@@ -172,7 +183,7 @@ const GENERIC_FALLBACK_FAMILIES = new Set([
 
 // ── Niche cue detection ──────────────────────────────────────────────────
 
-function detectCueStrength(
+export function detectCueStrength(
     still: LandingStillSpec,
     nicheKeywords: string[],
 ): 'explicit' | 'subtle' | 'absent' {
@@ -266,6 +277,7 @@ function buildPatternSummary(diagnostics: ProductionBuildStillDiagnostic[]): Pro
 export interface ProductionBuildLintInput {
     landingStillBible: LandingStillBible;
     productionBible?: ProductionBible;
+    manifest?: CampaignMediaManifest | null;
     themeName?: string;
     nicheKeywords?: string[];
 }
@@ -420,7 +432,93 @@ export function lintProductionBuild(input: ProductionBuildLintInput): Production
         });
     }
 
+    // ── Phase 3 (IMAGE_GEN_REVAMP_5-26) — Source-quality rules ───────────
+    // These look at the still bible + production bible together using the
+    // canonical CompositionFamily / TimeOfDay enums from source-quality.ts.
+    const productionBible = input.productionBible;
+    const sceneLibrary: SceneSpec[] = productionBible?.sceneLibrary ?? [];
+
+    // ── Rule F: rail / table / window overuse cap ────────────────────────
+    // Cap: no more than 3 of the combined 16 specs (10 scenes + 6 stills) may
+    // use rail, table, or window as the dominant composition family.
+    const RAIL_TABLE_WINDOW: CompositionFamily[] = ['rail', 'table', 'window'];
+    const stillRailFamily = stills.map((s) => ({
+        id: s.stillId,
+        family: inferCompositionFamily({
+            location: s.location,
+            composition: s.composition,
+            imagePrompt: s.imagePrompt,
+        }),
+    }));
+    const sceneRailFamily = sceneLibrary.map((s) => ({
+        id: s.sceneId,
+        family: inferCompositionFamily({
+            location: s.location,
+            imagePrompt: s.imagePrompt,
+        }),
+    }));
+    const railWindowHits = [...stillRailFamily, ...sceneRailFamily]
+        .filter((entry) => RAIL_TABLE_WINDOW.includes(entry.family));
+
+    if (railWindowHits.length > 3 && (stills.length + sceneLibrary.length) >= 8) {
+        warnings.push({
+            code: 'rail_table_window_overuse',
+            severity: 'warning',
+            message: `${railWindowHits.length} of ${stills.length + sceneLibrary.length} specs lean on rail/table/window composition — the cap is 3 across the combined set.`,
+            affectedStillIds: railWindowHits.map((h) => h.id),
+            details: 'Rotate to open_deck, interior_lounge, dining_communal, nature_overlook, or studio_class for the remaining slots.',
+        });
+    }
+
+    // ── Rule G: group-action floor ────────────────────────────────────────
+    // At least 4 of 10 scenes should read as group action (4–6 people in
+    // theme-specific shared activity). Only evaluate when a production bible
+    // with a scene library is present.
+    if (sceneLibrary.length >= 6) {
+        const groupActionScenes = sceneLibrary.filter((scene) => {
+            const peopleCount = inferPeopleCount({
+                imagePrompt: scene.imagePrompt,
+                subjectAction: scene.subjectAction,
+            });
+            const score = scoreGroupAction({ peopleCount, subjectAction: scene.subjectAction });
+            return score >= 0.6;
+        });
+        if (groupActionScenes.length < 4) {
+            warnings.push({
+                code: 'group_action_floor_missing',
+                severity: 'warning',
+                message: `Only ${groupActionScenes.length} of ${sceneLibrary.length} scenes read as group action (4–6 people in shared theme activity) — floor is 4.`,
+                affectedStillIds: sceneLibrary.map((s) => s.sceneId),
+                details: 'Group-action scenes are the primary ad-source candidates. Add scenes that show 4–6 people doing something theme-specific.',
+            });
+        }
+    }
+
+    // ── Rule H: time-of-day monotony ─────────────────────────────────────
+    // The combined still + scene set should include at least one non-daylight
+    // beat (sunrise / golden_hour / dusk_blue_hour / night). All-midday
+    // sets read as homogeneous travel-stock.
+    const stillTimes: TimeOfDay[] = stills.map((s) => inferTimeOfDay(s.timeOfDay));
+    const sceneTimes: TimeOfDay[] = sceneLibrary.map((s) => inferTimeOfDay(s.timeOfDay));
+    const allTimes = [...stillTimes, ...sceneTimes];
+    const hasMoodyHour = allTimes.some(
+        (t) => t === 'sunrise' || t === 'golden_hour' || t === 'dusk_blue_hour' || t === 'night',
+    );
+    if (!hasMoodyHour && allTimes.length >= 6) {
+        warnings.push({
+            code: 'time_of_day_monotony',
+            severity: 'warning',
+            message: 'No specs use dusk/blue_hour, sunrise, golden hour, or night — the set is all midday daylight.',
+            affectedStillIds: [...stills.map((s) => s.stillId), ...sceneLibrary.map((s) => s.sceneId)],
+            details: 'Add at least one sunrise, golden_hour, dusk_blue_hour, or night beat so the campaign reads with cinematic range.',
+        });
+    }
+
     // ── Verdict ───────────────────────────────────────────────────────────
+    const visualCompass = lintVisualCompass(input.manifest);
+    blockingIssues.push(...visualCompass.blockingIssues);
+    warnings.push(...visualCompass.warnings);
+
     const verdict: ProductionBuildLintVerdict = blockingIssues.length > 0
         ? 'fail'
         : warnings.length > 0

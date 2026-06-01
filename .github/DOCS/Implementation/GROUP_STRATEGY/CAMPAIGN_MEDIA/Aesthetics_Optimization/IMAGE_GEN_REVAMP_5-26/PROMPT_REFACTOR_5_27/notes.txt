@@ -1,0 +1,60 @@
+Looking at `image_75e37b.jpg`, you can instantly see why the output feels flat. The images are clean and technically correct, but they lack soul—they look like stock imagery for a corporate cruise brochure rather than a highly targeted, themed group campaign.
+
+The core issue is that your prompt pipeline is **over-engineered with constraints** and **under-engineered for atmosphere**. The image model is spending all its "attention span" (token weight) on what *not* to do (avoid lawns, avoid close-ups, maintain location integrity) and processing conflicting instructions, rather than leaning into the romance of the theme.
+
+If the theme is **"glass-observatory-winter-sea-watchers"**, the prompt you provided actually buries the most exciting words. It asks for a "modern mirrorless camera" look but then demands "1970s Kodachrome warmth," while entirely leaving out the words "winter," "observatory," or "watchers."
+
+Here is the diagnosis of what is going wrong and a scalable blueprint to fix this for this campaign and the next 100 themes.
+
+---
+
+## 1. The Diagnosis: Why the Prompt is Failing
+
+* **Token Dilution & Negative Guardrails:** Nearly 40% of your prompt is dedicated to negative constraints ("avoid lawns, grass fields, hedges...", "avoid couples-as-default"). LLMs and Diffusion models handle negative constraints poorly when baked into the main prompt text. They see the word "lawn" and accidentally sub-prime the model with land-based concepts.
+* **Theme Starvation:** Look at your text. The word **"winter"** is entirely absent. The word **"observatory"** is absent. The word **"watchers"** is absent. You are asking the model to build a "winter sea watchers" mood using "early morning soft cool daylight" and a "ceramic coffee cup." The model built exactly what you asked for: a generic breakfast table.
+* **Style Contradictions:** Asking for "modern mirrorless" detail alongside "1970s Kodachrome analog film character" forces the model to split the difference, resulting in muddy, desaturated colors that look dated rather than intentionally stylized.
+
+---
+
+## 2. The Architectural Fix: The "Core + Theme + Guardrail" Split
+
+To scale this to 100 different themes without manual rewriting, you need to modularize your prompt generator into three distinct layers: **Core Engine (Static)**, **Theme Injection (Dynamic)**, and **Negative System Prompt (Separate)**.
+
+Do not let the system concatenate everything into one massive paragraph. Keep the dynamic theme upfront where the model weighs tokens heaviest.
+
+### The Revised Prompt Structure for "Glass Observatory Winter Sea Watchers"
+
+Here is how you should restructure the prompt to get a highly evocative, themed shot while maintaining your required shipboard guardrails:
+
+> **[THEME ENGINE: 40% Weight]**
+> A cinematic, atmospheric wide shot of the "Winter Sea Watchers" club gathered inside the massive, panoramic glass observatory of a ship cruising through northern waters. Dramatic frost-tinted framing. A group of 3-4 deep-sea enthusiasts sit intently by the floor-to-ceiling glass windows, looking out with binoculars and maps. The mood is cozy, warm, and highly intellectual—an exclusive winter expedition society at sea.
+> **[VISUAL AESTHETIC & LIGHTING: 30% Weight]**
+> Style: Documentary travel photography. Crisp, cold winter morning light pouring through massive glass panes, contrasting sharply with the warm amber glow of interior brass lamps. Sharp focus on the architectural curve of the glass observation dome, overlooking a dark, dramatic, white-capped winter ocean. Moody, cinematic contrast with soft, natural highlight rolloff.
+> **[SCENE DETAILS & PROPS: 30% Weight]**
+> Environment: Shipboard observation lounge. Authentic marine architecture: clean teak wood flooring, sweeping steel frames holding the glass, and dark leather seating. On the table sit campaign props: a slim notebook, a heavy ceramic coffee cup emitting faint steam, and a paperback book. Background figures are softly blurred, keeping the focus on the shared moment of the watchers looking out to the horizon.
+
+---
+
+## 3. Playbook for Scaling to 100+ Themes
+
+To ensure your automated system doesn't generate "Typical Boring Cruise" photos for future campaigns, program your prompt generation engine to follow these three rules:
+
+### Rule 1: Elevate the "Hero Prop" or Action to Match the Theme
+
+If the theme is about "Sea Watchers," the people shouldn't just be sitting near a window; they need a reason to be looking out. Introduce thematic actions or items (e.g., binoculars, stargazing charts, vintage compasses) that instantly tell a story. If the theme is "Vinyl & Verandah," the hero element becomes a vintage record player on a private deck.
+
+### Rule 2: Use "Weather & Environment" as an Emotional Lever
+
+Boring cruise shots always use generic bright daylight (as flagged by your system's `bright_daylight_overuse` tag in `image_75e37b.jpg`). Force the system to map specific environments to specific themes:
+
+* *Winter/Scandinavia themes:* "Moody steel-grey seas, low-slung northern sun, frost-rimmed glass panes."
+* *Night/Cosmic themes:* "Deep indigo twilight, glowing bioluminescent wake, star-mapped skies."
+
+### Rule 3: Move Constraints to the Negative Prompt Parameter
+
+If you are using an API (like Stable Diffusion XL, Imagen, or Midjourney v6), **never** put "no lawns, no couples, no eye-contact" in the main prompt body. Move all of those structural rejections to the actual `negative_prompt` parameter of the API call.
+
+* **Main Prompt:** Focus entirely on what *is* there (3+ people, group presence, authentic teak, ocean horizon).
+* **Negative Prompt Parameter:** `lawn, grass, hotel courtyard, land, solo portrait, close-up face, staring at camera, staged pose, over-saturated, digital illustration.`
+
+By separating the "rules" from the "romance," your system will give the image model the creative freedom to lean heavily into the distinct keywords of your campaign titles, transforming boring compliance into compelling, theme-driven imagery.

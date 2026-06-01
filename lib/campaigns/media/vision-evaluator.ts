@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { getModelConfig, ModelName, callLLM } from '@/lib/ai/llm-gateway';
 import { ShipReferenceCandidate } from '../schema';
 
@@ -23,6 +24,40 @@ const VALID_CATEGORY_FIT_VALUES = new Set(['strong', 'weak', 'wrong_category']);
 const VISION_MODEL = ModelName.CLAUDE_4_SONNET;
 const VISION_MIN_AI_SCORE = 30;
 const FETCH_TIMEOUT_MS = 10_000;
+
+// Phase 8 (IMAGE_GEN_REVAMP_5-26): Anthropic vision rejects images > 5 MB.
+// We downscale anything above this safety threshold before base64 encoding.
+// A 1920px long-edge JPEG q80 is comfortably below 5 MB for ordinary photos.
+const VISION_MAX_PAYLOAD_BYTES = 4 * 1024 * 1024; // 4 MB safety margin
+const VISION_RESIZE_MAX_DIMENSION = 1920;
+const VISION_RESIZE_JPEG_QUALITY = 80;
+
+async function normalizeImageForVisionApi(
+    rawBuffer: Buffer,
+    rawMimeType: string,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+    if (rawBuffer.length <= VISION_MAX_PAYLOAD_BYTES) {
+        return { buffer: rawBuffer, mimeType: rawMimeType };
+    }
+    // Image exceeds the Anthropic API limit. Resize + recompress.
+    try {
+        const resized = await sharp(rawBuffer)
+            .rotate()
+            .resize({
+                width: VISION_RESIZE_MAX_DIMENSION,
+                height: VISION_RESIZE_MAX_DIMENSION,
+                fit: 'inside',
+                withoutEnlargement: true,
+            })
+            .jpeg({ quality: VISION_RESIZE_JPEG_QUALITY, mozjpeg: true })
+            .toBuffer();
+        return { buffer: resized, mimeType: 'image/jpeg' };
+    } catch (err) {
+        throw new Error(
+            `[VisionEvaluator] Image > 5 MB and sharp downscale failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+    }
+}
 
 // ── Prompt construction ───────────────────────────────────────────────────────
 
@@ -115,6 +150,26 @@ function buildEvaluationPrompt(shipName: string, category: string): string {
     });
 }
 
+// ── MIME type detection from magic bytes ─────────────────────────────────────
+// Servers like cruisedeckplans.com serve PNG/JPEG bytes under the wrong
+// Content-Type header. Anthropic's API validates the actual image format against
+// the declared mimeType and rejects mismatches with a 400. We always verify the
+// declared type against the image's file signature (magic bytes) and correct it.
+
+function detectMimeTypeFromBytes(buf: Buffer): string | null {
+    if (buf.length < 12) return null;
+    // JPEG: FF D8 FF
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
+    // GIF: GIF8
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return 'image/gif';
+    // WebP: RIFF????WEBP
+    if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+        buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp';
+    return null;
+}
+
 // ── Image fetch ───────────────────────────────────────────────────────────────
 
 async function fetchImageAsBase64(
@@ -135,13 +190,27 @@ async function fetchImageAsBase64(
         throw new Error(`[VisionEvaluator] Image fetch returned ${response.status}: ${url}`);
     }
 
-    const rawMime = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
-    if (!rawMime.startsWith('image/')) {
-        throw new Error(`[VisionEvaluator] Non-image content-type "${rawMime}" for: ${url}`);
+    const headerMime = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+    if (!headerMime.startsWith('image/')) {
+        throw new Error(`[VisionEvaluator] Non-image content-type "${headerMime}" for: ${url}`);
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return { base64: buffer.toString('base64'), mimeType: rawMime };
+    const rawBuffer = Buffer.from(await response.arrayBuffer());
+
+    // Detect actual format from magic bytes — headers from third-party sites are
+    // frequently wrong (e.g. PNG bytes served as image/jpeg). Anthropic rejects
+    // mismatches with a 400, so we always use the detected type when it differs.
+    const detectedMime = detectMimeTypeFromBytes(rawBuffer);
+    const trueMime = (detectedMime && detectedMime !== headerMime)
+        ? (() => {
+            console.warn(`[VisionEvaluator] MIME mismatch corrected: header="${headerMime}" actual="${detectedMime}" url=${url}`);
+            return detectedMime;
+        })()
+        : headerMime;
+
+    // Phase 8 (IMAGE_GEN_REVAMP_5-26): Anthropic rejects images > 5 MB.
+    const { buffer, mimeType } = await normalizeImageForVisionApi(rawBuffer, trueMime);
+    return { base64: buffer.toString('base64'), mimeType };
 }
 
 // ── Response parsing ──────────────────────────────────────────────────────────

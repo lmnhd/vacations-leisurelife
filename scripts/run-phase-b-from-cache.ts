@@ -88,12 +88,30 @@ function extractNights(itinerary?: string): string | undefined {
     return match ? match[1] : undefined;
 }
 
+function normalizeDateKey(rawDate?: string): string {
+    const value = (rawDate ?? '').trim();
+    if (!value) {
+        return '';
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return value.toLowerCase();
+    }
+    return [
+        parsed.getFullYear(),
+        String(parsed.getMonth() + 1).padStart(2, '0'),
+        String(parsed.getDate()).padStart(2, '0'),
+    ].join('-');
+}
+
 function findItineraryBackfill(
     campaign: Campaign,
     inventory: CbGroupInventoryItem[],
 ): BackfillResult | null {
     const candidateShipName = (campaign.matchedShipName ?? campaign.shipTarget ?? campaign.name).trim().toLowerCase();
     const candidateDestination = (campaign.targetDestination ?? '').trim().toLowerCase();
+    const campaignSailDate = normalizeDateKey(campaign.matchedSailDate);
+    const campaignNights = extractNights(campaign.matchedNights) ?? campaign.matchedNights?.replace(/[^0-9]/g, '');
 
     const exactShipItems = inventory.filter(
         (item) => item.shipName.trim().toLowerCase() === candidateShipName,
@@ -103,9 +121,26 @@ function findItineraryBackfill(
         return null;
     }
 
+    const compatibleItems = exactShipItems.filter((item) => {
+        const itemSailDate = normalizeDateKey(item.sailDate || extractActualSailDate(item.itinerary));
+        const itemNights = extractNights(item.itinerary);
+        const dateCompatible = !campaignSailDate || !itemSailDate || campaignSailDate === itemSailDate;
+        const nightsCompatible = !campaignNights || !itemNights || campaignNights === itemNights;
+        return dateCompatible && nightsCompatible;
+    });
+
     const preferredItem =
-        exactShipItems.find((item) => candidateDestination && item.itinerary.toLowerCase().includes(candidateDestination))
-        ?? exactShipItems[0];
+        compatibleItems.find((item) => candidateDestination && item.itinerary.toLowerCase().includes(candidateDestination))
+        ?? compatibleItems.find((item) => {
+            const itemSailDate = normalizeDateKey(item.sailDate || extractActualSailDate(item.itinerary));
+            const itemNights = extractNights(item.itinerary);
+            return (!!campaignSailDate && itemSailDate === campaignSailDate)
+                || (!!campaignNights && itemNights === campaignNights);
+        });
+
+    if (!preferredItem) {
+        return null;
+    }
 
     const itinerarySummary = preferredItem.itinerary.trim();
     if (!itinerarySummary) {

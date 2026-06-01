@@ -72,8 +72,8 @@ This skill is split across sub-documents. Load only what you need for the curren
 | **Phase 1: Discovery** | Gemini Deep Research → GPT-5 → Inventory match gate → DynamoDB | CB deals cache must be fresh; operator runs `scrape-cb-deals.ts`                      |
 | **Phase 2: Phase B**   | CB live scrape + link validation + Odysseus retail link        | Playwright — operator runs `run-phase-b.ts`; agent checks result via `scripts/agent/` |
 | **Phase 3: Brief**     | Aesthetic brief, landing still bible, production bible, secondary research dossier (`nicheResearch` + `cruiseTranslation`) | Best practice: generate the dossier before the brief bundle so it can inform the Production Bible; dossier must exist before approving the brief for media; verify production bible has non-empty `imagePrompt` fields before proceeding to media generation |
-| **Phase 4: Media**     | Ships → heroes → scenes → Canva/Templated ads + preserved premium display → video/audio | One asset type per call; never re-submit video on timeout — poll manifest instead; dossier is a hard gate |
-| **Phase 5: Publish**   | Landing page, ad distribution, go live                         | Brief must be approved; verify manifest before distribution plan                      |
+| **Phase 4: Media**     | Ships → heroes + concepts + **flyer images** → scenes → Canva/HTML ads → video/audio | One asset type per call; never re-submit video on timeout — poll manifest instead; dossier is a hard gate; tune Flyer Generation Controls before running flyers |
+| **Phase 5: Publish**   | Landing Image Studio (hero + gallery curation) → ad distribution → go live | Use `/tests/landing-studio` to manually set the landing hero and curate the gallery before publishing; brief must be approved |
 
 **Full step-by-step workflow:** [WORKFLOW.md](./WORKFLOW.md)
 

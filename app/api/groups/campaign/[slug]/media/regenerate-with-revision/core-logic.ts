@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { generateStructuredObject, ModelName } from '@/lib/ai/llm-gateway';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import {
     getActiveAssetRecord,
@@ -9,13 +10,14 @@ import {
     updateCampaignMediaStatus,
 } from '@/lib/campaigns/media/media-store';
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
-import { generateImageFromPrompt } from '@/lib/campaigns/media/generators/stability-generator';
+import { generateImageFromPrompt, generateNanoBananaImage } from '@/lib/campaigns/media/generators/stability-generator';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateStoryboardVideo } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
 import { buildElevenLabsVoiceTags, isElevenLabsVoiceTag } from '@/lib/campaigns/media/elevenlabs-voices';
 import { selectPreferredAssetForContext } from '@/lib/campaigns/media/image-selection';
 import { AssetRecord, AssetType, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import {
+    NANO_BANANA_CONFIG,
     getMediaImageGeneratorService,
     getActiveVideoGeneratorService,
 } from '@/lib/campaigns/media/media-pipeline-config';
@@ -35,33 +37,114 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
 const AUDIO_ASSET_TYPES = new Set<AssetType>(['ambient_narration', 'hype_clip']);
 
 const KNOWN_VIDEO_TAGS = new Set(['video', 'storyboard', 'narrated', 'revised']);
+const PROMPT_REWRITE_MODEL = ModelName.GPT_5_INSTANT;
+const PROMPT_REWRITE_SYSTEM_PROMPT = [
+    'You are a prompt-composition editor for campaign media regeneration.',
+    'Rewrite the original prompt and revision note into one coherent, non-contradictory generation prompt.',
+    'Do not add new requirements beyond the original prompt and revision note.',
+    'Return valid JSON only.',
+].join(' ');
 
 const RegenerateWithRevisionSchema = z.object({
     assetId: z.string().min(1),
     applyMode: z.enum(['append_note', 'manual_override']),
     revisionNote: z.string().optional(),
+    steeringMessage: z.string().optional(),
     revisedPrompt: z.string().optional(),
 });
 
-function buildRevisedSceneImagePrompt(
+const PromptRewriteSchema = z.object({
+    rewrittenPrompt: z.string().min(1),
+});
+
+export function deterministicPromptComposition(
+    existingText: string,
+    revisionNote: string,
+    artifactKind: 'image_prompt' | 'audio_script',
+): string {
+    if (artifactKind === 'audio_script') {
+        return [
+            'Rewrite this narration as one coherent finished script.',
+            `Original script: ${existingText}`,
+            `Required revision: ${revisionNote}`,
+            'Apply the revision cleanly and remove any contradictory older direction.',
+        ].join('\n');
+    }
+
+    return [
+        'Create one coherent image-generation prompt from the original direction and required revision.',
+        `Original direction: ${existingText}`,
+        `Required revision: ${revisionNote}`,
+        'Resolve contradictions in favor of the required revision. Keep the result concise, visual, and directly usable by the image model.',
+    ].join(' ');
+}
+
+export async function composeRegenerationPrompt(
+    existingText: string,
+    revisionNote: string,
+    artifactKind: 'image_prompt' | 'audio_script' = 'image_prompt',
+): Promise<string> {
+    const cleanExisting = existingText.trim();
+    const cleanRevision = revisionNote.trim();
+    if (!cleanRevision) return cleanExisting;
+
+    const fallback = deterministicPromptComposition(cleanExisting, cleanRevision, artifactKind);
+    try {
+        const prompt = JSON.stringify({
+            task: 'compose_regeneration_prompt',
+            artifactKind,
+            original: cleanExisting,
+            revision: cleanRevision,
+            outputRequirements: [
+                'Return a single rewrittenPrompt string.',
+                'Do not include labels such as ORIGINAL, REVISION, append_note, or override.',
+                'Remove redundant or contradictory clauses.',
+                'Preserve campaign, ship, subject, composition, and realism constraints unless the revision explicitly changes them.',
+                artifactKind === 'image_prompt'
+                    ? 'Keep it as one image-generation prompt under 1800 words.'
+                    : 'Keep it as one finished script or direction under 1200 words.',
+            ],
+        });
+        const result = await generateStructuredObject({
+            model: PROMPT_REWRITE_MODEL,
+            schema: PromptRewriteSchema,
+            system: PROMPT_REWRITE_SYSTEM_PROMPT,
+            prompt,
+            timeoutMs: 30_000,
+            strictJsonSchema: true,
+        });
+        return result.object.rewrittenPrompt.trim() || fallback;
+    } catch (error) {
+        console.warn('[regenerate-with-revision] prompt rewrite failed; using deterministic composition', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return fallback;
+    }
+}
+
+async function buildRevisedSceneImagePrompt(
     existingPrompt: string,
     applyMode: 'append_note' | 'manual_override',
     revisionNote: string | undefined,
     revisedPrompt: string | undefined
-): string {
+): Promise<string> {
     if (applyMode === 'manual_override' && revisedPrompt) return revisedPrompt;
-    if (applyMode === 'append_note' && revisionNote) return `${existingPrompt}. REVISION: ${revisionNote}`;
+    if (applyMode === 'append_note' && revisionNote) {
+        return composeRegenerationPrompt(existingPrompt, revisionNote, 'image_prompt');
+    }
     return existingPrompt;
 }
 
-function buildRevisedAudioScript(
+async function buildRevisedAudioScript(
     existingScript: string,
     applyMode: 'append_note' | 'manual_override',
     revisionNote: string | undefined,
     revisedPrompt: string | undefined
-): string {
+): Promise<string> {
     if (applyMode === 'manual_override' && revisedPrompt?.trim()) return revisedPrompt.trim();
-    if (applyMode === 'append_note' && revisionNote?.trim()) return `${existingScript}\n\n${revisionNote.trim()}`;
+    if (applyMode === 'append_note' && revisionNote?.trim()) {
+        return composeRegenerationPrompt(existingScript, revisionNote, 'audio_script');
+    }
     return existingScript;
 }
 
@@ -102,12 +185,26 @@ function replaceSlotInManifest(
         ];
         return { ...manifest, images: { ...manifest.images, hero } };
     }
+    if (assetType === 'flyer_image') {
+        const flyerImages = [
+            ...(manifest.images.flyerImages ?? []).filter(r => r.assetId !== oldAssetId),
+            newRecord,
+        ];
+        return { ...manifest, images: { ...manifest.images, flyerImages } };
+    }
     if (assetType === 'aesthetic_concept') {
         const aestheticConcepts = [
             ...manifest.images.aestheticConcepts.filter(r => r.assetId !== oldAssetId),
             newRecord,
         ];
         return { ...manifest, images: { ...manifest.images, aestheticConcepts } };
+    }
+    if (assetType === 'documentary_detail_image') {
+        const documentaryDetails = [
+            ...(manifest.images.documentaryDetails ?? []).filter(r => r.assetId !== oldAssetId),
+            newRecord,
+        ];
+        return { ...manifest, images: { ...manifest.images, documentaryDetails } };
     }
     if (assetType === 'tiktok_seed_video') {
         return { ...manifest, videos: { ...manifest.videos, tiktokSeed: newRecord } };
@@ -141,12 +238,53 @@ function replaceSlotInManifest(
     return manifest;
 }
 
+function retargetManifestAssetReferences(
+    manifest: CampaignMediaManifest,
+    oldAssetId: string,
+    newAssetId: string,
+): CampaignMediaManifest {
+    const imageSelections = Object.fromEntries(
+        Object.entries(manifest.imageSelections ?? {}).map(([key, selectedAssetId]) => [
+            key,
+            selectedAssetId === oldAssetId ? newAssetId : selectedAssetId,
+        ]),
+    );
+    const landingGallery = manifest.landingImageSets?.gallery?.map((assetId) => (
+        assetId === oldAssetId ? newAssetId : assetId
+    ));
+
+    return {
+        ...manifest,
+        imageSelections,
+        landingImageSets: manifest.landingImageSets
+            ? { ...manifest.landingImageSets, ...(landingGallery ? { gallery: landingGallery } : {}) }
+            : manifest.landingImageSets,
+    };
+}
+
+function buildRegeneratedCuration(existingAsset: AssetRecord): AssetRecord['curation'] {
+    if (!existingAsset.curation) return undefined;
+    return {
+        ...existingAsset.curation,
+        approvalState: 'pending_review',
+        generationLocked: false,
+        curatorNotes: existingAsset.curation.curatorNotes
+            ? `${existingAsset.curation.curatorNotes}\n\nRegenerated from ${existingAsset.assetId}; review the new version before downstream use.`
+            : `Regenerated from ${existingAsset.assetId}; review the new version before downstream use.`,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
 function countManifestAssets(manifest: CampaignMediaManifest): number {
     return [
         ...manifest.images.shipReferences,
         ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
+        ...(manifest.images.documentaryDetails ?? []),
+        ...(manifest.images.alternateArt ?? []),
+        ...(manifest.images.designedAdArtifacts ?? []),
         ...Object.values(manifest.images.platformCrops).flat(),
         ...(manifest.videos.tiktokSeed ? [manifest.videos.tiktokSeed] : []),
         ...(manifest.videos.heroExplainer ? [manifest.videos.heroExplainer] : []),
@@ -170,7 +308,8 @@ export async function handleRegenerateWithRevisionRequest(
         return { status: 400, data: { error: 'Invalid request body', issues: parsed.error.issues } };
     }
 
-    const { assetId, applyMode, revisionNote, revisedPrompt } = parsed.data;
+    const { assetId, applyMode, revisedPrompt } = parsed.data;
+    const revisionNote = parsed.data.revisionNote ?? parsed.data.steeringMessage;
 
     try {
         const [existingAsset, manifest, brief] = await Promise.all([
@@ -196,15 +335,34 @@ export async function handleRegenerateWithRevisionRequest(
 
         let newRecord: AssetRecord;
 
-        if (assetType === 'scene_image' || assetType === 'hero_image' || assetType === 'aesthetic_concept') {
-            const newPrompt = buildRevisedSceneImagePrompt(
+        if (assetType === 'scene_image'
+            || assetType === 'hero_image'
+            || assetType === 'flyer_image'
+            || assetType === 'aesthetic_concept'
+            || assetType === 'documentary_detail_image'
+        ) {
+            const newPrompt = await buildRevisedSceneImagePrompt(
                 existingAsset.promptUsed,
                 applyMode,
                 revisionNote,
                 revisedPrompt
             );
-            const imageBuffer = await generateImageFromPrompt(newPrompt);
-            const typePrefix = assetType === 'hero_image' ? 'hero' : assetType === 'aesthetic_concept' ? 'concept' : 'scene';
+            const imageBuffer = assetType === 'flyer_image'
+                ? await generateNanoBananaImage(
+                    newPrompt,
+                    NANO_BANANA_CONFIG.conceptAspectRatio,
+                    NANO_BANANA_CONFIG.heroImageSize,
+                )
+                : await generateImageFromPrompt(newPrompt);
+            const typePrefix = assetType === 'hero_image'
+                ? 'hero'
+                : assetType === 'aesthetic_concept'
+                    ? 'concept'
+                    : assetType === 'documentary_detail_image'
+                        ? 'detail'
+                        : assetType === 'flyer_image'
+                            ? 'flyer'
+                            : 'scene';
             const newAssetId = `img_${typePrefix}_rev_${shortId}`;
             const url = await storeAsset(slug, newAssetId, `images/${typePrefix}s/revised_${shortId}.png`, imageBuffer, 'image/png');
             newRecord = {
@@ -220,7 +378,12 @@ export async function handleRegenerateWithRevisionRequest(
                 reviewStatus: 'needs_review',
                 version: (existingAsset.version ?? 1) + 1,
                 active: true,
-                dimensions: { width: 1920, height: 1080 },
+                dimensions: assetType === 'flyer_image'
+                    ? { width: 2048, height: 2048 }
+                    : { width: 1920, height: 1080 },
+                eligibilityRole: existingAsset.eligibilityRole,
+                curation: buildRegeneratedCuration(existingAsset),
+                variantGroupId: existingAsset.variantGroupId,
             };
             await saveAssetRecord(slug, newRecord);
 
@@ -292,7 +455,7 @@ export async function handleRegenerateWithRevisionRequest(
             await saveAssetRecord(slug, newRecord);
 
         } else if (AUDIO_ASSET_TYPES.has(assetType)) {
-            const revisedScript = buildRevisedAudioScript(
+            const revisedScript = await buildRevisedAudioScript(
                 existingAsset.promptUsed,
                 applyMode,
                 revisionNote,
@@ -341,7 +504,11 @@ export async function handleRegenerateWithRevisionRequest(
 
         await deactivateAssetRecord(slug, assetId);
 
-        const updatedManifest = replaceSlotInManifest(manifest, assetId, newRecord, assetType);
+        const updatedManifest = retargetManifestAssetReferences(
+            replaceSlotInManifest(manifest, assetId, newRecord, assetType),
+            assetId,
+            newRecord.assetId,
+        );
         const finalManifest: CampaignMediaManifest = {
             ...updatedManifest,
             generatedAt: new Date().toISOString(),
@@ -356,6 +523,7 @@ export async function handleRegenerateWithRevisionRequest(
                 oldAssetId: assetId,
                 newAssetId: newRecord.assetId,
                 applyMode,
+                revisedPrompt: newRecord.promptUsed,
                 manifest: finalManifest,
             },
         };

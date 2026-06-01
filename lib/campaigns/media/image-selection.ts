@@ -54,6 +54,14 @@ const CONTEXT_PREFERENCES: Record<ImageContext, { preferTags: string[]; avoidTag
     },
 };
 
+const INELIGIBLE_SELECTOR_ROLES = new Set([
+    'alternate_art',
+    'reference.audit_only',
+    'final.ad_artifact',
+    'final.channel_deliverable',
+    'review_only',
+]);
+
 function deriveApprovalState(asset: AssetRecord): AssetApprovalState {
     if (asset.reviewStatus === 'human_approved') return 'human_approved';
     if (asset.reviewStatus === 'auto_approved') return 'auto_approved';
@@ -94,6 +102,7 @@ function isBlockedByApprovalState(curation: AssetCuration, governance: MediaGove
 
 function isEligibleForContext(asset: AssetRecord, context: ImageContext, governance: MediaGovernancePolicy): boolean {
     if (!asset.active) return false;
+    if (asset.eligibilityRole && INELIGIBLE_SELECTOR_ROLES.has(asset.eligibilityRole)) return false;
     const curation = normalizeAssetCuration(asset);
     if (isBlockedByApprovalState(curation, governance)) return false;
     if (curation.blockedContexts.includes(context)) return false;

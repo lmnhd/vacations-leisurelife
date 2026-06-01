@@ -17,7 +17,7 @@ import { suggestDeterministicIssueCodes } from './aesthetic-fixers/registry';
 // Model
 // ────────────────────────────────────────────────────────────────────────────
 
-const PATCH_MODEL = openai('gpt-4o');
+const PATCH_MODEL = openai('gpt-5.4');
 
 // ────────────────────────────────────────────────────────────────────────────
 // Derive allowed paths for a patch request

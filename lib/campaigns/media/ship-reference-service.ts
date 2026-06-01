@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { Campaign } from '../types';
 import { AssetCuration, AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../schema';
 import { applyVisionEvaluationToCategory } from './vision-evaluator';
@@ -566,47 +567,140 @@ function buildExternalReferenceAssetRecord(
     };
 }
 
-async function importCandidateAsAsset(slug: string, candidate: ShipReferenceCandidate, assetType: 'ship_reference_image' | 'hero_image', assetId: string, reviewStatus: AssetRecord['reviewStatus']): Promise<AssetRecord> {
-    const response = await fetch(candidate.imageUrl);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch ship reference image (${response.status}): ${candidate.imageUrl}`);
+// Phase 8 (IMAGE_GEN_REVAMP_5-26): downscale-on-import.
+// Reference images come from third parties and can exceed both the Anthropic
+// vision API limit (5 MB) and the DynamoDB storage fallback (350 KB). We
+// resize on import so the bytes we persist are guaranteed fetchable, vision-
+// safe, and quick to load at generation time. Long-edge 1920px, JPEG q80 is
+// the Phase 8 target — comfortably under 5 MB for ordinary photos and large
+// enough that Nano-Banana's downstream 1280px reference resize still has
+// detail to work with.
+const REFERENCE_STORE_MAX_DIMENSION = 1920;
+const REFERENCE_STORE_JPEG_QUALITY = 80;
+const REFERENCE_PNG_PASSTHROUGH_LIMIT_BYTES = 2 * 1024 * 1024; // 2 MB
+
+async function normalizeReferenceImageForStorage(
+    sourceBuffer: Buffer,
+    sourceMimeType: string,
+): Promise<{ buffer: Buffer; mimeType: string; width?: number; height?: number }> {
+    if (!sourceMimeType.startsWith('image/')) {
+        return { buffer: sourceBuffer, mimeType: sourceMimeType };
     }
 
-    const mimeType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
-    const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const fileName = assetType === 'ship_reference_image'
-        ? `images/references/${assetId}.${extension}`
-        : `images/hero/${assetId}.${extension}`;
-    const url = await storeAsset(slug, assetId, fileName, buffer, mimeType);
+    try {
+        const pipeline = sharp(sourceBuffer).rotate();
+        const metadata = await pipeline.metadata();
+        const width = metadata.width ?? 0;
+        const height = metadata.height ?? 0;
+        const longEdge = Math.max(width, height);
+        const needsResize = longEdge > REFERENCE_STORE_MAX_DIMENSION;
 
-    const record: AssetRecord = {
-        assetId,
-        assetType,
-        url,
-        generator: 'serpapi',
-        promptUsed: candidate.title,
-        sourceImageUrl: candidate.imageUrl,
-        sourcePageUrl: candidate.contextUrl,
-        sourceThumbnailUrl: candidate.thumbnailUrl,
-        sourceQuery: candidate.query,
-        selectionScore: candidate.selectionScore,
-        dimensions: {
-            width: candidate.width,
-            height: candidate.height,
-        },
-        fileSizeBytes: buffer.length,
-        mimeType,
-        tags: ['ship-reference', candidate.category, assetType === 'hero_image' ? 'hero' : 'reference'],
-        createdAt: new Date().toISOString(),
-        reviewStatus,
-        version: 1,
-        active: true,
-        ...(buildCurationFromCandidateAI(candidate) ? { curation: buildCurationFromCandidateAI(candidate) } : {}),
-    };
+        // Preserve PNG alpha when the source is small enough to keep as-is.
+        const isSmallPng = sourceMimeType === 'image/png'
+            && metadata.hasAlpha === true
+            && !needsResize
+            && sourceBuffer.length <= REFERENCE_PNG_PASSTHROUGH_LIMIT_BYTES;
+        if (isSmallPng) {
+            return { buffer: sourceBuffer, mimeType: 'image/png', width, height };
+        }
 
-    await saveAssetRecord(slug, record);
-    return record;
+        const resized = needsResize
+            ? pipeline.resize({
+                width: REFERENCE_STORE_MAX_DIMENSION,
+                height: REFERENCE_STORE_MAX_DIMENSION,
+                fit: 'inside',
+                withoutEnlargement: true,
+            })
+            : pipeline;
+
+        const finalBuffer = await resized
+            .jpeg({ quality: REFERENCE_STORE_JPEG_QUALITY, mozjpeg: true })
+            .toBuffer();
+        const finalMeta = await sharp(finalBuffer).metadata();
+        return {
+            buffer: finalBuffer,
+            mimeType: 'image/jpeg',
+            width: finalMeta.width,
+            height: finalMeta.height,
+        };
+    } catch (error) {
+        console.warn('[ShipReferenceService] sharp normalize failed — storing original bytes', {
+            sourceMimeType,
+            sourceBytes: sourceBuffer.length,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return { buffer: sourceBuffer, mimeType: sourceMimeType };
+    }
+}
+
+async function importCandidateAsAsset(
+    slug: string,
+    campaign: Campaign,
+    candidate: ShipReferenceCandidate,
+    assetType: 'ship_reference_image' | 'hero_image',
+    assetId: string,
+    reviewStatus: AssetRecord['reviewStatus'],
+): Promise<AssetRecord> {
+    try {
+        const response = await fetch(candidate.imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ship reference image (${response.status}): ${candidate.imageUrl}`);
+        }
+
+        const rawMimeType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+        const rawBuffer = Buffer.from(await response.arrayBuffer());
+
+        // Phase 8: normalize (downscale + recompress) BEFORE storage. Prevents
+        // the 5 MB Anthropic limit and the 350 KB DynamoDB fallback from
+        // pushing us to the external-record fallback for large references.
+        const normalized = await normalizeReferenceImageForStorage(rawBuffer, rawMimeType);
+        const mimeType = normalized.mimeType;
+        const buffer = normalized.buffer;
+        const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+        const fileName = assetType === 'ship_reference_image'
+            ? `images/references/${assetId}.${extension}`
+            : `images/hero/${assetId}.${extension}`;
+        const url = await storeAsset(slug, assetId, fileName, buffer, mimeType);
+
+        const record: AssetRecord = {
+            assetId,
+            assetType,
+            url,
+            generator: 'serpapi',
+            promptUsed: candidate.title,
+            sourceImageUrl: candidate.imageUrl,
+            sourcePageUrl: candidate.contextUrl,
+            sourceThumbnailUrl: candidate.thumbnailUrl,
+            sourceQuery: candidate.query,
+            selectionScore: candidate.selectionScore,
+            dimensions: {
+                width: normalized.width ?? candidate.width,
+                height: normalized.height ?? candidate.height,
+            },
+            fileSizeBytes: buffer.length,
+            mimeType,
+            tags: ['ship-reference', candidate.category, assetType === 'hero_image' ? 'hero' : 'reference'],
+            createdAt: new Date().toISOString(),
+            reviewStatus,
+            version: 1,
+            active: true,
+            ...(buildCurationFromCandidateAI(candidate) ? { curation: buildCurationFromCandidateAI(candidate) } : {}),
+        };
+
+        await saveAssetRecord(slug, record);
+        return record;
+    } catch (error) {
+        console.warn('[ShipReferenceService] Rehosting failed; preserving external reference candidate', {
+            assetId,
+            imageUrl: candidate.imageUrl,
+            contextUrl: candidate.contextUrl,
+            error: error instanceof Error ? error.message : String(error),
+        });
+
+        const externalRecord = buildExternalReferenceAssetRecord(campaign, candidate, assetId, reviewStatus);
+        await saveAssetRecord(slug, externalRecord);
+        return externalRecord;
+    }
 }
 
 export async function importShipReferenceAssets(slug: string, campaign: Campaign, candidates: ReadonlyArray<ShipReferenceCandidate>): Promise<AssetRecord[]> {
@@ -620,7 +714,7 @@ export async function importShipReferenceAssets(slug: string, campaign: Campaign
     const importResults = await Promise.allSettled(
         candidates.map((candidate, index) => {
             const assetId = `img_ship_reference_${String(nextIndex + index + 1).padStart(3, '0')}`;
-            return importCandidateAsAsset(slug, candidate, 'ship_reference_image', assetId, 'needs_review');
+            return importCandidateAsAsset(slug, campaign, candidate, 'ship_reference_image', assetId, 'needs_review');
         })
     );
 
@@ -637,17 +731,40 @@ export async function importShipReferenceAssets(slug: string, campaign: Campaign
     return records;
 }
 
+/**
+ * Phase 8 (IMAGE_GEN_REVAMP_5-26): pick the URL we can actually fetch at
+ * generation time.
+ *
+ * Before Phase 8, this function preferred record.sourceImageUrl (the
+ * original third-party URL) over record.url (our rehosted R2/storage URL).
+ * That single line caused every successfully-rehosted reference to STILL be
+ * fetched from its flaky third-party source — geo-blocked CDNs, anti-
+ * hotlinking, expired URLs — and the scene generator silently degraded to
+ * text-only output when those fetches failed.
+ *
+ * Phase 8 reverses the preference: use our storage URL unless it's an
+ * "r2://pending:" placeholder, in which case rehosting did not produce
+ * usable bytes and we fall back to the third-party URL.
+ */
+export function selectFetchableReferenceUrl(record: AssetRecord): string {
+    if (record.url && !record.url.startsWith('r2://pending:')) {
+        return record.url;
+    }
+    return record.sourceImageUrl || record.url;
+}
+
 export function assetRecordToShipReferenceCandidate(record: AssetRecord): ShipReferenceCandidate | null {
     if (record.assetType !== 'ship_reference_image') {
         return null;
     }
 
     const category = record.tags.find((tag) => tag !== 'ship-reference' && tag !== 'reference') ?? 'exterior';
+    const fetchableUrl = selectFetchableReferenceUrl(record);
 
     return {
         title: record.promptUsed || record.assetId,
-        imageUrl: record.sourceImageUrl || record.url,
-        thumbnailUrl: record.sourceThumbnailUrl || record.url,
+        imageUrl: fetchableUrl,
+        thumbnailUrl: record.sourceThumbnailUrl || fetchableUrl,
         contextUrl: record.sourcePageUrl || record.url,
         width: record.dimensions?.width ?? 0,
         height: record.dimensions?.height ?? 0,

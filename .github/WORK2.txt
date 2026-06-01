@@ -1,8 +1,0 @@
-1.P4: Static distribution template matrix
-- Meta feed square 1:1 - 1080 x 1080
-- Meta feed portrait 4:5 - 1080 x 1350
-- Meta story/reel 9:16 - 1080 x 1920
-- Meta carousel 1:1 cards - 1080 x 1080
-- Google responsive display landscape 1.91:1 - 1920 x 1004
-- Google responsive display square 1:1 - 1080 x 1080
-- Google responsive display vertical 9:16 - 1080 x 1920

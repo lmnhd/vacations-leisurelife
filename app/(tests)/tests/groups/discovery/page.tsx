@@ -1619,6 +1619,7 @@ export default function DiscoveryTestPage() {
   });
 
   const filteredBlueprints = sortedBlueprints
+    .filter((bp) => bp.status !== 'GATHERING_INTEREST')
     .filter((bp) => showRetired || !isCampaignRetired(bp))
     .filter(matchesPricingFilter)
     .filter(matchesLaunchFilter);

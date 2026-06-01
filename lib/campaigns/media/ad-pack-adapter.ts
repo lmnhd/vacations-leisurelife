@@ -15,8 +15,11 @@ import type {
     CopyForgeCampaignSlice,
     CopyForgeDossierSlice,
     NormalizedAdInput,
+    SourcePoolQualitySummary,
 } from '@/lib/ads/types';
 import { normalizeCampaignResearchDossier } from '../schema';
+import type { AssetRecord, SourceQualityMetadata } from '../schema';
+import { buildSourcePoolAdvisory } from './source-quality';
 
 function nicheSignalsFromBrief(brief: CampaignAestheticBrief, campaign: Campaign): string[] {
     const blueprint = brief.identityBlueprint;
@@ -91,6 +94,39 @@ function buildAvailableImages(manifest: CampaignMediaManifest | null): Available
     };
 }
 
+/**
+ * Phase 3 (IMAGE_GEN_REVAMP_5-26): collect source-quality metadata across all
+ * pools and aggregate into a summary for Copy Forge. Pre-Phase-3 records have
+ * no sourceQuality field and are silently skipped.
+ */
+function buildSourcePoolQuality(manifest: CampaignMediaManifest | null): SourcePoolQualitySummary | undefined {
+    if (!manifest) return undefined;
+    const pools: ReadonlyArray<readonly AssetRecord[] | undefined> = [
+        manifest.images.hero,
+        manifest.images.aestheticConcepts,
+        manifest.images.sceneImages,
+        manifest.images.documentaryDetails,
+    ];
+    const metadata: SourceQualityMetadata[] = [];
+    for (const pool of pools) {
+        if (!pool) continue;
+        for (const record of pool) {
+            if (record.sourceQuality) metadata.push(record.sourceQuality);
+        }
+    }
+    if (metadata.length === 0) return undefined;
+    const advisory = buildSourcePoolAdvisory(metadata);
+    return {
+        sampleSize: advisory.sampleSize,
+        averagePeopleCount: advisory.averagePeopleCount,
+        bestGroupActionScore: advisory.bestGroupActionScore,
+        bestThemeLegibilityScore: advisory.bestThemeLegibilityScore,
+        compositionFamilyBreakdown: advisory.compositionFamilyBreakdown as Record<string, number>,
+        timeOfDayBreakdown: advisory.timeOfDayBreakdown as Record<string, number>,
+        artisticTreatmentBreakdown: advisory.artisticTreatmentBreakdown as Record<string, number>,
+    };
+}
+
 export interface BuildCampaignAdInputArgs {
     brief: CampaignAestheticBrief;
     campaign: Campaign;
@@ -129,5 +165,6 @@ export function buildCampaignAdInput(args: BuildCampaignAdInputArgs): Normalized
         dossier: buildDossierSlice(args.brief, args.campaign),
         templateLayouts,
         availableImages: buildAvailableImages(args.manifest),
+        sourcePoolQuality: buildSourcePoolQuality(args.manifest),
     };
 }

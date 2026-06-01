@@ -45,20 +45,53 @@ function uniqueActiveAssetPool(records: readonly AssetRecord[]): AssetRecord[] {
     return pool;
 }
 
+function isPlatformCropSourceEligible(record: AssetRecord): boolean {
+    if (!record.eligibilityRole) return true;
+    return ![
+        'alternate_art',
+        'reference.audit_only',
+        'final.ad_artifact',
+        'final.channel_deliverable',
+        'review_only',
+    ].includes(record.eligibilityRole);
+}
+
 function selectPreferredUnusedAsset(
     records: readonly AssetRecord[],
     format: ImageFormat,
     manifest: CampaignMediaManifest | null | undefined,
     usedAssetIds: ReadonlySet<string>,
 ): AssetRecord | null {
-    const unusedPool = records.filter((record) => !usedAssetIds.has(record.assetId));
+    const eligibleRecords = records.filter(isPlatformCropSourceEligible);
+    const unusedPool = eligibleRecords.filter((record) => !usedAssetIds.has(record.assetId));
     const context = getPlatformCropSelectionContext(format);
 
     return selectPreferredAssetForContext([...unusedPool], context, manifest)
-        ?? selectPreferredAssetForContext([...records], context, manifest)
+        ?? selectPreferredAssetForContext([...eligibleRecords], context, manifest)
         ?? unusedPool[0]
-        ?? records[0]
+        ?? eligibleRecords[0]
         ?? null;
+}
+
+function findSelectionOverride(
+    manifest: CampaignMediaManifest | null | undefined,
+    key: string,
+): AssetRecord | null {
+    const selectedAssetId = manifest?.imageSelections?.[key];
+    if (!selectedAssetId || !manifest?.images) return null;
+
+    const candidates = [
+        ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
+        ...manifest.images.sceneImages,
+        ...manifest.images.aestheticConcepts,
+        ...(manifest.images.documentaryDetails ?? []),
+        ...manifest.images.shipReferences,
+        ...Object.values(manifest.images.platformCrops ?? {}).flat(),
+    ];
+    const selected = candidates.find((record) => record.assetId === selectedAssetId);
+    if (!selected || !selected.active || !isPlatformCropSourceEligible(selected)) return null;
+    return selected;
 }
 
 export function selectPlatformCropSourceRecord(
@@ -70,6 +103,9 @@ export function selectPlatformCropSourceRecord(
     preferHeroFirst: boolean = true,
     usedAssetIds: ReadonlySet<string> = new Set<string>(),
 ): AssetRecord | null {
+    const override = findSelectionOverride(manifest, `crop:${format}`);
+    if (override) return override;
+
     const activeHeroes = uniqueActiveAssetPool(heroImages);
     const activeScenes = uniqueActiveAssetPool(sceneImages);
     const activeConcepts = uniqueActiveAssetPool(aestheticConcepts);

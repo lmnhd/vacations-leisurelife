@@ -29,9 +29,11 @@ function makeManifest(): CampaignMediaManifest {
         images: {
             shipReferences: [],
             hero: [],
+            flyerImages: [],
             sceneImages: [],
             aestheticConcepts: [],
             documentaryDetails: [],
+            alternateArt: [],
             designedAdArtifacts: [{
                 assetId: 'ad_image_detail_191x100',
                 assetType: 'designed_ad_artifact',

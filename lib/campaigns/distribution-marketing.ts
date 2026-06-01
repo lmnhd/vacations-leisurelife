@@ -1,10 +1,24 @@
 import type { Campaign } from "./types";
 import type {
   AssetRecord,
+  CampaignAestheticBrief,
   CampaignMediaManifest,
   DistributionPostStatus,
   ScheduledPost,
 } from "./schema";
+
+// CTAs that are banned for shadow/waitlist campaigns.
+// When the manifest has stale copy with one of these, substitute the brief's
+// waitlist CTA instead of letting banned language reach live ad platforms.
+const BANNED_CTA_SUBSTRINGS = ['book', 'buy now', 'purchase', 'reserve a cabin'];
+
+function sanitizeCta(cta: string, brief?: CampaignAestheticBrief): string {
+  const lower = cta.toLowerCase();
+  const isBanned = BANNED_CTA_SUBSTRINGS.some((b) => lower.includes(b));
+  if (!isBanned) return cta;
+  // Prefer the brief's waitlist CTA; fall back to a safe default
+  return brief?.messaging?.ctaVariants?.waitlist ?? 'Get First Access';
+}
 import {
   buildMetaAdsReviewUrl,
   getMetaAdsConfig,
@@ -45,6 +59,7 @@ function getAllManifestAssets(manifest: CampaignMediaManifest): AssetRecord[] {
   return [
     ...manifest.images.shipReferences,
     ...manifest.images.hero,
+    ...(manifest.images.flyerImages ?? []),
     ...manifest.images.sceneImages,
     ...manifest.images.aestheticConcepts,
     ...(manifest.images.documentaryDetails ?? []),
@@ -121,12 +136,19 @@ function getTikTokCaption(
 function getInstagramCaption(
   manifest: CampaignMediaManifest,
   campaign: Campaign,
+  brief?: CampaignAestheticBrief,
 ): string {
+  // The brief's heroSlogan is the authoritative source of truth — it updates
+  // with every brief regeneration. The manifest's carouselSlides are generated
+  // copy that can go stale between regenerations, so when the brief is
+  // available we always prefer it over stored slides.
+  if (brief?.messaging?.heroSlogan) {
+    return brief.messaging.heroSlogan;
+  }
   const slide = manifest.copy?.carouselSlides[0]?.trim();
   if (slide && slide.length > 0) {
     return slide;
   }
-
   return campaign.description;
 }
 
@@ -144,6 +166,7 @@ function getMetaAdCopy(
   manifest: CampaignMediaManifest,
   campaign: Campaign,
   copyVariant: string,
+  brief?: CampaignAestheticBrief,
 ): {
   headline: string;
   primaryText: string;
@@ -160,20 +183,25 @@ function getMetaAdCopy(
     ? manifest.copy?.adVariants.find((entry) => entry.variant === variant)
     : manifest.copy?.adVariants[0];
 
+  // The brief's heroSlogan is the authoritative headline — it matches what is
+  // visually rendered inside the static ad image so both text layers tell the
+  // same story in responsive placements.
+  const headline = brief?.messaging?.heroSlogan ?? selected?.headline ?? campaign.name;
+
   if (selected) {
     return {
-      headline: selected.headline,
+      headline,
       primaryText: selected.primaryText,
       description: selected.description,
-      cta: selected.cta,
+      cta: sanitizeCta(selected.cta, brief),
     };
   }
 
   return {
-    headline: campaign.name,
+    headline,
     primaryText: campaign.description,
     description: campaign.description,
-    cta: "LEARN_MORE",
+    cta: sanitizeCta("LEARN_MORE", brief),
   };
 }
 
@@ -182,6 +210,7 @@ function buildPreviewPayload(
   manifest: CampaignMediaManifest,
   post: ScheduledPost,
   assetUrl: string,
+  brief?: CampaignAestheticBrief,
 ): Record<string, unknown> {
   if (post.platform === "tiktok") {
     return {
@@ -201,7 +230,7 @@ function buildPreviewPayload(
   }
 
   if (post.platform === "tiktok_paid") {
-    const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant);
+    const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant, brief);
     return {
       endpoint:
         "/campaign/create + /adgroup/create + /ad/create + /lead/form/create",
@@ -235,14 +264,14 @@ function buildPreviewPayload(
           : post.platform === "instagram_story"
             ? "STORY"
             : "IMAGE",
-      caption: getInstagramCaption(manifest, campaign),
+      caption: getInstagramCaption(manifest, campaign, brief),
       mediaUrl: assetUrl,
       ...(isCarousel ? { mediaUrls } : {}),
       campaignStage: post.campaignStage,
     };
   }
 
-  const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant);
+  const adCopy = getMetaAdCopy(manifest, campaign, post.copyVariant, brief);
 
   if (post.platform === "google_display") {
     return {
@@ -636,6 +665,7 @@ export async function dispatchMarketingPost(
   manifest: CampaignMediaManifest,
   post: ScheduledPost,
   mode: MarketingProviderMode,
+  brief?: CampaignAestheticBrief,
 ): Promise<MarketingDispatchResult> {
   const assetUrl = resolveAssetUrl(manifest, post.assetId);
   if (!assetUrl) {
@@ -653,7 +683,7 @@ export async function dispatchMarketingPost(
     };
   }
 
-  const preview = buildPreviewPayload(campaign, manifest, post, assetUrl);
+  const preview = buildPreviewPayload(campaign, manifest, post, assetUrl, brief);
 
   if (mode === "live") {
     if (post.platform === "tiktok") {

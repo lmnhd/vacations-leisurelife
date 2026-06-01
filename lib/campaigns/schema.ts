@@ -173,6 +173,12 @@ export const SceneSpecSchema = z.object({
     mood: z.string(),
     imagePrompt: z.string(),
     referenceCategory: z.string(),
+    // Phase 2 (IMAGE_GEN_REVAMP_5-26): explicit reference binding.
+    // Populated by bindReferencesToScenes() in the orchestrator after ship
+    // references are loaded — not written by the brief LLM. Generator reads
+    // these to fetch the right reference image and emit preserve clauses.
+    referenceAssetIds: z.array(z.string()).optional(),
+    mustPreserveShipFeatures: z.array(z.string()).optional(),
 });
 export type SceneSpec = z.infer<typeof SceneSpecSchema>;
 
@@ -219,13 +225,101 @@ export const LandingStillUsageEnum = z.enum([
 ]);
 export type LandingStillUsage = z.infer<typeof LandingStillUsageEnum>;
 
+// Phase 3 (IMAGE_GEN_REVAMP_5-26): source-quality metadata stamped onto every
+// generated source image. Drives Copy Forge selection, lint checks, and Phase 5
+// visual-compass enforcement. Scores are deterministic heuristics over scene
+// specs and prompts — vision-based refinement is a Phase 5 stretch goal.
+export const CompositionFamilyEnum = z.enum([
+    'rail',
+    'table',
+    'window',
+    'open_deck',
+    'interior_lounge',
+    'pool_apron',
+    'studio_class',
+    'treatment_room',
+    'nature_overlook',
+    'dining_communal',
+    'corridor_architecture',
+    'off_ship_excursion',
+    'other',
+]);
+export type CompositionFamily = z.infer<typeof CompositionFamilyEnum>;
+
+export const TimeOfDayEnum = z.enum([
+    'sunrise',
+    'morning',
+    'midday',
+    'golden_hour',
+    'dusk_blue_hour',
+    'night',
+]);
+export type TimeOfDay = z.infer<typeof TimeOfDayEnum>;
+
+export const ArtisticTreatmentEnum = z.enum([
+    'natural_documentary',
+    'film_grain_35mm',
+    'sepia',
+    'black_and_white',
+    'high_contrast_editorial',
+    'color_shifted',
+    'overlay_texture',
+    'watercolor_illustration',
+    'other',
+]);
+export type ArtisticTreatment = z.infer<typeof ArtisticTreatmentEnum>;
+
+export const DemographicCoverageSchema = z.object({
+    ageBands: z.array(z.string()).default([]),
+    ethnicityBands: z.array(z.string()).default([]),
+});
+export type DemographicCoverage = z.infer<typeof DemographicCoverageSchema>;
+
+export const SupportSurfaceIntegritySchema = z.object({
+    supported: z.boolean(),
+    issue: z.string().optional(),
+});
+export type SupportSurfaceIntegrity = z.infer<typeof SupportSurfaceIntegritySchema>;
+
+export const SourceQualityMetadataSchema = z.object({
+    compositionFamily: CompositionFamilyEnum,
+    peopleCount: z.number().int().min(0),
+    demographicCoverage: DemographicCoverageSchema,
+    timeOfDay: TimeOfDayEnum,
+    shipLocationFamily: z.string().optional(),
+    themeLegibilityScore: z.number().min(0).max(1),
+    groupActionScore: z.number().min(0).max(1),
+    artisticTreatment: ArtisticTreatmentEnum,
+    supportSurfaceIntegrity: SupportSurfaceIntegritySchema.optional(),
+    // Phase 5 (IMAGE_GEN_REVAMP_5-26): records whether the score was inferred
+    // from prompt metadata or overwritten by an actual image/vision review.
+    scoringSource: z.enum(['deterministic', 'vision_verified']).optional(),
+    visionEvaluatedAt: z.string().optional(),
+});
+export type SourceQualityMetadata = z.infer<typeof SourceQualityMetadataSchema>;
+
+// Phase 1 (IMAGE_GEN_REVAMP_5-26): expanded role set differentiates hero-safe
+// stills from group-action stills, documentary details, and alternate art.
+// New roles map to AssetEligibilityRole via the asset-role-migration section map.
 export const LandingStillSlotRoleEnum = z.enum([
+    // Hero-safe: headline copy space, 1–3 people, low activity density.
     'HERO_PRIMARY',
     'HERO_ALT',
+    // Campaign action: 4–6 people, theme-specific group activity, primary ad-source pool.
+    'CAMPAIGN_ACTION',
+    // Documentary detail: tight texture, hands, objects, proof cues; 1–3 people or no people.
+    'DOCUMENTARY_DETAIL',
+    // Scene image: broad group scene; eligible as static still for animated-type video layouts.
+    'SCENE_IMAGE',
+    // Legacy editorial slots retained for backward compat; treated as CAMPAIGN_ACTION downstream.
     'EDITORIAL_WIDE_A',
     'EDITORIAL_WIDE_B',
+    // Intimate: emotional close-up or pair moment.
     'INTIMATE',
+    // Flex: generator assigns to the least-used role at generation time.
     'FLEX',
+    // Alternate art: watercolor/illustration; blocked from hero and ad source pools.
+    'ALTERNATE_ART',
 ]);
 export type LandingStillSlotRole = z.infer<typeof LandingStillSlotRoleEnum>;
 
@@ -756,6 +850,19 @@ export const ProductionBuildLintIssueCodeEnum = z.enum([
     'missing_role_coverage',
     'hero_set_too_homogeneous',
     'identity_legibility_too_low',
+    // Phase 3 (IMAGE_GEN_REVAMP_5-26): source-quality lint codes.
+    'rail_table_window_overuse',
+    'group_action_floor_missing',
+    'time_of_day_monotony',
+    // Phase 5 (IMAGE_GEN_REVAMP_5-26): manifest-level visual compass lint.
+    'bright_daylight_overuse',
+    'dusk_blue_hour_absent',
+    'demographic_monotony',
+    'alternate_art_leak',
+    'reference_feature_survival_missing',
+    'source_quality_missing',
+    'theme_legibility_weak',
+    'support_surface_impossible',
 ]);
 export type ProductionBuildLintIssueCode = z.infer<typeof ProductionBuildLintIssueCodeEnum>;
 
@@ -1060,8 +1167,8 @@ export type CampaignAestheticBrief = z.infer<typeof CampaignAestheticBriefSchema
 // ────────────────────────────────────────────────────────────────────────────
 
 export const AssetTypeEnum = z.enum([
-    'ship_reference_image', 'hero_image', 'aesthetic_concept', 'scene_image', 'platform_crop',
-    'documentary_detail_image', 'designed_ad_artifact',
+    'ship_reference_image', 'hero_image', 'flyer_image', 'aesthetic_concept', 'scene_image', 'platform_crop',
+    'documentary_detail_image', 'designed_ad_artifact', 'alternate_art',
     'tiktok_seed_video', 'hero_explainer_video', 'threshold_video',
     'countdown_video', 'broll_clip',
     'ambient_narration', 'hype_clip', 'theme_music',
@@ -1073,15 +1180,15 @@ export type AssetType = z.infer<typeof AssetTypeEnum>;
 
 export const GeneratorServiceEnum = z.enum([
     // Image generators
-    'midjourney', 'stability_ai', 'dalle3', 'serpapi',
+    'midjourney', 'stability_ai', 'dalle3', 'gpt_image_2', 'serpapi',
     // Video generators
     'heygen', 'runwayml', 'kling',
     // Audio generators
     'elevenlabs', 'openai_tts', 'replicate', 'udio', 'default_library',
     // Image processing
-    'sharp', 'templated',
+    'sharp', 'templated', 'html_screenshot',
     // OpenAI LLM
-    'gpt4o',
+    'gpt4o', 'gpt5', 'gpt5_mini',
     // Anthropic LLM
     'claude4_opus', 'claude4_sonnet',
     // Google LLM
@@ -1125,6 +1232,25 @@ export const AssetApprovalStateEnum = z.enum([
     'hold',
 ]);
 export type AssetApprovalState = z.infer<typeof AssetApprovalStateEnum>;
+
+// Phase 0 (IMAGE_GEN_REVAMP_5-26): hard source/final separation.
+// Every asset record carries a role that governs which downstream selectors may
+// use it. source.* roles are eligible for ad rendering and landing selection.
+// final.* and reference.audit_only roles are structurally blocked.
+export const AssetEligibilityRoleEnum = z.enum([
+    'source.flyer',            // slug-prompt single-image "flyer"; selectable, never auto-used
+    'source.hero_clean',       // headline-safe, lower density
+    'source.group_action',     // 4–10 people doing theme activity; primary ad pool
+    'source.theme_detail',     // hands, objects, documentary proof cues
+    'source.ship_context',     // vessel architecture; must carry referenceCategory
+    'source.editorial_alt',    // contrast/grain/sepia treatment; photo-real
+    'alternate_art',           // watercolor/illustration; blocked from hero and ad pools
+    'reference.audit_only',    // raw ship reference imagery; informs generation only
+    'final.ad_artifact',       // designed/templated rendered ad; never reusable source
+    'final.channel_deliverable', // final crop/video/audio for distribution
+    'review_only',             // probe images and audit artefacts; not selectable
+]);
+export type AssetEligibilityRole = z.infer<typeof AssetEligibilityRoleEnum>;
 
 export const AssetCurationSchema = z.object({
     approvalState: AssetApprovalStateEnum.default('pending_review'),
@@ -1194,6 +1320,25 @@ export const AssetRecordSchema = z.object({
     /** Quality lint score (0–100) stored at generation time for video assets. */
     lintScore: z.number().min(0).max(100).optional(),
     lintStatus: z.enum(['pass', 'warn', 'fail']).optional(),
+    // Phase 0 (IMAGE_GEN_REVAMP_5-26): source/final eligibility role.
+    // Absent on pre-migration records; treat as source-eligible by convention.
+    eligibilityRole: AssetEligibilityRoleEnum.optional(),
+    // MULTI_MODEL_IMAGES: links the per-model renditions of one logical item.
+    // All model-versions of e.g. flyer rendition #1 share the same variantGroupId
+    // and are distinguished by `generator`. Absent ⇒ single-model item (its own
+    // group). The canonical member is chosen by manifest.modelVersionSelections.
+    variantGroupId: z.string().optional(),
+    // Phase 2 (IMAGE_GEN_REVAMP_5-26): post-generation audit of ship-feature
+    // survival. Populated declaratively at scene-image record time (mirrors
+    // mustPreserveShipFeatures from the bound scene). Phase 5 visual-compass
+    // lint will replace declarative values with vision-verified survivors.
+    preservedFeaturesReported: z.array(z.string()).optional(),
+    // Phase 3 (IMAGE_GEN_REVAMP_5-26): source-quality metadata.
+    // Stamped at generation time by source-quality.ts heuristics. Read by
+    // Copy Forge to prefer higher-quality candidates and by production-build
+    // lint to detect rail/table/window overuse, group-action floor failures,
+    // and time-of-day monotony.
+    sourceQuality: SourceQualityMetadataSchema.optional(),
 });
 export type AssetRecord = z.infer<typeof AssetRecordSchema>;
 
@@ -1344,6 +1489,32 @@ export const CampaignMediaManifestSchema = z.object({
     selections: z.object({
         images: z.record(z.string(), ContextSelectionEntrySchema).default({}),
     }).optional(),
+    imageSelections: z.record(z.string(), z.string()).optional(),
+    imageSlotControls: z.record(z.string(), z.object({
+        hidden: z.boolean().optional(),
+        flipX: z.boolean().optional(),
+        position: z.enum(['left', 'center', 'right']).optional(),
+    })).optional(),
+    copySelections: z.record(z.string(), z.string()).optional(),
+    // MULTI_MODEL_IMAGES: which model-version is canonical per variant group.
+    // variantGroupId -> GeneratorService. Absent ⇒ the primary backend's version.
+    modelVersionSelections: z.record(z.string(), z.string()).optional(),
+    // Per-campaign flyer generation controls — negation rules + variation axes
+    // edited in /tests/media-generation. Absent ⇒ orchestrator uses code defaults.
+    flyerControls: z.object({
+        negations: z.array(z.string()).default([]),
+        axes: z.array(z.string()).default([]),
+        // MULTI_MODEL_IMAGES: active image backends for flyer generation.
+        // Omitted/empty ⇒ primary backend only (single-model). GeneratorService ids.
+        models: z.array(z.string()).optional(),
+    }).optional(),
+    // LANDING_IMAGE_STUDIO: operator-curated landing collections. Each is an
+    // ordered list of assetIds. Present & non-empty ⇒ FULL-REPLACE that collection
+    // (the view-model uses exactly this list/order); absent/empty ⇒ auto algorithm.
+    landingImageSets: z.object({
+        gallery: z.array(z.string()).optional(),
+        trust: z.array(z.string()).optional(),
+    }).optional(),
     tiktokPromotionPackage: TikTokPromotionPackageSchema.optional(),
 
     images: z.object({
@@ -1352,6 +1523,8 @@ export const CampaignMediaManifestSchema = z.object({
         sceneImages: z.array(AssetRecordSchema),
         aestheticConcepts: z.array(AssetRecordSchema),
         documentaryDetails: z.array(AssetRecordSchema).default([]),
+        flyerImages: z.array(AssetRecordSchema).default([]),
+        alternateArt: z.array(AssetRecordSchema).default([]),
         designedAdArtifacts: z.array(AssetRecordSchema).default([]),
         platformCrops: z.record(ImageFormatEnum, z.array(AssetRecordSchema)),
     }),

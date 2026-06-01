@@ -16,7 +16,9 @@ export const ImageSlotDirectiveSchema = z.object({
 
 export const SlotPackSchema = z.object({
     compositionNote: z.string().min(20, 'compositionNote must explain how copy + imagery fuse'),
-    headline: z.string().min(1).max(50, 'headline must be <=50 chars'),
+    // The real cap is enforced per template slot in the quality gate. This
+    // schema ceiling only prevents runaway generations from getting absurd.
+    headline: z.string().min(1).max(80, 'headline must be <=80 chars'),
     subhead: z.string().max(80, 'subhead must be <=80 chars'),
     microcopy: z.string().max(30, 'microcopy must be <=30 chars'),
     cta: z.string().min(1).max(20, 'cta must be <=20 chars'),

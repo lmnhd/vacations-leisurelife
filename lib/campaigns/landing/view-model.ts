@@ -11,6 +11,7 @@ import type {
   VisualFlavor,
 } from "@/lib/campaigns/schema";
 import { formatDeparturePort } from "@/lib/campaigns/cruise-ports";
+import { formatPortsOfCall, formatDepartureLeg } from "@/lib/campaigns/landing/port-codes";
 import {
   getPublicGroupCabinTarget,
   getPublicThresholdPercent,
@@ -331,37 +332,140 @@ function buildStarterConversation(
   ];
 }
 
+function parseNightCount(value?: string | null): number | null {
+  const match = value?.match(/(\d+)\s*(?:night|nights)?/i);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function formatNightLabel(value?: string | null): string {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) return '';
+  return /\bnight(s)?\b/i.test(trimmed) ? trimmed : `${trimmed} nights`;
+}
+
+function normalizeItineraryComparable(value?: string | null): string {
+  return (value ?? '')
+    .toLowerCase()
+    .replace(/\b(pr|p\.r\.)\b/g, 'puerto rico')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function splitRouteParts(value: string): string[] {
+  return value
+    .split(/\s*(?:Â·|·|\|)\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function extractDepartingLeg(value: string): string {
+  for (const part of splitRouteParts(value)) {
+    const match = part.match(/^Departing\s+(.+)$/i);
+    if (match?.[1]) return match[1].trim();
+  }
+  return '';
+}
+
+function hasMeaningfulLocationOverlap(left: string, right: string): boolean {
+  const leftWords = new Set(
+    normalizeItineraryComparable(left)
+      .split(/\s+/)
+      .filter((word) => word.length > 2),
+  );
+  const rightWords = normalizeItineraryComparable(right)
+    .split(/\s+/)
+    .filter((word) => word.length > 2);
+
+  return rightWords.some((word) => leftWords.has(word));
+}
+
+function isStoredItineraryConsistentWithMatch(
+  rawItinerarySummary: string,
+  cleanItinerarySummary: string,
+  campaignNights: string,
+  departurePort: string,
+): boolean {
+  if (!cleanItinerarySummary) return false;
+
+  const itineraryNights = parseNightCount(cleanItinerarySummary);
+  const matchedNights = parseNightCount(campaignNights);
+  if (itineraryNights !== null && matchedNights !== null && itineraryNights !== matchedNights) {
+    return false;
+  }
+
+  const departingLeg =
+    extractDepartingLeg(cleanItinerarySummary) || extractDepartingLeg(rawItinerarySummary);
+  if (departingLeg && departurePort && !hasMeaningfulLocationOverlap(departurePort, departingLeg)) {
+    return false;
+  }
+
+  return true;
+}
+
 function buildItinerarySummary(campaign: Campaign): LandingItinerarySummary {
   const ship = campaign.matchedShipName ?? campaign.shipTarget ?? campaign.name;
   const destination = campaign.targetDestination?.trim() || '';
   const nights = campaign.matchedNights?.trim() || '';
-  const odysseusItinerarySummary = campaign.odysseusItinerarySummary?.trim() || '';
-  const odysseusPortsOfCall = campaign.odysseusPortsOfCall?.trim() || '';
+  const rawItinerarySummary = campaign.odysseusItinerarySummary?.trim() || '';
+  const rawPortsOfCall = campaign.odysseusPortsOfCall?.trim() || '';
   const departurePort = campaign.matchedDeparturePort?.trim()
     ? formatDeparturePort(campaign.matchedDeparturePort)
     : '';
   const sailDate = campaign.matchedSailDate?.trim() || '';
-  const routeSummary = odysseusItinerarySummary
-    || [nights ? `${nights} nights` : '', destination]
+
+  // Rebuild the itinerary summary cleanly, resolving any raw port codes that
+  // appear in the Odysseus-scraped summary string (e.g. "Departing SJU").
+  const cleanItinerarySummary = rawItinerarySummary
+    ? rawItinerarySummary
+        .split(/\s*(?:Â·|·)\s*/)
+        .map((part) => {
+          // "Departing CODE" / "Arriving CODE" — resolve the code
+          const legMatch = part.match(/^(Departing|Arriving)\s+([A-Z]{2,4})$/);
+          if (legMatch) return `${legMatch[1]} ${formatDepartureLeg(legMatch[2])}`;
+          // Bare pipe-separated code string — reformat
+          if (/^[A-Z]{2,4}(\|[A-Z]{2,4})+$/.test(part)) {
+            return formatPortsOfCall(part) ?? part;
+          }
+          return part;
+        })
+        .join(' · ')
+    : '';
+
+  const storedItineraryIsConsistent = isStoredItineraryConsistentWithMatch(
+    rawItinerarySummary,
+    cleanItinerarySummary,
+    nights,
+    departurePort,
+  );
+
+  // Resolve port codes to human-readable names, but only when the stored route
+  // does not contradict the matched sailing facts.
+  const resolvedPortsOfCall = storedItineraryIsConsistent && rawPortsOfCall
+    ? formatPortsOfCall(rawPortsOfCall)
+    : null;
+
+  const routeSummary = (storedItineraryIsConsistent ? cleanItinerarySummary : '')
+    || [formatNightLabel(nights), destination]
       .filter(Boolean)
       .join(' · ')
     || 'Itinerary still forming';
+
   const details = [
     sailDate ? `Sail date: ${sailDate}` : '',
     departurePort ? `Departure port: ${departurePort}` : '',
     destination ? `Region: ${destination}` : '',
-    nights ? `Duration: ${nights} nights` : '',
-    odysseusPortsOfCall ? `Ports of call: ${odysseusPortsOfCall}` : '',
+    nights ? `Duration: ${formatNightLabel(nights)}` : '',
+    resolvedPortsOfCall ? `Ports of call: ${resolvedPortsOfCall}` : '',
   ].filter(Boolean);
   const notes = campaign.finalItineraryUrl
     ? [
         'A final itinerary link has been published for this sailing.',
         'If the route is fully published elsewhere, that source should be treated as authoritative.',
       ]
-    : odysseusPortsOfCall
+    : resolvedPortsOfCall
       ? [
-          'Odysseus has published a route summary for this sailing.',
-          'Use the port-of-call text from the booking engine as the best available itinerary detail.',
+          'A route summary has been confirmed for this sailing.',
+          'Port details reflect the confirmed sailing itinerary.',
         ]
     : [
         'Specific port stops have not been published yet.',
@@ -373,8 +477,8 @@ function buildItinerarySummary(campaign: Campaign): LandingItinerarySummary {
     statusLabel: campaign.finalItineraryUrl ? 'Itinerary published' : 'Itinerary still forming',
     summary: campaign.finalItineraryUrl
       ? `A final itinerary is available for ${ship}.`
-      : odysseusPortsOfCall
-        ? `Odysseus shows the route for ${ship}: ${odysseusPortsOfCall}.`
+      : resolvedPortsOfCall
+        ? `The confirmed route for ${ship}: ${resolvedPortsOfCall}.`
       : `We can confirm the sailing direction, but the port-by-port route has not been published yet for ${ship}.`,
     details,
     notes,
@@ -618,11 +722,37 @@ function selectApprovedOrFirst(candidates: AssetRecord[]): AssetRecord | null {
   return withUrl.find(isApprovedAsset) ?? withUrl[0] ?? null;
 }
 
+function findLandingSelectionOverride(
+  manifest: CampaignMediaManifest,
+  key: string,
+): AssetRecord | null {
+  const selectedAssetId = manifest.imageSelections?.[key];
+  if (!selectedAssetId) return null;
+  const candidates = [
+    ...(manifest.images.platformCrops.hero_16x9 ?? []),
+    ...manifest.images.hero,
+    ...(manifest.images.flyerImages ?? []),
+    ...manifest.images.sceneImages,
+    ...manifest.images.aestheticConcepts,
+    ...(manifest.images.documentaryDetails ?? []),
+    ...manifest.images.shipReferences,
+  ];
+  const selected = candidates.find((asset) => asset.assetId === selectedAssetId);
+  if (!selected?.url || selected.active === false) return null;
+  if (selected.curation?.approvalState === "rejected") return null;
+  return selected;
+}
+
 export function selectLandingHeroAsset(
   manifest: CampaignMediaManifest | null,
 ): AssetRecord | null {
   if (!manifest) {
     return null;
+  }
+
+  const override = findLandingSelectionOverride(manifest, "section:landingHero:primary");
+  if (override) {
+    return override;
   }
 
   const candidates = [
@@ -658,6 +788,32 @@ function resolveHeroImage(
   };
 }
 
+// LANDING_IMAGE_STUDIO: gather every image asset into an id→asset map so a
+// curated id (any section, any model-variant) resolves.
+function buildLandingAssetIndex(manifest: CampaignMediaManifest): Map<string, AssetRecord> {
+  const all: AssetRecord[] = [
+    ...Object.values(manifest.images.platformCrops ?? {}).flat(),
+    ...manifest.images.hero,
+    ...(manifest.images.flyerImages ?? []),
+    ...manifest.images.sceneImages,
+    ...manifest.images.aestheticConcepts,
+    ...(manifest.images.documentaryDetails ?? []),
+    ...manifest.images.shipReferences,
+  ];
+  const map = new Map<string, AssetRecord>();
+  for (const asset of all) if (asset.assetId) map.set(asset.assetId, asset);
+  return map;
+}
+
+// A curated asset ships if it still exists, is active, and isn't rejected/held —
+// i.e. the same eligibility as the studio's selectable pool. Graceful skip
+// otherwise (an asset that was later rejected just drops out).
+function isCuratedEligible(asset: AssetRecord | undefined): asset is AssetRecord {
+  if (!asset?.url || asset.active === false) return false;
+  const state = asset.curation?.approvalState;
+  return state !== 'rejected' && state !== 'revision_required' && state !== 'hold';
+}
+
 function buildGalleryImages(
   campaign: Campaign,
   manifest: CampaignMediaManifest | null,
@@ -667,6 +823,25 @@ function buildGalleryImages(
 
   if (!manifest) {
     return heroImage?.url ? [heroImage] : [];
+  }
+
+  // FULL-REPLACE override: if the operator curated a gallery, use exactly that
+  // list/order (eligible, de-duped, hero excluded, capped) — algorithm not consulted.
+  const curated = manifest.landingImageSets?.gallery;
+  if (curated && curated.length > 0) {
+    const index = buildLandingAssetIndex(manifest);
+    const seen = new Set<string>();
+    const out: LandingImageAsset[] = [];
+    for (const id of curated) {
+      const asset = index.get(id);
+      if (!isCuratedEligible(asset)) continue;
+      if (asset.url === heroImage?.url || seen.has(asset.url)) continue;
+      seen.add(asset.url);
+      out.push({ url: asset.url, alt: `${campaign.name} campaign image` });
+      if (out.length >= maxGalleryImages) break;
+    }
+    if (out.length > 0) return out;
+    // Curated list resolved to nothing usable → fall through to the algorithm.
   }
 
   const sceneCandidates = [...manifest.images.sceneImages];
@@ -1211,7 +1386,7 @@ function buildFacts(
   const itinerary = buildItinerarySummary(campaign);
 
   const facts: LandingFact[] = [
-    { label: "Sailing", value: campaign.targetDates },
+    { label: "Sailing", value: campaign.matchedSailDate ?? campaign.targetDates },
     {
       label: "Ship",
       value:
@@ -1237,7 +1412,7 @@ function buildFacts(
   if (campaign.matchedNights) {
     facts.push({
       label: "Duration",
-      value: `${campaign.matchedNights} nights`,
+      value: formatNightLabel(campaign.matchedNights),
     });
   }
 

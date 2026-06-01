@@ -1,29 +1,9 @@
 import { getOdysseusSession, releaseOdysseusSession } from '@/lib/services/odysseus/OdysseusSessionManager';
 import type { CruiseResult, CruiseSearchCriteria } from '@/lib/services/odysseus/types';
-
-const PORT_CODES: Record<string, string> = {
-    MIA: 'Miami, FL',
-    FLL: 'Fort Lauderdale, FL',
-    MCO: 'Orlando (Port Canaveral), FL',
-    XPC: 'Port Canaveral, FL',
-    TPA: 'Tampa, FL',
-    JAX: 'Jacksonville, FL',
-    NOR: 'New Orleans, LA',
-    NYC: 'New York, NY',
-    BAL: 'Baltimore, MD',
-    BOS: 'Boston, MA',
-    SEA: 'Seattle, WA',
-    SFO: 'San Francisco, CA',
-    LAX: 'Los Angeles, CA',
-    SOU: 'Southampton, UK',
-    BCN: 'Barcelona, Spain',
-    ROM: 'Rome (Civitavecchia), Italy',
-    VEN: 'Venice, Italy',
-    ATH: 'Athens (Piraeus), Greece',
-};
+import { resolvePortCode } from '@/lib/campaigns/landing/port-codes';
 
 function resolvePort(code: string): string {
-    return PORT_CODES[code] ?? code;
+    return resolvePortCode(code) ?? code;
 }
 
 const CRUISE_LINE_NAMES: Record<number, string> = {

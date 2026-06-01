@@ -39,29 +39,11 @@ export const SKETCHED_STYLE = [
 export const REALISTIC_BASE_STYLE = [
     'Style: Documentary-grade cruise photography',
     'Use sharp detail, accurate ship architecture, natural marine lighting, and believable materials such as teak, steel, glass, pool tile, painted deck surfaces, and ocean haze',
-    'Keep editorial restraint with no over-processing; the image should feel like a professional cruise line brochure or travel photographer portfolio shot on a modern mirrorless camera',
+    'Keep editorial restraint with no over-processing; the image should feel like a professional cruise line brochure or travel photographer portfolio',
     'Use subtle depth of field only where appropriate, and do not apply illustrative treatment',
 ].join('. ');
 
-export const FILM_GRADES = [
-    'Kodachrome 1970s warmth with natural reds, amber sunlight, and gentle highlight rolloff',
-    'late-1980s Ektachrome saturation with crisp blue water, clean whites, and slide-film contrast',
-    'expired Polaroid color shift with softened shadows, creamy highlights, and tactile analog imperfection',
-    'cross-processed slide film with restrained cyan shadows, warm highlights, and real optical character',
-] as const;
-
-function stableHash(value: string): number {
-    let hash = 2166136261;
-    for (let index = 0; index < value.length; index += 1) {
-        hash ^= value.charCodeAt(index);
-        hash = Math.imul(hash, 16777619);
-    }
-    return hash >>> 0;
-}
-
-function chooseRealisticFilmGrade(seed: string): string {
-    return FILM_GRADES[stableHash(seed) % FILM_GRADES.length];
-}
+// Film grades removed from prompts — visual effects live in image-filter-registry.ts
 
 function buildThemeAnchorInstruction(themeAnchorProps: readonly string[] | undefined): string {
     const props = (themeAnchorProps ?? [])
@@ -82,21 +64,23 @@ function resolveStyleId(input: MediaStyleResolutionInput): StyleId {
         return 'sketched';
     }
 
-    // Trust-facing assets stay realistic. Scenes, probes, and documentary detail
-    // modules should never drift back into the watercolor experiment.
-    if (input.assetKind === 'scene' || input.assetKind === 'probe' || input.assetKind === 'documentary_detail') {
+    // Trust-facing assets always stay realistic. Heroes and ref_heroes are source
+    // images for ads and landing pages — they must never be watercolor/illustration.
+    // Scenes, probes, and documentary details also stay realistic.
+    if (
+        input.assetKind === 'hero' ||
+        input.assetKind === 'ref_hero' ||
+        input.assetKind === 'scene' ||
+        input.assetKind === 'probe' ||
+        input.assetKind === 'documentary_detail'
+    ) {
+        // indie_zine is the only flavor that intentionally uses handmade/sketch aesthetic.
+        if (input.visualFlavor === 'indie_zine') return 'sketched';
         return 'realistic';
     }
 
-    // When a visual flavor is known, let it drive the style for heroes/ref_heroes.
-    // indie_zine uses a handmade polaroid aesthetic (sketched); all others use the
-    // realistic trust-image pool (editorial, nostalgia, or neutral System 4).
-    if (input.visualFlavor !== undefined) {
-        return input.visualFlavor === 'indie_zine' ? 'sketched' : 'realistic';
-    }
-
-    // Legacy fallback: use people-detection heuristic when no flavor is set.
-    return input.hasPeople ? 'sketched' : 'realistic';
+    // For any remaining kinds (should not occur in practice), default realistic.
+    return 'realistic';
 }
 
 export function resolveMediaStyle(input: MediaStyleResolutionInput): ResolvedMediaStyle {
@@ -110,12 +94,10 @@ export function resolveMediaStyle(input: MediaStyleResolutionInput): ResolvedMed
         };
     }
 
-    const filmGrade = chooseRealisticFilmGrade(input.seed || input.assetKind);
     return {
         style,
         promptBlock: [
             REALISTIC_BASE_STYLE,
-            `Analog film character: ${filmGrade}; make this feel like physical film stock or lens behavior, not a digital overlay`,
             buildThemeAnchorInstruction(input.themeAnchorProps),
         ].join('. '),
         allowPhotographicReinforcers: true,

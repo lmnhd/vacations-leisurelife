@@ -380,13 +380,22 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                                     className="absolute inset-0 bg-cover bg-center"
                                     style={{ backgroundImage: `url(${images[1]?.url})` }}
                                 />
-                                <div className={`absolute inset-0 ${system === 'system_4_modular' ? 'bg-black/60' : 'bg-black/35'}`} />
+                                <div className="absolute inset-0 bg-black/25" />
                                 <div className="relative z-10 flex h-full items-center px-8 md:px-10">
-                                    <blockquote>
-                                        <p className="max-w-xl text-xl font-medium italic leading-8 text-white/90">
+                                    <blockquote className={[
+                                        'px-5 py-4 backdrop-blur-[2px]',
+                                        system === 'system_4_modular'
+                                            ? 'bg-black/75 border-l-4 border-white/30'
+                                            : system === 'system_3_polaroid'
+                                                ? 'bg-white/15 border border-white/25 rounded-sm'
+                                                : system === 'system_2_postcard'
+                                                    ? 'bg-black/60 rounded-sm'
+                                                    : 'bg-black/60',
+                                    ].join(' ')}>
+                                        <p className="max-w-xl text-xl font-medium italic leading-8 text-white" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
                                             &ldquo;{landing.designSystem.quote}&rdquo;
                                         </p>
-                                        <cite className="mt-3 block text-[10px] font-semibold uppercase not-italic tracking-[0.28em] text-white/50">
+                                        <cite className="mt-3 block text-[10px] font-semibold uppercase not-italic tracking-[0.28em] text-white/70">
                                             {landing.designSystem.quoteCite}
                                         </cite>
                                     </blockquote>

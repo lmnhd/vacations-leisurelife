@@ -20,12 +20,15 @@ export default async function CampaignLandingPreviewPage(
         searchParams,
     }: {
         params: Promise<{ slug: string }>;
-        searchParams: Promise<{ flavor?: string | string[] }>;
+        searchParams: Promise<{ flavor?: string | string[]; chrome?: string | string[] }>;
     },
 ) {
     const { slug } = await params;
-    const { flavor } = await searchParams;
+    const { flavor, chrome } = await searchParams;
     const flavorOverride = parseFlavorParam(flavor);
+    // chrome=0 → bare landing render (used by the Landing Image Studio iframe so
+    // the review/flavor bars don't slide over the page on each reload).
+    const showChrome = chrome !== '0';
 
     const result = await getCampaignLandingBySlug(slug, {
         includeDraftPreview: true,
@@ -40,6 +43,11 @@ export default async function CampaignLandingPreviewPage(
         ?? result.brief?.identityBlueprint?.visualFlavor
         ?? 'none';
     const persistedIsLocked = Boolean(result.campaign.manualVisualFlavor);
+
+    if (!showChrome) {
+        // Bare render for the studio iframe — just the public page.
+        return <GuestPortal landing={result.landing} />;
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-slate-100">

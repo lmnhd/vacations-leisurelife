@@ -455,12 +455,13 @@
                             "maxWords": 6,
                             "maxLines": 2,
                             "copyRole": "Call-to-action text in the black banner bar at the bottom of the design",
-                            "copyInstruction": "Write a short, action-oriented CTA phrase that invites the viewer to learn more or take action. Conversational and exciting tone.",
+                            "copyInstruction": "Write a short, action-oriented CTA phrase that invites the viewer to join the waitlist or get early access. Conversational and exciting tone. Never use booking language — use waitlist-forward language instead.",
                             "disallow": [
                                 "date",
                                 "port",
                                 "ship",
-                                "route"
+                                "route",
+                                "book"
                             ]
                         },
                         {
@@ -742,10 +743,11 @@
                             "maxWords": 3,
                             "maxLines": 2,
                             "copyRole": "Call-to-action button text driving clicks",
-                            "copyInstruction": "Short uppercase action phrase. Should convey exclusivity or next step (e.g., JOIN WAIT LIST, RESERVE NOW, LEARN MORE).",
+                            "copyInstruction": "Short uppercase action phrase conveying waitlist access or next step (e.g., JOIN WAIT LIST, GET FIRST ACCESS, SAVE MY SPOT). Never use booking language.",
                             "disallow": [
                                 "price",
-                                "date"
+                                "date",
+                                "book"
                             ]
                         }
                     ]
@@ -909,7 +911,10 @@
                             "maxWords": 3,
                             "maxLines": 2,
                             "copyRole": "Call-to-action text inside a circular gold button in the lower-left area",
-                            "copyInstruction": "Write a short, direct CTA in uppercase that fits inside a small circular badge; two short words preferred"
+                            "copyInstruction": "Write a short, direct CTA in uppercase that fits inside a small circular badge; two short words preferred. Never use booking language — use waitlist-forward language.",
+                            "disallow": [
+                                "book"
+                            ]
                         }
                     ]
                 }

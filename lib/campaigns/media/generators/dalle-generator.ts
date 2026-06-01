@@ -2,6 +2,7 @@ import { CampaignAestheticBrief } from '../../schema';
 import { GeneratedImage } from './stability-generator';
 import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 import { resolveMediaStyle } from '../style-prompts';
+import { extractNanoBananaImageBuffer } from './nano-banana-response';
 
 // ────────────────────────────────────────────────────────────────────────────
 // DALL-E 3 Merch Design Generator
@@ -39,25 +40,8 @@ async function generateNanoBananaMerchImage(prompt: string): Promise<Buffer> {
         throw new Error(`Nano-Banana error ${response.status}: ${errorText}`);
     }
 
-    const payload = await response.json() as {
-        candidates?: Array<{
-            content?: {
-                parts?: Array<{
-                    inlineData?: { data?: string };
-                    inline_data?: { data?: string };
-                }>;
-            };
-        }>;
-    };
-    const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
-    const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
-
-    if (!imageData) {
-        throw new Error('Nano-Banana did not return a merch image payload');
-    }
-
-    return Buffer.from(imageData, 'base64');
+    const payload = await response.json() as Parameters<typeof extractNanoBananaImageBuffer>[0];
+    return extractNanoBananaImageBuffer(payload, 'Nano-Banana');
 }
 
 function buildStyledMerchPrompt(prompt: string, seed: string, themeAnchorProps: readonly string[]): string {
@@ -92,6 +76,7 @@ export async function generateMerchDesigns(
     results.push({
         buffer: coreBuffer,
         prompt: corePrompt,
+        filterId: null,
         assetId: 'merch_core_tshirt',
         fileName: `merch/designs/core_tshirt_design.png`,
     });
@@ -102,6 +87,7 @@ export async function generateMerchDesigns(
     results.push({
         buffer: practicalBuffer,
         prompt: practicalPrompt,
+        filterId: null,
         assetId: practicalAssetId,
         fileName: `merch/designs/${merch.practicalItem.productType.toLowerCase().replace(/\s+/g, '_')}_design.png`,
     });
@@ -115,6 +101,7 @@ export async function generateMerchDesigns(
         results.push({
             buffer,
             prompt,
+            filterId: null,
             assetId,
             fileName: `merch/designs/niche_item_${idx}_design.png`,
         });

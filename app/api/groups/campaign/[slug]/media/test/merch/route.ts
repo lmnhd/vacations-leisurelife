@@ -6,6 +6,7 @@ import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord, upsertManifestAssetSection } from '@/lib/campaigns/media/media-store';
 import { NANO_BANANA_CONFIG, getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 import type { AssetRecord } from '@/lib/campaigns/schema';
+import { extractNanoBananaImageBuffer } from '@/lib/campaigns/media/generators/nano-banana-response';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/merch
@@ -86,24 +87,8 @@ export async function POST(
             throw new Error(`Nano-Banana error ${imageResponse.status}: ${errorText}`);
         }
 
-        const payload = await imageResponse.json() as {
-            candidates?: Array<{
-                content?: {
-                    parts?: Array<{
-                        inlineData?: { data?: string };
-                        inline_data?: { data?: string };
-                    }>;
-                };
-            }>;
-        };
-        const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
-        const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
-        const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
-        if (!imageData) {
-            throw new Error('Nano-Banana did not return a merch image payload');
-        }
-
-        const imageBuffer = Buffer.from(imageData, 'base64');
+        const payload = await imageResponse.json() as Parameters<typeof extractNanoBananaImageBuffer>[0];
+        const imageBuffer = extractNanoBananaImageBuffer(payload, 'Nano-Banana');
         const assetId = `merch_${targetItem.type}_${randomUUID().slice(0, 8)}`;
         const fileName = `merch/${targetItem.type}_design_${assetId}.png`;
 

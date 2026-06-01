@@ -83,6 +83,8 @@ async function main() {
         assert.match(prompt, /low-pressure decompression/i);
         assert.match(prompt, /Ceramic mugs/i);
         assert.match(prompt, /Icon of the Seas/i);
+        assert.match(prompt, /No person may sit, stand, kneel, or lie on open water/i);
+        assert.match(prompt, /pool boundary, coping, or deck edge/i);
     });
 
     if (failedCount > 0) {

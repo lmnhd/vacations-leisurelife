@@ -709,13 +709,22 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         className="absolute inset-0 bg-cover bg-center"
                         style={{ backgroundImage: `url(${images[1]?.url})` }}
                     />
-                    <div className={`absolute inset-0 ${system === 'system_4_modular' ? 'bg-black/60' : 'bg-black/35'}`} />
+                    <div className="absolute inset-0 bg-black/25" />
                     <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl items-center px-6 md:px-10">
-                        <blockquote>
-                            <p className="max-w-2xl text-2xl font-medium italic leading-9 text-white/95 md:text-3xl">
+                        <blockquote className={[
+                            'px-6 py-5 backdrop-blur-[2px]',
+                            system === 'system_4_modular'
+                                ? 'bg-black/75 border-l-4 border-white/30'
+                                : system === 'system_3_polaroid'
+                                    ? 'bg-white/15 border border-white/25 rounded-sm'
+                                    : system === 'system_2_postcard'
+                                        ? 'bg-black/60 rounded-sm'
+                                        : 'bg-black/60', // system_1_magazine default
+                        ].join(' ')}>
+                            <p className="max-w-2xl text-2xl font-medium italic leading-9 text-white md:text-3xl" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                                 &ldquo;{landing.designSystem.quote}&rdquo;
                             </p>
-                            <cite className="mt-3 block text-[10px] font-semibold uppercase not-italic tracking-[0.28em] text-white/60">
+                            <cite className="mt-3 block text-[10px] font-semibold uppercase not-italic tracking-[0.28em] text-white/70">
                                 {landing.designSystem.quoteCite}
                             </cite>
                         </blockquote>

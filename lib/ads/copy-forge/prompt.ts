@@ -34,12 +34,13 @@ Hard rules:
 - Never use the ship name, cruise line, route, port names, or sail date in headline, subhead, or microcopy when that slot disallows logistics.
 - Headline: no trailing period, must use a concrete sensory or temporal anchor from the campaign's nicheSignals/propFamilies/cruiseNativeMoments.
 - Headline: must not contain any term from avoidDirectives.
-- CTA: max 20 chars, imperative voice.
+- CTA: max 20 chars, imperative voice. Never use "book", "reserve a cabin", or any direct-booking verb — these are shadow waitlist campaigns, not open-sale listings. Use waitlist-forward language instead: "Get First Access", "Join the List", "Save My Spot", "Reserve Your Spot".
 - subhead: use the template slot budget; if no subhead slot exists, return an empty string.
 - microcopy: use the template slot budget; if no microcopy slot exists, return an empty string.
 - Each imageSlotDirective.narrativeRole MUST be unique within a SlotPack.
 - Image slot directives must create a diversified image set. Use each slot's preferredAssetTypes and copyInstruction; avoid assigning every slot to the same subject, scene type, or assetType.
 - Each imageSlotDirective.assetType MUST be present in availableImages (count > 0).
+- When source_pool_quality is present, use it: prefer narrative roles backed by higher bestGroupActionScore and bestThemeLegibilityScore. If the pool is dominated by one compositionFamily (e.g. mostly "rail"), explicitly write narrative roles that pull from a different family so the ad set does not visually collapse. If the pool is mostly midday daylight, ask for one dusk_blue_hour or golden_hour beat where the slot allows.
 - Output strict JSON matching the supplied schema. No prose, no markdown.`;
 
 function formatsForPrompt(
@@ -116,6 +117,12 @@ export function assembleCopyForgePrompt(input: CopyForgeInput): AssembledPrompt 
         visual_flavor: input.visualFlavor,
         formats,
         available_images: input.availableImages,
+        // Phase 3 (IMAGE_GEN_REVAMP_5-26): aggregate source-pool quality so the
+        // model can pick narrative roles aligned with what the pool contains.
+        // When this block is present, prefer slots backed by higher-scoring
+        // group-action or theme-legible candidates. When absent (legacy
+        // manifest), fall back to counts only.
+        source_pool_quality: input.sourcePoolQuality ?? null,
         constraints: {
             niche_theme_is_primary_sales_message: true,
             visible_copy_must_name_or_clearly_signal_the_niche: true,

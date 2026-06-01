@@ -1,11 +1,12 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { getElevenLabsVoiceRoleLabel, parseElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import type { AssetApprovalState, AssetRecord, AssetType, CampaignIdentityBlueprint, ReviewStatus } from '@/lib/campaigns/schema';
 import { IMAGE_CONTEXT_VALUES } from '@/lib/campaigns/schema';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';
 import { metadataContainsKnownShipLandscapeFeature } from '@/lib/campaigns/media/ship-environment-profile';
+import { imageBackendLabel } from '@/lib/campaigns/media/generators/image-backend-meta';
 import { Check, AlertTriangle, Trash2, RefreshCw, Loader2, ExternalLink, SlidersHorizontal, MoreHorizontal, X, Plus, Lock, Unlock } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -18,8 +19,8 @@ const VIDEO_ASSET_TYPES = new Set<AssetType>([
 ]);
 
 const IMAGE_ARTIFACT_TYPES = new Set<AssetType>([
-    'hero_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
-    'documentary_detail_image', 'designed_ad_artifact',
+    'hero_image', 'flyer_image', 'aesthetic_concept', 'ship_reference_image', 'platform_crop',
+    'documentary_detail_image', 'alternate_art', 'designed_ad_artifact',
 ]);
 
 const AUDIO_ARTIFACT_TYPES = new Set<AssetType>([
@@ -58,9 +59,20 @@ function getDeleteEndpoint(slug: string, assetType: AssetType): string | null {
 function isRegenerableType(assetType: AssetType): boolean {
     return assetType === 'scene_image'
         || assetType === 'hero_image'
+        || assetType === 'flyer_image'
         || assetType === 'aesthetic_concept'
-    || AUDIO_ARTIFACT_TYPES.has(assetType)
+        || assetType === 'documentary_detail_image'
+        || AUDIO_ARTIFACT_TYPES.has(assetType)
         || VIDEO_ASSET_TYPES.has(assetType);
+}
+
+export interface VisualRepairInsight {
+    code: string;
+    severity: 'blocker' | 'warning';
+    summary: string;
+    recommendedAction: string;
+    revisionNote: string;
+    details?: string;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -90,10 +102,10 @@ function renderPreview(asset: AssetRecord) {
         const previewUrl = asset.assetType === 'ship_reference_image' && asset.sourceThumbnailUrl
             ? asset.sourceThumbnailUrl
             : asset.url;
-        return <img src={`${previewUrl}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-44 w-full rounded-lg object-cover" />;
+        return <img src={`${previewUrl}?v=${encodeURIComponent(asset.createdAt)}`} alt={asset.assetId} className="h-64 w-full rounded-lg object-cover" />;
     }
     if (asset.mimeType.startsWith('video/')) {
-        return <video controls src={asset.url} className="h-44 w-full rounded-lg bg-black" />;
+        return <video controls src={asset.url} className="h-64 w-full rounded-lg bg-black" />;
     }
     if (asset.mimeType.startsWith('audio/')) {
         return <audio controls src={asset.url} className="w-full" />;
@@ -208,6 +220,51 @@ function buildReferenceSummary(asset: AssetRecord): string {
     }
 
     return `Medium-confidence ${category} reference. It matches the ship-focused query "${query}", but the metadata alone is not strong enough to guarantee that the image is truly the correct ship space.`;
+}
+
+function getReferenceStatus(asset: AssetRecord): 'applied' | 'failed' | 'none' | null {
+    const tags = asset.tags;
+    const GENERATED_TYPES = new Set(['hero_image', 'scene_image', 'aesthetic_concept', 'documentary_detail_image']);
+    if (!GENERATED_TYPES.has(asset.assetType)) return null;
+
+    // Orchestrator scene path (tagged by media-orchestrator)
+    if (tags.includes('reference_applied')) return 'applied';
+    if (tags.includes('reference_unavailable')) return 'failed';
+    if (tags.includes('no_reference_available')) return 'none';
+
+    // Hero path (tagged by ship-reference-service.importHeroAssetsFromReferences)
+    if (tags.includes('embellished') || (tags.includes('ship-reference') && !tags.includes('fallback'))) return 'applied';
+    if (tags.includes('fallback') && !tags.includes('ship-reference')) return 'none';
+
+    return null;
+}
+
+function renderReferenceStatus(asset: AssetRecord) {
+    const status = getReferenceStatus(asset);
+    if (!status) return null;
+
+    if (status === 'applied') {
+        return (
+            <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                Ship reference image applied
+            </div>
+        );
+    }
+    if (status === 'failed') {
+        return (
+            <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-[10px] text-amber-300">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                Generated without ship reference — fetch failed
+            </div>
+        );
+    }
+    return (
+        <div className="flex items-center gap-1.5 rounded-lg border border-slate-500/20 bg-slate-500/10 px-2.5 py-1.5 text-[10px] text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-500 shrink-0" />
+            No ship reference available
+        </div>
+    );
 }
 
 function renderReferenceContext(asset: AssetRecord) {
@@ -350,12 +407,16 @@ function renderPromptSnippet(asset: AssetRecord) {
 // ReviewAssetCard
 // ────────────────────────────────────────────────────────────────────────────
 
-export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
+export function ReviewAssetCard({ slug, asset, title, entryKey, variants, visualInsights = [], onRefresh }: {
     slug: string;
     asset: AssetRecord;
     title: string;
     entryKey: string;
+    /** MULTI_MODEL_IMAGES: all model-versions of this item (incl. the displayed
+     *  one). When >1, a source-model toggle is shown. */
+    variants?: AssetRecord[];
     identityBlueprint?: CampaignIdentityBlueprint;
+    visualInsights?: VisualRepairInsight[];
     onRefresh: () => Promise<void>;
 }) {
     const initialCuration = normalizeAssetCuration(asset);
@@ -383,11 +444,15 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
     const [downstreamLocked, setDownstreamLocked] = useState(initialCuration.downstreamLocked);
     const [generationLocked, setGenerationLocked] = useState(initialCuration.generationLocked);
     const [lockSaving, setLockSaving] = useState(false);
+    const [switchingModel, setSwitchingModel] = useState(false);
     const [error, setError] = useState('');
+    const [repairFeedback, setRepairFeedback] = useState('');
+    const regenFormRef = useRef<HTMLDivElement | null>(null);
 
     const deleteEndpoint = getDeleteEndpoint(slug, asset.assetType);
     const canRegen = isRegenerableType(asset.assetType);
     const allowsSharedVoiceRerender = AUDIO_ARTIFACT_TYPES.has(asset.assetType);
+    const isFlyerImage = asset.assetType === 'flyer_image';
     const isBusy = saving || deleting || regenerating || savingCuration || lockSaving;
     const effectiveApprovalState = approvalState;
 
@@ -404,6 +469,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         setCuratorNotes(nextCuration.curatorNotes ?? '');
         setDownstreamLocked(nextCuration.downstreamLocked);
         setGenerationLocked(nextCuration.generationLocked);
+        setRepairFeedback('');
     }, [asset]);
 
     const addTag = (kind: 'suitability' | 'anti', rawValue: string) => {
@@ -562,6 +628,29 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         }
     };
 
+    // ── Source-model switch (MULTI_MODEL_IMAGES) ─────────────────────────────
+    const handleSwitchModel = async (generator: string) => {
+        if (!asset.variantGroupId || generator === asset.generator || switchingModel) return;
+        setSwitchingModel(true);
+        setError('');
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/media/model-version`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ groupId: asset.variantGroupId, generator }),
+            });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.error || 'Model switch failed');
+            }
+            await onRefresh();
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Unknown error');
+        } finally {
+            setSwitchingModel(false);
+        }
+    };
+
     // ── Delete ───────────────────────────────────────────────────────────────
     const handleDelete = async () => {
         if (!deleteEndpoint) return;
@@ -598,7 +687,9 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                 assetId: asset.assetId,
                 applyMode: regenMode,
                 ...(regenMode === 'append_note'
-                    ? { revisionNote: regenText.trim() }
+                    ? isFlyerImage
+                        ? { steeringMessage: regenText.trim() }
+                        : { revisionNote: regenText.trim() }
                     : { revisedPrompt: editablePrompt.trim() }),
             };
             const res = await fetch(`/api/groups/campaign/${slug}/media/regenerate-with-revision`, {
@@ -618,6 +709,26 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
         } finally {
             setRegenerating(false);
         }
+    };
+
+    const handleUseVisualRepair = (insight: VisualRepairInsight) => {
+        if (canRegen) {
+            setRegenMode('append_note');
+            setRegenText(insight.revisionNote);
+            setShowRegenForm(true);
+            setShowMoreActions(false);
+            setShowPromptViewer(false);
+            setShowCurationForm(false);
+            setRepairFeedback(`Revision note loaded for ${insight.code}.`);
+            window.setTimeout(() => {
+                regenFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 0);
+            return;
+        }
+
+        const prefix = notes.trim() ? `${notes.trim()}\n\n` : '';
+        setNotes(`${prefix}[${insight.code}] ${insight.recommendedAction}`);
+        setRepairFeedback(`Review note added for ${insight.code}.`);
     };
 
     return (
@@ -646,6 +757,35 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
             {/* ── Preview ──────────────────────────────────────────────── */}
             {renderPreview(asset)}
 
+            {/* ── Source-model toggle (MULTI_MODEL_IMAGES) ─────────────── */}
+            {variants && variants.length > 1 && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/5 p-1">
+                    <span className="px-1 text-[9px] font-semibold uppercase tracking-widest text-violet-300/80">Source</span>
+                    <div className="flex flex-1 gap-1">
+                        {variants.map((v) => {
+                            const isSel = v.generator === asset.generator;
+                            return (
+                                <button
+                                    key={v.assetId}
+                                    type="button"
+                                    onClick={() => void handleSwitchModel(v.generator)}
+                                    disabled={switchingModel || isSel}
+                                    title={`Show the ${imageBackendLabel(v.generator)} version (used downstream when selected)`}
+                                    className={`flex-1 rounded-md px-2 py-1 text-[10px] font-medium transition disabled:cursor-default ${
+                                        isSel
+                                            ? 'bg-violet-500/25 text-violet-100'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                    }`}
+                                >
+                                    {imageBackendLabel(v.generator)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {switchingModel && <Loader2 className="h-3 w-3 animate-spin text-violet-300" />}
+                </div>
+            )}
+
             {/* ── Metadata row ─────────────────────────────────────────── */}
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-slate-500">
                 <span>{formatBytes(asset.fileSizeBytes)}</span>
@@ -655,10 +795,51 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
             </div>
 
             {renderPromptSnippet(asset)}
+            {renderReferenceStatus(asset)}
             {renderReferenceContext(asset)}
             {renderVoiceContext(asset)}
 
             {/* ── Notes ────────────────────────────────────────────────── */}
+            {visualInsights.length > 0 && (
+                <details className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+                    <summary className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-amber-200 cursor-pointer select-none list-none">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Visual Repair Suggestions ({visualInsights.length})
+                    </summary>
+                    {visualInsights.slice(0, 3).map((insight) => (
+                        <div key={`${asset.assetId}-${insight.code}`} className="rounded-lg border border-white/10 bg-slate-950/70 p-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                                    insight.severity === 'blocker'
+                                        ? 'border-red-500/30 bg-red-500/10 text-red-200'
+                                        : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                                }`}>
+                                    {insight.code}
+                                </span>
+                                <span className="text-[11px] font-medium text-slate-100">{insight.summary}</span>
+                            </div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                                {insight.recommendedAction}
+                            </div>
+                            {insight.details && (
+                                <div className="mt-1 text-[10px] leading-relaxed text-slate-500">
+                                    {insight.details}
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => handleUseVisualRepair(insight)}
+                                disabled={isBusy}
+                                className="mt-2 inline-flex items-center gap-1 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-100 hover:bg-amber-500/20 transition disabled:opacity-40"
+                            >
+                                <RefreshCw className="h-3 w-3" />
+                                {canRegen ? 'Use Revision Note' : 'Add Review Note'}
+                            </button>
+                        </div>
+                    ))}
+                </details>
+            )}
+
             <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -672,6 +853,12 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
             )}
 
             {/* ── Primary actions: Approve / Flag ──────────────────────── */}
+            {repairFeedback && (
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[11px] text-emerald-200">
+                    {repairFeedback}
+                </div>
+            )}
+
             <div className="grid grid-cols-3 gap-1.5">
                 <button onClick={() => void handleReview('human_approved')} disabled={isBusy}
                     className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition disabled:opacity-40">
@@ -728,7 +915,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                             <button onClick={() => { setShowRegenForm(!showRegenForm); setShowMoreActions(false); }} disabled={isBusy}
                                 className="flex items-center justify-center gap-1 rounded-lg border border-purple-500/20 bg-purple-500/5 px-2.5 py-1.5 text-[11px] text-purple-400 hover:bg-purple-500/15 transition disabled:opacity-40">
                                 <RefreshCw className="h-3 w-3" />
-                                Revise
+                                {isFlyerImage ? 'Steer' : 'Regenerate'}
                             </button>
                         )}
                         <button onClick={() => { setShowPromptViewer(!showPromptViewer); setShowMoreActions(false); }} disabled={isBusy}
@@ -827,6 +1014,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         Lock from downstream usage until explicitly approved
                     </label>
 
+                    <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                         <div className="text-[10px] text-slate-400">Approved Contexts</div>
                         <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-slate-900/60 p-2">
@@ -869,6 +1057,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                                 );
                             })}
                         </div>
+                    </div>
                     </div>
 
                     <div className="space-y-1">
@@ -991,8 +1180,10 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
 
             {/* ── Regeneration form (expandable) ───────────────────────── */}
             {showRegenForm && (
-                <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 space-y-2">
-                    <div className="text-[10px] uppercase tracking-widest text-purple-400">Regenerate with Revision</div>
+                <div ref={regenFormRef} className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3 space-y-2">
+                    <div className="text-[10px] uppercase tracking-widest text-purple-400">
+                        {isFlyerImage ? 'Steer & Regenerate Flyer' : 'Regenerate with Revision'}
+                    </div>
                     <select value={regenMode}
                         onChange={(e) => {
                             const mode = e.target.value as 'append_note' | 'manual_override';
@@ -1002,7 +1193,7 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                             }
                         }}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500/40">
-                        <option value="append_note">Append revision note to original</option>
+                        <option value="append_note">{isFlyerImage ? 'Steer from original prompt' : 'Append revision note to original'}</option>
                         <option value="manual_override">Edit full prompt manually</option>
                     </select>
                     
@@ -1010,7 +1201,9 @@ export function ReviewAssetCard({ slug, asset, title, entryKey, onRefresh }: {
                         <textarea value={regenText} onChange={(e) => setRegenText(e.target.value)}
                             placeholder={allowsSharedVoiceRerender
                                 ? "Optional: append extra spoken text. Leave blank to re-render this script with the current shared voice."
-                                : "Describe what to change (e.g., 'make it more vibrant', 'add sunset lighting')..."}
+                                : isFlyerImage
+                                    ? "Pull back inside the glass dome, dusk light, remove the megaship silhouette..."
+                                    : "Describe what to change (e.g., 'make it more vibrant', 'add sunset lighting')..."}
                             className="w-full min-h-16 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/40 resize-y"
                         />
                     ) : (

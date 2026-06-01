@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { dispatchDiscordPost } from '@/lib/campaigns/distribution-discord';
 import { dispatchMarketingPost, type MarketingProviderMode } from '@/lib/campaigns/distribution-marketing';
 import { buildDistributionSchedule } from '@/lib/campaigns/distribution-planner';
@@ -70,6 +70,10 @@ async function dispatchSupportedPlatforms(
     forceDispatch: boolean,
     replaceExisting: boolean,
 ): Promise<{ dispatchedPosts: number; skippedPosts: number; warnings: string[]; previews: Array<{ postId: string; platform: string; payload: Record<string, unknown> }> }> {
+    // Fetch the brief once for CTA sanitisation and caption fallback.
+    // Non-fatal: if the brief is unavailable the dispatch still proceeds,
+    // just without the brief-level overrides.
+    const brief = await getAestheticBrief(campaign.id).catch(() => null);
     let dispatchedPosts = 0;
     let skippedPosts = 0;
     const warnings: string[] = [];
@@ -95,7 +99,7 @@ async function dispatchSupportedPlatforms(
                 await resetScheduledPostStatus(campaign.id, post.postId);
             }
 
-            const result = await dispatchMarketingPost(campaign, manifest, post, providerMode);
+            const result = await dispatchMarketingPost(campaign, manifest, post, providerMode, brief ?? undefined);
             previews.push({
                 postId: post.postId,
                 platform: post.platform,

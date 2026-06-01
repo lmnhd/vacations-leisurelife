@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
+import { getAestheticBrief, getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { dispatchDiscordPost } from '@/lib/campaigns/distribution-discord';
 import { dispatchMarketingPost, type MarketingProviderMode } from '@/lib/campaigns/distribution-marketing';
 import { buildDistributionSchedule } from '@/lib/campaigns/distribution-planner';
@@ -91,6 +91,7 @@ async function dispatchSupportedPlatforms(
     let skippedPosts = 0;
     const warnings: string[] = [];
     const previews: Array<{ postId: string; platform: string; payload: Record<string, unknown> }> = [];
+    const brief = await getAestheticBrief(campaign.id).catch(() => null);
 
     for (const post of schedule.posts) {
         if (!forceDispatch && !canDispatchPost(campaign, post)) {
@@ -105,7 +106,7 @@ async function dispatchSupportedPlatforms(
             || post.platform === 'instagram_story'
             || post.platform === 'facebook_ad'
         ) {
-            const result = await dispatchMarketingPost(campaign, manifest, post, providerMode);
+            const result = await dispatchMarketingPost(campaign, manifest, post, providerMode, brief ?? undefined);
             previews.push({
                 postId: post.postId,
                 platform: post.platform,

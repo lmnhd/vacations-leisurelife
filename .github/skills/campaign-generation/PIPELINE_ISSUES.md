@@ -10,6 +10,26 @@ Recurring operational issues in the campaign generation pipeline. Reference this
 
 The following issues have been encountered repeatedly across campaigns. Agents must handle them proactively:
 
+### heroSlogan Ignores Niche — Model Defaults to Generic "Window/View" Copy
+
+- **Symptom:** Even after multiple brief regenerations, `messaging.heroSlogan` reads like generic cruise copy ("Choose the window first.", "Choose the window. Sail Caribbean.") with no words from the campaign slug.
+- **Root Cause:** Three compounding issues — (1) the slug anchor check used `new RegExp(\`\\b${stem}\\w*\`)` in a template literal which silently produces a backspace character instead of a word boundary, making every match return false; (2) the aesthetic engine refinement pass has no slug anchor rule so it freely "polishes" a passing niche slogan back to generic copy; (3) the fix only ran after PASS 1 but not after refinement.
+- **Status:** Fixed. `sloganContainsSlugWord` now uses string tokenization (no regex). Post-PASS-1 safety net AND post-refinement safety net both enforce the anchor. Refinement prompt also includes a CRITICAL instruction not to remove niche anchor words.
+- **What to check if it recurs:** Look for `[aesthetic-engine] Refinement downgraded heroSlogan` in the brief generation log. If the safety net fires, it restores the pre-refinement slogan. If neither message appears and the slogan still lacks slug words, the tsx process may not have picked up source changes — restart the dev server and re-run.
+
+### Reference Images — Same Reference Used for Every Scene of a Category
+
+- **Symptom:** Generated scene images look visually homogeneous across scenes that share a `referenceCategory`. Different atrium scenes reference the same atrium photo; different exterior scenes reference the same exterior photo.
+- **Root Cause:** `generateSceneImages` in `stability-generator.ts` used `shipReferences.find(ref => ref.category === scene.referenceCategory)` — a naive first-match. It completely ignored `scene.referenceAssetIds[]`, which the `bindReferencesToScenes` phase had already populated with the top-scored, vision-evaluated reference for each specific scene. The `manifestReferenceRecords` (containing asset IDs and URLs) were also never passed to the generator.
+- **Status:** Fixed. `generateSceneImages` now accepts `manifestReferenceRecords`, builds an `assetId → url` map, and resolves `scene.referenceAssetIds[0]` first. Falls back to the category `.find()` only when binding produced no result.
+- **What to check if it recurs:** Confirm `scene.referenceAssetIds` is populated after `bindReferencesToScenes` runs (check the orchestrator log). If it's empty, the binding step failed or `manifestReferenceRecords` was empty at the time.
+
+### weak_niche_signal Lint Blocker Shows No Fix Button
+
+- **Symptom:** Pre-media lint shows a `weak_niche_signal` BLOCKER but only a "Regenerate Brief" button appears. No "Fix Issue" button.
+- **Root Cause:** The targeted-fix frontend set (`TARGETED_FIX_RULE_CODES` in `brief-studio/page.tsx`) was not updated when the server-side contract was added.
+- **Status:** Fixed. `'weak_niche_signal'` is now in both `lib/campaigns/media/lint-fix-contracts.ts` (server contract) and `brief-studio/page.tsx` (UI). The Fix Issue button will appear and run a surgical LLM patch that rewrites only `subjectAction`, `environmentDetails`, `imagePrompt`, `nicheCue`, and `nicheCarryThrough` on the flagged stills.
+
 ### Dev Server Stability During Heavy Generation
 - **Symptom:** Next.js dev server becomes unresponsive or crashes during long-running media generation calls (image/video/audio).
 - **Root Cause:** The `POST /api/groups/campaign/[slug]/media/generate` endpoint is synchronous and can take 10Ã¢â‚¬â€œ20+ minutes. The dev server may exhaust resources or hit memory limits during concurrent heavy calls.

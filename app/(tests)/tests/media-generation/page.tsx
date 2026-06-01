@@ -8,12 +8,15 @@ import { ProbeResultsPanel } from "./probe-results-panel";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
 import { MediaReviewPanel } from "./media-review-panel";
+import { FlyerControlsEditor } from "./flyer-controls-editor";
 import { CampaignSelector } from "./campaign-selector";
 import { ResearchContextPanel } from "../research-context-panel";
 import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
+import { ImageSlotPicker } from "@/components/campaign-media/image-slot-picker";
+import { collectSelectableImageGroups, type HtmlTemplateManifest } from "@/lib/ads/html-templates/core";
 import {
     Loader2, Wand2, Image, Crop, Film, Music, Type, Shirt,
-    Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink
+    Zap, Download, Eye, AlertTriangle, BookOpen, Layers, ExternalLink, Sparkles
 } from "lucide-react";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -101,6 +104,7 @@ interface CategoryConfig {
 const CATEGORIES: readonly CategoryConfig[] = [
     { key: "references", label: "References", icon: Eye, color: "cyan", types: ["ship_reference_image"] },
     { key: "images", label: "Hero Images", icon: Image, color: "cyan", types: ["hero_image", "aesthetic_concept"] },
+    { key: "flyers", label: "Flyers", icon: Sparkles, color: "violet", types: ["flyer_image"] },
     { key: "crops", label: "Crops", icon: Crop, color: "amber", types: ["platform_crop"] },
     { key: "documentaryDetails", label: "Documentary Details", icon: BookOpen, color: "teal", types: ["documentary_detail_image"] },
     { key: "designedAds", label: "Canva Ads", icon: Wand2, color: "pink", types: ["designed_ad_artifact"] },
@@ -113,6 +117,7 @@ const CATEGORIES: readonly CategoryConfig[] = [
 
 const COST_ESTIMATES: Record<string, string> = {
     references: "~SerpAPI search + import only",
+    flyers: "~Nano-Banana × 6 flyer images (slug-prompt; no Production Bible needed)",
     designedAds: "~Canva/Templated ads + preserved premium display (Production Bible required)",
     documentaryDetails: "~Nano-Banana × source/detail modules (Production Bible required)",
     images: "~Nano-Banana × hero images + concepts (uses approved refs)",
@@ -145,6 +150,7 @@ export default function MediaGenerationTestPage() {
     const [campaign, setCampaign] = useState<DiscoveryCampaignSnapshot | null>(null);
     const [probeResult, setProbeResult] = useState<ProbeRunRecord | null>(null);
     const [probeLoading, setProbeLoading] = useState(false);
+    const [selectionStatus, setSelectionStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [error, setError] = useState("");
     const requestedSlug = searchParams.get("slug")?.trim() ?? "";
     const handoffSource = searchParams.get("from")?.trim() ?? "";
@@ -177,9 +183,11 @@ export default function MediaGenerationTestPage() {
                 setManifest(data as CampaignMediaManifest);
                 localStorage.setItem(getManifestStorageKey(targetSlug), JSON.stringify(data));
             }
+            let parsedBrief: CampaignAestheticBrief | null = null;
             if (briefRes.ok) {
                 const briefData = await briefRes.json();
-                setBrief(briefData.brief ?? briefData);
+                parsedBrief = briefData.brief ?? briefData;
+                setBrief(parsedBrief);
             } else {
                 setBrief(null);
             }
@@ -189,10 +197,17 @@ export default function MediaGenerationTestPage() {
             } else {
                 setCampaign(null);
             }
-            // ── Hydrate last probe run (404 is expected if none exists yet) ──
-            const probeRes = await fetch(`/api/groups/campaign/${targetSlug}/media/probe`, { cache: 'no-store' });
-            if (probeRes.ok) {
-                setProbeResult(await probeRes.json() as ProbeRunRecord);
+            // ── Hydrate last probe run only when brief has a landingStillBible ──
+            // The probe endpoint returns 404 when no run exists. Skipping the
+            // fetch for campaigns without a landingStillBible suppresses the
+            // console noise since the Probe Renders UI is gated on the same flag.
+            if (parsedBrief?.landingStillBible) {
+                const probeRes = await fetch(`/api/groups/campaign/${targetSlug}/media/probe`, { cache: 'no-store' });
+                if (probeRes.ok) {
+                    setProbeResult(await probeRes.json() as ProbeRunRecord);
+                } else {
+                    setProbeResult(null);
+                }
             } else {
                 setProbeResult(null);
             }
@@ -223,6 +238,33 @@ export default function MediaGenerationTestPage() {
             setProbeLoading(false);
         }
     };
+
+    const handleImageSelectionChange = useCallback(async (usePointKey: string, assetId: string | null) => {
+        const trimmedSlug = slug.trim();
+        if (!trimmedSlug || !manifest) return;
+
+        setSelectionStatus('saving');
+        try {
+            const response = await fetch(`/api/groups/campaign/${trimmedSlug}/media/selections`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selections: { [usePointKey]: assetId } }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error((data as { error?: string }).error ?? `Selection update failed (${response.status})`);
+            }
+            const nextManifest = (data as { manifest?: CampaignMediaManifest }).manifest;
+            if (nextManifest) {
+                setManifest(nextManifest);
+                localStorage.setItem(getManifestStorageKey(trimmedSlug), JSON.stringify(nextManifest));
+            }
+            setSelectionStatus('saved');
+        } catch (err: unknown) {
+            setSelectionStatus('error');
+            setError(err instanceof Error ? err.message : 'Selection update failed');
+        }
+    }, [manifest, slug]);
 
     useEffect(() => {
         if (initialSlugHydrated) return;
@@ -401,6 +443,7 @@ export default function MediaGenerationTestPage() {
             emerald: { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/40" },
             amber: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/40" },
             pink: { bg: "bg-pink-500/20", text: "text-pink-400", border: "border-pink-500/40" },
+            violet: { bg: "bg-violet-500/20", text: "text-violet-400", border: "border-violet-500/40" },
         };
         return map[color]?.[part] || "";
     };
@@ -412,6 +455,7 @@ export default function MediaGenerationTestPage() {
     const manifestImageCount = manifest
         ? manifest.images.shipReferences.length
             + manifest.images.hero.length
+            + (manifest.images.flyerImages?.length ?? 0)
             + manifest.images.aestheticConcepts.length
             + (manifest.images.sceneImages?.length ?? 0)
             + Object.values(manifest.images.platformCrops ?? {}).flat().length
@@ -426,12 +470,15 @@ export default function MediaGenerationTestPage() {
         (manifest?.images.sceneImages?.length ?? 0) > 0 ||
         (manifest?.images.aestheticConcepts?.length ?? 0) > 0
     );
+    const selectableImageAssets = manifest ? collectSelectableImageGroups(manifest as HtmlTemplateManifest) : [];
+    const landingHeroSelectionKey = 'section:landingHero:primary';
+    const selectedLandingHeroId = manifest?.imageSelections?.[landingHeroSelectionKey];
 
     const showBriefStudioHandoff = handoffSource === 'brief-studio' && briefApproved && slug.trim().length > 0;
 
     return (
         <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
-            <div className="max-w-5xl mx-auto space-y-4">
+            <div className="max-w-[1800px] mx-auto space-y-4">
 
                 {/* Header */}
                 <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
@@ -530,20 +577,18 @@ export default function MediaGenerationTestPage() {
                     defaultExpanded={false}
                 />
 
-                <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div className="text-[10px] text-slate-500 uppercase tracking-widest">What Each Layer Controls</div>
-                            <p className="mt-1 text-xs text-slate-400">
-                                Discovery holds campaign facts. Aesthetic Design holds the approved creative direction. The manifest holds the media files currently generated for this campaign.
-                            </p>
-                        </div>
-                        <div className="text-[10px] text-slate-500">
+                <details className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
+                    <summary className="flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">What Each Layer Controls</span>
+                        <span className="text-[10px] text-slate-500">
                             {slug.trim() ? `Campaign: ${slug.trim()}` : 'Select a campaign'}
-                        </div>
-                    </div>
+                        </span>
+                    </summary>
+                    <p className="text-xs text-slate-400">
+                        Discovery holds campaign facts. Aesthetic Design holds the approved creative direction. The manifest holds the media files currently generated for this campaign.
+                    </p>
 
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <div className="grid gap-3 md:grid-cols-3 pt-1">
                         <div className={`rounded-xl border p-3 ${discoveryFactsReady ? 'border-cyan-500/30 bg-cyan-500/5' : 'border-white/10 bg-slate-950/40'}`}>
                             <div className="flex items-center justify-between gap-2">
                                 <div className="text-[10px] uppercase tracking-widest text-cyan-400">Discovery</div>
@@ -593,9 +638,50 @@ export default function MediaGenerationTestPage() {
                             <div className="mt-3 text-[11px] text-slate-400">
                                 Use this card to see which generated assets currently exist and which ones are active for review.
                             </div>
+                            {slug.trim() && (
+                                <a
+                                    href={`/tests/canva-templates?campaign=${encodeURIComponent(slug.trim())}`}
+                                    className="mt-3 inline-flex text-[11px] font-semibold text-purple-300 hover:text-purple-200"
+                                >
+                                    Edit ad images
+                                </a>
+                            )}
                         </div>
                     </div>
-                </div>
+                </details>
+
+                {manifest && (
+                    <div className="p-4 space-y-3 border border-white/10 rounded-xl bg-slate-900/50">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500">Image Overrides</div>
+                                <div className="mt-1 text-xs text-slate-400">
+                                    Non-ad use points live here. Ad slot composition is handled in the HTML ad image studio.
+                                </div>
+                            </div>
+                            <a
+                                href={`/tests/canva-templates?campaign=${encodeURIComponent(slug.trim())}`}
+                                className="inline-flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-300 hover:bg-purple-500/15"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Edit ad images
+                            </a>
+                        </div>
+                        <div className="max-w-xl">
+                            <ImageSlotPicker
+                                label="Landing hero primary"
+                                usePointKey={landingHeroSelectionKey}
+                                value={selectedLandingHeroId}
+                                assets={selectableImageAssets}
+                                autoUrl={manifest.images.platformCrops.hero_16x9?.[0]?.url ?? manifest.images.hero[0]?.url}
+                                onChange={handleImageSelectionChange}
+                            />
+                        </div>
+                        {selectionStatus === 'saving' && <div className="text-[11px] text-slate-500">Saving image override...</div>}
+                        {selectionStatus === 'saved' && <div className="text-[11px] text-emerald-400">Image override saved.</div>}
+                        {selectionStatus === 'error' && <div className="text-[11px] text-red-400">Image override save failed.</div>}
+                    </div>
+                )}
 
                 {/* Production Bible status strip */}
                 <div className={`border rounded-xl p-3 flex items-center gap-3 text-xs ${
@@ -618,6 +704,9 @@ export default function MediaGenerationTestPage() {
                         <span className="text-slate-500">Load a campaign to see Production Bible status.</span>
                     )}
                 </div>
+
+                {/* Flyer Generation Controls — steers the flyer_image prompt */}
+                {slug.trim() && <FlyerControlsEditor slug={slug.trim()} />}
 
                 {/* Per-Category Generator Buttons */}
                 <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
@@ -863,15 +952,15 @@ export default function MediaGenerationTestPage() {
                 )}
 
                 {manifest?.copy && (
-                    <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
-                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                    <details className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
+                        <summary className="flex items-center justify-between px-4 py-2 border-b border-white/5 cursor-pointer select-none">
                             <span className="text-xs tracking-widest uppercase text-slate-400">Copy Results</span>
                             <div className="flex items-center gap-3 text-[10px] text-slate-500">
                                 <span>{manifest.copy.carouselSlides.length} slides</span>
                                 <span>{manifest.copy.adVariants.length} ad variants</span>
                                 <span>{manifest.copy.emailSubjectLines.length} email subjects</span>
                             </div>
-                        </div>
+                        </summary>
 
                         <div className="grid gap-4 p-4 md:grid-cols-2">
                             <div className="p-3 space-y-2 border rounded-lg border-white/10 bg-slate-950/40">
@@ -949,7 +1038,7 @@ export default function MediaGenerationTestPage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </details>
                 )}
 
                 {/* Manifest Viewer */}
@@ -965,12 +1054,18 @@ export default function MediaGenerationTestPage() {
                         </div>
 
                         {/* Asset count summary */}
-                        <div className="grid grid-cols-3 gap-3 p-4 md:grid-cols-6">
+                        <div className="grid grid-cols-3 gap-3 p-4 md:grid-cols-7">
                             <div className="p-3 text-center border rounded-lg bg-cyan-500/5 border-cyan-500/10">
                                 <div className="text-lg font-bold text-cyan-400">
                                     {manifest.images.shipReferences.length + manifest.images.hero.length + manifest.images.aestheticConcepts.length}
                                 </div>
                                 <div className="text-[9px] text-slate-500">Hero + Refs</div>
+                            </div>
+                            <div className="p-3 text-center border rounded-lg bg-violet-500/5 border-violet-500/10">
+                                <div className="text-lg font-bold text-violet-400">
+                                    {manifest.images.flyerImages?.length ?? 0}
+                                </div>
+                                <div className="text-[9px] text-slate-500">Flyers</div>
                             </div>
                             <div className="p-3 text-center border rounded-lg bg-teal-500/5 border-teal-500/10">
                                 <div className="text-lg font-bold text-teal-400">
@@ -1002,17 +1097,17 @@ export default function MediaGenerationTestPage() {
                             </div>
                         </div>
 
-                        {/* Full JSON */}
-                        <div className="border-t border-white/5">
-                            <div className="px-4 py-2 border-b border-white/5">
-                                <span className="text-xs tracking-widest uppercase text-slate-400">Full Manifest JSON</span>
-                            </div>
+                        {/* Full JSON — collapsed by default to keep the page tidy */}
+                        <details className="border-t border-white/5">
+                            <summary className="px-4 py-2 cursor-pointer select-none text-xs tracking-widest uppercase text-slate-400 hover:text-slate-200">
+                                Full Manifest JSON
+                            </summary>
                             <div className="p-4 max-h-[500px] overflow-y-auto">
                                 <pre className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
                                     {JSON.stringify(manifest, null, 2)}
                                 </pre>
                             </div>
-                        </div>
+                        </details>
                     </div>
                 )}
             </div>

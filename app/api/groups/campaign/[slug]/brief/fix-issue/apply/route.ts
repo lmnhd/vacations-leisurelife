@@ -23,6 +23,7 @@ import {
 import {
     applyTargetedLintFixPatches,
     type StillPatch,
+    type ScenePatch,
 } from "@/lib/campaigns/media/targeted-lint-fix";
 import { lintProductionBuild } from "@/lib/campaigns/media/production-build-lint";
 import { getExpandedNicheKeywords } from "@/lib/campaigns/reference-packs";
@@ -39,12 +40,15 @@ export async function POST(
         const body = (await req.json().catch(() => ({}))) as {
             ruleCode?: string;
             patches?: StillPatch[];
+            scenePatches?: ScenePatch[];
             operatorGuidance?: string;
         };
 
-        if (!body.ruleCode || !Array.isArray(body.patches) || body.patches.length === 0) {
+        const hasStillPatches = Array.isArray(body.patches) && body.patches.length > 0;
+        const hasScenePatches = Array.isArray(body.scenePatches) && body.scenePatches.length > 0;
+        if (!body.ruleCode || (!hasStillPatches && !hasScenePatches)) {
             return NextResponse.json(
-                { error: "ruleCode and non-empty patches are required." },
+                { error: "ruleCode and at least one of patches or scenePatches are required." },
                 { status: 400 },
             );
         }
@@ -75,7 +79,7 @@ export async function POST(
         const originalById = new Map(
             brief.landingStillBible.stillLibrary.map((s) => [s.stillId, s]),
         );
-        for (const patch of body.patches) {
+        for (const patch of (body.patches ?? [])) {
             const original = originalById.get(patch.stillId);
             if (!original) {
                 return NextResponse.json(
@@ -85,10 +89,6 @@ export async function POST(
                     { status: 409 },
                 );
             }
-            // Patch keys are constrained to mutableFields by the trial schema;
-            // re-verify here in case the client tampered. The patch is a flat
-            // shape `{ stillId, ...mutableFields }` — everything except stillId
-            // must be in the contract's mutable set.
             for (const key of Object.keys(patch)) {
                 if (key === "stillId") continue;
                 if (!contract.mutableFields.includes(key as keyof typeof original)) {
@@ -102,6 +102,40 @@ export async function POST(
             }
         }
 
+        // ── Scene patch defensive validation
+        if (body.scenePatches && body.scenePatches.length > 0) {
+            if (!contract.mutableSceneFields) {
+                return NextResponse.json(
+                    { error: `Contract for "${body.ruleCode}" does not support scene patches.` },
+                    { status: 400 },
+                );
+            }
+            const sceneById = new Map(
+                (brief.productionBible?.sceneLibrary ?? []).map((s) => [s.sceneId, s]),
+            );
+            for (const patch of body.scenePatches) {
+                if (!sceneById.has(patch.sceneId)) {
+                    return NextResponse.json(
+                        {
+                            error: `Scene patch targets sceneId="${patch.sceneId}" but it is no longer in the brief.`,
+                        },
+                        { status: 409 },
+                    );
+                }
+                for (const key of Object.keys(patch)) {
+                    if (key === "sceneId") continue;
+                    if (!contract.mutableSceneFields.includes(key as never)) {
+                        return NextResponse.json(
+                            {
+                                error: `Scene patch attempted to mutate field "${key}" on ${patch.sceneId}, which is not in the contract's mutable scene set.`,
+                            },
+                            { status: 400 },
+                        );
+                    }
+                }
+            }
+        }
+
         // ── Snapshot lint BEFORE applying so we can report the transition
         const beforeLint = lintProductionBuild({
             landingStillBible: brief.landingStillBible,
@@ -111,7 +145,7 @@ export async function POST(
         });
 
         // ── Apply
-        const patched = applyTargetedLintFixPatches(brief, body.patches);
+        const patched = applyTargetedLintFixPatches(brief, body.patches ?? [], body.scenePatches);
 
         // ── Re-run lint so the persisted productionBuildLint reflects the new state
         const freshLint = lintProductionBuild({
@@ -139,13 +173,14 @@ export async function POST(
         const afterFamilyById = new Map(
             freshLint.stillDiagnostics.map((d) => [d.stillId, d.compositionFamily]),
         );
-        const familyTransitions = body.patches.map((p) => ({
+        const appliedPatches = body.patches ?? [];
+        const familyTransitions = appliedPatches.map((p) => ({
             stillId: p.stillId,
             before: beforeFamilyById.get(p.stillId) ?? "(unknown)",
             after: afterFamilyById.get(p.stillId) ?? "(unknown)",
         }));
         console.log(
-            `[brief:fix-issue:apply] ${slug} — applied ${body.patches.length} patch(es) for ${body.ruleCode}: ` +
+            `[brief:fix-issue:apply] ${slug} — applied ${appliedPatches.length} still patch(es) + ${(body.scenePatches ?? []).length} scene patch(es) for ${body.ruleCode}: ` +
                 familyTransitions
                     .map((t) => `${t.stillId} ${t.before}→${t.after}`)
                     .join(", "),
@@ -158,7 +193,8 @@ export async function POST(
             {
                 success: true,
                 ruleCode: body.ruleCode,
-                appliedStillIds: body.patches.map((p) => p.stillId),
+                appliedStillIds: (body.patches ?? []).map((p) => p.stillId),
+                appliedSceneIds: (body.scenePatches ?? []).map((p) => p.sceneId),
                 familyTransitions,
                 beforeVerdict: beforeLint.verdict,
                 beforeBlockerCount: beforeLint.blockingIssues.length,

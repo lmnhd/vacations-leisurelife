@@ -2,8 +2,15 @@ import type {
     AssetApprovalState,
     AssetRecord,
     CampaignMediaManifest,
+    ImageContext,
     MediaGovernancePolicy,
 } from '@/lib/campaigns/schema';
+import {
+    applyCurationContract,
+    getCurationTagMatchScore,
+    getEffectivePriority,
+    hasAllPreferredTags,
+} from '@/lib/campaigns/media/curation-contract';
 import { lookupTemplate } from './template-registry';
 import type {
     AdCopySet,
@@ -15,7 +22,28 @@ import type {
     SlotPack,
     TemplatedLayerOverride,
 } from './types';
+import { imageContextForAdFormat } from './ad-format-context';
 import { prepareRenderImageSource } from './image-uploader';
+
+// Phase 0 (IMAGE_GEN_REVAMP_5-26): roles that must never reach an ad selector.
+// Checked in isAdSourceEligible() and applied inside filterUsableAssets().
+const INELIGIBLE_ROLES = new Set([
+    'final.ad_artifact',
+    'final.channel_deliverable',
+    'reference.audit_only',
+    'alternate_art',
+    'review_only',
+]);
+
+/**
+ * Returns false for any asset whose eligibilityRole marks it as a final
+ * artifact, reference, or alternate-art. Legacy records without a role are
+ * treated as source-eligible so existing manifests keep working.
+ */
+export function isAdSourceEligible(asset: AssetRecord): boolean {
+    if (asset.eligibilityRole === undefined) return true;
+    return !INELIGIBLE_ROLES.has(asset.eligibilityRole);
+}
 
 interface ManifestImagePool {
     hero: AssetRecord[];
@@ -23,7 +51,8 @@ interface ManifestImagePool {
     sceneImages: AssetRecord[];
     aestheticConcepts: AssetRecord[];
     documentaryDetails: AssetRecord[];
-    designedAdArtifacts: AssetRecord[];
+    // designedAdArtifacts is intentionally absent — final.ad_artifact assets are
+    // never eligible source material and must not appear in any selection pool.
     platformCrops: AssetRecord[];
     merchDesigns: AssetRecord[];
     merchMockups: AssetRecord[];
@@ -83,6 +112,7 @@ function filterUsableAssets(records: AssetRecord[], governance: MediaGovernanceP
         if (!record.active || !record.url) continue;
         if (seen.has(record.assetId)) continue;
         if (curationBlocks(record, governance)) continue;
+        if (!isAdSourceEligible(record)) continue;
         seen.add(record.assetId);
         out.push(record);
     }
@@ -97,20 +127,22 @@ function flattenManifestImages(manifest: CampaignMediaManifest | null, governanc
             sceneImages: EMPTY_ASSET_POOL,
             aestheticConcepts: EMPTY_ASSET_POOL,
             documentaryDetails: EMPTY_ASSET_POOL,
-            designedAdArtifacts: EMPTY_ASSET_POOL,
             platformCrops: EMPTY_ASSET_POOL,
             merchDesigns: EMPTY_ASSET_POOL,
             merchMockups: EMPTY_ASSET_POOL,
         };
     }
 
+    // designedAdArtifacts is deliberately excluded. Those records carry
+    // eligibilityRole: 'final.ad_artifact' and must never enter a source pool.
+    // filterUsableAssets would also block them via isAdSourceEligible(), but
+    // structural exclusion makes the contract explicit at the pool-build level.
     return {
         hero: filterUsableAssets(manifest.images.hero ?? [], governance),
         shipReferences: filterUsableAssets(manifest.images.shipReferences ?? [], governance),
         sceneImages: filterUsableAssets(manifest.images.sceneImages ?? [], governance),
         aestheticConcepts: filterUsableAssets(manifest.images.aestheticConcepts ?? [], governance),
         documentaryDetails: filterUsableAssets(manifest.images.documentaryDetails ?? [], governance),
-        designedAdArtifacts: filterUsableAssets(manifest.images.designedAdArtifacts ?? [], governance),
         platformCrops: filterUsableAssets(Object.values(manifest.images.platformCrops ?? {}).flat(), governance),
         merchDesigns: filterUsableAssets(manifest.merch?.designs ?? [], governance),
         merchMockups: filterUsableAssets(manifest.merch?.mockups ?? [], governance),
@@ -140,31 +172,42 @@ interface ScoreKey {
     approval: number;
     hasAllPreferred: number;
     tagMatches: number;
-    globalPriority: number;
+    priority: number;
     createdAt: number;
 }
 
-function assetScoreKey(asset: AssetRecord, preferredTags: string[]): ScoreKey {
-    const tags = cleanTags(asset.tags);
-    const tagMatches = preferredTags.reduce((count, tag) => count + (tags.includes(tag) ? 1 : 0), 0);
-    const hasAllPreferred = preferredTags.length > 0 && preferredTags.every((tag) => tags.includes(tag));
+/**
+ * Phase 4 (IMAGE_GEN_REVAMP_5-26): scoring honors the full curation contract.
+ *
+ *   - approval rank (same as before)
+ *   - hasAllPreferred: directive preferTags found in tags OR curation.suitabilityTags
+ *   - tagMatches: directive preferTags found in tags + suitabilityTags, minus
+ *     antiTags penalty (heavier — see getCurationTagMatchScore)
+ *   - priority: contextPriorities[context] ?? globalPriority ?? 50
+ *
+ * The function still expects the candidate pool to have been pre-filtered
+ * through applyCurationContract() — i.e., ineligible assets never reach here.
+ */
+function assetScoreKey(asset: AssetRecord, context: ImageContext, preferredTags: string[]): ScoreKey {
+    const tagMatches = getCurationTagMatchScore(asset, preferredTags);
+    const hasAllPreferred = hasAllPreferredTags(asset, preferredTags);
     const createdAt = Date.parse(asset.createdAt);
     return {
         approval: approvalRank(asset),
         hasAllPreferred: hasAllPreferred ? 1 : 0,
         tagMatches,
-        globalPriority: asset.curation?.globalPriority ?? 50,
+        priority: getEffectivePriority(asset, context),
         createdAt: Number.isNaN(createdAt) ? 0 : createdAt,
     };
 }
 
-function compareAssetScore(a: AssetRecord, b: AssetRecord, preferredTags: string[]): number {
-    const aKey = assetScoreKey(a, preferredTags);
-    const bKey = assetScoreKey(b, preferredTags);
+function compareAssetScore(a: AssetRecord, b: AssetRecord, context: ImageContext, preferredTags: string[]): number {
+    const aKey = assetScoreKey(a, context, preferredTags);
+    const bKey = assetScoreKey(b, context, preferredTags);
     if (aKey.approval !== bKey.approval) return bKey.approval - aKey.approval;
     if (aKey.hasAllPreferred !== bKey.hasAllPreferred) return bKey.hasAllPreferred - aKey.hasAllPreferred;
     if (aKey.tagMatches !== bKey.tagMatches) return bKey.tagMatches - aKey.tagMatches;
-    if (aKey.globalPriority !== bKey.globalPriority) return bKey.globalPriority - aKey.globalPriority;
+    if (aKey.priority !== bKey.priority) return bKey.priority - aKey.priority;
     if (aKey.createdAt !== bKey.createdAt) return bKey.createdAt - aKey.createdAt;
     return a.assetId.localeCompare(b.assetId);
 }
@@ -172,14 +215,23 @@ function compareAssetScore(a: AssetRecord, b: AssetRecord, preferredTags: string
 function selectAsset(
     pool: ManifestImagePool,
     assetType: string,
+    context: ImageContext,
+    governance: MediaGovernancePolicy,
     preferredTags: string[],
     usedAssetIds: Set<string>,
     slotName: string,
 ): AssetRecord {
-    const candidates = poolForAssetType(pool, assetType).sort((a, b) => compareAssetScore(a, b, preferredTags));
+    // Phase 4 (IMAGE_GEN_REVAMP_5-26): every selector must honor the full
+    // curation contract. applyCurationContract enforces blockedContexts,
+    // approvedContexts, and the approval-state governance gate. Without this
+    // step the render pack could silently pick an asset the operator had
+    // explicitly blocked from ad surfaces.
+    const rawCandidates = poolForAssetType(pool, assetType);
+    const eligible = applyCurationContract(rawCandidates, context, governance);
+    const candidates = eligible.sort((a, b) => compareAssetScore(a, b, context, preferredTags));
     const candidate = candidates.find((asset) => !usedAssetIds.has(asset.assetId)) ?? candidates[0];
     if (!candidate) {
-        throw new Error(`No usable manifest asset found for slot "${slotName}" with assetType "${assetType}". Either no asset of that type exists in the manifest, or every candidate is blocked by media governance (rejected / revision_required / hold).`);
+        throw new Error(`No usable manifest asset found for slot "${slotName}" with assetType "${assetType}" in context "${context}". Either no asset of that type exists in the manifest, every candidate is blocked by media governance (rejected / revision_required / hold), or every candidate has curation that blocks this context (blockedContexts / approvedContexts).`);
     }
 
     usedAssetIds.add(candidate.assetId);
@@ -207,6 +259,8 @@ async function buildLayerOverrides(
     layoutSlots: Array<{ name: string; type: 'text' | 'image' | 'color'; visualOrder: number }>,
     pack: SlotPackValue,
     pool: ManifestImagePool,
+    context: ImageContext,
+    governance: MediaGovernancePolicy,
     slug: string,
     usedAssetIds: Set<string>,
     pageIndex = 0,
@@ -225,7 +279,7 @@ async function buildLayerOverrides(
         }
 
         const preferredTags = cleanTags(directive.preferTags);
-        const asset = selectAsset(pool, directive.assetType, preferredTags, usedAssetIds, slot.name);
+        const asset = selectAsset(pool, directive.assetType, context, governance, preferredTags, usedAssetIds, slot.name);
         const prepared = await prepareRenderImageSource(slug, asset);
 
         layers[slot.name] = {
@@ -288,6 +342,10 @@ export async function buildTemplatedRenderPacks(
             throw new Error(`Copy set does not include a slot pack for format "${format}".`);
         }
 
+        // Phase 4 (IMAGE_GEN_REVAMP_5-26): every format maps to an ImageContext
+        // so the curation contract can be evaluated correctly per format.
+        const context = imageContextForAdFormat(format);
+
         const slotPacks: SlotPack[] = Array.isArray(packValue) ? packValue : [packValue];
         const layoutSlots = templateRef.layout.slotDescriptors;
         const pageArtifacts: AdRenderPageArtifact[] = [];
@@ -302,7 +360,7 @@ export async function buildTemplatedRenderPacks(
         };
 
         if (slotPacks.length === 1) {
-            const prepared = await buildLayerOverrides(layoutSlots, slotPacks[0], pool, args.slug, usedAssetIds, 0);
+            const prepared = await buildLayerOverrides(layoutSlots, slotPacks[0], pool, context, governance, args.slug, usedAssetIds, 0);
             pageArtifacts.push({
                 page: 'page-1',
                 request: {
@@ -314,7 +372,7 @@ export async function buildTemplatedRenderPacks(
             });
         } else {
             for (let pageIndex = 0; pageIndex < slotPacks.length; pageIndex += 1) {
-                const prepared = await buildLayerOverrides(layoutSlots, slotPacks[pageIndex], pool, args.slug, usedAssetIds, pageIndex);
+                const prepared = await buildLayerOverrides(layoutSlots, slotPacks[pageIndex], pool, context, governance, args.slug, usedAssetIds, pageIndex);
                 const pageName = `page-${pageIndex + 1}`;
                 pageArtifacts.push({
                     page: pageName,

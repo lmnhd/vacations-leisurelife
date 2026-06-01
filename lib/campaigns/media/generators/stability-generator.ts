@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import {
+    AssetRecord,
     CampaignAestheticBrief,
     LandingStillSpec,
     ShipReferenceCandidate,
@@ -12,6 +13,9 @@ import sharp from 'sharp';
 import { buildShipLandscapeGuardrails } from '../ship-environment-profile';
 import { sceneHasVisiblePeople, stillHasVisiblePeople } from '../storyboard-motion-policy';
 import { resolveMediaStyle, type StyleId } from '../style-prompts';
+import { extractNanoBananaImageBuffer } from './nano-banana-response';
+import { assignExtendersToBatch, DEFAULT_PROMPT_EXTENDERS } from '../prompt-extender';
+import { selectFiltersForBatch, IMAGE_FILTER_REGISTRY } from '../image-filter-registry';
 
 const NANO_BANANA_PROMPT_CHAR_LIMIT = 6000;
 const NANO_BANANA_REFERENCE_MAX_DIMENSION = 1280;
@@ -19,6 +23,12 @@ const NANO_BANANA_REFERENCE_JPEG_QUALITY = 70;
 const NANO_BANANA_MAX_ATTEMPTS = 3;
 const NANO_BANANA_RETRY_DELAY_MS = 1200;
 const REMOTE_FETCH_TIMEOUT_MS = 90000;
+const HUMAN_SUPPORT_SURFACE_RULE = [
+    'Human support-surface rule: every seated, standing, kneeling, or reclining person must be physically supported by a real visible surface such as a deck, chair, lounger, bench, step, pool coping, or pool ledge',
+    'No person may sit, stand, kneel, or lie on open water',
+    'Water may contain swimmers only when they are clearly swimming, plus reflections and ripples',
+    'For pool-adjacent scenes, make the pool boundary, coping, or deck edge readable so support surfaces are visually unambiguous',
+].join('. ');
 
 // ────────────────────────────────────────────────────────────────────────────
 // Stability AI Image Generator
@@ -85,29 +95,66 @@ async function optimizeReferenceImageForNanoBanana(
     }
 }
 
-async function fetchUsableReferenceImage(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    try {
-        const response = await fetchWithTimeout(url, {}, REMOTE_FETCH_TIMEOUT_MS);
-        if (!response.ok) {
-            return null;
-        }
-
-        const mimeType = response.headers.get('content-type')?.split(';')[0] ?? '';
-        if (!mimeType.startsWith('image/')) {
-            return null;
-        }
-
-        return {
-            buffer: Buffer.from(await response.arrayBuffer()),
-            mimeType,
-        };
-    } catch (error) {
-        console.warn('Failed to fetch reference image for generation', {
-            url,
-            error: error instanceof Error ? error.message : String(error),
-        });
-        return null;
+/**
+ * Phase 8 (IMAGE_GEN_REVAMP_5-26): reference fetch is now LOUD, with retry.
+ *
+ * Before Phase 8 this function returned null on any failure and
+ * generateSceneImages silently fell through to text-only generation,
+ * producing generic images while the manifest looked complete.
+ *
+ * Now: try every candidate URL in order, throw with the full list of
+ * attempted URLs and the last error if none succeed. The caller decides
+ * whether to skip the scene, tag it `reference_unavailable`, or fail loud.
+ */
+export class ReferenceFetchError extends Error {
+    readonly attemptedUrls: string[];
+    constructor(attemptedUrls: string[], lastError: unknown) {
+        const last = lastError instanceof Error ? lastError.message : String(lastError);
+        super(`Reference image fetch failed for all ${attemptedUrls.length} URL(s). Last error: ${last}. Attempted: ${attemptedUrls.join(' | ')}`);
+        this.name = 'ReferenceFetchError';
+        this.attemptedUrls = attemptedUrls;
     }
+}
+
+async function fetchUsableReferenceImage(
+    primaryUrl: string,
+    fallbackUrl?: string,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+    const candidateUrls = [primaryUrl, fallbackUrl]
+        .filter((u): u is string => typeof u === 'string' && u.length > 0)
+        // r2://pending: placeholders are not fetchable URLs.
+        .filter((u) => !u.startsWith('r2://pending:'));
+
+    if (candidateUrls.length === 0) {
+        throw new ReferenceFetchError([], new Error('no usable URL on reference asset'));
+    }
+
+    let lastError: unknown = new Error('unknown');
+    for (const url of candidateUrls) {
+        try {
+            const response = await fetchWithTimeout(url, {}, REMOTE_FETCH_TIMEOUT_MS);
+            if (!response.ok) {
+                lastError = new Error(`HTTP ${response.status} from ${url}`);
+                continue;
+            }
+            const mimeType = response.headers.get('content-type')?.split(';')[0] ?? '';
+            if (!mimeType.startsWith('image/')) {
+                lastError = new Error(`Non-image content-type "${mimeType}" from ${url}`);
+                continue;
+            }
+            return {
+                buffer: Buffer.from(await response.arrayBuffer()),
+                mimeType,
+            };
+        } catch (error) {
+            lastError = error;
+            console.warn('[stability-generator] reference fetch attempt failed', {
+                url,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+    throw new ReferenceFetchError(candidateUrls, lastError);
 }
 
 async function delay(ms: number): Promise<void> {
@@ -169,7 +216,7 @@ function buildGroupPresenceGuidance(brief: CampaignAestheticBrief): string {
 }
 
 function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): string[] {
-    const { imageryMood, lightingStyle, compositionNotes } = brief.visual;
+    const { imageryMood, compositionNotes } = brief.visual;
     const casting = brief.visual.humanRepresentation;
     const docDirection = brief.landingStillBible?.globalDirectionNotes
         ?? brief.productionBible?.globalDirectionNotes
@@ -224,9 +271,9 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Still location: ${still.location}`,
                 `Still mood: ${still.mood}`,
                 `Reference category: ${still.referenceCategory}`,
+                resolvedStyle.promptBlock,
                 `Overall direction: ${buildTravelFirstHeroDirection(brief, shipName)}`,
                 resolvedStyle.allowPhotographicReinforcers ? `Atmosphere: ${docDirection}` : '',
-                resolvedStyle.allowPhotographicReinforcers ? `Lighting: ${still.lighting || lightingStyle}` : '',
                 resolvedStyle.allowPhotographicReinforcers ? `Composition: ${still.composition || compositionNotes}` : '',
                 `Plausibility rule: ${plausibility.governingPrinciple}`,
                 `Niche cue strategy: ${cueStrategy}`,
@@ -234,21 +281,15 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 researchContext,
                 `Hero shot type: ${heroVariant.label}`,
                 `Variation bias: ${heroVariant.cameraBias}`,
-                `Time-of-day bias: ${heroVariant.temporalBias}`,
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
                 buildGroupPresenceGuidance(brief),
-                `Casting goal: ${casting.castingGoal}`,
-                `Age guidance: ${casting.ageRangeGuidance}`,
-                `Diversity guidance: ${casting.diversityIntent}`,
-                `Pairing guidance: ${casting.pairingGuidance}`,
                 `Styling guidance: ${casting.stylingGuidance}`,
-                `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
                 allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
+                HUMAN_SUPPORT_SURFACE_RULE,
                 landscapeGuardrails.reality,
-                resolvedStyle.promptBlock,
                 `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
             ].filter(Boolean).join('. ');
         });
@@ -275,24 +316,24 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
                 `Scene location: ${scene.location}`,
                 `Scene mood: ${scene.mood}`,
                 `Reference category: ${scene.referenceCategory}`,
+                resolvedStyle.promptBlock,
                 `Overall direction: ${buildTravelFirstHeroDirection(brief, shipName)}`,
                 resolvedStyle.allowPhotographicReinforcers ? `Atmosphere: ${docDirection}` : '',
-                resolvedStyle.allowPhotographicReinforcers ? `Lighting: ${lightingStyle}` : '',
                 resolvedStyle.allowPhotographicReinforcers ? `Composition: ${compositionNotes}` : '',
                 `Plausibility rule: ${plausibility.governingPrinciple}`,
                 `Niche cue strategy: ${cueStrategy}`,
                 `Believable niche moment: ${nicheMoment}`,
                 `Hero shot type: ${heroVariant.label}`,
                 `Variation bias: ${heroVariant.cameraBias}`,
-                `Time-of-day bias: ${heroVariant.temporalBias}`,
                 `Staging bias: ${heroVariant.stagingBias}`,
                 `Hero framing: ${heroVariant.framing}`,
                 `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
                 buildGroupPresenceGuidance(brief),
+                `Styling guidance: ${casting.stylingGuidance}`,
                 allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
                 `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
+                HUMAN_SUPPORT_SURFACE_RULE,
                 landscapeGuardrails.reality,
-                resolvedStyle.promptBlock,
                 `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
             ].filter(Boolean).join('. ');
         });
@@ -321,8 +362,8 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `On ${shipName}`,
             `Scene: ${scene.description} at ${scene.location}`,
             `Mood: ${scene.mood}, ${imageryMood}`,
+            resolvedStyle.promptBlock,
             resolvedStyle.allowPhotographicReinforcers ? `Atmosphere: ${docDirection}` : '',
-            resolvedStyle.allowPhotographicReinforcers ? `Lighting: ${lightingStyle}` : '',
             resolvedStyle.allowPhotographicReinforcers ? `Composition: ${compositionNotes}` : '',
             `Plausibility rule: ${plausibility.governingPrinciple}`,
             `Niche cue strategy: ${cueStrategy}`,
@@ -332,16 +373,11 @@ function buildHeroPrompts(brief: CampaignAestheticBrief, shipName: string): stri
             `Hero framing: single clear focal subject, one activity only, minimal background distractions`,
             `Layout: 35-45% intentional negative space for headline and CTA, clean horizon, uncluttered edges`,
             `${buildGroupPresenceGuidance(brief)}; at least some prompts should feel softly social rather than isolated`,
-            `Casting goal: ${casting.castingGoal}`,
-            `Age guidance: ${casting.ageRangeGuidance}`,
-            `Diversity guidance: ${casting.diversityIntent}`,
-            `Pairing guidance: ${casting.pairingGuidance}`,
             `Styling guidance: ${casting.stylingGuidance}`,
-            `Anti-stereotype rules: ${casting.antiStereotypeRules.join(', ')}`,
             allowedPropsText ? `Believable cues: ${allowedPropsText}` : '',
             `Ship realism: hard marine deck surfaces, railings, teak, metal, glass, pool tile, ocean horizon, and real vessel architecture only`,
+            HUMAN_SUPPORT_SURFACE_RULE,
             landscapeGuardrails.reality,
-            resolvedStyle.promptBlock,
             `Avoid: generic cruise imagery, over-polished styling, empty luxury, staged poses, busy signage, dense props, the same niche prop repeated in every frame, visual clutter, ${stagedEventAvoidText}, ${landscapeGuardrails.avoid}, resort cabanas, suburban furniture, ${discouragedPropsText || 'clinical or industrial props inconsistent with cruise leisure'}, ${implausibleText || 'equipment-heavy demos, classroom scenes, formal workshop setups'}`,
         ].filter(Boolean).join('. ');
     });
@@ -645,6 +681,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Palette treatment: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
             resolvedStyle.allowPhotographicReinforcers ? `Lighting: ${still.lighting || lightingStyle}` : '',
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
+            HUMAN_SUPPORT_SURFACE_RULE,
             landscapeGuardrails.reality,
             resolvedStyle.promptBlock,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, ${stagedEventAvoidText}, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
@@ -688,6 +725,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Palette treatment: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
             resolvedStyle.allowPhotographicReinforcers ? `Lighting: ${lightingStyle}` : '',
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
+            HUMAN_SUPPORT_SURFACE_RULE,
             landscapeGuardrails.reality,
             resolvedStyle.promptBlock,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, repeating the same small tabletop prop in every image, ${stagedEventAvoidText}, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
@@ -730,6 +768,7 @@ function buildConceptPrompts(brief: CampaignAestheticBrief): string[] {
             `Human presence rule: at least one visible person must appear in the frame; never leave the image empty of people`,
             `Prop rule: if any object appears, it must be incidental and secondary — never the main read of the frame`,
             `Environment rule: remain clearly ship-based or sea-facing; preserve marine architecture, deck materials, railings, windows, horizon, or believable cruise interiors`,
+            HUMAN_SUPPORT_SURFACE_RULE,
             landscapeGuardrails.reality,
             resolvedStyle.promptBlock,
             `Avoid: explicit workshops, tables full of gear, whiteboards, crowded demo scenes, the same prop repeated in every image, ${stagedEventAvoidText}, fantasy elements, loss of authenticity, ${landscapeGuardrails.avoid}, land hotels, patio furniture sets, home terraces`,
@@ -831,6 +870,7 @@ function buildReferenceGroundedHeroPrompt(
             : `Framing constraints: one focal plane, ship-led composition, at least one visible person, background figures only if incidental`,
         `Negative space requirement: reserve clean breathing room for headline overlay; keep sky/sea or deck areas uncluttered`,
         `Environment integrity: preserve marine deck materials, railings, glazing, pool surfaces, and vessel architecture from the source reference; do not convert ship spaces into landscaped resort spaces`,
+        HUMAN_SUPPORT_SURFACE_RULE,
         landscapeGuardrails.reality,
         `Apply campaign palette through lighting and atmosphere only: ${colorPalette.primary}, ${colorPalette.secondary}, ${colorPalette.accent}`,
         resolvedStyle.style === 'sketched'
@@ -842,7 +882,7 @@ function buildReferenceGroundedHeroPrompt(
     ].filter(Boolean).join('. ');
 }
 
-async function generateNanoBananaImage(
+export async function generateNanoBananaImage(
     prompt: string,
     aspectRatio: typeof NANO_BANANA_CONFIG.heroAspectRatio | typeof NANO_BANANA_CONFIG.conceptAspectRatio | typeof NANO_BANANA_CONFIG.merchAspectRatio,
     imageSize: typeof NANO_BANANA_CONFIG.heroImageSize | typeof NANO_BANANA_CONFIG.conceptImageSize | typeof NANO_BANANA_CONFIG.merchImageSize,
@@ -897,26 +937,8 @@ async function generateNanoBananaImage(
                 throw new Error(`Nano-Banana error ${response.status}: ${errorText}`);
             }
 
-            const payload = await response.json() as {
-                candidates?: Array<{
-                    content?: {
-                        parts?: Array<{
-                            text?: string;
-                            inlineData?: { data?: string; mimeType?: string };
-                            inline_data?: { data?: string; mime_type?: string };
-                        }>;
-                    };
-                }>;
-            };
-            const contentParts = payload.candidates?.[0]?.content?.parts ?? [];
-            const imagePart = contentParts.find((part) => part.inlineData?.data || part.inline_data?.data);
-            const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
-
-            if (!imageData) {
-                throw new Error('Nano-Banana did not return an image payload');
-            }
-
-            return Buffer.from(imageData, 'base64');
+            const payload = await response.json() as Parameters<typeof extractNanoBananaImageBuffer>[0];
+            return extractNanoBananaImageBuffer(payload, 'Nano-Banana');
         } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -936,7 +958,11 @@ export interface GeneratedImage {
     prompt: string;
     assetId: string;
     fileName: string;
+    filterId: string | null;
 }
+
+const HERO_FILTER_COUNT = 3;
+const SCENE_FILTER_COUNT = 3;
 
 export async function generateHeroImages(
     brief: CampaignAestheticBrief,
@@ -946,16 +972,33 @@ export async function generateHeroImages(
     const prompts = buildHeroPrompts(brief, shipName).slice(0, count);
     const results: GeneratedImage[] = [];
 
+    const extenderAssignment = assignExtendersToBatch(prompts.length, DEFAULT_PROMPT_EXTENDERS);
+    const filterAssignment = selectFiltersForBatch(
+        prompts.length,
+        Math.min(HERO_FILTER_COUNT, prompts.length, IMAGE_FILTER_REGISTRY.length),
+        brief.themeName,
+    );
+
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateNanoBananaImage(
-            prompts[i],
+        const extenders = extenderAssignment[i];
+        const finalPrompt = extenders.length > 0
+            ? `${prompts[i]}. ${extenders.join('. ')}`
+            : prompts[i];
+
+        const rawBuffer = await generateNanoBananaImage(
+            finalPrompt,
             NANO_BANANA_CONFIG.heroAspectRatio,
-            NANO_BANANA_CONFIG.heroImageSize
+            NANO_BANANA_CONFIG.heroImageSize,
         );
+
+        const filter = filterAssignment[i];
+        const buffer = filter ? await filter.apply(rawBuffer) : rawBuffer;
+
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
-            prompt: prompts[i],
+            prompt: finalPrompt,
+            filterId: filter?.id ?? null,
             assetId: `img_hero_${idx}`,
             fileName: `images/hero/hero_${idx}_source.png`,
         });
@@ -987,6 +1030,7 @@ export async function generateReferenceGroundedHeroImages(
         results.push({
             buffer: transformedBuffer,
             prompt,
+            filterId: null,
             assetId: `img_hero_${itemIndex}`,
             fileName: `images/hero/hero_${itemIndex}_embellished.png`,
         });
@@ -1012,6 +1056,7 @@ export async function generateAestheticConcepts(
         results.push({
             buffer,
             prompt: prompts[i],
+            filterId: null,
             assetId: `img_concept_${idx}`,
             fileName: `images/concepts/concept_${idx}.png`,
         });
@@ -1048,6 +1093,7 @@ export async function generateProbeImage(
     return {
         buffer,
         prompt: styledPrompt,
+        filterId: null,
         assetId: `probe_${id}`,
         fileName: `images/probes/probe_${id}.png`,
     };
@@ -1058,8 +1104,24 @@ export async function generateProbeImage(
 // Each scene in the library gets its own distinct source image.
 // ────────────────────────────────────────────────────────────────────────────
 
+// Phase 8 (IMAGE_GEN_REVAMP_5-26): scene-image reference status.
+//   - reference_applied: the ship reference image was fetched and passed to
+//     Nano-Banana as a conditioning input.
+//   - no_reference_available: the production bible scene did not have a
+//     matching reference candidate (legal case, e.g. for off-ship scenes).
+//   - reference_fetch_failed: a matching candidate existed but every URL
+//     attempt failed; generation fell back to text-only. The orchestrator
+//     should tag the AssetRecord as `reference_unavailable` and mark the
+//     manifest run partial.
+export type SceneImageReferenceStatus =
+    | 'reference_applied'
+    | 'no_reference_available'
+    | 'reference_fetch_failed';
+
 export interface GeneratedSceneImage extends GeneratedImage {
     sceneId: string;
+    referenceStatus: SceneImageReferenceStatus;
+    referenceFetchError?: string;
 }
 
 function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
@@ -1189,30 +1251,36 @@ export function buildSceneImagePrompt(
     const categoryGuidance = themeSpecificWellnessGuidance
         ? buildWellnessSceneCategoryGuidance(scene)
         : '';
+    // Phase 2 (IMAGE_GEN_REVAMP_5-26): preserve clause from bound reference features.
+    const preserveClause = scene.mustPreserveShipFeatures && scene.mustPreserveShipFeatures.length > 0
+        ? `Ship architecture must show: ${scene.mustPreserveShipFeatures.join(', ')} — these are the distinctive vessel features the reference image carries and they must remain visible in the generated frame`
+        : '';
 
     return [
-        resolvedStyle.promptBlock,
+        `Production Bible source frame: ${scene.imagePrompt}`,
         `Mood: ${scene.mood}`,
-        researchContext,
-        researchSignalGuidance,
-        discouragedSignalGuidance,
-        researchRoutineGuidance,
-        researchTranslationGuidance,
-        themeSpecificWellnessGuidance,
-        categoryGuidance,
+        resolvedStyle.promptBlock,
         sceneActionGuidance,
         environmentGuidance,
-        `Production Bible source frame: ${scene.imagePrompt}`,
-        buildStoryboardSafeSceneDirection(scene),
+        themeSpecificWellnessGuidance,
+        categoryGuidance,
         nicheVisibilityGuidance,
+        preserveClause,
         `Setting: ${scene.location}`,
         `Time: ${scene.timeOfDay}`,
         `Light: ${scene.lighting}`,
         `Framing: ${scene.cameraAngle}`,
         shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
+        researchContext,
+        researchSignalGuidance,
+        discouragedSignalGuidance,
+        researchRoutineGuidance,
+        researchTranslationGuidance,
+        buildStoryboardSafeSceneDirection(scene),
         `If people appear: show at least ${brief.visual.humanRepresentation.minimumVisiblePeople ?? 3} visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults`,
         'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
         'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
+        HUMAN_SUPPORT_SURFACE_RULE,
         landscapeGuardrails.reality,
         `Avoid ${landscapeGuardrails.avoid}`,
     ].filter(Boolean).join('. ');
@@ -1224,114 +1292,108 @@ export async function generateSceneImages(
     shipName: string,
     brief: CampaignAestheticBrief,
     themeAnchorProps: readonly string[] = [],
+    manifestReferenceRecords: readonly AssetRecord[] = [],
 ): Promise<GeneratedSceneImage[]> {
-    const results: GeneratedSceneImage[] = [];
-    const landscapeGuardrails = buildShipLandscapeGuardrails(shipName);
-    const normalizedResearchDossier = normalizeCampaignResearchDossier(brief.campaignResearchDossier);
-    const researchContext = buildCampaignResearchDossierContext(
-        normalizedResearchDossier,
-        'Secondary campaign research dossier (use to keep scene imagery grounded in the niche and its visible behaviors):',
+    // Build a fast assetId → URL lookup from the stored manifest records so we
+    // can honour scene.referenceAssetIds (the intelligently-scored binding).
+    const recordUrlById = new Map<string, string>(
+        manifestReferenceRecords.map((r) => [r.assetId, r.url]),
     );
-    const nicheSignalHints = normalizedResearchDossier?.nicheResearch.allowedSignals ?? [];
-    const nicheTranslationHints = normalizedResearchDossier?.cruiseTranslation.downstreamImplications.mediaGeneration ?? [];
-    const researchSignalGuidance = nicheSignalHints.length > 0
-        ? `Visible niche signals for scene imagery: ${nicheSignalHints.slice(0, 4).join(', ')}`
-        : '';
-    const researchTranslationGuidance = nicheTranslationHints.length > 0
-        ? `Cruise translation guidance: ${nicheTranslationHints.slice(0, 3).join(' ')}`
-        : '';
-    const themeSpecificWellnessGuidance = /wellness|nature|yoga|meditation|mindful/i.test(
-        [
-            brief.themeName,
-            brief.messaging.heroSlogan,
-            brief.messaging.elevatorPitch,
-            brief.visual.aestheticLabel,
-        ].join(' '),
-    )
-        ? [
-            'For wellness or nature campaigns, the scene must show a visible wellness or mindfulness behavior, not just a calm cruise backdrop.',
-            'Prefer yoga stretch, meditation pause, breathing, journaling, nature observation, herbal tea, walking meditation, or quiet reset moments that read immediately as wellness.',
-            'Do not let the frame collapse into generic pool, dining, or horizon imagery unless a wellness behavior or cue is clearly visible in the same shot.',
-        ].join(' ')
-        : '';
+
+    const results: GeneratedSceneImage[] = [];
+
+    const extenderAssignment = assignExtendersToBatch(scenes.length, DEFAULT_PROMPT_EXTENDERS);
+    const filterAssignment = selectFiltersForBatch(
+        scenes.length,
+        Math.min(SCENE_FILTER_COUNT, scenes.length, IMAGE_FILTER_REGISTRY.length),
+        brief.themeName + '_scenes',
+    );
 
     for (let i = 0; i < scenes.length; i++) {
         const scene = scenes[i];
-        const matchedReference = shipReferences.find(
-            (ref) => ref.category === scene.referenceCategory
-        );
-        const resolvedStyle = resolveMediaStyle({
-            assetKind: 'scene',
-            hasPeople: sceneHasVisiblePeople(scene),
-            seed: scene.sceneId,
-            themeAnchorProps: themeAnchorProps.slice(0, 2),
-        });
 
-        const nicheVisibilityGuidance = themeAnchorProps.length > 0
-            ? `Niche prop visibility: at least one of these campaign props must be visible in the frame — ${themeAnchorProps.join(', ')} — placed incidentally on a table, in the foreground, or near a background figure`
-            : '';
+        // Prefer the scored, bound reference for this specific scene
+        // (scene.referenceAssetIds[0] is the top-ranked reference chosen by
+        // bindReferencesToScenes). Fall back to the naive category-match only
+        // when binding produced no result or the record URL is missing.
+        const boundUrl = scene.referenceAssetIds?.[0]
+            ? recordUrlById.get(scene.referenceAssetIds[0])
+            : undefined;
 
-        const enrichedPrompt = [
-            // Style + emotional framing FIRST — highest weight for image gen
-            resolvedStyle.promptBlock,
-            `Mood: ${scene.mood}`,
-            researchContext,
-            researchSignalGuidance,
-            researchTranslationGuidance,
-            themeSpecificWellnessGuidance,
-            // Primary creative direction from Production Bible
-            scene.imagePrompt,
-            buildStoryboardSafeSceneDirection(scene),
-            // Niche prop visibility (injected from campaign allowedProps)
-            nicheVisibilityGuidance,
-            // Atmosphere context (no task descriptions)
-            `Setting: ${scene.location}`,
-            `Time: ${scene.timeOfDay}`,
-            `Light: ${scene.lighting}`,
-            `Framing: ${scene.cameraAngle}`,
-            shipName !== 'TBD' ? `Aboard the ${shipName}` : '',
-            // Human presence: prefer low-risk social texture over total suppression
-            `If people appear: show at least ${brief.visual.humanRepresentation.minimumVisiblePeople ?? 3} visible people in a settled social arrangement; avoid close-up portraits, mid-gesture motion, eye-contact hero framing, and couples-or-solo defaults`,
-            'Location integrity: the scene must remain visibly aboard a real cruise ship or on a clearly ship-adjacent sea-facing deck, not a land resort or backyard setting',
-            'Environment rule: preserve marine railings, glazing, teak, pool tile, steel, painted deck surfaces, and believable vessel architecture',
-            landscapeGuardrails.reality,
-            `Avoid ${landscapeGuardrails.avoid}`,
-        ].filter(Boolean).join('. ');
-        const correctedPrompt = buildSceneImagePrompt(scene, shipName, brief, themeAnchorProps) || enrichedPrompt;
+        const matchedReference = boundUrl
+            ? { imageUrl: boundUrl, category: scene.referenceCategory } as ShipReferenceCandidate
+            : shipReferences.find((ref) => ref.category === scene.referenceCategory);
 
+        const scenePrompt = buildSceneImagePrompt(scene, shipName, brief, themeAnchorProps);
+        const extenders = extenderAssignment[i];
+        const finalPrompt = extenders.length > 0
+            ? `${scenePrompt}. ${extenders.join('. ')}`
+            : scenePrompt;
+
+        // Phase 8 (IMAGE_GEN_REVAMP_5-26): track whether the reference image
+        // actually reached the generator. Before Phase 8 we silently produced
+        // text-only output whenever the fetch failed, which is the root cause
+        // documented in 06_WORKFLOW_DRIFT_AUDIT_REPORT.md Finding 4. The
+        // referenceStatus now travels with the result so the orchestrator can
+        // tag the AssetRecord and mark the manifest partial.
         let buffer: Buffer;
+        let referenceStatus: SceneImageReferenceStatus;
+        let referenceFetchError: string | undefined;
+
         if (matchedReference) {
-            const referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
-            if (referenceImage) {
+            try {
+                const referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
                 buffer = await generateNanoBananaImage(
-                    correctedPrompt,
+                    finalPrompt,
                     NANO_BANANA_CONFIG.heroAspectRatio,
                     NANO_BANANA_CONFIG.heroImageSize,
                     referenceImage.buffer,
                     referenceImage.mimeType
                 );
-            } else {
+                referenceStatus = 'reference_applied';
+            } catch (err) {
+                // Phase 8: loud failure. The scene STILL gets an image (text-only)
+                // so the campaign batch can complete, but the AssetRecord is
+                // flagged so the visual-compass lint and review UI can surface
+                // the gap. The orchestrator marks the manifest partial.
+                referenceFetchError = err instanceof Error ? err.message : String(err);
+                console.error('[stability-generator] reference fetch failed — scene will be text-only', {
+                    sceneId: scene.sceneId,
+                    category: matchedReference.category,
+                    referenceImageUrl: matchedReference.imageUrl,
+                    error: referenceFetchError,
+                });
                 buffer = await generateNanoBananaImage(
-                    correctedPrompt,
+                    finalPrompt,
                     NANO_BANANA_CONFIG.heroAspectRatio,
                     NANO_BANANA_CONFIG.heroImageSize
                 );
+                referenceStatus = 'reference_fetch_failed';
             }
         } else {
             buffer = await generateNanoBananaImage(
-                correctedPrompt,
+                finalPrompt,
                 NANO_BANANA_CONFIG.heroAspectRatio,
                 NANO_BANANA_CONFIG.heroImageSize
             );
+            referenceStatus = 'no_reference_available';
+        }
+
+        const sceneFilter = filterAssignment[i];
+        if (sceneFilter) {
+            buffer = await sceneFilter.apply(buffer);
         }
 
         const idx = String(i + 1).padStart(3, '0');
         results.push({
             buffer,
-            prompt: correctedPrompt,
+            prompt: finalPrompt,
+            filterId: sceneFilter?.id ?? null,
             assetId: `img_scene_${scene.sceneId}_${idx}`,
             fileName: `images/scenes/${scene.sceneId}_${idx}.png`,
             sceneId: scene.sceneId,
+            referenceStatus,
+            referenceFetchError,
         });
     }
 
@@ -1349,6 +1411,10 @@ export async function generateImageFromPrompt(prompt: string): Promise<Buffer> {
         NANO_BANANA_CONFIG.heroImageSize
     );
 }
+
+// NOTE: the slug-prompt "single image" path moved to ./flyer-generator.ts
+// (buildFlyerPrompt / generateFlyerImages). generateNanoBananaImage is exported
+// above so that module can reuse this model call without duplicating it.
 
 export interface ImageFingerprint {
     width: number;

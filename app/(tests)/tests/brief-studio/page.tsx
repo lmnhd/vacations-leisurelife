@@ -191,6 +191,8 @@ function getProductionIssueRepairHint(issue: ProductionBuildLintIssue): string {
 // lib/campaigns/media/lint-fix-contracts.ts FIX_CONTRACTS.
 const TARGETED_FIX_RULE_CODES = new Set<string>([
     'repeated_composition_family',
+    'rail_table_window_overuse',
+    'weak_niche_signal',
 ]);
 
 interface StillSpecLike {
@@ -217,10 +219,12 @@ interface FixTrialResponse {
     rejectReason?: string;
     rejectDetail?: string;
     patches?: Array<{ stillId: string; [field: string]: string | undefined }>;
+    scenePatches?: Array<{ sceneId: string; [field: string]: string | undefined }>;
     rationale?: string;
     beforeLint?: { verdict: string; blockerCount: number; warningCount: number };
     afterLint?: { verdict: string; blockerCount: number; warningCount: number };
     diffs?: StillDiff[];
+    sceneDiffs?: Array<{ sceneId: string; before: Record<string, unknown>; after: Record<string, unknown>; mutatedFields: string[] }>;
 }
 
 interface AppliedFixSummary {
@@ -280,7 +284,9 @@ function TargetedFixModal({
     }, [slug, issue, guidance]);
 
     const applyPatch = useCallback(async () => {
-        if (!trialResult || trialResult.status !== 'ok' || !trialResult.patches) return;
+        const hasStillPatches = trialResult?.patches && trialResult.patches.length > 0;
+        const hasScenePatches = trialResult?.scenePatches && trialResult.scenePatches.length > 0;
+        if (!trialResult || trialResult.status !== 'ok' || (!hasStillPatches && !hasScenePatches)) return;
         setApplying(true);
         setErrorMessage(null);
         try {
@@ -289,7 +295,8 @@ function TargetedFixModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ruleCode: issue.code,
-                    patches: trialResult.patches,
+                    patches: trialResult.patches ?? [],
+                    scenePatches: trialResult.scenePatches,
                     operatorGuidance: guidance.trim() || undefined,
                 }),
             });
@@ -407,6 +414,33 @@ function TargetedFixModal({
                                 )}
                             </div>
                         ))}
+                        {trialResult.sceneDiffs && trialResult.sceneDiffs.length > 0 && (
+                            <>
+                                <p className="text-[10px] text-slate-500 pt-1">Scene spec patches ({trialResult.sceneDiffs.length})</p>
+                                {trialResult.sceneDiffs.map((diff) => (
+                                    <div key={diff.sceneId} className="rounded border border-white/10 bg-slate-950/60 p-3 space-y-2">
+                                        <p className="text-[11px] font-mono text-violet-300">{diff.sceneId}</p>
+                                        {diff.mutatedFields.length === 0 ? (
+                                            <p className="text-[10px] text-slate-500">No fields changed.</p>
+                                        ) : (
+                                            <div className="space-y-1.5">
+                                                {diff.mutatedFields.map((field) => (
+                                                    <div key={field} className="text-[10px]">
+                                                        <p className="text-slate-500">{field}</p>
+                                                        <p className="text-rose-300/80 line-through truncate">
+                                                            {String(diff.before[field] ?? '')}
+                                                        </p>
+                                                        <p className="text-emerald-300">
+                                                            {String(diff.after[field] ?? '')}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </>
+                        )}
                     </div>
                 )}
 

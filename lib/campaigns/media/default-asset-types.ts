@@ -5,6 +5,7 @@ import type { AssetType } from '../schema';
 export const PRODUCTION_ALL_MEDIA_ASSET_TYPES: readonly AssetType[] = [
     'ship_reference_image',
     'hero_image',
+    'flyer_image',
     'aesthetic_concept',
     'scene_image',
     'platform_crop',

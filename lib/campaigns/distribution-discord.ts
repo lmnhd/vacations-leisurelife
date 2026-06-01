@@ -10,6 +10,7 @@ function resolveAssetUrl(manifest: CampaignMediaManifest, assetId: string): stri
     const allAssets = [
         ...manifest.images.shipReferences,
         ...manifest.images.hero,
+        ...(manifest.images.flyerImages ?? []),
         ...manifest.images.sceneImages,
         ...manifest.images.aestheticConcepts,
         ...(manifest.images.documentaryDetails ?? []),
