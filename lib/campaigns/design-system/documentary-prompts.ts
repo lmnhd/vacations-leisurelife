@@ -1,6 +1,7 @@
 import type { CampaignAestheticBrief } from '../schema';
 import type { Campaign } from '../types';
 import type { DocumentaryDetailKind, DocumentaryDetailSpec, NicheTokens } from './types';
+import { getAuthoritativeShipName } from '../ship-context';
 
 const PROMPT_RULES = [
     'No text, no readable labels, no logos, no signage, no typography, no ad layout',
@@ -150,7 +151,7 @@ export function buildDocumentaryDetailPrompt(
     return [
         KIND_PROMPTS[kind],
         `Campaign world: ${brief.themeName}`,
-        `Route/vessel context: ${tokens.route}; ${campaign?.shipTarget ?? tokens.vesselName}`,
+        `Route/vessel context: ${tokens.route}; ${getAuthoritativeShipName(campaign) ?? tokens.vesselName}`,
         buildEnergyDirective(tokens),
         buildBoardGameDirective(tokens, brief, campaign),
         buildThemeCue(tokens, brief),

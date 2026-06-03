@@ -20,6 +20,40 @@ import { Loader2, ExternalLink, ChevronUp, ChevronDown, X, Check } from 'lucide-
 
 const HERO_KEY = 'section:landingHero:primary';
 
+type PlacementValue = string | string[];
+type PlacementDraft = Record<string, PlacementValue>;
+
+const LANDING_IMAGE_PLACEMENTS: Array<{
+    key: string;
+    label: string;
+    note: string;
+    multi?: boolean;
+}> = [
+    { key: 'chat.backdrop', label: 'Chat backdrop', note: 'Blurred or dimmed image behind the chat room.' },
+    { key: 'form.backdrop', label: 'Form backdrop', note: 'Waitlist form atmosphere or companion image.' },
+    { key: 'progress.card.background', label: 'Progress card', note: 'Formation/progress module background.' },
+    { key: 'pricing.banner', label: 'Pricing banner', note: 'Inventory and pricing module banner.' },
+    { key: 'story.whatItIs.background', label: 'Opening story', note: 'Image behind or beside the first story block.' },
+    { key: 'story.expectation.cards', label: 'Expectation cards', note: 'Ordered images for guest-expectation cards.', multi: true },
+    { key: 'itinerary.rail', label: 'Itinerary rail', note: 'Ordered images for process/how-it-works rails.', multi: true },
+    { key: 'trust.card.backgrounds', label: 'Trust cards', note: 'Ordered images for trust/reassurance card backgrounds.', multi: true },
+    { key: 'faq.banner', label: 'FAQ banner', note: 'Decision-reassurance image strip near FAQ.' },
+    { key: 'footer.strip', label: 'Footer strip', note: 'Closing visual strip.' },
+];
+
+function normalizePlacements(value: unknown): PlacementDraft {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    const out: PlacementDraft = {};
+    for (const [key, entry] of Object.entries(value)) {
+        if (typeof entry === 'string' && entry.trim()) out[key] = entry;
+        else if (Array.isArray(entry)) {
+            const ids = entry.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+            if (ids.length > 0) out[key] = ids;
+        }
+    }
+    return out;
+}
+
 const FLAVORS: { id: string; label: string }[] = [
     { id: '', label: 'Production' },
     { id: 'editorial_magazine', label: 'Editorial' },
@@ -39,12 +73,21 @@ export default function LandingStudioPage() {
     // Gallery curated set: local draft vs. saved (so editing is instant; one reload on Apply).
     const [galleryDraft, setGalleryDraft] = useState<string[]>([]);
     const [gallerySaved, setGallerySaved] = useState<string[]>([]);
+    const [placementsDraft, setPlacementsDraft] = useState<PlacementDraft>({});
+    const [placementsSaved, setPlacementsSaved] = useState<PlacementDraft>({});
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const pendingScrollRef = useRef<number | null>(null);
 
     const load = useCallback(async (s: string) => {
-        if (!s) { setManifest(null); setGalleryDraft([]); setGallerySaved([]); return; }
+        if (!s) {
+            setManifest(null);
+            setGalleryDraft([]);
+            setGallerySaved([]);
+            setPlacementsDraft({});
+            setPlacementsSaved({});
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
@@ -53,9 +96,12 @@ export default function LandingStudioPage() {
                 fetch(`/api/groups/campaign/${s}/media/landing-images?t=${Date.now()}`, { cache: 'no-store' }),
             ]);
             setManifest(mRes.ok ? (await mRes.json() as HtmlTemplateManifest) : null);
-            const sets = lRes.ok ? await lRes.json() as { gallery?: string[] } : {};
+            const sets = lRes.ok ? await lRes.json() as { gallery?: string[]; placements?: Record<string, PlacementValue> } : {};
             setGalleryDraft(sets.gallery ?? []);
             setGallerySaved(sets.gallery ?? []);
+            const placements = normalizePlacements(sets.placements);
+            setPlacementsDraft(placements);
+            setPlacementsSaved(placements);
         } catch {
             setManifest(null);
         } finally {
@@ -69,6 +115,7 @@ export default function LandingStudioPage() {
     const assetIndex = useMemo(() => buildImageAssetIndex(manifest), [manifest]);
     const heroValue = manifest?.imageSelections?.[HERO_KEY];
     const galleryDirty = JSON.stringify(galleryDraft) !== JSON.stringify(gallerySaved);
+    const placementsDirty = JSON.stringify(placementsDraft) !== JSON.stringify(placementsSaved);
 
     // ── Preview reload with scroll preservation ──────────────────────────────
     const reloadPreview = useCallback(() => {
@@ -132,6 +179,62 @@ export default function LandingStudioPage() {
         } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
         finally { setSaving(false); }
     }, [slug, reloadPreview]);
+
+    const setSinglePlacement = (key: string, id: string | null) =>
+        setPlacementsDraft((prev) => {
+            const next = { ...prev };
+            if (id) next[key] = id;
+            else delete next[key];
+            return next;
+        });
+
+    const toggleMultiPlacement = (key: string, id: string) =>
+        setPlacementsDraft((prev) => {
+            const current = Array.isArray(prev[key]) ? prev[key] as string[] : [];
+            const nextIds = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+            const next = { ...prev };
+            if (nextIds.length > 0) next[key] = nextIds;
+            else delete next[key];
+            return next;
+        });
+
+    const removeMultiPlacement = (key: string, id: string) =>
+        setPlacementsDraft((prev) => {
+            const current = Array.isArray(prev[key]) ? prev[key] as string[] : [];
+            const nextIds = current.filter((x) => x !== id);
+            const next = { ...prev };
+            if (nextIds.length > 0) next[key] = nextIds;
+            else delete next[key];
+            return next;
+        });
+
+    const moveMultiPlacement = (key: string, i: number, dir: -1 | 1) =>
+        setPlacementsDraft((prev) => {
+            const current = Array.isArray(prev[key]) ? [...prev[key] as string[]] : [];
+            const j = i + dir;
+            if (j < 0 || j >= current.length) return prev;
+            [current[i], current[j]] = [current[j], current[i]];
+            return { ...prev, [key]: current };
+        });
+
+    const savePlacements = useCallback(async () => {
+        if (!slug) return;
+        setSaving(true); setError(null);
+        try {
+            const patch: Record<string, PlacementValue | null> = {};
+            const keys = new Set([...Object.keys(placementsSaved), ...Object.keys(placementsDraft)]);
+            for (const key of keys) patch[key] = placementsDraft[key] ?? null;
+            const res = await fetch(`/api/groups/campaign/${slug}/media/landing-images`, {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ placements: patch }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+            setPlacementsSaved(placementsDraft);
+            reloadPreview();
+        } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+        finally { setSaving(false); }
+    }, [slug, placementsDraft, placementsSaved, reloadPreview]);
 
     const previewSrc = slug ? `/tests/campaign-landing/${slug}?chrome=0${flavor ? `&flavor=${flavor}` : ''}` : '';
 
@@ -245,6 +348,86 @@ export default function LandingStudioPage() {
                                         onToggle={toggleGallery}
                                         disabled={saving}
                                     />
+                                </div>
+                            </section>
+
+                            {/* Placements */}
+                            <section>
+                                <div className="mb-2 flex items-center justify-between">
+                                    <div className="text-[10px] uppercase tracking-widest text-slate-500">
+                                        Placements <span className="text-slate-600">- {Object.keys(placementsDraft).length} selected</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        {Object.keys(placementsDraft).length > 0 && (
+                                            <button type="button" onClick={() => setPlacementsDraft({})} disabled={saving}
+                                                className="rounded border border-white/10 px-2 py-0.5 text-[10px] text-slate-400 hover:bg-white/5 disabled:opacity-40">Clear</button>
+                                        )}
+                                        <button type="button" onClick={() => void savePlacements()} disabled={saving || !placementsDirty}
+                                            className={`rounded px-2.5 py-0.5 text-[10px] font-semibold transition disabled:opacity-40 ${placementsDirty ? 'bg-cyan-500/25 text-cyan-100 hover:bg-cyan-500/35' : 'bg-white/5 text-slate-500'}`}>
+                                            {placementsDirty ? 'Apply' : 'Applied'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {LANDING_IMAGE_PLACEMENTS.map((placement) => {
+                                        const value = placementsDraft[placement.key];
+                                        const ids = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+                                        return (
+                                            <details key={placement.key} className="rounded border border-white/10 bg-white/[0.02] p-2">
+                                                <summary className="cursor-pointer list-none">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="min-w-0">
+                                                            <div className="truncate text-xs font-medium text-slate-200">{placement.label}</div>
+                                                            <div className="truncate text-[10px] text-slate-500">{placement.note}</div>
+                                                        </div>
+                                                        <span className="shrink-0 text-[10px] text-slate-600">{ids.length || 'auto'}</span>
+                                                    </div>
+                                                </summary>
+                                                {ids.length > 0 && (
+                                                    <div className="mt-2 space-y-1">
+                                                        {ids.map((id, i) => {
+                                                            const a = assetIndex.get(id);
+                                                            return (
+                                                                <div key={id} className="flex items-center gap-2 rounded border border-white/10 bg-black/20 p-1">
+                                                                    {placement.multi && <span className="w-4 text-center text-[10px] text-slate-500">{i + 1}</span>}
+                                                                    <div className="h-9 w-12 shrink-0 overflow-hidden rounded bg-slate-900">
+                                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                        {a?.url ? <img src={a.url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-[8px] text-amber-400">missing</div>}
+                                                                    </div>
+                                                                    <span className="min-w-0 flex-1 truncate text-[10px] text-slate-400">{a?.assetType ?? 'unavailable'} - {id.slice(-10)}</span>
+                                                                    {placement.multi && (
+                                                                        <>
+                                                                            <button type="button" onClick={() => moveMultiPlacement(placement.key, i, -1)} disabled={i === 0} className="p-0.5 text-slate-500 hover:text-slate-200 disabled:opacity-20"><ChevronUp className="h-3.5 w-3.5" /></button>
+                                                                            <button type="button" onClick={() => moveMultiPlacement(placement.key, i, 1)} disabled={i === ids.length - 1} className="p-0.5 text-slate-500 hover:text-slate-200 disabled:opacity-20"><ChevronDown className="h-3.5 w-3.5" /></button>
+                                                                        </>
+                                                                    )}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => placement.multi ? removeMultiPlacement(placement.key, id) : setSinglePlacement(placement.key, null)}
+                                                                        className="p-0.5 text-slate-500 hover:text-red-400"
+                                                                    >
+                                                                        <X className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                                <div className="mt-2 max-h-64 overflow-y-auto pr-1">
+                                                    <ImageThumbPicker
+                                                        assets={pool}
+                                                        selectedId={placement.multi ? undefined : typeof value === 'string' ? value : undefined}
+                                                        selectedIds={placement.multi ? ids : undefined}
+                                                        autoActive={!placement.multi && ids.length === 0}
+                                                        disabled={saving}
+                                                        onPick={placement.multi ? undefined : (id) => setSinglePlacement(placement.key, id)}
+                                                        onAuto={placement.multi ? undefined : () => setSinglePlacement(placement.key, null)}
+                                                        onToggle={placement.multi ? (id) => toggleMultiPlacement(placement.key, id) : undefined}
+                                                    />
+                                                </div>
+                                            </details>
+                                        );
+                                    })}
                                 </div>
                             </section>
                         </>

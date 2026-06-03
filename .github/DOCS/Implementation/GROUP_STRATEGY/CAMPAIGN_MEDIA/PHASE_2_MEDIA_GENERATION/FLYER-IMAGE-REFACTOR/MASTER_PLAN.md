@@ -312,6 +312,28 @@ crammed (decided 2026-05-30):
 - The media-generation asset card labels flyer regeneration as **Steer & Regenerate Flyer** and
   sends the operator note as `steeringMessage`.
 
+### Implementation checkpoint — 2026-06-02
+
+- `/tests/flyer-lab` now requests actual selected image backends (`gemini3_flash`,
+  `gpt_image_2`, or both) instead of tagging one generated image as a different model.
+- `generateFlyerRenditions` uses the shared multi-model image backend registry and returns
+  grouped per-rendition variants plus backend warnings.
+- The lab result cards now expose a **source** switcher that swaps between the real generated
+  model outputs for that rendition.
+- Add/assign manifest commits save the currently displayed variant bytes and its real
+  `generator`, so a GPT Image 2 save is backed by a GPT Image 2 render.
+- Flyer Lab settings are now saved per campaign slug in local storage: base prompt template,
+  negation rules, variation axes, selected image models, fallback count, and brief-anchor
+  toggles return when that campaign is loaded again.
+- The latest saved Flyer Lab state from any campaign is now exposed as a reusable template on
+  every other campaign, so operators can clone a proven setup into a new slug without rebuilding
+  the controls by hand.
+- Added a lab-only Talking Point Generator that reads the campaign brief and media manifest,
+  proposes campaign-specific in-image callout chips, stores them per campaign, and passes
+  enabled chips into the actual flyer prompt as optional text-box material.
+- Flyer Lab panels are collapsible at the major-column level and at the nested control/result
+  level, including generated rendition tiles, so the expanded lab stays usable as settings grow.
+
 ---
 
 ## 11. Data-model change summary

@@ -233,6 +233,21 @@ const coerceToStr = (val: unknown): unknown =>
 const coerceToStrArr = (val: unknown): unknown =>
   typeof val === "string" ? [val] : val;
 
+// Coerce a string merch item into the object shape the refinement schema expects.
+const coerceToMerchItem = (val: unknown): unknown => {
+  if (typeof val === "string") {
+    return {
+      productType: "",
+      designDescription: val,
+      colorway: "",
+      dallePrompt: "",
+      printfulProductId: "",
+    };
+  }
+
+  return val;
+};
+
 const GenerationPass1CommunitySchema = z.object({
   corePromise: z.preprocess(coerceToStr, z.string().default("")),
   participationStyle: z.preprocess(coerceToStr, z.string().default("")),
@@ -397,11 +412,11 @@ const Pass2Schema = z.object({
 
 // Lenient merch item for refinement parsing (dallePrompt/printfulProductId often missing from model output)
 const LenientMerchItemForRefinement = z.object({
-  productType: z.string().default(""),
-  designDescription: z.string().default(""),
-  colorway: z.string().default(""),
-  dallePrompt: z.string().default(""),
-  printfulProductId: z.string().default(""),
+  productType: z.preprocess(coerceToStr, z.string().default("")),
+  designDescription: z.preprocess(coerceToStr, z.string().default("")),
+  colorway: z.preprocess(coerceToStr, z.string().default("")),
+  dallePrompt: z.preprocess(coerceToStr, z.string().default("")),
+  printfulProductId: z.preprocess(coerceToStr, z.string().default("")),
 });
 
 const RefinementSchema = CampaignAestheticBriefSchema.omit({
@@ -431,7 +446,10 @@ const RefinementSchema = CampaignAestheticBriefSchema.omit({
       conceptStatement: z.string().default(""),
       coreItem: LenientMerchItemForRefinement.default({}),
       practicalItem: LenientMerchItemForRefinement.default({}),
-      nicheSpecificItems: z.array(LenientMerchItemForRefinement).default([]),
+      nicheSpecificItems: z.preprocess(
+        (val) => Array.isArray(val) ? val.map(coerceToMerchItem) : val,
+        z.array(LenientMerchItemForRefinement).default([]),
+      ),
       logoConceptDescription: z.string().default(""),
       tagline: z.string().default(""),
       printStyle: z.string().default(""),
@@ -744,14 +762,14 @@ export function sanitizePromptList(values?: string[]): string[] {
 }
 
 export function getCanonicalShipName(campaign: Campaign): string {
-  const shipTarget = campaign.shipTarget?.trim();
-  if (shipTarget) {
-    return shipTarget;
-  }
-
   const matchedShipName = campaign.matchedShipName?.trim();
   if (matchedShipName) {
     return matchedShipName;
+  }
+
+  const shipTarget = campaign.shipTarget?.trim();
+  if (shipTarget) {
+    return shipTarget;
   }
 
   return "TBD";
@@ -759,14 +777,15 @@ export function getCanonicalShipName(campaign: Campaign): string {
 
 export function buildShipContext(campaign: Campaign): string {
   const canonicalShip = getCanonicalShipName(campaign);
+  const shipTarget = campaign.shipTarget?.trim();
   const matchedShipName = campaign.matchedShipName?.trim();
 
   if (
     matchedShipName &&
-    campaign.shipTarget?.trim() &&
-    matchedShipName !== campaign.shipTarget.trim()
+    shipTarget &&
+    matchedShipName !== shipTarget
   ) {
-    return `${canonicalShip} | Inventory metadata conflict: ${matchedShipName} (do not use conflicting ship name in outward copy)`;
+    return `${canonicalShip} | Blueprint target: ${shipTarget} | Inventory metadata conflict: ${matchedShipName} (use the matched ship for downstream copy)`;
   }
 
   if (matchedShipName) {
@@ -902,6 +921,7 @@ SPECIFIC QUALITY BAR:
 - Visual composition and plausibility cues should prioritize ship life, sea, and human presence before any niche prop.
 - Social and video concepts should feel varied and platform-native without repeating the same token, die, pouch, tray, or leaflet beat over and over.
 - Merch should stay cute and printable, but not dominate the campaign identity or repeat the same icon family across every item.
+- merch.nicheSpecificItems must be an array of objects. Each object must include productType, designDescription, and colorway. Do not return plain strings for merch items.
 
 OUTPUT RULES:
 - Return a fully refined brief matching the schema.

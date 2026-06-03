@@ -17,6 +17,7 @@ import {
     selectFetchableReferenceUrl,
 } from '../ship-reference-service';
 import { ReferenceFetchError } from '../generators/stability-generator';
+import { resolveShipReferenceShipName } from '../ship-reference-service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,16 @@ async function main() {
         const record = makeReferenceRecord({ assetType: 'scene_image' });
         const candidate = assetRecordToShipReferenceCandidate(record);
         assert.equal(candidate, null);
+    });
+
+    test('resolveShipReferenceShipName prefers matchedShipName over shipTarget', () => {
+        const shipName = resolveShipReferenceShipName({
+            id: 'campaign-001',
+            shipTarget: 'Celebrity Edge',
+            matchedShipName: 'Norwegian Gem',
+        } as never);
+
+        assert.equal(shipName, 'Norwegian Gem');
     });
 
     // ── ReferenceFetchError ───────────────────────────────────────────────────

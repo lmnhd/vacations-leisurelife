@@ -1,6 +1,7 @@
 import type { Campaign } from '../types';
 import type { CampaignAestheticBrief, CampaignEnergyMode, VisualFlavor } from '../schema';
 import type { CampaignEnergyProfile, NicheTokens, VisualSystem } from './types';
+import { getAuthoritativeShipName } from '../ship-context';
 
 const STOPWORDS = new Set([
     'the', 'and', 'for', 'with', 'from', 'into', 'your', 'this', 'that', 'cruise', 'voyage',
@@ -296,7 +297,7 @@ export function extractNicheTokens(
     const headline = brief.messaging.heroSlogan || brief.themeName;
     const energyProfile = inferEnergyProfile(brief, campaign);
     const energyMode = brief.identityBlueprint?.energyMode ?? fallbackEnergyMode(energyProfile);
-    const vesselName = campaign?.shipTarget ?? 'Selected vessel';
+    const vesselName = getAuthoritativeShipName(campaign) ?? 'Selected vessel';
     const route = campaign?.targetDestination ?? 'At sea';
     const departure = campaign?.targetDates ?? 'Departure TBA';
     const quoteSource = brief.socialConcepts.facebookAd.primaryText || brief.messaging.subSlogan || brief.messaging.elevatorPitch;

@@ -3,6 +3,7 @@ import { ModelName, getModelConfig } from '@/lib/ai/llm-gateway';
 import { ProductionBibleSchema, LandingStillBibleSchema, type LandingStillBible, type ProductionBible } from '../../schema';
 import type { TrinityAgent, TrinityAgentContext, TrinityAgentResult, TrinityFeedbackItem } from '../types';
 import { generateStructuredTrinityObject } from '../structured-generation';
+import { getAuthoritativeShipName } from '../../ship-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Schema — Builder produces ONLY production artifacts
@@ -63,7 +64,7 @@ function buildBriefContext(context: TrinityAgentContext): string {
 
     return [
         `Campaign: ${campaign.name}`,
-        `Ship: ${campaign.shipTarget ?? campaign.matchedShipName ?? 'TBD'}`,
+        `Ship: ${getAuthoritativeShipName(campaign) ?? 'TBD'}`,
         `Destination: ${campaign.targetDestination ?? 'TBD'}`,
         `Sail Date: ${campaign.matchedSailDate ?? 'TBD'}`,
         `Nights: ${campaign.matchedNights ?? 'TBD'}`,
@@ -123,7 +124,7 @@ function buildSeedProductionArtifacts(context: TrinityAgentContext): {
     productionBible: ProductionBible;
     landingStillBible: LandingStillBible;
 } {
-    const ship = context.campaign.shipTarget ?? context.campaign.matchedShipName ?? 'the ship';
+    const ship = getAuthoritativeShipName(context.campaign) ?? 'the ship';
     const destination = context.campaign.targetDestination ?? 'open water';
     const cues = summarizeThemeSignals(context);
     const heroSlogan = context.brief.messaging.heroSlogan;

@@ -21,7 +21,7 @@ import {
 import { storeAsset, getAssetUrl } from './storage-client';
 import { generateAestheticConcepts, generateSceneImages } from './generators/stability-generator';
 import { generateFlyerImages } from './generators/flyer-generator';
-import { deriveBriefAnchors, DEFAULT_FLYER_NEGATIONS, DEFAULT_FLYER_VARIATION_AXES } from './generators/flyer-prompt';
+import { deriveBriefAnchors, deriveFlyerNicheHint, DEFAULT_FLYER_NEGATIONS, DEFAULT_FLYER_VARIATION_AXES } from './generators/flyer-prompt';
 import { generatePlatformCrops } from './generators/sharp-processor';
 import { generateMerchDesigns } from './generators/dalle-generator';
 import { generateHeroExplainer, generateThresholdAnnouncement } from './generators/heygen-generator';
@@ -63,6 +63,7 @@ import {
     PLATFORM_CROP_FORMATS,
     planPlatformCropSources,
 } from './platform-crop-selection';
+import { getAuthoritativeShipName } from '../ship-context';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
@@ -647,13 +648,24 @@ export async function runMediaGeneration(
                     // MULTI_MODEL_IMAGES: active image models (per-campaign). Omitted
                     // ⇒ primary backend only (single-model, unchanged behavior).
                     const models = controls?.models as GeneratorService[] | undefined;
+                    const nicheHint = controls?.nicheHint?.trim() || deriveFlyerNicheHint({
+                        themeName: brief?.themeName,
+                        visual: { aestheticLabel: brief?.visual?.aestheticLabel },
+                        communityExpression: brief?.communityExpression,
+                        // researchRationale/audienceSignals are campaign fields, not brief fields.
+                        researchRationale: campaign?.researchRationale,
+                        audienceSignals: campaign?.audienceSignals,
+                        campaignResearchDossier: brief?.campaignResearchDossier,
+                    }) || undefined;
                     const anchors = deriveBriefAnchors({
                         themeName: brief?.themeName,
                         visual: { aestheticLabel: brief?.visual?.aestheticLabel },
+                        campaignResearchDossier: brief?.campaignResearchDossier,
                     }).map((a) => a.text);
                     const { images, warnings } = await generateFlyerImages(slug, {
                         count: axes.length, // one variant group per variation axis
                         anchors,
+                        nicheHint,
                         axes,
                         negations,
                         models,
@@ -925,7 +937,7 @@ export async function runMediaGeneration(
                     const sceneImages = await generateSceneImages(
                         boundScenes,
                         sceneReferenceCandidates,
-                        campaign.shipTarget || 'TBD',
+                        getAuthoritativeShipName(campaign) ?? 'TBD',
                         brief,
                         brief?.visual.plausibilityFramework.allowedProps.slice(0, 5) ?? [],
                         manifestReferenceRecords,

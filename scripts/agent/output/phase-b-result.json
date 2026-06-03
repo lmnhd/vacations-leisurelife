@@ -1,47 +1,17 @@
 {
-  "completedAt": "2026-05-25T22:14:05.972Z",
+  "completedAt": "2026-06-01T20:15:24.373Z",
   "summary": {
-    "confirmedCount": 3,
+    "confirmedCount": 1,
     "backupCount": 0,
-    "retailCount": 4,
+    "retailCount": 0,
     "expiredCount": 0,
     "failedCount": 0
   },
   "results": [
     {
-      "slug": "glass-observatory-winter-sea-watchers",
+      "slug": "fiber-arts-yarn-tasting-voyage",
       "status": "CONFIRMED",
-      "detail": "Brilliance of the Seas — $989/pp (score: 100, rank: 0) + retail link"
-    },
-    {
-      "slug": "board-games-at-sea",
-      "status": "CONFIRMED",
-      "detail": "Brilliance of the Seas — $1122/pp (score: 100, rank: 0) + retail link"
-    },
-    {
-      "slug": "vintage-sea-bar-social-club",
-      "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Grandeur of the Seas — retail fallback + retail link"
-    },
-    {
-      "slug": "maritime-folk-art-analog-seafarer",
-      "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Grandeur of the Seas — retail fallback + retail link"
-    },
-    {
-      "slug": "wellness-and-nature-cruise",
-      "status": "CONFIRMED",
-      "detail": "Symphony of the Seas — $834/pp (score: 55, rank: 0) + retail link"
-    },
-    {
-      "slug": "astrotourism-dark-sky-caribbean",
-      "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Vision of the Seas — retail fallback + retail link"
-    },
-    {
-      "slug": "next-gen-thrill-seeker-megaship",
-      "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Hero of the Seas — retail fallback + retail link"
+      "detail": "Norwegian Gem — $1335/pp (score: 100, rank: 0)"
     }
   ]
 }

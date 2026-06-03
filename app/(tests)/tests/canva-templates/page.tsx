@@ -7,7 +7,10 @@ import {
     buildImagePool,
     buildImageAssetIndex,
     collectSelectableImageGroups,
+    collectFlyerImageGroups,
     resolveSlotImages,
+    resolveAdOverride,
+    adOverrideKey,
     SLOT_TYPES,
     SINGLE_IMAGE_CAPABLE_FORMATS,
     TEMPLATE_DIMENSIONS,
@@ -27,6 +30,7 @@ import {
     T6MetaFeedSquare,
     T7MetaFeedPortrait,
     T8IGStoryGrid,
+    SingleImageAd,
 } from '@/lib/ads/html-templates/components';
 
 const DEFAULT_SLUG = 'glass-observatory-winter-sea-watchers';
@@ -170,6 +174,7 @@ export default function CanvasTemplatesPage() {
     const pool = manifest ? buildImagePool(manifest) : null;
     const assetById = manifest ? buildImageAssetIndex(manifest) : undefined;
     const selectableAssets = manifest ? collectSelectableImageGroups(manifest) : [];
+    const flyerAssets = manifest ? collectFlyerImageGroups(manifest) : [];
     const imgCount = pool ? Object.values(pool).reduce((n, arr) => n + arr.length, 0) : 0;
     const savedSelections = manifest?.imageSelections ?? {};
     const savedSlotControls = manifest?.imageSlotControls ?? {};
@@ -195,6 +200,7 @@ export default function CanvasTemplatesPage() {
                 ...(control.hidden ? { hidden: true } : {}),
                 ...(control.flipX ? { flipX: true } : {}),
                 ...(control.position && control.position !== 'center' ? { position: control.position } : {}),
+                ...(control.fit && control.fit !== 'cover' ? { fit: control.fit } : {}),
             };
             if (Object.keys(normalized).length === 0) delete next[usePointKey];
             else next[usePointKey] = normalized;
@@ -350,20 +356,57 @@ export default function CanvasTemplatesPage() {
                         const slotDefs = SLOT_TYPES[id] ?? {};
                         const singleImageKey = SINGLE_IMAGE_CAPABLE_FORMATS[id] ? `ad:${id}:flyer` : null;
                         const copyKey = copySelectionKey(id);
+                        const overrideKey = adOverrideKey(id);
+                        const override = resolveAdOverride(id, {
+                            selections: draftSelections,
+                            slotControls: draftSlotControls,
+                            assetById,
+                        });
+                        // Override SELECTED but parked (Hide toggle) → template still shows.
+                        const overrideSelected = Boolean(draftSelections[overrideKey]);
                         return (
                             <div key={id} className="flex w-[500px] flex-col gap-3">
                                 <Scaled w={w} h={h} scale={scale}>
-                                    {renderTemplate(id, d, imgs, draftSlotControls)}
+                                    {override
+                                        ? <SingleImageAd width={w} height={h} url={override.url} fit={override.fit} position={override.position} flipX={override.flipX} />
+                                        : renderTemplate(id, d, imgs, draftSlotControls)}
                                 </Scaled>
                                 <div>
                                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-300">
                                         {label}
                                     </div>
                                     <div className="font-mono text-xs text-slate-600">
-                                        {dims}{slotCount > 0 ? ` / ${slotCount} slot${slotCount === 1 ? '' : 's'} filled` : ''}
+                                        {override
+                                            ? `${dims} / single image override`
+                                            : `${dims}${slotCount > 0 ? ` / ${slotCount} slot${slotCount === 1 ? '' : 's'} filled` : ''}`}
                                     </div>
                                 </div>
-                                <div className="rounded border border-white/10 bg-white/[0.025] p-2">
+                                <div className="rounded border border-emerald-400/20 bg-emerald-500/[0.04] p-2">
+                                    <div className="mb-1 flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold text-emerald-300/90">single image override</span>
+                                        <span className="text-[10px] uppercase tracking-wide text-slate-600">
+                                            {override ? 'active' : overrideSelected ? 'parked' : 'flyer → whole ad'}
+                                        </span>
+                                    </div>
+                                    {flyerAssets.length > 0 ? (
+                                        <ImageSlotPicker
+                                            label="flyer"
+                                            usePointKey={overrideKey}
+                                            value={draftSelections[overrideKey]}
+                                            assets={flyerAssets}
+                                            onChange={updateSelection}
+                                            control={draftSlotControls[overrideKey]}
+                                            onControlChange={updateSlotControl}
+                                            showFit
+                                        />
+                                    ) : (
+                                        <p className="text-[10px] text-slate-600">No flyer images in this campaign yet — generate some in /tests/flyer-lab.</p>
+                                    )}
+                                    {override && (
+                                        <p className="mt-1 text-[10px] text-slate-500">Template text & image slots below are muted while the override is active.</p>
+                                    )}
+                                </div>
+                                <div className={`rounded border border-white/10 bg-white/[0.025] p-2 ${override ? 'pointer-events-none opacity-40' : ''}`}>
                                     <div className="mb-1 flex items-center justify-between gap-2">
                                         <span className="text-[11px] font-semibold text-slate-300">headline source</span>
                                         <span className="text-[10px] uppercase tracking-wide text-slate-600">
@@ -384,7 +427,7 @@ export default function CanvasTemplatesPage() {
                                     </select>
                                 </div>
                                 {Object.keys(slotDefs).length > 0 && (
-                                    <div className="grid gap-2">
+                                    <div className={`grid gap-2 ${override ? 'pointer-events-none opacity-40' : ''}`}>
                                         {singleImageKey && (
                                             <ImageSlotPicker
                                                 label="single image"

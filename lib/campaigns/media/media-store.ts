@@ -433,7 +433,7 @@ export async function updateManifestCopySelections(
 
 export async function updateManifestLandingImageSets(
     slug: string,
-    changes: { gallery?: string[] | null; trust?: string[] | null },
+    changes: { gallery?: string[] | null; trust?: string[] | null; placements?: Record<string, string | string[] | null> | null },
 ): Promise<CampaignMediaManifest> {
     const existingManifest = await getMediaManifest(slug);
     if (!existingManifest) {
@@ -449,6 +449,30 @@ export async function updateManifestLandingImageSets(
     if (changes.trust !== undefined) {
         if (changes.trust === null || changes.trust.length === 0) delete next.trust;
         else next.trust = clean(changes.trust);
+    }
+    if (changes.placements !== undefined) {
+        if (changes.placements === null || Object.keys(changes.placements).length === 0) {
+            delete next.placements;
+        } else {
+            const nextPlacements = { ...(next.placements ?? {}) };
+            for (const [key, value] of Object.entries(changes.placements)) {
+                const cleanKey = key.trim();
+                if (!cleanKey) continue;
+                if (value === null) {
+                    delete nextPlacements[cleanKey];
+                } else if (Array.isArray(value)) {
+                    const ids = clean(value);
+                    if (ids.length > 0) nextPlacements[cleanKey] = ids;
+                    else delete nextPlacements[cleanKey];
+                } else {
+                    const id = value.trim();
+                    if (id) nextPlacements[cleanKey] = id;
+                    else delete nextPlacements[cleanKey];
+                }
+            }
+            if (Object.keys(nextPlacements).length > 0) next.placements = nextPlacements;
+            else delete next.placements;
+        }
     }
 
     const finalizedManifest = finalizeManifest({
@@ -488,7 +512,7 @@ export async function updateManifestModelVersionSelections(
 
 export async function updateManifestFlyerControls(
     slug: string,
-    controls: { negations: string[]; axes: string[]; models?: string[] },
+    controls: { negations: string[]; axes: string[]; nicheHint?: string; models?: string[] },
 ): Promise<CampaignMediaManifest> {
     const existingManifest = await getMediaManifest(slug);
     if (!existingManifest) {
@@ -500,6 +524,7 @@ export async function updateManifestFlyerControls(
         flyerControls: {
             negations: controls.negations.map((s) => s.trim()).filter(Boolean),
             axes: controls.axes.map((s) => s.trim()).filter(Boolean),
+            ...(controls.nicheHint?.trim() ? { nicheHint: controls.nicheHint.trim() } : {}),
             ...(controls.models ? { models: controls.models.map((s) => s.trim()).filter(Boolean) } : {}),
         },
     });

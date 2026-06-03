@@ -137,7 +137,7 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
     ].filter(Boolean);
 
     return (
-        <section className="bg-[#f2ead8] text-stone-950">
+        <section className="bg-[#f5f8f4] text-slate-950">
             <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-10 md:px-6 lg:px-8 lg:pt-16">
                 <header className="flex items-end justify-between border-b-[3px] border-stone-950 pb-4">
                     <div>
@@ -154,7 +154,7 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
 
                 <div className="grid gap-10 pt-10 lg:grid-cols-[1.05fr_0.95fr]">
                     <div className="relative">
-                        <div className="aspect-[3/4] overflow-hidden border border-stone-950 bg-stone-200 shadow-[20px_20px_0_rgba(76,46,26,0.18)]">
+                        <div className="aspect-[3/4] overflow-hidden border border-teal-950 bg-teal-50 shadow-[20px_20px_0_rgba(15,83,77,0.18)]">
                             {heroImage?.url ? (
                                 <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${heroImage.url})` }} />
                             ) : (
@@ -208,7 +208,7 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                                 asChild
                                 disabled={landing.ctas.primary.disabled}
                                 className="min-h-[58px] rounded-none px-6 text-base font-bold"
-                                style={{ backgroundColor: '#1c1410', color: '#f2ead8' }}
+                                style={{ backgroundColor: '#061b1a', color: '#f5f8f4' }}
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                             </Button>
@@ -253,7 +253,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
     const palette = landing.designSystem.palette;
 
     return (
-        <section className="relative overflow-hidden bg-[#f6e4bf] py-12 text-amber-950 md:py-16">
+        <section className="relative overflow-hidden bg-[#eef8f7] py-12 text-[#143d3b] md:py-16">
             {/* Background image with heavy cream overlay for depth without washing out postcard */}
             {bgImage?.url && (
                 <>
@@ -261,24 +261,29 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20 saturate-50 blur-sm"
                         style={{ backgroundImage: `url(${bgImage.url})` }}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-[#f6e4bf]/75" />
+                    <div className="pointer-events-none absolute inset-0 bg-[#eef8f7]/72" />
                 </>
             )}
             <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
                 {/* The postcard */}
                 <div className="relative">
-                    <div className="relative rotate-[-1.2deg] border-[14px] border-[#fff8e8] bg-[#fff8e8] p-2 shadow-[0_30px_70px_rgba(101,60,18,0.35)]">
-                        <div className="aspect-[5/3] overflow-hidden bg-amber-100">
+                    <div className="relative rotate-[-1.2deg] border-[14px] border-white bg-white p-2 shadow-[0_30px_70px_rgba(8,91,101,0.24)]">
+                        <div className="aspect-[5/3] overflow-hidden bg-cyan-100">
                             {cardImage?.url ? (
-                                <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${cardImage.url})` }} />
+                                <img
+                                    src={cardImage.url}
+                                    alt={cardImage.alt ?? landing.title}
+                                    className="h-full w-full object-cover"
+                                    loading="eager"
+                                />
                             ) : (
                                 <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${accent}55, #b16f2488)` }} />
                             )}
                         </div>
 
                         {/* Postage stamp */}
-                        <div className="absolute -right-3 -top-3 rotate-[6deg] border-2 border-amber-900 bg-[#fff8e8] p-2" style={{ boxShadow: '0 0 0 4px #fff8e8, 0 0 0 5px #78491880' }}>
-                            <div className="h-20 w-16 border border-dashed border-amber-900/50 px-1 py-2 text-center">
+                        <div className="absolute -right-3 -top-3 rotate-[6deg] border-2 border-cyan-950 bg-white p-2" style={{ boxShadow: '0 0 0 4px #ffffff, 0 0 0 5px rgba(8,91,101,0.35)' }}>
+                            <div className="h-20 w-16 border border-dashed border-cyan-950/50 px-1 py-2 text-center">
                                 <p className={`${alfa_slab_one.className} text-[8px] uppercase leading-tight`} style={{ color: palette.primary }}>
                                     {landing.designSystem.issueLabel}
                                 </p>
@@ -288,72 +293,72 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         </div>
 
                         {/* Circular postmark */}
-                        <div className="absolute -left-4 top-2 flex h-24 w-24 rotate-[-12deg] items-center justify-center rounded-full border-[2px] border-amber-900/60 text-center">
-                            <div className="font-mono text-[8px] uppercase leading-tight tracking-widest text-amber-900/80">
+                        <div className="absolute -left-4 top-2 flex h-24 w-24 rotate-[-12deg] items-center justify-center rounded-full border-[2px] border-cyan-950/60 text-center">
+                            <div className="font-mono text-[8px] uppercase leading-tight tracking-widest text-cyan-950/80">
                                 <p>★ POSTED ★</p>
-                                <p className="my-1 border-y border-amber-900/40 py-1 text-[9px]">{landing.facts.find(f => f.label === 'Sailing')?.value ?? landing.designSystem.issueLabel}</p>
+                                <p className="my-1 border-y border-cyan-950/40 py-1 text-[9px]">{landing.facts.find(f => f.label === 'Sailing')?.value ?? landing.designSystem.issueLabel}</p>
                                 <p>{landing.facts.find(f => f.label === 'Departure Port')?.value?.split(',')[0] ?? 'Port'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Handwritten greeting card below */}
-                    <div className="relative mt-8 ml-8 max-w-md rotate-[1deg] border border-amber-900/20 bg-[#fff8e8] p-6 shadow-[0_18px_50px_rgba(101,60,18,0.18)]">
-                        <p className="font-serif text-2xl italic leading-snug text-amber-950">
+                    <div className="relative mt-8 ml-8 max-w-md rotate-[1deg] border border-cyan-950/20 bg-white p-6 shadow-[0_18px_50px_rgba(8,91,101,0.14)]">
+                        <p className="font-serif text-2xl italic leading-snug text-[#143d3b]">
                             Wish you were here —
                         </p>
-                        <p className="mt-3 font-serif text-base leading-7 italic text-amber-900/85">
+                        <p className="mt-3 font-serif text-base leading-7 italic text-[#315f5a]">
                             {landing.designSystem.quote}
                         </p>
-                        <p className="mt-4 text-right font-serif text-sm italic text-amber-900/70">— {landing.designSystem.quoteCite}</p>
+                        <p className="mt-4 text-right font-serif text-sm italic text-[#48756f]">— {landing.designSystem.quoteCite}</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col justify-between gap-8">
                     <div>
-                        <div className="inline-flex items-center gap-3 border border-amber-900/40 bg-[#fff8e8] px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.32em] text-amber-900/80">
+                        <div className="inline-flex items-center gap-3 border border-cyan-950/30 bg-white px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.32em] text-cyan-950/80">
                             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
                             {landing.stateLabel} · Voyage Post
                         </div>
                         <h1 className={`${alfa_slab_one.className} mt-6 text-5xl leading-[0.95] tracking-tight md:text-7xl`}>
                             {landing.heroSlogan}
                         </h1>
-                        <p className="mt-6 max-w-xl font-serif text-lg leading-8 italic text-amber-900/80">
+                        <p className="mt-6 max-w-xl font-serif text-lg leading-8 italic text-[#315f5a]">
                             {landing.subSlogan}
                         </p>
                     </div>
 
                     {/* Boarding pass mini-artifact */}
-                    <div className="border border-amber-900/30 bg-[#fff8e8] shadow-[0_18px_50px_rgba(101,60,18,0.16)]">
+                    <div className="border border-cyan-950/25 bg-white shadow-[0_18px_50px_rgba(8,91,101,0.14)]">
                         <div className="grid grid-cols-[1.2fr_auto_1fr]">
                             <div className="p-4">
-                                <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-amber-900/60">From</p>
+                                <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-950/55">From</p>
                                 <p className={`${alfa_slab_one.className} mt-1 text-2xl`}>
                                     {landing.facts.find(f => f.label === 'Departure Port')?.value?.split(',')[0]?.toUpperCase() ?? 'PORT'}
                                 </p>
                             </div>
-                            <div className="flex items-center justify-center border-x border-dashed border-amber-900/30 px-3 text-3xl text-amber-900/50">
+                            <div className="flex items-center justify-center border-x border-dashed border-cyan-950/25 px-3 text-3xl text-cyan-950/45">
                                 ✈
                             </div>
                             <div className="p-4 text-right">
-                                <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-amber-900/60">To</p>
+                                <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-950/55">To</p>
                                 <p className={`${alfa_slab_one.className} mt-1 text-2xl`}>
                                     {landing.facts.find(f => f.label === 'Destination')?.value?.toUpperCase() ?? 'AT SEA'}
                                 </p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 border-t border-dashed border-amber-900/30 bg-[#f6e4bf]/40 p-3 font-mono text-[9px] uppercase tracking-[0.24em] text-amber-900/70">
+                        <div className="grid grid-cols-3 border-t border-dashed border-cyan-950/25 bg-[#d6f0ea]/65 p-3 font-mono text-[9px] uppercase tracking-[0.24em] text-cyan-950/70">
                             <div>
-                                <p className="text-amber-900/50">Vessel</p>
-                                <p className="mt-1 text-amber-950">{landing.facts.find(f => f.label === 'Ship')?.value ?? '—'}</p>
+                                <p className="text-cyan-950/50">Vessel</p>
+                                <p className="mt-1 text-[#143d3b]">{landing.facts.find(f => f.label === 'Ship')?.value ?? '—'}</p>
                             </div>
                             <div>
-                                <p className="text-amber-900/50">Sailing</p>
-                                <p className="mt-1 text-amber-950">{landing.facts.find(f => f.label === 'Sailing')?.value ?? '—'}</p>
+                                <p className="text-cyan-950/50">Sailing</p>
+                                <p className="mt-1 text-[#143d3b]">{landing.facts.find(f => f.label === 'Sailing')?.value ?? '—'}</p>
                             </div>
                             <div>
-                                <p className="text-amber-900/50">Cabin</p>
-                                <p className="mt-1 text-amber-950">{landing.facts.find(f => f.label === 'Duration')?.value ?? 'TBA'}</p>
+                                <p className="text-cyan-950/50">Cabin</p>
+                                <p className="mt-1 text-[#143d3b]">{landing.facts.find(f => f.label === 'Duration')?.value ?? 'TBA'}</p>
                             </div>
                         </div>
                     </div>
@@ -362,14 +367,14 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         <Button
                             asChild
                             disabled={landing.ctas.primary.disabled}
-                            className="min-h-[58px] rounded-none px-6 text-base font-bold text-amber-950"
+                            className="min-h-[58px] rounded-none px-6 text-base font-bold text-[#062625]"
                             style={{ backgroundColor: accent }}
                         >
                             <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                         </Button>
-                        <p className="text-sm leading-6 text-amber-900/75">
+                        <p className="text-sm leading-6 text-[#315f5a]">
                             <span>Need the faster path? </span>
-                            <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-amber-950">
+                            <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-[#143d3b]">
                                 {landing.ctas.secondary.label}
                             </a>
                         </p>
@@ -398,7 +403,7 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
     const captions = landing.designSystem.sectionLabels.slice(0, 4);
 
     return (
-        <section className="relative overflow-hidden bg-[#f3ead5] py-12 text-zinc-950 md:py-16">
+        <section className="relative overflow-hidden bg-[#fbf7ff] py-12 text-zinc-950 md:py-16">
             {/* Photocopy grain overlay */}
             <div
                 className="pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply"
@@ -415,7 +420,7 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                         className="inline-block -rotate-1 px-6 py-3 shadow-[8px_8px_0_rgba(0,0,0,0.85)]"
                         style={{
                             backgroundColor: accent,
-                            color: '#fff9e8',
+                            color: '#ffffff',
                             clipPath: 'polygon(0 8%, 5% 0, 12% 6%, 22% 0, 32% 8%, 45% 2%, 60% 8%, 75% 0, 88% 6%, 100% 0, 100% 92%, 95% 100%, 85% 94%, 70% 100%, 55% 92%, 40% 100%, 25% 92%, 12% 100%, 0 94%)',
                         }}
                     >
@@ -482,9 +487,9 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                         </div>
 
                         {/* Tracklist mini facts */}
-                        <div className="border-2 border-zinc-950 bg-[#fff9e8] shadow-[6px_6px_0_rgba(0,0,0,0.85)]">
+                        <div className="border-2 border-zinc-950 bg-white shadow-[6px_6px_0_rgba(0,0,0,0.85)]">
                             <div className="border-b-2 border-zinc-950 bg-zinc-950 px-4 py-2">
-                                <p className={`${orbitron.className} font-black uppercase tracking-widest text-[#fff9e8]`}>RUN OF SHOW</p>
+                                <p className={`${orbitron.className} font-black uppercase tracking-widest text-white`}>RUN OF SHOW</p>
                             </div>
                             <ul className="divide-y-2 divide-dashed divide-zinc-950/30">
                                 {landing.facts.slice(0, 4).map((fact, i) => {
@@ -507,7 +512,7 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                                 asChild
                                 disabled={landing.ctas.primary.disabled}
                                 className="min-h-[58px] rounded-none border-2 border-zinc-950 px-6 text-base font-black uppercase shadow-[6px_6px_0_rgba(0,0,0,0.95)]"
-                                style={{ backgroundColor: accent, color: '#fff9e8' }}
+                                style={{ backgroundColor: accent, color: '#ffffff' }}
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>► {landing.ctas.primary.label}</a>
                             </Button>

@@ -169,16 +169,20 @@ function classifyReferenceMatchLevel(
     return 'generic_cruise';
 }
 
-function getResolvedShipName(campaign: Campaign): string {
-    const shipTarget = campaign.shipTarget?.trim();
-    if (shipTarget) {
-        return shipTarget;
-    }
+export function resolveShipReferenceShipName(campaign: Campaign): string {
     const matchedShipName = campaign.matchedShipName?.trim();
     if (matchedShipName) {
         return matchedShipName;
     }
-    throw new Error(`Campaign ${campaign.id} does not have a ship target for reference discovery`);
+    const shipTarget = campaign.shipTarget?.trim();
+    if (shipTarget) {
+        return shipTarget;
+    }
+    throw new Error(`Campaign ${campaign.id} does not have a matched ship or ship target for reference discovery`);
+}
+
+function getResolvedShipName(campaign: Campaign): string {
+    return resolveShipReferenceShipName(campaign);
 }
 
 function getCruiseLineQueryFragment(campaign: Campaign): string {

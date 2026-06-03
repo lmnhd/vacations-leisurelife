@@ -1504,6 +1504,7 @@ export const CampaignMediaManifestSchema = z.object({
     flyerControls: z.object({
         negations: z.array(z.string()).default([]),
         axes: z.array(z.string()).default([]),
+        nicheHint: z.string().optional(),
         // MULTI_MODEL_IMAGES: active image backends for flyer generation.
         // Omitted/empty ⇒ primary backend only (single-model). GeneratorService ids.
         models: z.array(z.string()).optional(),
@@ -1514,6 +1515,7 @@ export const CampaignMediaManifestSchema = z.object({
     landingImageSets: z.object({
         gallery: z.array(z.string()).optional(),
         trust: z.array(z.string()).optional(),
+        placements: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
     }).optional(),
     tiktokPromotionPackage: TikTokPromotionPackageSchema.optional(),
 

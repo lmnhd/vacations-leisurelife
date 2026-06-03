@@ -46,9 +46,13 @@ export async function screenshotHtmlTemplate(
             timeout: NAV_TIMEOUT_MS,
         });
 
-        // Wait for every CSS background-image referenced in the rendered DOM
-        // to finish loading. Playwright's `networkidle`/`load` heuristics do
-        // NOT cover CSS-loaded images, so we have to drive this ourselves.
+        // Wait for every CSS background-image AND <img> element to finish
+        // loading. Playwright's `networkidle`/`load` heuristics do NOT cover
+        // CSS-loaded images, so we drive this ourselves. <img> elements must
+        // also be covered because SingleImageAd (used by the Single Image
+        // Override path) renders via <img> tags, not CSS background-image —
+        // without this the screenshot fires before the override image loads,
+        // producing a black frame.
         await page.evaluate(async () => {
             const urls = new Set<string>();
             for (const el of document.querySelectorAll<HTMLElement>('*')) {
@@ -58,6 +62,10 @@ export async function screenshotHtmlTemplate(
                 for (const m of bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)) {
                     urls.add(m[1]);
                 }
+            }
+            // Also collect <img> src attributes so SingleImageAd overrides are waited on.
+            for (const imgEl of document.querySelectorAll<HTMLImageElement>('img')) {
+                if (imgEl.src) urls.add(imgEl.src);
             }
             await Promise.all(Array.from(urls).map((url) => new Promise<void>((resolve) => {
                 const img = new Image();

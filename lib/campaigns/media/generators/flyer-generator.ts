@@ -14,17 +14,22 @@
 // NOTE: this module imposes no default negations/axes. Callers pass what they
 // want (the sandbox seeds DEFAULT_FLYER_* and lets the operator tune them).
 
-import { NANO_BANANA_CONFIG } from '../media-pipeline-config';
 import type { GeneratorService } from '@/lib/campaigns/schema';
-import { generateNanoBananaImage, type GeneratedImage } from './stability-generator';
+import { type GeneratedImage } from './stability-generator';
 import { buildFlyerPrompt } from './flyer-prompt';
 import { getActiveImageBackends, generateVariants } from './image-backends';
 
 export interface GenerateFlyerOptions {
     /** Number of renditions. Defaults to axes.length (or 1 if no axes). */
     count?: number;
+    /** Optional base prompt template. Use {slug} where the campaign slug should appear. */
+    basePromptTemplate?: string;
     /** Enabled brief-anchor texts. */
     anchors?: string[];
+    /** Optional ultra-specific niche detail to bias the image stronger. */
+    nicheHint?: string;
+    /** Optional callout texts for in-image text boxes. */
+    talkingPoints?: string[];
     /** Per-rendition variation axes. Empty ⇒ no rendition direction (slug-only). */
     axes?: string[];
     /** Negation rule texts. Empty ⇒ no "Avoid:" clause. */
@@ -38,35 +43,57 @@ export interface GenerateFlyerOptions {
 export interface FlyerRendition {
     axis: string | null;
     prompt: string;
-    buffer: Buffer;
+    variants: Array<{
+        generator: GeneratorService;
+        buffer: Buffer;
+    }>;
+}
+
+export interface GenerateFlyerRenditionsResult {
+    renditions: FlyerRendition[];
+    /** Per-backend failures (one model failing never sinks the others). */
+    warnings: string[];
 }
 
 export async function generateFlyerRenditions(
     slug: string,
     opts: GenerateFlyerOptions = {},
-): Promise<FlyerRendition[]> {
+): Promise<GenerateFlyerRenditionsResult> {
     const axes = opts.axes ?? [];
     const negations = opts.negations ?? [];
     const anchors = opts.anchors ?? [];
     const count = opts.count ?? (axes.length || 1);
+    const backends = getActiveImageBackends(opts.models);
 
     const results: FlyerRendition[] = [];
+    const warnings: string[] = [];
+    if (backends.length === 0) {
+        warnings.push('No requested image model is available in this environment.');
+    }
     for (let i = 0; i < count; i += 1) {
         const axis = axes.length ? axes[i % axes.length] : null;
         const prompt = buildFlyerPrompt(slug, {
+            basePromptTemplate: opts.basePromptTemplate,
             anchors,
+            nicheHint: opts.nicheHint,
+            talkingPoints: opts.talkingPoints,
             axis: axis ?? undefined,
             negations,
             steer: opts.steer,
         });
-        const buffer = await generateNanoBananaImage(
+        const variantGroupId = `rendition_${String(i + 1).padStart(3, '0')}`;
+        const { variants, errors } = await generateVariants(prompt, { aspect: '1:1' }, backends);
+        warnings.push(...errors.map((e) => `${variantGroupId}: ${e}`));
+        results.push({
+            axis,
             prompt,
-            NANO_BANANA_CONFIG.conceptAspectRatio, // '1:1'
-            NANO_BANANA_CONFIG.heroImageSize,
-        );
-        results.push({ axis, prompt, buffer });
+            variants: variants.map((v) => ({
+                generator: v.generator,
+                buffer: v.buffer,
+            })),
+        });
     }
-    return results;
+    return { renditions: results, warnings };
 }
 
 /** A flyer image plus the model that produced it and its variant group. */
@@ -104,7 +131,10 @@ export async function generateFlyerImages(
     for (let i = 0; i < count; i += 1) {
         const axis = axes.length ? axes[i % axes.length] : null;
         const prompt = buildFlyerPrompt(slug, {
+            basePromptTemplate: opts.basePromptTemplate,
             anchors,
+            nicheHint: opts.nicheHint,
+            talkingPoints: opts.talkingPoints,
             axis: axis ?? undefined,
             negations,
             steer: opts.steer,

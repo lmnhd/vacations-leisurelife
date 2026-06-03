@@ -20,6 +20,7 @@ export async function GET(
     return NextResponse.json({
         gallery: sets?.gallery ?? [],
         trust: sets?.trust ?? [],
+        placements: sets?.placements ?? {},
         hasManifest: Boolean(manifest),
     });
 }
@@ -31,6 +32,19 @@ function asIdArrayOrNull(value: unknown): string[] | null | undefined {
     return value.filter((x): x is string => typeof x === 'string');
 }
 
+function asPlacementsOrNull(value: unknown): Record<string, string | string[] | null> | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const out: Record<string, string | string[] | null> = {};
+    for (const [key, entry] of Object.entries(value)) {
+        if (entry === null) out[key] = null;
+        else if (typeof entry === 'string') out[key] = entry;
+        else if (Array.isArray(entry)) out[key] = entry.filter((x): x is string => typeof x === 'string');
+    }
+    return out;
+}
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ slug: string }> },
@@ -40,12 +54,14 @@ export async function PATCH(
         const body = await request.json().catch(() => ({}));
         const gallery = asIdArrayOrNull(body.gallery);
         const trust = asIdArrayOrNull(body.trust);
-        if (gallery === undefined && trust === undefined) {
-            return NextResponse.json({ error: 'No gallery/trust provided' }, { status: 400 });
+        const placements = asPlacementsOrNull(body.placements);
+        if (gallery === undefined && trust === undefined && placements === undefined) {
+            return NextResponse.json({ error: 'No gallery/trust/placements provided' }, { status: 400 });
         }
         const manifest = await updateManifestLandingImageSets(slug, {
             ...(gallery !== undefined ? { gallery } : {}),
             ...(trust !== undefined ? { trust } : {}),
+            ...(placements !== undefined ? { placements } : {}),
         });
         return NextResponse.json({ landingImageSets: manifest.landingImageSets ?? {} });
     } catch (err) {

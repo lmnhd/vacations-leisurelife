@@ -34,9 +34,9 @@ function ItineraryNostalgia({ steps, theme, accentHex }: { steps: LandingStorySe
     return (
         <div className="grid gap-5">
             {steps.map((step, i) => (
-                <div key={step.title} className="relative grid gap-4 border border-dashed border-amber-900/40 bg-[#fff8e8] p-5 shadow-[0_14px_36px_rgba(120,73,24,0.14)] md:grid-cols-[7rem_1fr]">
-                    <div className="border-r border-dashed border-amber-900/30 pr-4">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-900/60">Stamp {i + 1}</p>
+                <div key={step.title} className="relative grid gap-4 border border-dashed border-cyan-950/30 bg-white/90 p-5 shadow-[0_14px_36px_rgba(8,91,101,0.12)] md:grid-cols-[7rem_1fr]">
+                    <div className="border-r border-dashed border-cyan-950/25 pr-4">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-950/55">Stamp {i + 1}</p>
                         <p className={`${alfa_slab_one.className} mt-2 text-3xl`} style={{ color: accentHex }}>№{i + 1}</p>
                     </div>
                     <div>
@@ -51,9 +51,9 @@ function ItineraryNostalgia({ steps, theme, accentHex }: { steps: LandingStorySe
 
 function ItineraryZine({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
     return (
-        <div className="border-2 border-zinc-950 bg-[#fff9e8] shadow-[8px_8px_0_rgba(0,0,0,0.85)]">
+        <div className="border-2 border-zinc-950 bg-white shadow-[8px_8px_0_rgba(0,0,0,0.85)]">
             <div className="border-b-2 border-zinc-950 bg-zinc-950 px-5 py-3">
-                <p className={`${orbitron.className} text-sm font-black uppercase tracking-[0.32em] text-[#fff9e8]`}>SIDE B — TRACKLIST</p>
+                <p className={`${orbitron.className} text-sm font-black uppercase tracking-[0.32em] text-white`}>SIDE B — TRACKLIST</p>
             </div>
             <ol className="divide-y-2 divide-dashed divide-zinc-950/30">
                 {steps.map((step, i) => (

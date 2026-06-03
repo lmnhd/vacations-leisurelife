@@ -15,11 +15,12 @@ import {
     buildImagePool,
     buildImageAssetIndex,
     resolveSlotImages,
+    resolveAdOverride,
     TEMPLATE_DIMENSIONS,
     type HtmlTemplateBrief,
     type HtmlTemplateManifest,
 } from '@/lib/ads/html-templates/core';
-import { FORMAT_COMPONENTS } from '@/lib/ads/html-templates/components';
+import { FORMAT_COMPONENTS, SingleImageAd } from '@/lib/ads/html-templates/components';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,14 @@ export default async function AdRenderPage({ params }: Props) {
         assetById,
     }) : {};
 
+    // Single Image Override wins over the whole template — the flyer (with its own
+    // baked-in text) becomes the entire ad and all template chrome is muted.
+    const override = resolveAdOverride(format, {
+        selections: typedManifest?.imageSelections ?? {},
+        slotControls: typedManifest?.imageSlotControls ?? {},
+        assetById,
+    });
+
     return (
         <>
             {/*
@@ -83,7 +92,18 @@ export default async function AdRenderPage({ params }: Props) {
                 className="ad-render-root"
                 style={{ width: dims.width, height: dims.height, overflow: 'hidden' }}
             >
-                <Component d={d} imgs={imgs} slotControls={typedManifest?.imageSlotControls ?? {}} />
+                {override ? (
+                    <SingleImageAd
+                        width={dims.width}
+                        height={dims.height}
+                        url={override.url}
+                        fit={override.fit}
+                        position={override.position}
+                        flipX={override.flipX}
+                    />
+                ) : (
+                    <Component d={d} imgs={imgs} slotControls={typedManifest?.imageSlotControls ?? {}} />
+                )}
             </div>
         </>
     );

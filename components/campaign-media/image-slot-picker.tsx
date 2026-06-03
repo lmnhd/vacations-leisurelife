@@ -9,6 +9,8 @@ interface ImageSlotPickerProps {
     assets: HtmlTemplateAsset[];
     autoUrl?: string;
     control?: ImageSlotControl;
+    /** Show a Cover/Contain object-fit toggle (Single Image Override only). */
+    showFit?: boolean;
     onChange: (usePointKey: string, assetId: string | null) => void;
     onControlChange?: (usePointKey: string, control: ImageSlotControl) => void;
 }
@@ -29,11 +31,13 @@ export function ImageSlotPicker({
     assets,
     autoUrl,
     control = {},
+    showFit = false,
     onChange,
     onControlChange,
 }: ImageSlotPickerProps) {
     const selected = value ? assets.find((asset) => asset.assetId === value) : undefined;
     const previewUrl = selected?.url ?? autoUrl;
+    const fit = control.fit ?? 'cover';
     const updateControl = (patch: ImageSlotControl) => {
         onControlChange?.(usePointKey, { ...control, ...patch });
     };
@@ -46,7 +50,7 @@ export function ImageSlotPicker({
                     <img
                         src={previewUrl}
                         alt=""
-                        className={`h-full w-full object-cover ${control.hidden ? 'opacity-25 grayscale' : ''}`}
+                        className={`h-full w-full ${showFit && fit === 'contain' ? 'object-contain' : 'object-cover'} ${control.hidden ? 'opacity-25 grayscale' : ''}`}
                         style={{
                             objectPosition: control.position ?? 'center',
                             transform: control.flipX ? 'scaleX(-1)' : undefined,
@@ -110,6 +114,16 @@ export function ImageSlotPicker({
                                 className={`rounded border px-2 py-1 text-[10px] font-semibold capitalize ${control.position === position || (!control.position && position === 'center') ? 'border-sky-400/50 bg-sky-500/15 text-sky-300' : 'border-white/10 text-slate-500 hover:text-slate-200'}`}
                             >
                                 {position}
+                            </button>
+                        ))}
+                        {showFit && (['cover', 'contain'] as const).map((option) => (
+                            <button
+                                key={option}
+                                type="button"
+                                onClick={() => updateControl({ fit: option })}
+                                className={`rounded border px-2 py-1 text-[10px] font-semibold capitalize ${fit === option ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-300' : 'border-white/10 text-slate-500 hover:text-slate-200'}`}
+                            >
+                                {option}
                             </button>
                         ))}
                     </div>

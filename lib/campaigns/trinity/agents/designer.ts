@@ -6,6 +6,7 @@ import {
 } from '../../schema';
 import type { TrinityAgent, TrinityAgentContext, TrinityAgentResult, TrinityFeedbackItem } from '../types';
 import { generateStructuredTrinityObject } from '../structured-generation';
+import { getAuthoritativeShipName } from '../../ship-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Schema — Designer owns creative identity, not production planning artifacts
@@ -80,7 +81,7 @@ function buildCampaignContext(context: TrinityAgentContext): string {
         `Aesthetic: ${campaign.aesthetic ?? 'Determine best fit'}`,
         `Target Keywords: ${keywords}`,
         `Highlight Events: ${highlightEvents}`,
-        `Ship: ${campaign.shipTarget ?? campaign.matchedShipName ?? 'TBD'}`,
+        `Ship: ${getAuthoritativeShipName(campaign) ?? 'TBD'}`,
         `Destination: ${campaign.targetDestination ?? 'TBD'}`,
         `Matched Sail Date: ${campaign.matchedSailDate ?? 'TBD'}`,
         `Departure Port: ${campaign.matchedDeparturePort ?? 'TBD'}`,

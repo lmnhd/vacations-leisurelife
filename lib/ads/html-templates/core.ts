@@ -73,6 +73,8 @@ export interface ImageSlotControl {
     hidden?: boolean;
     flipX?: boolean;
     position?: ImageSlotPosition;
+    /** Object-fit for the Single Image Override only. Defaults to 'cover'. */
+    fit?: 'cover' | 'contain';
 }
 export type ImageSlotControls = Record<string, ImageSlotControl>;
 
@@ -367,6 +369,56 @@ export function collectSelectableImageGroups(manifest: HtmlTemplateManifest | nu
 
 export function imageUsePointKey(formatKey: string, slot: string): string {
     return `ad:${formatKey}:${slot}`;
+}
+
+/**
+ * SINGLE IMAGE OVERRIDE — flyer-as-whole-ad.
+ *
+ * The override is a normal image selection at the reserved `:override` slot. When
+ * set (and not hidden), the renderer skips the template component entirely and
+ * paints just this one image full-bleed at the format's native dimensions — every
+ * headline, CTA, and facet tile is muted because the template never mounts. This
+ * is the counterpart to (not the same as) SINGLE_IMAGE_CAPABLE_FORMATS, which
+ * fills one slot but keeps the template chrome.
+ */
+export function adOverrideKey(formatKey: string): string {
+    return `ad:${formatKey}:override`;
+}
+
+export interface AdOverrideResolution {
+    url: string;
+    fit: 'cover' | 'contain';
+    position: ImageSlotPosition;
+    flipX: boolean;
+}
+
+/** Resolve the active Single Image Override for a format, or null to render the
+ *  normal template. Hidden control = override parked (selection kept, template wins). */
+export function resolveAdOverride(
+    formatKey: string,
+    opts: ResolveSlotOptions = {},
+): AdOverrideResolution | null {
+    const assetId = opts.selections?.[adOverrideKey(formatKey)];
+    if (!assetId) return null;
+    const asset = opts.assetById?.get(assetId);
+    if (!asset || !asset.url || !isSelectableImageAsset(asset)) return null;
+    const control = opts.slotControls?.[adOverrideKey(formatKey)] ?? {};
+    if (control.hidden) return null;
+    return {
+        url: asset.url,
+        fit: control.fit === 'contain' ? 'contain' : 'cover',
+        position: control.position ?? 'center',
+        flipX: control.flipX === true,
+    };
+}
+
+/** Flyer images as selectable assets, collapsed to one canonical model-version per
+ *  variant group. Source pool for the flyers-only Single Image Override picker. */
+export function collectFlyerImageGroups(
+    manifest: HtmlTemplateManifest | null | undefined,
+): HtmlTemplateAsset[] {
+    const active = (manifest?.images?.flyerImages ?? []).filter(isSelectableImageAsset);
+    return collapseVariantGroups(active, manifest?.modelVersionSelections);
 }
 
 export function getImageSlotControl(

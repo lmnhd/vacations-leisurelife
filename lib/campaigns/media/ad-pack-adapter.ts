@@ -20,6 +20,7 @@ import type {
 import { normalizeCampaignResearchDossier } from '../schema';
 import type { AssetRecord, SourceQualityMetadata } from '../schema';
 import { buildSourcePoolAdvisory } from './source-quality';
+import { getAuthoritativeShipName } from '../ship-context';
 
 function nicheSignalsFromBrief(brief: CampaignAestheticBrief, campaign: Campaign): string[] {
     const blueprint = brief.identityBlueprint;
@@ -58,7 +59,7 @@ function buildBriefSlice(brief: CampaignAestheticBrief, campaign: Campaign): Cop
 function buildCampaignSlice(campaign: Campaign): CopyForgeCampaignSlice {
     return {
         name: campaign.name,
-        vessel: campaign.matchedShipName ?? campaign.shipTarget ?? '',
+        vessel: getAuthoritativeShipName(campaign) ?? '',
         route: campaign.odysseusPortsOfCall ?? campaign.targetDestination ?? '',
         departure: campaign.matchedSailDate ?? campaign.targetDates ?? '',
         theme: campaign.aesthetic ?? campaign.description ?? '',

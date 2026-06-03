@@ -43,6 +43,35 @@ export interface LandingImageAsset {
   alt: string;
 }
 
+export const LANDING_IMAGE_PLACEMENT_KEYS = [
+  "chat.backdrop",
+  "form.backdrop",
+  "progress.card.background",
+  "pricing.banner",
+  "story.whatItIs.background",
+  "story.expectation.cards",
+  "itinerary.rail",
+  "trust.card.backgrounds",
+  "faq.banner",
+  "footer.strip",
+] as const;
+
+export type LandingImagePlacementKey =
+  (typeof LANDING_IMAGE_PLACEMENT_KEYS)[number];
+
+export interface LandingImagePlacements {
+  chatBackdrop: LandingImageAsset | null;
+  formBackdrop: LandingImageAsset | null;
+  progressCardBackground: LandingImageAsset | null;
+  pricingBanner: LandingImageAsset | null;
+  storyWhatItIsBackground: LandingImageAsset | null;
+  storyExpectationCards: LandingImageAsset[];
+  itineraryRail: LandingImageAsset[];
+  trustCardBackgrounds: LandingImageAsset[];
+  faqBanner: LandingImageAsset | null;
+  footerStrip: LandingImageAsset | null;
+}
+
 export interface LandingStorySection {
   title: string;
   body: string;
@@ -161,6 +190,7 @@ export interface CampaignLandingViewModel {
   heroImage: LandingImageAsset | null;
   galleryImages: LandingImageAsset[];
   trustImages: LandingImageAsset[];
+  imagePlacements: LandingImagePlacements;
   accentColor: string;
   surfaceColor: string;
   textColor: string;
@@ -572,9 +602,9 @@ export function buildLandingDesignSystem(
 // Surface color each landing system renders against. Used to clamp brief-derived
 // palette colors so a near-cream brief color does not vanish on cream paper.
 const SYSTEM_SURFACE: Record<VisualSystem, string> = {
-  system_1_editorial: "#f2ead8",
-  system_2_nostalgia: "#f6e4bf",
-  system_3_zine: "#f3ead5",
+  system_1_editorial: "#f5f8f4",
+  system_2_nostalgia: "#eef8f7",
+  system_3_zine: "#fbf7ff",
   system_4_modular: "#08090d",
 };
 
@@ -896,6 +926,21 @@ function buildTrustImages(
 ): LandingImageAsset[] {
   if (!manifest) return heroImage?.url ? [heroImage] : [];
 
+  const curated = manifest.landingImageSets?.trust;
+  if (curated && curated.length > 0) {
+    const index = buildLandingAssetIndex(manifest);
+    const seen = new Set<string>();
+    const out: LandingImageAsset[] = [];
+    for (const id of curated) {
+      const asset = index.get(id);
+      if (!isCuratedEligible(asset)) continue;
+      if (asset.url === heroImage?.url || seen.has(asset.url)) continue;
+      seen.add(asset.url);
+      out.push({ url: asset.url, alt: `${campaign.name} ship reference` });
+    }
+    if (out.length > 0) return out;
+  }
+
   const candidates = [
     ...manifest.images.shipReferences,
     ...manifest.images.documentaryDetails,
@@ -912,6 +957,70 @@ function buildTrustImages(
   }
 
   return out;
+}
+
+function assetToLandingImage(
+  campaign: Campaign,
+  asset: AssetRecord,
+): LandingImageAsset {
+  return {
+    url: asset.url,
+    alt: `${campaign.name} campaign image`,
+  };
+}
+
+function resolvePlacementImages(
+  campaign: Campaign,
+  manifest: CampaignMediaManifest | null,
+  key: LandingImagePlacementKey,
+): LandingImageAsset[] {
+  if (!manifest) return [];
+  const value = manifest.landingImageSets?.placements?.[key];
+  const ids = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  if (ids.length === 0) return [];
+
+  const index = buildLandingAssetIndex(manifest);
+  const seen = new Set<string>();
+  const out: LandingImageAsset[] = [];
+  for (const id of ids) {
+    const asset = index.get(id);
+    if (!isCuratedEligible(asset) || seen.has(asset.url)) continue;
+    seen.add(asset.url);
+    out.push(assetToLandingImage(campaign, asset));
+  }
+  return out;
+}
+
+function firstImage(...images: Array<LandingImageAsset | null | undefined>): LandingImageAsset | null {
+  return images.find((image): image is LandingImageAsset => Boolean(image?.url)) ?? null;
+}
+
+function buildLandingImagePlacements(
+  campaign: Campaign,
+  manifest: CampaignMediaManifest | null,
+  heroImage: LandingImageAsset | null,
+  galleryImages: LandingImageAsset[],
+  trustImages: LandingImageAsset[],
+): LandingImagePlacements {
+  const single = (key: LandingImagePlacementKey, fallback: LandingImageAsset | null): LandingImageAsset | null =>
+    resolvePlacementImages(campaign, manifest, key)[0] ?? fallback;
+  const many = (key: LandingImagePlacementKey, fallback: LandingImageAsset[]): LandingImageAsset[] => {
+    const resolved = resolvePlacementImages(campaign, manifest, key);
+    return resolved.length > 0 ? resolved : fallback;
+  };
+
+  return {
+    chatBackdrop: single("chat.backdrop", firstImage(heroImage, galleryImages[0])),
+    formBackdrop: single("form.backdrop", firstImage(galleryImages[8], heroImage, galleryImages[0])),
+    progressCardBackground: single("progress.card.background", firstImage(trustImages[0], galleryImages[0], heroImage)),
+    pricingBanner: single("pricing.banner", firstImage(galleryImages[3], galleryImages[0], heroImage)),
+    storyWhatItIsBackground: single("story.whatItIs.background", firstImage(galleryImages[1], heroImage)),
+    storyExpectationCards: many("story.expectation.cards", galleryImages.slice(2, 7)),
+    itineraryRail: many("itinerary.rail", galleryImages.slice(4, 7)),
+    trustCardBackgrounds: many("trust.card.backgrounds", trustImages),
+    faqBanner: single("faq.banner", firstImage(galleryImages[7], galleryImages[0], heroImage)),
+    footerStrip: single("footer.strip", firstImage(galleryImages[9], heroImage)),
+  };
 }
 
 function getPricingDetail(campaign: Campaign): {
@@ -1447,6 +1556,13 @@ function buildLandingViewModel(
   const heroImage = resolveHeroImage(campaign, brief, manifest);
   const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
   const trustImages = buildTrustImages(campaign, manifest, heroImage);
+  const imagePlacements = buildLandingImagePlacements(
+    campaign,
+    manifest,
+    heroImage,
+    galleryImages,
+    trustImages,
+  );
   // Use verified entries for threshold progress when available.
   const thresholdSource = verifiedSummary ?? waitlistSummary;
   const percentOfThreshold = getPublicThresholdPercent(
@@ -1472,6 +1588,7 @@ function buildLandingViewModel(
     heroImage,
     galleryImages,
     trustImages,
+    imagePlacements,
     accentColor: normalizeColorToken(
       brief?.visual.colorPalette.accent,
       "#2962FF",

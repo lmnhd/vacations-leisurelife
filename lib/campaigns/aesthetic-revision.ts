@@ -4,6 +4,7 @@ import { ModelName } from '@/lib/ai/llm-gateway';
 import { getCampaignBlueprint, getAestheticBrief, saveAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { CampaignAestheticBriefSchema, ProductionBibleSchema, LandingStillBibleSchema } from '@/lib/campaigns/schema';
 import { runAestheticRedTeamReview } from '@/lib/campaigns/aesthetic-red-team';
+import { getAuthoritativeShipName } from '@/lib/campaigns/ship-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -190,10 +191,10 @@ MANDATORY SWEEPS — Before returning, verify every one of these:
     const prompt = {
         campaignContext: {
             name: campaign.name,
-            targetDates: campaign.targetDates,
-            targetDestination: campaign.targetDestination,
-            shipTarget: campaign.shipTarget,
-            audienceSignals: campaign.audienceSignals,
+        targetDates: campaign.targetDates,
+        targetDestination: campaign.targetDestination,
+        shipTarget: getAuthoritativeShipName(campaign),
+        audienceSignals: campaign.audienceSignals,
         },
         currentBrief: currentBriefForRevision,
         redTeamReviewToAddress: compactReview,

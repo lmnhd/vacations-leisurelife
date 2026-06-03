@@ -66,52 +66,52 @@ interface SystemTheme {
 function buildTheme(system: SystemKey): SystemTheme {
     if (system === 'system_1_editorial') {
         return {
-            pageBg: 'bg-[#f2ead8] text-stone-950',
-            pageText: 'text-stone-950',
-            sectionAlt: 'bg-[#ebe1c9]',
-            surface: 'bg-[#fff8ea] border border-stone-300',
-            surfaceText: 'text-stone-950',
-            cardBorder: 'border-stone-300',
-            softText: 'text-stone-700',
-            softerText: 'text-stone-500',
-            accentText: 'text-stone-950',
+            pageBg: 'bg-[#f5f8f4] text-slate-950',
+            pageText: 'text-slate-950',
+            sectionAlt: 'bg-[#dbeee7]',
+            surface: 'bg-white/90 border border-teal-950/20 shadow-[0_22px_60px_rgba(15,83,77,0.10)]',
+            surfaceText: 'text-slate-950',
+            cardBorder: 'border-teal-950/25',
+            softText: 'text-slate-700',
+            softerText: 'text-teal-950/55',
+            accentText: 'text-teal-950',
             eyebrowFont: 'font-mono',
             headingFont: alfa_slab_one.className,
-            rule: 'border-stone-400/60',
-            badge: 'border border-stone-400 bg-[#fff8ea] text-stone-700',
-            primaryBtnTextColor: '#1c1410',
-            secondaryBtnClasses: 'border-stone-950 bg-transparent text-stone-950 hover:bg-stone-950/5',
-            chip: 'bg-[#fff8ea] text-stone-700',
-            accentRingShadow: () => '0 14px 36px rgba(76,46,26,0.18)',
+            rule: 'border-teal-950/20',
+            badge: 'border border-teal-950/25 bg-white/90 text-slate-700',
+            primaryBtnTextColor: '#061b1a',
+            secondaryBtnClasses: 'border-teal-950 bg-transparent text-teal-950 hover:bg-teal-950/5',
+            chip: 'bg-white/90 text-slate-700',
+            accentRingShadow: () => '0 16px 46px rgba(15,83,77,0.20)',
         };
     }
     if (system === 'system_2_nostalgia') {
         return {
-            pageBg: 'bg-[#f6e4bf] text-amber-950',
-            pageText: 'text-amber-950',
-            sectionAlt: 'bg-[#efd9a8]',
-            surface: 'bg-[#fff8e8] border border-amber-900/25',
-            surfaceText: 'text-amber-950',
-            cardBorder: 'border-amber-900/25',
-            softText: 'text-amber-900/80',
-            softerText: 'text-amber-900/55',
-            accentText: 'text-amber-950',
+            pageBg: 'bg-[#eef8f7] text-[#143d3b]',
+            pageText: 'text-[#143d3b]',
+            sectionAlt: 'bg-[#d6f0ea]',
+            surface: 'bg-white/85 border border-cyan-950/20 shadow-[0_20px_50px_rgba(8,91,101,0.10)]',
+            surfaceText: 'text-[#143d3b]',
+            cardBorder: 'border-cyan-950/25',
+            softText: 'text-[#315f5a]',
+            softerText: 'text-[#48756f]',
+            accentText: 'text-cyan-950',
             eyebrowFont: 'font-mono',
             headingFont: alfa_slab_one.className,
-            rule: 'border-amber-900/30',
-            badge: 'border border-amber-900/30 bg-[#fff8e8] text-amber-900/80',
-            primaryBtnTextColor: '#3a210b',
-            secondaryBtnClasses: 'border-amber-900 bg-transparent text-amber-950 hover:bg-amber-900/5',
-            chip: 'bg-[#fff8e8] text-amber-900/80',
-            accentRingShadow: () => '0 14px 36px rgba(120,73,24,0.16)',
+            rule: 'border-cyan-950/20',
+            badge: 'border border-cyan-950/25 bg-white/88 text-[#315f5a]',
+            primaryBtnTextColor: '#062625',
+            secondaryBtnClasses: 'border-cyan-950 bg-transparent text-cyan-950 hover:bg-cyan-950/5',
+            chip: 'bg-white/88 text-[#315f5a]',
+            accentRingShadow: () => '0 16px 46px rgba(8,91,101,0.18)',
         };
     }
     if (system === 'system_3_zine') {
         return {
-            pageBg: 'bg-[#f3ead5] text-zinc-950',
+            pageBg: 'bg-[#fbf7ff] text-zinc-950',
             pageText: 'text-zinc-950',
-            sectionAlt: 'bg-[#eadfc1]',
-            surface: 'bg-[#fff9e8] border-2 border-zinc-950',
+            sectionAlt: 'bg-[#e5fbff]',
+            surface: 'bg-white border-2 border-zinc-950 shadow-[6px_6px_0_rgba(255,90,61,0.9)]',
             surfaceText: 'text-zinc-950',
             cardBorder: 'border-2 border-zinc-950',
             softText: 'text-zinc-800',
@@ -120,11 +120,11 @@ function buildTheme(system: SystemKey): SystemTheme {
             eyebrowFont: 'font-mono',
             headingFont: orbitron.className,
             rule: 'border-zinc-950/40',
-            badge: 'border-2 border-zinc-950 bg-[#fff9e8] text-zinc-950',
-            primaryBtnTextColor: '#fff9e8',
-            secondaryBtnClasses: 'border-2 border-zinc-950 bg-[#fff9e8] text-zinc-950 hover:bg-white shadow-[6px_6px_0_rgba(0,0,0,0.85)]',
-            chip: 'bg-[#fff9e8] text-zinc-950 border-2 border-zinc-950',
-            accentRingShadow: () => '6px 6px 0 rgba(0,0,0,0.85)',
+            badge: 'border-2 border-zinc-950 bg-white text-zinc-950',
+            primaryBtnTextColor: '#ffffff',
+            secondaryBtnClasses: 'border-2 border-zinc-950 bg-white text-zinc-950 hover:bg-[#e5fbff] shadow-[6px_6px_0_rgba(0,0,0,0.85)]',
+            chip: 'bg-white text-zinc-950 border-2 border-zinc-950',
+            accentRingShadow: () => '6px 6px 0 rgba(255,90,61,0.9)',
         };
     }
     return {
@@ -134,8 +134,8 @@ function buildTheme(system: SystemKey): SystemTheme {
         surface: 'bg-white/[0.04] border border-white/10',
         surfaceText: 'text-white',
         cardBorder: 'border-white/10',
-        softText: 'text-white/75',
-        softerText: 'text-white/45',
+        softText: 'text-white/86',
+        softerText: 'text-white/62',
         accentText: 'text-white',
         eyebrowFont: 'font-mono',
         headingFont: '',
@@ -221,9 +221,27 @@ function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: S
 
 function StatusPanel({ landing, theme, accentHex }: { landing: CampaignLandingViewModel; theme: SystemTheme; accentHex: string }) {
     const pct = Math.max(0, Math.min(100, landing.threshold.percentOfThreshold));
+    const progressImage = landing.imagePlacements.progressCardBackground;
+    const pricingImage = landing.imagePlacements.pricingBanner;
     return (
-        <div className={`${theme.surface} grid gap-6 p-6 md:p-8 lg:grid-cols-[1.1fr_0.9fr]`}>
-            <div>
+        <div className={`${theme.surface} grid gap-6 overflow-hidden p-6 md:p-8 lg:grid-cols-[1.1fr_0.9fr]`}>
+            <div className="relative overflow-hidden p-1">
+                {progressImage?.url && (
+                    <div
+                        className="absolute inset-0 scale-105 bg-cover bg-center opacity-[0.28] blur-[2px] saturate-90"
+                        style={{ backgroundImage: `url(${progressImage.url})` }}
+                    />
+                )}
+                {progressImage?.url && (
+                    <div
+                        className="absolute inset-0"
+                        style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.82), rgba(0,0,0,0.68))'
+                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.74))'
+                        }}
+                    />
+                )}
+                <div className="relative">
                 <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: accentHex }}>Group Status</p>
                 <h3 className={`mt-3 text-2xl font-bold leading-tight md:text-3xl ${theme.pageText}`}>{landing.threshold.headline}</h3>
                 <p className={`mt-3 text-sm leading-7 ${theme.softText}`}>{landing.threshold.detail}</p>
@@ -236,12 +254,30 @@ function StatusPanel({ landing, theme, accentHex }: { landing: CampaignLandingVi
                         <span style={{ color: accentHex }}>{pct}% of {landing.threshold.requiredCabins} cabins</span>
                     </div>
                 </div>
+                </div>
             </div>
-            <div className={`grid gap-3 ${theme.cardBorder} border p-5`}>
+            <div className={`relative grid gap-3 overflow-hidden ${theme.cardBorder} border p-5`}>
+                {pricingImage?.url && (
+                    <div
+                        className="absolute inset-0 scale-105 bg-cover bg-center opacity-30 blur-[2px] saturate-90"
+                        style={{ backgroundImage: `url(${pricingImage.url})` }}
+                    />
+                )}
+                {pricingImage?.url && (
+                    <div
+                        className="absolute inset-0"
+                        style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.82), rgba(0,0,0,0.68))'
+                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.74))'
+                        }}
+                    />
+                )}
+                <div className="relative grid gap-3">
                 <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em] ${theme.softerText}`}>Pricing Desk</p>
                 <p className={`text-3xl font-black ${theme.pageText}`}>{landing.pricing.startingPriceLabel}</p>
                 <p className="text-sm font-semibold" style={{ color: accentHex }}>{landing.pricing.sourceLabel}</p>
                 <p className={`text-sm leading-7 ${theme.softText}`}>{landing.pricing.detail}</p>
+                </div>
             </div>
         </div>
     );
@@ -386,9 +422,9 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                                         'px-5 py-4 backdrop-blur-[2px]',
                                         system === 'system_4_modular'
                                             ? 'bg-black/75 border-l-4 border-white/30'
-                                            : system === 'system_3_polaroid'
+                                            : system === 'system_3_zine'
                                                 ? 'bg-white/15 border border-white/25 rounded-sm'
-                                                : system === 'system_2_postcard'
+                                                : system === 'system_2_nostalgia'
                                                     ? 'bg-black/60 rounded-sm'
                                                     : 'bg-black/60',
                                     ].join(' ')}>
@@ -474,14 +510,31 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
 
             {landing.form.enabled && (
                 <SectionShell theme={theme} eyebrow="Save your place" title="Hold a spot for this sailing" description="No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens." accentHex={accentHex}>
-                    <div className={`${theme.surface} p-6 md:p-8`}>
-                        <CampaignWaitlistForm
-                            campaignName={landing.title}
-                            endpoint={landing.form.endpoint}
-                            enabled={landing.form.enabled}
-                            defaultMode={landing.form.defaultMode}
-                            isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
-                        />
+                    <div className={`${theme.surface} relative overflow-hidden p-6 md:p-8`}>
+                        {landing.imagePlacements.formBackdrop?.url && (
+                            <>
+                                <div
+                                    className="absolute inset-0 scale-105 bg-cover bg-center opacity-[0.28] blur-[2px] saturate-90"
+                                    style={{ backgroundImage: `url(${landing.imagePlacements.formBackdrop.url})` }}
+                                />
+                                <div
+                                    className="absolute inset-0"
+                                    style={{ background: theme.pageText === 'text-white'
+                                        ? 'linear-gradient(to right bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.82), rgba(0,0,0,0.68))'
+                                        : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.74))'
+                                    }}
+                                />
+                            </>
+                        )}
+                        <div className="relative">
+                            <CampaignWaitlistForm
+                                campaignName={landing.title}
+                                endpoint={landing.form.endpoint}
+                                enabled={landing.form.enabled}
+                                defaultMode={landing.form.defaultMode}
+                                isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
+                            />
+                        </div>
                     </div>
                 </SectionShell>
             )}

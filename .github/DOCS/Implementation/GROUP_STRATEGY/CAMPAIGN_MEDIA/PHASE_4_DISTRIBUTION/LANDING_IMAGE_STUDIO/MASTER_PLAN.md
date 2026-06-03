@@ -22,6 +22,150 @@
   reload). Verified by unit test: curated order honored; rejected ids skipped; no-override =
   algorithm; hero excluded. (Note: gallery renders client-side, so verify visually in the studio
   iframe — bare SSR HTML carries no image URLs.)
+### Image-rich landing refresh proposal - 2026-06-02
+
+**Problem:** The four landing designs are structurally working, but they still feel too sparse.
+They use a hero, a few gallery moments, and occasional trust imagery, while the media pipeline is
+now producing enough expressive image material to make the pages feel much more alive. The missing
+piece is not another generic gallery alone; it is an image placement system that lets each design
+use more pictures as atmosphere, texture, card depth, and section identity without flattening the
+distinct visual flavor of the four designs.
+
+**Design direction:** Keep the current four aesthetics intact, but increase image density by turning
+images into a reusable visual material:
+
+- Hero stays the strong first read, but the body should gain image-backed component surfaces: chat
+  window, story cards, progress cards, pricing card, itinerary/process steps, FAQ strips,
+  waitlist/form shell, sticky sidebar, banners, list-scroll rows, and quote blocks.
+- Galleries should become multiple designed image moments, not one monolithic gallery section:
+  editorial strips, stacked postcards, horizontal film rolls, zine clippings, background murals,
+  and small supporting thumbnails inside cards.
+- Background images should stay legible: dimmed, blurred, masked, duotoned, or cropped behind text
+  with strong overlays. The image is atmosphere unless the component is explicitly a gallery or
+  inspection component.
+- Each visual flavor gets its own treatment:
+  - `editorial_magazine`: full-bleed chapter images, masthead-like image bands, side-by-side
+    editorial photo essays, polished image-backed quote panels.
+  - `travel_nostalgia`: postcard stacks, faded paper photo panels, warm map/banner imagery,
+    low-contrast image textures behind itinerary and pricing modules.
+  - `indie_zine`: cutout collage tiles, sticker-like thumbnails, rough image strips, energetic
+    image-backed callouts and list rows.
+  - `none` / modular: clean operational image panels, dimmed card backgrounds, product-like
+    media rails, calm image accents that keep the UI readable.
+
+**Core implementation idea:** Add a semantic landing image placement layer on top of the current
+collection system. The current `heroImage`, `galleryImages[]`, and `trustImages[]` remain the
+fallback collections. A new optional placement map lets the studio pin exact assets to exact
+semantic uses.
+
+Proposed manifest shape:
+
+```ts
+manifest.landingImageSets = {
+  gallery?: string[];
+  trust?: string[];
+  placements?: Record<LandingImagePlacementKey, string | string[]>;
+}
+```
+
+Example placement keys:
+
+| Placement key | Intent | Suggested fallback |
+|---|---|---|
+| `hero.primary` | Main landing hero | `heroImage` |
+| `hero.supporting` | Secondary hero/card image | `galleryImages[0]` |
+| `chat.backdrop` | Blurred/dimmed chat window image | `heroImage ?? galleryImages[0]` |
+| `story.whatItIs.background` | Image behind or beside opening story module | `galleryImages[1]` |
+| `story.expectation.cards` | Per-card thumbnails/backgrounds for guest expectations | `galleryImages[2..]` |
+| `progress.card.background` | Formation/progress card atmosphere | `trustImages[0] ?? galleryImages[0]` |
+| `pricing.banner` | Price/inventory module banner | `galleryImages[3]` |
+| `itinerary.rail` | Process/how-it-works image rail | `galleryImages[4..6]` |
+| `trust.card.backgrounds` | Trust bullet card backgrounds | `trustImages[]` |
+| `faq.banner` | FAQ/decision reassurance banner | `galleryImages[7]` |
+| `form.backdrop` | Waitlist form shell/background image | `galleryImages[8] ?? heroImage` |
+| `footer.strip` | Closing visual strip | `galleryImages[9]` |
+
+**View-model addition:** Resolve these placements once in `buildLandingViewModel` and expose them
+as a typed `landing.imagePlacements` object. Renderers do not search the manifest themselves; they
+ask for `landing.imagePlacements.chatBackdrop`, `landing.imagePlacements.formBackdrop`, etc. If a
+placement is absent, the view-model falls back to the existing gallery/trust/hero ordering. This
+keeps all four renderers deterministic and keeps the public route safe when no manual placement has
+been curated.
+
+**Landing Studio requirement:** `/tests/landing-studio` should become the manual control surface for
+every image that can appear on the landing page:
+
+- Add a `Placements` tab/panel below Hero/Gallery/Trust.
+- Show every semantic placement as a compact row with current selected thumbnail(s), placement
+  label, flavor usage note, clear button, and `Pick image`.
+- For multi-image placements such as expectation cards, trust card backgrounds, or itinerary rails,
+  use the same ordered tray pattern as Gallery: add/remove/reorder, then Apply.
+- Add filters to the image pool: all, hero, scene, flyer, trust/ship, documentary, designed ads,
+  generator/model, approved-only.
+- Add a flavor preview hint per placement: for example, `chat.backdrop` shows "used as blurred
+  panel background in all flavors"; `story.expectation.cards` shows "zine uses thumbnails, editorial
+  uses card background crops."
+- Keep batch-apply behavior so an operator can select many placements and reload the iframe once.
+- Add an "auto fill empty placements" button that assigns unused approved assets across the
+  placement map while preserving existing manual choices.
+
+**Renderer approach:** Do not make four separate data models. Each renderer receives the same
+semantic placements, then applies them in its own aesthetic language:
+
+- Shared helpers: `ImageBackdrop`, `ImageCardSurface`, `ImageRail`, and `PlacedImage`.
+- Editorial uses larger, cleaner crops and fewer overlays.
+- Nostalgia uses warmer filters, paper edges, and postcard-like spacing.
+- Zine uses more fragments, smaller crops, high contrast, and irregular placement.
+- Modular uses quieter, lower-opacity backgrounds and clear card hierarchy.
+
+**Acceptance standard:** The page should visibly contain more campaign-specific images above the
+fold and throughout the body without hurting scanability or form completion:
+
+- At least 8-12 distinct image appearances on a complete landing page when enough assets exist.
+- Chat module has a selectable image background.
+- Waitlist/form area has a selectable image background or companion image.
+- Progress/pricing/trust areas have selectable image-backed treatments.
+- The studio can manually pick or clear every non-algorithmic image placement.
+- If no manual placement exists, the page still renders from the current hero/gallery/trust
+  algorithms with no broken images.
+
+**Phased delivery:**
+
+1. **Phase 5 - Placement registry + view-model:** Add placement keys, manifest schema support, route
+   support, and `landing.imagePlacements` fallback resolution.
+2. **Phase 6 - Studio placement control:** Add placement rows/trays, image-pool filters, batch
+   apply, clear, and auto-fill empty placements.
+3. **Phase 7 - Renderer enrichment pass:** Update all four landing designs to consume placements in
+   flavor-specific ways, starting with chat backdrop, form backdrop, story cards, progress/pricing,
+   and trust cards.
+4. **Phase 8 - Visual QA:** Use `/tests/landing-studio` to compare all four flavors on at least two
+   campaigns, checking readability, mobile cropping, image repetition, and whether the page feels
+   vibrant without turning into a loose collage.
+
+### Implementation checkpoint - 2026-06-02
+
+- Added `landingImageSets.placements` to the manifest schema and persisted it through the existing
+  `/api/groups/campaign/[slug]/media/landing-images` route.
+- Added typed landing image placement resolution in `buildLandingViewModel`, with graceful fallback
+  to the existing hero/gallery/trust collections when a manual placement is absent or unusable.
+- Extended `/tests/landing-studio` with a Placements panel for single-image placements and ordered
+  multi-image placements. The panel uses the existing thumbnail pool and batch Apply behavior.
+- Wired the first visible placement consumers: chat backdrop, progress card background, pricing
+  banner, and waitlist/form backdrop.
+- Added curated trust-set resolution in the view-model so future Trust studio controls can use the
+  same full-replace behavior as Gallery.
+
+### Visual QA correction - 2026-06-02
+
+- Replaced the sand-heavy light-system palettes across the active landing renderers with brighter
+  editorial, sea-glass nostalgia, and punchier zine surfaces.
+- Expanded placement-backed image usage beyond isolated strips: story sections, progress/pricing,
+  itinerary/travel bands, expectation cards, trust cards, form shell, and closing CTA now use
+  selected placements or gallery fallbacks.
+- Added stronger readability treatment for image-backed text surfaces: images are blurred/faded and
+  sit under high-opacity light/dark gradient scrims so copy remains readable in all four design
+  systems.
+
 **Decision (2026-05-31):** *Curated sets + Landing Studio.* Override landing images at the
 view-model's three **collections** (hero / gallery / trust), surfaced in a dedicated studio
 preview. Reuses the `imageSelections` + picker + variant-collapse machinery built for flyers/ads.

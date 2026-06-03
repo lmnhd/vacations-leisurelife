@@ -57,53 +57,53 @@ interface SystemTheme {
 function buildTheme(system: SystemKey): SystemTheme {
     if (system === 'system_1_editorial') {
         return {
-            pageBg: 'bg-[#f2ead8] text-stone-950',
-            pageText: 'text-stone-950',
-            sectionAlt: 'bg-[#ebe1c9]',
-            surface: 'bg-[#fff8ea] border border-stone-300',
-            cardBorder: 'border-stone-300',
-            softText: 'text-stone-700',
-            softerText: 'text-stone-500',
+            pageBg: 'bg-[#f5f8f4] text-slate-950',
+            pageText: 'text-slate-950',
+            sectionAlt: 'bg-[#dbeee7]',
+            surface: 'bg-white/90 border border-teal-950/20 shadow-[0_22px_60px_rgba(15,83,77,0.10)]',
+            cardBorder: 'border-teal-950/25',
+            softText: 'text-slate-700',
+            softerText: 'text-teal-950/55',
             eyebrowFont: 'font-mono',
             headingFont: alfa_slab_one.className,
-            rule: 'border-stone-400/60',
-            primaryBtnTextColor: '#1c1410',
-            secondaryBtnClasses: 'border-stone-950 bg-transparent text-stone-950 hover:bg-stone-950/5',
-            accentRingShadow: () => '0 14px 36px rgba(76,46,26,0.18)',
+            rule: 'border-teal-950/20',
+            primaryBtnTextColor: '#061b1a',
+            secondaryBtnClasses: 'border-teal-950 bg-transparent text-teal-950 hover:bg-teal-950/5',
+            accentRingShadow: () => '0 16px 46px rgba(15,83,77,0.20)',
         };
     }
     if (system === 'system_2_nostalgia') {
         return {
-            pageBg: 'bg-[#f6e4bf] text-amber-950',
-            pageText: 'text-amber-950',
-            sectionAlt: 'bg-[#efd9a8]',
-            surface: 'bg-[#fff8e8] border border-amber-900/25',
-            cardBorder: 'border-amber-900/25',
-            softText: 'text-amber-900/80',
-            softerText: 'text-amber-900/55',
+            pageBg: 'bg-[#eef8f7] text-[#143d3b]',
+            pageText: 'text-[#143d3b]',
+            sectionAlt: 'bg-[#d6f0ea]',
+            surface: 'bg-white/85 border border-cyan-950/20 shadow-[0_20px_50px_rgba(8,91,101,0.10)]',
+            cardBorder: 'border-cyan-950/25',
+            softText: 'text-[#315f5a]',
+            softerText: 'text-[#48756f]',
             eyebrowFont: 'font-mono',
             headingFont: alfa_slab_one.className,
-            rule: 'border-amber-900/30',
-            primaryBtnTextColor: '#3a210b',
-            secondaryBtnClasses: 'border-amber-900 bg-transparent text-amber-950 hover:bg-amber-900/5',
-            accentRingShadow: () => '0 14px 36px rgba(120,73,24,0.16)',
+            rule: 'border-cyan-950/20',
+            primaryBtnTextColor: '#062625',
+            secondaryBtnClasses: 'border-cyan-950 bg-transparent text-cyan-950 hover:bg-cyan-950/5',
+            accentRingShadow: () => '0 16px 46px rgba(8,91,101,0.18)',
         };
     }
     if (system === 'system_3_zine') {
         return {
-            pageBg: 'bg-[#f3ead5] text-zinc-950',
+            pageBg: 'bg-[#fbf7ff] text-zinc-950',
             pageText: 'text-zinc-950',
-            sectionAlt: 'bg-[#eadfc1]',
-            surface: 'bg-[#fff9e8] border-2 border-zinc-950',
+            sectionAlt: 'bg-[#e5fbff]',
+            surface: 'bg-white border-2 border-zinc-950 shadow-[6px_6px_0_rgba(255,90,61,0.9)]',
             cardBorder: 'border-2 border-zinc-950',
             softText: 'text-zinc-800',
             softerText: 'text-zinc-600',
             eyebrowFont: 'font-mono',
             headingFont: orbitron.className,
             rule: 'border-zinc-950/40',
-            primaryBtnTextColor: '#fff9e8',
-            secondaryBtnClasses: 'border-2 border-zinc-950 bg-[#fff9e8] text-zinc-950 hover:bg-white shadow-[6px_6px_0_rgba(0,0,0,0.85)]',
-            accentRingShadow: () => '6px 6px 0 rgba(0,0,0,0.85)',
+            primaryBtnTextColor: '#ffffff',
+            secondaryBtnClasses: 'border-2 border-zinc-950 bg-white text-zinc-950 hover:bg-[#e5fbff] shadow-[6px_6px_0_rgba(0,0,0,0.85)]',
+            accentRingShadow: () => '6px 6px 0 rgba(255,90,61,0.9)',
         };
     }
     return {
@@ -112,8 +112,8 @@ function buildTheme(system: SystemKey): SystemTheme {
         sectionAlt: 'bg-[#0c0e14]',
         surface: 'bg-white/[0.04] border border-white/10',
         cardBorder: 'border-white/10',
-        softText: 'text-white/75',
-        softerText: 'text-white/45',
+        softText: 'text-white/86',
+        softerText: 'text-white/62',
         eyebrowFont: 'font-mono',
         headingFont: '',
         rule: 'border-white/10',
@@ -121,6 +121,18 @@ function buildTheme(system: SystemKey): SystemTheme {
         secondaryBtnClasses: 'border-white/20 bg-transparent text-white hover:bg-white/5',
         accentRingShadow: (hex: string) => `0 16px 50px ${hex}33`,
     };
+}
+
+function isDimHexOnDark(hex: string | undefined): boolean {
+    if (!hex?.startsWith('#')) return false;
+    const raw = hex.slice(1);
+    const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+    if (full.length !== 6) return false;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    if ([r, g, b].some((v) => Number.isNaN(v))) return false;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 115;
 }
 
 function resolveCtaHrefs(
@@ -168,15 +180,34 @@ interface BleedSectionProps {
     eyebrowColor?: string;
     /** Cap content width inside the full-bleed shell. */
     contentMaxWidth?: 'narrow' | 'wide' | 'full';
+    backdrop?: LandingImageAsset | null;
 }
 
-function BleedSection({ theme, eyebrow, title, description, children, alt, accentHex, eyebrowColor, contentMaxWidth = 'wide' }: BleedSectionProps) {
+function BleedSection({ theme, eyebrow, title, description, children, alt, accentHex, eyebrowColor, contentMaxWidth = 'wide', backdrop }: BleedSectionProps) {
     const widthClass = contentMaxWidth === 'narrow' ? 'max-w-4xl' : contentMaxWidth === 'full' ? 'max-w-none' : 'max-w-7xl';
+    const isDark = theme.pageText === 'text-white';
+    const headerAccent = isDark && isDimHexOnDark(eyebrowColor) ? accentHex : eyebrowColor ?? accentHex;
     return (
-        <section className={`w-full ${alt ? theme.sectionAlt : ''} border-t ${theme.rule}`}>
-            <div className={`mx-auto w-full ${widthClass} px-4 py-14 md:px-8 md:py-20`}>
+        <section className={`relative w-full overflow-hidden ${alt ? theme.sectionAlt : ''} border-t ${theme.rule}`}>
+            {backdrop?.url && (
+                <>
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-30 saturate-125"
+                        style={{ backgroundImage: `url(${backdrop.url})` }}
+                    />
+                    <div
+                        className="absolute inset-0"
+                        style={{ background: isDark
+                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.90), rgba(0,0,0,0.74), rgba(0,0,0,0.48))'
+                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.76), rgba(255,255,255,0.56))'
+                        }}
+                    />
+                    <div className="absolute inset-x-0 top-0 h-24" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.10), transparent)' }} />
+                </>
+            )}
+            <div className={`relative mx-auto w-full ${widthClass} px-4 py-14 md:px-8 md:py-20`}>
                 <header className="max-w-2xl">
-                    <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: eyebrowColor ?? accentHex }}>{eyebrow}</p>
+                    <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: headerAccent }}>{eyebrow}</p>
                     <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{title}</h2>
                     {description && <p className={`mt-4 text-base leading-7 ${theme.softText}`}>{description}</p>}
                 </header>
@@ -187,20 +218,21 @@ function BleedSection({ theme, eyebrow, title, description, children, alt, accen
 }
 
 function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: SystemKey }) {
-    const active = images.filter((img) => img.url).slice(0, 4);
+    const active = images.filter((img) => img.url).slice(0, 5);
     if (active.length === 0) return null;
-    const filter = system === 'system_1_editorial' ? 'grayscale(0.2) contrast(1.05) saturate(0.85)'
-        : system === 'system_2_nostalgia' ? 'sepia(0.18) saturate(0.9)'
-        : system === 'system_3_zine' ? 'contrast(1.08) saturate(1.08)'
-        : 'saturate(0.65) brightness(0.75)';
+    const filter = system === 'system_1_editorial' ? 'contrast(1.07) saturate(1.12)'
+        : system === 'system_2_nostalgia' ? 'contrast(1.04) saturate(1.18)'
+        : system === 'system_3_zine' ? 'contrast(1.12) saturate(1.25)'
+        : 'saturate(0.85) brightness(0.82)';
     return (
-        <div className="grid w-full overflow-hidden" style={{ gridTemplateColumns: `repeat(${active.length}, 1fr)`, height: 168 }}>
+        <div className="grid h-[210px] w-full overflow-hidden border-y border-black/20 md:h-[240px]" style={{ gridTemplateColumns: `repeat(${active.length}, 1fr)` }}>
             {active.map((img, i) => (
                 <div key={i} className="relative overflow-hidden">
                     <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
                         style={{ backgroundImage: `url(${img.url})`, filter }}
                     />
+                    <div className="absolute inset-x-0 bottom-0 h-16" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.28), transparent)' }} />
                 </div>
             ))}
         </div>
@@ -210,10 +242,26 @@ function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: S
 function StatusStrip({ landing, theme, accentHex }: { landing: CampaignLandingViewModel; theme: SystemTheme; accentHex: string }) {
     const pct = Math.max(0, Math.min(100, landing.threshold.percentOfThreshold));
     const palette = landing.designSystem.palette;
+    const isDark = theme.pageText === 'text-white';
+    const labelAccent = isDark && isDimHexOnDark(palette.primary) ? accentHex : palette.primary;
+    const fallbackImages = landing.galleryImages.filter((img) => img.url.trim().length > 0);
+    const progressImage = landing.imagePlacements.progressCardBackground ?? fallbackImages[0] ?? null;
+    const pricingImage = landing.imagePlacements.pricingBanner ?? fallbackImages[1] ?? fallbackImages[0] ?? null;
     return (
-        <div className={`grid w-full grid-cols-1 gap-0 md:grid-cols-[2fr_1fr_1fr] divide-x ${theme.rule} divide-y md:divide-y-0`}>
-            <div className="px-6 py-7 md:px-8">
-                <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.primary }}>Group Status</p>
+        <div className={`grid w-full grid-cols-1 gap-0 overflow-hidden md:grid-cols-[2fr_1fr_1fr] divide-x ${theme.rule} divide-y md:divide-y-0`}>
+            <div className="relative overflow-hidden px-6 py-7 md:px-8">
+                {progressImage?.url && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-[0.32] saturate-125"
+                        style={{ backgroundImage: `url(${progressImage.url})` }}
+                    />
+                )}
+                <div className="absolute inset-0" style={{ background: isDark
+                    ? 'linear-gradient(to right bottom, rgba(0,0,0,0.86), rgba(0,0,0,0.64), rgba(0,0,0,0.28))'
+                    : 'linear-gradient(to right bottom, rgba(255,255,255,0.86), rgba(255,255,255,0.64), rgba(255,255,255,0.28))'
+                }} />
+                <div className="relative">
+                <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: labelAccent }}>Group Status</p>
                 <h3 className={`mt-2 text-xl font-bold leading-tight md:text-2xl ${theme.pageText}`}>{landing.threshold.headline}</h3>
                 <p className={`mt-2 text-sm leading-6 ${theme.softText}`}>{landing.threshold.detail}</p>
                 <div className="mt-4">
@@ -225,14 +273,29 @@ function StatusStrip({ landing, theme, accentHex }: { landing: CampaignLandingVi
                         <span style={{ color: accentHex }}>{pct}% of {landing.threshold.requiredCabins} cabins</span>
                     </div>
                 </div>
+                </div>
             </div>
-            <div className="px-6 py-7 md:px-8">
+            <div className="relative overflow-hidden px-6 py-7 md:px-8">
+                {pricingImage?.url && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-[0.45] saturate-125"
+                        style={{ backgroundImage: `url(${pricingImage.url})` }}
+                    />
+                )}
+                <div className="absolute inset-0" style={{ background: isDark
+                    ? 'linear-gradient(to right bottom, rgba(0,0,0,0.70), rgba(0,0,0,0.58), rgba(0,0,0,0.32))'
+                    : 'linear-gradient(to right bottom, rgba(0,0,0,0.18), rgba(255,255,255,0.68), rgba(255,255,255,0.34))'
+                }} />
+                <div className="relative">
                 <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em] ${theme.softerText}`}>Pricing</p>
                 <p className={`mt-2 text-3xl font-black ${theme.pageText}`}>{landing.pricing.startingPriceLabel}</p>
                 <p className="mt-1 text-sm font-semibold" style={{ color: accentHex }}>{landing.pricing.sourceLabel}</p>
                 <p className={`mt-2 text-xs leading-5 ${theme.softText}`}>{landing.pricing.detail}</p>
+                </div>
             </div>
-            <div className="px-6 py-7 md:px-8">
+            <div className="relative overflow-hidden px-6 py-7 md:px-8">
+                <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${palette.primary}18, ${palette.secondary}22)` }} />
+                <div className="relative">
                 <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em] ${theme.softerText}`}>Voyage</p>
                 <ul className="mt-2 space-y-1.5 text-sm">
                     {landing.facts.slice(0, 4).map((fact) => (
@@ -242,28 +305,64 @@ function StatusStrip({ landing, theme, accentHex }: { landing: CampaignLandingVi
                         </li>
                     ))}
                 </ul>
+                </div>
             </div>
         </div>
     );
 }
 
-function ExperienceList({ items, theme, accentHex }: { items: string[]; theme: SystemTheme; accentHex: string }) {
+function ExperienceList({
+    items,
+    theme,
+    accentHex,
+    backgroundImages = [],
+}: {
+    items: string[];
+    theme: SystemTheme;
+    accentHex: string;
+    backgroundImages?: LandingImageAsset[];
+}) {
+    const isDark = theme.pageText === 'text-white';
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item, i) => (
+            {items.map((item, i) => {
+                const backgroundImage = backgroundImages.length > 0 ? backgroundImages[i % backgroundImages.length] : null;
+                const hasBackdrop = Boolean(backgroundImage?.url);
+                const readableText = hasBackdrop
+                    ? isDark
+                        ? 'text-white/95'
+                        : 'text-slate-950'
+                    : theme.softText;
+                return (
                 <div key={i} className={`${theme.surface} relative flex items-start gap-4 overflow-hidden p-5`}>
+                    {backgroundImage?.url && (
+                        <>
+                            <div
+                                className="absolute inset-0 scale-105 bg-cover bg-center opacity-[0.28] blur-[2px] saturate-90"
+                                style={{ backgroundImage: `url(${backgroundImage.url})` }}
+                            />
+                            <div
+                                className="absolute inset-0"
+                                style={{ background: isDark
+                                    ? 'linear-gradient(to right bottom, rgba(0,0,0,0.94), rgba(0,0,0,0.86), rgba(0,0,0,0.74))'
+                                    : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.76))'
+                                }}
+                            />
+                        </>
+                    )}
                     <span
                         className="pointer-events-none absolute -bottom-3 -right-1 select-none font-mono text-8xl font-black"
-                        style={{ color: accentHex, opacity: 0.06 }}
+                        style={{ color: accentHex, opacity: hasBackdrop ? 0.1 : 0.06 }}
                     >
                         {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className={`${theme.eyebrowFont} mt-1 shrink-0 text-sm font-bold`} style={{ color: accentHex }}>
+                    <span className={`${theme.eyebrowFont} relative z-10 mt-1 shrink-0 text-sm font-bold`} style={{ color: accentHex }}>
                         {String(i + 1).padStart(2, '0')}
                     </span>
-                    <p className={`relative z-10 text-sm leading-7 ${theme.softText}`}>{item}</p>
+                    <p className={`relative z-10 text-sm leading-7 ${readableText}`}>{item}</p>
                 </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
@@ -360,9 +459,20 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     const theme = buildTheme(system);
     const accentHex = landing.designSystem.accentHex;
     const palette = landing.designSystem.palette;
+    const visiblePrimary = theme.pageText === 'text-white' && isDimHexOnDark(palette.primary) ? accentHex : palette.primary;
+    const visibleSecondary = theme.pageText === 'text-white' && isDimHexOnDark(palette.secondary) ? accentHex : palette.secondary;
     const pageStyle: CSSProperties = { ['--accent' as string]: accentHex };
     const { primaryHref, secondaryHref } = resolveCtaHrefs(landing, primaryHrefProp, secondaryHrefProp);
     const images = landing.galleryImages.filter((img) => img.url.trim().length > 0);
+    const placements = landing.imagePlacements;
+    const storyBackdrop = placements.storyWhatItIsBackground ?? images[0] ?? null;
+    const expectationBackdrop = placements.storyExpectationCards[0] ?? images[1] ?? images[0] ?? null;
+    const itineraryBackdrop = placements.itineraryRail[1] ?? placements.itineraryRail[0] ?? images[2] ?? images[0] ?? null;
+    const howItWorksBackdrop = placements.itineraryRail[0] ?? images[3] ?? images[0] ?? null;
+    const faqBackdrop = placements.faqBanner ?? images[1] ?? null;
+    const trustBackdrop = placements.trustCardBackgrounds[0] ?? images[2] ?? images[0] ?? null;
+    const formBackdrop = placements.formBackdrop ?? images[0] ?? null;
+    const footerBackdrop = placements.footerStrip ?? images[3] ?? images[0] ?? null;
 
     const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
     const [isCampaignNoticeOpen, setIsCampaignNoticeOpen] = useState(false);
@@ -554,10 +664,22 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             </section>
 
             {/* 4) Itinerary snapshot */}
-            <section className={`w-full border-t ${theme.rule}`}>
-                <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:px-8">
+            <section className={`relative w-full overflow-hidden border-t ${theme.rule}`}>
+                {itineraryBackdrop?.url && (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center opacity-[0.28] saturate-125"
+                            style={{ backgroundImage: `url(${itineraryBackdrop.url})` }}
+                        />
+                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right, rgba(0,0,0,0.88), rgba(0,0,0,0.68), rgba(0,0,0,0.46))'
+                            : 'linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.76), rgba(255,255,255,0.54))'
+                        }} />
+                    </>
+                )}
+                <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:px-8">
                     <div>
-                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
                             Itinerary Snapshot
                         </p>
                         <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight ${theme.pageText}`}>
@@ -586,10 +708,22 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                  and `final_countdown` emails. Always rendered so the deeplink
                  (`{landing}#travel`) never lands on a missing element. Content
                  mirrors the email module list in KLAVIYO_TEMPLATE_COPY_DECK.md §8. */}
-            <section id="travel" className={`w-full border-t ${theme.rule} ${theme.sectionAlt}`}>
-                <div className="mx-auto w-full max-w-7xl px-4 py-12 md:px-8 md:py-16">
+            <section id="travel" className={`relative w-full overflow-hidden border-t ${theme.rule} ${theme.sectionAlt}`}>
+                {expectationBackdrop?.url && (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center opacity-[0.24] saturate-125"
+                            style={{ backgroundImage: `url(${expectationBackdrop.url})` }}
+                        />
+                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.90), rgba(0,0,0,0.72), rgba(0,0,0,0.48))'
+                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.78), rgba(255,255,255,0.58))'
+                        }} />
+                    </>
+                )}
+                <div className="relative mx-auto w-full max-w-7xl px-4 py-12 md:px-8 md:py-16">
                     <header className="max-w-2xl">
-                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.primary }}>
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visiblePrimary }}>
                             Travel Essentials
                         </p>
                         <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>
@@ -603,7 +737,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
 
                     <div className="mt-8 grid gap-4 md:grid-cols-2">
                         <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
                                 Departure port
                             </p>
                             <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
@@ -618,7 +752,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         </div>
 
                         <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
                                 Documents
                             </p>
                             <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
@@ -632,7 +766,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         </div>
 
                         <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
                                 Flights &amp; hotel
                             </p>
                             <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
@@ -645,7 +779,7 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         </div>
 
                         <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: palette.secondary }}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
                                 Insurance
                             </p>
                             <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
@@ -669,7 +803,16 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             <PhotoStrip images={images} system={system} />
 
             {/* 6) Voyage brief — what it is + why now */}
-            <BleedSection theme={theme} eyebrow="Voyage Brief" title={landing.story.whatItIs.title} description={landing.story.whatItIs.body} accentHex={accentHex} eyebrowColor={palette.primary} contentMaxWidth="wide">
+            <BleedSection
+                theme={theme}
+                eyebrow="Voyage Brief"
+                title={landing.story.whatItIs.title}
+                description={landing.story.whatItIs.body}
+                accentHex={accentHex}
+                eyebrowColor={visiblePrimary}
+                contentMaxWidth="wide"
+                backdrop={storyBackdrop}
+            >
                 <ul className={`grid gap-4 md:grid-cols-${Math.min(landing.story.whyJoinNow.length, 3)}`}>
                     {landing.story.whyJoinNow.map((reason, i) => (
                         <li key={i} className={`${theme.surface} relative overflow-hidden p-5`}>
@@ -696,10 +839,16 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 eyebrow={landing.designSystem.sectionLabels[1] ?? landing.designSystem.issueLabel}
                 title={`On board: ${landing.designSystem.sectionLabels[0] ?? landing.title}`}
                 accentHex={accentHex}
-                eyebrowColor={palette.secondary}
+                eyebrowColor={visibleSecondary}
                 alt
+                backdrop={expectationBackdrop}
             >
-                <ExperienceList items={landing.story.whatToExpect} theme={theme} accentHex={accentHex} />
+                <ExperienceList
+                    items={landing.story.whatToExpect}
+                    theme={theme}
+                    accentHex={accentHex}
+                    backgroundImages={placements.storyExpectationCards.length > 0 ? placements.storyExpectationCards : images}
+                />
             </BleedSection>
 
             {/* 8) Inline pull-quote on photo (if available) */}
@@ -715,11 +864,11 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                             'px-6 py-5 backdrop-blur-[2px]',
                             system === 'system_4_modular'
                                 ? 'bg-black/75 border-l-4 border-white/30'
-                                : system === 'system_3_polaroid'
+                                : system === 'system_3_zine'
                                     ? 'bg-white/15 border border-white/25 rounded-sm'
-                                    : system === 'system_2_postcard'
+                                    : system === 'system_2_nostalgia'
                                         ? 'bg-black/60 rounded-sm'
-                                        : 'bg-black/60', // system_1_magazine default
+                                        : 'bg-black/60', // system_1_editorial default
                         ].join(' ')}>
                             <p className="max-w-2xl text-2xl font-medium italic leading-9 text-white md:text-3xl" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                                 &ldquo;{landing.designSystem.quote}&rdquo;
@@ -738,7 +887,8 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 eyebrow="How it works"
                 title={landing.state === 'GATHERING_INTEREST' ? 'Three steps from interest to possible booking' : 'Three steps from interest to booking'}
                 accentHex={accentHex}
-                eyebrowColor={palette.primary}
+                eyebrowColor={visiblePrimary}
+                backdrop={howItWorksBackdrop}
             >
                 <Itinerary
                     system={system}
@@ -759,16 +909,38 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             </BleedSection>
 
             {/* 10) FAQ */}
-            <BleedSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex} eyebrowColor={palette.secondary} contentMaxWidth="narrow">
+            <BleedSection theme={theme} eyebrow="FAQ" title="Quick answers before you join" accentHex={accentHex} eyebrowColor={visibleSecondary} contentMaxWidth="narrow" backdrop={faqBackdrop}>
                 <FaqList items={landing.faq} theme={theme} />
             </BleedSection>
 
             {/* 11) Trust */}
-            <BleedSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} eyebrowColor={palette.primary} alt>
+            <BleedSection theme={theme} eyebrow="Trust" title="What stays steady on this page" accentHex={accentHex} eyebrowColor={visiblePrimary} alt backdrop={trustBackdrop}>
                 <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {landing.trustBullets.map((bullet, i) => (
-                        <li key={i} className={`${theme.surface} p-5`}>
-                            <p className={`text-sm leading-7 ${theme.softText}`}>{bullet}</p>
+                        <li key={i} className={`${theme.surface} relative overflow-hidden p-5`}>
+                            {(placements.trustCardBackgrounds[i % Math.max(placements.trustCardBackgrounds.length, 1)] ?? images[i % Math.max(images.length, 1)])?.url && (
+                                <>
+                                    <div
+                                        className="absolute inset-0 scale-105 bg-cover bg-center opacity-[0.26] blur-[2px] saturate-90"
+                                        style={{ backgroundImage: `url(${(placements.trustCardBackgrounds[i % Math.max(placements.trustCardBackgrounds.length, 1)] ?? images[i % Math.max(images.length, 1)])?.url})` }}
+                                    />
+                                    <div
+                                        className="absolute inset-0"
+                                        style={{ background: theme.pageText === 'text-white'
+                                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.94), rgba(0,0,0,0.86), rgba(0,0,0,0.74))'
+                                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.76))'
+                                        }}
+                                    />
+                                </>
+                            )}
+                            <p className={`relative text-sm leading-7 ${(placements.trustCardBackgrounds.length > 0 || images.length > 0)
+                                ? theme.pageText === 'text-white'
+                                    ? 'text-white/95'
+                                    : 'text-slate-950'
+                                : theme.softText}`}
+                            >
+                                {bullet}
+                            </p>
                         </li>
                     ))}
                 </ul>
@@ -784,28 +956,58 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                         ? 'This step is free and non-binding. We save your party size, cabin preference, and the right to reach out if the campaign matures into the proper next step.'
                         : 'No payment is taken on this page. We hold your party size, cabin preference, and the right to reach out when the next step opens.'}
                     accentHex={accentHex}
-                    eyebrowColor={palette.secondary}
+                    eyebrowColor={visibleSecondary}
                     contentMaxWidth="narrow"
+                    backdrop={formBackdrop}
                 >
-                    <div id="save-your-place" className={`${theme.surface} p-6 md:p-8`}>
-                        <CampaignWaitlistForm
-                            campaignName={landing.title}
-                            endpoint={landing.form.endpoint}
-                            enabled={landing.form.enabled || landing.preview}
-                            defaultMode={landing.form.defaultMode}
-                            isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
-                            onGuestRegistered={handleGuestRegistered}
-                        />
-                        <p className={`mt-4 text-xs leading-5 ${theme.softText} opacity-60`}>
-                            {landing.inventoryDisclosure.formAcknowledgement}
-                        </p>
+                    <div id="save-your-place" className={`${theme.surface} relative overflow-hidden p-6 md:p-8`}>
+                        {formBackdrop?.url && (
+                            <>
+                                <div
+                                    className="absolute inset-0 scale-105 bg-cover bg-center opacity-[0.28] blur-[2px] saturate-90"
+                                    style={{ backgroundImage: `url(${formBackdrop.url})` }}
+                                />
+                                <div
+                                    className="absolute inset-0"
+                                    style={{ background: theme.pageText === 'text-white'
+                                        ? 'linear-gradient(to right bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.82), rgba(0,0,0,0.68))'
+                                        : 'linear-gradient(to right bottom, rgba(255,255,255,0.94), rgba(255,255,255,0.86), rgba(255,255,255,0.74))'
+                                    }}
+                                />
+                            </>
+                        )}
+                        <div className="relative">
+                            <CampaignWaitlistForm
+                                campaignName={landing.title}
+                                endpoint={landing.form.endpoint}
+                                enabled={landing.form.enabled || landing.preview}
+                                defaultMode={landing.form.defaultMode}
+                                isGatheringInterest={landing.state === 'GATHERING_INTEREST'}
+                                onGuestRegistered={handleGuestRegistered}
+                            />
+                            <p className={`mt-4 text-xs leading-5 ${theme.softText} opacity-60`}>
+                                {landing.inventoryDisclosure.formAcknowledgement}
+                            </p>
+                        </div>
                     </div>
                 </BleedSection>
             )}
 
             {/* 13) Final CTA strip */}
-            <section className={`w-full border-t ${theme.rule}`}>
-                <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-8">
+            <section className={`relative w-full overflow-hidden border-t ${theme.rule}`}>
+                {footerBackdrop?.url && (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center opacity-[0.34] saturate-125"
+                            style={{ backgroundImage: `url(${footerBackdrop.url})` }}
+                        />
+                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right, rgba(0,0,0,0.88), rgba(0,0,0,0.72), rgba(0,0,0,0.52))'
+                            : 'linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.76), rgba(255,255,255,0.50))'
+                        }} />
+                    </>
+                )}
+                <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-8">
                     <div>
                         <h2 className={`${theme.headingFont} text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{landing.designSystem.cta}</h2>
                         <p className={`mt-3 max-w-xl text-base leading-7 ${theme.softText}`}>

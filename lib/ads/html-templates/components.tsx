@@ -14,10 +14,84 @@ import {
     type Imgs,
     type ImageSlotControl,
     type ImageSlotControls,
+    type ImageSlotPosition,
     type Palette,
 } from './core';
 
 type TemplateProps = { d: D; imgs: Imgs; slotControls?: ImageSlotControls };
+
+// =============================================================================
+// SingleImageAd — Single Image Override
+// =============================================================================
+// Renders ONE image full-bleed at the format's native dimensions, with no
+// template chrome. The render route and the canva-templates preview both swap to
+// this whenever an `ad:<format>:override` selection is active, so the flyer (which
+// now carries its own text) becomes the entire ad. 'contain' letterboxes against
+// `background` so text-bearing flyers are never cropped; 'cover' fills the frame.
+
+export function SingleImageAd({
+    width,
+    height,
+    url,
+    fit = 'cover',
+    position = 'center',
+    flipX = false,
+    background = '#000',
+}: {
+    width: number;
+    height: number;
+    url: string;
+    fit?: 'cover' | 'contain';
+    position?: ImageSlotPosition;
+    flipX?: boolean;
+    background?: string;
+}) {
+    const transform = flipX ? 'scaleX(-1)' : undefined;
+    return (
+        <div style={{ width, height, position: 'relative', overflow: 'hidden', background }}>
+            {fit === 'contain' && (
+                // Blurred letterbox plate — same image behind, full-bleed cover,
+                // heavily blurred + dimmed so the sharp foreground pops.
+                <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={url}
+                        alt=""
+                        aria-hidden
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: position,
+                            transform,
+                            filter: 'blur(28px) saturate(1.3)',
+                            // scale slightly to bleed the blur past the edge so
+                            // bright halos don't glow around the border
+                            scale: '1.08',
+                        }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
+                </>
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={url}
+                alt=""
+                style={{
+                    position: 'relative',
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: fit,
+                    objectPosition: position,
+                    transform,
+                }}
+            />
+        </div>
+    );
+}
 
 function backgroundImageLayer(
     url: string | undefined,

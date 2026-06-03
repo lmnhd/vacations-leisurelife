@@ -14,6 +14,7 @@ import {
 import { IMAGE_BACKEND_META, PRIMARY_IMAGE_BACKEND_ID } from "@/lib/campaigns/media/generators/image-backend-meta";
 
 interface Row { id: string; text: string; }
+interface BackendAvailability { id: string; label: string; available: boolean; }
 
 let _seq = 0;
 const nextId = () => `fc${++_seq}`;
@@ -49,10 +50,12 @@ function RuleList({ rows, setRows, placeholder }: {
     );
 }
 
-export function FlyerControlsEditor({ slug }: { slug: string }) {
+export function FlyerControlsEditor({ slug, defaultNicheHint }: { slug: string; defaultNicheHint?: string | null }) {
     const [negations, setNegations] = useState<Row[]>([]);
     const [axes, setAxes] = useState<Row[]>([]);
+    const [nicheHint, setNicheHint] = useState("");
     const [models, setModels] = useState<string[]>([PRIMARY_IMAGE_BACKEND_ID]);
+    const [backendAvailability, setBackendAvailability] = useState<BackendAvailability[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [usingDefaults, setUsingDefaults] = useState(true);
@@ -71,17 +74,21 @@ export function FlyerControlsEditor({ slug }: { slug: string }) {
             if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
             setNegations(toRows(data.negations ?? DEFAULT_FLYER_NEGATIONS));
             setAxes(toRows(data.axes ?? DEFAULT_FLYER_VARIATION_AXES));
+            setNicheHint((typeof data.nicheHint === "string" && data.nicheHint.trim()) ? data.nicheHint : (defaultNicheHint ?? ""));
             setModels(Array.isArray(data.models) && data.models.length ? data.models : [PRIMARY_IMAGE_BACKEND_ID]);
+            setBackendAvailability(Array.isArray(data.backendAvailability) ? data.backendAvailability : []);
             setUsingDefaults(Boolean(data.usingDefaults));
             setHasManifest(Boolean(data.hasManifest));
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
             setNegations(toRows(DEFAULT_FLYER_NEGATIONS));
             setAxes(toRows(DEFAULT_FLYER_VARIATION_AXES));
+            setNicheHint(defaultNicheHint ?? "");
+            setBackendAvailability([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [defaultNicheHint]);
 
     useEffect(() => { void load(slug); }, [slug, load]);
 
@@ -96,6 +103,7 @@ export function FlyerControlsEditor({ slug }: { slug: string }) {
                 body: JSON.stringify({
                     negations: negations.map((r) => r.text.trim()).filter(Boolean),
                     axes: axes.map((r) => r.text.trim()).filter(Boolean),
+                    nicheHint: nicheHint.trim(),
                     models: models.length ? models : [PRIMARY_IMAGE_BACKEND_ID],
                 }),
             });
@@ -113,12 +121,16 @@ export function FlyerControlsEditor({ slug }: { slug: string }) {
     const resetDefaults = () => {
         setNegations(toRows(DEFAULT_FLYER_NEGATIONS));
         setAxes(toRows(DEFAULT_FLYER_VARIATION_AXES));
+        setNicheHint(defaultNicheHint ?? "");
         setModels([PRIMARY_IMAGE_BACKEND_ID]);
         setStatus("Reset to defaults (not yet saved).");
     };
 
     const axisCount = axes.filter((r) => r.text.trim()).length;
+    const hintedNiche = nicheHint.trim() || defaultNicheHint?.trim() || "";
     const modelCount = models.length || 1;
+    const unavailableSelected = backendAvailability.filter((backend) => models.includes(backend.id) && !backend.available);
+    const availableMap = new Map(backendAvailability.map((backend) => [backend.id, backend.available]));
 
     return (
         <details className="border border-white/10 rounded-xl bg-slate-900/50">
@@ -155,22 +167,51 @@ export function FlyerControlsEditor({ slug }: { slug: string }) {
                         {IMAGE_BACKEND_META.map((m) => {
                             const checked = models.includes(m.id);
                             const isPrimary = m.id === PRIMARY_IMAGE_BACKEND_ID;
+                            const isAvailable = availableMap.get(m.id) !== false;
                             return (
-                                <button key={m.id} type="button" disabled={isPrimary}
+                                <button
+                                    key={m.id}
+                                    type="button"
                                     onClick={() => setModels((prev) => prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id])}
-                                    title={isPrimary ? 'Primary backend — always on' : undefined}
+                                    title={isPrimary ? 'Primary backend' : undefined}
                                     className={`rounded-full border px-3 py-1 text-[11px] transition ${checked
                                         ? 'border-violet-500/40 bg-violet-500/15 text-violet-200'
-                                        : 'border-white/10 text-slate-500 hover:text-slate-300'} ${isPrimary ? 'opacity-80 cursor-default' : ''}`}>
-                                    {checked ? '✓ ' : ''}{m.label}{isPrimary ? ' (primary)' : ''}
+                                        : 'border-white/10 text-slate-500 hover:text-slate-300'}`}>
+                                    {checked ? '✓ ' : ''}{m.label}{isPrimary ? ' (primary)' : ''}{isAvailable ? '' : ' (unavailable)'}
                                 </button>
                             );
                         })}
                     </div>
+                    {backendAvailability.length > 0 && unavailableSelected.length > 0 && (
+                        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+                            {unavailableSelected.map((backend) => backend.label).join(', ')} is selected here, but it is not available in
+                            this environment, so the pipeline can only render the available backend(s). If you want a Gemini/OpenAI
+                            switch on the final flyer cards, both backends must successfully generate variants.
+                        </div>
+                    )}
                     <p className="text-[11px] text-slate-500">
-                        Enable a second model to generate the same prompt across both — you can switch each item&apos;s
-                        viewed version with the per-image source toggle. More models = proportionally more cost/time.
+                        Toggle one or both models to generate the same prompt across the selected backends — you can
+                        switch each item&apos;s viewed version with the per-image source toggle. More models = proportionally more cost/time.
                     </p>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="text-[10px] uppercase tracking-widest text-slate-400">Niche Detail</div>
+                    <textarea
+                        value={nicheHint}
+                        onChange={(e) => setNicheHint(e.target.value)}
+                        placeholder={defaultNicheHint ? `Auto-detected: ${defaultNicheHint}` : "Optional precise niche note to steer the flyer prompt"}
+                        rows={3}
+                        className="w-full resize-y rounded-lg border border-white/10 bg-slate-950 px-2.5 py-2 text-[11px] leading-snug text-slate-200 focus:outline-none focus:border-violet-500/40"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                        Use a short, specific description from the brief to sharpen the flyer image prompt. Leave blank to use the auto-derived brief hint only.
+                    </p>
+                    {hintedNiche && (
+                        <p className="text-[11px] text-violet-300">
+                            Current flyer niche hint: {hintedNiche}
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">

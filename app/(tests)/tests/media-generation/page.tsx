@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { VoicePreferencePanel } from "@/components/voice-preference-panel";
 import type { AssetType, CampaignAestheticBrief, CampaignMediaManifest, ProbeRunRecord } from "@/lib/campaigns/schema";
+import { normalizeCampaignResearchDossier } from "@/lib/campaigns/schema";
 import { ProbeResultsPanel } from "./probe-results-panel";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
@@ -706,7 +707,19 @@ export default function MediaGenerationTestPage() {
                 </div>
 
                 {/* Flyer Generation Controls — steers the flyer_image prompt */}
-                {slug.trim() && <FlyerControlsEditor slug={slug.trim()} />}
+                {slug.trim() && (
+                    <FlyerControlsEditor
+                        slug={slug.trim()}
+                        defaultNicheHint={
+                            normalizeCampaignResearchDossier(brief?.campaignResearchDossier)?.nicheResearch.nicheTitle
+                            ?? brief?.communityExpression?.corePromise
+                            ?? brief?.communityExpression?.socialGravity
+                            ?? campaign?.researchRationale
+                            ?? campaign?.communityFitRationale
+                            ?? null
+                        }
+                    />
+                )}
 
                 {/* Per-Category Generator Buttons */}
                 <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
