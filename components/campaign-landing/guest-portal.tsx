@@ -702,101 +702,6 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                 </div>
             </section>
 
-            {/* 4b) Travel essentials — anchor target for Phase 3 `travel_prep`
-                 and `final_countdown` emails. Always rendered so the deeplink
-                 (`{landing}#travel`) never lands on a missing element. Content
-                 mirrors the email module list in KLAVIYO_TEMPLATE_COPY_DECK.md §8. */}
-            <section id="travel" className={`relative w-full overflow-hidden border-t ${theme.rule} ${theme.sectionAlt}`}>
-                {expectationBackdrop?.url && (
-                    <>
-                        <div
-                            className="absolute inset-0 bg-cover bg-center opacity-[0.24] saturate-125"
-                            style={{ backgroundImage: `url(${expectationBackdrop.url})` }}
-                        />
-                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
-                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.90), rgba(0,0,0,0.72), rgba(0,0,0,0.48))'
-                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.78), rgba(255,255,255,0.58))'
-                        }} />
-                    </>
-                )}
-                <div className="relative mx-auto w-full max-w-7xl px-4 py-12 md:px-8 md:py-16">
-                    <header className="max-w-2xl">
-                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visiblePrimary }}>
-                            Travel Essentials
-                        </p>
-                        <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>
-                            Get to the ship without the scramble
-                        </h2>
-                        <p className={`mt-4 text-base leading-7 ${theme.softText}`}>
-                            We are not booking your trip for you, but here is the short list of moves to make so the day-of is smooth.
-                            If you booked through us, these are the same prep notes the Travel Prep email walks through.
-                        </p>
-                    </header>
-
-                    <div className="mt-8 grid gap-4 md:grid-cols-2">
-                        <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
-                                Departure port
-                            </p>
-                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
-                                {landing.facts.find((f) => f.label === 'Departure Port')?.value
-                                    ?? landing.itinerary.routeSummary
-                                    ?? 'Confirmed once your sailing is finalized.'}
-                            </p>
-                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
-                                Plan to arrive the day before whenever you can. A pre-cruise hotel night removes the
-                                single biggest source of missed-sailing stress.
-                            </p>
-                        </div>
-
-                        <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
-                                Documents
-                            </p>
-                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
-                                Passport, ID, vaccination card
-                            </p>
-                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
-                                Check that your passport is valid for at least six months past
-                                {' '}{landing.facts.find((f) => f.label === 'Sailing')?.value ?? 'your sail date'}.
-                                Bring a physical ID even if your line accepts digital boarding passes.
-                            </p>
-                        </div>
-
-                        <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
-                                Flights &amp; hotel
-                            </p>
-                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
-                                Book wide on day-of windows
-                            </p>
-                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
-                                Aim to be at the port no later than early afternoon on sail day. If your flight lands the same
-                                morning, give yourself a four-hour buffer minimum. A pre-night hotel near the port is the safer call.
-                            </p>
-                        </div>
-
-                        <div className={`${theme.surface} p-5`}>
-                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
-                                Insurance
-                            </p>
-                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
-                                Travel insurance is your safety net
-                            </p>
-                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
-                                Trip-cancellation and medical coverage are inexpensive relative to the booking and protect you
-                                if weather, illness, or a flight cancellation forces a change.
-                            </p>
-                        </div>
-                    </div>
-
-                    <p className={`mt-6 text-xs leading-6 ${theme.softText} opacity-75`}>
-                        We do not sell or commission these pieces. Use whatever booking tools you already trust.
-                        The Travel Prep email links here so this list is always one click away.
-                    </p>
-                </div>
-            </section>
-
             {/* 5) Atmospheric photo strip */}
             <PhotoStrip images={images} system={system} />
 
@@ -990,6 +895,101 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                     </div>
                 </BleedSection>
             )}
+
+            {/* Travel essentials — anchor target for Phase 3 `travel_prep`
+                 and `final_countdown` emails. Always rendered so the deeplink
+                 (`{landing}#travel`) never lands on a missing element. Content
+                 mirrors the email module list in KLAVIYO_TEMPLATE_COPY_DECK.md §8. */}
+            <section id="travel" className={`relative w-full overflow-hidden border-t ${theme.rule} ${theme.sectionAlt}`}>
+                {expectationBackdrop?.url && (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center opacity-[0.24] saturate-125"
+                            style={{ backgroundImage: `url(${expectationBackdrop.url})` }}
+                        />
+                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
+                            ? 'linear-gradient(to right bottom, rgba(0,0,0,0.90), rgba(0,0,0,0.72), rgba(0,0,0,0.48))'
+                            : 'linear-gradient(to right bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.78), rgba(255,255,255,0.58))'
+                        }} />
+                    </>
+                )}
+                <div className="relative mx-auto w-full max-w-7xl px-4 py-12 md:px-8 md:py-16">
+                    <header className="max-w-2xl">
+                        <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visiblePrimary }}>
+                            Travel Essentials
+                        </p>
+                        <h2 className={`${theme.headingFont} mt-3 text-3xl leading-tight md:text-4xl ${theme.pageText}`}>
+                            Get to the ship without the scramble
+                        </h2>
+                        <p className={`mt-4 text-base leading-7 ${theme.softText}`}>
+                            We are not booking your trip for you, but here is the short list of moves to make so the day-of is smooth.
+                            If you booked through us, these are the same prep notes the Travel Prep email walks through.
+                        </p>
+                    </header>
+
+                    <div className="mt-8 grid gap-4 md:grid-cols-2">
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
+                                Departure port
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                {landing.facts.find((f) => f.label === 'Departure Port')?.value
+                                    ?? landing.itinerary.routeSummary
+                                    ?? 'Confirmed once your sailing is finalized.'}
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Plan to arrive the day before whenever you can. A pre-cruise hotel night removes the
+                                single biggest source of missed-sailing stress.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
+                                Documents
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Passport, ID, vaccination card
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Check that your passport is valid for at least six months past
+                                {' '}{landing.facts.find((f) => f.label === 'Sailing')?.value ?? 'your sail date'}.
+                                Bring a physical ID even if your line accepts digital boarding passes.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
+                                Flights &amp; hotel
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Book wide on day-of windows
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Aim to be at the port no later than early afternoon on sail day. If your flight lands the same
+                                morning, give yourself a four-hour buffer minimum. A pre-night hotel near the port is the safer call.
+                            </p>
+                        </div>
+
+                        <div className={`${theme.surface} p-5`}>
+                            <p className={`${theme.eyebrowFont} text-[10px] uppercase tracking-[0.32em]`} style={{ color: visibleSecondary }}>
+                                Insurance
+                            </p>
+                            <p className={`mt-2 text-lg font-bold ${theme.pageText}`}>
+                                Travel insurance is your safety net
+                            </p>
+                            <p className={`mt-3 text-sm leading-6 ${theme.softText}`}>
+                                Trip-cancellation and medical coverage are inexpensive relative to the booking and protect you
+                                if weather, illness, or a flight cancellation forces a change.
+                            </p>
+                        </div>
+                    </div>
+
+                    <p className={`mt-6 text-xs leading-6 ${theme.softText} opacity-75`}>
+                        We do not sell or commission these pieces. Use whatever booking tools you already trust.
+                        The Travel Prep email links here so this list is always one click away.
+                    </p>
+                </div>
+            </section>
 
             <footer className={`w-full border-t ${theme.rule} py-10`}>
                 <div className={`mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 text-xs md:flex-row md:px-8 ${theme.softerText}`}>
