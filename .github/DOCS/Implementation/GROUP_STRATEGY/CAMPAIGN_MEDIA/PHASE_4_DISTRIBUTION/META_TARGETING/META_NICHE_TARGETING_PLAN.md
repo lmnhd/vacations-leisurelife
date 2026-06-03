@@ -1,92 +1,100 @@
 # Meta Ads Dynamic Niche Targeting Strategy
 
-## 1. The Current Gap
-Currently, Meta Ads dispatch (`dispatchMetaAdsLive`) uses a static `META_AD_SET_ID` from the environment. This means all campaigns, regardless of their niche, are broadcast to the same static audience. Google Ads, by contrast, dynamically synthesizes contextual placements, keywords, and audience signals specific to the campaign using a dedicated targeting module (`synthesizeGoogleTargeting`).
+## 1. The Problem This Solves
+Meta Ads dispatch previously used a static `META_AD_SET_ID` from the environment, broadcasting every campaign to the same generic audience. A fiber arts cruise was targeting the same people as a tabletop gaming cruise. The goal is to promote from *within* the niche: if the campaign is a knitting cruise, the Meta Ads should target knitters — not generic cruise audiences.
 
-## 2. Objective
-Promote from *within* the niche. If the campaign is a "Tabletop Gaming" cruise, the Meta Ads should target board game interests, convention attendees, and tabletop hobbyists, actively excluding generic cruise audiences to maintain high relevance and low CPA.
+## 2. Architecture
 
-## 3. Options for Implementation
+### 2.1. Targeting Synthesizer (`lib/campaigns/distribution/platforms/meta-ads/targeting.ts`)
+Extracts niche signals from the campaign blueprint and research dossier, filters out generic travel/cruise terms, then resolves them to Meta interest node IDs via the Graph API.
 
-### Option A: Dynamic Ad Set Creation (Recommended)
-Instead of hardcoding the Ad Set, we create a new Meta Ad Set (and potentially a parent Meta Campaign) for every group campaign at the time of dispatch.
-*   **Pros:** Isolates budget and learning phase per niche. Prevents concurrent campaigns from polluting each other's audiences. Allows a true 1:1 map between the campaign blueprint and Meta delivery.
-*   **Cons:** Requires handling campaign budgets, bid strategies, and schedule windows via the Meta Graph API.
+Key behaviors:
+- **Seed extraction:** `targetingKeywords`, `audienceSignals`, dossier `allowedSignals`, `specificExamples`, and campaign prose fields are all mined for interest atoms
+- **Generic denial:** Travel ideology terms (cruise, vacation, travel, ship, port, etc.) are stripped before any Meta query is built
+- **Atom compression:** Long dossier prose is compressed into short Meta-safe queries (≤4 words, ≤36 chars) before resolution
+- **AI parent node resolution:** `resolveMetaParentNodes` calls the LLM gateway (`extraction` task tier) to identify 2–6 verified broad Meta interest category names for the niche (e.g. "Knitting", "Crochet", "Board game"). These are injected immediately after seed keywords so they are never crowded out by secondary text-mining. This replaces the old `NICHE_PARENT_MAP` regex table.
+- **Interest ID resolution:** Each query is sent to `GET /search?type=adinterest`. On miss, smaller derived atoms are retried. The in-memory cache prevents duplicate API calls within a dispatch run.
+- **Fallback chain:** dynamic ad set → `META_AD_SET_ID` static fallback → hard fail (no silent generic audience)
 
-### Option B: Static Ad Set with Overwritten Targeting
-Maintain a single "Draft" Ad Set and overwrite its targeting parameters right before adding the new Ad.
-*   **Pros:** Requires fewer API calls.
-*   **Cons:** Extremely fragile. If multiple campaigns run concurrently or are in draft review, overwriting the Ad Set targeting affects *all* ads currently running under that Ad Set.
+### 2.2. Meta Graph Integration (`lib/integrations/meta-ads.ts`)
+- `createMetaCampaign`: creates a paused `OUTCOME_TRAFFIC` campaign. **Must use JSON body** — `special_ad_categories` is an array and cannot be sent via form encoding. Requires `is_adset_budget_sharing_enabled: false`.
+- `createMetaAdSet`: creates a paused ad set with `flexible_spec` interest targeting, `LANDING_PAGE_VIEWS` optimization, `IMPRESSIONS` billing.
+- `searchMetaAdInterests`: wraps `GET /search?type=adinterest`.
+- Error formatting surfaces `error_user_msg` (the human-readable Meta explanation) rather than the generic `message` field.
 
-### Option C: Saved Audience API
-Generate Meta "Saved Audiences" via the API and attach them manually.
-*   **Pros:** Reusable audiences.
-*   **Cons:** Overcomplicates the pipeline; Ad Sets already encapsulate targeting effectively.
+### 2.3. Dispatch Pipeline (`lib/campaigns/distribution-marketing.ts`)
+`dispatchMetaAdsLive` orchestration:
+1. Build preview payload (image URL, copy, CTA from brief/manifest)
+2. Upload image to Meta and get image hash
+3. `synthesizeMetaTargeting` — runs AI parent node resolution + Meta interest ID resolution
+4. If interests resolved → create paused campaign + paused ad set with `flexible_spec` targeting
+5. If campaign/ad set creation fails → fall back to `META_AD_SET_ID` with a warning (not a silent failure)
+6. Create ad creative and paused ad under the resolved ad set
+7. Persist all IDs, review URL, and targeting summary to the schedule entry
 
-**Verdict:** **Option A** is the only safe and scalable approach for an autonomous pipeline managing multiple diverse niches.
+### 2.4. Operator UI
+Two surfaces expose the full targeting picture before and after live dispatch:
 
-## 4. Proposed Architecture
+**Review panel** (`app/(tests)/tests/campaign-landing/[slug]/review-controls.tsx`):
+- **Preview Meta Targeting** — simulate-only, no Meta API calls, shows AI parent nodes + interest queries
+- **Build Meta Draft** — live dispatch scoped to `facebook_ad` only, `replaceExisting: true`
 
-### 4.1. Meta Targeting Synthesizer (`lib/campaigns/distribution/platforms/meta-ads/targeting.ts`)
-Parallel to Google's synthesizer, this module will extract signals and format them for Meta:
-*   **Seed Extraction:** Pull `targetingKeywords`, `highlightEvents`, and `audienceSignals` from the blueprint and the research dossier.
-*   **Generic Denial:** Actively filter out broad travel words ("cruise", "travel", "vacation").
-*   **Meta Interest Resolution:** Unlike Google (which takes raw string keywords), Meta requires specific Interest Node IDs for targeting. We will need to query the Meta Graph API (`GET /search?type=adinterest&q={keyword}`) to map our raw text seeds into valid Meta targeting node IDs.
+**Distribution Control Deck** (`app/dashboard/campaigns/[slug]/media/distribution/page.tsx`):
+- **Preview Meta Targeting** — same simulate path
+- **Dispatch Meta Live** — live dispatch, `replaceExisting: true`
+- **Current Meta Targeting** panel — shows AI-resolved parent nodes (blue chips), interest queries, resolved interests, unresolved queries, and warnings after any action
 
-### 4.2. Meta Graph Updates (`lib/integrations/meta-ads.ts`)
-*   Add functions to query the targeting search API (`/search?type=adinterest`).
-*   Add functions to create Meta Campaigns (`/act_<id>/campaigns`).
-*   Add functions to create Meta Ad Sets (`/act_<id>/adsets`) using the resolved `targeting` parameter. The payload will use the `flexible_spec` targeting format (e.g., `targeting: { flexible_spec: [{ interests: [{id, name}] }] }`).
+## 3. Account-Specific Requirements (act_1612907296491359)
 
-### 4.3. Dispatch Pipeline Updates (`lib/campaigns/distribution-marketing.ts`)
-*   Modify `dispatchMetaAdsLive` to follow a multi-step orchestration:
-    1.  Synthesize Meta Targeting (resolve blueprint text to Meta Interest IDs).
-    2.  Create a Meta Campaign for the Leisure Life Group Campaign (if not using a master campaign).
-    3.  Create an Ad Set with the synthesized targeting and a baseline daily budget.
-    4.  Create the Ad Creative and Ad (as it does now, but linking to the newly generated Ad Set).
+These were discovered through live testing and are not in Meta's generic docs. Future campaigns on this account must follow these exactly.
 
-## 5. Step-by-Step Execution Plan
+**Campaign creation:**
+- Use JSON body (`Content-Type: application/json`), not form encoding
+- `special_ad_categories: []` — required, must be a real JSON array
+- `is_adset_budget_sharing_enabled: false` — required; account rejects creation without this
+- `objective: 'OUTCOME_TRAFFIC'` — correct ODAX objective; `LINK_CLICKS` is rejected
+- `status: 'PAUSED'`
 
-**Step 1: Meta Interest Resolution API**
-*   Implement the Graph API wrapper for `GET /search?type=adinterest`.
-*   Create a caching layer or fallback mechanism so we don't spam the Meta Search API if a keyword resolution fails.
+**Ad set creation:**
+- `optimization_goal: 'LANDING_PAGE_VIEWS'` — matches existing account ad sets; `LINK_CLICKS` is wrong for this objective
+- `billing_event: 'IMPRESSIONS'`
+- No explicit `bid_strategy` — let Meta default it
+- `destination_type: 'WEBSITE'`
 
-**Step 2: Build `synthesizeMetaTargeting`**
-*   Create `lib/campaigns/distribution/platforms/meta-ads/targeting.ts`.
-*   Port the keyword expansion logic from Google Ads, but append the asynchronous step of resolving these keywords into Meta Interest IDs.
-*   Include robust error handling (if a niche is too obscure, fall back to the closest broader interest).
+**Error handling:**
+- Always surface `error.error_user_msg` from Graph API errors — the `message` field contains only generic text like "Invalid parameter" which is useless for debugging
 
-**Step 3: Preview & Simulation UI**
-*   Update the `providerMode="simulate"` logic in `distribution-marketing.ts` to output `metaTargeting`.
-*   Update the preview response to surface the resolved Meta Interests alongside Google Placements, allowing the user to review the planned audience before live dispatch.
+## 4. Duplicate Ad Prevention
 
-**Step 4: Live Dispatch Orchestration**
-*   Update `dispatchMetaAdsLive` to create the Ad Set on the fly.
-*   Retire or deprecate the strict requirement for `META_AD_SET_ID` in `.env`, using it only as an absolute fallback for generic campaigns.
+`forceDispatch: true` bypasses the schedule timing gate but must not bypass the already-drafted guard. The dispatch route (`app/api/groups/campaign/[slug]/media/distribute/route.ts`) skips live paid-ad platforms (`facebook_ad`, `google_display`, `tiktok_paid`) that already have `status: draft_created` and an `externalPostId`, unless `replaceExisting: true` is also passed. "Build Meta Draft" and "Dispatch Meta Live" both pass `replaceExisting: true` intentionally.
 
-**Step 5: E2E Testing**
-*   Run the pipeline against existing difficult test cases (e.g., Tabletop Gaming, Niche Music Festivals) to verify the Meta interests actually map correctly.
-*   Validate the payloads created in the Meta Ads Manager Sandbox.
+## 5. Ship Name Integrity
 
-## 6. Implementation Status - Option A
+Ad copy is generated by `generatePlatformCopy` from the campaign brief. The copy generator now receives `canonicalShipName` (from `getAuthoritativeShipName(campaign)`) as an explicit parameter, injected as a hard rule at the top of the LLM prompt: `"SHIP NAME RULE: The ship for this campaign is X. Use this exact name. Never substitute another ship name."` This prevents the LLM from hallucinating a ship name from stale text in other fields (e.g. `researchRationale`).
 
-Status: implemented in the app-side dispatch path.
+`getAuthoritativeShipName` prefers `matchedShipName` (inventory-matched) over `shipTarget` (blueprint). The campaign PATCH API (`/api/groups/campaign/[slug]`) now accepts `shipTarget` and `matchedShipName` corrections directly without requiring a full discovery re-run.
 
-Completed:
-* `lib/integrations/meta-ads.ts` now treats `META_AD_SET_ID` as optional fallback configuration, exposes Meta interest search, and can create paused Meta campaigns and paused ad sets.
-* `lib/campaigns/distribution/platforms/meta-ads/targeting.ts` synthesizes campaign-native Meta interest queries from `targetingKeywords`, `highlightEvents`, `audienceSignals`, niche text fields, and the secondary research dossier. Generic cruise/travel/vacation terms are denied before targeting is built.
-* Live `facebook_ad` dispatch now resolves Meta interest IDs, creates a paused campaign plus paused ad set when interests resolve, and creates the paused ad under that dynamic ad set.
-* If live interest resolution produces no usable Meta interests, `META_AD_SET_ID` is used only as an explicit static fallback. If no fallback is configured, dispatch fails rather than silently using a generic audience.
-* Simulated `facebook_ad` dispatch now returns a `metaTargeting` preview payload without calling Meta provider APIs.
-* The distribution dashboard exposes "Preview Meta Targeting", "Meta Draft Audit", and "Current Meta Targeting" surfaces so operators can review audience construction before live draft creation.
+## 6. Current Status
 
-Live behavior:
-1. Resolve niche terms with `GET /search?type=adinterest`.
-2. Create a paused Meta campaign using `OUTCOME_TRAFFIC`.
-3. Create a paused Meta ad set using `flexible_spec` interests, `LINK_CLICKS` optimization, and a daily budget from `META_DAILY_BUDGET_CENTS` or the default 2000 cents.
-4. Create the ad creative and paused ad linked to the new ad set.
-5. Persist campaign, ad set, creative, ad, review URL, and targeting summary notes.
+**Fully working as of 2026-06-03:**
+- Dynamic campaign + ad set creation with `flexible_spec` interest targeting — confirmed live on act_1612907296491359
+- AI parent node resolution via LLM gateway replacing the old regex `NICHE_PARENT_MAP`
+- Fallback to `META_AD_SET_ID` when dynamic creation fails, with explicit warning in dispatch response
+- Duplicate ad prevention via `draft_created` + `externalPostId` guard
+- Ship name explicitly injected into copy generator prompt
+- `shipTarget` / `matchedShipName` patchable via campaign PATCH API
+- `parentNodes` surfaced in preview UI and dispatch metadata
+- Warning messages in targeting package updated to be operator-actionable
 
-Remaining live validation:
-* Run one sandbox or production-paused Meta draft with a real campaign to confirm the account accepts the selected objective/ad-set fields.
-* Confirm that interest resolution quality is strong enough for the first few niche campaigns; adjust query expansion only if live Meta search returns weak matches.
+**Live dispatch flow (confirmed):**
+1. AI resolves niche → broad Meta parent nodes (e.g. Knitting, Crochet, Sewing, Crafts)
+2. Meta interest search resolves parent nodes to IDs
+3. Paused campaign created with `OUTCOME_TRAFFIC`, `special_ad_categories: []`, `is_adset_budget_sharing_enabled: false`
+4. Paused ad set created with `flexible_spec` interests, `LANDING_PAGE_VIEWS`, `IMPRESSIONS`
+5. Ad creative and paused ad created under the dynamic ad set
+6. All IDs, review URL, and targeting summary persisted to schedule entry
+
+**Remaining:**
+- Monitor interest resolution quality across additional niche campaigns (tabletop gaming, music festivals, etc.)
+- Consider adding `age_min`/`age_max` and `geo_locations.location_types` to match the account's existing ad set structure if Meta requires it for future ad sets
+- Copy regeneration for the fiber arts campaign is still needed — the manifest `adVariants` still contain "Celebrity Edge"; regenerate via `POST /api/groups/campaign/fiber-arts-yarn-tasting-voyage/media/test/copy`

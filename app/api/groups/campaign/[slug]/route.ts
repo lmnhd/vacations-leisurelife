@@ -8,6 +8,13 @@ import { dispatchEmailBroadcast } from '@/lib/campaigns/email/email-event-orches
 const CampaignPatchSchema = z.object({
     status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']).optional(),
     /**
+     * Correct the ship name when discovery produced the wrong value.
+     * Updates both shipTarget (blueprint) and matchedShipName (inventory-matched).
+     * Any downstream copy (manifest adVariants, brief) must be regenerated separately.
+     */
+    shipTarget: z.string().trim().min(1).max(200).optional(),
+    matchedShipName: z.string().trim().min(1).max(200).optional(),
+    /**
      * Set to a VisualFlavor to lock that flavor as the campaign's manual override.
      * Set to `null` to clear the override and return to auto-selection.
      */
@@ -33,6 +40,8 @@ const CampaignPatchSchema = z.object({
         value.status !== undefined
         || value.manualVisualFlavor !== undefined
         || value.optionalGatheringMoments !== undefined
+        || value.shipTarget !== undefined
+        || value.matchedShipName !== undefined
         || value.finalItineraryUrl !== undefined
         || value.tourConductorName !== undefined
         || value.tourConductorBio !== undefined,
@@ -176,6 +185,18 @@ export async function PATCH(
         messages.push(`optionalGatheringMoments updated (${patch.optionalGatheringMoments.length} items).`);
     }
 
+    if (patch.shipTarget !== undefined) {
+        const previous = campaign.shipTarget ?? 'unset';
+        updatedCampaign.shipTarget = patch.shipTarget;
+        messages.push(`shipTarget corrected from "${previous}" to "${patch.shipTarget}". Regenerate brief and manifest copy to pick up the new ship name.`);
+    }
+
+    if (patch.matchedShipName !== undefined) {
+        const previous = campaign.matchedShipName ?? 'unset';
+        updatedCampaign.matchedShipName = patch.matchedShipName;
+        messages.push(`matchedShipName corrected from "${previous}" to "${patch.matchedShipName}". Regenerate brief and manifest copy to pick up the new ship name.`);
+    }
+
     // Phase 3 — capture before/after for itinerary / TC fields so we can decide
     // whether the change is the kind that should trigger a broadcast.
     const finalItineraryUrlChanged = patch.finalItineraryUrl !== undefined
@@ -217,6 +238,8 @@ export async function PATCH(
     const isUnchanged = updatedCampaign.status === campaign.status
         && updatedCampaign.manualVisualFlavor === campaign.manualVisualFlavor
         && JSON.stringify(updatedCampaign.optionalGatheringMoments) === JSON.stringify(campaign.optionalGatheringMoments)
+        && updatedCampaign.shipTarget === campaign.shipTarget
+        && updatedCampaign.matchedShipName === campaign.matchedShipName
         && !finalItineraryUrlChanged
         && updatedCampaign.tourConductorName === campaign.tourConductorName
         && updatedCampaign.tourConductorBio === campaign.tourConductorBio;

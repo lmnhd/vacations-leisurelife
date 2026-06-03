@@ -353,6 +353,7 @@ export default function CampaignDistributionPage() {
             metaTargeting?: {
                 seedKeywords?: string[];
                 audienceSignals?: string[];
+                parentNodes?: string[];
                 interestQueries?: string[];
                 resolvedInterests?: Array<{ id: string; name: string; sourceQuery?: string }>;
                 unresolvedQueries?: string[];
@@ -412,6 +413,10 @@ export default function CampaignDistributionPage() {
                             <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-meta", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["facebook_ad"] })} disabled={actionState !== null}>
                                 {actionState === "preview-meta" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
                                 Preview Meta Targeting
+                            </Button>
+                            <Button variant="destructive" className="justify-start gap-2" onClick={() => void runAction("dispatch-meta-live", { caller: "human", mode: "dispatch", dryRun: false, providerMode: "live", forceDispatch: true, replaceExisting: true, platforms: ["facebook_ad"] })} disabled={actionState !== null}>
+                                {actionState === "dispatch-meta-live" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                Dispatch Meta Live
                             </Button>
                         </CardContent>
                     </Card>
@@ -679,6 +684,18 @@ export default function CampaignDistributionPage() {
                                 <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
                                     <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Summary</div>
                                     <pre className="mt-2 whitespace-pre-wrap text-xs text-neutral-200">{metaTargeting.summary}</pre>
+                                </div>
+                            ) : null}
+                            {metaTargeting?.parentNodes?.length ? (
+                                <div className="rounded-lg border border-blue-500/20 bg-blue-950/20 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-blue-400">AI-Resolved Parent Nodes</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {metaTargeting.parentNodes.map((node) => (
+                                            <span key={node} className="rounded-full border border-blue-500/40 bg-blue-500/10 px-2.5 py-1 text-xs text-blue-200">
+                                                {node}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             ) : null}
                             {metaTargeting?.interestQueries?.length ? (

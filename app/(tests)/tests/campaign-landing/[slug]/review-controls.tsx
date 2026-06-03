@@ -16,6 +16,7 @@ interface ReviewControlsProps {
 
 interface DistributionPlanResponse {
     message?: string;
+    warnings?: string[];
     summary?: {
         plannedPosts: number;
     };
@@ -114,6 +115,7 @@ interface MetaTargetingPreviewPayload {
     metaTargeting?: {
         seedKeywords?: string[];
         audienceSignals?: string[];
+        parentNodes?: string[];
         interestQueries?: string[];
         resolvedInterests?: Array<{ id: string; name: string; sourceQuery?: string }>;
         unresolvedQueries?: string[];
@@ -560,6 +562,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                     dryRun: false,
                     providerMode: 'live',
                     forceDispatch: true,
+                    replaceExisting: true,
                     platforms: ['facebook_ad'],
                 }),
             });
@@ -573,7 +576,8 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
             const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
             setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
-            setDispatchMessage(data.message ?? 'Meta draft created for native review.');
+            const warningText = data.warnings?.length ? ` | ${data.warnings.join(' | ')}` : '';
+            setDispatchMessage((data.message ?? 'Meta draft created for native review.') + warningText);
             await loadAdPlan();
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to build Meta draft.');
@@ -760,6 +764,18 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                     <p className="text-xs text-emerald-800">
                                         Seed keywords: {metaTargetingPreview.seedKeywords.join(', ')}
                                     </p>
+                                ) : null}
+                                {metaTargetingPreview.parentNodes?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-blue-700">AI-Resolved Parent Nodes</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {metaTargetingPreview.parentNodes.map((node) => (
+                                                <span key={node} className="rounded-full border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs text-blue-900">
+                                                    {node}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
                                 ) : null}
                                 {metaTargetingPreview.interestQueries?.length ? (
                                     <div className="space-y-1">

@@ -212,3 +212,23 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** Implemented Option A from `PHASE_4_DISTRIBUTION/META_TARGETING/META_NICHE_TARGETING_PLAN.md` so Meta paid ads no longer default every niche campaign into the same static `META_AD_SET_ID` audience.  
 **The Change / Rule:** Live `facebook_ad` dispatch now synthesizes campaign-native Meta targeting, resolves Meta interest IDs, creates a paused Meta campaign plus paused ad set, and attaches the paused ad to that new ad set. `META_AD_SET_ID` is optional fallback only when no interests resolve; if no fallback exists, dispatch fails rather than using a generic audience.  
 **Broader Lesson:** Meta targeting proof should be visible in the distribution dashboard before live draft creation. Use "Preview Meta Targeting" to inspect planned interest queries, and treat static ad-set dispatch as an explicit fallback path, not the normal workflow.
+
+---
+
+### 2026-06-03: Paid Targeting Must Enter Through Niche Circles, Not Travel Intent
+
+**Trigger / Context:** The fiber arts preview produced keywords like `knitting cruise`, `crochet group travel`, and fake placements such as `reddit.com/r/knittingcruise`, which aimed at nonexistent cruise-search intent instead of real knitting/yarn communities.  
+**The Change / Rule:** Google and Meta targeting now reject travel ideology terms inside positive targeting phrases, including cruise, group travel, vacation, ship, venue, shore, deck, voyage, and similar terms. Keyword-derived Reddit placement fabrication is disabled; placements must come from real `audienceSignals` or the research dossier.  
+**Broader Lesson:** Ad targeting should first reach the niche where it already lives, such as knitting, crochet, yarn, Ravelry, indie dyers, or local yarn shop circles. The cruise narrative belongs in creative and landing copy after the ad has entered that circle.
+
+### 2026-06-03: Dossier Vocabulary Leads Paid Targeting Expansion
+
+**Trigger / Context:** The user flagged that even after removing cruise-heavy terms, targeting still leaned on invented campaign phrases like `morning stitch circles` instead of the real community language captured during secondary research.  
+**The Change / Rule:** Google and Meta targeting now expand seeds first from `campaign.researchDossier.nicheResearch` and concrete `audienceSignals`, with campaign-authored prose only filling remaining slots. Cruise-translation fields are not used as positive targeting vocabulary.  
+**Broader Lesson:** The research dossier is not just creative guidance; it is the most trustworthy vocabulary source for paid targeting. If a term was not surfaced by the researched community or audience evidence, it should not outrank that community's own language in targeting synthesis.
+
+### 2026-06-03: Meta Targeting Uses Interest Atoms, Not Dossier Paragraphs
+
+**Trigger / Context:** Live Meta preview surfaced long descriptive strings like `canvas or quilted project bags with yarn peeking out`, which failed to resolve as Meta interests and forced static fallback ad-set mode.  
+**The Change / Rule:** Meta targeting now compresses dossier and audience prose into short interest atoms before resolution. Preferred query shape is compact hobby/category language such as `crochet hooks`, `stitch markers`, `project bag`, `indie dyers`, or `ravelry community`, not full descriptive clauses or conversational quotes. If a query fails, resolution now tries smaller derived atoms before giving up.  
+**Broader Lesson:** Meta detailed targeting behaves more like entity/category lookup than semantic prose search. Rich dossier language should still shape the audience, but only after being distilled into short reusable interest labels.

@@ -4,6 +4,8 @@ interface MetaGraphErrorPayload {
         type?: string;
         code?: number;
         error_subcode?: number;
+        error_user_title?: string;
+        error_user_msg?: string;
     };
 }
 
@@ -103,7 +105,9 @@ function graphErrorMessage(payload: unknown): string {
     if (graphError.error_subcode !== undefined) {
         pieces.push(`subcode=${graphError.error_subcode}`);
     }
-    if (graphError.message) {
+    if (graphError.error_user_msg) {
+        pieces.push(graphError.error_user_msg);
+    } else if (graphError.message) {
         pieces.push(graphError.message);
     }
 
@@ -273,18 +277,32 @@ export async function createMetaCampaign(
     config: MetaAdsConfig,
     input: MetaCampaignCreateInput,
 ): Promise<string> {
-    const response = await postMetaGraphForm<MetaCreateResponse>(
-        `act_${config.adAccountId}/campaigns`,
-        config.accessToken,
+    // special_ad_categories must be a JSON array — form encoding cannot represent
+    // arrays correctly, so this call uses a JSON body instead of form encoding.
+    const body = JSON.stringify({
+        name: input.name,
+        objective: input.objective ?? 'OUTCOME_TRAFFIC',
+        status: input.status ?? 'PAUSED',
+        special_ad_categories: [],
+        is_adset_budget_sharing_enabled: false,
+        access_token: config.accessToken,
+    });
+
+    const response = await fetch(
+        `https://graph.facebook.com/v22.0/act_${config.adAccountId}/campaigns`,
         {
-            name: input.name,
-            objective: input.objective ?? 'OUTCOME_TRAFFIC',
-            status: input.status ?? 'PAUSED',
-            special_ad_categories: JSON.stringify([]),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
         },
     );
 
-    return response.id;
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+        throw new Error(graphErrorMessage(payload));
+    }
+
+    return (payload as MetaCreateResponse).id;
 }
 
 export async function createMetaAdSet(
@@ -299,8 +317,7 @@ export async function createMetaAdSet(
             campaign_id: input.campaignId,
             daily_budget: String(input.dailyBudgetCents),
             billing_event: 'IMPRESSIONS',
-            optimization_goal: 'LINK_CLICKS',
-            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+            optimization_goal: 'LANDING_PAGE_VIEWS',
             destination_type: 'WEBSITE',
             targeting: JSON.stringify(input.targeting),
             status: input.status ?? 'PAUSED',

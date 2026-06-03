@@ -94,8 +94,23 @@ async function dispatchSupportedPlatforms(
             || post.platform === 'facebook_ad'
             || post.platform === 'google_display'
         ) {
+            // For live paid-ad platforms, skip posts that already have a draft unless
+            // replaceExisting is explicitly set. forceDispatch bypasses the schedule
+            // date gate but should not bypass the already-drafted guard — doing so
+            // creates duplicate ads on every button press.
+            const isPaidAdPlatform = post.platform === 'facebook_ad' || post.platform === 'google_display' || post.platform === 'tiktok_paid';
+            if (providerMode === 'live' && isPaidAdPlatform && post.status === 'draft_created' && post.externalPostId && !replaceExisting) {
+                skippedPosts += 1;
+                warnings.push(`Skipped ${post.platform} post ${post.postId}: draft already exists (${post.externalPostId}). Pass replaceExisting=true to rebuild.`);
+                continue;
+            }
+
             if (replaceExisting && providerMode === 'live' && post.platform === 'google_display' && post.externalPostId) {
                 await removeGoogleDisplayDraft(post.externalPostId);
+                await resetScheduledPostStatus(campaign.id, post.postId);
+            }
+
+            if (replaceExisting && providerMode === 'live' && post.platform === 'facebook_ad' && post.externalPostId) {
                 await resetScheduledPostStatus(campaign.id, post.postId);
             }
 
@@ -199,12 +214,17 @@ export async function POST(
 
         const existingSchedule = dryRun ? null : await getDistributionSchedule(slug);
         const shouldRegenerateSchedule = mode === 'plan';
-        const baseSchedule = shouldRegenerateSchedule || !existingSchedule ? buildDistributionSchedule(campaign, manifest, {
-            caller,
-            platforms: parsed.data.platforms,
-            stages: parsed.data.stages,
-            timezone: parsed.data.timezone,
-        }) : existingSchedule;
+        // replaceExisting always rebuilds from the current manifest so stale assetIds
+        // stored in a previous schedule entry don't silently cause asset-not-found failures.
+        const needsFreshSchedule = shouldRegenerateSchedule || !existingSchedule || replaceExisting;
+        const baseSchedule = needsFreshSchedule
+            ? buildDistributionSchedule(campaign, manifest, {
+                caller,
+                platforms: parsed.data.platforms,
+                stages: parsed.data.stages,
+                timezone: parsed.data.timezone,
+            })
+            : existingSchedule;
         const schedule = filterSchedule(baseSchedule, parsed.data.platforms, parsed.data.stages);
 
         const record: DistributionExecutionRecord = {

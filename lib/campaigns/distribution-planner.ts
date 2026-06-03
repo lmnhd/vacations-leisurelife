@@ -224,7 +224,7 @@ export function buildDistributionSchedule(
         copyVariant: 'ad_variant_A',
         scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
         campaignStage: 'seed_day_0',
-        notes: ['Creates ad-ready placeholder schedule entry. Platform adapter not implemented yet.'],
+        notes: ['Creates a paused Meta campaign, ad set with niche interest targeting, creative, and ad for native Ads Manager review.'],
     } : null);
 
     addIfPresent(drafts, googleDisplayAdAssetId ? {

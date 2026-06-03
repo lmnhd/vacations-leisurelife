@@ -81,6 +81,53 @@ async function main(): Promise<void> {
         }
     });
 
+    await runTest('separates fiber niche targeting from cruise and group-travel ideology', () => {
+        const pkg = synthesizeGoogleTargeting(makeCampaign({
+            id: 'fiber-arts-yarn-tasting-voyage',
+            name: 'Fiber Arts Yarn-Tasting Voyage',
+            description: 'A fiber arts themed cruise.',
+            targetingKeywords: [
+                'knitting cruise',
+                'crochet group travel',
+                'ravelry community',
+                'yarn tasting',
+                'slow making vacation',
+                'indie yarn',
+                'sunset shawl',
+            ],
+            highlightEvents: [
+                'morning stitch circles',
+                'indie yarn tasting tables',
+                'sunset shawl show and tell',
+            ],
+            researchRationale:
+                'r/knitting, r/crochet, r/yarnaddicts, Ravelry groups, and local yarn shop newsletters show active community discussion.',
+            audienceSignals: [
+                'r/knitting project threads show strong daily discussion volume',
+                'r/crochet pattern help threads stay active',
+                'r/yarnaddicts regularly discusses indie dyers and yarn clubs',
+                'ravelry.com groups organize swaps, knit-alongs, and yarn tasting events',
+            ],
+            nicheExpressionMode:
+                'fiber artists share skein notes, compare indie dyers, discuss shawl patterns, and browse yarn tasting tables',
+        }));
+
+        for (const forbidden of ['knitting cruise', 'crochet group travel', 'slow making vacation']) {
+            assert.ok(!pkg.keywords.includes(forbidden), `travel-framed keyword leaked: ${forbidden}`);
+        }
+        for (const allowed of ['ravelry community', 'yarn tasting', 'indie yarn', 'sunset shawl']) {
+            assert.ok(pkg.keywords.includes(allowed), `expected niche-native keyword: ${allowed}`);
+        }
+        assert.ok(pkg.placements.includes('reddit.com/r/knitting'));
+        assert.ok(pkg.placements.includes('reddit.com/r/crochet'));
+        assert.ok(pkg.placements.includes('reddit.com/r/yarnaddicts'));
+        assert.ok(pkg.placements.includes('ravelry.com'));
+        for (const placement of pkg.placements) {
+            assert.ok(!placement.includes('cruise'), `cruise placement leaked: ${placement}`);
+            assert.ok(!placement.includes('grouptravel'), `group-travel placement leaked: ${placement}`);
+        }
+    });
+
     await runTest('extracts placements from audienceSignals (reddit + youtube + domains)', () => {
         const pkg = synthesizeGoogleTargeting(makeCampaign());
 
@@ -127,6 +174,11 @@ async function main(): Promise<void> {
                         highlightEvents: [],
                         nicheExpressionMode: undefined,
                         researchRationale: undefined,
+                        audienceSignals: [],
+                        communityFitRationale: undefined,
+                        allowedThemeSignals: [],
+                        optionalGatheringMoments: [],
+                        successLogic: undefined,
                     }),
                 ),
             TargetingSynthesisError,
@@ -151,7 +203,7 @@ async function main(): Promise<void> {
         assert.ok(pkg.negativeKeywords.includes('cruise jobs'));
     });
 
-    await runTest('produces >=5 placements when audienceSignals are prose-only (no URLs)', () => {
+    await runTest('does not invent placements when audienceSignals are prose-only (no URLs)', () => {
         const proseCampaign = makeCampaign({
             audienceSignals: [
                 'Wellness retreat operators report consistent sell-out cohorts after launching slow-cinema reels.',
@@ -164,13 +216,8 @@ async function main(): Promise<void> {
         const pkg = synthesizeGoogleTargeting(proseCampaign);
 
         assert.ok(
-            pkg.placements.length >= 5,
-            `expected >=5 placements from prose-only signals, got ${pkg.placements.length}: ${pkg.placements.join(', ')}`,
-        );
-        assert.ok(pkg.placements.length <= 10);
-        assert.ok(
-            pkg.placementSources.includes('keyword_derived'),
-            `expected keyword_derived in placementSources, got: ${pkg.placementSources.join(', ')}`,
+            !pkg.placementSources.includes('keyword_derived'),
+            `keyword-derived placement fabrication should be disabled, got: ${pkg.placementSources.join(', ')}`,
         );
         // Generic subreddits must not leak in even through keyword-derived path
         for (const generic of ['reddit.com/r/cruise', 'reddit.com/r/travel', 'reddit.com/r/vacation']) {
@@ -228,6 +275,73 @@ async function main(): Promise<void> {
         assert.ok(pkg.placements.includes('youtube.com/@shinrinyokuwalk'));
         assert.ok(pkg.placements.includes('mindbodygreen.com'));
         assert.ok(pkg.placements.includes('yogajournal.com'));
+    });
+
+    await runTest('prioritizes dossier-native vocabulary ahead of invented campaign prose', () => {
+        const pkg = synthesizeGoogleTargeting(makeCampaign({
+            id: 'fiber-circle',
+            targetingKeywords: ['yarn', 'knitting', 'ravelry'],
+            audienceSignals: [
+                'r/knitting knit-along threads stay active each week',
+                'r/yarnaddicts discussions center indie dyers and local yarn shops',
+            ],
+            highlightEvents: [
+                'morning stitch circles on deck',
+                'yarn tasting tables at sunset',
+            ],
+            nicheExpressionMode:
+                'soft fiber rituals, morning stitch circles, and tasting-table moments',
+            researchRationale:
+                'Campaign prose keeps inventing poetic event labels that do not come from the underlying niche research.',
+            researchDossier: {
+                nicheResearch: {
+                    nicheTitle: 'Indie Yarn and Knit-Along Culture',
+                    trendCycleSummary:
+                        'Current yarn-community momentum lives in knit-alongs, local yarn shops, and indie dyer launches.',
+                    whyThisTrendFeelsDistinctNow:
+                        'People are trading project notes, pattern talk, and hand-dyed skein drops in public hobby spaces.',
+                    audienceRoutineInsights: [
+                        'Knitters compare project bags, swap row-counting habits, and share shawl progress.',
+                    ],
+                    specificExamples: [
+                        'local yarn shop',
+                        'knit along',
+                        'indie dyers',
+                        'hand dyed yarn',
+                    ],
+                    allowedSignals: [
+                        'project bag',
+                        'shawl knitting',
+                    ],
+                    discouragedSignals: ['costume pirate knitting'],
+                    sourceNotes: ['Ravelry forum language and yarn-shop event listings shaped these terms.'],
+                },
+                cruiseTranslation: {
+                    cruiseNativeTranslationNotes: [
+                        'The ship angle belongs later, after niche trust is established.',
+                    ],
+                    downstreamImplications: {
+                        briefDirection: [],
+                        mediaGeneration: [],
+                        copyDirection: [],
+                    },
+                },
+            },
+        }));
+
+        const expectedDossierTerms = [
+            'local yarn shop',
+            'knit along',
+            'indie dyers',
+            'hand dyed yarn',
+            'project bag',
+            'shawl knitting',
+        ];
+        for (const term of expectedDossierTerms) {
+            assert.ok(pkg.keywords.includes(term), `expected dossier-native keyword: ${term}`);
+        }
+        assert.ok(!pkg.keywords.includes('morning stitch circles'));
+        assert.ok(!pkg.keywords.includes('yarn tasting tables'));
     });
 
     await runTest('summary mentions placement source attribution', () => {

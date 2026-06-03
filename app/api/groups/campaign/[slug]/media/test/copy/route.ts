@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red-team';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { saveAssetRecord, upsertManifestCopy } from '@/lib/campaigns/media/media-store';
 import { generatePlatformCopy } from '@/lib/campaigns/media/generators/copy-generator';
 import { MEDIA_LLM_CONFIG, modelNameToGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
+import { getAuthoritativeShipName } from '@/lib/campaigns/ship-context';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/copy
@@ -19,7 +20,10 @@ export async function POST(
 ) {
     const { slug } = await params;
 
-    const brief = await getAestheticBrief(slug);
+    const [brief, campaign] = await Promise.all([
+        getAestheticBrief(slug),
+        getCampaignBlueprint(slug),
+    ]);
     if (!brief) {
         return NextResponse.json({ error: `No aesthetic brief found for ${slug}` }, { status: 404 });
     }
@@ -35,7 +39,7 @@ export async function POST(
     const generatorService = modelNameToGeneratorService(activeModel);
 
     try {
-        const copy = await generatePlatformCopy(brief);
+        const copy = await generatePlatformCopy(brief, getAuthoritativeShipName(campaign));
         const copyJson = JSON.stringify(copy, null, 2);
         const copyBuffer = Buffer.from(copyJson, 'utf-8');
         const assetId = `copy_platform_${randomUUID().slice(0, 8)}`;

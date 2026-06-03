@@ -740,7 +740,7 @@ export async function runMediaGeneration(
         if (shouldRunAny(['ad_creative', 'carousel_slide', 'email_header'], resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'ad_creative', modelNameToGeneratorService(MEDIA_LLM_CONFIG.platformCopy), 'platform copy', async () => {
-                    const generatedCopy = await generatePlatformCopy(brief!);
+                    const generatedCopy = await generatePlatformCopy(brief!, getAuthoritativeShipName(campaign));
                     copyCarouselSlides = generatedCopy.carouselSlides;
                     copyAdVariants = generatedCopy.adVariants;
                     copyCaptions = generatedCopy.captions;

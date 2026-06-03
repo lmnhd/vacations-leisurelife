@@ -26,7 +26,8 @@ export interface GeneratedCopy {
  * Returns structured JSON with carousel slides, ad variants, captions, and email subjects.
  */
 export async function generatePlatformCopy(
-  brief: CampaignAestheticBrief
+  brief: CampaignAestheticBrief,
+  canonicalShipName?: string | null,
 ): Promise<GeneratedCopy> {
   const model = MEDIA_LLM_CONFIG.platformCopy;
   const researchContext = buildCampaignResearchDossierContext(
@@ -70,7 +71,10 @@ Return ONLY valid JSON matching the exact schema specified. No markdown, no expl
   ]
 }
 
+SHIP NAME RULE: The ship for this campaign is "${canonicalShipName ?? 'TBD'}". Use this exact name wherever ship copy appears. Never substitute another ship name.
+
 Campaign Context:
+- Ship: ${canonicalShipName ?? 'TBD'}
 - Theme: ${brief.themeName}
 - Hero Slogan: ${brief.messaging.heroSlogan}
 - Sub Slogan: ${brief.messaging.subSlogan}

@@ -456,7 +456,6 @@ async function dispatchMetaAdsLive(
     config,
     resolveInterestIds: true,
   });
-
   const dynamicAdSetAvailable = targeting.resolvedInterests.length > 0;
   let metaCampaignId: string | undefined;
   let metaAdSetId: string | undefined;
@@ -473,18 +472,38 @@ async function dispatchMetaAdsLive(
 
   if (dynamicAdSetAvailable) {
     const adSetWindow = buildMetaAdSetWindow();
-    metaCampaignId = await createMetaCampaign(config, {
-      name: `[DRAFT] ${campaign.name} Meta ${post.postId}`,
-    });
-    metaAdSetId = await createMetaAdSet(config, {
-      name: `[DRAFT] ${campaign.name} Audience ${post.postId}`,
-      campaignId: metaCampaignId,
-      targeting: targeting.targeting,
-      dailyBudgetCents: getMetaDailyBudgetCents(),
-      startTime: adSetWindow.startTime,
-      endTime: adSetWindow.endTime,
-      status: "PAUSED",
-    });
+    try {
+      metaCampaignId = await createMetaCampaign(config, {
+        name: `[DRAFT] ${campaign.name} Meta ${post.postId}`,
+      });
+      metaAdSetId = await createMetaAdSet(config, {
+        name: `[DRAFT] ${campaign.name} Audience ${post.postId}`,
+        campaignId: metaCampaignId,
+        targeting: targeting.targeting,
+        dailyBudgetCents: getMetaDailyBudgetCents(),
+        startTime: adSetWindow.startTime,
+        endTime: adSetWindow.endTime,
+        status: "PAUSED",
+      });
+    } catch (campaignError: unknown) {
+      // Dynamic campaign/ad set creation failed — fall back to the static META_AD_SET_ID
+      // if configured. This handles accounts that reject programmatic campaign creation.
+      const reason = campaignError instanceof Error ? campaignError.message : String(campaignError);
+      console.warn('[Meta dispatch] dynamic campaign creation failed, trying static fallback:', reason);
+      metaCampaignId = undefined;
+      metaAdSetId = undefined;
+      if (config.adSetId) {
+        metaAdSetId = config.adSetId;
+        metaTargetingNotes.push(
+          "meta_ad_set_mode=static_fallback",
+          `meta_targeting_warning=Dynamic campaign creation failed (${reason}); using META_AD_SET_ID fallback.`,
+        );
+      } else {
+        throw new Error(
+          `Meta dynamic campaign creation failed and META_AD_SET_ID fallback is not configured. Reason: ${reason}`,
+        );
+      }
+    }
   } else if (config.adSetId) {
     metaAdSetId = config.adSetId;
     metaTargetingNotes.push(
@@ -526,7 +545,6 @@ async function dispatchMetaAdsLive(
       object_story_spec: JSON.stringify(objectStorySpec),
     },
   );
-
   const adResponse = await postMetaGraphForm<MetaAdCreateResponse>(
     `https://graph.facebook.com/v22.0/act_${config.adAccountId}/ads`,
     {
@@ -991,6 +1009,7 @@ export async function dispatchMarketingPost(
         metaTargeting: {
           seedKeywords: targeting.seedKeywords,
           audienceSignals: targeting.audienceSignals,
+          parentNodes: targeting.parentNodes,
           interestQueries: targeting.interestQueries,
           resolvedInterests: targeting.resolvedInterests,
           unresolvedQueries: targeting.unresolvedQueries,

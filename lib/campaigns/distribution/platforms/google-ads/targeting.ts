@@ -27,7 +27,11 @@ const MAX_PLACEMENTS = 10;
 const GENERIC_SUBREDDIT_DENY = new Set([
     'cruise',
     'cruises',
+    'cruising',
     'travel',
+    'travels',
+    'traveling',
+    'travelling',
     'vacation',
     'vacations',
     'holiday',
@@ -36,7 +40,23 @@ const GENERIC_SUBREDDIT_DENY = new Set([
     'trips',
     'tourism',
     'getaway',
+    'getaways',
     'wanderlust',
+    'sailing',
+    'sailings',
+    'voyage',
+    'voyages',
+    'ship',
+    'ships',
+    'cabin',
+    'cabins',
+    'shore',
+    'excursion',
+    'excursions',
+    'deck',
+    'lounge',
+    'port',
+    'ports',
 ]);
 
 const GENERIC_DENY_TERMS = new Set([
@@ -67,6 +87,61 @@ const GENERIC_DENY_TERMS = new Set([
     'all inclusive',
 ]);
 
+const TRAVEL_IDEOLOGY_TOKENS = new Set([
+    'cruise',
+    'cruises',
+    'cruising',
+    'travel',
+    'travels',
+    'traveling',
+    'travelling',
+    'vacation',
+    'vacations',
+    'holiday',
+    'holidays',
+    'trip',
+    'trips',
+    'tour',
+    'tours',
+    'tourism',
+    'getaway',
+    'getaways',
+    'sailing',
+    'sailings',
+    'voyage',
+    'voyages',
+    'ship',
+    'ships',
+    'cabin',
+    'cabins',
+    'shore',
+    'excursion',
+    'excursions',
+    'deck',
+    'lounge',
+    'port',
+    'ports',
+    'caribbean',
+    'fjord',
+    'fjords',
+    'itinerary',
+    'itineraries',
+]);
+
+const TRAVEL_IDEOLOGY_PHRASES = [
+    'group travel',
+    'cruise group',
+    'cruise vacation',
+    'cruise vacations',
+    'cruise deal',
+    'cruise deals',
+    'slow making vacation',
+    'shore excursion',
+    'shore excursions',
+    'onboard',
+    'on board',
+];
+
 const DEFAULT_NEGATIVE_KEYWORDS = [
     'cheap cruise',
     'cruise deals',
@@ -76,6 +151,25 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
     'family cruise',
     'cruise jobs',
 ];
+
+const PHRASE_STOPWORDS = new Set([
+    'a',
+    'an',
+    'and',
+    'at',
+    'by',
+    'for',
+    'from',
+    'in',
+    'into',
+    'of',
+    'on',
+    'or',
+    'over',
+    'the',
+    'to',
+    'with',
+]);
 
 function normalizeTerm(value: string): string {
     return value
@@ -88,17 +182,15 @@ function isGenericTerm(term: string): boolean {
     const lower = normalizeTerm(term);
     if (!lower) return true;
     if (GENERIC_DENY_TERMS.has(lower)) return true;
-    // Single-word stems like "cruise"/"travel" embedded as the only token
     const tokens = lower.split(/\s+/);
-    if (tokens.length === 1 && GENERIC_DENY_TERMS.has(tokens[0])) {
-        return true;
-    }
-    return false;
+    if (tokens.some((token) => TRAVEL_IDEOLOGY_TOKENS.has(token))) return true;
+    return TRAVEL_IDEOLOGY_PHRASES.some((phrase) => lower.includes(phrase));
 }
 
 function pushUnique(target: string[], candidate: string, max: number): boolean {
     const normalized = normalizeTerm(candidate);
     if (!normalized) return false;
+    if (isGenericTerm(normalized)) return false;
     if (target.includes(normalized)) return false;
     if (target.length >= max) return false;
     target.push(normalized);
@@ -117,13 +209,26 @@ function extractWordPhrases(source: string): string[] {
     const tokens = cleaned.split(/\s+/).filter((token) => token.length > 2);
     for (let i = 0; i < tokens.length; i += 1) {
         for (let len = 2; len <= 3 && i + len <= tokens.length; len += 1) {
-            const phrase = tokens.slice(i, i + len).join(' ');
-            if (phrase.length >= 8 && phrase.length <= 40) {
+            const phraseTokens = tokens.slice(i, i + len);
+            if (phraseTokens.some((token) => PHRASE_STOPWORDS.has(token))) continue;
+            const phrase = phraseTokens.join(' ');
+            if (phrase.length >= 8 && phrase.length <= 40 && !isGenericTerm(phrase)) {
                 phrases.add(phrase);
             }
         }
     }
     return Array.from(phrases);
+}
+
+function dossierStructuredTerms(campaign: Campaign): string[] {
+    const dossier = normalizeCampaignResearchDossier(campaign.researchDossier);
+    if (!dossier) return [];
+
+    const niche = dossier.nicheResearch;
+    return [
+        ...(niche.allowedSignals ?? []),
+        ...(niche.specificExamples ?? []),
+    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
 }
 
 function extractPlacementsFromText(
@@ -163,6 +268,10 @@ function extractPlacementsFromText(
 }
 
 function deriveSubredditCandidatesFromKeywords(keywords: string[]): string[] {
+    // Do not invent subreddit placements from ad keywords. If a community is
+    // real, it should appear in audienceSignals or the research dossier.
+    return [];
+
     const candidates: string[] = [];
 
     for (const keyword of keywords) {
@@ -194,28 +303,26 @@ function dossierTextSources(campaign: Campaign): string[] {
     const niche = dossier.nicheResearch;
     return [
         niche.nicheTitle,
+        ...(niche.allowedSignals ?? []),
+        ...(niche.specificExamples ?? []),
+        ...(niche.audienceRoutineInsights ?? []),
+        ...(niche.sourceNotes ?? []),
         niche.trendCycleSummary,
         niche.whyThisTrendFeelsDistinctNow,
-        ...(niche.audienceRoutineInsights ?? []),
-        ...(niche.specificExamples ?? []),
-        ...(niche.allowedSignals ?? []),
-        ...(niche.sourceNotes ?? []),
-        ...(dossier.cruiseTranslation?.cruiseNativeTranslationNotes ?? []),
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
 }
 
-function nicheTextSources(campaign: Campaign): string[] {
+function campaignSupportTextSources(campaign: Campaign): string[] {
     const fields: Array<string | string[] | undefined> = [
-        campaign.researchRationale,
-        campaign.successLogic,
+        campaign.audienceSignals,
         campaign.communityFitRationale,
-        campaign.vacationFitRationale,
-        campaign.nicheExpressionMode,
-        campaign.optionalityStyle,
-        campaign.cruiseNativeMoments,
         campaign.allowedThemeSignals,
         campaign.optionalGatheringMoments,
         campaign.highlightEvents,
+        campaign.nicheExpressionMode,
+        campaign.optionalityStyle,
+        campaign.researchRationale,
+        campaign.successLogic,
     ];
 
     const out: string[] = [];
@@ -230,6 +337,20 @@ function nicheTextSources(campaign: Campaign): string[] {
         }
     }
     return out;
+}
+
+function appendExtractedPhrases(
+    target: string[],
+    sources: string[],
+    max: number,
+): void {
+    for (const source of sources) {
+        if (target.length >= max) break;
+        for (const phrase of extractWordPhrases(source)) {
+            pushUnique(target, phrase, max);
+            if (target.length >= max) break;
+        }
+    }
 }
 
 function buildPlacementSet(
@@ -252,7 +373,7 @@ function buildPlacementSet(
 
     if (placements.length < MAX_PLACEMENTS) {
         const beforeNiche = placements.length;
-        extractPlacementsFromText(nicheTextSources(campaign), placements);
+        extractPlacementsFromText(campaignSupportTextSources(campaign), placements);
         if (placements.length > beforeNiche) sources.push('niche_text_fields');
     }
 
@@ -270,9 +391,7 @@ function buildPlacementSet(
 
 function buildKeywordExpansion(
     seedKeywords: string[],
-    nicheExpressionMode: string | undefined,
-    highlightEvents: string[],
-    researchRationale: string | undefined,
+    campaign: Campaign,
 ): string[] {
     const keywords: string[] = [];
 
@@ -282,38 +401,13 @@ function buildKeywordExpansion(
         }
     }
 
-    // Expand from highlight events (specific, campaign-native)
-    for (const event of highlightEvents) {
-        if (!event || isGenericTerm(event)) continue;
-        const phrases = extractWordPhrases(event);
-        for (const phrase of phrases) {
-            if (!isGenericTerm(phrase)) {
-                pushUnique(keywords, phrase, MAX_KEYWORDS);
-            }
-            if (keywords.length >= MAX_KEYWORDS) break;
-        }
-        if (keywords.length >= MAX_KEYWORDS) break;
+    for (const term of dossierStructuredTerms(campaign)) {
+        pushUnique(keywords, term, MAX_KEYWORDS);
     }
 
-    // Expand from niche expression mode (a sentence describing tone)
-    if (nicheExpressionMode && keywords.length < MAX_KEYWORDS) {
-        for (const phrase of extractWordPhrases(nicheExpressionMode)) {
-            if (!isGenericTerm(phrase)) {
-                pushUnique(keywords, phrase, MAX_KEYWORDS);
-            }
-            if (keywords.length >= MAX_KEYWORDS) break;
-        }
-    }
-
-    // Fall back to research rationale phrases (most generic source - last)
-    if (researchRationale && keywords.length < MAX_KEYWORDS) {
-        for (const phrase of extractWordPhrases(researchRationale)) {
-            if (!isGenericTerm(phrase)) {
-                pushUnique(keywords, phrase, MAX_KEYWORDS);
-            }
-            if (keywords.length >= MAX_KEYWORDS) break;
-        }
-    }
+    appendExtractedPhrases(keywords, dossierTextSources(campaign), MAX_KEYWORDS);
+    appendExtractedPhrases(keywords, campaign.audienceSignals ?? [], MAX_KEYWORDS);
+    appendExtractedPhrases(keywords, campaignSupportTextSources(campaign), MAX_KEYWORDS);
 
     return keywords;
 }
@@ -337,11 +431,11 @@ function buildSummary(pkg: Omit<GoogleTargetingPackage, 'summary' | 'rationale'>
 
     const rationaleLines: string[] = [
         `Seeded from ${pkg.seedKeywords.length} campaign.targetingKeywords term(s).`,
-        `Expanded with ${pkg.audienceSignals.length} audience signal(s).`,
+        `Expanded first with ${pkg.audienceSignals.length} audience signal(s) and dossier-native vocabulary before campaign-authored prose.`,
         pkg.placementSources.length > 0
             ? `Placements sourced from: ${pkg.placementSources.join(', ')}.`
             : 'No placement sources contributed.',
-        'Generic cruise / travel / vacation terms excluded by design.',
+        'Travel ideology terms such as cruise, group travel, vacation, ship, and venue language are excluded before keyword and placement expansion.',
     ];
 
     return {
@@ -385,9 +479,7 @@ export function synthesizeGoogleTargeting(campaign: Campaign): GoogleTargetingPa
 
     const keywords = buildKeywordExpansion(
         nonGenericSeeds,
-        campaign.nicheExpressionMode,
-        campaign.highlightEvents ?? [],
-        campaign.researchRationale,
+        campaign,
     );
 
     if (keywords.length < MIN_KEYWORDS) {
@@ -406,7 +498,10 @@ export function synthesizeGoogleTargeting(campaign: Campaign): GoogleTargetingPa
 
     const negativeKeywords: string[] = [];
     for (const term of DEFAULT_NEGATIVE_KEYWORDS) {
-        pushUnique(negativeKeywords, term, DEFAULT_NEGATIVE_KEYWORDS.length);
+        const normalized = normalizeTerm(term);
+        if (normalized && !negativeKeywords.includes(normalized)) {
+            negativeKeywords.push(normalized);
+        }
     }
 
     const partial = {
