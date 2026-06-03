@@ -472,8 +472,6 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     const faqBackdrop = placements.faqBanner ?? images[1] ?? null;
     const trustBackdrop = placements.trustCardBackgrounds[0] ?? images[2] ?? images[0] ?? null;
     const formBackdrop = placements.formBackdrop ?? images[0] ?? null;
-    const footerBackdrop = placements.footerStrip ?? images[3] ?? images[0] ?? null;
-
     const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
     const [isCampaignNoticeOpen, setIsCampaignNoticeOpen] = useState(false);
 
@@ -992,41 +990,6 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                     </div>
                 </BleedSection>
             )}
-
-            {/* 13) Final CTA strip */}
-            <section className={`relative w-full overflow-hidden border-t ${theme.rule}`}>
-                {footerBackdrop?.url && (
-                    <>
-                        <div
-                            className="absolute inset-0 bg-cover bg-center opacity-[0.34] saturate-125"
-                            style={{ backgroundImage: `url(${footerBackdrop.url})` }}
-                        />
-                        <div className="absolute inset-0" style={{ background: theme.pageText === 'text-white'
-                            ? 'linear-gradient(to right, rgba(0,0,0,0.88), rgba(0,0,0,0.72), rgba(0,0,0,0.52))'
-                            : 'linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.76), rgba(255,255,255,0.50))'
-                        }} />
-                    </>
-                )}
-                <div className="relative mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-8">
-                    <div>
-                        <h2 className={`${theme.headingFont} text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{landing.designSystem.cta}</h2>
-                        <p className={`mt-3 max-w-xl text-base leading-7 ${theme.softText}`}>
-                            {landing.state === 'GATHERING_INTEREST'
-                                ? 'The form below is where you tell us whether you want to help the shared group version form or simply want the earliest possible booking handoff if the trip stabilizes.'
-                                : 'The form below is where you tell us whether you want the shared group path or the faster booking path.'}
-                        </p>
-                    </div>
-                    <div className="flex items-end">
-                        <a
-                            href="#save-your-place"
-                            className="text-base font-bold underline underline-offset-4 transition hover:opacity-80"
-                            style={{ color: accentHex }}
-                        >
-                            Go to the form
-                        </a>
-                    </div>
-                </div>
-            </section>
 
             <footer className={`w-full border-t ${theme.rule} py-10`}>
                 <div className={`mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 text-xs md:flex-row md:px-8 ${theme.softerText}`}>

@@ -539,24 +539,6 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                 </SectionShell>
             )}
 
-            <section className={`border-t ${theme.rule}`}>
-                <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 md:grid-cols-[1.4fr_1fr] md:px-6 lg:px-8">
-                    <div>
-                        <h2 className={`${theme.headingFont} text-3xl leading-tight md:text-4xl ${theme.pageText}`}>{landing.designSystem.cta}</h2>
-                        <p className={`mt-3 max-w-xl text-base leading-7 ${theme.softText}`}>{landing.ctas.primary.description}</p>
-                    </div>
-                    <div className="flex items-end">
-                        <a
-                            href="#save-your-place"
-                            className="text-base font-bold underline underline-offset-4 transition hover:opacity-80"
-                            style={{ color: accentHex }}
-                        >
-                            Go to the form
-                        </a>
-                    </div>
-                </div>
-            </section>
-
             <footer className={`border-t ${theme.rule} py-10`}>
                 <div className={`mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 text-xs md:flex-row md:px-6 lg:px-8 ${theme.softerText}`}>
                     <p>{landing.designSystem.issueLabel} · {landing.title}</p>
