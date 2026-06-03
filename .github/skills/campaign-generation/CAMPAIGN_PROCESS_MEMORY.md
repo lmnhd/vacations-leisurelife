@@ -204,3 +204,11 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** The user noted that regeneration repair notes appended to existing image prompts can create redundancy or contradiction, especially when multiple visual-lint findings are applied.  
 **The Change / Rule:** Append-mode media regeneration should rewrite the original prompt plus repair note into one coherent generation prompt before calling the image model. Section-level batch regeneration is acceptable when it uses that composed prompt path, skips locked assets, and preserves the original campaign/ship/asset role.  
 **Broader Lesson:** Repair notes are operator intent, not final model prompts. The durable pipeline should treat them as patch input and compile them into clean prompts before spending on regeneration.
+
+---
+
+### 2026-06-03: Meta Ads Use Dynamic Per-Campaign Ad Sets By Default
+
+**Trigger / Context:** Implemented Option A from `PHASE_4_DISTRIBUTION/META_TARGETING/META_NICHE_TARGETING_PLAN.md` so Meta paid ads no longer default every niche campaign into the same static `META_AD_SET_ID` audience.  
+**The Change / Rule:** Live `facebook_ad` dispatch now synthesizes campaign-native Meta targeting, resolves Meta interest IDs, creates a paused Meta campaign plus paused ad set, and attaches the paused ad to that new ad set. `META_AD_SET_ID` is optional fallback only when no interests resolve; if no fallback exists, dispatch fails rather than using a generic audience.  
+**Broader Lesson:** Meta targeting proof should be visible in the distribution dashboard before live draft creation. Use "Preview Meta Targeting" to inspect planned interest queries, and treat static ad-set dispatch as an explicit fallback path, not the normal workflow.

@@ -21,9 +21,41 @@ interface MetaPageResponse {
 export interface MetaAdsConfig {
     accessToken: string;
     adAccountId: string;
-    adSetId: string;
+    adSetId?: string;
     pageId: string;
     instagramActorId?: string;
+}
+
+export interface MetaInterestSearchResult {
+    id: string;
+    name: string;
+    audience_size_lower_bound?: number;
+    audience_size_upper_bound?: number;
+    path?: string[];
+}
+
+interface MetaInterestSearchResponse {
+    data?: MetaInterestSearchResult[];
+}
+
+export interface MetaCampaignCreateInput {
+    name: string;
+    status?: 'PAUSED' | 'ACTIVE';
+    objective?: string;
+}
+
+export interface MetaAdSetCreateInput {
+    name: string;
+    campaignId: string;
+    targeting: Record<string, unknown>;
+    dailyBudgetCents: number;
+    startTime?: string;
+    endTime?: string;
+    status?: 'PAUSED' | 'ACTIVE';
+}
+
+interface MetaCreateResponse {
+    id: string;
 }
 
 export interface MetaProviderStatus {
@@ -44,6 +76,17 @@ function buildMetaGraphUrl(path: string, accessToken: string, fields: string): s
     });
 
     return `https://graph.facebook.com/v22.0/${path}?${params.toString()}`;
+}
+
+function buildMetaGraphSearchUrl(accessToken: string, query: string, limit: number): string {
+    const params = new URLSearchParams({
+        access_token: accessToken,
+        type: 'adinterest',
+        q: query,
+        limit: String(limit),
+    });
+
+    return `https://graph.facebook.com/v22.0/search?${params.toString()}`;
 }
 
 function graphErrorMessage(payload: unknown): string {
@@ -81,6 +124,32 @@ async function readMetaNode<TResponse>(path: string, accessToken: string, fields
     return payload as TResponse;
 }
 
+async function postMetaGraphForm<TResponse>(
+    path: string,
+    accessToken: string,
+    form: Record<string, string>,
+): Promise<TResponse> {
+    const formData = new URLSearchParams({ access_token: accessToken });
+    for (const [key, value] of Object.entries(form)) {
+        formData.append(key, value);
+    }
+
+    const response = await fetch(`https://graph.facebook.com/v22.0/${path}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+    });
+
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+        throw new Error(graphErrorMessage(payload));
+    }
+
+    return payload as TResponse;
+}
+
 export function getMetaAdsConfig(): MetaAdsConfig | null {
     const accessToken = process.env.META_ACCESS_TOKEN?.trim();
     const adAccountId = process.env.META_AD_ACCOUNT_ID?.trim();
@@ -88,15 +157,15 @@ export function getMetaAdsConfig(): MetaAdsConfig | null {
     const pageId = process.env.META_PAGE_ID?.trim();
     const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID?.trim();
 
-    if (!accessToken || !adAccountId || !adSetId || !pageId) {
+    if (!accessToken || !adAccountId || !pageId) {
         return null;
     }
 
     return {
         accessToken,
         adAccountId,
-        adSetId,
         pageId,
+        ...(adSetId ? { adSetId } : {}),
         ...(instagramActorId ? { instagramActorId } : {}),
     };
 }
@@ -119,7 +188,6 @@ export async function getMetaProviderStatus(): Promise<MetaProviderStatus> {
         const missingVars = [
             'META_ACCESS_TOKEN',
             'META_AD_ACCOUNT_ID',
-            'META_AD_SET_ID',
             'META_PAGE_ID',
         ].filter((name) => !process.env[name]?.trim());
 
@@ -150,6 +218,10 @@ export async function getMetaProviderStatus(): Promise<MetaProviderStatus> {
             warnings.push('META_INSTAGRAM_ACTOR_ID not configured; Instagram placement validation skipped.');
         }
 
+        if (!config.adSetId) {
+            warnings.push('META_AD_SET_ID not configured; dynamic per-campaign ad set creation will be used.');
+        }
+
         if (adAccount.account_status !== undefined && adAccount.account_status !== 1) {
             warnings.push(`Meta ad account status is ${adAccount.account_status}; Ads Manager may still block draft creation.`);
         }
@@ -176,4 +248,66 @@ export async function getMetaProviderStatus(): Promise<MetaProviderStatus> {
             warnings: [message],
         };
     }
+}
+
+export async function searchMetaAdInterests(
+    accessToken: string,
+    query: string,
+    limit = 6,
+): Promise<MetaInterestSearchResult[]> {
+    const response = await fetch(buildMetaGraphSearchUrl(accessToken, query, limit), {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-store' },
+    });
+
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+        throw new Error(graphErrorMessage(payload));
+    }
+
+    const parsed = payload as MetaInterestSearchResponse;
+    return (parsed.data ?? []).filter((interest) => interest.id && interest.name);
+}
+
+export async function createMetaCampaign(
+    config: MetaAdsConfig,
+    input: MetaCampaignCreateInput,
+): Promise<string> {
+    const response = await postMetaGraphForm<MetaCreateResponse>(
+        `act_${config.adAccountId}/campaigns`,
+        config.accessToken,
+        {
+            name: input.name,
+            objective: input.objective ?? 'OUTCOME_TRAFFIC',
+            status: input.status ?? 'PAUSED',
+            special_ad_categories: JSON.stringify([]),
+        },
+    );
+
+    return response.id;
+}
+
+export async function createMetaAdSet(
+    config: MetaAdsConfig,
+    input: MetaAdSetCreateInput,
+): Promise<string> {
+    const response = await postMetaGraphForm<MetaCreateResponse>(
+        `act_${config.adAccountId}/adsets`,
+        config.accessToken,
+        {
+            name: input.name,
+            campaign_id: input.campaignId,
+            daily_budget: String(input.dailyBudgetCents),
+            billing_event: 'IMPRESSIONS',
+            optimization_goal: 'LINK_CLICKS',
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+            destination_type: 'WEBSITE',
+            targeting: JSON.stringify(input.targeting),
+            status: input.status ?? 'PAUSED',
+            ...(input.startTime ? { start_time: input.startTime } : {}),
+            ...(input.endTime ? { end_time: input.endTime } : {}),
+        },
+    );
+
+    return response.id;
 }

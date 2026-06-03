@@ -163,17 +163,19 @@ export function CampaignLandingPageClaude({
                     </a>
                   </Button>
                 )}
-                <p className="text-sm leading-6" style={{ color: p.bodyText, opacity: 0.65 }}>
-                  <span>Need the faster path? </span>
-                  <a
-                    href={secondaryHref}
-                    target={secondaryHref.startsWith("http") ? "_blank" : undefined}
-                    rel={secondaryHref.startsWith("http") ? "noreferrer" : undefined}
-                    className="underline underline-offset-4 hover:opacity-100"
-                  >
-                    {landing.ctas.secondary.label}
-                  </a>
-                </p>
+                {secondaryHref.startsWith("http") && (
+                  <p className="text-sm leading-6" style={{ color: p.bodyText, opacity: 0.65 }}>
+                    <span>Need the faster path? </span>
+                    <a
+                      href={secondaryHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4 hover:opacity-100"
+                    >
+                      {landing.ctas.secondary.label}
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 

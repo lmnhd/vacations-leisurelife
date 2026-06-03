@@ -136,6 +136,10 @@ function findLatestGoogleDraft(posts: ScheduledPost[]): ScheduledPost | undefine
     return [...posts].reverse().find((post) => post.platform === "google_display");
 }
 
+function findLatestMetaDraft(posts: ScheduledPost[]): ScheduledPost | undefined {
+    return [...posts].reverse().find((post) => post.platform === "facebook_ad");
+}
+
 export default function CampaignDistributionPage() {
     const params = useParams();
     const slug = params.slug as string;
@@ -332,6 +336,36 @@ export default function CampaignDistributionPage() {
         }
         | undefined;
     const googleTargeting = googlePreview?.googleTargeting;
+    const metaDraftPost = findLatestMetaDraft(data?.schedule.posts ?? []);
+    const metaNotes = metaDraftPost?.notes ?? [];
+    const metaCampaignId = getNoteValue(metaNotes, "meta_campaign_id");
+    const metaAdSetId = getNoteValue(metaNotes, "meta_ad_set_id");
+    const metaAdSetMode = getNoteValue(metaNotes, "meta_ad_set_mode");
+    const metaCreativeId = getNoteValue(metaNotes, "meta_ad_creative_id");
+    const metaAdId = getNoteValue(metaNotes, "meta_ad_id");
+    const metaInterestsResolved = getNoteValue(metaNotes, "meta_interests_resolved");
+    const metaInterestQueries = getNoteValue(metaNotes, "meta_interest_queries");
+    const metaUnresolvedQueries = getNoteValue(metaNotes, "meta_unresolved_queries");
+    const metaTargetingSummary = getNoteValue(metaNotes, "meta_targeting_summary");
+    const metaReviewUrl = metaDraftPost?.externalReviewUrl;
+    const metaPreview = preview?.previews?.find((entry) => entry.platform === "facebook_ad")?.payload as
+        | {
+            metaTargeting?: {
+                seedKeywords?: string[];
+                audienceSignals?: string[];
+                interestQueries?: string[];
+                resolvedInterests?: Array<{ id: string; name: string; sourceQuery?: string }>;
+                unresolvedQueries?: string[];
+                summary?: string;
+                rationale?: string;
+                warnings?: string[];
+                adSetMode?: string;
+                campaignId?: string;
+                adSetId?: string;
+            };
+        }
+        | undefined;
+    const metaTargeting = metaPreview?.metaTargeting;
 
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-50">
@@ -374,6 +408,10 @@ export default function CampaignDistributionPage() {
                             <Button className="justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => void runAction("dispatch-discord", { caller: "human", mode: "dispatch", dryRun: false, platforms: ["discord"] })} disabled={actionState !== null}>
                                 {actionState === "dispatch-discord" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                 Dispatch Discord
+                            </Button>
+                            <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-meta", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["facebook_ad"] })} disabled={actionState !== null}>
+                                {actionState === "preview-meta" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                                Preview Meta Targeting
                             </Button>
                         </CardContent>
                     </Card>
@@ -584,6 +622,116 @@ export default function CampaignDistributionPage() {
                             {!googleTargeting ? (
                                 <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4 text-neutral-400">
                                     Run Preview Google Targeting or Rebuild Google Draft to surface the targeting payload here.
+                                </div>
+                            ) : null}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Meta Draft Audit</CardTitle>
+                            <CardDescription className="text-neutral-400">Persisted proof of the last Meta Ads draft and its audience container.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 text-sm text-neutral-300">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Campaign ID {metaCampaignId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad Set ID {metaAdSetId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad Set Mode {metaAdSetMode ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Creative ID {metaCreativeId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad ID {metaAdId ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    {metaReviewUrl ? (
+                                        <a href={metaReviewUrl} target="_blank" rel="noreferrer" className="text-cyan-300 hover:text-cyan-200">
+                                            Open native review
+                                        </a>
+                                    ) : (
+                                        "No native review URL"
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Queries {metaInterestQueries ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Resolved {metaInterestsResolved ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Unresolved {metaUnresolvedQueries ?? "n/a"}</div>
+                            </div>
+                            {metaTargetingSummary ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Targeting Summary</div>
+                                    <pre className="mt-2 whitespace-pre-wrap text-xs text-neutral-200">{metaTargetingSummary}</pre>
+                                </div>
+                            ) : null}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Current Meta Targeting</CardTitle>
+                            <CardDescription className="text-neutral-400">Preview payload from a simulated Meta targeting run or live draft creation.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm text-neutral-300">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Ad Set Mode {metaTargeting?.adSetMode ?? "n/a"}</div>
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Seed keywords {metaTargeting?.seedKeywords?.join(", ") ?? "n/a"}</div>
+                            </div>
+                            {metaTargeting?.summary ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Summary</div>
+                                    <pre className="mt-2 whitespace-pre-wrap text-xs text-neutral-200">{metaTargeting.summary}</pre>
+                                </div>
+                            ) : null}
+                            {metaTargeting?.interestQueries?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Interest Queries</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {metaTargeting.interestQueries.map((query) => (
+                                            <span key={query} className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs text-neutral-100">
+                                                {query}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {metaTargeting?.resolvedInterests?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Resolved Interests</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {metaTargeting.resolvedInterests.map((interest) => (
+                                            <span key={`${interest.id}-${interest.name}`} className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-200">
+                                                {interest.name} [{interest.id}]
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {metaTargeting?.unresolvedQueries?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Unresolved Queries</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {metaTargeting.unresolvedQueries.map((query) => (
+                                            <span key={query} className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-200">
+                                                {query}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {metaTargeting?.warnings?.length ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Warnings</div>
+                                    <div className="mt-3 grid gap-2">
+                                        {metaTargeting.warnings.map((warning) => (
+                                            <div key={warning} className="rounded-md bg-neutral-900 p-2 text-xs text-neutral-300">
+                                                {warning}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {!metaTargeting ? (
+                                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4 text-neutral-400">
+                                    Run Preview Meta Targeting to surface the planned Meta audience package here.
                                 </div>
                             ) : null}
                         </CardContent>

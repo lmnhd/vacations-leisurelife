@@ -197,7 +197,8 @@ export async function upsertCampaignPricingMatch(
     match: CbInventoryMatch,
     healthPayload?: InventoryHealthPayload,
 ): Promise<void> {
-    const retailLinkExpr = match.odysseusRetailBookingLink ? ', odysseusRetailBookingLink = :retailLink' : '';
+    const retailLinkSetExpr = match.odysseusRetailBookingLink ? ', odysseusRetailBookingLink = :retailLink' : '';
+    const retailLinkRemoveExpr = !match.odysseusRetailBookingLink ? ' REMOVE odysseusRetailBookingLink' : '';
     const healthExpr = healthPayload
         ? ', inventoryCandidates = :candidates, activeBookingMode = :bookingMode, inventoryHealth = :invHealth, inventoryLastCheckedAt = :checkedAt'
         : '';
@@ -219,7 +220,7 @@ export async function upsertCampaignPricingMatch(
             'odysseusItinerarySummary = :odysseusItinerarySummary',
             'odysseusPortsOfCall = :odysseusPortsOfCall',
             'updatedAt = :now',
-        ].join(', ') + retailLinkExpr + healthExpr,
+        ].join(', ') + retailLinkSetExpr + healthExpr + retailLinkRemoveExpr,
         ExpressionAttributeValues: {
             ':groupId': match.cbGroupId,
             ':link': match.cbPersonalLink,

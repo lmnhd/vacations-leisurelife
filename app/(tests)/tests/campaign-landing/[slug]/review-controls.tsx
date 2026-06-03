@@ -80,6 +80,17 @@ interface GoogleAdsStatusResponse {
     hasAdWordsScope?: boolean;
 }
 
+interface MetaProviderStatusResponse {
+    provider: 'meta';
+    status: 'connected' | 'misconfigured' | 'unauthorized' | 'unverified';
+    accountLabel?: string;
+    accountId?: string;
+    pageId?: string;
+    instagramActorId?: string;
+    lastValidatedAt: string;
+    warnings: string[];
+}
+
 type PlannedPost = NonNullable<DistributionStatusResponse['schedule']>['posts'][number];
 
 interface GoogleTargetingPreviewPayload {
@@ -94,6 +105,24 @@ interface GoogleTargetingPreviewPayload {
         seedKeywords?: string[];
         audienceSignals?: string[];
         placementSources?: string[];
+    };
+}
+
+interface MetaTargetingPreviewPayload {
+    workflow?: string;
+    providerDraftType?: string;
+    metaTargeting?: {
+        seedKeywords?: string[];
+        audienceSignals?: string[];
+        interestQueries?: string[];
+        resolvedInterests?: Array<{ id: string; name: string; sourceQuery?: string }>;
+        unresolvedQueries?: string[];
+        summary?: string;
+        rationale?: string;
+        warnings?: string[];
+        adSetMode?: string;
+        campaignId?: string;
+        adSetId?: string;
     };
 }
 
@@ -141,6 +170,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
     const [plannedPosts, setPlannedPosts] = useState<PlannedPost[]>([]);
     const [dispatchPreviews, setDispatchPreviews] = useState<Array<{ postId: string; platform: string; payload: Record<string, unknown> }>>([]);
     const [googleTargetingPreview, setGoogleTargetingPreview] = useState<GoogleTargetingPreviewPayload['googleTargeting'] | null>(null);
+    const [metaTargetingPreview, setMetaTargetingPreview] = useState<MetaTargetingPreviewPayload['metaTargeting'] | null>(null);
 
     const publicPreviewHref = useMemo(() => `/groups/${slug}?preview=1`, [slug]);
     const publicHref = useMemo(() => `/groups/${slug}`, [slug]);
@@ -241,15 +271,17 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setValidateMessage('');
 
         try {
-            const [organicResponse, paidResponse, googleResponse] = await Promise.all([
+            const [organicResponse, paidResponse, googleResponse, metaResponse] = await Promise.all([
                 fetch('/api/integrations/tiktok/status', { cache: 'no-store' }),
                 fetch('/api/integrations/tiktok/advertiser-status', { cache: 'no-store' }),
                 fetch('/api/integrations/google/status', { cache: 'no-store' }),
+                fetch('/api/integrations/meta/status', { cache: 'no-store' }),
             ]);
 
             const organic = await organicResponse.json() as TikTokProviderStatusResponse;
             const paid = await paidResponse.json() as TikTokAdvertiserStatusResponse;
             const google = await googleResponse.json() as GoogleAdsStatusResponse;
+            const meta = await metaResponse.json() as MetaProviderStatusResponse;
 
             let organicMessage: string;
             if (organic.ready) {
@@ -280,7 +312,14 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                 googleMessage = `Google Ads: not configured — ${google.detail ?? google.reason ?? 'unknown'}`;
             }
 
-            setValidateMessage(`${organicMessage} | ${paidMessage} | ${googleMessage}`);
+            const metaWarningText = meta.warnings.length > 0 ? ` - ${meta.warnings.join('; ')}` : '';
+            const metaMessage = meta.status === 'connected'
+                ? `Meta Ads: ready - ${meta.accountLabel ?? meta.accountId ?? 'account verified'}${metaWarningText}`
+                : meta.status === 'unverified'
+                    ? `Meta Ads: partially verified${metaWarningText}`
+                    : `Meta Ads: ${meta.status}${metaWarningText}`;
+
+            setValidateMessage(`${organicMessage} | ${paidMessage} | ${googleMessage} | ${metaMessage}`);
         } catch (error) {
             setValidateMessage(error instanceof Error ? error.message : 'Provider validation failed.');
         } finally {
@@ -318,6 +357,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setPreviewing(true);
         setDispatchMessage('');
         setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -335,6 +375,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
             const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
             setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
+            const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
+            const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
+            setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
             setDispatchMessage(`Simulation preview ready: ${(data.previews ?? []).length} payloads. No live TikTok upload or paid-ad API call was sent.`);
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview ad dispatch.');
@@ -347,6 +390,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setPreviewing(true);
         setDispatchMessage('');
         setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -381,10 +425,50 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
+    async function handlePreviewMetaTargeting() {
+        setPreviewing(true);
+        setDispatchMessage('');
+        setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: true,
+                    providerMode: 'simulate',
+                    forceDispatch: true,
+                    platforms: ['facebook_ad'],
+                }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to preview Meta targeting.');
+            }
+
+            const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
+            const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
+            setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
+            setDispatchMessage(
+                metaPayload?.metaTargeting
+                    ? 'Meta targeting preview loaded.'
+                    : 'Meta targeting preview returned no targeting block.',
+            );
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview Meta targeting.');
+        } finally {
+            setPreviewing(false);
+        }
+    }
+
     async function handleDispatchAds() {
         setDispatching(true);
         setDispatchMessage('');
         setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -402,6 +486,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
             const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
             setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
+            const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
+            const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
+            setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
             setDispatchMessage(data.message ?? 'Simulated dispatch completed. No live provider API was called.');
             await loadAdPlan();
         } catch (error) {
@@ -415,6 +502,7 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         setLiveDispatching(true);
         setDispatchMessage('');
         setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
 
         try {
             const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
@@ -439,6 +527,9 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             const googlePreview = data.previews?.find((preview) => preview.platform === 'google_display');
             const googlePayload = googlePreview?.payload as GoogleTargetingPreviewPayload | undefined;
             setGoogleTargetingPreview(googlePayload?.googleTargeting ?? null);
+            const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
+            const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
+            setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
             setDispatchMessage(
                 data.message ?? (
                     replaceExisting
@@ -449,6 +540,43 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
             await loadAdPlan();
         } catch (error) {
             setDispatchMessage(error instanceof Error ? error.message : 'Failed to dispatch LIVE ads.');
+        } finally {
+            setLiveDispatching(false);
+        }
+    }
+
+    async function handleLiveMetaDraft() {
+        setLiveDispatching(true);
+        setDispatchMessage('');
+        setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: false,
+                    providerMode: 'live',
+                    forceDispatch: true,
+                    platforms: ['facebook_ad'],
+                }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to build Meta draft.');
+            }
+
+            setDispatchPreviews(data.previews ?? []);
+            const metaPreview = data.previews?.find((preview) => preview.platform === 'facebook_ad');
+            const metaPayload = metaPreview?.payload as MetaTargetingPreviewPayload | undefined;
+            setMetaTargetingPreview(metaPayload?.metaTargeting ?? null);
+            setDispatchMessage(data.message ?? 'Meta draft created for native review.');
+            await loadAdPlan();
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to build Meta draft.');
         } finally {
             setLiveDispatching(false);
         }
@@ -516,6 +644,11 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                     {previewing ? 'Previewing...' : 'Preview Google Targeting'}
                                 </Button>
                             </ActionTip>
+                            <ActionTip label="Preview Meta Targeting" description="Show the Meta interest queries that will be used to build the campaign-specific ad set, without creating a Meta draft.">
+                                <Button onClick={handlePreviewMetaTargeting} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
+                                    {previewing ? 'Previewing...' : 'Preview Meta Targeting'}
+                                </Button>
+                            </ActionTip>
                             <ActionTip label="Reconnect Google Ads" description="Start the Google OAuth reconnect flow so you can refresh the stored access and refresh token.">
                                 <Button asChild variant="outline" className="border-amber-300 bg-white">
                                     <a href="/api/integrations/google/connect" target="_blank" rel="noreferrer">
@@ -541,6 +674,11 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                             <ActionTip label="Rebuild Google Draft" description="Remove the existing Google draft for this campaign, reset its schedule entry, and rebuild it with the current targeting.">
                                 <Button onClick={() => void handleLiveDispatchAds(true)} disabled={liveDispatching} variant="outline" className="border-red-400 bg-white text-red-700 hover:bg-red-50">
                                     {liveDispatching ? 'Rebuilding...' : 'Rebuild Google Draft'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Build Meta Draft" description="Create a paused Meta campaign, campaign-specific ad set, creative, and ad for native Ads Manager review.">
+                                <Button onClick={handleLiveMetaDraft} disabled={liveDispatching} variant="outline" className="border-red-400 bg-white text-red-700 hover:bg-red-50">
+                                    {liveDispatching ? 'Building Meta...' : 'Build Meta Draft'}
                                 </Button>
                             </ActionTip>
                             <ActionTip label="Sync Organic TikTok Status" description="Ask TikTok whether the organic post has moved beyond its draft state yet.">
@@ -601,6 +739,64 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                     <p className="text-xs text-cyan-800">
                                         Negative keywords: {googleTargetingPreview.negativeKeywords.join(', ')}
                                     </p>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {metaTargetingPreview ? (
+                            <div className="grid gap-3 border border-emerald-200 bg-emerald-50 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">Meta Targeting Preview</p>
+                                    <p className="text-[11px] text-emerald-700">
+                                        Ad set mode: {metaTargetingPreview.adSetMode ?? 'n/a'}
+                                    </p>
+                                </div>
+                                {metaTargetingPreview.summary ? (
+                                    <p className="whitespace-pre-wrap text-sm text-emerald-950">{metaTargetingPreview.summary}</p>
+                                ) : null}
+                                {metaTargetingPreview.rationale ? (
+                                    <p className="text-xs text-emerald-800">{metaTargetingPreview.rationale}</p>
+                                ) : null}
+                                {metaTargetingPreview.seedKeywords?.length ? (
+                                    <p className="text-xs text-emerald-800">
+                                        Seed keywords: {metaTargetingPreview.seedKeywords.join(', ')}
+                                    </p>
+                                ) : null}
+                                {metaTargetingPreview.interestQueries?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-emerald-700">Interest Queries</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {metaTargetingPreview.interestQueries.map((query) => (
+                                                <span key={query} className="rounded-full border border-emerald-300 bg-white px-2.5 py-1 text-xs text-emerald-950">
+                                                    {query}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {metaTargetingPreview.resolvedInterests?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-emerald-700">Resolved Meta Interests</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {metaTargetingPreview.resolvedInterests.map((interest) => (
+                                                <span key={`${interest.id}-${interest.name}`} className="rounded-full border border-emerald-300 bg-white px-2.5 py-1 text-xs text-emerald-950">
+                                                    {interest.name} [{interest.id}]
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {metaTargetingPreview.unresolvedQueries?.length ? (
+                                    <p className="text-xs text-emerald-800">
+                                        Unresolved queries: {metaTargetingPreview.unresolvedQueries.join(', ')}
+                                    </p>
+                                ) : null}
+                                {metaTargetingPreview.warnings?.length ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase tracking-widest text-emerald-700">Warnings</p>
+                                        {metaTargetingPreview.warnings.map((warning) => (
+                                            <p key={warning} className="text-xs text-emerald-800">{warning}</p>
+                                        ))}
+                                    </div>
                                 ) : null}
                             </div>
                         ) : null}

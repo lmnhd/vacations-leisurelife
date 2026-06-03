@@ -21,8 +21,11 @@ function sanitizeCta(cta: string, brief?: CampaignAestheticBrief): string {
 }
 import {
   buildMetaAdsReviewUrl,
+  createMetaAdSet,
+  createMetaCampaign,
   getMetaAdsConfig,
 } from "@/lib/integrations/meta-ads";
+import { synthesizeMetaTargeting } from "./distribution/platforms/meta-ads/targeting";
 
 export type MarketingProviderMode = "simulate" | "live";
 
@@ -354,6 +357,27 @@ function mapCtaType(rawCta: string): string {
   return "LEARN_MORE";
 }
 
+function getMetaDailyBudgetCents(): number {
+  const raw = process.env.META_DAILY_BUDGET_CENTS?.trim();
+  if (!raw) return 2000;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed < 100) {
+    return 2000;
+  }
+
+  return parsed;
+}
+
+function buildMetaAdSetWindow(): { startTime: string; endTime: string } {
+  const start = new Date(Date.now() + 10 * 60 * 1000);
+  const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+  return {
+    startTime: start.toISOString(),
+    endTime: end.toISOString(),
+  };
+}
+
 async function postMetaGraphForm<TResponse>(
   url: string,
   form: Record<string, string>,
@@ -388,11 +412,12 @@ async function dispatchMetaAdsLive(
   status: DistributionPostStatus;
   externalReviewUrl: string;
   metadataNotes: string[];
+  metaTargeting: Record<string, unknown>;
 }> {
   const config = getMetaAdsConfig();
   if (!config) {
     throw new Error(
-      "Missing META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, META_AD_SET_ID, or META_PAGE_ID",
+      "Missing META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, or META_PAGE_ID",
     );
   }
 
@@ -426,6 +451,51 @@ async function dispatchMetaAdsLive(
     config.adAccountId,
     config.accessToken,
   );
+
+  const targeting = await synthesizeMetaTargeting(campaign, {
+    config,
+    resolveInterestIds: true,
+  });
+
+  const dynamicAdSetAvailable = targeting.resolvedInterests.length > 0;
+  let metaCampaignId: string | undefined;
+  let metaAdSetId: string | undefined;
+  const metaTargetingNotes = [
+    `meta_interest_queries=${targeting.interestQueries.length}`,
+    `meta_interests_resolved=${targeting.resolvedInterests.length}`,
+    `meta_unresolved_queries=${targeting.unresolvedQueries.length}`,
+    `meta_targeting_summary=${targeting.summary.replace(/\n/g, " | ")}`,
+    ...targeting.resolvedInterests.map(
+      (interest) => `meta_interest=${interest.name}:${interest.id}`,
+    ),
+    ...targeting.warnings.map((warning) => `meta_targeting_warning=${warning}`),
+  ];
+
+  if (dynamicAdSetAvailable) {
+    const adSetWindow = buildMetaAdSetWindow();
+    metaCampaignId = await createMetaCampaign(config, {
+      name: `[DRAFT] ${campaign.name} Meta ${post.postId}`,
+    });
+    metaAdSetId = await createMetaAdSet(config, {
+      name: `[DRAFT] ${campaign.name} Audience ${post.postId}`,
+      campaignId: metaCampaignId,
+      targeting: targeting.targeting,
+      dailyBudgetCents: getMetaDailyBudgetCents(),
+      startTime: adSetWindow.startTime,
+      endTime: adSetWindow.endTime,
+      status: "PAUSED",
+    });
+  } else if (config.adSetId) {
+    metaAdSetId = config.adSetId;
+    metaTargetingNotes.push(
+      "meta_ad_set_mode=static_fallback",
+      "meta_targeting_warning=No Meta interests resolved; using META_AD_SET_ID fallback.",
+    );
+  } else {
+    throw new Error(
+      "Meta targeting produced no resolved interests and META_AD_SET_ID fallback is not configured.",
+    );
+  }
 
   const objectStorySpec: Record<string, unknown> = {
     page_id: config.pageId,
@@ -462,7 +532,7 @@ async function dispatchMetaAdsLive(
     {
       access_token: config.accessToken,
       name: `${campaign.id}-${post.postId}`,
-      adset_id: config.adSetId,
+      adset_id: metaAdSetId,
       creative: JSON.stringify({ creative_id: creativeResponse.id }),
       status: "PAUSED",
     },
@@ -479,13 +549,30 @@ async function dispatchMetaAdsLive(
     externalReviewUrl,
     metadataNotes: [
       `meta_ad_account_id=${config.adAccountId}`,
-      `meta_ad_set_id=${config.adSetId}`,
+      ...(metaCampaignId ? [`meta_campaign_id=${metaCampaignId}`] : []),
+      `meta_ad_set_id=${metaAdSetId}`,
+      `meta_ad_set_mode=${dynamicAdSetAvailable ? "dynamic" : "static_fallback"}`,
       `meta_ad_creative_id=${creativeResponse.id}`,
       `meta_ad_id=${adResponse.id}`,
       `meta_review_url=${externalReviewUrl}`,
       `meta_destination_url=${destinationUrl}`,
       `meta_dispatched_at=${new Date().toISOString()}`,
+      ...metaTargetingNotes,
     ],
+    metaTargeting: {
+      seedKeywords: targeting.seedKeywords,
+      audienceSignals: targeting.audienceSignals,
+      interestQueries: targeting.interestQueries,
+      resolvedInterests: targeting.resolvedInterests,
+      unresolvedQueries: targeting.unresolvedQueries,
+      targeting: targeting.targeting,
+      summary: targeting.summary,
+      rationale: targeting.rationale,
+      warnings: targeting.warnings,
+      adSetMode: dynamicAdSetAvailable ? "dynamic" : "static_fallback",
+      ...(metaCampaignId ? { campaignId: metaCampaignId } : {}),
+      adSetId: metaAdSetId,
+    },
   };
 }
 
@@ -812,6 +899,10 @@ export async function dispatchMarketingPost(
     if (post.platform === "facebook_ad") {
       try {
         const liveResult = await dispatchMetaAdsLive(campaign, post, preview);
+        const enrichedPreview: Record<string, unknown> = {
+          ...preview,
+          metaTargeting: liveResult.metaTargeting,
+        };
         return {
           postId: post.postId,
           platform: post.platform,
@@ -819,7 +910,7 @@ export async function dispatchMarketingPost(
           externalPostId: liveResult.externalPostId,
           externalReviewUrl: liveResult.externalReviewUrl,
           metadataNotes: liveResult.metadataNotes,
-          preview,
+          preview: enrichedPreview,
         };
       } catch (error: unknown) {
         const message =
@@ -886,6 +977,39 @@ export async function dispatchMarketingPost(
     } catch (error: unknown) {
       simulatedNotes.push(
         `targeting_synthesis_warning=${describeUnknownError(error)}`,
+      );
+    }
+  }
+
+  if (post.platform === "facebook_ad") {
+    try {
+      const targeting = await synthesizeMetaTargeting(campaign, {
+        resolveInterestIds: false,
+      });
+      simulatedPreview = {
+        ...preview,
+        metaTargeting: {
+          seedKeywords: targeting.seedKeywords,
+          audienceSignals: targeting.audienceSignals,
+          interestQueries: targeting.interestQueries,
+          resolvedInterests: targeting.resolvedInterests,
+          unresolvedQueries: targeting.unresolvedQueries,
+          targeting: targeting.targeting,
+          summary: targeting.summary,
+          rationale: targeting.rationale,
+          warnings: targeting.warnings,
+          adSetMode: "dynamic_preview_unresolved",
+        },
+      };
+      simulatedNotes.push(
+        "draftType=meta_dynamic_ad_set",
+        `meta_interest_queries_planned=${targeting.interestQueries.length}`,
+        `meta_targeting_summary=${targeting.summary.replace(/\n/g, " | ")}`,
+        ...targeting.warnings.map((warning) => `meta_targeting_warning=${warning}`),
+      );
+    } catch (error: unknown) {
+      simulatedNotes.push(
+        `meta_targeting_synthesis_warning=${describeUnknownError(error)}`,
       );
     }
   }

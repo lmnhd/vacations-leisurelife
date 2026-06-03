@@ -77,12 +77,14 @@ export function ModularHero({ landing, primaryHref, secondaryHref }: HeroProps) 
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label} →</a>
                             </Button>
-                            <p className="text-sm leading-6 text-white/65">
-                                <span>Need the faster path? </span>
-                                <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-white">
-                                    {landing.ctas.secondary.label}
-                                </a>
-                            </p>
+                            {secondaryHref.startsWith('http') && (
+                                <p className="text-sm leading-6 text-white/65">
+                                    <span>Need the faster path? </span>
+                                    <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-white">
+                                        {landing.ctas.secondary.label}
+                                    </a>
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -212,12 +214,14 @@ export function EditorialHero({ landing, primaryHref, secondaryHref }: HeroProps
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                             </Button>
-                            <p className="text-sm leading-6 text-stone-700">
-                                <span>Need the faster path? </span>
-                                <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-stone-950">
-                                    {landing.ctas.secondary.label}
-                                </a>
-                            </p>
+                            {secondaryHref.startsWith('http') && (
+                                <p className="text-sm leading-6 text-stone-700">
+                                    <span>Need the faster path? </span>
+                                    <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-stone-950">
+                                        {landing.ctas.secondary.label}
+                                    </a>
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -338,7 +342,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                                 </p>
                             </div>
                             <div className="flex items-center justify-center border-x border-dashed border-cyan-950/25 px-3 text-3xl text-cyan-950/45">
-                                ✈
+                                🚢
                             </div>
                             <div className="p-4 text-right">
                                 <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-950/55">To</p>
@@ -372,12 +376,14 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         >
                             <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
                         </Button>
-                        <p className="text-sm leading-6 text-[#315f5a]">
-                            <span>Need the faster path? </span>
-                            <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-[#143d3b]">
-                                {landing.ctas.secondary.label}
-                            </a>
-                        </p>
+                        {secondaryHref.startsWith('http') && (
+                            <p className="text-sm leading-6 text-[#315f5a]">
+                                <span>Need the faster path? </span>
+                                <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-[#143d3b]">
+                                    {landing.ctas.secondary.label}
+                                </a>
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -516,16 +522,18 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                             >
                                 <a href={primaryHref} {...externalTarget(primaryHref)}>► {landing.ctas.primary.label}</a>
                             </Button>
-                            <p className="flex items-center px-1 text-sm font-bold uppercase tracking-[0.2em] text-zinc-700">
-                                <span>Need the faster path? </span>
-                                <a
-                                    href={secondaryHref}
-                                    {...externalTarget(secondaryHref)}
-                                    className="ml-2 inline-flex underline underline-offset-4 transition hover:text-zinc-950"
-                                >
-                                    {landing.ctas.secondary.label}
-                                </a>
-                            </p>
+                            {secondaryHref.startsWith('http') && (
+                                <p className="flex items-center px-1 text-sm font-bold uppercase tracking-[0.2em] text-zinc-700">
+                                    <span>Need the faster path? </span>
+                                    <a
+                                        href={secondaryHref}
+                                        {...externalTarget(secondaryHref)}
+                                        className="ml-2 inline-flex underline underline-offset-4 transition hover:text-zinc-950"
+                                    >
+                                        {landing.ctas.secondary.label}
+                                    </a>
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
