@@ -53,6 +53,10 @@ type PriceAdvantageDeal = {
     priceAdvantage: string;
     detailUrl?: string;
     personalLink?: string;
+    /** True when the group's Contact field is "House" — CB owns the block and no
+     *  agent personal booking link will ever appear. Booking must go through the
+     *  Odysseus retail path instead. */
+    isHouseGroup?: boolean;
     sourceUrl: string;
 };
 

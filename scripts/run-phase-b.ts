@@ -62,11 +62,18 @@ function shiftDateByDays(mmDdYyyy: string, days: number): string {
 function normalizeDateKey(rawDate?: string | null): string {
   const value = rawDate?.trim();
   if (!value) return "";
-  const parsed = new Date(value);
+  // ISO-format strings like "2027-01-08" or "2027-01-08T00:00:00Z" are parsed as
+  // UTC midnight by the V8 runtime. In non-UTC timezones (e.g. America/New_York)
+  // that shifts the local date back by one day. Force noon UTC so the calendar
+  // date is stable regardless of server timezone.
+  const normalized = /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10) + "T12:00:00Z"
+    : value;
+  const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return "";
-  const yyyy = parsed.getFullYear();
-  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
-  const dd = String(parsed.getDate()).padStart(2, "0");
+  const yyyy = parsed.getUTCFullYear();
+  const mm = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -88,40 +95,66 @@ function getCruiseResultNightCount(result: CruiseResult): number | null {
   return typeof packageDuration === "number" && packageDuration > 0 ? packageDuration : null;
 }
 
+// How many days a retail sailing's start may differ from the CB group's listed
+// sail date and still be considered the same voyage. CB House-group dates are
+// often approximate (and sometimes off by a day from the retail manifest), so an
+// exact-day requirement rejects real matches. ±3 days safely brackets the same
+// voyage without colliding with the next week's sailing of the same ship.
+const SAIL_DATE_TOLERANCE_DAYS = 3;
+
+function daysBetweenDateKeys(a: string, b: string): number | null {
+  // Date keys are YYYY-MM-DD (UTC-stable from normalizeDateKey).
+  const da = Date.parse(`${a}T12:00:00Z`);
+  const db = Date.parse(`${b}T12:00:00Z`);
+  if (Number.isNaN(da) || Number.isNaN(db)) return null;
+  return Math.round(Math.abs(da - db) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Picks the retail sailing that best corresponds to the CB group block.
+ *
+ * Uses proximity scoring rather than exact-bullseye matching: CB House-group
+ * dates are approximate and often carry no night count, so requiring an exact
+ * date AND exact nights rejects sailings that are obviously the same voyage
+ * (e.g. a Jan-8 group block vs the Jan-9 retail manifest). We instead pick the
+ * closest sailing within a date tolerance, preferring a matching night count
+ * when one is known, and only reject when nothing is close enough.
+ */
 function findMatchingOdysseusResult(
   results: CruiseResult[],
   match: CbInventoryMatch,
 ): { result: CruiseResult; index: number } | null {
   const expectedDate = normalizeDateKey(match.matchedSailDate);
   const expectedNights = parseNightCount(match.matchedNights);
+  if (!expectedDate) return null;
 
   const scored = results
     .map((result, index) => {
       const resultDate = getCruiseResultStartDate(result);
       const resultNights = getCruiseResultNightCount(result);
-      const dateMatches = expectedDate && resultDate ? expectedDate === resultDate : false;
-      const nightsMatch =
-        expectedNights !== null && resultNights !== null
-          ? expectedNights === resultNights
-          : false;
+      const dayGap = resultDate ? daysBetweenDateKeys(expectedDate, resultDate) : null;
+      const nightsKnown = expectedNights !== null && resultNights !== null;
+      const nightsMatch = nightsKnown ? expectedNights === resultNights : false;
 
-      return {
-        result,
-        index,
-        score: (dateMatches ? 4 : 0) + (nightsMatch ? 3 : 0),
-        dateMatches,
-        nightsMatch,
-        resultDate,
-        resultNights,
-      };
+      // Lower is better. Date proximity dominates; a known-nights mismatch adds a
+      // soft penalty so a same-day exact-nights sailing beats a same-day wrong-nights one.
+      const datePenalty = dayGap === null ? Number.POSITIVE_INFINITY : dayGap;
+      const nightsPenalty = nightsKnown && !nightsMatch ? 0.5 : 0;
+
+      return { result, index, dayGap, nightsMatch, resultDate, resultNights, cost: datePenalty + nightsPenalty };
     })
-    .sort((a, b) => b.score - a.score);
+    .filter((s) => s.dayGap !== null && s.dayGap <= SAIL_DATE_TOLERANCE_DAYS)
+    .sort((a, b) => a.cost - b.cost);
 
   const winner = scored[0];
   if (!winner) return null;
 
-  if (expectedDate && !winner.dateMatches) return null;
-  if (expectedNights !== null && !winner.nightsMatch) return null;
+  console.log(
+    `[run-phase-b] Retail match: ${match.matchedShipName} expected ${expectedDate}` +
+    `${expectedNights !== null ? ` (${expectedNights}n)` : ''} -> ${winner.resultDate}` +
+    `${winner.resultNights !== null ? ` (${winner.resultNights}n)` : ''}` +
+    ` [${winner.dayGap}d gap${winner.nightsMatch ? ', nights match' : expectedNights !== null ? ', nights differ' : ''}]`,
+  );
 
   return { result: winner.result, index: winner.index };
 }
@@ -198,12 +231,28 @@ async function generateOdysseusRetailLink(
     await engine.init(true);
     await engine.login();
 
-    const startDate = parseSailDateToMmDdYyyy(match.matchedSailDate);
-    const endDate = startDate ? shiftDateByDays(startDate, 30) : undefined;
+    // Center the search window on the actual sail date (±7 days) so the API
+    // returns the target sailing; findMatchingOdysseusResult then pins the exact
+    // date/nights. (The search now calls the nitroapi directly, so no UI state to
+    // reset — but the search is only as good as the date window we hand it.)
+    const sailDateMmDdYyyy = parseSailDateToMmDdYyyy(match.matchedSailDate);
+    const startDate = sailDateMmDdYyyy ? shiftDateByDays(sailDateMmDdYyyy, -7) : undefined;
+    const endDate = sailDateMmDdYyyy ? shiftDateByDays(sailDateMmDdYyyy, 7) : undefined;
+
+    // Royal Caribbean vendor ID = 8. Scope the search by vendor when known so
+    // we don't bleed across cruise lines or regions. The vendor string comes from
+    // the CB inventory cache (e.g. "Royal Caribbean International" or "Royal Caribbean …").
+    const ROYAL_CARIBBEAN_VENDOR_ID = 8;
+    const isRcl = /royal caribbean/i.test(match.vendor ?? "");
+    console.log(
+      '[run-phase-b] Odysseus retail search: vendor="' + (match.vendor ?? "unknown") + '" isRcl=' + isRcl +
+      ' sailDate=' + (sailDateMmDdYyyy ?? "none") + ' window=' + (startDate ?? "none") + ' to ' + (endDate ?? "none"),
+    );
 
     const results = await engine.searchCruises({
       passengers: 2,
       guestAges: [35, 35],
+      ...(isRcl ? { vendorId: ROYAL_CARIBBEAN_VENDOR_ID } : {}),
       ...(startDate && endDate ? { startDate, endDate } : {}),
     });
 
@@ -216,14 +265,32 @@ async function generateOdysseusRetailLink(
 
     const selectedItinerary = findMatchingOdysseusResult(results, match);
     if (!selectedItinerary) {
+      const resultsSummary = results.map((r, i) => {
+        const date = getCruiseResultStartDate(r);
+        const nights = getCruiseResultNightCount(r);
+        return '  [' + i + '] ' + r.name + ' (' + r.code + ') ' + date + ' ' + (nights ?? '?') + 'n';
+      }).join('\n');
       console.warn(
-        `[run-phase-b] Odysseus returned ${results.length} result(s) for "${match.matchedShipName}", but none matched date "${match.matchedSailDate}" and nights "${match.matchedNights ?? "unknown"}" â€” skipping retail link and itinerary enrichment.`,
+        '[run-phase-b] Odysseus returned ' + results.length + ' result(s) for “' + match.matchedShipName + '”, but none matched' +
+        ' date “' + match.matchedSailDate + '” and nights “' + (match.matchedNights ?? 'unknown') + '” - skipping retail link.\n' +
+        '  Expected: ' + normalizeDateKey(match.matchedSailDate) + ' | ' + (match.matchedNights ?? '?') + 'n\n' +
+        '  Got:\n' + resultsSummary,
       );
       return { retailLink: null, itinerarySummary: null, portsOfCall: null };
     }
 
     const itinerarySummary = buildOdysseusItinerarySummary(selectedItinerary.result);
-    await engine.selectItinerary(selectedItinerary.index);
+    const selected = await engine.selectItineraryByResult(selectedItinerary.result);
+    if (!selected) {
+      console.warn(
+        `[run-phase-b] Could not navigate to the matched package for "${match.matchedShipName}" — skipping retail link.`,
+      );
+      return {
+        retailLink: null,
+        itinerarySummary: itinerarySummary.summary,
+        portsOfCall: itinerarySummary.portsOfCall || null,
+      };
+    }
     const retailLink = await engine.bypassGuestInfoAndContinue();
 
     if (!retailLink) {
@@ -476,7 +543,17 @@ async function runPhaseB(): Promise<void> {
         console.log(
           `[run-phase-b] Fetching Personal Booking Link for group ${candidate.groupId} (rank ${candidate.rank})...`,
         );
-        personalLink = await scrapeGroupPersonalLink(candidate.groupId!);
+        const scrapeResult = await scrapeGroupPersonalLink(candidate.groupId!);
+        if (scrapeResult.isHouseGroup) {
+          // House groups have no personal link — CB owns the inventory block.
+          // Skip remaining candidates and go straight to Odysseus retail fallback.
+          console.warn(
+            `[run-phase-b] Group ${candidate.groupId} is a House group. Skipping candidate loop — routing to Odysseus retail path.`,
+          );
+          validatedCandidates.push({ ...candidate, healthStatus: "FAILED", failureReason: "House group — no personal link available" });
+          break;
+        }
+        personalLink = scrapeResult.link;
       }
       // Fallback: CB's detail group ID can differ from the stored booking package ID.
       if (!personalLink && campaign.cbagenttoolsBookingLink && campaignBookingLinkMatchesCandidate(campaign, candidate)) {
@@ -533,6 +610,7 @@ async function runPhaseB(): Promise<void> {
           matchedSailDate: retailFallbackSource.sailDate,
           matchedDeparturePort: retailFallbackSource.departurePort,
           matchedNights: retailFallbackSource.nights,
+          vendor: retailFallbackSource.vendor || undefined,
           matchScore: retailFallbackSource.matchScore,
           odysseusRetailBookingLink: null,
         };

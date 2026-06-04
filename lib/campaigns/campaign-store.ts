@@ -1,4 +1,4 @@
-import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, GetCommand, UpdateCommand, ScanCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { chatDynamoDocumentClient } from '@/lib/chat/dynamo-client';
 import type { Campaign, CampaignInventoryCandidate, CampaignInventoryMode, InventoryHealthStatus } from './types';
 import { CbInventoryMatch } from './cb-inventory-matcher';
@@ -13,6 +13,7 @@ import {
     normalizeVisualPlausibilityFramework,
 } from './schema';
 import { buildCampaignIdentityBlueprintAsync } from './design-system/identity-blueprint';
+import { clearArchiveOnStatusAdvance } from './discovery-iteration';
 
 const TABLE_NAME = 'lll-shadow-campaigns';
 
@@ -32,9 +33,11 @@ function normalizeStoredAestheticBriefShape(brief: CampaignAestheticBrief): Camp
 }
 
 export async function saveCampaignBlueprint(campaign: Campaign): Promise<void> {
+    // A campaign that has advanced past DRAFT ("running") rejoins dedup feedback,
+    // so we clear any stale archived flag at the persistence boundary.
     const params = {
         TableName: TABLE_NAME,
-        Item: campaign,
+        Item: clearArchiveOnStatusAdvance(campaign),
     };
 
     try {
@@ -45,13 +48,43 @@ export async function saveCampaignBlueprint(campaign: Campaign): Promise<void> {
     }
 }
 
+/**
+ * Deletes ALL rows for a campaign (every SK under its PK), not just METADATA.
+ * The single-table design stores aesthetic briefs, dossiers, and other artifacts
+ * under additional SKs (e.g. MEDIA#AESTHETIC_BRIEF); deleting only METADATA would
+ * orphan those. This queries the partition and removes every item it finds.
+ */
 export async function deleteCampaignBlueprint(slug: string): Promise<void> {
-    const params = {
-        TableName: TABLE_NAME,
-        Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
-    };
+    const pk = `CAMPAIGN#${slug}`;
     try {
-        await chatDynamoDocumentClient.send(new DeleteCommand(params));
+        const keys: Array<{ PK: string; SK: string }> = [];
+        let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+        do {
+            const response = await chatDynamoDocumentClient.send(new QueryCommand({
+                TableName: TABLE_NAME,
+                KeyConditionExpression: 'PK = :pk',
+                ProjectionExpression: 'PK, SK',
+                ExpressionAttributeValues: { ':pk': pk },
+                ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+            }));
+            for (const item of (response.Items ?? []) as Array<{ PK: string; SK: string }>) {
+                keys.push({ PK: item.PK, SK: item.SK });
+            }
+            lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+        } while (lastEvaluatedKey);
+
+        // Fall back to the canonical METADATA key if the partition query returned
+        // nothing (e.g. eventual-consistency edge) so callers still get a clean delete.
+        if (keys.length === 0) {
+            keys.push({ PK: pk, SK: 'METADATA' });
+        }
+
+        await Promise.all(
+            keys.map((Key) =>
+                chatDynamoDocumentClient.send(new DeleteCommand({ TableName: TABLE_NAME, Key })),
+            ),
+        );
     } catch (error) {
         console.error(`Failed to delete campaign ${slug}:`, error);
         throw error;

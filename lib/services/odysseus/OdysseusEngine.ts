@@ -16,6 +16,12 @@ export class OdysseusEngine {
     // Store intercept data temporarily
     public interceptedData: any[] = [];
 
+    // The request headers from the most recent real /nitroapi/v2/cruise call the
+    // page fired. Captured so the direct-API search can replay the exact auth
+    // headers (uniquetid, odyuserid, siteitemid, etc.) the Angular app uses,
+    // rather than reconstructing them and risking a 401.
+    public lastCruiseRequestHeaders: Record<string, string> | null = null;
+
     /**
      * Initialize the headless browser and attach the global XHR interceptor.
      */
@@ -42,6 +48,14 @@ export class OdysseusEngine {
             });
         }
 
+        // tsx/esbuild wraps named functions with `__name(fn, "label")` to preserve
+        // Function.name. When page.evaluate() serializes a function body, that helper
+        // reference leaks into the browser where __name is undefined → ReferenceError.
+        // Stub the common esbuild helpers in every page/tab so evaluated code resolves.
+        await this.context.addInitScript(
+            "window.__name = (f) => f; window.__publicField = (o,k,v) => { o[k] = v; return v; }; window.__defProp = Object.defineProperty;",
+        );
+
         // CRITICAL: Attach to any new tabs (Odysseus uses `target="_blank"` heavily)
         this.context.on('page', (newPage) => {
             console.log('[OdysseusEngine] New tab detected. Attaching XHR listener...');
@@ -57,6 +71,17 @@ export class OdysseusEngine {
      * Global listener to catch all JSON payloads related to the booking flow
      */
     private setupNetworkInterceptor(page: Page) {
+        // Capture request headers from real cruise-search calls so the direct-API
+        // search can replay the exact authenticated headers the app uses.
+        page.on('request', (request) => {
+            const url = request.url();
+            if (url.includes('/nitroapi/v2/cruise') && !url.includes('/facets')) {
+                try {
+                    this.lastCruiseRequestHeaders = request.headers();
+                } catch { /* ignore */ }
+            }
+        });
+
         page.on('response', async (response) => {
             const url = response.url();
 
@@ -188,66 +213,142 @@ export class OdysseusEngine {
     }
 
     /**
-     * Executes a cruise search query
+     * Converts an MM/DD/YYYY date string into the DD-MMM-YYYY format the
+     * nitroapi cruise search expects (e.g. "01/09/2027" -> "09-Jan-2027").
+     * Returns null for unparseable input.
+     */
+    private static toApiDate(mmDdYyyy: string): string | null {
+        const m = mmDdYyyy.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!m) return null;
+        const [, mm, dd, yyyy] = m;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthIdx = Number(mm) - 1;
+        if (monthIdx < 0 || monthIdx > 11) return null;
+        return `${String(Number(dd)).padStart(2, '0')}-${months[monthIdx]}-${yyyy}`;
+    }
+
+    /**
+     * Ensures we have captured the request headers from a real /nitroapi/v2/cruise
+     * call. The Odysseus SPA fires one on load; reloading the page reliably triggers
+     * it. Returns the captured headers, or null if none could be captured.
+     */
+    private async ensureCruiseRequestHeaders(): Promise<Record<string, string> | null> {
+        if (this.lastCruiseRequestHeaders) return this.lastCruiseRequestHeaders;
+        const page = this.odysseusPage;
+        if (!page) return null;
+
+        console.log('[OdysseusEngine] No cruise request headers captured yet — reloading Odysseus to trigger one...');
+        try {
+            await page.reload({ waitUntil: 'domcontentloaded' });
+            // Wait specifically for the SPA's own cruise XHR so our request listener fires.
+            await page.waitForResponse(
+                (r) => r.url().includes('/nitroapi/v2/cruise') && !r.url().includes('/facets'),
+                { timeout: 20000 },
+            ).catch(() => undefined);
+            // Small settle so the request listener has recorded headers.
+            await page.waitForTimeout(300);
+        } catch (e) {
+            console.warn('[OdysseusEngine] Reload to capture cruise headers failed:', e instanceof Error ? e.message : e);
+        }
+        return this.lastCruiseRequestHeaders;
+    }
+
+    /**
+     * Executes a cruise search query.
+     *
+     * Calls the nitroapi/v2/cruise endpoint directly (POST + JSON filter body)
+     * instead of driving the search form. To authenticate, it REPLAYS the exact
+     * request headers (uniquetid, odyuserid, siteitemid, ody session tokens, etc.)
+     * captured from a real cruise XHR the SPA fired — reconstructing them manually
+     * returns 401. The request goes through Playwright's APIRequestContext
+     * (`page.request`), which shares the browser's authenticated cookie jar.
      */
     async searchCruises(criteria: CruiseSearchCriteria): Promise<CruiseResult[]> {
         const page = this.odysseusPage;
         if (!page) throw new Error('Engine not initialized or Odysseus tab not opened.');
 
-        console.log('[OdysseusEngine] Executing search for:', criteria);
+        console.log('[OdysseusEngine] Executing search (direct API) for:', criteria);
 
-        const occupancyStr = criteria.passengers >= 5 ? '5_undefined' : `${criteria.passengers}_${criteria.passengers}`;
-        await this.select2Option('maxOccupancy', occupancyStr);
-
-        // TODO: Phase 2 - Implement destination, cruise line, and date selection
-        // The data-ody-id selectors mapping:
-        // Destinations: 'ody-dropdown[data-ody-id="destinations"] select'
-        // Dates: 'input[data-ody-id="sailingDates"]'
-        // Cruise Lines: 'ody-dropdown[data-ody-id="cruiselines"] select'
-        // Ships: 'ody-dropdown[data-ody-id="ships"] select'
-
+        // Build the filters array matching the captured nitroapi contract.
+        const filters: Array<Record<string, unknown>> = [
+            { key: 'destinationType', value: 'All' },
+        ];
         if (criteria.vendorId) {
-            await this.select2Option('cruiselines', criteria.vendorId.toString());
+            filters.push({ values: [String(criteria.vendorId)], key: 'cruiselineId' });
         }
-
         if (criteria.startDate && criteria.endDate) {
-            console.log(`[OdysseusEngine] Setting Sailing Dates: ${criteria.startDate} - ${criteria.endDate}`);
-            try {
-                // Focus the date input to open the calendar
-                await page.locator('input[data-ody-id="sailingDates"]').click();
-                await page.waitForTimeout(500);
-
-                // Use eval to forcibly set the value and trigger the change event
-                await page.$eval('input[data-ody-id="sailingDates"]', (el: any, dateStr) => {
-                    el.value = dateStr;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                }, `${criteria.startDate} - ${criteria.endDate}`);
-            } catch (e) {
-                console.log('[OdysseusEngine] Failed to set sailing dates.');
+            const from = OdysseusEngine.toApiDate(criteria.startDate);
+            const to = OdysseusEngine.toApiDate(criteria.endDate);
+            if (from && to) {
+                filters.push({ ranges: [{ from, to }], key: 'departureDateTime' });
+            } else {
+                console.warn(`[OdysseusEngine] Could not convert date range ${criteria.startDate} - ${criteria.endDate} to API format; searching without date filter.`);
             }
         }
 
-        console.log('[OdysseusEngine] Triggering Search...');
-        await page.locator('button[data-ody-id="SearchButton"]').click();
+        const capturedHeaders = await this.ensureCruiseRequestHeaders();
+        if (!capturedHeaders) {
+            console.warn('[OdysseusEngine] Could not capture authenticated cruise headers — search will likely fail.');
+        } else {
+            console.log('[OdysseusEngine] Captured cruise request headers:', JSON.stringify(Object.keys(capturedHeaders)));
+        }
 
-        // Wait for the results loader to appear and then disappear
-        await page.waitForLoadState('networkidle');
+        // Build the header set to send: start from the SPA's own captured request
+        // headers (carries uniquetid, odyuserid, siteitemid, languageid, devicetype,
+        // and any session/anti-forgery headers the API requires), then force our
+        // content-type. Drop browser-managed headers fetch refuses to set.
+        const headers: Record<string, string> = {};
+        if (capturedHeaders) {
+            for (const [k, v] of Object.entries(capturedHeaders)) {
+                const lower = k.toLowerCase();
+                if (
+                    lower === 'host' || lower === 'content-length' || lower === 'cookie' ||
+                    lower.startsWith(':') || lower === 'connection' || lower === 'accept-encoding'
+                ) continue;
+                headers[k] = v;
+            }
+        }
+        headers['accept'] = 'application/json, text/plain, */*';
+        headers['content-type'] = 'application/json';
 
-        // Extract the responses we've accumulated from the API call
-        const searchResponses = this.interceptedData.filter(d =>
-            d.url.includes('/nitroapi/v2/cruise?') &&
-            !d.url.includes('facets')
+        const url = 'https://bookings.cbagenttools.com/nitroapi/v2/cruise?&sortColumn=cruiselinePriority&sortOrder=asc&includeFacets=hasHqGroupRate,hasAgGroupRate&includeFacets=uniqueId&pageSize=50&fetchFacets=true&groupByItineraryId=true&applyExchangeRates=true&ignoreCruiseTaxInclusivePref=true&includeFacets=availableCategory,includeShipFlagFacets&requestSource=1';
+
+        // Guard the esbuild __name helper on the current document (string form has
+        // no __name refs of its own) before running the function-form evaluate.
+        await page.evaluate("window.__name = window.__name || function (f) { return f; };");
+
+        // Run the request from INSIDE the page so the live session cookies attach
+        // natively (same-origin), while passing the captured SPA auth headers.
+        // Passed as JSON strings to avoid esbuild __name leakage in the body.
+        const resultJson = await page.evaluate(
+            async ([u, h, body]: [string, Record<string, string>, string]) => {
+                try {
+                    const res = await fetch(u, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: h,
+                        body,
+                    });
+                    const text = await res.text();
+                    return JSON.stringify({ status: res.status, ok: res.ok, text });
+                } catch (e) {
+                    return JSON.stringify({ status: 0, ok: false, text: '', error: e instanceof Error ? e.message : String(e) });
+                }
+            },
+            [url, headers, JSON.stringify({ filters })] as [string, Record<string, string>, string],
         );
 
         let cruiseResults: CruiseResult[] = [];
-
-        if (searchResponses.length > 0) {
-            // Take the last one in case there were multiple identical requests
-            const latestResponse = searchResponses[searchResponses.length - 1];
-            if (latestResponse.payload && latestResponse.payload.data && latestResponse.payload.data.list) {
-                cruiseResults = latestResponse.payload.data.list as CruiseResult[];
+        try {
+            const parsed = JSON.parse(resultJson) as { status: number; ok: boolean; text: string; error?: string };
+            if (!parsed.ok) {
+                console.warn(`[OdysseusEngine] Direct cruise search returned status ${parsed.status}${parsed.error ? ` (${parsed.error})` : ''}.`);
+            } else {
+                const json = JSON.parse(parsed.text) as { data?: { list?: CruiseResult[] } };
+                cruiseResults = json?.data?.list ?? [];
             }
+        } catch (err) {
+            console.warn('[OdysseusEngine] Failed to parse cruise search response:', err instanceof Error ? err.message : err);
         }
 
         console.log(`[OdysseusEngine] Search Complete. Successfully parsed ${cruiseResults.length} cruise results.`);
@@ -278,6 +379,49 @@ export class OdysseusEngine {
         } catch (e) {
             console.error(`[OdysseusEngine] Failed to select itinerary at index ${index}. Taking screenshot...`);
             await page.screenshot({ path: `select-itinerary-error-${index}.png` });
+            throw e;
+        }
+    }
+
+    /**
+     * Selects an itinerary by navigating DIRECTLY to its package detail URL using
+     * the package ID from the API search result — no on-screen "Book" button click.
+     *
+     * Required because searchCruises() now fetches results via the direct API and
+     * renders nothing, so clicking the Nth results button (selectItinerary) times
+     * out. The package URL puts the live page on the package so the existing
+     * bypassGuestInfoAndContinue() can read the PID from page.url() unchanged.
+     *
+     * Returns false if the result has no usable package ID.
+     */
+    async selectItineraryByResult(result: CruiseResult): Promise<boolean> {
+        const page = this.odysseusPage;
+        if (!page) throw new Error('Engine not initialized or Odysseus tab not opened.');
+
+        const packageId = result.packages?.[0]?.id;
+        if (!packageId) {
+            console.warn(`[OdysseusEngine] Result "${result.name}" (${result.code}) has no package id — cannot select by result.`);
+            return false;
+        }
+
+        // Preserve the siid from the current Odysseus URL so the package page stays
+        // scoped to this agency.
+        let siid = '';
+        try {
+            siid = new URL(page.url()).searchParams.get('siid') ?? '';
+        } catch { /* ignore */ }
+
+        const packageUrl = `https://bookings.cbagenttools.com/swift/cruise/package/${packageId}?${siid ? `siid=${siid}&` : ''}lang=1`;
+        console.log(`[OdysseusEngine] Navigating directly to package ${packageId}: ${packageUrl}`);
+
+        try {
+            await page.goto(packageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+            console.log(`[OdysseusEngine] Landed on package page: ${page.url()}`);
+            return true;
+        } catch (e) {
+            console.error(`[OdysseusEngine] Failed to navigate to package ${packageId}. Taking screenshot...`);
+            await page.screenshot({ path: `select-package-error-${packageId}.png` });
             throw e;
         }
     }

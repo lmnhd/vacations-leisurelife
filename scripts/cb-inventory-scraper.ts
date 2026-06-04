@@ -240,13 +240,21 @@ async function writeGroupLinkDebugArtifacts(
   await page.screenshot({ path: `${basePath}.png`, fullPage: true });
 }
 
+export type PersonalLinkResult =
+  | { link: string; isHouseGroup: false }
+  | { link: null; isHouseGroup: true }
+  | { link: null; isHouseGroup: false };
+
 /**
  * Given a CBAT groupId, visits the group detail page and extracts the true
  * Personal Link which contains the actual Odysseus package ID.
+ *
+ * Returns `{ link, isHouseGroup }`. House groups (Group Contact = House) never
+ * have a personal link — callers should go straight to the Odysseus retail path.
  */
 export async function scrapeGroupPersonalLink(
   groupId: string,
-): Promise<string | null> {
+): Promise<PersonalLinkResult> {
   const { browser, page } = await getAuthenticatedPage();
   try {
     // tsx/esbuild wraps named arrow functions with `__name(fn, "label")` to
@@ -378,14 +386,24 @@ export async function scrapeGroupPersonalLink(
       console.warn(
         `[cb-inventory-scraper] Link extraction returned no diagnostics for group ${groupId}.`,
       );
-      return null;
+      return { link: null, isHouseGroup: false };
+    }
+
+    // House groups: CB owns the block; no personal booking link will ever appear.
+    // Detect from the "Group Contact\tHouse" text in the page body.
+    const isHouseGroup = /group\s+contact[:\t\s]+house/i.test(result.bodyExcerpt);
+    if (isHouseGroup) {
+      console.log(
+        `[cb-inventory-scraper] Group ${groupId} is a House group — no personal link available. Use Odysseus retail path.`,
+      );
+      return { link: null, isHouseGroup: true };
     }
 
     if (result.found) {
       console.log(
         `[cb-inventory-scraper] Personal Link (strategy=${result.debug[0]?.strategy ?? "?"}): ${result.found}`,
       );
-      return result.found;
+      return { link: result.found, isHouseGroup: false };
     }
 
     console.warn(`[cb-inventory-scraper] Could not find Personal Link on page ${url}`);
@@ -423,13 +441,13 @@ export async function scrapeGroupPersonalLink(
       );
     }
 
-    return null;
+    return { link: null, isHouseGroup: false };
   } catch (e) {
     console.error(
       `[cb-inventory-scraper] Error extracting personal link for group ${groupId}:`,
       e,
     );
-    return null;
+    return { link: null, isHouseGroup: false };
   } finally {
     await browser.close();
   }

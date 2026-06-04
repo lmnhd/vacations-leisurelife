@@ -66,6 +66,9 @@ export interface CbInventoryMatch {
   matchedSailDate: string;
   matchedDeparturePort?: string;
   matchedNights?: string;
+  /** Cruise line vendor string from CB (e.g. "Royal Caribbean International"). Used
+   *  by the Odysseus retail path to scope the search to the correct cruise line. */
+  vendor?: string;
   odysseusItinerarySummary?: string;
   odysseusPortsOfCall?: string;
   matchScore: number; // 0–100 confidence of the match
@@ -383,6 +386,7 @@ export function matchGroupInventoryToCampaign(
     matchedSailDate: bestItem.sailDate,
     matchedDeparturePort: bestItem.departurePort,
     matchedNights: bestItem.nights,
+    vendor: bestItem.vendor || undefined,
     odysseusItinerarySummary: bestItem.itinerary?.trim() || undefined,
     matchScore: bestScore,
     odysseusRetailBookingLink: null,
@@ -495,6 +499,7 @@ export function rankGroupInventoryCandidates(
       sailDate: item.sailDate,
       departurePort: item.departurePort,
       nights: item.nights,
+      vendor: item.vendor || undefined,
       startingPrice,
       priceSource: "CB_GROUP_INVENTORY",
       matchScore: score,

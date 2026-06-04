@@ -12,6 +12,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  Sparkles,
+  Search,
+  Archive,
+  Lightbulb,
 } from "lucide-react";
 import type { Campaign, CampaignInventoryCandidate, CampaignInventoryMode, InventoryHealthStatus } from "@/lib/campaigns/types";
 import { getLaunchWindowAssessment } from "@/lib/campaigns/launch-window";
@@ -748,10 +752,26 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
 // ─── Pricing Badge ────────────────────────────────────────────────────────────
 
 function PricingBadge({ status, inventoryHealth, activeBookingMode }: { status: PricingStatus; inventoryHealth?: InventoryHealthStatus | null; activeBookingMode?: CampaignInventoryMode | null }) {
+  // Phase B ran and the booking link is dead / House group with no fallback
+  if (status === "CB_MATCHED" && activeBookingMode === "INVENTORY_FAILED_PAUSED") {
+    return (
+      <span
+        title="Phase B ran but could not find a valid booking link. Use Rematch Ship to assign a different inventory block, then re-run Phase B."
+        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-red-500/15 border-red-500/30 text-red-300"
+      >
+        ❌ Link Failed
+      </span>
+    );
+  }
+
+  // Phase B ran and explicitly failed validation (link broken)
   if (status === "CB_MATCHED" && inventoryHealth === "FAILED") {
     return (
-      <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-red-500/15 border-red-500/30 text-red-300">
-        ⚠️ CB Validation Failed
+      <span
+        title="Phase B validated this link and it returned unhealthy. Re-run Phase B or use Rematch Ship."
+        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-red-500/15 border-red-500/30 text-red-300"
+      >
+        ⚠️ Validation Failed
       </span>
     );
   }
@@ -770,27 +790,32 @@ function PricingBadge({ status, inventoryHealth, activeBookingMode }: { status: 
     );
   }
 
+  // Phase B ran and confirmed a healthy booking link
   if (status === "CB_MATCHED" && inventoryHealth === "HEALTHY") {
     return (
-      <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-400">
-        ✅ CB Confirmed
+      <span
+        title="Phase B confirmed a healthy CB group booking link."
+        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+      >
+        ✅ Link Confirmed
       </span>
     );
   }
 
+  // CB_MATCHED but Phase B has never run (inventoryHealth is null/undefined)
   const styles: Record<PricingStatus, string> = {
-    CB_MATCHED:
-      "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400",
+    CB_MATCHED: "bg-slate-700/40 border border-slate-600 text-slate-400",
     AI_ESTIMATE: "bg-amber-500/15 border border-amber-500/30 text-amber-400",
     UNMATCHED: "bg-red-500/15 border border-red-500/30 text-red-400",
   };
   const labels: Record<PricingStatus, string> = {
-    CB_MATCHED: "CB Match Found",
+    CB_MATCHED: "Needs Phase B",
     AI_ESTIMATE: "⚠️ AI Estimate",
     UNMATCHED: "❌ Unmatched",
   };
   return (
     <span
+      title={status === "CB_MATCHED" ? "A CB inventory group was matched during discovery, but Phase B has not yet validated the booking link." : undefined}
       className={`text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded ${styles[status]}`}
     >
       {labels[status]}
@@ -829,6 +854,16 @@ export default function DiscoveryTestPage() {
   const [revisionMessage, setRevisionMessage] = useState<string | null>(null);
   const [bulkRemoveLoading, setBulkRemoveLoading] = useState(false);
   const [retireLoadingSlug, setRetireLoadingSlug] = useState<string | null>(null);
+  const [archiveLoadingSlug, setArchiveLoadingSlug] = useState<string | null>(null);
+  const [rematchLoadingSlug, setRematchLoadingSlug] = useState<string | null>(null);
+
+  // Manual seed (operator-supplied niche idea → single blueprint)
+  const [seedConcept, setSeedConcept] = useState("");
+  const [seedDeepResearch, setSeedDeepResearch] = useState(true);
+  const [seedLoading, setSeedLoading] = useState(false);
+
+  // Active Phase A / Phase B tab
+  const [activeTab, setActiveTab] = useState<"phaseA" | "phaseB">("phaseA");
 
   // Two-stage pipeline (research / generate split)
   const [researchCacheStatus, setResearchCacheStatus] = useState<{
@@ -1093,12 +1128,191 @@ export default function DiscoveryTestPage() {
 
   const handleClearAll = async () => {
     const confirmed = window.confirm(
-      "⚠️ This will permanently delete ALL campaigns from DynamoDB and clear the research cache.\n\n" +
-        "Use this to wipe stale Phase A results before a fresh inventory-aligned run.\n\nContinue?",
+      "⚠️ This will permanently delete ALL campaigns from DynamoDB (every record, not just metadata) and clear the research cache.\n\n" +
+        "This CANNOT be undone. To only stop the model from re-suggesting ideas without deleting, use \"Archive All\" instead.\n\nContinue?",
     );
     if (!confirmed) return;
     await fetch("/api/groups/discovery/clear", { method: "DELETE" });
     handleClear();
+  };
+
+  // ─── Manual seed (operator-supplied niche idea) ───────────────────────────
+  const handleGenerateFromSeed = async () => {
+    const seed = seedConcept.trim();
+    if (!seed) return;
+
+    const confirmed = window.confirm(
+      `Develop a blueprint from the idea "${seed}".\n\n` +
+        (seedDeepResearch
+          ? "Deep research ON: 1× Gemini Deep Research call on this niche + 1× GPT-5 generation. Slower (minutes), more grounded.\n\n"
+          : "Deep research OFF: GPT-5 only, no Gemini call. Fast, less grounded.\n\n") +
+        "The blueprint must pass the same launch-window + CB inventory gates and saves as DRAFT.\n\nContinue?",
+    );
+    if (!confirmed) return;
+
+    setSeedLoading(true);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const res = await fetch("/api/groups/discovery/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seed, deepResearch: seedDeepResearch }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        skipped?: boolean;
+        message?: string;
+        campaign?: { id: string; name: string; fetchUrl: string };
+      };
+      if (!res.ok || !data.success || !data.campaign) {
+        throw new Error(data.error ?? "Seed generation failed");
+      }
+
+      // Fetch the new campaign and merge it into the slate
+      const r = await fetch(data.campaign.fetchUrl);
+      const d = (await r.json()) as { success?: boolean; campaign?: Campaign };
+      if (d.success && d.campaign) {
+        const created = d.campaign;
+        setBlueprints((current) => {
+          const existingIds = new Set(current.map((c) => c.id));
+          return existingIds.has(created.id) ? current.map((c) => (c.id === created.id ? created : c)) : [...current, created];
+        });
+      }
+      setRevisionMessage(data.message ?? `Developed blueprint from "${seed}".`);
+      setSeedConcept("");
+    } catch (error) {
+      setPhaseAError(error instanceof Error ? error.message : "Seed generation failed");
+    } finally {
+      setSeedLoading(false);
+    }
+  };
+
+  // ─── Archive (forget-from-dedup, reversible) ──────────────────────────────
+  const handleArchiveBlueprint = async (slug: string, archive: boolean) => {
+    const blueprint = blueprints.find((item) => item.id === slug);
+    if (!blueprint) return;
+
+    setArchiveLoadingSlug(slug);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const response = await fetch(`/api/groups/discovery/archive/${slug}`, {
+        method: archive ? "POST" : "DELETE",
+      });
+      const data = (await response.json()) as { success?: boolean; error?: string; campaign?: Campaign };
+      if (!response.ok || !data.success || !data.campaign) {
+        throw new Error(data.error ?? "Archive action failed");
+      }
+      setBlueprints((current) =>
+        current.map((item) => (item.id === slug ? (data.campaign as Campaign) : item)),
+      );
+      setRevisionMessage(
+        archive
+          ? `Archived ${blueprint.name}. It is excluded from the model's dedup memory and hidden by default. Reversible.`
+          : `Restored ${blueprint.name} to the active dedup pool and default view.`,
+      );
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Archive action failed");
+    } finally {
+      setArchiveLoadingSlug(null);
+    }
+  };
+
+  const handleArchiveAll = async () => {
+    const confirmed = window.confirm(
+      "Archive ALL campaigns (including retired ones)?\n\n" +
+        "This removes every campaign from the model's dedup memory so it can surface adjacent ideas again, and clears the research cache. " +
+        "Records are KEPT in the database and are reversible (unarchive, or they auto-restore when a campaign runs).\n\nContinue?",
+    );
+    if (!confirmed) return;
+
+    setBulkRemoveLoading(true);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const res = await fetch("/api/groups/discovery/clear", { method: "POST" });
+      const data = (await res.json()) as { success?: boolean; archived?: number; total?: number; error?: string };
+      if (!res.ok || !data.success) throw new Error(data.error ?? "Archive all failed");
+      // Reflect archived state locally
+      setBlueprints((current) =>
+        current.map((item) => ({ ...item, archived: true, archivedAt: new Date().toISOString() })),
+      );
+      setSelectedBlueprintSlugs([]);
+      setRevisionMessage(
+        `Archived ${data.archived ?? 0} campaign(s) and cleared the research cache. The model will no longer treat these as duplicates.`,
+      );
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Archive all failed");
+    } finally {
+      setBulkRemoveLoading(false);
+    }
+  };
+
+  // ─── Rematch (replace failed inventory, keep blueprint intact) ───────────
+  const handleRematchBlueprint = async (slug: string) => {
+    const blueprint = blueprints.find((item) => item.id === slug);
+    if (!blueprint) return;
+
+    const confirmed = window.confirm(
+      `Re-match "${blueprint.name}" to a different CB inventory block?\n\n` +
+        "The blueprint, niche, and all creative fields stay exactly as-is. " +
+        "Only the ship/date/group assignment is replaced using the current CB deals cache.\n\n" +
+        "The current failed group (" + (blueprint.cbagenttoolsGroupId ?? "unknown") + ") is automatically excluded. " +
+        "Run Phase B after rematch to validate the new link.\n\nContinue?",
+    );
+    if (!confirmed) return;
+
+    setRematchLoadingSlug(slug);
+    setPhaseAError(null);
+    setRevisionMessage(null);
+
+    try {
+      const res = await fetch(`/api/groups/discovery/rematch/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        previousGroupId?: string;
+        newGroupId?: string;
+        matchedShipName?: string;
+        matchedSailDate?: string;
+        matchScore?: number;
+        cacheAgeHours?: number;
+        campaign?: Campaign;
+      };
+
+      if (!res.ok || !data.success || !data.campaign) {
+        throw new Error(data.error ?? "Rematch failed");
+      }
+
+      setBlueprints((current) =>
+        current.map((item) => (item.id === slug ? (data.campaign as Campaign) : item)),
+      );
+      setRevisionMessage(
+        `Rematched "${blueprint.name}": ${data.previousGroupId ?? "?"} → group ${data.newGroupId} (${data.matchedShipName}, ${data.matchedSailDate}, score ${data.matchScore}). Now run Phase B to validate the new link.`,
+      );
+    } catch (error: unknown) {
+      setPhaseAError(error instanceof Error ? error.message : "Rematch failed");
+    } finally {
+      setRematchLoadingSlug(null);
+    }
+  };
+
+  const toggleRowExpanded = (slug: string) => {
+    setExpandedSlugs((current) => {
+      const next = new Set(current);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
   };
 
   const handleBulkRedTeam = async () => {
@@ -1573,6 +1787,13 @@ export default function DiscoveryTestPage() {
   const [pricingFilter, setPricingFilter] = useState<"all" | "matched" | "estimate" | "unmatched">("all");
   const [launchFilter, setLaunchFilter] = useState<"all" | "healthy" | "tight" | "past_minimum">("all");
   const [showRetired, setShowRetired] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<
+    "created_desc" | "created_asc" | "name" | "price_desc" | "price_asc" | "days_asc" | "verdict"
+  >("created_desc");
+  // Compact rows collapse to a one-line summary; click to expand full detail.
+  const [expandedSlugs, setExpandedSlugs] = useState<Set<string>>(new Set());
 
   const hasPhaseAResults = blueprints.length > 0;
   const revisableBlueprints = blueprints.filter(
@@ -1585,6 +1806,48 @@ export default function DiscoveryTestPage() {
   function isCampaignRetired(bp: Campaign): boolean {
     return !!bp.discoveryIteration?.retiredAt
       || bp.discoveryIteration?.recommendedNextAction === 'retire';
+  }
+
+  function isCampaignArchived(bp: Campaign): boolean {
+    return !!bp.archived;
+  }
+
+  function matchesSearch(bp: Campaign): boolean {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = [
+      bp.name,
+      bp.id,
+      bp.aesthetic,
+      bp.description,
+      bp.targetDestination,
+      bp.shipTarget,
+      bp.matchedShipName,
+      bp.seedConcept,
+      ...(bp.targetingKeywords ?? []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  }
+
+  function daysUntilSailFor(bp: Campaign): number | null {
+    const primary = bp.inventoryCandidates
+      ?.filter((c) => c.source === "CB_GROUP")
+      .sort((a, b) => a.rank - b.rank)[0];
+    return getLaunchWindowAssessment({
+      matchedSailDate: primary?.sailDate ?? bp.matchedSailDate,
+      targetDates: bp.targetDates,
+    }).daysUntilSail;
+  }
+
+  function verdictRank(bp: Campaign): number {
+    const v = bp.discoveryRedTeamReview?.verdict;
+    if (v === "pass") return 0;
+    if (v === "warn") return 1;
+    if (v === "block") return 2;
+    return 3; // unreviewed last
   }
 
   function matchesPricingFilter(bp: Campaign): boolean {
@@ -1611,16 +1874,40 @@ export default function DiscoveryTestPage() {
     return days >= 210; // healthy
   }
 
-  // Sort campaigns descending by createdAt, so the newest ones are always first
+  // Sort campaigns by the operator-selected key.
   const sortedBlueprints = [...blueprints].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return dateB - dateA;
+    const created = (x: Campaign) => (x.createdAt ? new Date(x.createdAt).getTime() : 0);
+    switch (sortKey) {
+      case "created_asc":
+        return created(a) - created(b);
+      case "name":
+        return (a.name ?? "").localeCompare(b.name ?? "");
+      case "price_desc":
+        return (b.startingPrice ?? 0) - (a.startingPrice ?? 0);
+      case "price_asc":
+        return (a.startingPrice ?? 0) - (b.startingPrice ?? 0);
+      case "days_asc": {
+        const da = daysUntilSailFor(a);
+        const db = daysUntilSailFor(b);
+        // Nulls (no known sail date) sort last
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      }
+      case "verdict":
+        return verdictRank(a) - verdictRank(b) || created(b) - created(a);
+      case "created_desc":
+      default:
+        return created(b) - created(a);
+    }
   });
 
   const filteredBlueprints = sortedBlueprints
     .filter((bp) => bp.status !== 'GATHERING_INTEREST')
+    .filter((bp) => showArchived || !isCampaignArchived(bp))
     .filter((bp) => showRetired || !isCampaignRetired(bp))
+    .filter(matchesSearch)
     .filter(matchesPricingFilter)
     .filter(matchesLaunchFilter);
 
@@ -1628,7 +1915,8 @@ export default function DiscoveryTestPage() {
     recencyFilter === "new" ? filteredBlueprints.slice(0, 5) : filteredBlueprints;
 
   const retiredCount = blueprints.filter(isCampaignRetired).length;
-  const activeCount = blueprints.length - retiredCount;
+  const archivedCount = blueprints.filter(isCampaignArchived).length;
+  const activeCount = blueprints.filter((bp) => !isCampaignRetired(bp) && !isCampaignArchived(bp)).length;
   const phaseBMatchedCount = phaseBCampaigns.filter(
     (campaign) => campaign.pricingStatus === "CB_MATCHED",
   ).length;
@@ -1672,19 +1960,87 @@ export default function DiscoveryTestPage() {
 
   return (
     <div className="min-h-screen p-6 font-mono text-white bg-slate-950">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header */}
+      <div className="w-full max-w-[1800px] mx-auto space-y-6">
+        {/* Header + tabs */}
         <div className="p-4 border border-white/10 rounded-xl bg-slate-900/50">
-          <h1 className="text-lg font-semibold tracking-wide text-cyan-400">
-            🔍 Group Campaign Discovery
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Phase A — Sonar deep research → 5 structured blueprints. Phase B —
-            Playwright CB inventory match → live pricing + booking links.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-lg font-semibold tracking-wide text-cyan-400">
+                🔍 Group Campaign Discovery
+              </h1>
+              <p className="mt-1 text-xs text-slate-500">
+                Phase A — Deep research or manual seed → structured blueprints. Phase B —
+                Playwright CB inventory match → live pricing + booking links.
+              </p>
+            </div>
+            <div className="flex rounded-lg overflow-hidden border border-white/10">
+              <button
+                onClick={() => setActiveTab("phaseA")}
+                className={`px-4 py-2 text-xs uppercase tracking-widest transition-colors ${activeTab === "phaseA" ? "bg-cyan-500/20 text-cyan-300 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+              >
+                Phase A — Discovery ({activeCount})
+              </button>
+              <button
+                onClick={() => setActiveTab("phaseB")}
+                className={`px-4 py-2 text-xs uppercase tracking-widest transition-colors ${activeTab === "phaseB" ? "bg-violet-500/20 text-violet-300 font-bold" : "bg-slate-900 text-slate-500 hover:text-slate-300"}`}
+              >
+                Phase B — Inventory ({phaseBCampaigns.length || activeCount})
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ─── Phase A ─────────────────────────────────────────────── */}
+        {activeTab === "phaseA" && (
+        <>
+        {/* Manual seed panel */}
+        <div className="overflow-hidden border border-fuchsia-500/20 rounded-xl bg-fuchsia-950/10">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-fuchsia-500/10">
+            <Lightbulb className="h-3.5 w-3.5 text-fuchsia-400" />
+            <span className="text-xs tracking-widest uppercase text-fuchsia-300">
+              Manual Concept
+            </span>
+            <span className="text-[10px] text-slate-600 ml-1">
+              Type your own niche idea (e.g. "Star Wars Theme") and develop a single blueprint from it — skips the Gemini ideation funnel.
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <input
+              type="text"
+              value={seedConcept}
+              onChange={(e) => setSeedConcept(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && seedConcept.trim() && !seedLoading) void handleGenerateFromSeed(); }}
+              placeholder="e.g. Star Wars Theme, competitive Scrabble, vintage synth collectors…"
+              disabled={seedLoading}
+              className="flex-1 min-w-[260px] bg-slate-900 border border-white/10 rounded px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-fuchsia-400/50 focus:outline-none disabled:opacity-50"
+            />
+            <label
+              title="Deep research ON: one focused Gemini Deep Research call on this niche grounds the blueprint in real community evidence (slower). OFF: GPT-5 only (fast, less grounded)."
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-slate-400 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={seedDeepResearch}
+                onChange={(e) => setSeedDeepResearch(e.target.checked)}
+                disabled={seedLoading}
+                className="accent-fuchsia-500"
+              />
+              Deep research this niche
+            </label>
+            <button
+              onClick={() => void handleGenerateFromSeed()}
+              disabled={seedLoading || !seedConcept.trim()}
+              className="flex items-center gap-2 px-4 py-2 rounded text-sm font-medium bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 hover:bg-fuchsia-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+            >
+              {seedLoading ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Developing…</>
+              ) : (
+                <><Sparkles className="w-3.5 h-3.5" /> Develop Blueprint</>
+              )}
+            </button>
+          </div>
+        </div>
+
         <div className="overflow-hidden border border-white/10 rounded-xl bg-slate-900/50">
           <div className="flex flex-wrap items-center justify-between px-4 py-3 border-b border-white/5 gap-4">
             <div className="flex items-center gap-4">
@@ -1853,8 +2209,16 @@ export default function DiscoveryTestPage() {
                   </button>
                 )}
                 <button
+                  onClick={() => void handleArchiveAll()}
+                  disabled={bulkRemoveLoading}
+                  title="Archive All (NON-DESTRUCTIVE): Removes every campaign (including retired) from the model's dedup memory so it can surface adjacent ideas again, and clears the research cache. Records are kept in the DB and reversible — they auto-restore when a campaign runs."
+                  className="text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-300 hover:text-amber-200 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {bulkRemoveLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-3 h-3" />} Archive All
+                </button>
+                <button
                   onClick={handleClearAll}
-                  title="Clear All (DESTRUCTIVE): Permanently deletes every campaign METADATA record from DynamoDB and clears the research cache. Cannot be undone. Use Retire on individual campaigns to keep them in the database but hide them from this view."
+                  title="Clear All (DESTRUCTIVE): Permanently deletes every campaign record (all rows, not just metadata) from DynamoDB and clears the research cache. Cannot be undone. Prefer Archive All to forget ideas non-destructively."
                   className="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-400/60 transition-all flex items-center gap-1.5"
                 >
                   🗑 Clear All
@@ -1866,6 +2230,32 @@ export default function DiscoveryTestPage() {
           {/* ─── Filter bar ──────────────────────────────────────────── */}
           {blueprints.length > 0 && (
             <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-white/5 bg-slate-950/40">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name, niche, ship, keywords…"
+                  className="bg-slate-900 border border-slate-700 text-[11px] text-slate-200 placeholder:text-slate-600 pl-7 pr-2 py-1 rounded w-56 focus:border-cyan-400/50 focus:outline-none"
+                />
+              </div>
+
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+                title="Sort the blueprint list."
+                className="bg-slate-900 border border-slate-700 text-[10px] uppercase tracking-widest text-slate-300 px-2 py-1 rounded"
+              >
+                <option value="created_desc">Sort: Newest</option>
+                <option value="created_asc">Sort: Oldest</option>
+                <option value="name">Sort: Name A–Z</option>
+                <option value="price_desc">Sort: Price ↓</option>
+                <option value="price_asc">Sort: Price ↑</option>
+                <option value="days_asc">Sort: Days to sail ↑</option>
+                <option value="verdict">Sort: Review verdict</option>
+              </select>
+
               <span className="text-[10px] uppercase tracking-widest text-slate-500">Filters</span>
               <div className="flex rounded-md overflow-hidden border border-slate-700">
                 <button
@@ -1919,6 +2309,19 @@ export default function DiscoveryTestPage() {
                   className="accent-fuchsia-500"
                 />
                 Show retired ({retiredCount})
+              </label>
+
+              <label
+                title="Archived campaigns are excluded from the model's dedup memory (so it can surface adjacent ideas again) and hidden by default. They stay in the DB and are reversible."
+                className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-slate-400 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="accent-amber-500"
+                />
+                Show archived ({archivedCount})
               </label>
 
               <div className="ml-auto flex items-center gap-2">
@@ -2019,7 +2422,7 @@ export default function DiscoveryTestPage() {
             )}
 
             {hasPhaseAResults ? (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {visibleBlueprints.map((bp, i) => {
                   const isMatched = bp.pricingStatus === "CB_MATCHED";
                   const isUnmatched = bp.pricingStatus === "UNMATCHED";
@@ -2038,97 +2441,95 @@ export default function DiscoveryTestPage() {
                     bp.discoveryIteration?.recommendedNextAction ===
                     "operator_cleanup";
                   const isRevisable = !!bp.discoveryRedTeamReview;
+                  const isArchived = isCampaignArchived(bp);
+                  const isExpanded = expandedSlugs.has(bp.id);
                   return (
                     <div
                       key={bp.id || i}
-                      className={`border rounded-xl overflow-hidden bg-slate-800/30 ${isMatched ? "border-emerald-500/30" : isUnmatched ? "border-red-500/20" : "border-white/10"}`}
+                      className={`border rounded-lg overflow-hidden bg-slate-800/30 ${isMatched ? "border-emerald-500/30" : isUnmatched ? "border-red-500/20" : "border-white/10"} ${isArchived || isRetired ? "opacity-70" : ""}`}
                     >
-                      {/* Card Header */}
-                      <div className={`flex items-start justify-between gap-4 px-5 py-4 ${isMatched ? "bg-emerald-950/20" : isUnmatched ? "bg-red-950/10" : "bg-slate-800/50"}`}>
-                        <div className="flex items-start gap-3 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={selectedBlueprintSlugs.includes(bp.id)}
-                            onChange={() => toggleBlueprintSelection(bp.id)}
-                            disabled={
-                              bulkRevisionLoading ||
-                              revisionLoadingSlug === bp.id ||
-                              reviewLoadingSlug === bp.id
-                            }
-                            className="mt-1 h-4 w-4 flex-shrink-0 rounded border-white/20 bg-slate-900 text-cyan-400"
-                            aria-label={`Select ${bp.name} for batch actions`}
+                      {/* Compact Row (click to expand) */}
+                      <div className={`flex items-center gap-3 px-4 py-2.5 ${isMatched ? "bg-emerald-950/20" : isUnmatched ? "bg-red-950/10" : "bg-slate-800/50"}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedBlueprintSlugs.includes(bp.id)}
+                          onChange={() => toggleBlueprintSelection(bp.id)}
+                          disabled={
+                            bulkRevisionLoading ||
+                            revisionLoadingSlug === bp.id ||
+                            reviewLoadingSlug === bp.id
+                          }
+                          className="h-4 w-4 flex-shrink-0 rounded border-white/20 bg-slate-900 text-cyan-400"
+                          aria-label={`Select ${bp.name} for batch actions`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleRowExpanded(bp.id)}
+                          className="flex items-center gap-1 flex-shrink-0 text-slate-500 hover:text-slate-300"
+                          aria-label={isExpanded ? "Collapse" : "Expand"}
+                        >
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleRowExpanded(bp.id)}
+                          className="flex-1 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-left"
+                        >
+                          <span className="text-sm font-semibold text-white truncate max-w-[28ch]">{bp.name}</span>
+                          {bp.seedConcept && (
+                            <span title={`Manually seeded from: ${bp.seedConcept}`} className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 flex items-center gap-1">
+                              <Lightbulb className="w-2.5 h-2.5" /> seed
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-400 font-sans truncate max-w-[24ch]">{bp.aesthetic}</span>
+                          <span className="hidden md:flex items-center gap-1 text-[11px] text-slate-500"><MapPin className="w-3 h-3" />{displayedShip}</span>
+                          <span className="text-[11px] text-slate-500">{bp.targetDates}</span>
+                          {bp.startingPrice ? <span className="text-[11px] text-emerald-400">${bp.startingPrice.toLocaleString()}/pp</span> : null}
+                          {launchWindow.daysUntilSail !== null && (
+                            <span className={`text-[11px] ${launchWindow.meetsMinimumLeadTime === false ? "text-red-300" : launchWindow.isTightLeadTime ? "text-amber-300" : "text-slate-500"}`}>
+                              {launchWindow.daysUntilSail}d
+                            </span>
+                          )}
+                        </button>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {isArchived && (
+                            <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border bg-amber-500/15 border-amber-500/30 text-amber-300">archived</span>
+                          )}
+                          {isStagnant && !isRetired && (
+                            <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border bg-amber-500/15 border-amber-500/30 text-amber-300">stagnant</span>
+                          )}
+                          {needsOperatorCleanup && !isRetired && (
+                            <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border bg-sky-500/15 border-sky-500/30 text-sky-300">cleanup</span>
+                          )}
+                          {isRetired && (
+                            <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border bg-red-500/15 border-red-500/30 text-red-400">retired</span>
+                          )}
+                          {bp.discoveryRedTeamReview && (
+                            <span
+                              className={`text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border ${
+                                bp.discoveryRedTeamReview.verdict === "pass"
+                                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                                  : bp.discoveryRedTeamReview.verdict === "warn"
+                                    ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                                    : "bg-red-500/15 border-red-500/30 text-red-400"
+                              }`}
+                            >
+                              {bp.discoveryRedTeamReview.verdict}
+                            </span>
+                          )}
+                          {bp.inventoryHealth && <InventoryHealthBadge status={bp.inventoryHealth} />}
+                          <PricingBadge
+                            status={(bp.pricingStatus ?? "AI_ESTIMATE") as PricingStatus}
+                            inventoryHealth={bp.inventoryHealth}
+                            activeBookingMode={bp.activeBookingMode}
                           />
-                          <div className="min-w-0">
-                            <div className="text-base font-semibold text-white leading-snug">
-                              {bp.name}
-                            </div>
-                            <div className="text-xs text-slate-400 mt-1 font-sans">
-                              {bp.aesthetic} · {bp.targetDates}
-                            </div>
-                            <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
-                              {bp.id}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          <div className="flex items-center gap-1.5">
-                            {bp.inventoryHealth && (
-                              <InventoryHealthBadge status={bp.inventoryHealth} />
-                            )}
-                            <PricingBadge
-                              status={
-                                (bp.pricingStatus ??
-                                  "AI_ESTIMATE") as PricingStatus
-                              }
-                              inventoryHealth={bp.inventoryHealth}
-                              activeBookingMode={bp.activeBookingMode}
-                            />
-                          </div>
-                          {bp.activeBookingMode &&
-                            bp.activeBookingMode !== "GROUP_BLOCK_ACTIVE" && (
-                              <span
-                                title={`Active booking mode is ${bp.activeBookingMode}. Inventory transitioned away from the original group block.`}
-                                className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300"
-                              >
-                                {bp.activeBookingMode
-                                  .replace(/_/g, " ")
-                                  .toLowerCase()}
-                              </span>
-                            )}
-                          <div className="flex flex-wrap justify-end gap-1">
-                            {isStagnant && !isRetired && (
-                              <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-amber-500/15 border-amber-500/30 text-amber-300">
-                                stagnant
-                              </span>
-                            )}
-                            {needsOperatorCleanup && !isRetired && (
-                              <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-sky-500/15 border-sky-500/30 text-sky-300">
-                                operator cleanup
-                              </span>
-                            )}
-                            {isRetired && (
-                              <span className="text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border bg-red-500/15 border-red-500/30 text-red-400">
-                                retired
-                              </span>
-                            )}
-                            {bp.discoveryRedTeamReview && (
-                              <span
-                                className={`text-[10px] uppercase tracking-widest font-mono px-2 py-0.5 rounded border ${
-                                  bp.discoveryRedTeamReview.verdict === "pass"
-                                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                                    : bp.discoveryRedTeamReview.verdict === "warn"
-                                      ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
-                                      : "bg-red-500/15 border-red-500/30 text-red-400"
-                                }`}
-                              >
-                                review {bp.discoveryRedTeamReview.verdict}
-                              </span>
-                            )}
-                          </div>
                         </div>
                       </div>
-                      {/* Card Body */}
-                      <div className="px-5 py-4 space-y-3">
+                      {/* Expanded Body */}
+                      {isExpanded && (
+                      <>
+                      <div className="px-5 py-4 space-y-3 border-t border-white/5">
+                        <div className="text-[10px] text-slate-600 font-mono">{bp.id}</div>
                         {launchWindow.meetsMinimumLeadTime === false && (
                           <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                             Launch window failed: {launchWindow.daysUntilSail}{" "}
@@ -2221,12 +2622,45 @@ export default function DiscoveryTestPage() {
                               : "Revise"}
                           </button>
                         )}
+                        {bp.activeBookingMode === "INVENTORY_FAILED_PAUSED" && (
+                          <button
+                            onClick={() => void handleRematchBlueprint(bp.id)}
+                            disabled={rematchLoadingSlug === bp.id}
+                            title="Rematch: keep the blueprint and all creative fields exactly as-is, but find a different CB inventory block. Run Phase B after to validate the new link."
+                            className="text-xs px-3 py-1.5 rounded border border-violet-500/30 text-violet-300 hover:text-violet-200 hover:border-violet-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            {rematchLoadingSlug === bp.id ? (
+                              <><Loader2 className="w-3 h-3 animate-spin" /> Rematching…</>
+                            ) : (
+                              "Rematch Ship"
+                            )}
+                          </button>
+                        )}
+                        {isArchived ? (
+                          <button
+                            onClick={() => void handleArchiveBlueprint(bp.id, false)}
+                            disabled={archiveLoadingSlug === bp.id}
+                            title="Unarchive: restore this campaign to the model's dedup pool and the default view."
+                            className="ml-auto text-xs px-3 py-1.5 rounded border border-amber-500/30 text-amber-300 hover:text-amber-200 hover:border-amber-400/60 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            {archiveLoadingSlug === bp.id ? "Restoring…" : "Unarchive"}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => void handleArchiveBlueprint(bp.id, true)}
+                            disabled={archiveLoadingSlug === bp.id}
+                            title="Archive: remove this campaign from the model's dedup memory (so it can surface adjacent ideas again) and hide it by default. Kept in the DB, reversible, auto-restores when the campaign runs."
+                            className="ml-auto text-xs px-3 py-1.5 rounded border border-slate-600 text-slate-400 hover:text-amber-200 hover:border-amber-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            {archiveLoadingSlug === bp.id ? "Archiving…" : (<><Archive className="w-3 h-3" /> Archive</>)}
+                          </button>
+                        )}
                         {isCampaignRetired(bp) ? (
                           <button
                             onClick={() => void handleUnretireBlueprint(bp.id)}
                             disabled={retireLoadingSlug === bp.id}
                             title="Restore this campaign to the active discovery list."
-                            className="ml-auto text-xs px-3 py-1.5 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:border-emerald-400/60 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                            className="text-xs px-3 py-1.5 rounded border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 hover:border-emerald-400/60 transition-all disabled:opacity-40 disabled:pointer-events-none"
                           >
                             {retireLoadingSlug === bp.id ? "Restoring…" : "Unretire"}
                           </button>
@@ -2235,7 +2669,7 @@ export default function DiscoveryTestPage() {
                             onClick={() => void handleRetireBlueprint(bp.id)}
                             disabled={retireLoadingSlug === bp.id}
                             title="Retire this campaign. It stays in the database (and continues feeding deduplication into new research) but is hidden from this view by default. Reversible."
-                            className="ml-auto text-xs px-3 py-1.5 rounded border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                            className="text-xs px-3 py-1.5 rounded border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-400 transition-all disabled:opacity-40 disabled:pointer-events-none"
                           >
                             {retireLoadingSlug === bp.id ? "Retiring…" : "Retire"}
                           </button>
@@ -2244,6 +2678,8 @@ export default function DiscoveryTestPage() {
 
                       {/* Research Intelligence (collapsible) */}
                       <BlueprintRationaleSection campaign={bp} />
+                      </>
+                      )}
                     </div>
                   );
                 })}
@@ -2260,7 +2696,12 @@ export default function DiscoveryTestPage() {
 
         {/* ─── Sonar Research ─────────────────────────────────────── */}
         {sonarResearch && <SonarResearchPanel research={sonarResearch} />}
+        </>
+        )}
 
+        {/* ─── Phase B (tab) ───────────────────────────────────────── */}
+        {activeTab === "phaseB" && (
+        <>
         {/* ─── Phase B Confirm Modal ───────────────────────────────── */}
         {phaseBConfirmOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -2458,6 +2899,8 @@ export default function DiscoveryTestPage() {
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

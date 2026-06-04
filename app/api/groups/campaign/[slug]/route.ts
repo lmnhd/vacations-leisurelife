@@ -114,6 +114,21 @@ export async function GET(
             discoveryIteration: campaign.discoveryIteration ?? null,
             cbagenttoolsGroupId: campaign.cbagenttoolsGroupId ?? null,
             cbagenttoolsBookingLink: campaign.cbagenttoolsBookingLink ?? null,
+            cbPriceAdvantage: campaign.cbPriceAdvantage ?? null,
+            odysseusRetailBookingLink: campaign.odysseusRetailBookingLink ?? null,
+            // Phase B inventory-health state — required so the discovery UI can
+            // restore the correct booking badge (Confirmed / Retail / Failed /
+            // Needs Phase B) after a reload instead of resetting everything to
+            // "Needs Phase B".
+            activeBookingMode: campaign.activeBookingMode ?? null,
+            inventoryHealth: campaign.inventoryHealth ?? null,
+            inventoryLastCheckedAt: campaign.inventoryLastCheckedAt ?? null,
+            inventoryCandidates: campaign.inventoryCandidates ?? null,
+            // Provenance for manually-seeded blueprints.
+            seedConcept: campaign.seedConcept ?? null,
+            // Archive flag so the archived filter/badge survives a reload.
+            archived: campaign.archived ?? false,
+            archivedAt: campaign.archivedAt ?? null,
             manualVisualFlavor: campaign.manualVisualFlavor ?? null,
             createdAt: campaign.createdAt,
             updatedAt: campaign.updatedAt,

@@ -34,6 +34,9 @@ export interface CampaignInventoryCandidate {
     sailDate: string;
     departurePort?: string;
     nights?: string;
+    /** Cruise line vendor string from CB (e.g. "Royal Caribbean …"). Used to scope
+     *  the Odysseus retail fallback search to the correct cruise line. */
+    vendor?: string;
     startingPrice?: number;
     odysseusItinerarySummary?: string;
     odysseusPortsOfCall?: string;
@@ -220,6 +223,33 @@ export interface Campaign {
      * stagnation, branch instead of ping-ponging, and retire weak blueprints.
      */
     discoveryIteration?: DiscoveryIterationState;
+
+    /**
+     * For manually-seeded blueprints: the raw operator idea this blueprint was
+     * developed from (e.g. "Star Wars Theme"). Absent for blueprints produced by
+     * the Gemini Deep Research ideation funnel. Recorded for provenance and so the
+     * discovery UI can badge operator-originated concepts.
+     */
+    seedConcept?: string;
+
+    /**
+     * Archive flag — distinct from `discoveryIteration.retiredAt` (retired).
+     *
+     * Retired: hidden from the default view but STILL fed into dedup so the model
+     *   does not re-suggest the same idea.
+     * Archived: hidden from the default view AND excluded from dedup feedback, so
+     *   the model "forgets" it and is free to surface adjacent ideas again. The
+     *   record is kept in the DB (non-destructive, reversible). A campaign auto-
+     *   leaves archived when its `status` advances past DRAFT (i.e. it "runs"),
+     *   rejoining dedup.
+     */
+    archived?: boolean;
+
+    /**
+     * ISO timestamp of when the campaign was archived. Cleared on unarchive or on
+     * status advance past DRAFT.
+     */
+    archivedAt?: string;
 
     /**
      * ISO timestamp of when the aesthetic brief was generated.

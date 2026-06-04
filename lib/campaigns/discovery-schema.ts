@@ -59,16 +59,27 @@ export const DiscoveryBlueprintBatchSchema = z.object({
     blueprints: z.array(DiscoveryBlueprintSchema).length(5, 'Must provide exactly 5 blueprints'),
 });
 
+/**
+ * Single-blueprint variant used by the manual-seed pipeline, where the operator
+ * supplies one niche idea and we develop exactly one blueprint from it. Shares the
+ * same per-blueprint field schema as the batch path so the two never diverge.
+ */
+export const DiscoverySingleBlueprintSchema = z.object({
+    blueprint: DiscoveryBlueprintSchema,
+});
+
 export type DiscoveryBlueprint = z.infer<typeof DiscoveryBlueprintSchema>;
 
 export function mapDiscoveryBlueprintToCampaign(
     blueprint: DiscoveryBlueprint,
     existingCampaign?: Campaign,
+    options?: { seedConcept?: string },
 ): Campaign {
     const now = new Date().toISOString();
 
     return {
         ...existingCampaign,
+        ...(options?.seedConcept ? { seedConcept: options.seedConcept } : {}),
         PK: existingCampaign?.PK ?? `CAMPAIGN#${blueprint.id}`,
         SK: existingCampaign?.SK ?? 'METADATA',
         id: existingCampaign?.id ?? blueprint.id,

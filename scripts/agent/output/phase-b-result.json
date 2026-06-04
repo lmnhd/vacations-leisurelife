@@ -1,17 +1,22 @@
 {
-  "completedAt": "2026-06-01T20:15:24.373Z",
+  "completedAt": "2026-06-04T20:58:31.350Z",
   "summary": {
-    "confirmedCount": 1,
+    "confirmedCount": 0,
     "backupCount": 0,
-    "retailCount": 0,
+    "retailCount": 2,
     "expiredCount": 0,
     "failedCount": 0
   },
   "results": [
     {
-      "slug": "fiber-arts-yarn-tasting-voyage",
-      "status": "CONFIRMED",
-      "detail": "Norwegian Gem — $1335/pp (score: 100, rank: 0)"
+      "slug": "grand-costumed-promenade-explorer",
+      "status": "RETAIL_MULTI_BOOKING",
+      "detail": "Explorer of the Seas — retail fallback + retail link"
+    },
+    {
+      "slug": "urban-sketchers-sea-voyage-radiance",
+      "status": "RETAIL_MULTI_BOOKING",
+      "detail": "Radiance of the Seas — retail fallback + retail link"
     }
   ]
 }

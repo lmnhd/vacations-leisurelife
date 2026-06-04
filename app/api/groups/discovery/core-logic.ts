@@ -4,7 +4,7 @@ import { ModelName } from '@/lib/ai/llm-gateway';
 import { callGeminiDeepResearch } from '@/lib/ai/gemini-deep-research';
 import { Campaign } from '@/lib/campaigns/types';
 import { getAestheticBrief, saveCampaignBlueprint, getCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';
-import { DiscoveryBlueprintBatchSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
+import { DiscoveryBlueprintBatchSchema, DiscoverySingleBlueprintSchema, mapDiscoveryBlueprintToCampaign } from '@/lib/campaigns/discovery-schema';
 import {
     assertLaunchWindowCompliance,
     buildLaunchWindowPromptGuidance,
@@ -290,6 +290,29 @@ type PriorCampaignContext = {
     reviewSource: 'discovery-red-team' | 'aesthetic-red-team' | null;
 };
 
+// Cap on how many existing themes we inject into the dedup exclusion block.
+// The full slate can grow into the dozens; injecting every name bloats the prompt
+// and dilutes the signal. We keep the most-recent N (by createdAt) so the model
+// avoids near-term duplicates without drowning in history.
+const DEDUP_EXCLUSION_CAP = 40;
+
+/**
+ * Filters the slate down to the campaigns that should feed dedup feedback.
+ * Archived campaigns are intentionally excluded so the model is free to surface
+ * adjacent ideas again ("forget-from-memory"). Returns the most-recent
+ * DEDUP_EXCLUSION_CAP campaigns to keep prompts lean.
+ */
+function selectCampaignsForDedup(existingCampaigns: Campaign[]): Campaign[] {
+    return existingCampaigns
+        .filter((c) => !c.archived)
+        .sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return bTime - aTime;
+        })
+        .slice(0, DEDUP_EXCLUSION_CAP);
+}
+
 function buildExistingThemesBlock(existingCampaigns: Campaign[]): string {
     if (existingCampaigns.length === 0) {
         return '';
@@ -411,7 +434,10 @@ async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date })
     const cbInventoryContext = buildCbInventoryContext(now);
     const cachedInventory = loadCbInventoryFromCache();
     const launchWindowPromptGuidance = buildLaunchWindowPromptGuidance(now);
-    const existingCampaigns = await scanAllCampaigns();
+    const allCampaigns = await scanAllCampaigns();
+    // Archived campaigns are excluded from dedup feedback (forget-from-memory); the
+    // list is also capped to the most-recent N to keep prompts lean.
+    const existingCampaigns = selectCampaignsForDedup(allCampaigns);
     const priorCampaignContext = respin ? await loadPriorCampaignContext(existingCampaigns) : [];
     const existingThemesBlock = respin
         ? buildCorrectiveThemesBlock(priorCampaignContext)
@@ -428,7 +454,8 @@ async function buildDiscoveryPromptContext(opts: { respin: boolean; now: Date })
         approvedCandidatesBlock,
         respinFeedbackBlock,
         lightExclusionBlock,
-        existingCampaignsCount: existingCampaigns.length,
+        existingCampaignsCount: allCampaigns.length,
+        dedupCampaignsCount: existingCampaigns.length,
     };
 }
 
@@ -554,6 +581,185 @@ export async function runGroupDiscoveryPipeline(options: DiscoveryPipelineOption
     return await generateDiscoveryBlueprints({ research, respin });
 }
 
+// ─── Manual Seed Pipeline ─────────────────────────────────────────────────────
+// Lets an operator type a niche idea (e.g. "Star Wars Theme") and develop a single
+// blueprint from it, skipping the Gemini ideation funnel (Steps 1+2). When
+// deepResearch is on, one focused Gemini Deep Research call grounds the seed in
+// community-native evidence before GPT-5 structures the blueprint. Either way the
+// blueprint passes the same launch-window + CB inventory match gates as the batch
+// path and saves as DRAFT.
+
+export interface SeedBlueprintOptions {
+    /** Raw operator niche idea, e.g. "Star Wars Theme" or "competitive Scrabble". */
+    seed: string;
+    /** When true, run a focused Gemini Deep Research pass on the seed niche first. */
+    deepResearch?: boolean;
+}
+
+export interface SeedBlueprintResult {
+    campaign: Campaign | null;
+    /** True when the produced slug already existed and was skipped (idempotency). */
+    skipped: boolean;
+    /** The niche research text used to ground generation, when deepResearch ran. */
+    seedResearch: string | null;
+}
+
+/**
+ * Focused Deep Research prompt for a single operator-supplied niche. Borrows the
+ * dossier's "research the niche, not the cruise" discipline so the result grounds
+ * the blueprint in community-native evidence rather than travel-sector trends.
+ */
+function buildSeedResearchPrompt(seed: string, cbInventoryContext: string): string {
+    return `
+You are researching a single operator-supplied niche concept for a vacation-first group cruise business.
+
+OPERATOR SEED CONCEPT: "${seed}"
+
+PRIMARY FRAMING RULE:
+${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+
+COMMUNITY-NATIVE NICHE EVIDENCE RULE:
+${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
+
+Research the seed concept as a real-world community/fandom/taste-world FIRST — not as a cruise.
+Study how this community actually behaves today: platforms, subreddits, Discords, forums, creators,
+hashtags, meetups, clubs, tools/apps, gear, jargon, rituals, spending behavior, and social psychology.
+Treat travel-sector data only as secondary support for ship/itinerary plausibility.
+
+Then, and only then, assess cruise fit:
+1. Who is this community and what do they actively DO together? What is the social gravity — why would
+   they say "I heard there's a [${seed}] cruise, we have to go"?
+2. What non-travel evidence proves the community is real and active right now?
+3. Why is a cruise the ideal venue for them to gather vs a hotel, retreat, or convention?
+4. What cruise-compatible activities/rituals make the niche visible and social on the ship using only
+   portable props or existing ship spaces (deck, lounge, bar, pool, dining room, balcony, theater, ports)?
+5. What would feel implausible, workshop-like, clinical, industrial, or operationally awkward on a ship?
+6. What portable props, gear, or visual cues make this community recognizable and photographable onboard?
+7. What spend and conversion signals exist, with travel-market data used only as secondary support?
+
+If the seed concept is implausible as a literal cruise theme (requires fixed infrastructure, heavy
+machinery, hazardous equipment, or onshore-only logistics), reinterpret it into the closest
+cruise-plausible expression of the same community identity rather than rejecting it outright, and say so.${cbInventoryContext}
+    `.trim();
+}
+
+/**
+ * Builds the single-blueprint GPT-5 generation prompt for a manual seed.
+ * Reuses the same field requirements and realism boundaries as the batch path.
+ */
+function buildSeedBlueprintPrompt(args: {
+    seed: string;
+    seedResearch: string | null;
+    launchWindowPromptGuidance: string;
+    cbInventoryHardConstraintBlock: string;
+    existingThemesBlock: string;
+}): string {
+    const { seed, seedResearch, launchWindowPromptGuidance, cbInventoryHardConstraintBlock, existingThemesBlock } = args;
+    const researchSection = seedResearch
+        ? `Niche research findings (study before structuring):\n${seedResearch}`
+        : `No deep-research pass was run. Develop the blueprint from your own knowledge of this community plus the inventory constraints below. Stay grounded in real community-native behavior — do not invent fake metrics.`;
+
+    return `
+You are an expert Cruise Campaign Strategist with deep knowledge of niche subcultures and community marketing.
+
+The operator has supplied ONE niche concept to develop into a single Theme Cruise Blueprint:
+OPERATOR SEED CONCEPT: "${seed}"
+
+${researchSection}
+
+COMMUNITY-NATIVE NICHE EVIDENCE RULE:
+${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
+Travel-sector evidence can support destination or ship plausibility, but it cannot be the lead proof
+that a niche exists or will convert.
+
+Develop exactly ONE fully vetted, high-value Theme Cruise Blueprint that faithfully expresses the
+operator's seed concept. Preserve the operator's intent — do not pivot to a different niche — but you
+MAY reinterpret an implausible literal version into the closest cruise-plausible expression of the
+same community identity.
+
+NON-NEGOTIABLE REALISM BOUNDARY:
+${CRUISE_REALISM_GOVERNING_PRINCIPLE}
+
+PLAUSIBILITY GATE:
+The niche's core activity must be expressible using props a guest could carry in a day bag or find in an
+existing ship space. Any niche requiring purpose-built infrastructure, fixed installations, heavy
+machinery, safety-hazardous equipment, or onshore-only logistics fails this gate — reinterpret it.
+
+DATE OUTPUT RULES:
+${launchWindowPromptGuidance}
+- targetDates must be a real, parseable sailing date aligned to eligible CB inventory.
+
+REQUIRED JSON FIELDS (the parser rejects missing fields):
+- id (string, url-friendly slug), name, description, aesthetic
+- targetDates (exact sailing date copied from inventory, e.g. "2026-11-07")
+- targetDestination, shipTarget (ship name from inventory)
+- highlightEvents (3-5), targetingKeywords (3-5)
+- minCabinsRequired (default 8), startingPrice (default 1000 if unknown), priceSource ("AI Estimate" if unknown)
+- researchRationale, successLogic, audienceSignals (2-4)
+- vacationFitRationale, cruiseNativeMoments (3-5, each with a specific prop/texture/environmental detail)
+- nicheExpressionMode, implausibleLiteralizations (3-5)
+- allowedThemeSignals (3-6, each a concrete object/texture/color/set-dressing element), discouragedThemeSignals (3-6)
+- communityFitRationale, optionalGatheringMoments (3-5, each describing the physical scene)
+- optionalityStyle, solitudeRisks (3-5)
+
+Output a single JSON object: { "blueprint": { ...all fields above... } }.${cbInventoryHardConstraintBlock}${existingThemesBlock}
+    `.trim();
+}
+
+/**
+ * Develops a single blueprint from an operator-supplied niche seed and persists it
+ * as DRAFT (idempotent on slug). Reuses the shared launch-window + inventory gates.
+ */
+export async function generateBlueprintFromSeed(options: SeedBlueprintOptions): Promise<SeedBlueprintResult> {
+    const seed = options.seed.trim();
+    if (!seed) {
+        throw new Error('Seed concept is required.');
+    }
+    const deepResearch = options.deepResearch !== false;
+    const now = new Date();
+
+    const ctx = await buildDiscoveryPromptContext({ respin: false, now });
+    const { cbInventoryContext, cachedInventory, launchWindowPromptGuidance, existingThemesBlock } = ctx;
+
+    let seedResearch: string | null = null;
+    if (deepResearch) {
+        console.log(`[generateBlueprintFromSeed] Deep-researching seed niche: "${seed}"`);
+        seedResearch = await callGeminiDeepResearch(buildSeedResearchPrompt(seed, cbInventoryContext));
+        console.log('[generateBlueprintFromSeed] ✅ Seed research complete.');
+    } else {
+        console.log(`[generateBlueprintFromSeed] Skipping deep research — GPT-5 only for seed: "${seed}"`);
+    }
+
+    const { object } = await callGlobalGenerateObject({
+        schema: DiscoverySingleBlueprintSchema,
+        modelName: ModelName.GPT_5_HIGH,
+        operationName: 'DiscoverySeed-Blueprint',
+        timeoutMs: 300000,
+        maxOutputTokens: 6000,
+        prompt: buildSeedBlueprintPrompt({
+            seed,
+            seedResearch,
+            launchWindowPromptGuidance,
+            cbInventoryHardConstraintBlock: buildCbInventoryHardConstraintBlock(cbInventoryContext),
+            existingThemesBlock,
+        }),
+    });
+
+    const { matchedCampaigns, skippedCount } = await gateAndPersistBlueprints({
+        blueprints: [object.blueprint],
+        cachedInventory,
+        now,
+        logPrefix: 'generateBlueprintFromSeed',
+        seedConcept: seed,
+    });
+
+    return {
+        campaign: matchedCampaigns[0] ?? null,
+        skipped: skippedCount > 0,
+        seedResearch,
+    };
+}
+
 // ─── Internal: prompt builders + Step 3 + persistence ─────────────────────────
 
 function buildPsychographicPrompt(blocks: {
@@ -670,6 +876,15 @@ ${psychographicData}
         `.trim();
 }
 
+/**
+ * Builds the strict CB inventory hard-constraint block shared by the batch Step 3
+ * prompt and the manual-seed prompt. Returns '' when no inventory context exists.
+ */
+function buildCbInventoryHardConstraintBlock(cbInventoryContext: string): string {
+    if (!cbInventoryContext) return '';
+    return `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.\n- targetDates MUST be at least 6 months (180 days) from today — sailings closer than that are ineligible.\n- INVENTORY REALITY: Available CB group inventory is ~95% Royal Caribbean International. Do NOT target Celebrity, Norwegian, Holland America, or other lines unless they explicitly appear in the inventory list above. Design every campaign to work beautifully on an RCL ship.\n- EXPLOIT RCL SHIP CLASS DIVERSITY — this is your primary niche-matching dimension:\n  • ICON / OASIS class (Icon of the Seas, Utopia, Wonder, Oasis, Allure, Symphony, Harmony of the Seas): mega-resort energy, 20+ restaurants, AquaTheater, multiple pools, Central Park, Royal Promenade. Best for: family, music/nightlife, gaming/entertainment, beach-party, food-culture, large social groups, broad-appeal communities.\n  • QUANTUM class (Quantum, Anthem, Ovation, Odyssey of the Seas): tech-forward "smart ship" features — iFly indoor skydiving simulator, North Star observation capsule, bumper cars, Two70 immersive entertainment lounge. Best for: adventure, active lifestyles, tech-curious niches, younger adult demographics, high-energy social groups.\n  • VOYAGER class (Freedom, Liberty, Independence, Explorer, Adventure, Navigator, Mariner of the Seas): Royal Promenade, FlowRider surf simulator, ice rink (some ships), rock climbing wall. Best for: active community groups, entertainment-first niches, general pop-culture fandom, accessible price point.\n  • RADIANCE class (Radiance, Brilliance, Jewel, Serenade of the Seas): smaller and more intimate, floor-to-ceiling glass panoramas, scenic-cruising capable, adult-skewing demographic. Best for: wine & culinary, arts & culture, literary, cottagecore/slow-living, photography, nature aesthetics, 35–55 demographic. Pairs especially well with Alaska, Pacific Coast, and European itineraries.\n  • VISION class (Vision, Enchantment, Grandeur of the Seas): oldest and smallest RCL ships, quietest and most intimate atmosphere, classic ocean-liner feel. Best for: retro/nostalgia niches, LGBTQ+ community sailings (historically popular), smaller tight-knit groups, vintage aesthetics, slower-paced community building.\n- ITINERARY AS A NICHE SIGNAL — choose the region that amplifies the campaign theme:\n  • Caribbean (Eastern/Western/Southern) → beach, snorkeling, diving, reggae/calypso, tropical lifestyle, active outdoor niches\n  • Alaska / Pacific Coast → nature photography, wilderness, hiking, cottagecore, scenic slow-travel, environmental niches\n  • Mediterranean / Europe → art history, culinary, wine, architecture, fashion, literary niches\n  • Bahamas / Short Caribbean → accessible first-timer niches, weekend-getaway energy, party/social niches\n- Match ship class AND itinerary region to the niche — a Radiance-class Alaska sailing is a completely different product from an Oasis-class Caribbean sailing, even though both are Royal Caribbean.`;
+}
+
 interface Step3PersistArgs {
     aestheticData: string;
     psychographicData: string;
@@ -696,9 +911,7 @@ async function runStep3AndPersist(args: Step3PersistArgs): Promise<DiscoveryPipe
     } = args;
 
     console.log('[generateDiscoveryBlueprints] Step 3: Generating Structured Blueprints via OpenAI (gpt-5)');
-    const cbInventoryHardConstraintBlock = cbInventoryContext
-        ? `\n\nINVENTORY HARD CONSTRAINTS — STRICT RULES:\n${cbInventoryContext}\n\n- shipTarget MUST name a ship that appears in the AVAILABLE CB GROUP INVENTORY list above.\n- targetDestination MUST match one of the destination regions shown in the inventory.\n- targetDates MUST align with a sailing in the inventory (within ±60 days of a listed date).\n- If you cannot find a niche that fits the available inventory, adjust your shipTarget and targetDestination to match what IS in the list rather than inventing unmatchable combinations.\n- Never name a ship that is not in the inventory list above.\n- targetDates MUST be at least 6 months (180 days) from today — sailings closer than that are ineligible.\n- INVENTORY REALITY: Available CB group inventory is ~95% Royal Caribbean International. Do NOT target Celebrity, Norwegian, Holland America, or other lines unless they explicitly appear in the inventory list above. Design every campaign to work beautifully on an RCL ship.\n- EXPLOIT RCL SHIP CLASS DIVERSITY — this is your primary niche-matching dimension:\n  • ICON / OASIS class (Icon of the Seas, Utopia, Wonder, Oasis, Allure, Symphony, Harmony of the Seas): mega-resort energy, 20+ restaurants, AquaTheater, multiple pools, Central Park, Royal Promenade. Best for: family, music/nightlife, gaming/entertainment, beach-party, food-culture, large social groups, broad-appeal communities.\n  • QUANTUM class (Quantum, Anthem, Ovation, Odyssey of the Seas): tech-forward "smart ship" features — iFly indoor skydiving simulator, North Star observation capsule, bumper cars, Two70 immersive entertainment lounge. Best for: adventure, active lifestyles, tech-curious niches, younger adult demographics, high-energy social groups.\n  • VOYAGER class (Freedom, Liberty, Independence, Explorer, Adventure, Navigator, Mariner of the Seas): Royal Promenade, FlowRider surf simulator, ice rink (some ships), rock climbing wall. Best for: active community groups, entertainment-first niches, general pop-culture fandom, accessible price point.\n  • RADIANCE class (Radiance, Brilliance, Jewel, Serenade of the Seas): smaller and more intimate, floor-to-ceiling glass panoramas, scenic-cruising capable, adult-skewing demographic. Best for: wine & culinary, arts & culture, literary, cottagecore/slow-living, photography, nature aesthetics, 35–55 demographic. Pairs especially well with Alaska, Pacific Coast, and European itineraries.\n  • VISION class (Vision, Enchantment, Grandeur of the Seas): oldest and smallest RCL ships, quietest and most intimate atmosphere, classic ocean-liner feel. Best for: retro/nostalgia niches, LGBTQ+ community sailings (historically popular), smaller tight-knit groups, vintage aesthetics, slower-paced community building.\n- ITINERARY AS A NICHE SIGNAL — choose the region that amplifies the campaign theme:\n  • Caribbean (Eastern/Western/Southern) → beach, snorkeling, diving, reggae/calypso, tropical lifestyle, active outdoor niches\n  • Alaska / Pacific Coast → nature photography, wilderness, hiking, cottagecore, scenic slow-travel, environmental niches\n  • Mediterranean / Europe → art history, culinary, wine, architecture, fashion, literary niches\n  • Bahamas / Short Caribbean → accessible first-timer niches, weekend-getaway energy, party/social niches\n- Match ship class AND itinerary region to the niche — a Radiance-class Alaska sailing is a completely different product from an Oasis-class Caribbean sailing, even though both are Royal Caribbean.`
-        : '';
+    const cbInventoryHardConstraintBlock = buildCbInventoryHardConstraintBlock(cbInventoryContext);
     const { object } = await callGlobalGenerateObject({
         schema: DiscoveryBlueprintBatchSchema,
         modelName: ModelName.GPT_5_HIGH,
@@ -800,8 +1013,44 @@ Output must be a single JSON object with a top-level "blueprints" array containi
         `.trim(),
     });
 
+    const { matchedCampaigns, skippedCount } = await gateAndPersistBlueprints({
+        blueprints: object.blueprints,
+        cachedInventory,
+        now,
+        logPrefix: 'generateDiscoveryBlueprints',
+    });
+
+    return {
+        campaigns: matchedCampaigns,
+        skippedCount,
+        sonarResearch: {
+            psychographic: psychographicData,
+            aesthetic: aestheticData,
+        },
+    };
+}
+
+// ─── Shared gate + persist (batch and seed paths) ─────────────────────────────
+
+interface GateAndPersistArgs {
+    blueprints: ReturnType<typeof DiscoveryBlueprintBatchSchema.parse>['blueprints'];
+    cachedInventory: CbGroupInventoryItem[];
+    now: Date;
+    logPrefix: string;
+    /** Provenance recorded on every produced campaign (manual seed concept). */
+    seedConcept?: string;
+}
+
+/**
+ * Runs the launch-window + CB inventory match gates over a set of blueprints, then
+ * persists the survivors to DynamoDB (idempotent on slug). Shared by the 5-blueprint
+ * batch path and the single-blueprint manual-seed path so validation never diverges.
+ */
+async function gateAndPersistBlueprints(args: GateAndPersistArgs): Promise<{ matchedCampaigns: Campaign[]; skippedCount: number }> {
+    const { blueprints, cachedInventory, now, logPrefix, seedConcept } = args;
+
     const launchWindowViolations = getLaunchWindowViolations(
-        object.blueprints.map((blueprint) => ({
+        blueprints.map((blueprint) => ({
             id: blueprint.id,
             name: blueprint.name,
             targetDates: blueprint.targetDates,
@@ -811,9 +1060,9 @@ Output must be a single JSON object with a top-level "blueprints" array containi
     const invalidLaunchWindowIds = new Set(launchWindowViolations.map((violation) => violation.candidate.id));
     if (launchWindowViolations.length > 0) {
         const details = launchWindowViolations.map((violation) => violation.message).join('; ');
-        console.warn(`[generateDiscoveryBlueprints] Step 3: Discarding ${launchWindowViolations.length} ineligible blueprint(s): ${details}`);
+        console.warn(`[${logPrefix}] Discarding ${launchWindowViolations.length} ineligible blueprint(s): ${details}`);
     }
-    const launchEligibleBlueprints = object.blueprints.filter((blueprint) => !invalidLaunchWindowIds.has(blueprint.id));
+    const launchEligibleBlueprints = blueprints.filter((blueprint) => !invalidLaunchWindowIds.has(blueprint.id));
     assertLaunchWindowCompliance(
         launchEligibleBlueprints.map((blueprint) => ({
             id: blueprint.id,
@@ -825,17 +1074,17 @@ Output must be a single JSON object with a top-level "blueprints" array containi
 
     // ── Inventory Match Gate ──────────────────────────────────────────────────
     // Discard any blueprint that cannot be matched to CB inventory before saving.
-    const allCampaigns: Campaign[] = launchEligibleBlueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp));
+    const allCampaigns: Campaign[] = launchEligibleBlueprints.map((bp) => mapDiscoveryBlueprintToCampaign(bp, undefined, seedConcept ? { seedConcept } : undefined));
     const matchedCampaigns: Campaign[] = [];
 
     if (cachedInventory.length === 0) {
-        console.warn('[generateDiscoveryBlueprints] Inventory Match Gate: no cached inventory — bypassing gate, all blueprints proceed.');
+        console.warn(`[${logPrefix}] Inventory Match Gate: no cached inventory — bypassing gate, all blueprints proceed.`);
         matchedCampaigns.push(...allCampaigns);
     } else {
         for (const campaign of allCampaigns) {
             const match = matchGroupInventoryToCampaign(campaign, cachedInventory);
             if (match) {
-                console.log(`[generateDiscoveryBlueprints] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
+                console.log(`[${logPrefix}] ✅ Gate PASSED: "${campaign.id}" → ${match.matchedShipName} (score: ${match.matchScore})`);
                 matchedCampaigns.push({
                     ...campaign,
                     cbagenttoolsGroupId: match.cbGroupId,
@@ -853,12 +1102,12 @@ Output must be a single JSON object with a top-level "blueprints" array containi
                     updatedAt: new Date().toISOString(),
                 });
             } else {
-                console.warn(`[generateDiscoveryBlueprints] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
+                console.warn(`[${logPrefix}] ⚠️ Gate DISCARDED: "${campaign.id}" — ship: "${campaign.shipTarget ?? 'unset'}", destination: "${campaign.targetDestination ?? 'unset'}"`);
             }
         }
         const discardedCount = allCampaigns.length - matchedCampaigns.length;
         if (discardedCount > 0) {
-            console.log(`[generateDiscoveryBlueprints] Inventory Match Gate: ${matchedCampaigns.length}/${allCampaigns.length} blueprints passed (${discardedCount} discarded).`);
+            console.log(`[${logPrefix}] Inventory Match Gate: ${matchedCampaigns.length}/${allCampaigns.length} blueprints passed (${discardedCount} discarded).`);
         }
     }
 
@@ -869,32 +1118,21 @@ Output must be a single JSON object with a top-level "blueprints" array containi
             `Launch-window discarded: ${invalidLaunchWindowIds.size}; inventory-gate evaluated: ${allCampaigns.length}. ` +
             `CB inventory may be too narrow for the requested niche space. ` +
             `Requested ships: ${ships}. ` +
-            `Suggest: re-scrape CB inventory or re-spin with relaxed destination constraints.`
+            `Suggest: re-scrape CB inventory or relax destination constraints.`
         );
     }
 
-    if (matchedCampaigns.length < 2) {
-        console.warn(`[generateDiscoveryBlueprints] Only ${matchedCampaigns.length} blueprint(s) passed the inventory gate — consider a re-spin with relaxed constraints.`);
-    }
-
-    console.log('[generateDiscoveryBlueprints] Step 4: Saving Matched Blueprints to DynamoDB (with idempotency check)');
+    console.log(`[${logPrefix}] Saving Matched Blueprints to DynamoDB (with idempotency check)`);
     let skippedCount = 0;
     for (const campaign of matchedCampaigns) {
         const existing = await getCampaignBlueprint(campaign.id);
         if (existing) {
-            console.warn(`[generateDiscoveryBlueprints] Campaign "${campaign.id}" already exists — skipping.`);
+            console.warn(`[${logPrefix}] Campaign "${campaign.id}" already exists — skipping.`);
             skippedCount++;
             continue;
         }
         await saveCampaignBlueprint(campaign);
     }
 
-    return {
-        campaigns: matchedCampaigns,
-        skippedCount,
-        sonarResearch: {
-            psychographic: psychographicData,
-            aesthetic: aestheticData,
-        },
-    };
+    return { matchedCampaigns, skippedCount };
 }

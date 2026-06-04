@@ -348,3 +348,40 @@ export function clearDiscoveryRetirement(campaign: Campaign): Campaign {
         },
     };
 }
+
+/**
+ * Archives a campaign — distinct from retirement. Archived campaigns are excluded
+ * from dedup feedback (the model "forgets" them and may surface adjacent ideas
+ * again) AND hidden from the default discovery view, but the record is kept in the
+ * DB. Non-destructive and reversible. A campaign auto-leaves archived when its
+ * status advances past DRAFT (see clearArchiveOnStatusAdvance).
+ */
+export function applyCampaignArchive(campaign: Campaign): Campaign {
+    return {
+        ...campaign,
+        archived: true,
+        archivedAt: new Date().toISOString(),
+    };
+}
+
+/** Reverses an archive, restoring the campaign to the dedup pool and default view. */
+export function clearCampaignArchive(campaign: Campaign): Campaign {
+    return {
+        ...campaign,
+        archived: false,
+        archivedAt: undefined,
+    };
+}
+
+/**
+ * Clears the archived flag if the campaign has advanced past DRAFT (i.e. it is
+ * "running"). Called on save so a campaign that converts rejoins dedup feedback
+ * automatically without an explicit unarchive. Returns the campaign unchanged when
+ * not applicable.
+ */
+export function clearArchiveOnStatusAdvance(campaign: Campaign): Campaign {
+    if (campaign.archived && campaign.status && campaign.status !== 'DRAFT') {
+        return clearCampaignArchive(campaign);
+    }
+    return campaign;
+}

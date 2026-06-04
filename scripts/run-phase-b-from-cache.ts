@@ -93,14 +93,20 @@ function normalizeDateKey(rawDate?: string): string {
     if (!value) {
         return '';
     }
-    const parsed = new Date(value);
+    // ISO-format strings (e.g. "2027-01-08") are parsed as UTC midnight by V8, which
+    // shifts the local calendar date in non-UTC timezones. Force noon UTC so the date
+    // is stable regardless of server timezone.
+    const normalized = /^\d{4}-\d{2}-\d{2}/.test(value)
+        ? value.slice(0, 10) + 'T12:00:00Z'
+        : value;
+    const parsed = new Date(normalized);
     if (Number.isNaN(parsed.getTime())) {
         return value.toLowerCase();
     }
     return [
-        parsed.getFullYear(),
-        String(parsed.getMonth() + 1).padStart(2, '0'),
-        String(parsed.getDate()).padStart(2, '0'),
+        parsed.getUTCFullYear(),
+        String(parsed.getUTCMonth() + 1).padStart(2, '0'),
+        String(parsed.getUTCDate()).padStart(2, '0'),
     ].join('-');
 }
 
