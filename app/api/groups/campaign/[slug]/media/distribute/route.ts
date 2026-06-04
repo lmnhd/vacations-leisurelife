@@ -214,17 +214,41 @@ export async function POST(
 
         const existingSchedule = dryRun ? null : await getDistributionSchedule(slug);
         const shouldRegenerateSchedule = mode === 'plan';
-        // replaceExisting always rebuilds from the current manifest so stale assetIds
-        // stored in a previous schedule entry don't silently cause asset-not-found failures.
-        const needsFreshSchedule = shouldRegenerateSchedule || !existingSchedule || replaceExisting;
-        const baseSchedule = needsFreshSchedule
+
+        // Build a fresh schedule from the current manifest to get up-to-date assetIds.
+        const freshSchedule = (shouldRegenerateSchedule || !existingSchedule)
             ? buildDistributionSchedule(campaign, manifest, {
                 caller,
                 platforms: parsed.data.platforms,
                 stages: parsed.data.stages,
                 timezone: parsed.data.timezone,
             })
-            : existingSchedule;
+            : null;
+
+        // For replaceExisting dispatch: use the existing schedule's postIds (so status
+        // updates land on the correct persisted entries) but patch in fresh assetIds from
+        // the current manifest so stale asset references don't cause asset-not-found failures.
+        let baseSchedule = freshSchedule ?? existingSchedule!;
+        if (replaceExisting && existingSchedule && !shouldRegenerateSchedule) {
+            const freshByPlatform = new Map(
+                buildDistributionSchedule(campaign, manifest, {
+                    caller,
+                    platforms: parsed.data.platforms,
+                    stages: parsed.data.stages,
+                    timezone: parsed.data.timezone,
+                }).posts.map((p) => [p.platform + ':' + p.campaignStage, p]),
+            );
+            baseSchedule = {
+                ...existingSchedule,
+                posts: existingSchedule.posts.map((p) => {
+                    const fresh = freshByPlatform.get(p.platform + ':' + p.campaignStage);
+                    if (!fresh) return p;
+                    // Keep the existing postId and status, but take the fresh assetId/assetIds
+                    return { ...p, assetId: fresh.assetId, ...(fresh.assetIds ? { assetIds: fresh.assetIds } : {}) };
+                }),
+            };
+        }
+
         const schedule = filterSchedule(baseSchedule, parsed.data.platforms, parsed.data.stages);
 
         const record: DistributionExecutionRecord = {

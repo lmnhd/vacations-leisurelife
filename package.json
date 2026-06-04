@@ -15,7 +15,8 @@
     "agent:brief-prototype": "npx tsx --env-file=.env.local scripts/agent-api-brief-prototype.ts --",
     "agent:worker": "npx tsx --env-file=.env.local scripts/agent-api-worker.ts --",
     "agent:check-brief": "npx tsx --env-file=.env.local scripts/check-brief-status.ts --",
-    "scrape-cb-deals": "npx tsx scripts/scrape-cb-deals.ts"
+    "scrape-cb-deals": "npx tsx scripts/scrape-cb-deals.ts",
+    "validate-cb-retail-links": "npx tsx scripts/validate-cb-retail-links.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

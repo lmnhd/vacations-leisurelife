@@ -215,6 +215,38 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 
 ---
 
+### 2026-06-03: Meta Graph API Account-Specific Requirements (act_1612907296491359)
+
+**Trigger / Context:** Dynamic campaign and ad set creation failed repeatedly with generic "Invalid parameter" errors. The actual `error_user_msg` field (not `message`) contained the real reason each time.  
+**The Change / Rule:** Campaign creation requires a JSON body (not form encoding), `special_ad_categories: []` as a real array, and `is_adset_budget_sharing_enabled: false`. Ad set creation requires `optimization_goal: 'LANDING_PAGE_VIEWS'`, `billing_event: 'IMPRESSIONS'`, and `bid_strategy: 'LOWEST_COST_WITHOUT_CAP'` — omitting `bid_strategy` causes Meta to default to bid cap which then requires a `bid_amount`. The `OUTCOME_TRAFFIC` objective is correct for this account; `LINK_CLICKS` is rejected as a legacy objective. Full requirements documented in `META_TARGETING/META_NICHE_TARGETING_PLAN.md`.  
+**Broader Lesson:** Always surface `error.error_user_msg` from Meta Graph API errors — the `message` field is generic and useless. The `error_user_msg` field contains the actual human-readable reason. The Graph API docs don't surface account-tier requirements upfront; test against the live account to discover them.
+
+---
+
+### 2026-06-03: Meta Ad Set Daily Budget Is $5 (500 cents)
+
+**Trigger / Context:** Default budget was 2000 cents ($20). Operator corrected to $5 manually in Ads Manager.  
+**The Change / Rule:** Default `META_DAILY_BUDGET_CENTS` is now 500 cents ($5). Override via the `META_DAILY_BUDGET_CENTS` env var. Minimum is 100 cents ($1).  
+**Broader Lesson:** Ad set budgets should be set conservatively for draft/paused campaigns. $5/day is the right floor for niche group cruise campaigns in the seed phase.
+
+---
+
+### 2026-06-03: Meta Niche Parent Node Resolution Replaced Static Regex Map with AI Gateway
+
+**Trigger / Context:** A 15-entry regex `NICHE_PARENT_MAP` was added to guarantee broad Meta-recognized interest parent nodes alongside niche atoms. The operator flagged this as the wrong approach for an AI-first team — 15 categories is not enough and regex maintenance doesn't scale.  
+**The Change / Rule:** `resolveMetaParentNodes` now calls the LLM gateway (`extraction` task tier) with the campaign's niche signals and asks it to return 2–6 verified Meta interest category names. The result is injected into the query list immediately after seed keywords, before text-mining phases, so parent nodes are never crowded out. Tests use a `resolveParentNodes` override to stay hermetic.  
+**Broader Lesson:** Any fixed taxonomy (regex maps, category lists, keyword tables) that needs to scale across arbitrary niches should be replaced with an LLM call. The AI knows Meta's interest taxonomy far better than a maintainable regex list ever will.
+
+---
+
+### 2026-06-03: Ship Name Must Be Explicitly Injected Into Copy Generator Prompt
+
+**Trigger / Context:** The fiber arts campaign copy was generated with "Celebrity Edge" despite `matchedShipName` being set to "Norwegian Gem" in DynamoDB. The copy generator received no explicit ship name — it inferred the ship from stale `researchRationale` text that contained the wrong ship name from an earlier discovery run.  
+**The Change / Rule:** `generatePlatformCopy` now takes `canonicalShipName` as a second parameter and injects it as a hard rule at the top of the LLM prompt: "SHIP NAME RULE: The ship for this campaign is X. Use this exact name. Never substitute another ship name." Both call sites (media orchestrator and test copy route) pass `getAuthoritativeShipName(campaign)`. The campaign PATCH API now accepts `shipTarget` and `matchedShipName` corrections without requiring a full discovery re-run.  
+**Broader Lesson:** Any field that must appear verbatim in LLM output (ship name, campaign slug, destination) must be injected as an explicit rule, not left for the model to infer from surrounding context. The model will hallucinate from the richest context signal available, which may be stale.
+
+---
+
 ### 2026-06-03: Paid Targeting Must Enter Through Niche Circles, Not Travel Intent
 
 **Trigger / Context:** The fiber arts preview produced keywords like `knitting cruise`, `crochet group travel`, and fake placements such as `reddit.com/r/knittingcruise`, which aimed at nonexistent cruise-search intent instead of real knitting/yarn communities.  

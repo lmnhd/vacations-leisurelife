@@ -359,11 +359,11 @@ function mapCtaType(rawCta: string): string {
 
 function getMetaDailyBudgetCents(): number {
   const raw = process.env.META_DAILY_BUDGET_CENTS?.trim();
-  if (!raw) return 2000;
+  if (!raw) return 500;
 
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed) || parsed < 100) {
-    return 2000;
+    return 500;
   }
 
   return parsed;
@@ -486,8 +486,6 @@ async function dispatchMetaAdsLive(
         status: "PAUSED",
       });
     } catch (campaignError: unknown) {
-      // Dynamic campaign/ad set creation failed — fall back to the static META_AD_SET_ID
-      // if configured. This handles accounts that reject programmatic campaign creation.
       const reason = campaignError instanceof Error ? campaignError.message : String(campaignError);
       console.warn('[Meta dispatch] dynamic campaign creation failed, trying static fallback:', reason);
       metaCampaignId = undefined;

@@ -318,6 +318,7 @@ export async function createMetaAdSet(
             daily_budget: String(input.dailyBudgetCents),
             billing_event: 'IMPRESSIONS',
             optimization_goal: 'LANDING_PAGE_VIEWS',
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             destination_type: 'WEBSITE',
             targeting: JSON.stringify(input.targeting),
             status: input.status ?? 'PAUSED',
