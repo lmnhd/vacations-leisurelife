@@ -253,6 +253,15 @@ export async function buildEmailEventPreview(
     if (!profile.booking_link_url) warnings.push('No booking_link_url — neither CB nor Odysseus link is set.');
     if (!profile.community_channel_url) warnings.push('No community_channel_url — populated at THRESHOLD_MET.');
 
+    if (stage === 'waitlist_confirmation') {
+        const verificationUrl = properties.verification_url;
+        if (typeof verificationUrl !== 'string') {
+            warnings.push('No verification_url - this lead is missing an active verification token.');
+        } else if (!/^https?:\/\//.test(verificationUrl)) {
+            warnings.push(`verification_url is not absolute: ${verificationUrl}`);
+        }
+    }
+
     const nurtureGateWarning = getNurtureProgressGateWarning(stage, summary.totalEntries);
     if (nurtureGateWarning) warnings.push(nurtureGateWarning);
 

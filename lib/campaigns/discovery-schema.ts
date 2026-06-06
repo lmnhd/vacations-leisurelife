@@ -86,7 +86,10 @@ export function mapDiscoveryBlueprintToCampaign(
         name: blueprint.name,
         description: blueprint.description,
         aesthetic: blueprint.aesthetic,
+        // Fresh blueprint dates are GPT season/preference hints until inventory is
+        // matched (the gate / Phase B then overwrites with the real sailing date).
         targetDates: blueprint.targetDates,
+        targetDatesSource: existingCampaign?.targetDatesSource ?? 'estimate',
         targetDestination: blueprint.targetDestination,
         shipTarget: blueprint.shipTarget,
         highlightEvents: blueprint.highlightEvents,

@@ -1480,6 +1480,46 @@ export const TikTokPromotionPackageSchema = z.object({
 });
 export type TikTokPromotionPackage = z.infer<typeof TikTokPromotionPackageSchema>;
 
+// ── Vertical Video Editor overrides ───────────────────────────────────────────
+// Sparse, operator-authored override layer for the vertical (9:16) TikTok/Reels
+// video. Edits sit on top of the synthesized TikTokPromotionPackage + storyboard
+// without replacing them: an absent field falls through to the package/scene
+// default, so a campaign with no edits renders exactly as before. Keyed by beat
+// INDEX (positional, matching the preset rotation in package-template.ts), not
+// by sceneId — sceneIds can repeat, the index is what the renderer iterates.
+// See VERTICAL_VIDEO_EDITOR/IMPLEMENTATION_PLAN.md.
+
+export const TikTokBeatEditSchema = z.object({
+    // Image override: which image asset backs this beat. Absent ⇒ use the
+    // storyboard sceneId → active scene image binding.
+    imageAssetId: z.string().optional(),
+    // Copy overrides — absent ⇒ fall through to the promotion-package beat.
+    // Field names are slot-semantic; package-template maps them to card slots.
+    headline: z.string().optional(),
+    subline: z.string().optional(),
+    badge: z.string().optional(),
+    cta: z.string().optional(),
+    spokenText: z.string().optional(),
+    // Phase 2: element/layout nudges, keyed by card index within the beat.
+    placements: z.record(z.string(), z.object({
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+    })).optional(),
+    hideBrandLockup: z.boolean().optional(),
+});
+export type TikTokBeatEdit = z.infer<typeof TikTokBeatEditSchema>;
+
+export const TikTokVideoEditsSchema = z.object({
+    updatedAt: z.string(),
+    applyFilmGrain: z.boolean().optional(),
+    grainStrength: z.number().min(0).max(20).optional(),
+    // Sparse per-beat overrides, keyed by beat index as a string ("0".."7").
+    beats: z.record(z.string(), TikTokBeatEditSchema).default({}),
+});
+export type TikTokVideoEdits = z.infer<typeof TikTokVideoEditsSchema>;
+
 export const CampaignMediaManifestSchema = z.object({
     slug: z.string(),
     generatedAt: z.string(),
@@ -1518,6 +1558,10 @@ export const CampaignMediaManifestSchema = z.object({
         placements: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
     }).optional(),
     tiktokPromotionPackage: TikTokPromotionPackageSchema.optional(),
+    // VERTICAL_VIDEO_EDITOR: operator overrides for the 9:16 TikTok/Reels video.
+    // Sparse per-beat layer over the promotion package + storyboard. Absent ⇒
+    // render exactly from the synthesized package (no behavior change).
+    tiktokVideoEdits: TikTokVideoEditsSchema.optional(),
 
     images: z.object({
         shipReferences: z.array(AssetRecordSchema),

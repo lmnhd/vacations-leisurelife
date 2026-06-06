@@ -17,6 +17,7 @@ import type { Campaign } from '../../types';
 import { buildCampaignAdInput } from '../ad-pack-adapter';
 import { saveAssetRecord } from '../media-store';
 import { storeAsset } from '../storage-client';
+import { sanitizeAdCopySetShipCopyForCampaign } from '../../ship-copy';
 
 const DEFAULT_TEMPLATED_AD_FORMATS: readonly AdFormat[] = [
     'meta_feed_square',
@@ -159,7 +160,11 @@ export async function generateTemplatedAdArtifactPack(args: {
     });
     const supportedFormats = formats.filter((format) => input.templateLayouts[format]);
     const resolvedInput = { ...input, formats: supportedFormats };
-    const copyResult = await generateCopySetForFormats(resolvedInput);
+    const rawCopyResult = await generateCopySetForFormats(resolvedInput);
+    const copyResult = {
+        ...rawCopyResult,
+        copySet: sanitizeAdCopySetShipCopyForCampaign(rawCopyResult.copySet, args.campaign),
+    };
     let renderableFormats = supportedFormats;
     let renderableCopySet = copyResult.copySet;
     let qualityGate = runQualityGate(copyResult.copySet, resolvedInput);

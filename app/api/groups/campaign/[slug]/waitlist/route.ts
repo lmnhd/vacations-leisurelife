@@ -17,6 +17,7 @@ import { normalizeAttribution } from "@/lib/campaigns/lead-attribution";
 import {
   sendWaitlistConfirmation,
 } from "@/lib/campaigns/nurture-orchestrator";
+import { isCampaignRetired } from "@/lib/campaigns/discovery-iteration";
 
 export const dynamic = "force-dynamic";
 
@@ -190,6 +191,18 @@ export async function POST(
       {
         success: false,
         error: "This campaign has expired and is not accepting new entries.",
+      },
+      { status: 409 },
+    );
+  }
+
+  // Retired campaigns (manually or via stagnation) are closed to the public and
+  // must not accept new entries even if status is still GATHERING_INTEREST.
+  if (!previewCaller && isCampaignRetired(campaign)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "This campaign has been closed and is not accepting new entries.",
       },
       { status: 409 },
     );

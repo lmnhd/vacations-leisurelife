@@ -17,6 +17,7 @@ interface GenerateRequestBody {
     assetTypes?: AssetType[];
     forceRegenerateAssetTypes?: AssetType[];
     themeMusicSource?: 'replicate' | 'default';
+    disableThemeMusic?: boolean;
     sceneImageMode?: 'all' | 'missing_only';
     storyboardDeliverableIds?: string[];
     videoModelPresetId?: string;
@@ -63,6 +64,9 @@ export async function POST(
         }
         if (body.themeMusicSource === 'replicate' || body.themeMusicSource === 'default') {
             options.themeMusicSource = body.themeMusicSource;
+        }
+        if (typeof body.disableThemeMusic === 'boolean') {
+            options.disableThemeMusic = body.disableThemeMusic;
         }
         if (body.sceneImageMode === 'all' || body.sceneImageMode === 'missing_only') {
             options.sceneImageMode = body.sceneImageMode;

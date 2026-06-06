@@ -24,6 +24,10 @@ import { validateBrief } from "./validation";
 import { applyAutoFixes } from "./auto-fix";
 import { applySupervisorState } from "./supervisor";
 import { getLaunchWindowAssessment } from "../launch-window";
+import {
+  formatStaleBriefForResearchMessage,
+  isResearchDossierNewerThanBrief,
+} from "../research-freshness";
 import type { CampaignAestheticBrief, ProductionBible } from "../schema";
 import type { Campaign } from "../types";
 import type { ValidationIssue } from "./validation";
@@ -661,6 +665,14 @@ async function computeReadiness(
         summary: "Secondary campaign research dossier is missing. Generate it before approving the brief for media.",
       };
     }
+    if (isResearchDossierNewerThanBrief(campaign, effectiveBrief)) {
+      return {
+        readiness: "needs_review",
+        brief: effectiveBrief,
+        issues: [],
+        summary: formatStaleBriefForResearchMessage(campaign.id),
+      };
+    }
 
     const validation = validateBrief(effectiveBrief, campaign);
     if (!validation.passed) {
@@ -1041,6 +1053,9 @@ export async function approveForMedia(slug: string): Promise<ApprovalResult> {
     throw new Error(
       `Cannot approve: secondary campaign research dossier is missing for ${slug}. Generate the research dossier on the brief page before approving for media.`,
     );
+  }
+  if (isResearchDossierNewerThanBrief(campaign, storedBrief)) {
+    throw new Error(`Cannot approve: ${formatStaleBriefForResearchMessage(slug)}`);
   }
 
 

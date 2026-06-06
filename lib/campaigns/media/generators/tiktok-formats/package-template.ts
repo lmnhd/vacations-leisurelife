@@ -1,4 +1,4 @@
-import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage, TikTokPromotionBeat } from '../../../schema';
+import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage, TikTokPromotionBeat, TikTokBeatEdit, TikTokVideoEdits } from '../../../schema';
 import type { TikTokOverlayCardSpec, TikTokBrandLockupSpec } from '../tiktok-overlay-cards';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -37,6 +37,12 @@ export interface TikTokSequenceBeat {
     presetId: TikTokPresetId;
     /** Scene image ID for this beat — from storyboard.shotSequence[i].sceneId */
     sceneId: string;
+    /**
+     * Operator-chosen image asset override (from VERTICAL_VIDEO_EDITOR).
+     * When set, the renderer should resolve this asset's URL instead of the
+     * sceneId → active scene image binding. Absent ⇒ use the scene default.
+     */
+    imageAssetId?: string;
     overlaySpecs: TikTokOverlayCardSpec[];
     brandLockup: TikTokBrandLockupSpec;
     /** Primary spoken text: storyboard narrationSegment → card copy fallback */
@@ -452,6 +458,80 @@ function buildBeatFromPromotion(
     }
 }
 
+// ── operator edit overlay (VERTICAL_VIDEO_EDITOR) ────────────────────────────
+// Applies a sparse TikTokBeatEdit on top of an already-built beat. The slot
+// mapping MUST match the promotion builders above so the editor preview and the
+// final render agree on which card a given copy field lands in:
+//
+//   hook    headline/subline → the single tag card; badge → tag badge
+//   social  headline → TOP tag card; subline → BOTTOM statement card headline
+//   cta     headline/subline → statement card; cta → pill card headline
+//
+// Only fields present on the edit override the built beat; absent fields keep
+// the promotion-package value. Returns a new beat (does not mutate input).
+
+function applyBeatEdit(beat: TikTokSequenceBeat, edit: TikTokBeatEdit | undefined): TikTokSequenceBeat {
+    if (!edit) return beat;
+
+    const overlaySpecs = beat.overlaySpecs.map((spec) => ({ ...spec }));
+    const tagCard       = overlaySpecs.find((s) => s.variant === 'tag');
+    const statementCard = overlaySpecs.find((s) => s.variant === 'statement');
+    const ctaCard       = overlaySpecs.find((s) => s.variant === 'cta');
+    const primaryCard   = overlaySpecs[0];
+
+    const headline = n(edit.headline ?? '');
+    const subline  = n(edit.subline ?? '');
+    const badge    = n(edit.badge ?? '');
+    const ctaLabel = n(edit.cta ?? '');
+
+    if (badge && primaryCard) primaryCard.badge = badge;
+
+    switch (beat.presetId) {
+        case 'hook': {
+            const card = tagCard ?? primaryCard;
+            if (card) {
+                if (headline) card.headline = headline;
+                if (subline) card.subline = subline;
+            }
+            break;
+        }
+        case 'social': {
+            if (headline && tagCard) tagCard.headline = headline;
+            // subline drives the BOTTOM statement card's headline (mirrors
+            // buildSocialBeatFromPromotion, where beat.subline → statement.headline)
+            if (subline && statementCard) statementCard.headline = subline;
+            break;
+        }
+        case 'cta': {
+            if (statementCard) {
+                if (headline) statementCard.headline = headline;
+                if (subline) statementCard.subline = subline;
+            }
+            if (ctaLabel && ctaCard) ctaCard.headline = ctaLabel;
+            break;
+        }
+    }
+
+    // Phase 2: placement nudges, keyed by card index within the beat.
+    if (edit.placements) {
+        for (const [indexKey, placement] of Object.entries(edit.placements)) {
+            const idx = Number(indexKey);
+            if (Number.isInteger(idx) && overlaySpecs[idx]) {
+                overlaySpecs[idx] = { ...overlaySpecs[idx], placement };
+            }
+        }
+    }
+
+    const spokenText = n(edit.spokenText ?? '') || beat.spokenText;
+
+    return {
+        ...beat,
+        imageAssetId: edit.imageAssetId ?? beat.imageAssetId,
+        overlaySpecs,
+        spokenText,
+    };
+}
+
 // ── public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -463,12 +543,16 @@ function buildBeatFromPromotion(
  *   3. brief field derivation                    — safe fallback
  *
  * Scene and duration always come from the storyboard (explicit, production bible).
+ *
+ * When `edits` (VERTICAL_VIDEO_EDITOR) is provided, each beat's sparse override
+ * is layered on after construction. Absent edits ⇒ identical output to before.
  */
 export function buildPackageSequenceBeats(
     brief: CampaignAestheticBrief,
     storyboard?: Storyboard,
     options: PackageTemplateOptions = {},
     promotionPackage?: TikTokPromotionPackage | null,
+    edits?: TikTokVideoEdits | null,
 ): TikTokSequenceBeat[] {
     const shots = storyboard?.shotSequence ?? [];
     const sourceBeatCount = shots.length || options.beatCount || 6;
@@ -500,7 +584,8 @@ export function buildPackageSequenceBeats(
         if (!promotionBeat) {
             throw new Error(`TikTok promotion package is missing beat ${i + 1} of ${beatCount}.`);
         }
-        beats.push(buildBeatFromPromotion(promotionBeat, presetId, brief, duration, sceneId, shotNarration));
+        const builtBeat = buildBeatFromPromotion(promotionBeat, presetId, brief, duration, sceneId, shotNarration);
+        beats.push(applyBeatEdit(builtBeat, edits?.beats?.[String(i)]));
     }
 
     return beats;

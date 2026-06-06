@@ -230,22 +230,33 @@ export async function POST(
         // the current manifest so stale asset references don't cause asset-not-found failures.
         let baseSchedule = freshSchedule ?? existingSchedule!;
         if (replaceExisting && existingSchedule && !shouldRegenerateSchedule) {
+            // Key includes assetId so multiple posts on the same platform+stage
+            // (e.g. three facebook_ad creatives: image, video Reel, IG image) are
+            // kept distinct rather than collapsed to one.
+            const postKey = (p: { platform: string; campaignStage: string; assetId: string }) =>
+                `${p.platform}:${p.campaignStage}:${p.assetId}`;
+            const existingKeys = new Set(existingSchedule.posts.map(postKey));
             const freshByPlatform = new Map(
                 buildDistributionSchedule(campaign, manifest, {
                     caller,
                     platforms: parsed.data.platforms,
                     stages: parsed.data.stages,
                     timezone: parsed.data.timezone,
-                }).posts.map((p) => [p.platform + ':' + p.campaignStage, p]),
+                }).posts.map((p) => [postKey(p), p]),
             );
             baseSchedule = {
                 ...existingSchedule,
-                posts: existingSchedule.posts.map((p) => {
-                    const fresh = freshByPlatform.get(p.platform + ':' + p.campaignStage);
-                    if (!fresh) return p;
-                    // Keep the existing postId and status, but take the fresh assetId/assetIds
-                    return { ...p, assetId: fresh.assetId, ...(fresh.assetIds ? { assetIds: fresh.assetIds } : {}) };
-                }),
+                posts: [
+                    ...existingSchedule.posts.map((p) => {
+                        const fresh = freshByPlatform.get(postKey(p));
+                        if (!fresh) return p;
+                        // Keep the existing postId and status, but take the fresh assetId/assetIds
+                        return { ...p, assetId: fresh.assetId, ...(fresh.assetIds ? { assetIds: fresh.assetIds } : {}) };
+                    }),
+                    ...Array.from(freshByPlatform.values()).filter(
+                        (fresh) => !existingKeys.has(postKey(fresh)),
+                    ),
+                ],
             };
         }
 

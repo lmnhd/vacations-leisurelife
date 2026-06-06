@@ -1,5 +1,5 @@
 {
-  "completedAt": "2026-06-04T20:58:31.350Z",
+  "completedAt": "2026-06-04T22:35:49.189Z",
   "summary": {
     "confirmedCount": 0,
     "backupCount": 0,
@@ -11,12 +11,12 @@
     {
       "slug": "grand-costumed-promenade-explorer",
       "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Explorer of the Seas — retail fallback + retail link"
+      "detail": "Symphony of the Seas — retail fallback + retail link"
     },
     {
-      "slug": "urban-sketchers-sea-voyage-radiance",
+      "slug": "speedcubers-maritime-meetup-hero",
       "status": "RETAIL_MULTI_BOOKING",
-      "detail": "Radiance of the Seas — retail fallback + retail link"
+      "detail": "Hero of the Seas — retail fallback + retail link"
     }
   ]
 }

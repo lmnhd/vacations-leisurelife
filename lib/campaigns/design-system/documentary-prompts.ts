@@ -56,7 +56,11 @@ function buildPresenceRule(brief: CampaignAestheticBrief, tokens: NicheTokens): 
 }
 
 function looksLikeBoardGameCampaign(tokens: NicheTokens, brief: CampaignAestheticBrief, campaign: Campaign | null): boolean {
-    const corpus = [
+    if (campaign?.id === 'board-games-at-sea' || /board games at sea/i.test(campaign?.name ?? '')) {
+        return true;
+    }
+
+    const identityCorpus = [
         brief.themeName,
         brief.visual.aestheticLabel,
         brief.messaging.heroSlogan,
@@ -66,14 +70,20 @@ function looksLikeBoardGameCampaign(tokens: NicheTokens, brief: CampaignAestheti
         campaign?.description ?? '',
         campaign?.targetingKeywords?.join(' ') ?? '',
         campaign?.allowedThemeSignals?.join(' ') ?? '',
+        campaign?.highlightEvents?.join(' ') ?? '',
+        brief.visual.plausibilityFramework.allowedProps?.join(' ') ?? '',
         campaign?.optionalGatheringMoments?.join(' ') ?? '',
         tokens.nicheVocabulary.join(' '),
-        tokens.propSignals.join(' '),
-        tokens.momentSignals.join(' '),
     ].join(' ').toLowerCase();
 
-    return /\b(board[- ]?game|tabletop|meeple|meeples|dice|cards?|card sleeves?|tile rack|score sheet|game box|playing pieces?|azul|monopoly|sorry|ticket to ride)\b/i.test(corpus)
-        || (tokens.energyMode === 'playful_collective' && tokens.propSignals.some((signal) => /\b(dice|cards?|game box|meeple|tile|score)\b/i.test(signal)));
+    const strongBoardGameCue = /\b(board[- ]?games?|tabletop|meeples?|dice|card sleeves?|tile racks?|score sheets?|game boxes?|board edge|playing pieces?|game pieces?|pawns?|azul|monopoly|sorry|ticket to ride)\b/i;
+    const cardWithGameContext = /\b(cards?|deck)\b.{0,40}\b(board|tabletop|game|play|players?|score|turns?)\b|\b(board|tabletop|game|play|players?|score|turns?)\b.{0,40}\b(cards?|deck)\b/i;
+    if (strongBoardGameCue.test(identityCorpus) || cardWithGameContext.test(identityCorpus)) {
+        return true;
+    }
+
+    return tokens.energyMode === 'playful_collective'
+        && tokens.propSignals.some((signal) => /\b(dice|game box|meeples?|tile rack|score sheet|board edge|playing pieces?|game pieces?|pawns?)\b/i.test(signal));
 }
 
 function buildBoardGameDirective(tokens: NicheTokens, brief: CampaignAestheticBrief, campaign: Campaign | null): string {

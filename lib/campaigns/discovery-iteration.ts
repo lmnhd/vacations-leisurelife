@@ -300,6 +300,17 @@ export function applyDiscoveryRevisionIteration(
     };
 }
 
+/**
+ * Canonical retirement check. A campaign is retired when it has an explicit
+ * `retiredAt` timestamp (manual or stagnation-driven) or its recommended next
+ * action is `retire`. Retired campaigns are hidden from the default discovery
+ * view and must not be served as a live public landing page.
+ */
+export function isCampaignRetired(campaign: Campaign): boolean {
+    const state = campaign.discoveryIteration;
+    return !!state?.retiredAt || state?.recommendedNextAction === 'retire';
+}
+
 export function getDiscoveryRevisionMode(campaign: Campaign): 'single' | 'branch' | 'retire' {
     const state = normalizeDiscoveryIterationState(campaign.discoveryIteration);
     if (state.retiredAt || state.recommendedNextAction === 'retire') {

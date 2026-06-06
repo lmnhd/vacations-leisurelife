@@ -51,7 +51,20 @@ function makeManifest(): CampaignMediaManifest {
             platformCrops: {} as CampaignMediaManifest['images']['platformCrops'],
         },
         videos: {
-            tiktokSeed: null,
+            tiktokSeed: {
+                assetId: 'vid_tiktok_seed_1',
+                assetType: 'tiktok_seed_video',
+                url: 'https://example.com/tiktok_seed.mp4',
+                generator: 'runwayml',
+                promptUsed: 'tiktok seed',
+                fileSizeBytes: 100,
+                mimeType: 'video/mp4',
+                tags: ['tiktok_seed'],
+                createdAt: '2026-04-30T00:00:00.000Z',
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            },
             heroExplainer: null,
             thresholdAnnouncement: null,
             countdown: [],
@@ -159,6 +172,21 @@ async function main(): Promise<void> {
         'https://example.com/ad_itinerary.png',
         'https://example.com/ad_quote.png',
     ]);
+
+    const reelsPost: ScheduledPost = {
+        postId: 'post3',
+        platform: 'instagram_reels',
+        assetId: 'vid_tiktok_seed_1',
+        copyVariant: 'instagram_reel_0',
+        scheduledAt: new Date().toISOString(),
+        campaignStage: 'seed_day_0',
+        status: 'scheduled',
+        notes: [],
+    };
+    const reelsResult = await dispatchMarketingPost(campaign, manifest, reelsPost, 'simulate');
+    assert.equal(reelsResult.status, 'draft_created');
+    assert.equal(reelsResult.preview.mediaType, 'REELS');
+    assert.equal(reelsResult.preview.mediaUrl, 'https://example.com/tiktok_seed.mp4');
 
     console.log('distribution marketing designed ads tests passed');
 }

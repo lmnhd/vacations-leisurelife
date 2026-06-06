@@ -235,6 +235,14 @@ export async function upsertCampaignPricingMatch(
     const healthExpr = healthPayload
         ? ', inventoryCandidates = :candidates, activeBookingMode = :bookingMode, inventoryHealth = :invHealth, inventoryLastCheckedAt = :checkedAt'
         : '';
+    // Inventory is the single source of date truth: when we have a real matched
+    // sailing date, overwrite the human-facing targetDates with it and mark the
+    // provenance as inventory-confirmed. This guarantees no downstream consumer can
+    // show a stale GPT-guessed date for a matched campaign.
+    const matchedDateText = match.matchedSailDate?.trim();
+    const targetDatesExpr = matchedDateText
+        ? ', targetDates = :matchedSailDate, targetDatesSource = :targetDatesSource'
+        : '';
 
     const params = {
         TableName: TABLE_NAME,
@@ -253,7 +261,7 @@ export async function upsertCampaignPricingMatch(
             'odysseusItinerarySummary = :odysseusItinerarySummary',
             'odysseusPortsOfCall = :odysseusPortsOfCall',
             'updatedAt = :now',
-        ].join(', ') + retailLinkSetExpr + healthExpr + retailLinkRemoveExpr,
+        ].join(', ') + targetDatesExpr + retailLinkSetExpr + healthExpr + retailLinkRemoveExpr,
         ExpressionAttributeValues: {
             ':groupId': match.cbGroupId,
             ':link': match.cbPersonalLink,
@@ -268,6 +276,7 @@ export async function upsertCampaignPricingMatch(
             ':odysseusItinerarySummary': match.odysseusItinerarySummary ?? '',
             ':odysseusPortsOfCall': match.odysseusPortsOfCall ?? '',
             ':now': new Date().toISOString(),
+            ...(matchedDateText ? { ':targetDatesSource': 'inventory' as const } : {}),
             ...(match.odysseusRetailBookingLink ? { ':retailLink': match.odysseusRetailBookingLink } : {}),
             ...(healthPayload ? {
                 ':candidates': healthPayload.inventoryCandidates ?? [],
@@ -428,12 +437,16 @@ export async function markCampaignUnmatched(slug: string): Promise<void> {
     const params = {
         TableName: TABLE_NAME,
         Key: { PK: `CAMPAIGN#${slug}`, SK: 'METADATA' },
+        // matchedSailDate is removed, so targetDates reverts to being a non-confirmed
+        // hint. targetDates itself is left intact so the campaign keeps a date to
+        // re-match against; we only flip its provenance back to 'estimate'.
         UpdateExpression: [
-            'SET pricingStatus = :pricingStatus, updatedAt = :now',
+            'SET pricingStatus = :pricingStatus, targetDatesSource = :targetDatesSource, updatedAt = :now',
             'REMOVE cbagenttoolsGroupId, cbagenttoolsBookingLink, cbPriceAdvantage, priceSource, matchedShipName, matchedSailDate, matchedDeparturePort, matchedNights, odysseusItinerarySummary, odysseusPortsOfCall',
         ].join(' '),
         ExpressionAttributeValues: {
             ':pricingStatus': 'UNMATCHED' as const,
+            ':targetDatesSource': 'estimate' as const,
             ':now': new Date().toISOString(),
         },
     };

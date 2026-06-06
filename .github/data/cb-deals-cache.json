@@ -1,5 +1,5 @@
 {
-  "generatedAtIso": "2026-06-04T15:23:28.648Z",
+  "generatedAtIso": "2026-06-04T22:28:31.262Z",
   "promos": [
     {
       "title": "ALG Vacations and Hyatt Inclusives - Save up to 25% off",
@@ -436,16 +436,29 @@
   ],
   "priceAdvantages": [
     {
-      "groupId": "50468",
-      "shipName": "Jewel of the Seas",
+      "groupId": "55213",
+      "shipName": "Hero of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
       "departurePort": "",
       "nights": "",
-      "sailDate": "April 18, 2027",
-      "startingPrice": "1191.51",
-      "priceAdvantage": "$305",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50468/",
+      "sailDate": "Dec. 11, 2027",
+      "startingPrice": "1777.70",
+      "priceAdvantage": "$456",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55213/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+    },
+    {
+      "groupId": "53432",
+      "shipName": "Navigator of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "17 Night Tokyo To Los Angeles Cruise",
+      "departurePort": "TYO",
+      "nights": "16",
+      "sailDate": "May 12, 2027",
+      "startingPrice": "1121.04",
+      "priceAdvantage": "$1100",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/53432/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
     },
     {
@@ -459,7 +472,20 @@
       "startingPrice": "1203.48",
       "priceAdvantage": "$305",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/52428/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "50468",
+      "shipName": "Jewel of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "April 18, 2027",
+      "startingPrice": "1191.51",
+      "priceAdvantage": "$305",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50468/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
       "groupId": "55173",
@@ -472,58 +498,6 @@
       "startingPrice": "2145.43",
       "priceAdvantage": "$481",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/55173/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
-    },
-    {
-      "groupId": "53856",
-      "shipName": "Celebrity Edge",
-      "vendor": "Celebrity Cruises",
-      "itinerary": "16 Night Tahitian Treasures Cruise",
-      "departurePort": "SYD",
-      "nights": "15",
-      "sailDate": "April 19, 2028",
-      "startingPrice": "2927.02",
-      "priceAdvantage": "$727",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/53856/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "53432",
-      "shipName": "Navigator of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "17 Night Tokyo To Los Angeles Cruise",
-      "departurePort": "TYO",
-      "nights": "16",
-      "sailDate": "May 12, 2027",
-      "startingPrice": "1121.04",
-      "priceAdvantage": "$1100",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/53432/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "55213",
-      "shipName": "Hero of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 11, 2027",
-      "startingPrice": "1777.70",
-      "priceAdvantage": "$456",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55213/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "52473",
-      "shipName": "Liberty of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "8 Night Western Caribbean Cruise",
-      "departurePort": "GLS",
-      "nights": "8",
-      "sailDate": "Aug. 20, 2027",
-      "startingPrice": "776.02",
-      "priceAdvantage": "$430",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52473/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {

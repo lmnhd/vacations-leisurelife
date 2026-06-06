@@ -168,6 +168,21 @@ function IssueRow({ issue }: { issue: ValidationIssue }) {
     );
 }
 
+function isResearchDossierNewerThanBrief(
+    campaign: { researchDossierGeneratedAt?: string | null } | null,
+    brief: { generatedAt?: unknown } | null,
+): boolean {
+    const researchAtRaw = campaign?.researchDossierGeneratedAt;
+    const briefAtRaw = brief?.generatedAt;
+    if (!researchAtRaw || typeof briefAtRaw !== 'string') {
+        return false;
+    }
+
+    const researchAt = Date.parse(researchAtRaw);
+    const briefAt = Date.parse(briefAtRaw);
+    return Number.isFinite(researchAt) && Number.isFinite(briefAt) && researchAt > briefAt;
+}
+
 function getProductionIssueRepairHint(issue: ProductionBuildLintIssue): string {
     switch (issue.code) {
         case 'missing_role_coverage':
@@ -596,6 +611,14 @@ export default function BriefStudioPage() {
     const hasStoredBrief = Boolean(readiness?.brief);
     const storedReviewStatus = typeof activeBrief?.['humanReviewStatus'] === 'string' ? activeBrief['humanReviewStatus'] : null;
     const hasResearchDossier = Boolean(campaign?.researchDossier);
+    const researchDossierNewerThanBrief = isResearchDossierNewerThanBrief(campaign, activeBrief);
+    const primaryBriefActionLabel = action === 'generating'
+        ? (hasStoredBrief ? 'Regenerating...' : 'Generating...')
+        : !hasResearchDossier
+            ? (hasStoredBrief ? 'Generate Research + Regenerate Brief' : 'Generate Research + Brief')
+            : hasStoredBrief
+                ? 'Regenerate Brief'
+                : 'Generate Brief';
 
 
     // ── Load readiness state ──────────────────────────────────────────
@@ -645,12 +668,25 @@ export default function BriefStudioPage() {
     // On completion we reload readiness so fresh brief state appears.
     const POLL_INTERVAL_MS = 5_000;
 
+    const generateResearchDossier = useCallback(async (force: boolean) => {
+        const res = await fetch(`/api/groups/campaign/${normalizedSlug}/research-dossier`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ force }),
+        });
+        const data = await res.json() as { success?: boolean; error?: string };
+        if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`);
+    }, [normalizedSlug]);
+
     const generateBrief = useCallback(async () => {
         if (!normalizedSlug) return;
+        const willGenerateDossierFirst = !hasResearchDossier;
         const confirmed = window.confirm(
-            hasStoredBrief
-                ? `Regenerate the stored brief for "${normalizedSlug}"?\n\nThis will run new LLM generation passes, rebuild the visual-planning bundle, overwrite the saved brief artifacts, and may incur provider cost.\n\nUse "Load Selected Brief" if you only want to reload the saved state.`
-                : `Generate the first brief for "${normalizedSlug}"?\n\nThis will run live LLM generation and may incur provider cost.`
+            willGenerateDossierFirst
+                ? `${hasStoredBrief ? 'Generate the missing secondary research dossier, then regenerate' : 'Generate the secondary research dossier, then generate'} the brief for "${normalizedSlug}"?\n\nThis is the expected order for new campaigns: research first, then the brief bundle, so the landing stills and Production Bible can use the dossier from the first pass.\n\nThis will run live LLM generation and may incur provider cost.`
+                : hasStoredBrief
+                    ? `Regenerate the stored brief for "${normalizedSlug}"?\n\nThis will run new LLM generation passes, rebuild the visual-planning bundle, overwrite the saved brief artifacts, and may incur provider cost.\n\nUse "Load Selected Brief" if you only want to reload the saved state.`
+                    : `Generate the first brief for "${normalizedSlug}"?\n\nThis will run live LLM generation and may incur provider cost.`
         );
         if (!confirmed) return;
         setLoading(true);
@@ -659,6 +695,11 @@ export default function BriefStudioPage() {
         setActiveJob(null);
 
         try {
+            if (willGenerateDossierFirst) {
+                await generateResearchDossier(false);
+                await loadReadiness();
+            }
+
             // Step 1: enqueue
             const enqueueRes = await fetch(`/api/groups/campaign/${normalizedSlug}/brief`, {
                 method: 'POST',
@@ -700,7 +741,7 @@ export default function BriefStudioPage() {
             setLoading(false);
             setAction(null);
         }
-    }, [hasStoredBrief, normalizedSlug, loadReadiness, loadHistory]);
+    }, [generateResearchDossier, hasResearchDossier, hasStoredBrief, normalizedSlug, loadReadiness, loadHistory]);
 
     // -- Approve for media ---------------------------------------------------
     const approve = useCallback(async () => {
@@ -734,13 +775,7 @@ export default function BriefStudioPage() {
         setAction('researching');
         setError(null);
         try {
-            const res = await fetch(`/api/groups/campaign/${normalizedSlug}/research-dossier`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ force: hasResearchDossier }),
-            });
-            const data = await res.json() as { success?: boolean; error?: string };
-            if (!res.ok || !data.success) throw new Error(data.error ?? `HTTP ${res.status}`);
+            await generateResearchDossier(hasResearchDossier);
             await loadReadiness();
             await loadHistory();
         } catch (err) {
@@ -749,7 +784,7 @@ export default function BriefStudioPage() {
             setLoading(false);
             setAction(null);
         }
-    }, [normalizedSlug, hasResearchDossier, loadReadiness, loadHistory]);
+    }, [normalizedSlug, hasResearchDossier, loadReadiness, loadHistory, generateResearchDossier]);
 
     const handleLoadCampaign = useCallback(async () => {
         await loadReadiness();
@@ -769,6 +804,9 @@ export default function BriefStudioPage() {
         if (!hasResearchDossier) {
             return 'Generate the secondary research dossier before approving this brief.';
         }
+        if (researchDossierNewerThanBrief) {
+            return 'The secondary research dossier is newer than this brief. Regenerate the brief so the landing stills and Production Bible absorb the latest research.';
+        }
         if (!activeBrief) return null;
         if (!hasLandingStillBible || !productionBuildStatus) {
             return 'Production build has not been evaluated yet. Regenerate the brief bundle to run pre-media lint before approving.';
@@ -787,6 +825,7 @@ export default function BriefStudioPage() {
         : '/tests/media-generation';
     const approvalBlockedReason = (() => {
         if (!hasResearchDossier) return 'Generate the secondary research dossier before approving this brief.';
+        if (researchDossierNewerThanBrief) return 'Regenerate the brief after the latest research dossier before approving for media.';
         if (!readiness) return 'Load a brief first.';
         if (isReadyForMedia) return 'This brief is already approved and ready for media generation. Continue in the media-generation handoff link below.';
         if (blockers.length > 0) return blockers[0]?.message ?? 'Resolve blocker issues before approving.';
@@ -903,7 +942,7 @@ export default function BriefStudioPage() {
                         <p className="text-xs text-slate-400">{lastResult?.summary ?? readiness.summary}</p>
                         {!hasResearchDossier && (
                             <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3 text-xs text-cyan-100">
-                                <strong>Secondary research required.</strong> Generate the research dossier before approving this brief or moving to media generation.
+                                <strong>Secondary research required.</strong> The expected order is research dossier first, then brief generation. Use the combined Generate Research + Brief action below, or generate the dossier here before approval.
                                 <div className="mt-3">
                                     <button
                                         onClick={handleGenerateResearchDossier}
@@ -913,6 +952,12 @@ export default function BriefStudioPage() {
                                         {action === 'researching' ? 'Generating dossier...' : 'Generate Research Dossier'}
                                     </button>
                                 </div>
+                            </div>
+                        )}
+
+                        {researchDossierNewerThanBrief && (
+                            <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
+                                <strong>Brief refresh required.</strong> This campaign's research dossier was generated after the saved brief. Regenerate the brief before approval or media generation so the Production Bible uses the newest niche research.
                             </div>
                         )}
 
@@ -1085,7 +1130,7 @@ export default function BriefStudioPage() {
                                 disabled={loading}
                                 className="flex-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-4 py-2.5 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                             >
-                                {action === 'generating' ? (hasStoredBrief ? 'Regenerating...' : 'Generating...') : hasStoredBrief ? 'Regenerate Brief' : 'Generate Brief'}
+                                {primaryBriefActionLabel}
                             </button>
 
                             <button

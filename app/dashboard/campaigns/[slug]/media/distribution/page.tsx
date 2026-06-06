@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import {
     Activity,
     CalendarClock,
+    ExternalLink,
     Loader2,
-    MessageSquare,
     Radio,
     RefreshCw,
     Send,
+    ShieldCheck,
     Sparkles,
     Webhook,
 } from "lucide-react";
@@ -91,18 +92,45 @@ type DistributionActionResponse = {
     }>;
 };
 
+type DistributionPreviewEntry = NonNullable<DistributionActionResponse["previews"]>[number];
+
+type ProviderStatusResponse = {
+    google?: string;
+    meta?: string;
+    tiktokOrganic?: string;
+    tiktokPaid?: string;
+};
+
 const PLATFORM_LABELS: Record<string, string> = {
     discord: "Discord",
     email: "Email",
     facebook_ad: "Meta Ads",
+    google_display: "Google Display",
     instagram_feed: "Instagram Feed",
     instagram_reels: "Instagram Reels",
     instagram_story: "Instagram Story",
     pinterest: "Pinterest",
     sms: "SMS",
     tiktok: "TikTok",
+    tiktok_paid: "TikTok Paid",
     youtube: "YouTube",
 };
+
+function stringValue(value: unknown): string | null {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function stringArrayValue(value: unknown): string[] {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
+}
+
+function arrayLength(value: unknown): number {
+    return Array.isArray(value) ? value.length : 0;
+}
 
 function formatTimestamp(value: string | undefined): string {
     if (!value) return "Not recorded";
@@ -140,6 +168,141 @@ function findLatestMetaDraft(posts: ScheduledPost[]): ScheduledPost | undefined 
     return [...posts].reverse().find((post) => post.platform === "facebook_ad");
 }
 
+function StatTile({ label, value }: { label: string; value: string | number }) {
+    return (
+        <div className="rounded-md border border-neutral-800 bg-neutral-950/70 p-3">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">{label}</div>
+            <div className="mt-1 truncate text-sm font-medium text-neutral-100">{value}</div>
+        </div>
+    );
+}
+
+function DetailPanel({ title, summary, children }: { title: string; summary: string; children: ReactNode }) {
+    return (
+        <details className="rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-50">
+            <summary className="cursor-pointer list-none p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <div className="text-sm font-semibold text-neutral-100">{title}</div>
+                        <div className="mt-1 text-xs text-neutral-400">{summary}</div>
+                    </div>
+                    <Badge variant="outline" className="border-neutral-700 text-neutral-300">Open details</Badge>
+                </div>
+            </summary>
+            <div className="border-t border-neutral-800 p-4">
+                {children}
+            </div>
+        </details>
+    );
+}
+
+function PreviewPayloadCard({ entry }: { entry: DistributionPreviewEntry }) {
+    const payload = entry.payload;
+    const endpoint = stringValue(payload.endpoint);
+    const mediaType = stringValue(payload.mediaType);
+    const workflow = stringValue(payload.workflow);
+    const providerDraftType = stringValue(payload.providerDraftType);
+    const mediaUrl = stringValue(payload.mediaUrl);
+    const destinationUrl = stringValue(payload.destinationUrl) ?? stringValue(payload.landingUrl);
+    const headline = stringValue(payload.headline);
+    const primaryText = stringValue(payload.primaryText);
+    const caption = stringValue(payload.caption);
+    const description = stringValue(payload.description);
+    const cta = stringValue(payload.cta);
+    const campaignStage = stringValue(payload.campaignStage);
+    const googleTargeting = objectValue(payload.googleTargeting);
+    const metaTargeting = objectValue(payload.metaTargeting);
+    const googleKeywords = stringArrayValue(googleTargeting?.keywords);
+    const googlePlacements = stringArrayValue(googleTargeting?.placements);
+    const googleNegatives = stringArrayValue(googleTargeting?.negativeKeywords);
+    const metaInterestQueries = arrayLength(metaTargeting?.interestQueries);
+    const metaResolvedInterests = arrayLength(metaTargeting?.resolvedInterests);
+    const metaUnresolvedQueries = arrayLength(metaTargeting?.unresolvedQueries);
+    const summary = stringValue(googleTargeting?.summary) ?? stringValue(metaTargeting?.summary);
+    const adSetMode = stringValue(metaTargeting?.adSetMode);
+    const visibleCopy = caption ?? primaryText ?? description;
+
+    return (
+        <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <div className="text-sm font-semibold text-neutral-100">{PLATFORM_LABELS[entry.platform] ?? entry.platform}</div>
+                    <div className="mt-1 text-xs text-neutral-500">Post {entry.postId}</div>
+                </div>
+                <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
+                    {mediaType ?? providerDraftType ?? workflow ?? "payload"}
+                </Badge>
+            </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <StatTile label="Endpoint" value={endpoint ?? "simulated adapter"} />
+                <StatTile label="Stage" value={campaignStage ?? "n/a"} />
+                <StatTile label="Workflow" value={workflow ?? providerDraftType ?? "n/a"} />
+                <StatTile label="CTA" value={cta ?? "n/a"} />
+            </div>
+
+            {(mediaUrl || destinationUrl) ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {mediaUrl ? (
+                        <a href={mediaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Open media URL
+                        </a>
+                    ) : null}
+                    {destinationUrl ? (
+                        <a href={destinationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Open destination
+                        </a>
+                    ) : null}
+                </div>
+            ) : null}
+
+            {headline ? (
+                <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-900 p-3">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">Headline</div>
+                    <div className="mt-1 text-sm text-neutral-100">{headline}</div>
+                </div>
+            ) : null}
+
+            {visibleCopy ? (
+                <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-900 p-3">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">
+                        {caption ? "Caption" : primaryText ? "Primary Text" : "Copy"}
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-neutral-200">{visibleCopy}</p>
+                </div>
+            ) : null}
+
+            {summary ? (
+                <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-900 p-3">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">Targeting Summary</div>
+                    <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{summary}</p>
+                </div>
+            ) : null}
+
+            {(googleTargeting || metaTargeting) ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    {googleTargeting ? (
+                        <>
+                            <StatTile label="Keywords" value={googleKeywords.length} />
+                            <StatTile label="Placements" value={googlePlacements.length} />
+                            <StatTile label="Negatives" value={googleNegatives.length} />
+                        </>
+                    ) : null}
+                    {metaTargeting ? (
+                        <>
+                            <StatTile label="Ad Set Mode" value={adSetMode ?? "n/a"} />
+                            <StatTile label="Resolved" value={metaResolvedInterests} />
+                            <StatTile label="Unresolved" value={`${metaUnresolvedQueries} of ${metaInterestQueries}`} />
+                        </>
+                    ) : null}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 export default function CampaignDistributionPage() {
     const params = useParams();
     const slug = params.slug as string;
@@ -148,6 +311,8 @@ export default function CampaignDistributionPage() {
     const [preview, setPreview] = useState<DistributionActionResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [providerStatus, setProviderStatus] = useState<ProviderStatusResponse | null>(null);
+    const [syncMessage, setSyncMessage] = useState("");
     const [actionState, setActionState] = useState<string | null>(null);
 
     useEffect(() => {
@@ -195,6 +360,98 @@ export default function CampaignDistributionPage() {
             await loadDistributionStatus();
         } catch (nextError: unknown) {
             setError(nextError instanceof Error ? nextError.message : "Unknown error");
+        } finally {
+            setActionState(null);
+        }
+    }
+
+    async function validateProviders(): Promise<void> {
+        setActionState("validate-providers");
+        setError("");
+        setProviderStatus(null);
+        try {
+            const [organicResponse, paidResponse, googleResponse, metaResponse] = await Promise.all([
+                fetch("/api/integrations/tiktok/status", { cache: "no-store" }),
+                fetch("/api/integrations/tiktok/advertiser-status", { cache: "no-store" }),
+                fetch("/api/integrations/google/status", { cache: "no-store" }),
+                fetch("/api/integrations/meta/status", { cache: "no-store" }),
+            ]);
+
+            const organic = await organicResponse.json() as {
+                ready?: boolean;
+                reason?: string;
+                detail?: string;
+                accountLabel?: string;
+                openId?: string;
+                zeroManualPostingReady?: boolean;
+            };
+            const paid = await paidResponse.json() as {
+                ready?: boolean;
+                reason?: string;
+                requiredVars?: string[];
+                advertiserAccountId?: string;
+            };
+            const google = await googleResponse.json() as {
+                ready?: boolean;
+                reason?: string;
+                detail?: string;
+                accountLabel?: string;
+            };
+            const meta = await metaResponse.json() as {
+                status?: string;
+                accountLabel?: string;
+                accountId?: string;
+                instagramActorId?: string;
+                warnings?: string[];
+            };
+
+            setProviderStatus({
+                google: google.ready
+                    ? `Ready: ${google.accountLabel ?? "Google Ads connected"}`
+                    : `Not ready: ${google.detail ?? google.reason ?? "unknown"}`,
+                meta: meta.status === "connected"
+                    ? `Ready: ${meta.accountLabel ?? meta.accountId ?? "Meta connected"}${meta.instagramActorId ? " + Instagram" : ""}`
+                    : `${meta.status ?? "unknown"}${meta.warnings?.length ? `: ${meta.warnings.join("; ")}` : ""}`,
+                tiktokOrganic: organic.ready
+                    ? `Ready: ${organic.accountLabel ?? organic.openId ?? "organic account"}${organic.zeroManualPostingReady ? " + direct publish" : ""}`
+                    : `Not ready: ${organic.detail ?? organic.reason ?? "unknown"}`,
+                tiktokPaid: paid.ready
+                    ? `Ready: ${paid.advertiserAccountId ?? "advertiser connected"}`
+                    : `Not ready: ${(paid.requiredVars ?? []).join(", ") || paid.reason || "unknown"}`,
+            });
+        } catch (nextError: unknown) {
+            setError(nextError instanceof Error ? nextError.message : "Provider validation failed");
+        } finally {
+            setActionState(null);
+        }
+    }
+
+    async function syncTikTokStatus(): Promise<void> {
+        setActionState("sync-tiktok");
+        setError("");
+        setSyncMessage("");
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribution/sync`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ platform: "tiktok" }),
+            });
+            const payload = await response.json() as {
+                message?: string;
+                error?: string;
+                summary?: { checked: number; posted: number; draftCreated: number; failed: number };
+            };
+            if (!response.ok) {
+                throw new Error(payload.error ?? "Failed to sync TikTok status");
+            }
+            setSyncMessage(
+                payload.summary
+                    ? `TikTok sync: checked ${payload.summary.checked}, posted ${payload.summary.posted}, drafts ${payload.summary.draftCreated}, failed ${payload.summary.failed}.`
+                    : payload.message ?? "TikTok sync complete.",
+            );
+            await loadDistributionStatus();
+        } catch (nextError: unknown) {
+            setError(nextError instanceof Error ? nextError.message : "TikTok sync failed");
         } finally {
             setActionState(null);
         }
@@ -367,6 +624,58 @@ export default function CampaignDistributionPage() {
         }
         | undefined;
     const metaTargeting = metaPreview?.metaTargeting;
+    const actionBusy = actionState !== null;
+    const posts = data?.schedule.posts ?? [];
+    const platformEntries = Object.entries(data?.summary.perPlatform ?? {}).sort(([left], [right]) => {
+        const order = ["facebook_ad", "google_display", "instagram_reels", "tiktok_paid", "instagram_feed", "email", "sms", "pinterest", "discord"];
+        return (order.indexOf(left) === -1 ? 999 : order.indexOf(left)) - (order.indexOf(right) === -1 ? 999 : order.indexOf(right));
+    });
+    const reelPost = posts.find((post) => post.platform === "instagram_reels");
+    const metaReady = Boolean(metaDraftPost?.externalPostId);
+    const googleReady = Boolean(googleDraftPost?.externalPostId);
+    const reelReady = reelPost?.status === "posted" || Boolean(reelPost?.externalPostId);
+    const scheduleReady = posts.length > 0;
+    const providerChecked = Boolean(providerStatus);
+    const targetingChecked = Boolean(googleTargeting || metaTargeting || googleTargetingSummary || metaTargetingSummary);
+    const suggestedNextStep = !scheduleReady
+        ? "Persist the distribution schedule."
+        : !providerChecked
+            ? "Validate provider connections."
+            : !targetingChecked
+                ? "Preview Google and Meta targeting."
+                : !googleReady
+                    ? "Rebuild the Google draft."
+                    : !metaReady
+                        ? "Build the Meta draft."
+                        : !reelReady
+                            ? "Preview or post the Instagram Reel."
+                            : "Review native platform drafts.";
+    const checklistItems = [
+        {
+            label: "Schedule",
+            status: scheduleReady ? "Ready" : "Needs plan",
+            detail: scheduleReady ? `${posts.length} posts in the saved plan` : "No persisted schedule yet",
+            tone: scheduleReady ? "emerald" : "amber",
+        },
+        {
+            label: "Providers",
+            status: providerChecked ? "Checked" : "Unchecked",
+            detail: providerChecked ? "Connection results are visible below" : "Run Validate Providers first",
+            tone: providerChecked ? "emerald" : "amber",
+        },
+        {
+            label: "Targeting",
+            status: targetingChecked ? "Previewed" : "Not previewed",
+            detail: targetingChecked ? "Google or Meta targeting evidence exists" : "Preview Google and Meta before live drafts",
+            tone: targetingChecked ? "emerald" : "amber",
+        },
+        {
+            label: "Native Drafts",
+            status: googleReady || metaReady || reelReady ? "Started" : "Not built",
+            detail: `${googleReady ? "Google" : "Google pending"} | ${metaReady ? "Meta" : "Meta pending"} | ${reelReady ? "Reel" : "Reel pending"}`,
+            tone: googleReady && metaReady && reelReady ? "emerald" : "amber",
+        },
+    ];
 
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-50">
@@ -390,34 +699,91 @@ export default function CampaignDistributionPage() {
 
                     <Card className="border-neutral-800 bg-gradient-to-br from-blue-950/70 via-neutral-900 to-neutral-900 text-neutral-50">
                         <CardHeader>
-                            <CardTitle className="text-lg">Operator Actions</CardTitle>
-                            <CardDescription className="text-neutral-400">Preview, persist, or dispatch through the shared endpoint.</CardDescription>
+                            <CardTitle className="text-lg">Operator Console</CardTitle>
+                            <CardDescription className="text-neutral-400">The same launch controls from the landing review panel, grouped for faster use.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2">
-                            <Button className="justify-start gap-2" onClick={() => void loadDistributionStatus()} disabled={actionState !== null}>
-                                <RefreshCw className="h-4 w-4" />
-                                Refresh Status
-                            </Button>
-                            <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview", { caller: "human", mode: "plan", dryRun: true })} disabled={actionState !== null}>
-                                {actionState === "preview" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                Preview Plan
-                            </Button>
-                            <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("persist", { caller: "human", mode: "plan", dryRun: false })} disabled={actionState !== null}>
-                                {actionState === "persist" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
-                                Persist Schedule
-                            </Button>
-                            <Button className="justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => void runAction("dispatch-discord", { caller: "human", mode: "dispatch", dryRun: false, platforms: ["discord"] })} disabled={actionState !== null}>
-                                {actionState === "dispatch-discord" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                Dispatch Discord
-                            </Button>
-                            <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-meta", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["facebook_ad"] })} disabled={actionState !== null}>
-                                {actionState === "preview-meta" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
-                                Preview Meta Targeting
-                            </Button>
-                            <Button variant="destructive" className="justify-start gap-2" onClick={() => void runAction("dispatch-meta-live", { caller: "human", mode: "dispatch", dryRun: false, providerMode: "live", forceDispatch: true, replaceExisting: true, platforms: ["facebook_ad"] })} disabled={actionState !== null}>
-                                {actionState === "dispatch-meta-live" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                Dispatch Meta Live
-                            </Button>
+                        <CardContent className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <Button className="justify-start gap-2" onClick={() => void loadDistributionStatus()} disabled={actionBusy}>
+                                    <RefreshCw className="h-4 w-4" />
+                                    Refresh Status
+                                </Button>
+                                <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void validateProviders()} disabled={actionBusy}>
+                                    {actionState === "validate-providers" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                                    Validate Providers
+                                </Button>
+                            </div>
+
+                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+                                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">Schedule</div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview", { caller: "human", mode: "plan", dryRun: true })} disabled={actionBusy}>
+                                        {actionState === "preview" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                        Preview Plan
+                                    </Button>
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("persist", { caller: "human", mode: "plan", dryRun: false })} disabled={actionBusy}>
+                                        {actionState === "persist" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+                                        Persist Schedule
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+                                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">Preview Payloads</div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-google", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["google_display"] })} disabled={actionBusy}>
+                                        {actionState === "preview-google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                                        Preview Google
+                                    </Button>
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-meta", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["facebook_ad"] })} disabled={actionBusy}>
+                                        {actionState === "preview-meta" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                                        Preview Meta
+                                    </Button>
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-instagram-reel", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true, platforms: ["instagram_reels"] })} disabled={actionBusy}>
+                                        {actionState === "preview-instagram-reel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                                        Preview Reel Payload
+                                    </Button>
+                                    <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void runAction("preview-all", { caller: "human", mode: "dispatch", dryRun: true, providerMode: "simulate", forceDispatch: true })} disabled={actionBusy}>
+                                        {actionState === "preview-all" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                        Preview All
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-red-500/20 bg-red-950/20 p-3">
+                                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-red-200">Live Drafts</div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    <Button variant="destructive" className="justify-start gap-2" onClick={() => void runAction("rebuild-google-live", { caller: "human", mode: "dispatch", dryRun: false, providerMode: "live", forceDispatch: true, replaceExisting: true, platforms: ["google_display"] })} disabled={actionBusy}>
+                                        {actionState === "rebuild-google-live" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        Rebuild Google
+                                    </Button>
+                                    <Button variant="destructive" className="justify-start gap-2" onClick={() => void runAction("dispatch-meta-live", { caller: "human", mode: "dispatch", dryRun: false, providerMode: "live", forceDispatch: true, replaceExisting: true, platforms: ["facebook_ad"] })} disabled={actionBusy}>
+                                        {actionState === "dispatch-meta-live" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        Build Meta
+                                    </Button>
+                                    <Button variant="destructive" className="justify-start gap-2" onClick={() => void runAction("dispatch-instagram-reel-live", { caller: "human", mode: "dispatch", dryRun: false, providerMode: "live", forceDispatch: true, replaceExisting: true, platforms: ["instagram_reels"] })} disabled={actionBusy}>
+                                        {actionState === "dispatch-instagram-reel-live" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        Post Reel
+                                    </Button>
+                                    <Button className="justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => void runAction("dispatch-discord", { caller: "human", mode: "dispatch", dryRun: false, platforms: ["discord"] })} disabled={actionBusy}>
+                                        {actionState === "dispatch-discord" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        Dispatch Discord
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <Button asChild variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800">
+                                    <a href="/api/integrations/google/connect" target="_blank" rel="noreferrer">
+                                        <ExternalLink className="h-4 w-4" />
+                                        Reconnect Google
+                                    </a>
+                                </Button>
+                                <Button variant="outline" className="justify-start gap-2 border-neutral-700 bg-neutral-950 text-neutral-50 hover:bg-neutral-800" onClick={() => void syncTikTokStatus()} disabled={actionBusy}>
+                                    {actionState === "sync-tiktok" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                    Sync TikTok Status
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -443,6 +809,106 @@ export default function CampaignDistributionPage() {
                     </div>
                 ) : null}
 
+                {(providerStatus || syncMessage || preview?.warnings?.length) ? (
+                    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                        {providerStatus ? (
+                            <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-lg"><ShieldCheck className="h-4 w-4 text-emerald-300" /> Provider Readiness</CardTitle>
+                                    <CardDescription className="text-neutral-400">Latest connection check for channels used by this campaign.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid gap-3 sm:grid-cols-2">
+                                    <StatTile label="Google Ads" value={providerStatus.google ?? "not checked"} />
+                                    <StatTile label="Meta / Instagram" value={providerStatus.meta ?? "not checked"} />
+                                    <StatTile label="TikTok Organic" value={providerStatus.tiktokOrganic ?? "not checked"} />
+                                    <StatTile label="TikTok Paid" value={providerStatus.tiktokPaid ?? "not checked"} />
+                                </CardContent>
+                            </Card>
+                        ) : null}
+
+                        <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Action Feedback</CardTitle>
+                                <CardDescription className="text-neutral-400">Warnings and status from the most recent operation.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm text-neutral-300">
+                                {syncMessage ? (
+                                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-4 text-emerald-100">{syncMessage}</div>
+                                ) : null}
+                                {preview?.warnings?.length ? preview.warnings.map((warning) => (
+                                    <div key={warning} className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4 text-amber-100">{warning}</div>
+                                )) : null}
+                                {!syncMessage && !preview?.warnings?.length ? (
+                                    <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4 text-neutral-400">No warnings from the latest action.</div>
+                                ) : null}
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : null}
+
+                {preview?.previews?.length ? (
+                    <Card className="border-cyan-500/25 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Preview Payloads</CardTitle>
+                            <CardDescription className="text-neutral-400">
+                                Dry-run output from the latest preview action. These cards show what would be sent before a live draft or post.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 lg:grid-cols-2">
+                            {preview.previews.map((entry) => (
+                                <PreviewPayloadCard key={`${entry.platform}-${entry.postId}`} entry={entry} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                ) : preview ? (
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Preview Payloads</CardTitle>
+                            <CardDescription className="text-neutral-400">
+                                The latest action did not return channel payloads. Use Preview Google, Preview Meta, Preview Reel Payload, or Preview All.
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+                ) : null}
+
+                <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Launch Checklist</CardTitle>
+                            <CardDescription className="text-neutral-400">A plain-language read on where this campaign stands.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                            {checklistItems.map((item) => (
+                                <div key={item.label} className={`rounded-lg border p-4 ${item.tone === "emerald" ? "border-emerald-500/25 bg-emerald-950/20" : "border-amber-500/25 bg-amber-950/20"}`}>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-xs uppercase tracking-[0.16em] text-neutral-400">{item.label}</div>
+                                        <Badge variant="outline" className={item.tone === "emerald" ? "border-emerald-500/40 text-emerald-200" : "border-amber-500/40 text-amber-200"}>{item.status}</Badge>
+                                    </div>
+                                    <div className="mt-3 text-sm text-neutral-200">{item.detail}</div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Suggested Next Step</CardTitle>
+                            <CardDescription className="text-neutral-400">The page should answer this before anything else.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="rounded-lg border border-cyan-500/25 bg-cyan-950/20 p-4 text-lg font-semibold text-cyan-100">
+                                {suggestedNextStep}
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <StatTile label="Meta Draft" value={metaReady ? "Created" : "Pending"} />
+                                <StatTile label="Google Draft" value={googleReady ? "Created" : "Pending"} />
+                                <StatTile label="Instagram Reel" value={reelReady ? "Posted / ID saved" : "Pending"} />
+                                <StatTile label="Last Action" value={preview?.mode ?? "No preview yet"} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
                         <CardHeader className="pb-2">
@@ -467,43 +933,34 @@ export default function CampaignDistributionPage() {
                     </Card>
                     <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
                         <CardHeader className="pb-2">
-                            <CardDescription className="text-neutral-400">Discord Ready</CardDescription>
-                            <CardTitle className="text-3xl">{data?.summary.perPlatform.discord?.total ?? 0}</CardTitle>
+                            <CardDescription className="text-neutral-400">Live Ad Drafts</CardDescription>
+                            <CardTitle className="text-3xl">
+                                {(data?.summary.perPlatform.facebook_ad?.draftCreated ?? 0)
+                                    + (data?.summary.perPlatform.google_display?.draftCreated ?? 0)
+                                    + (data?.summary.perPlatform.tiktok_paid?.draftCreated ?? 0)}
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-neutral-400">Eligible entries can dispatch through the current adapter.</CardContent>
+                        <CardContent className="text-sm text-neutral-400">Meta, Google, and TikTok paid draft records.</CardContent>
                     </Card>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg"><Radio className="h-4 w-4 text-cyan-300" /> Platform Status</CardTitle>
-                            <CardDescription className="text-neutral-400">Per-platform totals from the persisted schedule.</CardDescription>
+                            <CardTitle className="flex items-center gap-2 text-lg"><Radio className="h-4 w-4 text-cyan-300" /> Channel Status</CardTitle>
+                            <CardDescription className="text-neutral-400">Compact view of every planned channel.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-4 sm:grid-cols-2">
-                            {Object.entries(data?.summary.perPlatform ?? {}).map(([platform, stats]) => (
-                                <div key={platform} className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">
-                                    <div className="mb-3 flex items-center justify-between gap-3">
+                        <CardContent className="space-y-2">
+                            {platformEntries.map(([platform, stats]) => (
+                                <div key={platform} className="grid gap-3 rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:grid-cols-[1.2fr_0.8fr] sm:items-center">
+                                    <div>
                                         <div className="text-sm font-medium text-neutral-100">{PLATFORM_LABELS[platform] ?? platform}</div>
-                                        <Badge variant="outline" className="border-neutral-700 text-neutral-300">{stats.total} total</Badge>
+                                        <div className="mt-1 text-xs text-neutral-500">{stats.total} planned post{stats.total === 1 ? "" : "s"}</div>
                                     </div>
-                                    <div className="grid grid-cols-4 gap-2 text-xs text-neutral-400">
-                                        <div className="rounded-md bg-neutral-900 p-2">
-                                            <div className="text-neutral-500">Posted</div>
-                                            <div className="mt-1 text-base font-semibold text-neutral-50">{stats.posted}</div>
-                                        </div>
-                                        <div className="rounded-md bg-neutral-900 p-2">
-                                            <div className="text-neutral-500">Drafts</div>
-                                            <div className="mt-1 text-base font-semibold text-neutral-50">{stats.draftCreated}</div>
-                                        </div>
-                                        <div className="rounded-md bg-neutral-900 p-2">
-                                            <div className="text-neutral-500">Queued</div>
-                                            <div className="mt-1 text-base font-semibold text-neutral-50">{stats.scheduled}</div>
-                                        </div>
-                                        <div className="rounded-md bg-neutral-900 p-2">
-                                            <div className="text-neutral-500">Failed</div>
-                                            <div className="mt-1 text-base font-semibold text-neutral-50">{stats.failed}</div>
-                                        </div>
+                                    <div className="flex flex-wrap gap-2 text-xs">
+                                        <Badge variant={stats.draftCreated || stats.posted ? "default" : "outline"}>ready {stats.draftCreated + stats.posted}</Badge>
+                                        <Badge variant="secondary">queued {stats.scheduled}</Badge>
+                                        {stats.failed ? <Badge variant="destructive">failed {stats.failed}</Badge> : null}
                                     </div>
                                 </div>
                             ))}
@@ -536,6 +993,10 @@ export default function CampaignDistributionPage() {
                     </Card>
                 </div>
 
+                <DetailPanel
+                    title="Targeting And Native Proof"
+                    summary="Google and Meta IDs, native review links, targeting summaries, and resolved audience details."
+                >
                 <div className="grid gap-6 lg:grid-cols-2">
                     <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
                         <CardHeader>
@@ -754,7 +1215,12 @@ export default function CampaignDistributionPage() {
                         </CardContent>
                     </Card>
                 </div>
+                </DetailPanel>
 
+                <DetailPanel
+                    title="Schedule Timeline And Execution History"
+                    summary="Every planned post by campaign stage plus prior planning and dispatch runs."
+                >
                 <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                     <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
                         <CardHeader>
@@ -841,34 +1307,8 @@ export default function CampaignDistributionPage() {
                         </CardContent>
                     </Card>
                 </div>
+                </DetailPanel>
 
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg"><MessageSquare className="h-4 w-4 text-cyan-300" /> Dispatch Scope</CardTitle>
-                            <CardDescription className="text-neutral-400">The current UI only exposes a safe, targeted Discord dispatch action.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2 text-sm text-neutral-300">
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Shared backend contract for agents and humans</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Dry-run planning without side effects</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Persisted schedule and execution history</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Discord webhook dispatch for eligible posts</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-neutral-800 bg-neutral-900 text-neutral-50">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Backend Gaps</CardTitle>
-                            <CardDescription className="text-neutral-400">What still needs to be added below this dashboard.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2 text-sm text-neutral-300">
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Provider validation layer for Meta, TikTok, and Google</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Manifest-submission and expiry trigger handling</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Kill switch and halt controls</div>
-                            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-4">Asset swap and per-post manual override tools</div>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
         </div>
     );

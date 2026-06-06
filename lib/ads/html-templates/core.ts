@@ -28,6 +28,7 @@ export interface HtmlTemplateBrief {
         ctaVariants?: { waitlist?: string; bookNow?: string };
     };
     themeName?: string;
+    shipName?: string;
 }
 
 export interface HtmlTemplateManifest {
@@ -128,6 +129,7 @@ export interface ResolvedTemplateData {
     cta: string;
     waitlist: string;
     aestheticLabel: string;
+    ship: string;
     fonts: string[];
     themeName: string;
 }
@@ -189,6 +191,7 @@ export function resolveTemplateData(
         cta:           brief?.messaging?.ctaVariants?.bookNow  ?? fb.cta,
         waitlist:      brief?.messaging?.ctaVariants?.waitlist ?? fb.waitlist,
         aestheticLabel: brief?.visual?.aestheticLabel  ?? fb.aesthetic,
+        ship:          brief?.shipName ?? fb.ship,
         fonts:         brief?.visual?.typographyDirection?.suggestedFonts ?? ['Inter'],
         themeName:     brief?.themeName ?? fb.themeName,
     };

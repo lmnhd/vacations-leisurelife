@@ -111,6 +111,20 @@ assert.equal(fallback.visualFlavor, 'none');
 assert.equal(fallback.system, 'system_4_modular');
 assert.equal(fallback.chat.endpoint, '/api/groups/campaign/board-games-at-sea/chat');
 
+const staleShipBrief = makeBrief('travel_nostalgia');
+staleShipBrief.messaging.subSlogan = 'A Caribbean sailing on Symphony of the Seas for tabletop people.';
+staleShipBrief.messaging.elevatorPitch = 'Board Games at Sea is a cruise on Symphony of the Seas.';
+staleShipBrief.socialConcepts.facebookAd.primaryText = 'Meet your table on Symphony of the Seas.';
+const correctedShipDesignSystem = buildLandingDesignSystem(
+    { ...campaign, shipTarget: 'Explorer of the Seas' },
+    staleShipBrief,
+);
+assert.equal(
+    correctedShipDesignSystem.subhead,
+    'A Caribbean sailing on Explorer of the Seas for tabletop people.',
+);
+assert.equal(correctedShipDesignSystem.quote, 'Meet your table on Explorer of the Seas.');
+
 function makeAsset(assetId: string, assetType: AssetRecord['assetType'], url: string, reviewStatus: AssetRecord['reviewStatus'], tags: string[] = []): AssetRecord {
     return {
         assetId,

@@ -466,6 +466,45 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
+    async function handlePreviewInstagramReel() {
+        setPreviewing(true);
+        setDispatchMessage('');
+        setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: true,
+                    providerMode: 'simulate',
+                    forceDispatch: true,
+                    platforms: ['instagram_reels'],
+                }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to preview Instagram Reel dispatch.');
+            }
+
+            setDispatchPreviews(data.previews ?? []);
+            const reelPreview = data.previews?.find((preview) => preview.platform === 'instagram_reels');
+            const mediaType = typeof reelPreview?.payload?.mediaType === 'string' ? reelPreview.payload.mediaType : null;
+            setDispatchMessage(
+                reelPreview
+                    ? `Instagram Reel preview loaded${mediaType ? ` (${mediaType})` : ''}.`
+                    : 'Instagram Reel preview returned no payload.',
+            );
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to preview Instagram Reel dispatch.');
+        } finally {
+            setPreviewing(false);
+        }
+    }
+
     async function handleDispatchAds() {
         setDispatching(true);
         setDispatchMessage('');
@@ -586,6 +625,42 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
         }
     }
 
+    async function handleLiveInstagramReel() {
+        setLiveDispatching(true);
+        setDispatchMessage('');
+        setGoogleTargetingPreview(null);
+        setMetaTargetingPreview(null);
+
+        try {
+            const response = await fetch(`/api/groups/campaign/${slug}/media/distribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'dispatch',
+                    dryRun: false,
+                    providerMode: 'live',
+                    forceDispatch: true,
+                    replaceExisting: true,
+                    platforms: ['instagram_reels'],
+                }),
+            });
+
+            const data = await response.json() as DistributionPlanResponse;
+            if (!response.ok) {
+                throw new Error(data.error ?? 'Failed to dispatch Instagram Reel.');
+            }
+
+            setDispatchPreviews(data.previews ?? []);
+            const warningText = data.warnings?.length ? ` | ${data.warnings.join(' | ')}` : '';
+            setDispatchMessage((data.message ?? 'Instagram Reel dispatched through Instagram Graph.') + warningText);
+            await loadAdPlan();
+        } catch (error) {
+            setDispatchMessage(error instanceof Error ? error.message : 'Failed to dispatch Instagram Reel.');
+        } finally {
+            setLiveDispatching(false);
+        }
+    }
+
     return (
         <TooltipProvider delayDuration={150}>
             <Card className="border-amber-300 bg-white/80 shadow-sm">
@@ -653,6 +728,11 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                     {previewing ? 'Previewing...' : 'Preview Meta Targeting'}
                                 </Button>
                             </ActionTip>
+                            <ActionTip label="Preview Instagram Reel" description="Preview the Instagram Reel dispatch payload using the campaign's TikTok seed video, without calling Instagram Graph.">
+                                <Button onClick={handlePreviewInstagramReel} disabled={previewing} variant="outline" className="border-amber-300 bg-white">
+                                    {previewing ? 'Previewing...' : 'Preview Instagram Reel'}
+                                </Button>
+                            </ActionTip>
                             <ActionTip label="Reconnect Google Ads" description="Start the Google OAuth reconnect flow so you can refresh the stored access and refresh token.">
                                 <Button asChild variant="outline" className="border-amber-300 bg-white">
                                     <a href="/api/integrations/google/connect" target="_blank" rel="noreferrer">
@@ -680,9 +760,14 @@ export function ReviewControls({ slug, title, state }: ReviewControlsProps) {
                                     {liveDispatching ? 'Rebuilding...' : 'Rebuild Google Draft'}
                                 </Button>
                             </ActionTip>
-                            <ActionTip label="Build Meta Draft" description="Create a paused Meta campaign, campaign-specific ad set, creative, and ad for native Ads Manager review.">
+                            <ActionTip label="Build Meta Drafts" description="Create paused Meta ad drafts for native Ads Manager review: the Facebook image ad, the vertical Reels video ad, and the Instagram image ad. All paused — publish manually in Ads Manager.">
                                 <Button onClick={handleLiveMetaDraft} disabled={liveDispatching} variant="outline" className="border-red-400 bg-white text-red-700 hover:bg-red-50">
-                                    {liveDispatching ? 'Building Meta...' : 'Build Meta Draft'}
+                                    {liveDispatching ? 'Building Meta...' : 'Build Meta Drafts'}
+                                </Button>
+                            </ActionTip>
+                            <ActionTip label="Dispatch Instagram Reel" description="Send the campaign's TikTok seed video to Instagram Graph as an organic Reel using the live provider path.">
+                                <Button onClick={handleLiveInstagramReel} disabled={liveDispatching} variant="outline" className="border-red-400 bg-white text-red-700 hover:bg-red-50">
+                                    {liveDispatching ? 'Dispatching Reel...' : 'Dispatch Instagram Reel'}
                                 </Button>
                             </ActionTip>
                             <ActionTip label="Sync Organic TikTok Status" description="Ask TikTok whether the organic post has moved beyond its draft state yet.">

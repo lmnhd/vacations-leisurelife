@@ -112,7 +112,20 @@ function makeManifest(): CampaignMediaManifest {
             platformCrops: {} as CampaignMediaManifest['images']['platformCrops'],
         },
         videos: {
-            tiktokSeed: null,
+            tiktokSeed: {
+                assetId: 'vid_tiktok_seed_1',
+                assetType: 'tiktok_seed_video',
+                url: 'https://example.com/tiktok_seed.mp4',
+                generator: 'runwayml',
+                promptUsed: 'tiktok seed',
+                fileSizeBytes: 100,
+                mimeType: 'video/mp4',
+                tags: ['tiktok_seed'],
+                createdAt: '2026-04-30T00:00:00.000Z',
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            },
             heroExplainer: null,
             thresholdAnnouncement: null,
             countdown: [],
@@ -143,8 +156,21 @@ function main(): void {
         'ad_itinerary_toc_4x5',
         'ad_quote_card_1x1',
     ]);
+    assert.equal(postByPlatform(schedule.posts, 'instagram_reels')?.assetId, 'vid_tiktok_seed_1');
     assert.equal(postByPlatform(schedule.posts, 'facebook_ad')?.assetId, 'ad_image_detail_191x100');
     assert.equal(postByPlatform(schedule.posts, 'google_display')?.assetId, 'ad_image_detail_191x100');
+
+    // VERTICAL_VIDEO → META: Build Meta Drafts produces three paused facebook_ad
+    // creatives — the FB image, the vertical Reels video, and the IG image.
+    const facebookAds = schedule.posts.filter((p) => p.platform === 'facebook_ad');
+    const facebookAdAssetIds = facebookAds.map((p) => p.assetId);
+    assert.equal(facebookAds.length, 3, 'expected 3 facebook_ad posts (image, video, ig image)');
+    assert.ok(facebookAdAssetIds.includes('ad_image_detail_191x100'), 'FB image creative present');
+    assert.ok(facebookAdAssetIds.includes('vid_tiktok_seed_1'), 'Reels video creative present');
+    assert.ok(facebookAdAssetIds.includes('ad_editorial_cover_4x5'), 'IG image creative present');
+    // Each facebook_ad post must have a distinct postId so dispatch + replaceExisting
+    // do not collapse them.
+    assert.equal(new Set(facebookAds.map((p) => p.postId)).size, 3, 'facebook_ad postIds are distinct');
 
     const fallbackManifest = {
         ...manifest,

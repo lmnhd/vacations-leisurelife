@@ -431,6 +431,99 @@ export async function updateManifestCopySelections(
     return finalizedManifest;
 }
 
+type TikTokVideoEdits = NonNullable<CampaignMediaManifest['tiktokVideoEdits']>;
+type TikTokBeatEdit = TikTokVideoEdits['beats'][string];
+
+/** A per-beat patch: each field may be set, `null` (clear), or omitted (keep). */
+type TikTokBeatEditPatch = { [K in keyof TikTokBeatEdit]?: TikTokBeatEdit[K] | null };
+
+export interface TikTokVideoEditsPatch {
+    beats?: Record<string, TikTokBeatEditPatch | null>;
+    applyFilmGrain?: boolean | null;
+    grainStrength?: number | null;
+}
+
+/**
+ * Pure merge of a sparse patch onto an existing tiktokVideoEdits value.
+ * - a `null` beat value deletes that beat's edits
+ * - a partial beat merges per-field; `null`/`''`/`undefined` clears that field
+ * - a beat that becomes empty is dropped
+ * - grain flags merge when present (`null` clears)
+ * Returns `undefined` when nothing remains, so the campaign renders as if never
+ * edited. Does not stamp updatedAt — the caller does (keeps this deterministic
+ * and unit-testable).
+ */
+export function mergeTikTokVideoEdits(
+    existing: TikTokVideoEdits | undefined,
+    patch: TikTokVideoEditsPatch,
+): Omit<TikTokVideoEdits, 'updatedAt'> | undefined {
+    const nextBeats: Record<string, TikTokBeatEdit> = { ...(existing?.beats ?? {}) };
+
+    for (const [key, beatPatch] of Object.entries(patch.beats ?? {})) {
+        const beatKey = key.trim();
+        if (!beatKey) continue;
+        if (beatPatch === null) {
+            delete nextBeats[beatKey];
+            continue;
+        }
+        const merged: TikTokBeatEdit = { ...(nextBeats[beatKey] ?? {}) };
+        for (const [field, value] of Object.entries(beatPatch) as [keyof TikTokBeatEdit, unknown][]) {
+            if (value === null || value === '' || value === undefined) {
+                delete merged[field];
+            } else {
+                (merged as Record<string, unknown>)[field] = value;
+            }
+        }
+        if (Object.keys(merged).length === 0) delete nextBeats[beatKey];
+        else nextBeats[beatKey] = merged;
+    }
+
+    let applyFilmGrain = existing?.applyFilmGrain;
+    if (patch.applyFilmGrain !== undefined) {
+        applyFilmGrain = patch.applyFilmGrain === null ? undefined : patch.applyFilmGrain;
+    }
+    let grainStrength = existing?.grainStrength;
+    if (patch.grainStrength !== undefined) {
+        grainStrength = patch.grainStrength === null ? undefined : patch.grainStrength;
+    }
+
+    const hasEdits = Object.keys(nextBeats).length > 0
+        || applyFilmGrain !== undefined
+        || grainStrength !== undefined;
+    if (!hasEdits) return undefined;
+
+    return {
+        ...(applyFilmGrain !== undefined ? { applyFilmGrain } : {}),
+        ...(grainStrength !== undefined ? { grainStrength } : {}),
+        beats: nextBeats,
+    };
+}
+
+/**
+ * VERTICAL_VIDEO_EDITOR: persist a sparse patch of per-beat overrides onto the
+ * manifest's tiktokVideoEdits. Merge semantics live in mergeTikTokVideoEdits.
+ */
+export async function updateManifestTikTokVideoEdits(
+    slug: string,
+    patch: TikTokVideoEditsPatch,
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const merged = mergeTikTokVideoEdits(existingManifest.tiktokVideoEdits, patch);
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        tiktokVideoEdits: merged
+            ? { updatedAt: new Date().toISOString(), ...merged }
+            : undefined,
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
 export async function updateManifestLandingImageSets(
     slug: string,
     changes: { gallery?: string[] | null; trust?: string[] | null; placements?: Record<string, string | string[] | null> | null },

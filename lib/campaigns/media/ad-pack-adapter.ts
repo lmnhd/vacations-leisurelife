@@ -21,6 +21,7 @@ import { normalizeCampaignResearchDossier } from '../schema';
 import type { AssetRecord, SourceQualityMetadata } from '../schema';
 import { buildSourcePoolAdvisory } from './source-quality';
 import { getAuthoritativeShipName } from '../ship-context';
+import { sanitizeAestheticBriefShipCopyForCampaign } from '../ship-copy';
 
 function nicheSignalsFromBrief(brief: CampaignAestheticBrief, campaign: Campaign): string[] {
     const blueprint = brief.identityBlueprint;
@@ -142,9 +143,10 @@ export interface BuildCampaignAdInputArgs {
  * Throws if no templates are registered for (group_campaign, visualFlavor).
  */
 export function buildCampaignAdInput(args: BuildCampaignAdInputArgs): NormalizedAdInput {
+    const brief = sanitizeAestheticBriefShipCopyForCampaign(args.brief, args.campaign);
     const preferredVisualFlavor =
         args.campaign.manualVisualFlavor ??
-        args.brief.identityBlueprint?.visualFlavor ??
+        brief.identityBlueprint?.visualFlavor ??
         'travel_nostalgia';
 
     let visualFlavor = preferredVisualFlavor;
@@ -158,12 +160,12 @@ export function buildCampaignAdInput(args: BuildCampaignAdInputArgs): Normalized
 
     return {
         workflow: 'group_campaign',
-        slug: args.brief.slug,
+        slug: brief.slug,
         visualFlavor,
         formats: args.formats,
-        brief: buildBriefSlice(args.brief, args.campaign),
+        brief: buildBriefSlice(brief, args.campaign),
         campaign: buildCampaignSlice(args.campaign),
-        dossier: buildDossierSlice(args.brief, args.campaign),
+        dossier: buildDossierSlice(brief, args.campaign),
         templateLayouts,
         availableImages: buildAvailableImages(args.manifest),
         sourcePoolQuality: buildSourcePoolQuality(args.manifest),

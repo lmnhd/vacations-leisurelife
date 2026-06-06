@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAestheticBrief, deleteAestheticBrief } from "@/lib/campaigns/campaign-store";
+import { getAestheticBrief, deleteAestheticBrief, getCampaignBlueprint } from "@/lib/campaigns/campaign-store";
+import { sanitizeAestheticBriefShipCopyForCampaign } from "@/lib/campaigns/ship-copy";
+import { getAuthoritativeShipName } from "@/lib/campaigns/ship-context";
 
 export async function GET(
     req: NextRequest,
@@ -7,11 +9,23 @@ export async function GET(
 ) {
     try {
         const { slug } = await params;
-        const brief = await getAestheticBrief(slug);
+        const [brief, campaign] = await Promise.all([
+            getAestheticBrief(slug),
+            getCampaignBlueprint(slug).catch(() => null),
+        ]);
         if (!brief) {
             return NextResponse.json({ error: "Brief not found" }, { status: 404 });
         }
-        return NextResponse.json(brief, { status: 200 });
+        const responseBrief = campaign
+            ? {
+                ...sanitizeAestheticBriefShipCopyForCampaign(brief, campaign),
+                shipName: getAuthoritativeShipName(campaign) ?? undefined,
+            }
+            : brief;
+        return NextResponse.json(
+            responseBrief,
+            { status: 200 },
+        );
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";
         return NextResponse.json({ error: "Failed to fetch brief", details: message }, { status: 500 });

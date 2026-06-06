@@ -34,8 +34,9 @@ function resolveAssetUrl(manifest: CampaignMediaManifest, assetId: string): stri
 function buildDiscordContent(campaign: Campaign, manifest: CampaignMediaManifest, post: ScheduledPost): Record<string, unknown> {
     const assetUrl = resolveAssetUrl(manifest, post.assetId);
     const description = manifest.copy?.captions.discord?.trim() || campaign.description;
+    const sailingValue = campaign.matchedSailDate?.trim() || campaign.targetDates;
     const fields = [
-        campaign.targetDates ? { name: 'Sailing', value: campaign.targetDates, inline: true } : null,
+        sailingValue ? { name: 'Sailing', value: sailingValue, inline: true } : null,
         campaign.shipTarget ? { name: 'Ship', value: campaign.shipTarget, inline: true } : null,
         campaign.startingPrice ? { name: 'Starting From', value: `$${campaign.startingPrice}/pp`, inline: true } : null,
     ].filter((field): field is { name: string; value: string; inline: boolean } => field !== null);

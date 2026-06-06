@@ -270,8 +270,8 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
             )}
             <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
                 {/* The postcard */}
-                <div className="relative">
-                    <div className="relative rotate-[-1.2deg] border-[14px] border-white bg-white p-2 shadow-[0_30px_70px_rgba(8,91,101,0.24)]">
+                <div className="relative min-w-0">
+                    <div className="relative rotate-0 border-[8px] border-white bg-white p-2 shadow-[0_30px_70px_rgba(8,91,101,0.24)] sm:rotate-[-1.2deg] sm:border-[14px]">
                         <div className="aspect-[5/3] overflow-hidden bg-cyan-100">
                             {cardImage?.url ? (
                                 <img
@@ -286,7 +286,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         </div>
 
                         {/* Postage stamp */}
-                        <div className="absolute -right-3 -top-3 rotate-[6deg] border-2 border-cyan-950 bg-white p-2" style={{ boxShadow: '0 0 0 4px #ffffff, 0 0 0 5px rgba(8,91,101,0.35)' }}>
+                        <div className="absolute right-1 top-1 rotate-[6deg] border-2 border-cyan-950 bg-white p-2 sm:-right-3 sm:-top-3" style={{ boxShadow: '0 0 0 4px #ffffff, 0 0 0 5px rgba(8,91,101,0.35)' }}>
                             <div className="h-20 w-16 border border-dashed border-cyan-950/50 px-1 py-2 text-center">
                                 <p className={`${alfa_slab_one.className} text-[8px] uppercase leading-tight`} style={{ color: palette.primary }}>
                                     {landing.designSystem.issueLabel}
@@ -297,7 +297,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                         </div>
 
                         {/* Circular postmark */}
-                        <div className="absolute -left-4 top-2 flex h-24 w-24 rotate-[-12deg] items-center justify-center rounded-full border-[2px] border-cyan-950/60 text-center">
+                        <div className="absolute left-1 top-2 flex h-20 w-20 rotate-[-12deg] items-center justify-center rounded-full border-[2px] border-cyan-950/60 text-center sm:-left-4 sm:h-24 sm:w-24">
                             <div className="font-mono text-[8px] uppercase leading-tight tracking-widest text-cyan-950/80">
                                 <p>★ POSTED ★</p>
                                 <p className="my-1 border-y border-cyan-950/40 py-1 text-[9px]">{landing.facts.find(f => f.label === 'Sailing')?.value ?? landing.designSystem.issueLabel}</p>
@@ -307,7 +307,7 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                     </div>
 
                     {/* Handwritten greeting card below */}
-                    <div className="relative mt-8 ml-8 max-w-md rotate-[1deg] border border-cyan-950/20 bg-white p-6 shadow-[0_18px_50px_rgba(8,91,101,0.14)]">
+                    <div className="relative mt-8 rotate-0 border border-cyan-950/20 bg-white p-6 shadow-[0_18px_50px_rgba(8,91,101,0.14)] sm:ml-8 sm:max-w-md sm:rotate-[1deg]">
                         <p className="font-serif text-2xl italic leading-snug text-[#143d3b]">
                             Wish you were here —
                         </p>
@@ -318,13 +318,13 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between gap-8">
+                <div className="flex min-w-0 flex-col justify-between gap-8">
                     <div>
                         <div className="inline-flex items-center gap-3 border border-cyan-950/30 bg-white px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.32em] text-cyan-950/80">
                             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
                             {landing.stateLabel} · Voyage Post
                         </div>
-                        <h1 className={`${alfa_slab_one.className} mt-6 text-5xl leading-[0.95] tracking-tight md:text-7xl`}>
+                        <h1 className={`${alfa_slab_one.className} mt-6 text-4xl leading-[0.95] tracking-tight [overflow-wrap:break-word] sm:text-5xl md:text-7xl`}>
                             {landing.heroSlogan}
                         </h1>
                         <p className="mt-6 max-w-xl font-serif text-lg leading-8 italic text-[#315f5a]">
@@ -335,18 +335,18 @@ export function NostalgiaHero({ landing, primaryHref, secondaryHref }: HeroProps
                     {/* Boarding pass mini-artifact */}
                     <div className="border border-cyan-950/25 bg-white shadow-[0_18px_50px_rgba(8,91,101,0.14)]">
                         <div className="grid grid-cols-[1.2fr_auto_1fr]">
-                            <div className="p-4">
+                            <div className="min-w-0 p-3 sm:p-4">
                                 <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-950/55">From</p>
-                                <p className={`${alfa_slab_one.className} mt-1 text-2xl`}>
+                                <p className={`${alfa_slab_one.className} mt-1 break-words text-lg leading-tight sm:text-2xl`}>
                                     {landing.facts.find(f => f.label === 'Departure Port')?.value?.split(',')[0]?.toUpperCase() ?? 'PORT'}
                                 </p>
                             </div>
-                            <div className="flex items-center justify-center border-x border-dashed border-cyan-950/25 px-3 text-3xl text-cyan-950/45">
+                            <div className="flex items-center justify-center border-x border-dashed border-cyan-950/25 px-2 text-2xl text-cyan-950/45 sm:px-3 sm:text-3xl">
                                 🚢
                             </div>
-                            <div className="p-4 text-right">
+                            <div className="min-w-0 p-3 text-right sm:p-4">
                                 <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-cyan-950/55">To</p>
-                                <p className={`${alfa_slab_one.className} mt-1 text-2xl`}>
+                                <p className={`${alfa_slab_one.className} mt-1 break-words text-lg leading-tight sm:text-2xl`}>
                                     {landing.facts.find(f => f.label === 'Destination')?.value?.toUpperCase() ?? 'AT SEA'}
                                 </p>
                             </div>

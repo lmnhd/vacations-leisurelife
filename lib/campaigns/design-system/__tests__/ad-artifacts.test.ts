@@ -118,6 +118,71 @@ const vintageRockCampaign = {
     optionalGatheringMoments: ['Drop-in jam sessions', 'Casual vinyl listening hours', 'Open mic nights'],
 } as Campaign;
 
+const grandCostumedBrief = {
+    ...brief,
+    themeName: 'The Grand Costumed Promenade',
+    visual: {
+        ...brief.visual,
+        aestheticLabel: 'Nostalgic costuming cruise',
+        imageryMood: 'warm shipboard elegance',
+        plausibilityFramework: {
+            ...brief.visual.plausibilityFramework,
+            allowedProps: ['Folded ivory gloves', 'Painted parasol', 'Ribboned bonnet', 'Reticule'],
+        },
+    },
+    messaging: {
+        ...brief.messaging,
+        heroSlogan: 'Promenade in Full Dress',
+        subSlogan: 'A Caribbean sailing for guests who love to wear the work beautifully.',
+        elevatorPitch: 'Historical costuming at sea without workshops or staged performance.',
+        toneKeywords: ['aspirational', 'specific', 'welcoming'],
+    },
+    identityBlueprint: {
+        energyMode: 'warm_social',
+        visualFlavor: 'travel_nostalgia',
+        summary: 'warm social campaign; favor human-scaled warmth with mixed social scale.',
+        evidenceOfBelonging: [
+            'A dance-floor edge with abandoned dance cards, half-finished cocktails, and a few couples stepping into a waltz as others watch.',
+            'An upper-dining-room tea cluster where gloves, fans, and hat pins share table space with pastries.',
+        ],
+        propFamilies: ['Folded ivory gloves', 'Painted parasol', 'Ribboned bonnet', 'Reticule'],
+        forbiddenDefaults: ['cold showroom mood', 'formal event staging', 'isolated luxury silence'],
+        imageBehavior: ['human-scaled warmth', 'open sociability', 'cruise-first recognition cues'],
+    },
+} as unknown as CampaignAestheticBrief;
+
+const grandCostumedCampaign = {
+    id: 'grand-costumed-promenade-explorer',
+    name: 'The Grand Costumed Promenade',
+    description: 'A historical costuming sailing for makers, wearers, and period-dress devotees.',
+    targetDates: '2027-01-03',
+    targetDestination: 'Caribbean',
+    shipTarget: 'Symphony of the Seas',
+    targetingKeywords: ['historical costuming', 'costube', 'regency', 'victorian dress', 'period fashion'],
+    allowedThemeSignals: [
+        'silk taffeta sheen',
+        'ivory gloves folded on a tea saucer',
+        'painted parasol leaning on a deck chair',
+        'ribboned bonnet tied under the chin',
+    ],
+    optionalGatheringMoments: [
+        'A dance-floor edge with abandoned dance cards, half-finished cocktails, and a few couples stepping into a waltz as others watch.',
+        'An informal accessory-swap table in a wood-paneled bar with ribbons, cuffs, and spare gloves laid out beside drinks.',
+    ],
+    highlightEvents: ['Grand outer-deck promenade in day dress', 'Shipboard waltz and social dance hour'],
+} as Campaign;
+
+const boardGameCampaign = {
+    id: 'board-games-at-sea',
+    name: 'Board Games at Sea',
+    description: 'A tabletop cruise for board-game players, score sheets, and shared turns at sea.',
+    targetDates: '2026-11-07',
+    targetDestination: 'Caribbean',
+    shipTarget: 'Odyssey of the Seas',
+    targetingKeywords: ['board games', 'tabletop', 'meeples', 'dice'],
+    allowedThemeSignals: ['dice tray', 'score sheet', 'game box'],
+} as Campaign;
+
 async function main() {
     const tokens = extractNicheTokens(brief, campaign);
     assert.equal(tokens.accentHex, '#ff5a3d');
@@ -141,6 +206,17 @@ async function main() {
     assert.match(vintageSpecs[0].prompt, /analog, social, and in motion/i);
     assert.match(vintageSpecs[0].prompt, /Avoid mood mismatch/i);
     assert.doesNotMatch(vintageSpecs[0].prompt, /A quiet real cruise ship deck/i);
+
+    const costumedTokens = extractNicheTokens(grandCostumedBrief, grandCostumedCampaign);
+    const costumedSpecs = buildDocumentaryDetailSpecs(grandCostumedBrief, grandCostumedCampaign, costumedTokens, 1);
+    assert.doesNotMatch(costumedSpecs[0].prompt, /Board-game visibility/i);
+    assert.doesNotMatch(costumedSpecs[0].prompt, /board-game life aboard the ship/i);
+    assert.doesNotMatch(costumedSpecs[0].prompt, /record sleeve|guitar pick|leather jacket/i);
+    assert.match(costumedSpecs[0].prompt, /Folded ivory gloves|Painted parasol|Ribboned bonnet/i);
+
+    const boardGameTokens = extractNicheTokens(brief, boardGameCampaign);
+    const boardGameSpecs = buildDocumentaryDetailSpecs(brief, boardGameCampaign, boardGameTokens, 1);
+    assert.match(boardGameSpecs[0].prompt, /Board-game visibility/i);
 
     // Default tokens map to system_4_modular (4 templates)
     const renderSpecs = buildDesignedAdRenderSpecs(tokens, [], []);

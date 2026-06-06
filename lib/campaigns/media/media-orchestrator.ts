@@ -37,13 +37,14 @@ import { generateHtmlAdArtifacts } from './generators/html-ad-generator';
 import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDefaultThemeMusicTrack } from './theme-music-library';
 import { scoreTikTokVideoReadiness } from './lint/video-lint';
 import { inferTikTokFormat } from './generators/tiktok-formats/index';
+import { collectSelectableImageGroups, type HtmlTemplateManifest } from '@/lib/ads/html-templates/core';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { buildElevenLabsVoiceTags } from './elevenlabs-voices';
 import {
     assetRecordToShipReferenceCandidate,
-    discoverShipReferenceCandidates,
     discoverShipReferenceCandidatesWithExclusions,
+    filterShipReferenceRecordsForCampaign,
     importHeroAssetsFromReferences,
     importShipReferenceAssets,
 } from './ship-reference-service';
@@ -64,6 +65,11 @@ import {
     planPlatformCropSources,
 } from './platform-crop-selection';
 import { getAuthoritativeShipName } from '../ship-context';
+import {
+    formatStaleBriefForResearchMessage,
+    isResearchDossierNewerThanBrief,
+} from '../research-freshness';
+import { sanitizeAestheticBriefShipCopyForCampaign } from '../ship-copy';
 
 export { ProbeGateError } from './probe-gate';
 export const PRODUCTION_BUILD_LINT_FAILURE_CODE = 'PRODUCTION_BUILD_LINT_FAILURE' as const;
@@ -107,6 +113,11 @@ export interface GenerationOptions {
     /** Asset types that must bypass existing-manifest skip logic. */
     forceRegenerateAssetTypes?: AssetType[];
     themeMusicSource?: 'replicate' | 'default';
+    /**
+     * Force narrated/TikTok videos to render with NO background music bed, even
+     * when the manifest already has a theme-music track. Narration still plays.
+     */
+    disableThemeMusic?: boolean;
     sceneImageMode?: 'all' | 'missing_only';
     storyboardDeliverableIds?: string[];
     videoModelPresetId?: VideoModelPresetId;
@@ -209,20 +220,6 @@ function mergeKeepingLocked(existing: AssetRecord[], incoming: AssetRecord[]): A
     // Preserve locked records; exclude new records that would overwrite a locked assetId
     const filteredIncoming = incoming.filter((r) => !lockedIds.has(r.assetId));
     return [...lockedExisting, ...filteredIncoming];
-}
-
-function isResearchDossierNewerThanBrief(campaign: { researchDossierGeneratedAt?: string | null }, brief?: { generatedAt?: string | null } | null): boolean {
-    if (!campaign.researchDossierGeneratedAt || !brief?.generatedAt) {
-        return false;
-    }
-
-    const researchAt = Date.parse(campaign.researchDossierGeneratedAt);
-    const briefAt = Date.parse(brief.generatedAt);
-    if (Number.isNaN(researchAt) || Number.isNaN(briefAt)) {
-        return false;
-    }
-
-    return researchAt > briefAt;
 }
 
 function getSceneImageSceneId(asset: AssetRecord): string | null {
@@ -419,12 +416,26 @@ export async function runMediaGeneration(
         if (!campaign) {
             throw new Error(`Campaign not found: ${slug}`);
         }
+        const referenceDependentTypes: AssetType[] = [
+            'ship_reference_image',
+            'hero_image',
+            'scene_image',
+            'platform_crop',
+        ];
+        const needsShipReferencePool = shouldRunAny(referenceDependentTypes, resolvedOptions.assetTypes)
+            || shouldRunDesignedAds(resolvedOptions.assetTypes);
+        const existingShipReferenceRecords = needsShipReferencePool
+            ? filterShipReferenceRecordsForCampaign(campaign, existingManifest?.images.shipReferences ?? [])
+            : (existingManifest?.images.shipReferences ?? []);
         if (!campaign.researchDossier) {
             throw new MediaReadinessError(
                 `Secondary campaign research dossier missing for ${slug}. Generate the dossier on the brief page before any media generation.`,
             );
         }
-        const brief = await getAestheticBrief(slug);
+        const storedBrief = await getAestheticBrief(slug);
+        const brief = storedBrief
+            ? sanitizeAestheticBriefShipCopyForCampaign(storedBrief, campaign)
+            : storedBrief;
         const requiresApprovedBrief = shouldRunAny([
             'hero_image',
             'aesthetic_concept',
@@ -461,6 +472,9 @@ export async function runMediaGeneration(
                 throw new MediaReadinessError(
                     `Production Bible for ${slug} has no scene library entries. Regenerate the Production Bible so it emits scenes, approve the brief, then retry scene image generation.`
                 );
+            }
+            if (isResearchDossierNewerThanBrief(campaign, brief)) {
+                throw new MediaReadinessError(formatStaleBriefForResearchMessage(slug));
             }
         }
 
@@ -575,30 +589,28 @@ export async function runMediaGeneration(
         }
 
         if (shouldRunAsset('ship_reference_image', resolvedOptions.assetTypes)) {
-            group1Promises.push(
-                runWithJob(slug, 'ship_reference_image', 'serpapi', 'real ship reference discovery', async () => {
-                    const existingReferenceRecords = [
-                        ...(existingManifest?.images.shipReferences ?? []),
-                        ...shipReferenceRecords,
-                    ];
-                    const candidates = await discoverShipReferenceCandidatesWithExclusions(campaign, 6, {
-                        imageUrls: existingReferenceRecords.map((record) => record.sourceImageUrl ?? record.url),
-                    });
-                    if (candidates.length === 0) {
-                        throw new Error(`No usable ship reference images found for ${slug}`);
-                    }
-                    const referenceRecords = await importShipReferenceAssets(slug, campaign, candidates);
-                    shipReferenceRecords.push(...referenceRecords);
-                    return referenceRecords;
-                }, errors)
-            );
+            await runWithJob(slug, 'ship_reference_image', 'serpapi', 'real ship reference discovery', async () => {
+                const existingReferenceRecords = [
+                    ...existingShipReferenceRecords,
+                    ...shipReferenceRecords,
+                ];
+                const candidates = await discoverShipReferenceCandidatesWithExclusions(campaign, 6, {
+                    imageUrls: existingReferenceRecords.map((record) => record.sourceImageUrl ?? record.url),
+                });
+                if (candidates.length === 0) {
+                    throw new Error(`No usable ship reference images found for ${slug}`);
+                }
+                const referenceRecords = await importShipReferenceAssets(slug, campaign, candidates);
+                shipReferenceRecords.push(...referenceRecords);
+                return referenceRecords;
+            }, errors);
         }
 
         if (shouldRunAsset('hero_image', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'hero_image', getMediaImageGeneratorService(), 'real ship hero imagery from approved references', async () => {
                     const manifestReferenceRecords = [
-                        ...(existingManifest?.images.shipReferences ?? []),
+                        ...existingShipReferenceRecords,
                         ...shipReferenceRecords,
                     ];
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
@@ -792,7 +804,15 @@ export async function runMediaGeneration(
 
         }
 
-        if (shouldRunAsset('theme_music', resolvedOptions.assetTypes) && !isGenerationLocked(existingManifest?.audio.themeMusic)) {
+        const existingThemeMusicRecord = existingManifest?.audio.themeMusic ?? null;
+        const shouldGenerateThemeMusic = shouldRunAsset('theme_music', resolvedOptions.assetTypes)
+            && !isGenerationLocked(existingThemeMusicRecord)
+            && (
+                !existingThemeMusicRecord
+                || shouldForceRegenerateAsset('theme_music', resolvedOptions.forceRegenerateAssetTypes)
+            );
+
+        if (shouldGenerateThemeMusic) {
             // Theme music
             group1Promises.push(
                 runWithJob(slug, 'theme_music', resolvedOptions.themeMusicSource === 'default' ? 'default_library' : 'replicate', 'theme music', async () => {
@@ -832,7 +852,9 @@ export async function runMediaGeneration(
         const selectedThemeMusicRecord = audioRecords.themeMusic ?? existingManifest?.audio.themeMusic ?? null;
         let themeMusicBuffer: Buffer | null = null;
 
-        if (shouldGenerateNarratedVideos) {
+        if (shouldGenerateNarratedVideos && resolvedOptions.disableThemeMusic) {
+            // Operator explicitly chose no music bed — narration only.
+        } else if (shouldGenerateNarratedVideos) {
             if (!selectedThemeMusicRecord) {
                 warnings.push('No theme music track is selected. Narrated storyboard and TikTok videos will be composed without background music.');
             } else {
@@ -883,17 +905,13 @@ export async function runMediaGeneration(
 
         if (shouldRunAsset('scene_image', resolvedOptions.assetTypes) && hasProductionBible) {
             if (isResearchDossierNewerThanBrief(campaign, brief)) {
-                throw new MediaReadinessError(
-                    `Scene image generation is using a stale brief for ${slug}. ` +
-                    `The latest secondary research dossier was generated after the brief, so the scene library is out of date. ` +
-                    `Regenerate the brief in Brief Studio first, then rerun media generation so the production bible can absorb the newest research.`,
-                );
+                throw new MediaReadinessError(formatStaleBriefForResearchMessage(slug));
             }
 
             group2Promises.push(
                 runWithJob(slug, 'scene_image', getMediaImageGeneratorService(), 'scene images from production bible', async () => {
                     const manifestReferenceRecords = [
-                        ...(existingManifest?.images.shipReferences ?? []),
+                        ...existingShipReferenceRecords,
                         ...shipReferenceRecords,
                     ];
                     const approvedReferenceCandidates = getApprovedReferenceCandidates(manifestReferenceRecords);
@@ -1167,7 +1185,7 @@ export async function runMediaGeneration(
                 totalAssets: 0,
                 completionStatus: 'partial',
                 images: {
-                    shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
+                    shipReferences: mergeAssetRecords(existingShipReferenceRecords, shipReferenceRecords),
                     hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
                     flyerImages: mergeKeepingLocked(existingManifest?.images.flyerImages ?? [], flyerRecords),
                     sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),
@@ -1292,6 +1310,17 @@ export async function runMediaGeneration(
             }
             const fallbackUrl = firstHeroUrl;
 
+            // VERTICAL_VIDEO_EDITOR: resolve per-beat image overrides against the
+            // FULL selectable image library (any campaign image, not just scenes),
+            // and pass operator edits into the TikTok static-package render.
+            const tiktokVideoEdits = existingManifest?.tiktokVideoEdits ?? null;
+            const beatImageUrlById = new Map<string, string>();
+            if (existingManifest) {
+                for (const asset of collectSelectableImageGroups(existingManifest as HtmlTemplateManifest)) {
+                    if (asset.assetId && asset.url) beatImageUrlById.set(asset.assetId, asset.url);
+                }
+            }
+
             // Sequential — each storyboard video calls ElevenLabs; parallel runs hit the concurrent cap
             for (const storyboard of brief!.productionBible!.storyboards) {
                 const delivId = storyboard.deliverableId;
@@ -1322,8 +1351,9 @@ export async function runMediaGeneration(
 
                 await runWithJob(slug, assetType, activeVideoGeneratorService, `storyboard: ${delivId}`, async () => {
                     const synthPackage = assetType === 'tiktok_seed_video' ? tiktokPromotionPackage : null;
+                    const assetEdits = assetType === 'tiktok_seed_video' ? tiktokVideoEdits : null;
                     const video = await generateStoryboardVideo(
-                        brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug, synthPackage
+                        brief!, storyboard, sceneImageMap, fallbackUrl, themeMusicBuffer, undefined, undefined, resolvedOptions.videoModelPresetId, slug, synthPackage, assetEdits, beatImageUrlById
                     );
                     // Resolve distribution tag from the format registry — deterministic, not substring-based
                     const tiktokFormat = assetType === 'tiktok_seed_video' ? inferTikTokFormat(delivId) : null;
@@ -1372,7 +1402,7 @@ export async function runMediaGeneration(
         // ── Build manifest ────────────────────────────────────────────
 
         const mergedImages = {
-            shipReferences: mergeAssetRecords(existingManifest?.images.shipReferences ?? [], shipReferenceRecords),
+            shipReferences: mergeAssetRecords(existingShipReferenceRecords, shipReferenceRecords),
             hero: mergeKeepingLocked(existingManifest?.images.hero ?? [], heroRecords),
             flyerImages: mergeKeepingLocked(existingManifest?.images.flyerImages ?? [], flyerRecords),
             sceneImages: mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords),

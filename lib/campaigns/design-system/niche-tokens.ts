@@ -2,6 +2,7 @@ import type { Campaign } from '../types';
 import type { CampaignAestheticBrief, CampaignEnergyMode, VisualFlavor } from '../schema';
 import type { CampaignEnergyProfile, NicheTokens, VisualSystem } from './types';
 import { getAuthoritativeShipName } from '../ship-context';
+import { sanitizeShipCopyForCampaign } from '../ship-copy';
 
 const STOPWORDS = new Set([
     'the', 'and', 'for', 'with', 'from', 'into', 'your', 'this', 'that', 'cruise', 'voyage',
@@ -121,7 +122,8 @@ function profileFromMode(mode: CampaignEnergyMode): CampaignEnergyProfile {
 }
 
 function isMusicCampaign(corpus: string): boolean {
-    return /\b(rock|roll|beat|band|music|vinyl|record|dj|dance|song|sound|rhythm|guitar|listening|open mic|jam)\b/i.test(corpus);
+    return /\b(rock|roll|beat|band|music|vinyl|record|dj|song|rhythm|guitar|listening|open mic|jam|concert)\b/i.test(corpus)
+        || /\b(dance|dancing|dance[- ]?floor|dance[- ]?party)\b.{0,40}\b(music|dj|band|concert|vinyl|song|set|club)\b|\b(music|dj|band|concert|vinyl|song|set|club)\b.{0,40}\b(dance|dancing|dance[- ]?floor|dance[- ]?party)\b/i.test(corpus);
 }
 
 function isHighEnergyMusicCampaign(corpus: string): boolean {
@@ -226,11 +228,15 @@ function normalizePropSignal(signal: string): string | null {
 
 function buildPropSignals(brief: CampaignAestheticBrief, campaign: Campaign | null | undefined, profile: CampaignEnergyProfile): string[] {
     const corpus = textCorpus(brief, campaign);
+    const readingCampaign = /\b(reading|book|literary|reader|novel|paperback|library|book club)\b/i.test(corpus);
     const source = [
-        ...(brief.identityBlueprint?.propFamilies ?? []),
         ...(brief.visual.plausibilityFramework.allowedProps ?? []),
         ...(campaign?.allowedThemeSignals ?? []),
-    ].map(normalizePropSignal).filter((signal): signal is string => Boolean(signal));
+        ...(brief.identityBlueprint?.propFamilies ?? []),
+    ]
+        .map(normalizePropSignal)
+        .filter((signal): signal is string => Boolean(signal))
+        .filter((signal) => readingCampaign || !/\b(dog-eared paperback|bookmark ribbon|closed book|book on a lounger|folded note)\b/i.test(signal));
     const musicProps = isMusicCampaign(corpus)
         ? [
             'record sleeve',
@@ -294,20 +300,21 @@ export function extractNicheTokens(
     brief: CampaignAestheticBrief,
     campaign?: Campaign | null,
 ): NicheTokens {
-    const headline = brief.messaging.heroSlogan || brief.themeName;
+    const headline = sanitizeShipCopyForCampaign(brief.messaging.heroSlogan || brief.themeName, campaign);
     const energyProfile = inferEnergyProfile(brief, campaign);
     const energyMode = brief.identityBlueprint?.energyMode ?? fallbackEnergyMode(energyProfile);
     const vesselName = getAuthoritativeShipName(campaign) ?? 'Selected vessel';
     const route = campaign?.targetDestination ?? 'At sea';
-    const departure = campaign?.targetDates ?? 'Departure TBA';
+    const departure = campaign?.matchedSailDate?.trim() || campaign?.targetDates || 'Departure TBA';
     const quoteSource = brief.socialConcepts.facebookAd.primaryText || brief.messaging.subSlogan || brief.messaging.elevatorPitch;
-    const quote = quoteSource.length > 140 ? `${quoteSource.slice(0, 137).trimEnd()}...` : quoteSource;
+    const safeQuoteSource = sanitizeShipCopyForCampaign(quoteSource, campaign);
+    const quote = safeQuoteSource.length > 140 ? `${safeQuoteSource.slice(0, 137).trimEnd()}...` : safeQuoteSource;
     const propSignals = buildPropSignals(brief, campaign, energyProfile);
 
     return {
         headline,
         italicWord: pickItalicWord(headline, brief.themeName),
-        subhead: brief.messaging.subSlogan || brief.messaging.elevatorPitch,
+        subhead: sanitizeShipCopyForCampaign(brief.messaging.subSlogan || brief.messaging.elevatorPitch, campaign),
         vesselName,
         route,
         departure,
@@ -325,6 +332,6 @@ export function extractNicheTokens(
         propSignals,
         momentSignals: buildMomentSignals(brief, campaign, energyProfile),
         antiMood: buildAntiMoodForBrief(brief, energyProfile),
-        alignmentSummary: brief.identityBlueprint?.summary ?? brief.messaging.elevatorPitch,
+        alignmentSummary: sanitizeShipCopyForCampaign(brief.identityBlueprint?.summary ?? brief.messaging.elevatorPitch, campaign),
     };
 }

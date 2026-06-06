@@ -8,8 +8,10 @@
 //   none required — slug and format come from the route segments.
 
 import { notFound } from 'next/navigation';
-import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
+import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
+import { sanitizeAestheticBriefShipCopyForCampaign } from '@/lib/campaigns/ship-copy';
+import { getAuthoritativeShipName } from '@/lib/campaigns/ship-context';
 import {
     resolveTemplateData,
     buildImagePool,
@@ -38,13 +40,20 @@ export default async function AdRenderPage({ params }: Props) {
     if (!dims) notFound();
 
     // Fetch brief and manifest in parallel — manifest may legitimately be absent.
-    const [brief, manifest] = await Promise.all([
+    const [campaign, brief, manifest] = await Promise.all([
+        getCampaignBlueprint(slug).catch(() => null),
         getAestheticBrief(slug).catch(() => null),
         getMediaManifest(slug).catch(() => null),
     ]);
+    const displayBrief = brief && campaign
+        ? {
+            ...sanitizeAestheticBriefShipCopyForCampaign(brief, campaign),
+            shipName: getAuthoritativeShipName(campaign) ?? undefined,
+        }
+        : brief;
 
     const typedManifest = manifest as HtmlTemplateManifest | null;
-    const d = resolveTemplateData(brief as HtmlTemplateBrief | null, {
+    const d = resolveTemplateData(displayBrief as HtmlTemplateBrief | null, {
         formatKey: format,
         copySelections: typedManifest?.copySelections ?? {},
     });

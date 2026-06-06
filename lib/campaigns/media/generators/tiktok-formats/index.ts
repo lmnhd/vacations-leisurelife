@@ -1,4 +1,4 @@
-import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage } from '../../../schema';
+import type { CampaignAestheticBrief, Storyboard, TikTokPromotionPackage, TikTokVideoEdits } from '../../../schema';
 import {
     buildOrganicSeedShotPrompts,
     ORGANIC_SEED_TARGET_DURATION_SECONDS,
@@ -34,6 +34,7 @@ export interface TikTokFormatSpec {
         brief: CampaignAestheticBrief,
         storyboard?: Storyboard,
         promotionPackage?: TikTokPromotionPackage | null,
+        edits?: TikTokVideoEdits | null,
     ) => TikTokSequenceBeat[];
     /**
      * Flat overlay list for the motion-clip path (one prominent card per shot).
@@ -53,12 +54,13 @@ const ORGANIC_SEED_FORMAT: TikTokFormatSpec = {
     renderMode: 'static_package',
     distributionTag: 'organic',
     buildShotPrompts: buildOrganicSeedShotPrompts,
-    buildSequenceBeats: (brief, storyboard, promotionPackage) =>
+    buildSequenceBeats: (brief, storyboard, promotionPackage, edits) =>
         buildPackageSequenceBeats(
             brief,
             storyboard,
             { beatCount: ORGANIC_SEED_SHOTS.length, targetDurationSeconds: ORGANIC_SEED_TARGET_DURATION_SECONDS },
             promotionPackage,
+            edits,
         ),
     buildOverlayCards: (brief, storyboard, promotionPackage) =>
         flattenSequenceBeatsToPrimaryOverlays(
@@ -76,12 +78,13 @@ const PAID_VARIANT_FORMAT: TikTokFormatSpec = {
     renderMode: 'static_package',
     distributionTag: 'paid',
     buildShotPrompts: buildPaidVariantShotPrompts,
-    buildSequenceBeats: (brief, storyboard, promotionPackage) =>
+    buildSequenceBeats: (brief, storyboard, promotionPackage, edits) =>
         buildPackageSequenceBeats(
             brief,
             storyboard,
             { beatCount: PAID_VARIANT_SHOTS.length, targetDurationSeconds: PAID_VARIANT_TARGET_DURATION_SECONDS },
             promotionPackage,
+            edits,
         ),
     buildOverlayCards: (brief, storyboard, promotionPackage) =>
         flattenSequenceBeatsToPrimaryOverlays(

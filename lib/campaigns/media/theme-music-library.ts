@@ -63,15 +63,6 @@ function scoreThemeMusicTrack(track: AssetRecord, brief: CampaignAestheticBrief)
     }, 0);
 }
 
-function pickRandomTrack(tracks: AssetRecord[]): AssetRecord | null {
-    if (tracks.length === 0) {
-        return null;
-    }
-
-    const randomIndex = Math.floor(Math.random() * tracks.length);
-    return tracks[randomIndex] ?? null;
-}
-
 export async function selectDefaultThemeMusicTrack(brief: CampaignAestheticBrief): Promise<AssetRecord | null> {
     const tracks = await listThemeMusicLibraryTracks();
     if (tracks.length === 0) {
@@ -96,11 +87,7 @@ export async function selectDefaultThemeMusicTrack(brief: CampaignAestheticBrief
         return null;
     }
 
-    const highestScoringTracks = scoredTracks
-        .filter((scoredTrack) => scoredTrack.score === highestScore)
-        .map((scoredTrack) => scoredTrack.track);
-
-    return pickRandomTrack(highestScoringTracks);
+    return scoredTracks.find((scoredTrack) => scoredTrack.score === highestScore)?.track ?? null;
 }
 
 export async function selectDefaultThemeMusicTrackForCampaign(slug: string): Promise<AssetRecord | null> {
@@ -123,7 +110,7 @@ export function buildDefaultThemeMusicRecord(slug: string, selectedTrack: AssetR
         promptUsed: selectionReason,
         fileSizeBytes: selectedTrack.fileSizeBytes,
         mimeType: selectedTrack.mimeType,
-        tags: Array.from(new Set(['audio', 'music', 'theme', 'default', ...selectedTrack.tags])),
+        tags: Array.from(new Set(['audio', 'music', 'theme', 'default', `source_track:${selectedTrack.assetId}`, ...selectedTrack.tags])),
         createdAt: new Date().toISOString(),
         reviewStatus: 'auto_approved',
         version: 1,

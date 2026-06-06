@@ -18,6 +18,11 @@ import {
     getSiblingShipNames,
     metadataSupportsShipLandscapeFeature,
 } from './ship-environment-profile';
+import {
+    findMentionedKnownShips,
+    normalizeShipNameText,
+    normalizeSpecificShipName,
+} from '../ship-names';
 
 type ReferenceMatchLevel = 'exact_ship' | 'same_class' | 'generic_cruise';
 
@@ -124,7 +129,32 @@ async function isNearDuplicateHero(candidateBuffer: Buffer, acceptedBuffers: rea
 }
 
 function normalizeText(value: string): string {
-    return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+    return normalizeShipNameText(value);
+}
+
+function buildShipIdentityTag(shipName: string): string {
+    return `ship:${normalizeSpecificShipName(shipName) ?? normalizeText(shipName).replace(/\s+/g, '-')}`;
+}
+
+function getSpecificShipConflict(campaign: Campaign): { target: string; matched: string } | null {
+    const target = normalizeSpecificShipName(campaign.shipTarget);
+    const matched = normalizeSpecificShipName(campaign.matchedShipName);
+    if (target && matched && target !== matched) {
+        return { target, matched };
+    }
+    return null;
+}
+
+export function assertShipReferenceIdentityIsConsistent(campaign: Campaign): void {
+    const conflict = getSpecificShipConflict(campaign);
+    if (!conflict) {
+        return;
+    }
+
+    throw new Error(
+        `Ship reference discovery blocked: campaign shipTarget is "${campaign.shipTarget}" but matchedShipName is "${campaign.matchedShipName}". ` +
+        'Resolve the ship metadata conflict before generating references so stale ship photos cannot seed media.'
+    );
 }
 
 function getShipIdentityTokens(campaign: Campaign): { lineToken: string; shipTokens: string[]; fullShipName: string } {
@@ -170,6 +200,8 @@ function classifyReferenceMatchLevel(
 }
 
 export function resolveShipReferenceShipName(campaign: Campaign): string {
+    assertShipReferenceIdentityIsConsistent(campaign);
+
     const matchedShipName = campaign.matchedShipName?.trim();
     if (matchedShipName) {
         return matchedShipName;
@@ -289,13 +321,32 @@ function scoreReferenceCandidate(campaign: Campaign, category: string, query: st
 
 function shouldHardRejectReferenceCandidate(
     campaign: Campaign,
+    category: string,
     title: string,
     contextUrl: string,
 ): boolean {
     const metadataHaystack = `${normalizeText(title)} ${normalizeText(contextUrl)}`;
     const shipName = getResolvedShipName(campaign);
+    const resolvedSpecificShip = normalizeSpecificShipName(shipName);
+    const mentionedKnownShips = findMentionedKnownShips(metadataHaystack);
 
     if (HARD_REJECT_REFERENCE_TERMS.some((term) => metadataHaystack.includes(term))) {
+        return true;
+    }
+
+    if (
+        resolvedSpecificShip
+        && mentionedKnownShips.some((mentionedShip) => mentionedShip !== resolvedSpecificShip)
+    ) {
+        return true;
+    }
+
+    if (
+        category !== 'offboard_excursion'
+        && resolvedSpecificShip
+        && mentionedKnownShips.length > 0
+        && !mentionedKnownShips.includes(resolvedSpecificShip)
+    ) {
         return true;
     }
 
@@ -409,7 +460,7 @@ export async function discoverShipReferenceCandidatesWithExclusions(
                 continue;
             }
 
-            if (shouldHardRejectReferenceCandidate(campaign, result.title, result.contextUrl)) {
+            if (shouldHardRejectReferenceCandidate(campaign, queryConfig.category, result.title, result.contextUrl)) {
                 continue;
             }
 
@@ -543,6 +594,7 @@ function buildExternalReferenceAssetRecord(
     assetId: string,
     reviewStatus: AssetRecord['reviewStatus'],
 ): AssetRecord {
+    const shipName = getResolvedShipName(campaign);
     const matchLevel = classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl);
 
     return {
@@ -562,7 +614,7 @@ function buildExternalReferenceAssetRecord(
         },
         fileSizeBytes: 0,
         mimeType: inferReferenceMimeType(candidate),
-        tags: ['ship-reference', candidate.category, 'reference', buildReferenceMatchTag(matchLevel)],
+        tags: ['ship-reference', candidate.category, 'reference', buildReferenceMatchTag(matchLevel), buildShipIdentityTag(shipName)],
         createdAt: new Date().toISOString(),
         reviewStatus,
         version: 1,
@@ -666,6 +718,8 @@ async function importCandidateAsAsset(
             : `images/hero/${assetId}.${extension}`;
         const url = await storeAsset(slug, assetId, fileName, buffer, mimeType);
 
+        const shipName = getResolvedShipName(campaign);
+        const matchLevel = classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl);
         const record: AssetRecord = {
             assetId,
             assetType,
@@ -683,7 +737,13 @@ async function importCandidateAsAsset(
             },
             fileSizeBytes: buffer.length,
             mimeType,
-            tags: ['ship-reference', candidate.category, assetType === 'hero_image' ? 'hero' : 'reference'],
+            tags: [
+                'ship-reference',
+                candidate.category,
+                assetType === 'hero_image' ? 'hero' : 'reference',
+                buildReferenceMatchTag(matchLevel),
+                buildShipIdentityTag(shipName),
+            ],
             createdAt: new Date().toISOString(),
             reviewStatus,
             version: 1,
@@ -762,7 +822,12 @@ export function assetRecordToShipReferenceCandidate(record: AssetRecord): ShipRe
         return null;
     }
 
-    const category = record.tags.find((tag) => tag !== 'ship-reference' && tag !== 'reference') ?? 'exterior';
+    const category = record.tags.find((tag) =>
+        tag !== 'ship-reference'
+        && tag !== 'reference'
+        && !tag.startsWith('match:')
+        && !tag.startsWith('ship:')
+    ) ?? 'exterior';
     const fetchableUrl = selectFetchableReferenceUrl(record);
 
     return {
@@ -776,6 +841,48 @@ export function assetRecordToShipReferenceCandidate(record: AssetRecord): ShipRe
         query: record.sourceQuery || '',
         selectionScore: record.selectionScore ?? 0,
     };
+}
+
+export function filterShipReferenceRecordsForCampaign(
+    campaign: Campaign,
+    records: readonly AssetRecord[],
+): AssetRecord[] {
+    const shipName = getResolvedShipName(campaign);
+    const resolvedSpecificShip = normalizeSpecificShipName(shipName);
+    const expectedShipTag = buildShipIdentityTag(shipName);
+
+    return records.filter((record) => {
+        if (record.assetType !== 'ship_reference_image' || record.active === false) {
+            return false;
+        }
+
+        if (record.tags.includes(expectedShipTag)) {
+            return true;
+        }
+
+        const metadata = [
+            record.promptUsed,
+            record.sourcePageUrl,
+            record.sourceImageUrl,
+            record.sourceQuery,
+        ].filter(Boolean).join(' ');
+        const mentionedShips = findMentionedKnownShips(metadata);
+
+        if (resolvedSpecificShip && mentionedShips.some((ship) => ship !== resolvedSpecificShip)) {
+            return false;
+        }
+
+        const candidate = assetRecordToShipReferenceCandidate(record);
+        if (!candidate) {
+            return false;
+        }
+
+        if (candidate.category === 'offboard_excursion') {
+            return mentionedShips.length === 0 || !resolvedSpecificShip || mentionedShips.includes(resolvedSpecificShip);
+        }
+
+        return classifyReferenceMatchLevel(campaign, candidate.title, candidate.contextUrl) !== 'generic_cruise';
+    });
 }
 
 function scoreHeroCandidate(candidate: ShipReferenceCandidate): number {

@@ -5,6 +5,16 @@ import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 import { VisualFlavorEnum } from '@/lib/campaigns/schema';
 import { dispatchEmailBroadcast } from '@/lib/campaigns/email/email-event-orchestrator';
 
+function normalizeShipPatchValue(value?: string | null): string {
+    return (value ?? '')
+        .toLowerCase()
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/^(royal caribbean(?: international)?|celebrity cruises?|celebrity|norwegian cruise line|ncl)\s+/i, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 const CampaignPatchSchema = z.object({
     status: z.enum(['DRAFT', 'GATHERING_INTEREST', 'THRESHOLD_MET', 'CONVERTED', 'EXPIRED']).optional(),
     /**
@@ -81,6 +91,7 @@ export async function GET(
             aesthetic: campaign.aesthetic ?? null,
             status: campaign.status,
             targetDates: campaign.targetDates,
+            targetDatesSource: campaign.targetDatesSource ?? 'estimate',
             targetDestination: campaign.targetDestination ?? null,
             shipTarget: campaign.shipTarget ?? null,
             matchedShipName: campaign.matchedShipName ?? null,
@@ -204,6 +215,22 @@ export async function PATCH(
         const previous = campaign.shipTarget ?? 'unset';
         updatedCampaign.shipTarget = patch.shipTarget;
         messages.push(`shipTarget corrected from "${previous}" to "${patch.shipTarget}". Regenerate brief and manifest copy to pick up the new ship name.`);
+        if (
+            patch.matchedShipName === undefined
+            && campaign.matchedShipName
+            && normalizeShipPatchValue(campaign.matchedShipName) !== normalizeShipPatchValue(patch.shipTarget)
+        ) {
+            delete updatedCampaign.matchedShipName;
+            delete updatedCampaign.matchedSailDate;
+            delete updatedCampaign.matchedDeparturePort;
+            delete updatedCampaign.matchedNights;
+            delete updatedCampaign.cbagenttoolsGroupId;
+            delete updatedCampaign.cbagenttoolsBookingLink;
+            delete updatedCampaign.cbPriceAdvantage;
+            delete updatedCampaign.odysseusRetailBookingLink;
+            updatedCampaign.pricingStatus = 'UNMATCHED';
+            messages.push(`Cleared stale inventory match "${campaign.matchedShipName}" because it conflicts with the corrected ship target. Re-run Phase B/rematch before launch.`);
+        }
     }
 
     if (patch.matchedShipName !== undefined) {

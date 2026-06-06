@@ -6,6 +6,7 @@ import type {
   CampaignMediaManifest,
 } from "@/lib/campaigns/schema";
 import { selectPreferredAssetForContext } from "@/lib/campaigns/media/image-selection";
+import { ThemeMusicPicker } from "@/components/campaign-media/theme-music-picker";
 import { CampaignSelector } from "../campaign-selector";
 import {
   Loader2,
@@ -804,7 +805,7 @@ export default function MediaGenerationTestPage() {
         return;
       }
 
-      const cdnUrl = (data.cdnUrl as string) ?? "";
+      const cdnUrl = (data.cdnUrl as string) ?? (data.url as string) ?? "";
       setter({ state: "success", data, error: "", cdnUrl });
     } catch (err) {
       setter({
@@ -928,7 +929,7 @@ export default function MediaGenerationTestPage() {
 
         <div className="border border-white/10 rounded-xl p-4 bg-slate-900/50">
           <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">
-            Theme Music Source
+            Theme Music Generation Source
           </label>
           <select
             value={themeMusicSource}
@@ -943,12 +944,16 @@ export default function MediaGenerationTestPage() {
             <option value="replicate">Replicate MusicGen</option>
           </select>
           <p className="mt-2 text-[11px] text-slate-500">
-            Default Library reuses approved pre-made tracks with tags. Replicate
-            generates a fresh track.
+            Used when you run the generator card below. Manual library selection saves the campaign track immediately.
           </p>
         </div>
 
         {/* ── Copy Generator ───────────────────────────────────── */}
+        <ThemeMusicPicker
+          slug={slug}
+          onTrackChanged={(track) => setReplicateResult(assetRecordToResult(track))}
+        />
+
         <GeneratorCard
           id="gen-copy"
           keyStatus={keyStatus}

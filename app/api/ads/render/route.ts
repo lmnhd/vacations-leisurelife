@@ -7,6 +7,7 @@ import { TEMPLATED_API_KEY } from '@/lib/ads/config';
 import { AD_FORMATS, type AdFormat, type AdRenderResult } from '@/lib/ads/types';
 import { buildTemplatedRenderPacks } from '@/lib/ads/render-pack';
 import { renderWithTemplated } from '@/lib/ads/providers/templated';
+import { sanitizeAdCopySetShipCopyForCampaign } from '@/lib/campaigns/ship-copy';
 
 interface RenderRequestBody {
     slug?: string;
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
         }
 
         const input = buildCampaignAdInput({ brief, campaign, manifest, formats: requestedFormats });
+        const copySet = sanitizeAdCopySetShipCopyForCampaign(copySetResult.data, campaign);
         const supportedFormats = requestedFormats.filter((format) => input.templateLayouts[format]);
         const skippedFormats = requestedFormats.filter((format) => !input.templateLayouts[format]);
 
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
         }
 
         const resolvedInput = { ...input, formats: supportedFormats };
-        const qualityGate = runQualityGate(copySetResult.data, resolvedInput);
+        const qualityGate = runQualityGate(copySet, resolvedInput);
         if (!qualityGate.passed) {
             return NextResponse.json(
                 { error: 'Copy set failed quality gate before render.', qualityGate },
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
             slug,
             manifest,
             input: resolvedInput,
-            copySet: copySetResult.data,
+            copySet,
             formats: supportedFormats,
         });
 

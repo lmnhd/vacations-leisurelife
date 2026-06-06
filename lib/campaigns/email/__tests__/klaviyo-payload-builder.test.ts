@@ -136,6 +136,22 @@ test('buildKlaviyoEvent selects the correct metric name + visual mode per stage'
     assert.equal(d7.properties.visual_mode, 'status_briefing');
 });
 
+test('waitlist_confirmation emits an absolute verification_url when the lead has a token', () => {
+    const { properties } = buildKlaviyoEvent({
+        stage: 'waitlist_confirmation',
+        campaign: baseCampaign,
+        lead: { ...baseLead, verificationToken: 'verify-token-123' },
+        summary: { totalEntries: 1, totalPassengers: 2, convertedEntries: 0 },
+        requiredCabins: 8,
+        percentOfThreshold: 13,
+    });
+
+    assert.equal(
+        properties.verification_url,
+        'https://leisurelifeinteractive.net/api/groups/campaign/retro-future-2026/verify?email=lead%40example.com&token=verify-token-123',
+    );
+});
+
 test('buildKlaviyoEvent includes threshold snapshot for Day 7 momentum copy', () => {
     const { properties } = buildKlaviyoEvent({
         stage: 'nurture_day7',

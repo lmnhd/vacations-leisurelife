@@ -480,7 +480,7 @@ export function CampaignWaitlistForm({
 
             {showInboxOverlay ? (
                 <div className="absolute inset-0 z-20">
-                    <Card className="h-full border-sky-300/40 bg-slate-950/98 text-slate-50 shadow-[0_28px_100px_rgba(2,6,23,0.6)] backdrop-blur-md">
+                    <Card className="h-full border-sky-300/50 bg-slate-950 text-slate-50 shadow-[0_28px_100px_rgba(2,6,23,0.75)]">
                         <CardHeader className="border-b border-white/10 bg-gradient-to-r from-sky-500/20 via-cyan-500/10 to-transparent">
                             <div className="flex items-center gap-3">
                                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300/30 bg-sky-400/15 text-sky-100">
@@ -489,7 +489,7 @@ export function CampaignWaitlistForm({
                                 <div>
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/80">Step 1 of 2</p>
                                     <CardTitle className="text-2xl text-white">Check your inbox</CardTitle>
-                                    <CardDescription className="text-slate-300">
+                                    <CardDescription className="text-slate-200">
                                         Your submission is saved. We are waiting for the email verification step before the list opens.
                                     </CardDescription>
                                 </div>
@@ -510,17 +510,17 @@ export function CampaignWaitlistForm({
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="rounded-2xl border border-sky-300/20 bg-white/[0.04] p-5 text-slate-100">
+                                    <div className="rounded-2xl border border-sky-300/30 bg-white/[0.08] p-5 text-slate-100">
                                         <p className="text-lg font-semibold text-white">Your spot is saved, but you have not joined the list yet.</p>
-                                        <p className="mt-2 text-sm leading-6 text-slate-200/90">
+                                        <p className="mt-2 text-sm leading-6 text-slate-200">
                                             Click the confirmation link in your email to verify the address, join the list, and count this entry toward the threshold.
                                         </p>
                                     </div>
                                 )}
 
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/70">What this means</p>
-                                    <p className="mt-2 text-sm leading-6 text-slate-200/90">
+                                <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-5">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200">What this means</p>
+                                    <p className="mt-2 text-sm leading-6 text-slate-200">
                                         Until you verify, your submission is only saved as a pending request. Once you confirm the email, you join the list and the next step opens.
                                     </p>
                                 </div>
@@ -533,14 +533,14 @@ export function CampaignWaitlistForm({
                                         ['2', 'Confirm the link', 'Tap the verification button inside the email.'],
                                         ['3', 'Join the list', 'Your email verifies and the next step becomes active.'],
                                     ].map(([step, title, detail]) => (
-                                        <div key={step} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/80">Step {step}</p>
+                                        <div key={step} className="rounded-2xl border border-white/15 bg-white/[0.06] p-4">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200">Step {step}</p>
                                             <p className="mt-2 font-semibold text-white">{title}</p>
-                                            <p className="mt-1 text-sm leading-6 text-slate-200/85">{detail}</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-200">{detail}</p>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-5 text-sm leading-6 text-sky-50">
+                                <div className="rounded-2xl border border-sky-300/30 bg-sky-500/15 p-5 text-sm leading-6 text-sky-50">
                                     Once your email is verified, the next booking step will unlock automatically. Until then, this panel stays in front so you can focus on completing verification.
                                 </div>
                             </div>

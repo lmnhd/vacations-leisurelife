@@ -476,6 +476,20 @@ interface MetaAdCreative {
 
 Meta is the reference implementation for the full ad-phase workflow.
 
+### Build Meta Drafts — three paused creatives (implemented)
+
+"Build Meta Drafts" now creates **three** paused `facebook_ad` drafts in one pass, all reviewable/publishable in Ads Manager:
+
+1. **Facebook image ad** — the designed `meta`/`facebook` creative (unchanged primary).
+2. **Vertical Reels VIDEO ad** — the `tiktokSeed` vertical video. Uploaded via `POST act_{id}/advideos`, polled to `ready` (`uploadMetaAdVideo` / `waitForMetaVideoReady` in `distribution-marketing.ts`), then bound as `object_story_spec.video_data` with a thumbnail (asset thumbnail → campaign hero fallback). Meta ad-set placements deliver it to Instagram Reels / Facebook surfaces.
+3. **Instagram image ad** — the `instagram_feed` designed creative as a second image ad (only when distinct from the FB image).
+
+Mechanics:
+- The planner emits three `facebook_ad` posts (distinct `postId`s) at `seed_day_0`. `dispatchMetaAdsLive` branches image vs video on the resolved asset's `mimeType`. All ads are `PAUSED`.
+- The `replaceExisting` schedule-merge key was changed from `platform:campaignStage` to `platform:campaignStage:assetId` so the three same-platform creatives are not collapsed to one. (`app/api/groups/campaign/[slug]/media/distribute/route.ts`)
+- The organic `instagram_reels`/`instagram_feed` Graph posts still exist for a separate organic path; this paid path is additive.
+- Caveat: live Meta video upload needs real `META_*` creds + an active ad account and cannot be exercised in CI. Video transcoding is polled up to ~90s; a stuck transcode fails the draft loudly rather than hanging.
+
 ---
 
 ### 4. Google Ads

@@ -15,6 +15,7 @@ import { generateCopySet, runQualityGate } from '@/lib/ads/copy-forge';
 import type { AdCopySet, CopyForgeResult, QualityGateResult } from '@/lib/ads/types';
 import { AD_FORMATS, type AdFormat } from '@/lib/ads/types';
 import { lookupTemplate } from '@/lib/ads/template-registry';
+import { sanitizeAdCopySetShipCopyForCampaign } from '@/lib/campaigns/ship-copy';
 
 interface CopyForgeRequestBody {
     slug?: string;
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
         const supportedFormats = requestedFormats.filter((f) => input.templateLayouts[f]);
         const resolvedInput = { ...input, formats: supportedFormats };
 
-        const result = supportedFormats.length === 1
+        const rawResult = supportedFormats.length === 1
             ? await generateCopySet(resolvedInput)
             : mergeCopyForgeResults(await Promise.all(
                 supportedFormats.map(async (format) => ({
@@ -139,6 +140,10 @@ export async function POST(req: NextRequest) {
                     }),
                 })),
             ));
+        const result = {
+            ...rawResult,
+            copySet: sanitizeAdCopySetShipCopyForCampaign(rawResult.copySet, campaign),
+        };
 
         const templateRefs = Object.fromEntries(
             supportedFormats.map((format) => {
@@ -204,7 +209,11 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: 'Campaign or brief not found' }, { status: 404 });
         }
         const input = buildCampaignAdInput({ brief, campaign, manifest, formats });
-        const gate = runQualityGate(body.copySet as Parameters<typeof runQualityGate>[0], input);
+        const copySet = sanitizeAdCopySetShipCopyForCampaign(
+            body.copySet as Parameters<typeof runQualityGate>[0],
+            campaign,
+        );
+        const gate = runQualityGate(copySet, input);
         return NextResponse.json({ qualityGate: gate }, { status: 200 });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';

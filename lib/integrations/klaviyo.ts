@@ -178,6 +178,15 @@ export async function upsertKlaviyoProfile(
  * duplicate-profile branch so subsequent sends refresh per-campaign properties
  * (landing_page_url, hero_image_url, sail_date, etc.) instead of letting the
  * profile rot at first-contact values.
+ *
+ * A PATCH can itself 409 with `duplicate_profile` when the payload carries a
+ * secondary identifier (phone_number) that Klaviyo has attached to a DIFFERENT
+ * profile — i.e. the same person exists as two profiles, one keyed by email and
+ * one by phone. Klaviyo refuses to let a PATCH steal another profile's
+ * identifier (merging is a separate API). When that happens we retry the PATCH
+ * with the phone dropped: the email-keyed profile we located by id still gets
+ * its campaign properties refreshed, and the email send proceeds instead of
+ * failing the whole dispatch over a duplicate-phone bookkeeping conflict.
  */
 async function patchKlaviyoProfile(
     apiKey: string,
@@ -196,9 +205,45 @@ async function patchKlaviyoProfile(
         }),
     });
 
-    if (!response.ok) {
-        const body = await response.text();
-        throw new Error(`[Klaviyo] patchProfile failed (${response.status}) for ${profileId}: ${body}`);
+    if (response.ok) return;
+
+    const body = await response.text();
+
+    // Identifier conflict on PATCH: drop phone_number (the only secondary
+    // identifier we ever send) and retry once so property refresh still lands.
+    if (response.status === 409 && isDuplicateProfileError(body) && 'phone_number' in attributes) {
+        console.warn(
+            `[Klaviyo] PATCH ${profileId} hit duplicate-identifier 409; retrying without phone_number.`,
+        );
+        const { phone_number: _dropped, ...withoutPhone } = attributes;
+        const retry = await fetch(`${KLAVIYO_BASE}/profiles/${profileId}/`, {
+            method: 'PATCH',
+            headers: klaviyoHeaders(apiKey),
+            body: JSON.stringify({
+                data: {
+                    type: 'profile',
+                    id: profileId,
+                    attributes: withoutPhone,
+                },
+            }),
+        });
+        if (retry.ok) return;
+        const retryBody = await retry.text();
+        throw new Error(
+            `[Klaviyo] patchProfile retry (no phone) failed (${retry.status}) for ${profileId}: ${retryBody}`,
+        );
+    }
+
+    throw new Error(`[Klaviyo] patchProfile failed (${response.status}) for ${profileId}: ${body}`);
+}
+
+/** True when a Klaviyo error body contains a `duplicate_profile` error code. */
+function isDuplicateProfileError(body: string): boolean {
+    try {
+        const parsed = JSON.parse(body) as KlaviyoApiErrorResponse;
+        return parsed.errors?.some((error) => error.code === 'duplicate_profile') ?? false;
+    } catch {
+        return false;
     }
 }
 

@@ -7,6 +7,7 @@ import {
 import { callLLM } from '@/lib/ai/llm-gateway';
 import { MEDIA_LLM_CONFIG } from '../media-pipeline-config';
 import { buildCampaignResearchDossierContext } from '../../research-context';
+import { sanitizeAestheticBriefShipCopy } from '../../ship-copy';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Copy & Caption Generator
@@ -30,8 +31,9 @@ export async function generatePlatformCopy(
   canonicalShipName?: string | null,
 ): Promise<GeneratedCopy> {
   const model = MEDIA_LLM_CONFIG.platformCopy;
+  const promptBrief = sanitizeAestheticBriefShipCopy(brief, canonicalShipName);
   const researchContext = buildCampaignResearchDossierContext(
-    brief.campaignResearchDossier,
+    promptBrief.campaignResearchDossier,
     'Secondary campaign research dossier (use to sharpen carousel, ad, caption, and email copy):',
   );
 
@@ -75,28 +77,28 @@ SHIP NAME RULE: The ship for this campaign is "${canonicalShipName ?? 'TBD'}". U
 
 Campaign Context:
 - Ship: ${canonicalShipName ?? 'TBD'}
-- Theme: ${brief.themeName}
-- Hero Slogan: ${brief.messaging.heroSlogan}
-- Sub Slogan: ${brief.messaging.subSlogan}
-- Elevator Pitch: ${brief.messaging.elevatorPitch}
-- Tone Keywords: ${brief.messaging.toneKeywords.join(', ')}
-- Voice Persona: ${brief.messaging.voicePersona}
-- Community Core Promise: ${brief.communityExpression.corePromise}
-- Participation Style: ${brief.communityExpression.participationStyle}
-- Social Gravity: ${brief.communityExpression.socialGravity}
-- Optional Gatherings: ${brief.communityExpression.optionalGatherings.join(', ')}
-- Belonging Signals: ${brief.communityExpression.belongingSignals.join(', ')}
-- Solitude Anti-Patterns: ${brief.communityExpression.solitudeAntiPatterns.join(', ')}
-- Copy Framing Rule: ${brief.communityExpression.copyFramingRule}
-- CTA Variants: Waitlist: "${brief.messaging.ctaVariants.waitlist}", Join List: "${brief.messaging.ctaVariants.bookNow}"
-- Aesthetic: ${brief.visual.aestheticLabel}
-- TikTok Hook (reference): ${brief.socialConcepts.tiktokOrganic.hook}
-- Instagram Feed Caption (reference): ${brief.socialConcepts.instagramFeed.caption}
-- Facebook Ad Headline (reference): ${brief.socialConcepts.facebookAd.headline}
+- Theme: ${promptBrief.themeName}
+- Hero Slogan: ${promptBrief.messaging.heroSlogan}
+- Sub Slogan: ${promptBrief.messaging.subSlogan}
+- Elevator Pitch: ${promptBrief.messaging.elevatorPitch}
+- Tone Keywords: ${promptBrief.messaging.toneKeywords.join(', ')}
+- Voice Persona: ${promptBrief.messaging.voicePersona}
+- Community Core Promise: ${promptBrief.communityExpression.corePromise}
+- Participation Style: ${promptBrief.communityExpression.participationStyle}
+- Social Gravity: ${promptBrief.communityExpression.socialGravity}
+- Optional Gatherings: ${promptBrief.communityExpression.optionalGatherings.join(', ')}
+- Belonging Signals: ${promptBrief.communityExpression.belongingSignals.join(', ')}
+- Solitude Anti-Patterns: ${promptBrief.communityExpression.solitudeAntiPatterns.join(', ')}
+- Copy Framing Rule: ${promptBrief.communityExpression.copyFramingRule}
+- CTA Variants: Waitlist: "${promptBrief.messaging.ctaVariants.waitlist}", Join List: "${promptBrief.messaging.ctaVariants.bookNow}"
+- Aesthetic: ${promptBrief.visual.aestheticLabel}
+- TikTok Hook (reference): ${promptBrief.socialConcepts.tiktokOrganic.hook}
+- Instagram Feed Caption (reference): ${promptBrief.socialConcepts.instagramFeed.caption}
+- Facebook Ad Headline (reference): ${promptBrief.socialConcepts.facebookAd.headline}
 
 ${researchContext}
 
-Generate copy that is niche-native, avoids generic cruise tropes, matches the ${brief.visual.aestheticLabel} aesthetic, frames group energy as drop-in/drop-out and welcoming, and avoids both workshop language and emotionally empty solo-retreat language.`;
+Generate copy that is niche-native, avoids generic cruise tropes, matches the ${promptBrief.visual.aestheticLabel} aesthetic, frames group energy as drop-in/drop-out and welcoming, and avoids both workshop language and emotionally empty solo-retreat language.`;
 
   const { content } = await callLLM(model, userPrompt, {
     systemPrompt,

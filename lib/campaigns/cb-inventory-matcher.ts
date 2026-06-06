@@ -11,6 +11,7 @@ import type { Campaign, CampaignInventoryCandidate } from "./types";
 import { CbGroupInventoryItem } from "./cb-inventory-types";
 import { getLaunchWindowAssessment } from "./launch-window";
 import { getNicheAffinityScore, describeNicheAffinityMatch } from "./niche-affinity";
+import { getShipClassAffinityScore, describeShipClassFit } from "./ship-classes";
 
 const CB_AGENT_SIID = process.env.CB_AGENT_SIID ?? "1049337";
 const THEME_FEE_MULTIPLIER = 1.15;
@@ -201,13 +202,18 @@ function getDatePreferenceScore(
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
 /**
- * Scores a CB inventory item against a campaign using keyword overlap.
- * Returns 0–100.
+ * Scores a CB inventory item against a campaign. Returns 0–100.
+ *
+ * Philosophy (see 05_SMARTER_INVENTORY_MATCHING_PLAN): shipTarget is a SOFT
+ * preference, never a lock. The real intelligence is niche fit — ship-CLASS
+ * affinity (which distinguishes products within the ~95%-RCL fleet) plus
+ * niche→line affinity — with exact ship name and season as boosts/tiebreakers.
+ * No item is ever zeroed out for being a different ship; the best available
+ * always wins.
  */
 function scoreMatch(
   campaign: Campaign,
   item: CbGroupInventoryItem,
-  exactShipRequired: boolean,
 ): number {
   let score = 0;
 
@@ -216,117 +222,106 @@ function scoreMatch(
   const requiredShipName = getSpecificShipName(campaign.shipTarget);
   const itemShipName = getSpecificShipName(item.shipName);
 
-  // When the campaign names a concrete vessel that EXISTS in inventory, do not match across sister ships.
-  // If the required ship is not found in inventory at all, treat it as a soft preference (fallback to destination + dates).
-  if (
-    exactShipRequired &&
-    requiredShipName &&
-    itemShipName &&
-    requiredShipName !== itemShipName
-  ) {
-    return 0;
-  }
-
+  // Exact ship match is a strong PREFERENCE, not a requirement. A different ship
+  // is never disqualified — it just doesn't earn this boost and competes on
+  // class/niche/season instead.
   if (requiredShipName && itemShipName && requiredShipName === itemShipName) {
-    score += 60;
+    score += 50;
   }
 
-  // Ship / cruise line name match
+  // Ship / cruise line name token overlap (soft)
   const shipTokens = tokenizeShipName(campaign.shipTarget);
   for (const token of shipTokens) {
-    if (itemText.includes(token)) score += 25;
+    if (itemText.includes(token)) score += 10;
   }
 
-  // Date / month match
-  const dateTokens = campaign.targetDates
-    .toLowerCase()
-    .split(/[\s,]+/)
-    .filter((t) => t.length > 2);
-  for (const token of dateTokens) {
-    if (itemText.includes(token)) score += 20;
-  }
+  // ── Ship-class affinity (primary niche-fit signal) ───────────────────────
+  // The dimension that actually differentiates ships for a niche. Capped, and
+  // weighted comparably to the exact-ship boost so a class-appropriate ship can
+  // out-rank an off-theme exact-name guess.
+  score += getShipClassAffinityScore(campaign, item.shipName);
 
-  // Keyword overlap (destination signals)
-  const keywords = (campaign.targetingKeywords ?? []).map((k) =>
-    k.toLowerCase(),
-  );
+  // ── Niche-to-cruise-line affinity ────────────────────────────────────────
+  score += getNicheAffinityScore(campaign, item.vendor);
+
+  // Keyword overlap (destination/theme signals in itinerary text)
+  const keywords = (campaign.targetingKeywords ?? []).map((k) => k.toLowerCase());
   for (const keyword of keywords) {
-    if (itemText.includes(keyword)) score += 10;
+    if (itemText.includes(keyword)) score += 8;
   }
 
-  // Destination match
+  // Destination text match
   const destTokens = (campaign.targetDestination ?? "")
     .toLowerCase()
     .split(/[\s,]+/)
     .filter((t) => t.length > 2);
   for (const token of destTokens) {
-    if (itemText.includes(token)) score += 15;
+    if (itemText.includes(token)) score += 12;
   }
 
-  if (campaign.targetDates.trim().length > 0 && !item.sailDate?.trim()) {
-    score -= 10;
+  // Date / month text overlap (season tiebreaker; getDatePreferenceScore does the
+  // heavier date proximity work at ranking time)
+  const dateTokens = campaign.targetDates
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter((t) => t.length > 2);
+  for (const token of dateTokens) {
+    if (itemText.includes(token)) score += 8;
   }
 
-  // ── Niche-to-cruise-line affinity ────────────────────────────────────────
-  // Boosts candidates whose line fits the campaign theme; penalises poor fits.
-  score += getNicheAffinityScore(campaign, item.vendor);
+  // Agent-group soft preference: a row that exposes a personal link is far more
+  // valuable (TC credit + group price advantage) than a House block. Best-effort —
+  // most cached rows have no link, so this only nudges when CB surfaces one.
+  if (item.personalLink?.trim()) {
+    score += 15;
+  }
 
   return Math.max(0, Math.min(score, 100));
 }
 
 // ─── Matcher ─────────────────────────────────────────────────────────────────
 
+/** Score under this is matched anyway (never refused) but flagged low-confidence. */
+const LOW_CONFIDENCE_SCORE = 30;
+
+/**
+ * Returns true if the inventory item is eligible to be matched at all — the only
+ * HARD gate. An item must have a groupId and clear the launch-window minimum.
+ * (Price-advantage holdback items without a parseable date are allowed through.)
+ */
+function isEligibleInventoryItem(campaign: Campaign, item: CbGroupInventoryItem): boolean {
+  if (!item.groupId) return false;
+  const assessment = getLaunchWindowAssessment({
+    matchedSailDate: item.sailDate,
+    targetDates: campaign.targetDates,
+  });
+  if (assessment.meetsMinimumLeadTime === null && item.priceAdvantageNumber <= 0) return false;
+  if (assessment.meetsMinimumLeadTime === false) return false;
+  return true;
+}
+
 /**
  * Finds the best-matching CB inventory item for a campaign.
- * Returns null if no item scores above the minimum threshold (30).
+ *
+ * NEVER refuses when eligible inventory exists: shipTarget is a soft preference,
+ * there is no minimum-score discard. Returns null ONLY when no launch-window-
+ * eligible item exists at all. `matchScore` carries the confidence so weak picks
+ * stay visible.
  */
 export function matchGroupInventoryToCampaign(
   campaign: Campaign,
   inventory: CbGroupInventoryItem[],
 ): CbInventoryMatch | null {
-  const MIN_MATCH_SCORE = 25;
-
   if (inventory.length === 0) return null;
 
-  const requiredShipName = getSpecificShipName(campaign.shipTarget);
-  const exactShipCandidates = requiredShipName
-    ? inventory.filter(
-        (item) => getSpecificShipName(item.shipName) === requiredShipName,
-      )
-    : [];
-  const leadTimeEligibleExactCandidates = exactShipCandidates.filter((item) => {
-    const assessment = getLaunchWindowAssessment({
-      matchedSailDate: item.sailDate,
-      targetDates: campaign.targetDates,
-    });
-    return assessment.meetsMinimumLeadTime !== false;
-  });
-
-  // If campaign names a specific ship but NO inventory item has it, treat as soft preference (fallback to destination + dates).
-  const exactShipRequired = exactShipCandidates.length > 0;
-
   let bestItem: CbGroupInventoryItem | null = null;
-  let bestScore = 0;
+  let bestScore = Number.NEGATIVE_INFINITY;
   let bestDatePreferenceScore = Number.NEGATIVE_INFINITY;
 
   for (const item of inventory) {
-    // Only need a valid groupId — price absence is handled at result time
-    if (!item.groupId) continue;
+    if (!isEligibleInventoryItem(campaign, item)) continue;
 
-    const leadTimeAssessment = getLaunchWindowAssessment({
-      matchedSailDate: item.sailDate,
-      targetDates: campaign.targetDates,
-    });
-    // Items with no parseable sail date are ineligible by default.
-    // Exception: price-advantage items may be holdback inventory without published dates.
-    if (leadTimeAssessment.meetsMinimumLeadTime === null && item.priceAdvantageNumber <= 0) {
-      continue;
-    }
-    if (leadTimeAssessment.meetsMinimumLeadTime === false) {
-      continue;
-    }
-
-    const score = scoreMatch(campaign, item, exactShipRequired);
+    const score = scoreMatch(campaign, item);
     const datePreferenceScore = getDatePreferenceScore(campaign, item);
 
     if (
@@ -339,25 +334,17 @@ export function matchGroupInventoryToCampaign(
     }
   }
 
-  if (!bestItem || bestScore < MIN_MATCH_SCORE) {
-    if (
-      requiredShipName &&
-      exactShipCandidates.length > 0 &&
-      leadTimeEligibleExactCandidates.length === 0
-    ) {
-      console.log(
-        `[cb-inventory-matcher] Exact ship inventory exists for "${campaign.id}", but all sailings are inside the minimum launch window`,
-      );
-    }
-    if (requiredShipName && exactShipCandidates.length === 0) {
-      console.log(
-        `[cb-inventory-matcher] No exact-ship inventory for "${campaign.id}" (required ship: ${requiredShipName})`,
-      );
-    }
+  if (!bestItem) {
     console.log(
-      `[cb-inventory-matcher] No match for "${campaign.id}" (best score: ${bestScore})`,
+      `[cb-inventory-matcher] No launch-window-eligible inventory for "${campaign.id}" (${inventory.length} item(s) scanned).`,
     );
     return null;
+  }
+
+  if (bestScore < LOW_CONFIDENCE_SCORE) {
+    console.log(
+      `[cb-inventory-matcher] ⚠️ Low-confidence match for "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}). Best available; review.`,
+    );
   }
 
   // Use parsed price if available; fall back to a baseline derived from priceAdvantage discount value
@@ -371,8 +358,9 @@ export function matchGroupInventoryToCampaign(
   const computedStartingPrice = Math.round(rawPrice * THEME_FEE_MULTIPLIER);
 
   const affinityDescription = describeNicheAffinityMatch(campaign, bestItem.vendor);
+  const classDescription = describeShipClassFit(campaign, bestItem.shipName);
   console.log(
-    `[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice}, affinity: ${affinityDescription})`,
+    `[cb-inventory-matcher] ✅ Matched "${campaign.id}" → "${bestItem.shipName}" (score: ${bestScore}, price: $${computedStartingPrice}, ${classDescription}, affinity: ${affinityDescription})`,
   );
 
   return {
@@ -452,31 +440,16 @@ export function rankGroupInventoryCandidates(
   inventory: CbGroupInventoryItem[],
   topN = 3,
 ): CampaignInventoryCandidate[] {
-  const MIN_MATCH_SCORE = 25;
-
   if (inventory.length === 0) return [];
-
-  const requiredShipName = getSpecificShipName(campaign.shipTarget);
-  const exactShipCandidates = requiredShipName
-    ? inventory.filter((item) => getSpecificShipName(item.shipName) === requiredShipName)
-    : [];
-  const exactShipRequired = exactShipCandidates.length > 0;
 
   const scored: Array<{ item: CbGroupInventoryItem; score: number; dateScore: number }> = [];
 
+  // Same rule as matchGroupInventoryToCampaign: launch-window eligibility is the
+  // only hard gate. No minimum-score discard — rank everything eligible and take
+  // the top N. shipTarget is a soft preference inside scoreMatch.
   for (const item of inventory) {
-    if (!item.groupId) continue;
-
-    const assessment = getLaunchWindowAssessment({
-      matchedSailDate: item.sailDate,
-      targetDates: campaign.targetDates,
-    });
-    if (assessment.meetsMinimumLeadTime === null && item.priceAdvantageNumber <= 0) continue;
-    if (assessment.meetsMinimumLeadTime === false) continue;
-
-    const score = scoreMatch(campaign, item, exactShipRequired);
-    if (score < MIN_MATCH_SCORE) continue;
-
+    if (!isEligibleInventoryItem(campaign, item)) continue;
+    const score = scoreMatch(campaign, item);
     scored.push({ item, score, dateScore: getDatePreferenceScore(campaign, item) });
   }
 

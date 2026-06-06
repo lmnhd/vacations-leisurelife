@@ -264,3 +264,51 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** Live Meta preview surfaced long descriptive strings like `canvas or quilted project bags with yarn peeking out`, which failed to resolve as Meta interests and forced static fallback ad-set mode.  
 **The Change / Rule:** Meta targeting now compresses dossier and audience prose into short interest atoms before resolution. Preferred query shape is compact hobby/category language such as `crochet hooks`, `stitch markers`, `project bag`, `indie dyers`, or `ravelry community`, not full descriptive clauses or conversational quotes. If a query fails, resolution now tries smaller derived atoms before giving up.  
 **Broader Lesson:** Meta detailed targeting behaves more like entity/category lookup than semantic prose search. Rich dossier language should still shape the audience, but only after being distilled into short reusable interest labels.
+
+### 2026-06-04: Brief Studio Owns Dossier-First Sequencing
+
+**Trigger / Context:** The user repeatedly hit media-generation failures saying the scene library was stale because the secondary research dossier had been generated after the brief.  
+**The Change / Rule:** Treat the current operator path as dossier first, then brief. Brief Studio's primary generation action should generate the research dossier before the brief when the dossier is missing, block approval when the dossier is newer than the brief, and surface stale-brief status before media generation.  
+**Broader Lesson:** The dossier is upstream creative input, not post-brief paperwork. If the system requires that order, the UI must guide the operator before provider spend rather than revealing the problem at scene-image generation time.
+
+### 2026-06-04: Documentary Prompt Classifiers Must Avoid Generic Cue Words
+
+**Trigger / Context:** `grand-costumed-promenade-explorer` documentary detail prompts inherited board-game and music props because generic costume/social-dance wording included "dance cards" and "dance".  
+**The Change / Rule:** Campaign-specific documentary directives should key off campaign identity and strong cue phrases, not single generic tokens. "Cards" must not imply board games without tabletop/game context, and "dance" must not imply music-culture props without music, DJ, band, concert, vinyl, or song context. Approved brief/campaign props should outrank stale identity-blueprint fallback props.  
+**Broader Lesson:** Broad regex classifiers are leak-prone in arbitrary niche campaigns. When a directive changes image subject matter, require strong evidence and add regression coverage with confusing adjacent vocabulary.
+
+### 2026-06-05: Ship References Must Fail on Specific-Ship Conflicts
+
+**Trigger / Context:** `grand-costumed-promenade-explorer` targeted Explorer of the Seas, but stale `matchedShipName` metadata still said Symphony of the Seas, causing reference discovery to pull Symphony/Wonder Royal Caribbean images.  
+**The Change / Rule:** Ship reference discovery must block when `shipTarget` and `matchedShipName` are two different specific ships. Existing reference records must be filtered by resolved ship identity before they seed heroes, scenes, ads, or manifest merges. Manual ship-target corrections should clear conflicting inventory-match metadata instead of leaving a hidden authoritative ship behind. Full media runs must discover/import ship references before scheduling hero generation so heroes can use fresh references instead of text-only fallback.  
+**Broader Lesson:** Ship images are trust assets. The media pipeline should never silently resolve a ship conflict by choosing one field; it should force metadata repair before spending on references or downstream generated images.
+
+### 2026-06-05: Brief Copy Must Be Sanitized Against Current Ship Metadata
+
+**Trigger / Context:** `grand-costumed-promenade-explorer` had corrected campaign metadata for Explorer of the Seas, but Landing Studio still rendered aesthetic-brief copy that said Symphony of the Seas. The brief had been generated before the ship metadata repair, so its durable prose outlived the corrected structured fields.  
+**The Change / Rule:** Treat stored brief copy as potentially stale after inventory rematch or manual ship correction. Landing view-models, design-system token extraction, platform-copy prompts, and media orchestration must sanitize known specific ship-name mentions against the current authoritative ship before display or downstream generation.  
+**Broader Lesson:** The campaign record is the ship source of truth. Generated prose is creative material, not authoritative inventory metadata, and must not be allowed to contradict the campaign's current `matchedShipName` / `shipTarget`.
+
+### 2026-06-05: Canva/HTML Template Paths Need Their Own Ship Sanitizer
+
+**Trigger / Context:** After Landing Studio copy was corrected, Canva/HTML screenshot ads still rendered Symphony of the Seas because `/tests/canva-templates` and `/ads/render/[slug]/[format]` fetched the raw aesthetic brief directly. Those paths can also persist stale copy into final `designed_ad_artifact` manifest assets.  
+**The Change / Rule:** The aesthetic brief API used by template studios, the HTML screenshot render page, Copy Forge audition/render APIs, Templated generation, and ad-pack adapter all need campaign-aware ship-copy sanitization before preview, quality gate, render, or manifest write. HTML template chrome must use campaign-provided ship data, not baked-in fallback ship labels.  
+**Broader Lesson:** Every creative surface that reads `brief.messaging.*` is a potential ship-drift entry point. Sanitizing only landing pages is insufficient; preview, audition, render, and persisted artifact paths must all consume the same current campaign ship truth.
+
+### 2026-06-05: Instagram Reels Should Reuse TikTok Seed Video As The Organic Meta Asset
+
+**Trigger / Context:** The distribution system already knew about `instagram_reels`, but live dispatch still stopped at preview mode while Meta recommended 9:16 Reel creative.  
+**The Change / Rule:** Treat `manifest.videos.tiktokSeed` as the default organic Reel asset for Meta/Instagram scheduling. The live distribution path should publish `instagram_reels` through the Instagram Graph `/{ig-user-id}/media` plus `media_publish` flow, separate from paid `facebook_ad` creation.  
+**Broader Lesson:** Vertical video support is not complete just because the schema lists a platform. Keep paid Meta ads and organic Instagram publishing as separate adapters, but let them share the same campaign-native 9:16 video source when appropriate.
+
+### 2026-06-05: Distribution Control Deck Must Be An Operator Console
+
+**Trigger / Context:** The user was relying on the landing preview review panel because `/dashboard/campaigns/[slug]/media/distribution` had fewer useful actions, hid Google Ads controls, and spent too much space on passive informational blocks.  
+**The Change / Rule:** The Distribution Control Deck should expose the same practical controls as the landing review panel: provider validation, Google preview/rebuild, Meta preview/build, Instagram Reel preview/live dispatch, TikTok status sync, schedule planning, and targeted dispatch. Passive "what exists" or "backend gaps" panels should not crowd out operator controls.  
+**Broader Lesson:** Distribution is an operations surface, not a documentation page. If a launch action exists on a test preview route, the durable dashboard should also expose it clearly.
+
+### 2026-06-05: Theme Music Is A Campaign-Level Selection
+
+**Trigger / Context:** `/tests/media-generation/test`, `/tests/media-generation`, and `/tests/vertical-video-editor` could surface or select different music beds for the same campaign because default-library selection was page-triggered and tie-broken randomly.  
+**The Change / Rule:** Treat `manifest.audio.themeMusic` as the single campaign music source of truth. Manual library selection should update that manifest slot immediately and generation-lock the selected record. Video/editor renders should consume the existing track instead of requesting a fresh `theme_music` asset unless no track exists.  
+**Broader Lesson:** Audio choices are downstream creative commitments like landing hero selections. They need one shared operator control and deterministic fallback behavior, otherwise later video/Reel renders drift without a visible reason.

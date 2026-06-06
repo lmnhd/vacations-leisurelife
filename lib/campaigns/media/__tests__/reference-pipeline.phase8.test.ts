@@ -13,11 +13,13 @@
 import assert from 'node:assert/strict';
 import type { AssetRecord } from '../../schema';
 import {
+    assertShipReferenceIdentityIsConsistent,
     assetRecordToShipReferenceCandidate,
+    filterShipReferenceRecordsForCampaign,
     selectFetchableReferenceUrl,
+    resolveShipReferenceShipName,
 } from '../ship-reference-service';
 import { ReferenceFetchError } from '../generators/stability-generator';
-import { resolveShipReferenceShipName } from '../ship-reference-service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -132,6 +134,48 @@ async function main() {
     });
 
     // ── ReferenceFetchError ───────────────────────────────────────────────────
+
+    test('blocks specific Royal Caribbean ship conflicts before reference search', () => {
+        assert.throws(
+            () => assertShipReferenceIdentityIsConsistent({
+                id: 'campaign-001',
+                shipTarget: 'Explorer of the Seas',
+                matchedShipName: 'Symphony of the Seas',
+            } as never),
+            /shipTarget is "Explorer of the Seas" but matchedShipName is "Symphony of the Seas"/,
+        );
+    });
+
+    test('filters existing references to the resolved campaign ship', () => {
+        const explorerRecord = makeReferenceRecord({
+            assetId: 'img_ship_reference_explorer',
+            promptUsed: 'Explorer of the Seas Royal Promenade',
+            sourcePageUrl: 'https://example.com/explorer-of-the-seas-promenade',
+            sourceQuery: 'Explorer of the Seas central promenade hall',
+            tags: ['ship-reference', 'atrium', 'reference', 'match:exact_ship', 'ship:explorer of the seas'],
+        });
+        const staleSymphonyRecord = makeReferenceRecord({
+            assetId: 'img_ship_reference_symphony',
+            promptUsed: 'Symphony of the Seas Royal Promenade',
+            sourcePageUrl: 'https://example.com/symphony-of-the-seas-promenade',
+            sourceQuery: 'Symphony of the Seas central promenade hall',
+            tags: ['ship-reference', 'atrium', 'reference', 'match:exact_ship', 'ship:symphony of the seas'],
+        });
+        const wonderOffboardRecord = makeReferenceRecord({
+            assetId: 'img_ship_reference_wonder',
+            promptUsed: 'Wonder of the Seas Caribbean feature',
+            sourcePageUrl: 'https://example.com/wonder-of-the-seas',
+            sourceQuery: 'Caribbean cruise excursion beautiful travel photo',
+            tags: ['ship-reference', 'offboard_excursion', 'reference', 'match:generic_cruise'],
+        });
+
+        const filtered = filterShipReferenceRecordsForCampaign({
+            id: 'campaign-001',
+            shipTarget: 'Explorer of the Seas',
+        } as never, [explorerRecord, staleSymphonyRecord, wonderOffboardRecord]);
+
+        assert.deepEqual(filtered.map((record) => record.assetId), ['img_ship_reference_explorer']);
+    });
 
     test('ReferenceFetchError carries the list of attempted URLs', () => {
         const err = new ReferenceFetchError(

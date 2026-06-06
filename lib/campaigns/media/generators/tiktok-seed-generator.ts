@@ -1,4 +1,4 @@
-import { CampaignAestheticBrief, Storyboard, type TikTokPromotionPackage } from '../../schema';
+import { CampaignAestheticBrief, Storyboard, type TikTokPromotionPackage, type TikTokVideoEdits } from '../../schema';
 import { inferTikTokFormat, type TikTokSequenceBeat } from './tiktok-formats/index';
 import { renderTikTokOverlayCard, renderTikTokBrandLockup } from './tiktok-overlay-cards';
 import type { TikTokOverlayCardSpec } from './tiktok-overlay-cards';
@@ -140,6 +140,8 @@ async function generateStaticPackageStoryboardVideo(
     sceneImageMap: ReadonlyMap<string, string>,
     themeMusicBuffer?: Buffer | null,
     promotionPackage?: TikTokPromotionPackage | null,
+    edits?: TikTokVideoEdits | null,
+    beatImageUrlById?: ReadonlyMap<string, string> | null,
 ): Promise<{ buffer: Buffer; script: string; durationSeconds: number; motionPrompt: string; narrationVoiceId: string; narrationVoiceName: string | null }> {
     if (!promotionPackage) {
         throw new Error(
@@ -148,7 +150,9 @@ async function generateStaticPackageStoryboardVideo(
     }
 
     const tiktokFormat = inferTikTokFormat(storyboard.deliverableId);
-    const sequenceBeats = tiktokFormat.buildSequenceBeats(brief, storyboard, promotionPackage);
+    // VERTICAL_VIDEO_EDITOR: operator edits (copy + per-beat image override) ship
+    // here when present; absent ⇒ identical to the pre-editor render.
+    const sequenceBeats = tiktokFormat.buildSequenceBeats(brief, storyboard, promotionPackage, edits ?? null);
 
     const sourceBuffers: Buffer[] = [];
     const shotDurations: number[] = [];
@@ -162,7 +166,11 @@ async function generateStaticPackageStoryboardVideo(
         // beat.sceneId is explicitly mapped from storyboard.shotSequence[i].sceneId
         // in buildPackageSequenceBeats. Use it as the primary lookup key.
         const resolvedSceneId = beat.sceneId || shot.sceneId;
-        const imageUrl = sceneImageMap.get(resolvedSceneId);
+        // VERTICAL_VIDEO_EDITOR: an operator image override (beat.imageAssetId)
+        // takes precedence over the scene default, falling back to the scene
+        // image when the override id is unknown.
+        const overrideUrl = beat.imageAssetId ? beatImageUrlById?.get(beat.imageAssetId) : undefined;
+        const imageUrl = overrideUrl ?? sceneImageMap.get(resolvedSceneId);
         if (!imageUrl) {
             throw new Error(`Missing generated scene image for storyboard shot ${resolvedSceneId}`);
         }
@@ -243,6 +251,8 @@ export async function generateStoryboardVideo(
     presetId?: VideoModelPresetId,
     campaignSlug?: string,
     promotionPackage?: TikTokPromotionPackage | null,
+    edits?: TikTokVideoEdits | null,
+    beatImageUrlById?: ReadonlyMap<string, string> | null,
 ): Promise<StoryboardVideoResult> {
     const runId = createRunId();
 
@@ -303,6 +313,8 @@ export async function generateStoryboardVideo(
             sceneImageMap,
             themeMusicBuffer ?? null,
             promotionPackage,
+            edits,
+            beatImageUrlById,
         );
         return {
             buffer: staticPackageResult.buffer,

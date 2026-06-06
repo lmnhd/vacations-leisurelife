@@ -16,6 +16,18 @@ plus a short appendix for the separate `booking_change` branch.
 
 Use merge tags for facts that should change by campaign or lead. The app already sends these:
 
+### URL Field Rule
+
+When a CTA points to an event URL, paste the full Liquid expression into the Klaviyo button/link URL field.
+Do not type the bare property name. For the waitlist confirmation button, the URL field must be:
+
+```text
+{{ event.verification_url }}
+```
+
+If the URL field is entered as `event.verification_url`, Klaviyo treats it as literal text and rewrites it into
+`http://event.verification_url/` with tracking parameters. That link will never reach the Leisure Life verification route.
+
 | Field                                    | Use                                     |
 | ---------------------------------------- | --------------------------------------- |
 | `{{ person.first_name }}`                | Greeting                                |
@@ -100,6 +112,13 @@ If you added a phone number for alerts, we may also text you when the group reac
 **Primary CTA:**
 
 - `Confirm your email` → `{{ event.verification_url }}`
+
+**Klaviyo button setup:**
+
+- Button text: `Confirm your email`
+- URL field: `{{ event.verification_url }}`
+- Expected rendered shape: `https://leisurelifeinteractive.net/api/groups/campaign/<slug>/verify?email=<email>&token=<token>`
+- Broken shape to avoid: `http://event.verification_url/?_kx=...`
 
 ---
 

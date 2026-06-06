@@ -82,9 +82,23 @@ export interface Campaign {
     aesthetic?: string;
 
     /**
-     * Planned departure dates for the cruise.
+     * The campaign's sail date. This is the single human-facing date field.
+     *
+     * At discovery time it is a GPT-produced season/preference HINT used to drive
+     * inventory matching. Once a real CB sailing is matched (Phase A gate, Phase B,
+     * or rematch), this field is OVERWRITTEN with the matched sailing's actual date
+     * so inventory is the single source of date truth — no downstream consumer can
+     * show a guessed date for a matched campaign. See `targetDatesSource`.
      */
     targetDates: string;
+
+    /**
+     * Provenance of `targetDates`:
+     *  - 'estimate'  → still the GPT season/preference hint (no inventory match yet).
+     *  - 'inventory' → overwritten with a real matched sailing date.
+     * Absent is treated as 'estimate' (legacy records predate this field).
+     */
+    targetDatesSource?: 'estimate' | 'inventory';
 
     /**
      * Expected ship or destination.

@@ -1097,6 +1097,10 @@ async function gateAndPersistBlueprints(args: GateAndPersistArgs): Promise<{ mat
                     matchedSailDate: match.matchedSailDate,
                     matchedDeparturePort: match.matchedDeparturePort,
                     matchedNights: match.matchedNights,
+                    // Inventory is the source of date truth: overwrite the GPT
+                    // season-hint with the matched sailing date and mark provenance.
+                    targetDates: match.matchedSailDate?.trim() || campaign.targetDates,
+                    targetDatesSource: match.matchedSailDate?.trim() ? 'inventory' : 'estimate',
                     odysseusItinerarySummary: match.odysseusItinerarySummary,
                     odysseusPortsOfCall: match.odysseusPortsOfCall,
                     updatedAt: new Date().toISOString(),

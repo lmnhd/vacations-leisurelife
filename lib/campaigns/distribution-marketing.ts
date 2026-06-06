@@ -54,8 +54,14 @@ interface MetaGraphError {
     type?: string;
     code?: number;
     error_subcode?: number;
+    error_user_title?: string;
+    error_user_msg?: string;
     fbtrace_id?: string;
   };
+}
+
+interface MetaGraphCreateResponse {
+  id: string;
 }
 
 function getAllManifestAssets(manifest: CampaignMediaManifest): AssetRecord[] {
@@ -93,6 +99,22 @@ function resolveAssetUrl(
     getAllManifestAssets(manifest).find((asset) => asset.assetId === assetId)
       ?.url ?? null
   );
+}
+
+function resolveAssetRecord(
+  manifest: CampaignMediaManifest,
+  assetId: string,
+): AssetRecord | null {
+  return (
+    getAllManifestAssets(manifest).find((asset) => asset.assetId === assetId) ??
+    null
+  );
+}
+
+// First active hero image URL — used as a video-ad thumbnail fallback when the
+// video asset has no own thumbnail.
+function getFirstHeroImageUrl(manifest: CampaignMediaManifest): string | null {
+  return manifest.images.hero.find((asset) => asset.active)?.url ?? null;
 }
 
 function resolveAssetUrls(
@@ -311,7 +333,10 @@ function toGraphErrorMessage(payload: unknown): string {
     return "Unknown Graph API error";
   }
 
-  const message = errorPayload.error.message ?? "Unknown Graph API error";
+  const message =
+    errorPayload.error.error_user_msg ??
+    errorPayload.error.message ??
+    "Unknown Graph API error";
   const type = errorPayload.error.type ?? "GraphError";
   const code =
     errorPayload.error.code !== undefined
@@ -403,8 +428,161 @@ async function postMetaGraphForm<TResponse>(
   return payload as TResponse;
 }
 
+async function createInstagramGraphContainer(
+  igUserId: string,
+  accessToken: string,
+  form: Record<string, string>,
+): Promise<string> {
+  const response = await postMetaGraphForm<MetaGraphCreateResponse>(
+    `https://graph.facebook.com/v22.0/${igUserId}/media`,
+    {
+      access_token: accessToken,
+      ...form,
+    },
+  );
+
+  if (!response.id) {
+    throw new Error("Instagram Graph API did not return a media container id");
+  }
+
+  return response.id;
+}
+
+async function publishInstagramGraphContainer(
+  igUserId: string,
+  accessToken: string,
+  creationId: string,
+): Promise<string> {
+  const response = await postMetaGraphForm<MetaGraphCreateResponse>(
+    `https://graph.facebook.com/v22.0/${igUserId}/media_publish`,
+    {
+      access_token: accessToken,
+      creation_id: creationId,
+    },
+  );
+
+  if (!response.id) {
+    throw new Error("Instagram Graph API did not return a published media id");
+  }
+
+  return response.id;
+}
+
+async function dispatchInstagramGraphLive(
+  campaign: Campaign,
+  manifest: CampaignMediaManifest,
+  post: ScheduledPost,
+  preview: Record<string, unknown>,
+): Promise<{
+  externalPostId: string;
+  status: DistributionPostStatus;
+  metadataNotes: string[];
+}> {
+  const config = getMetaAdsConfig();
+  const igUserId = config?.instagramActorId?.trim();
+  if (!config || !igUserId) {
+    throw new Error(
+      "Missing META_ACCESS_TOKEN or META_INSTAGRAM_ACTOR_ID for Instagram Graph publishing.",
+    );
+  }
+
+  const caption =
+    typeof preview.caption === "string" ? preview.caption : campaign.description;
+  const primaryAsset = resolveAssetRecord(manifest, post.assetId);
+  if (!primaryAsset?.url) {
+    throw new Error(
+      `Instagram Graph dispatch could not resolve asset ${post.assetId}.`,
+    );
+  }
+
+  let creationId: string;
+  if (post.platform === "instagram_feed" && post.assetIds && post.assetIds.length > 1) {
+    const childUrls = resolveAssetUrls(manifest, post.assetIds);
+    if (childUrls.length === 0) {
+      throw new Error("Instagram carousel dispatch requires at least one child image URL.");
+    }
+
+    const childIds: string[] = [];
+    for (const childUrl of childUrls) {
+      const childId = await createInstagramGraphContainer(
+        igUserId,
+        config.accessToken,
+        {
+          image_url: childUrl,
+          is_carousel_item: "true",
+        },
+      );
+      childIds.push(childId);
+    }
+
+    creationId = await createInstagramGraphContainer(
+      igUserId,
+      config.accessToken,
+      {
+        media_type: "CAROUSEL",
+        children: childIds.join(","),
+        caption,
+      },
+    );
+  } else if (post.platform === "instagram_reels") {
+    creationId = await createInstagramGraphContainer(
+      igUserId,
+      config.accessToken,
+      {
+        video_url: primaryAsset.url,
+        caption,
+        media_type: "REELS",
+        share_to_feed: "true",
+      },
+    );
+  } else if (post.platform === "instagram_story") {
+    const isVideo = primaryAsset.mimeType.startsWith("video/");
+    creationId = await createInstagramGraphContainer(
+      igUserId,
+      config.accessToken,
+      isVideo
+        ? {
+            video_url: primaryAsset.url,
+            media_type: "STORIES",
+          }
+        : {
+            image_url: primaryAsset.url,
+            media_type: "STORIES",
+          },
+    );
+  } else {
+    creationId = await createInstagramGraphContainer(
+      igUserId,
+      config.accessToken,
+      {
+        image_url: primaryAsset.url,
+        caption,
+      },
+    );
+  }
+
+  const publishedMediaId = await publishInstagramGraphContainer(
+    igUserId,
+    config.accessToken,
+    creationId,
+  );
+
+  return {
+    externalPostId: publishedMediaId,
+    status: "posted",
+    metadataNotes: [
+      `instagram_graph_user_id=${igUserId}`,
+      `instagram_graph_creation_id=${creationId}`,
+      `instagram_graph_media_id=${publishedMediaId}`,
+      `instagram_graph_media_type=${String(preview.mediaType ?? "IMAGE")}`,
+      `instagram_graph_dispatched_at=${new Date().toISOString()}`,
+    ],
+  };
+}
+
 async function dispatchMetaAdsLive(
   campaign: Campaign,
+  manifest: CampaignMediaManifest,
   post: ScheduledPost,
   preview: Record<string, unknown>,
 ): Promise<{
@@ -435,22 +613,22 @@ async function dispatchMetaAdsLive(
     typeof preview.destinationUrl === "string"
       ? preview.destinationUrl
       : getCampaignLandingUrl(campaign);
-  const imageUrl = typeof preview.mediaUrl === "string" ? preview.mediaUrl : "";
+  const mediaUrl = typeof preview.mediaUrl === "string" ? preview.mediaUrl : "";
   const ctaType = mapCtaType(
     typeof preview.cta === "string" ? preview.cta : "LEARN_MORE",
   );
 
-  if (!imageUrl) {
+  if (!mediaUrl) {
     throw new Error(
       "Meta Ads requires an image or video URL in preview.mediaUrl",
     );
   }
 
-  const imageHash = await uploadMetaImageHash(
-    imageUrl,
-    config.adAccountId,
-    config.accessToken,
-  );
+  // Branch image vs video creative on the resolved asset's mime type. A video
+  // asset (e.g. the vertical TikTok/Reels seed) becomes a paused VIDEO ad;
+  // everything else becomes the existing image link ad.
+  const primaryAsset = resolveAssetRecord(manifest, post.assetId);
+  const isVideoCreative = primaryAsset?.mimeType.startsWith("video/") ?? false;
 
   const targeting = await synthesizeMetaTargeting(campaign, {
     config,
@@ -514,9 +692,46 @@ async function dispatchMetaAdsLive(
     );
   }
 
-  const objectStorySpec: Record<string, unknown> = {
-    page_id: config.pageId,
-    link_data: {
+  const objectStorySpec: Record<string, unknown> = { page_id: config.pageId };
+  const creativeNotes: string[] = [];
+
+  if (isVideoCreative) {
+    // Paused VIDEO ad: upload the video to the ad account, wait for processing,
+    // then bind it as video_data. Meta requires a thumbnail for video ads — use
+    // the asset's own thumbnail if present, else the campaign hero image.
+    const videoId = await uploadMetaAdVideo(
+      mediaUrl,
+      config.adAccountId,
+      config.accessToken,
+    );
+    const thumbnailUrl =
+      primaryAsset?.sourceThumbnailUrl ?? getFirstHeroImageUrl(manifest) ?? null;
+    const videoData: Record<string, unknown> = {
+      video_id: videoId,
+      message: primaryText,
+      title: headline,
+      call_to_action: {
+        type: ctaType,
+        value: { link: destinationUrl },
+      },
+    };
+    if (thumbnailUrl) {
+      videoData.image_url = thumbnailUrl;
+    }
+    objectStorySpec.video_data = videoData;
+    creativeNotes.push(`meta_creative_type=video`, `meta_video_id=${videoId}`);
+    if (!thumbnailUrl) {
+      creativeNotes.push(
+        "meta_targeting_warning=No video thumbnail available; Meta will auto-select a frame.",
+      );
+    }
+  } else {
+    const imageHash = await uploadMetaImageHash(
+      mediaUrl,
+      config.adAccountId,
+      config.accessToken,
+    );
+    objectStorySpec.link_data = {
       message: primaryText,
       link: destinationUrl,
       name: headline,
@@ -524,12 +739,11 @@ async function dispatchMetaAdsLive(
       image_hash: imageHash,
       call_to_action: {
         type: ctaType,
-        value: {
-          link: destinationUrl,
-        },
+        value: { link: destinationUrl },
       },
-    },
-  };
+    };
+    creativeNotes.push(`meta_creative_type=image`);
+  }
 
   if (config.instagramActorId) {
     objectStorySpec.instagram_actor_id = config.instagramActorId;
@@ -573,6 +787,7 @@ async function dispatchMetaAdsLive(
       `meta_review_url=${externalReviewUrl}`,
       `meta_destination_url=${destinationUrl}`,
       `meta_dispatched_at=${new Date().toISOString()}`,
+      ...creativeNotes,
       ...metaTargetingNotes,
     ],
     metaTargeting: {
@@ -763,6 +978,78 @@ async function uploadMetaImageHash(
   return imageHash;
 }
 
+// Upload a video to the ad account's video library and wait for Meta to finish
+// processing it. Returns the native video_id usable in a video ad creative.
+// Videos are NOT immediately usable after upload — Meta transcodes them, so we
+// poll the processing status until it is `ready` (or fail on `error`/timeout).
+async function uploadMetaAdVideo(
+  videoUrl: string,
+  adAccountId: string,
+  accessToken: string,
+): Promise<string> {
+  const fetchResponse = await fetch(videoUrl);
+  if (!fetchResponse.ok) {
+    throw new Error(
+      `Failed to download video for Meta upload: ${fetchResponse.statusText}`,
+    );
+  }
+
+  const blob = await fetchResponse.blob();
+  const formData = new FormData();
+  formData.append("access_token", accessToken);
+  formData.append("source", blob, "ad_video.mp4");
+
+  const response = await fetch(
+    `https://graph.facebook.com/v22.0/act_${adAccountId}/advideos`,
+    {
+      method: "POST",
+      body: formData as any,
+    },
+  );
+
+  const payload = (await response.json()) as { id?: string };
+  if (!response.ok || !payload.id) {
+    throw new Error(`Meta Video Upload Error: ${JSON.stringify(payload)}`);
+  }
+
+  await waitForMetaVideoReady(payload.id, accessToken);
+  return payload.id;
+}
+
+// Poll GET /{video_id}?fields=status until processing completes. Meta returns
+// video_status `processing` → `ready` (or `error`). Caps at ~90s so a stuck
+// transcode fails the dispatch loudly rather than hanging the request.
+async function waitForMetaVideoReady(
+  videoId: string,
+  accessToken: string,
+  maxAttempts = 30,
+  intervalMs = 3000,
+): Promise<void> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const url = `https://graph.facebook.com/v22.0/${videoId}?fields=status&access_token=${encodeURIComponent(accessToken)}`;
+    const response = await fetch(url);
+    const payload = (await response.json()) as {
+      status?: { video_status?: string };
+      error?: unknown;
+    };
+    if (!response.ok) {
+      throw new Error(`Meta video status check failed: ${JSON.stringify(payload)}`);
+    }
+
+    const videoStatus = payload.status?.video_status;
+    if (videoStatus === "ready") return;
+    if (videoStatus === "error") {
+      throw new Error(`Meta video ${videoId} failed processing: ${JSON.stringify(payload)}`);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error(
+    `Meta video ${videoId} did not finish processing within ${(maxAttempts * intervalMs) / 1000}s. Retry the draft once Meta finishes transcoding.`,
+  );
+}
+
 export async function dispatchMarketingPost(
   campaign: Campaign,
   manifest: CampaignMediaManifest,
@@ -914,7 +1201,7 @@ export async function dispatchMarketingPost(
 
     if (post.platform === "facebook_ad") {
       try {
-        const liveResult = await dispatchMetaAdsLive(campaign, post, preview);
+        const liveResult = await dispatchMetaAdsLive(campaign, manifest, post, preview);
         const enrichedPreview: Record<string, unknown> = {
           ...preview,
           metaTargeting: liveResult.metaTargeting,
@@ -938,6 +1225,41 @@ export async function dispatchMarketingPost(
           platform: post.platform,
           status: "failed",
           warning: `Meta Ads live dispatch failed: ${message}`,
+          preview,
+        };
+      }
+    }
+
+    if (
+      post.platform === "instagram_feed" ||
+      post.platform === "instagram_reels" ||
+      post.platform === "instagram_story"
+    ) {
+      try {
+        const liveResult = await dispatchInstagramGraphLive(
+          campaign,
+          manifest,
+          post,
+          preview,
+        );
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: liveResult.status,
+          externalPostId: liveResult.externalPostId,
+          metadataNotes: liveResult.metadataNotes,
+          preview,
+        };
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown Instagram Graph live dispatch error";
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: "failed",
+          warning: `Instagram Graph live dispatch failed: ${message}`,
           preview,
         };
       }

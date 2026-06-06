@@ -227,6 +227,29 @@ export function buildDistributionSchedule(
         notes: ['Creates a paused Meta campaign, ad set with niche interest targeting, creative, and ad for native Ads Manager review.'],
     } : null);
 
+    // Vertical video (TikTok/Reels seed) as a paused Meta VIDEO ad draft, so the
+    // Reel creative reaches Ads Manager alongside the image ad in one build pass.
+    // Meta's ad-set placements deliver it to Instagram Reels / Facebook surfaces.
+    addIfPresent(drafts, tiktokSeedId ? {
+        platform: 'facebook_ad',
+        assetId: tiktokSeedId,
+        copyVariant: 'ad_variant_A',
+        scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
+        campaignStage: 'seed_day_0',
+        notes: ['Creates a paused Meta VIDEO ad draft from the vertical TikTok/Reels seed video for native Ads Manager review.'],
+    } : null);
+
+    // Instagram image creative as a second paused Meta image ad draft, distinct
+    // from the primary Facebook ad creative above.
+    addIfPresent(drafts, instagramFeedAdAssetId && instagramFeedAdAssetId !== facebookAdAssetId ? {
+        platform: 'facebook_ad',
+        assetId: instagramFeedAdAssetId,
+        copyVariant: 'ad_variant_A',
+        scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
+        campaignStage: 'seed_day_0',
+        notes: ['Creates a paused Meta image ad draft from the Instagram feed creative for native Ads Manager review.'],
+    } : null);
+
     addIfPresent(drafts, googleDisplayAdAssetId ? {
         platform: 'google_display',
         assetId: googleDisplayAdAssetId,
@@ -247,6 +270,15 @@ export function buildDistributionSchedule(
                 ? 'TikTok defaults to paused paid lead-gen drafts until business-account activation is complete.'
                 : 'Legacy organic TikTok draft path selected explicitly.',
         ],
+    } : null);
+
+    addIfPresent(drafts, tiktokSeedId ? {
+        platform: 'instagram_reels',
+        assetId: tiktokSeedId,
+        copyVariant: 'instagram_reel_0',
+        scheduledAt: campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD',
+        campaignStage: 'seed_day_0',
+        notes: ['Publishes the existing TikTok seed video through Instagram Graph as an organic Reel draft/post.'],
     } : null);
 
     addIfPresent(drafts, emailHeaderAssetId ? {

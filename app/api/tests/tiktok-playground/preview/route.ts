@@ -160,9 +160,14 @@ export async function POST(request: NextRequest) {
 
             const finalVideo = await composeVideoSequenceWithTransitions(beatBuffers, beatDurations);
             const narrationBuffer = await generateSpeechClip(buildSequenceNarrationText(sequenceBeats), narrationVoice.voiceId);
+            // Honor an explicit total duration (e.g. the storyboard total) when
+            // provided; otherwise fall back to the sum of beat durations, then 35s.
+            const sequenceTargetDuration = Number.isFinite(durationSeconds) && (durationSeconds ?? 0) > 0
+                ? Number(durationSeconds)
+                : beatDurations.reduce((sum, d) => sum + d, 0) || 35;
             const mixedVideo = await composeProductionVideo([finalVideo], narrationBuffer, themeMusicBuffer, {
                 outputFormat: "9:16",
-                targetDurationSeconds: 35,
+                targetDurationSeconds: sequenceTargetDuration,
                 narrationVolume: 1.35,
                 musicVolume: 0.12,
             });

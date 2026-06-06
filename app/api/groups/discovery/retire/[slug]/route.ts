@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
-import { applyManualDiscoveryRetirement, clearDiscoveryRetirement } from '@/lib/campaigns/discovery-iteration';
+import { applyManualDiscoveryRetirement, clearDiscoveryRetirement, isCampaignRetired } from '@/lib/campaigns/discovery-iteration';
+import { dispatchEmailBroadcast } from '@/lib/campaigns/email/email-event-orchestrator';
 
 /**
  * POST /api/groups/discovery/retire/[slug]
@@ -24,12 +25,31 @@ export async function POST(
         }
 
         const reason = typeof body?.reason === 'string' ? body.reason : '';
+
+        // Only fire the cancellation broadcast on the transition INTO retirement,
+        // so re-retiring an already-retired campaign doesn't re-spam its leads.
+        const wasRetired = isCampaignRetired(campaign);
+
         const updated = {
             ...applyManualDiscoveryRetirement(campaign, reason),
             updatedAt: new Date().toISOString(),
         };
 
         await saveCampaignBlueprint(updated);
+
+        // Notify everyone who signed up that this campaign is closed. Fire-and-forget
+        // and non-fatal: a failed broadcast must not block the retirement itself.
+        // `operatorNote` carries the retirement reason into the cancellation email.
+        if (!wasRetired) {
+            const operatorNote = reason.trim() || undefined;
+            void dispatchEmailBroadcast(
+                slug,
+                'campaign_expired',
+                operatorNote ? { phase2: { operatorNote } } : {},
+            ).catch((err) => {
+                console.error(`[DiscoveryRetire] campaign_expired broadcast failed for ${slug}:`, err);
+            });
+        }
 
         return NextResponse.json({ success: true, campaign: updated }, { status: 200 });
     } catch (error: unknown) {

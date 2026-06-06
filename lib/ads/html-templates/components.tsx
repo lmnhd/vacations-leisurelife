@@ -140,7 +140,7 @@ export function T1GoogleLandscape({ d, imgs, slotControls }: TemplateProps) {
             <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '44px 56px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 32, height: 2, background: p.accent }} />
-                    <div style={{ color: p.accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{FB.ship}</div>
+                    <div style={{ color: p.accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{d.ship}</div>
                 </div>
                 <div>
                     <div style={{ color: p.textOnDark, fontSize: 84, fontWeight: 900, lineHeight: 0.93, textTransform: 'uppercase', letterSpacing: '-0.025em', maxWidth: 620, marginBottom: 20, whiteSpace: 'pre-line' }}>{d.headline}</div>
@@ -194,7 +194,7 @@ export function T2ElegantStory({ d, imgs, slotControls }: TemplateProps) {
                     <div style={{ color: p.accent, fontSize: 18 }}>✦</div>
                     <div style={{ flex: 1, height: 1, background: `${p.accent}33` }} />
                 </div>
-                <div style={{ color: `${p.textOnDark}66`, fontSize: 18, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>{FB.ship}</div>
+                <div style={{ color: `${p.textOnDark}66`, fontSize: 18, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>{d.ship}</div>
                 <div style={{ color: p.accent, fontSize: 30, fontWeight: 700, marginBottom: 64 }}>From {FB.price}</div>
                 <div style={{ border: `2px solid ${p.accent}`, padding: '20px 68px', color: p.accent, fontSize: 15, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{d.waitlist}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 68 }}>
@@ -249,7 +249,7 @@ export function T3GoogleSquare({ d, imgs, slotControls }: TemplateProps) {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 30 }}>
                         <div style={{ width: 22, height: 2, background: p.accent }} />
-                        <div style={{ color: p.accent, fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{FB.ship}</div>
+                        <div style={{ color: p.accent, fontSize: 11, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{d.ship}</div>
                     </div>
                     <div style={{ color: p.primary, fontSize: 70, fontWeight: 900, lineHeight: 0.93, textTransform: 'uppercase', letterSpacing: '-0.03em', whiteSpace: 'pre-line' }}>{d.headline}</div>
                 </div>
@@ -297,7 +297,7 @@ export function T4MetaCarousel({ d, imgs, slotControls }: TemplateProps) {
                 <div style={{ color: `${p.textOnDark}cc`, fontSize: 22, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 38, maxWidth: 680 }}>{d.subhead}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                     <div style={{ background: p.accent, color: '#fff', padding: '13px 32px', fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{d.cta}</div>
-                    <div style={{ color: `${p.textOnDark}44`, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{FB.ship} · {FB.price}</div>
+                    <div style={{ color: `${p.textOnDark}44`, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{d.ship} · {FB.price}</div>
                 </div>
             </div>
         </div>
@@ -345,7 +345,7 @@ export function T5MetaStory({ d, imgs, slotControls }: TemplateProps) {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
                     <div style={{ color: `${p.textOnDark}cc`, fontSize: 22, lineHeight: 1.55, maxWidth: 720 }}>{d.subhead}</div>
                     <div style={{ background: p.accent, color: '#fff', padding: '17px 50px', fontSize: 14, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase' }}>{d.waitlist}</div>
-                    <div style={{ color: `${p.textOnDark}44`, fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{FB.ship}</div>
+                    <div style={{ color: `${p.textOnDark}44`, fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{d.ship}</div>
                 </div>
             </div>
         </div>
@@ -408,7 +408,7 @@ export function T7MetaFeedPortrait({ d, imgs, slotControls }: TemplateProps) {
                 ))}
             </div>
             <div style={{ flex: 1, background: p.background, padding: '44px 58px', borderTop: `3px solid ${p.accent}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ color: p.accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', marginBottom: 14 }}>{FB.ship} · {FB.price}</div>
+                <div style={{ color: p.accent, fontSize: 12, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', marginBottom: 14 }}>{d.ship} · {FB.price}</div>
                 <div style={{ color: p.textOnDark, fontSize: 54, fontWeight: 900, lineHeight: 0.93, textTransform: 'uppercase', letterSpacing: '-0.025em', marginBottom: 18, whiteSpace: 'pre-line' }}>{d.headline}</div>
                 <div style={{ color: `${p.textOnDark}88`, fontSize: 17, lineHeight: 1.65, marginBottom: 28 }}>{d.subhead}</div>
                 <div style={{ display: 'inline-block', background: p.accent, color: '#fff', padding: '12px 34px', fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase' }}>{d.waitlist}</div>
@@ -449,7 +449,7 @@ export function T8IGStoryGrid({ d, imgs, slotControls }: TemplateProps) {
                 <div style={{ color: `${p.textOnDark}88`, fontSize: 21, lineHeight: 1.55, marginBottom: 40, maxWidth: 780 }}>{d.elevatorPitch}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
                     <div style={{ background: p.accent, color: '#fff', padding: '16px 46px', fontSize: 14, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase' }}>{d.waitlist}</div>
-                    <div style={{ color: `${p.textOnDark}44`, fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{FB.ship}</div>
+                    <div style={{ color: `${p.textOnDark}44`, fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{d.ship}</div>
                 </div>
             </div>
         </div>
@@ -468,3 +468,4 @@ export const FORMAT_COMPONENTS: Record<string, (props: TemplateProps) => React.R
     meta_feed_portrait:       T7MetaFeedPortrait,
     ig_story_grid:            T8IGStoryGrid,
 };
+

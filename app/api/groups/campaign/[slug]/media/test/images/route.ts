@@ -19,6 +19,10 @@ import {
     importShipReferenceAssets,
 } from '@/lib/campaigns/media/ship-reference-service';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
+import {
+    formatStaleBriefForResearchMessage,
+    isResearchDossierNewerThanBrief,
+} from '@/lib/campaigns/research-freshness';
 
 // ────────────────────────────────────────────────────────────────────────────
 // POST /api/groups/campaign/[slug]/media/test/images
@@ -63,6 +67,19 @@ export async function POST(
 
     const PAID_GENERATORS: ImageTestGenerator[] = ['real_ship_hero', 'stability_concepts', 'scene_images', 'designed_ad_artifacts'];
     if (PAID_GENERATORS.includes(generator)) {
+        if (
+            ['scene_images', 'designed_ad_artifacts'].includes(generator)
+            && isResearchDossierNewerThanBrief(campaign, brief)
+        ) {
+            return NextResponse.json(
+                {
+                    error: formatStaleBriefForResearchMessage(slug),
+                    code: 'STALE_BRIEF_FOR_RESEARCH',
+                },
+                { status: 422 },
+            );
+        }
+
         const lintVerdict = brief.productionBuildStatus;
         if (lintVerdict === 'fail') {
             return NextResponse.json(

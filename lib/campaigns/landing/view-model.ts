@@ -25,6 +25,10 @@ import {
 import { extractNicheTokens } from "@/lib/campaigns/design-system/niche-tokens";
 import type { VisualSystem } from "@/lib/campaigns/design-system/types";
 import { selectPreferredAssetForContext } from "@/lib/campaigns/media/image-selection";
+import {
+  sanitizeAestheticBriefShipCopyForCampaign,
+  sanitizeShipCopyForCampaign,
+} from "@/lib/campaigns/ship-copy";
 
 export interface LandingLoaderOptions {
   includeDraftPreview?: boolean;
@@ -330,7 +334,10 @@ function buildStarterConversation(
   // Source 2: deterministic fallback — assembled from brief fields.
   const ship = campaign.matchedShipName ?? campaign.shipTarget ?? 'our ship';
   const destination = campaign.targetDestination ?? 'at sea';
-  const dates = campaign.targetDates ?? 'coming up';
+  // Prefer the matched sailing date over the (possibly stale) targetDates hint.
+  // After inventory match these are equal, but this stays correct for records
+  // matched before targetDates-overwrite shipped.
+  const dates = campaign.matchedSailDate?.trim() || campaign.targetDates || 'coming up';
 
   // First TC answer: what the sailing is — one sentence of the pitch + logistics.
   const rawPitch = brief?.messaging.elevatorPitch
@@ -540,21 +547,24 @@ export function buildLandingDesignSystem(
   brief: CampaignAestheticBrief | null,
   flavorOverride?: VisualFlavor,
 ): LandingDesignSystem {
+  const displayBrief = brief
+    ? sanitizeAestheticBriefShipCopyForCampaign(brief, campaign)
+    : null;
   const endpoint = `/api/groups/campaign/${campaign.id}/chat`;
   const chatBase = {
     sessionId: `campaign-chat://${campaign.id}`,
     title: "Tour Conductor",
-    starterConversation: buildStarterConversation(campaign, brief),
+    starterConversation: buildStarterConversation(campaign, displayBrief),
     endpoint,
   };
 
   const activeFlavor = resolveActiveVisualFlavor(
     campaign,
-    brief,
+    displayBrief,
     flavorOverride,
   );
 
-  if (!brief) {
+  if (!displayBrief) {
     const fallbackSystem = visualSystemForFlavor(activeFlavor);
     return {
       ...FALLBACK_DESIGN_SYSTEM,
@@ -571,7 +581,7 @@ export function buildLandingDesignSystem(
     };
   }
 
-  const tokens = extractNicheTokens(brief, campaign);
+  const tokens = extractNicheTokens(displayBrief, campaign);
   const overrideSystem = visualSystemForFlavor(activeFlavor);
   const system = overrideSystem;
   const issueLabel = issueLabelForSystem(system);
@@ -584,7 +594,7 @@ export function buildLandingDesignSystem(
     sectionLabels: normalizeSectionLabels(tokens.sectionLabels),
     italicWord: tokens.italicWord,
     accentHex: tokens.accentHex,
-    palette: buildPalette(brief, system),
+    palette: buildPalette(displayBrief, system),
     headline: tokens.headline,
     subhead: tokens.subhead,
     quote: tokens.quote,
@@ -1378,7 +1388,7 @@ function buildInventoryDisclosure(campaign: Campaign): LandingInventoryDisclosur
       mode,
       bannerVisible: true,
       bannerCopy:
-        "The official group block for this sailing is no longer available. We can still help guests book the same cruise individually and coordinate the experience where possible. Pricing, cabin location, and group-specific amenities may differ from the original offer.",
+        "The official group inventory for this sailing has not been selected yet. The ship and sailing may change as we re-verify the best available option. Guests can still follow the campaign now, and we will update the booking path as soon as the group setup is locked.",
       processNote,
       trustBullet,
       formAcknowledgement,
@@ -1545,6 +1555,9 @@ function buildLandingViewModel(
   flavorOverride?: VisualFlavor,
   verifiedSummary?: CampaignWaitlistSummary,
 ): CampaignLandingViewModel {
+  const displayBrief = brief
+    ? sanitizeAestheticBriefShipCopyForCampaign(brief, campaign)
+    : null;
   const targetCabins = getPublicGroupCabinTarget(campaign);
   const pricing = getPricingDetail(campaign);
   const thresholdCopy = getThresholdCopy(
@@ -1552,8 +1565,8 @@ function buildLandingViewModel(
     waitlistSummary,
     targetCabins,
   );
-  const ctas = getCtas(campaign, brief);
-  const heroImage = resolveHeroImage(campaign, brief, manifest);
+  const ctas = getCtas(campaign, displayBrief);
+  const heroImage = resolveHeroImage(campaign, displayBrief, manifest);
   const galleryImages = buildGalleryImages(campaign, manifest, heroImage);
   const trustImages = buildTrustImages(campaign, manifest, heroImage);
   const imagePlacements = buildLandingImagePlacements(
@@ -1571,7 +1584,7 @@ function buildLandingViewModel(
   );
   const designSystem = buildLandingDesignSystem(
     campaign,
-    brief,
+    displayBrief,
     flavorOverride,
   );
   const itinerary = buildItinerarySummary(campaign);
@@ -1582,34 +1595,34 @@ function buildLandingViewModel(
     state: campaign.status,
     stateLabel: STATE_LABELS[campaign.status],
     title: campaign.name,
-    heroSlogan: brief?.messaging.heroSlogan ?? campaign.name,
-    subSlogan: brief?.messaging.subSlogan ?? campaign.description,
-    elevatorPitch: brief?.messaging.elevatorPitch ?? campaign.description,
+    heroSlogan: displayBrief?.messaging.heroSlogan ?? campaign.name,
+    subSlogan: displayBrief?.messaging.subSlogan ?? sanitizeShipCopyForCampaign(campaign.description, campaign),
+    elevatorPitch: displayBrief?.messaging.elevatorPitch ?? sanitizeShipCopyForCampaign(campaign.description, campaign),
     heroImage,
     galleryImages,
     trustImages,
     imagePlacements,
     accentColor: normalizeColorToken(
-      brief?.visual.colorPalette.accent,
+      displayBrief?.visual.colorPalette.accent,
       "#2962FF",
     ),
     surfaceColor: normalizeColorToken(
-      brief?.visual.colorPalette.background,
+      displayBrief?.visual.colorPalette.background,
       "#0F172A",
     ),
     textColor: normalizeColorToken(
-      brief?.visual.colorPalette.textOnDark,
+      displayBrief?.visual.colorPalette.textOnDark,
       "#F8FAFC",
     ),
     designSystem,
     itinerary,
     facts: buildFacts(campaign, waitlistSummary),
     story: {
-      whatItIs: buildWhatItIs(campaign, brief),
+      whatItIs: buildWhatItIs(campaign, displayBrief),
       whyJoinNow: buildWhyJoinNow(campaign),
-      whatToExpect: buildWhatToExpect(campaign, brief),
-      howItWorks: buildHowItWorks(campaign, brief),
-      guestInvitations: buildGuestInvitations(campaign, brief),
+      whatToExpect: buildWhatToExpect(campaign, displayBrief),
+      howItWorks: buildHowItWorks(campaign, displayBrief),
+      guestInvitations: buildGuestInvitations(campaign, displayBrief),
     },
     threshold: {
       requiredCabins: targetCabins,
@@ -1625,9 +1638,9 @@ function buildLandingViewModel(
       sourceLabel: pricing.sourceLabel,
       detail: pricing.detail,
     },
-    experienceBullets: buildExperienceBullets(campaign, brief),
+    experienceBullets: buildExperienceBullets(campaign, displayBrief),
     trustBullets: buildTrustBullets(campaign),
-    bookingPathChoices: getBookingChoices(campaign, brief),
+    bookingPathChoices: getBookingChoices(campaign, displayBrief),
     faq: buildFaq(campaign),
     ctas,
     links: {

@@ -14,6 +14,7 @@ import { CampaignSelector } from "./campaign-selector";
 import { ResearchContextPanel } from "../research-context-panel";
 import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
 import { ImageSlotPicker } from "@/components/campaign-media/image-slot-picker";
+import { ThemeMusicPicker } from "@/components/campaign-media/theme-music-picker";
 import { collectSelectableImageGroups, type HtmlTemplateManifest } from "@/lib/ads/html-templates/core";
 import {
     Loader2, Wand2, Image, Crop, Film, Music, Type, Shirt,
@@ -133,6 +134,19 @@ const COST_ESTIMATES: Record<string, string> = {
 
 const LS_SLUG_KEY = "mediaGen_slug";
 const getManifestStorageKey = (targetSlug: string) => `mediaGen_manifest_${targetSlug}`;
+
+function isResearchDossierNewerThanBrief(
+    campaign: { researchDossierGeneratedAt?: string | null } | null,
+    brief: { generatedAt?: string | null } | null,
+): boolean {
+    if (!campaign?.researchDossierGeneratedAt || !brief?.generatedAt) {
+        return false;
+    }
+
+    const researchAt = Date.parse(campaign.researchDossierGeneratedAt);
+    const briefAt = Date.parse(brief.generatedAt);
+    return Number.isFinite(researchAt) && Number.isFinite(briefAt) && researchAt > briefAt;
+}
 
 export default function MediaGenerationTestPage() {
     const searchParams = useSearchParams();
@@ -337,6 +351,10 @@ export default function MediaGenerationTestPage() {
             setError("Generate the secondary research dossier in Brief Studio before media generation.");
             return;
         }
+        if (researchDossierNewerThanBrief) {
+            setError("The secondary research dossier is newer than this brief. Regenerate the brief in Brief Studio before approving for media.");
+            return;
+        }
 
         setPageState("generating");
         setError("");
@@ -354,6 +372,13 @@ export default function MediaGenerationTestPage() {
     const handleGenerate = async (assetTypes?: readonly AssetType[]) => {
         if (!researchDossierReady) {
             setError("Generate the secondary research dossier in Brief Studio before media generation.");
+            return;
+        }
+        const includesSceneLibraryAssets = !assetTypes || assetTypes.some((type) =>
+            ['scene_image', 'tiktok_seed_video', 'designed_ad_artifact', 'documentary_detail_image'].includes(type)
+        );
+        if (includesSceneLibraryAssets && researchDossierNewerThanBrief) {
+            setError("The secondary research dossier is newer than this brief. Regenerate the brief in Brief Studio so the Production Bible can absorb the latest research before media generation.");
             return;
         }
 
@@ -466,6 +491,7 @@ export default function MediaGenerationTestPage() {
     const outputsReady = manifest !== null;
     const briefApproved = brief?.humanReviewStatus === 'approved';
     const researchDossierReady = Boolean(campaign?.researchDossier);
+    const researchDossierNewerThanBrief = isResearchDossierNewerThanBrief(campaign, brief);
     const hasCropSources = Boolean(
         (manifest?.images.hero?.length ?? 0) > 0 ||
         (manifest?.images.sceneImages?.length ?? 0) > 0 ||
@@ -539,7 +565,7 @@ export default function MediaGenerationTestPage() {
                     </button>
 
                     <div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Music Source</div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Music Generation Source</div>
                         <select
                             value={themeMusicSource}
                             onChange={(event) => setThemeMusicSource(event.target.value === 'replicate' ? 'replicate' : 'default')}
@@ -550,9 +576,19 @@ export default function MediaGenerationTestPage() {
                             <option value="replicate">Replicate MusicGen</option>
                         </select>
                         <p className="mt-2 text-[11px] text-slate-500">
-                            Choose whether theme music should reuse a tagged library track or generate a new track with Replicate.
+                            Used only when the campaign does not already have a selected music track.
                         </p>
                     </div>
+
+                    <ThemeMusicPicker
+                        slug={slug}
+                        disabled={isBusy || !slug.trim()}
+                        onManifestUpdated={(nextManifest) => {
+                            const typedManifest = nextManifest as CampaignMediaManifest;
+                            setManifest(typedManifest);
+                            localStorage.setItem(getManifestStorageKey(slug.trim()), JSON.stringify(typedManifest));
+                        }}
+                    />
 
                     {error && (
                         <div className="px-3 py-2 text-xs text-red-400 border rounded-lg bg-red-500/10 border-red-500/20">
@@ -686,12 +722,18 @@ export default function MediaGenerationTestPage() {
 
                 {/* Production Bible status strip */}
                 <div className={`border rounded-xl p-3 flex items-center gap-3 text-xs ${
-                    hasProductionBible
+                    researchDossierNewerThanBrief
+                        ? "border-amber-500/30 bg-amber-500/5 text-amber-300"
+                        : hasProductionBible
                         ? "border-teal-500/30 bg-teal-500/5 text-teal-300"
                         : "border-amber-500/30 bg-amber-500/5 text-amber-400"
                 }`}>
                     <BookOpen className="w-4 h-4 shrink-0" />
-                    {hasProductionBible ? (
+                    {researchDossierNewerThanBrief ? (
+                        <span>
+                            Brief refresh required. The research dossier is newer than the saved brief, so scene images, documentary details, Canva Ads, and TikTok are blocked until the brief is regenerated in Brief Studio.
+                        </span>
+                    ) : hasProductionBible ? (
                         <span>
                             Production Bible ready — <strong>{sceneCount} scenes</strong>, <strong>{storyboardCount} storyboards</strong>.
                             Video generation will use storyboard-driven assembly with per-shot scene images.
@@ -813,7 +855,7 @@ export default function MediaGenerationTestPage() {
                             const requiresCropSource = cat.types.includes('platform_crop');
                             const isCropOnlyRequest = requiresCropSource && cat.types.length === 1;
                             const requiresTikTokStoryboard = cat.types.includes('tiktok_seed_video');
-                            const isBlocked = (requiresProductionBible && !hasProductionBible) || (isCropOnlyRequest && !hasCropSources);
+                            const isBlocked = (requiresProductionBible && !hasProductionBible) || (requiresProductionBible && researchDossierNewerThanBrief) || (isCropOnlyRequest && !hasCropSources);
                             return (
                                 <button
                                     key={cat.key}
@@ -823,6 +865,8 @@ export default function MediaGenerationTestPage() {
                                     title={isBlocked ? (
                                         isCropOnlyRequest && !hasCropSources
                                             ? 'Crops require at least one curated Hero Image, Scene Image, or Concept in the manifest. Generate Hero Images first, then retry Crops.'
+                                            : requiresProductionBible && researchDossierNewerThanBrief
+                                                ? 'Research dossier is newer than this brief. Regenerate the brief in Brief Studio before this category.'
                                             : requiresTikTokStoryboard
                                                 ? 'TikTok seed video requires a saved Production Bible and storyboard scene images.'
                                                 : cat.types.includes('designed_ad_artifact')
@@ -841,7 +885,11 @@ export default function MediaGenerationTestPage() {
                                     <span className="text-[9px] opacity-60">{COST_ESTIMATES[cat.key]}</span>
                                     {isBlocked && (
                                         <span className="text-[9px] opacity-80 text-amber-300">
-                                            {isCropOnlyRequest && !hasCropSources ? 'Hero/scene source required' : 'Production Bible required'}
+                                            {isCropOnlyRequest && !hasCropSources
+                                                ? 'Hero/scene source required'
+                                                : researchDossierNewerThanBrief
+                                                    ? 'Brief refresh required'
+                                                    : 'Production Bible required'}
                                         </span>
                                     )}
                                 </button>
@@ -852,7 +900,7 @@ export default function MediaGenerationTestPage() {
                         <button
                             id="btn-gen-all"
                             onClick={() => handleGenerate(PRODUCTION_ALL_MEDIA_ASSET_TYPES)}
-                            disabled={isBusy || !slug.trim()}
+                            disabled={isBusy || !slug.trim() || researchDossierNewerThanBrief}
                             className="flex flex-col items-center col-span-2 gap-2 px-4 py-4 text-sm font-medium text-white transition-all border rounded-xl bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 border-white/20 hover:brightness-125 disabled:opacity-40 disabled:pointer-events-none md:col-span-3"
                         >
                             {activeCategory === "all"
@@ -865,7 +913,7 @@ export default function MediaGenerationTestPage() {
                         {brief?.humanReviewStatus !== 'approved' && (
                             <button
                                 onClick={handleApproveBrief}
-                                disabled={isBusy || !slug.trim()}
+                                disabled={isBusy || !slug.trim() || researchDossierNewerThanBrief}
                                 className="flex flex-col items-center col-span-2 gap-2 px-4 py-4 text-sm font-medium transition-all border rounded-xl bg-amber-500/20 border-amber-500/40 text-amber-400 hover:brightness-125 disabled:opacity-40 disabled:pointer-events-none md:col-span-3"
                             >
                                 {pageState === "generating"

@@ -676,17 +676,28 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
 
       {open && hasCandidates && (
         <div className="border-t border-white/5 bg-slate-950/50 px-3 py-3">
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">
-            Ranked candidates · last checked {c.inventoryLastCheckedAt ? new Date(c.inventoryLastCheckedAt).toLocaleString() : "unknown"}
-          </p>
+          <div className="mb-2 space-y-0.5">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500">
+              Ranked candidates · last checked {c.inventoryLastCheckedAt ? new Date(c.inventoryLastCheckedAt).toLocaleString() : "unknown"}
+            </p>
+            <p className="text-[10px] text-slate-600 leading-relaxed">
+              <span className="text-slate-500">CB Group</span> = agent-registered block with a personal booking link (earns TC credit).{" "}
+              <span className="text-slate-500">House Group</span> = CB-owned block, no agent link by design — books via the Retail path instead.{" "}
+              <span className="text-slate-500">Retail</span> = live Odysseus booking link for the same sailing (fully bookable, no TC credit).
+            </p>
+          </div>
           <ol className="space-y-1.5">
-            {candidates.map((cand) => (
+            {candidates.map((cand) => {
+              const isHouseGroup = cand.source === "CB_GROUP" && cand.failureReason?.toLowerCase().includes("house group");
+              return (
               <li
                 key={`${cand.source}-${cand.rank}-${cand.groupId ?? cand.retailLink ?? cand.shipName}`}
                 className="flex items-start gap-3 px-2.5 py-2 rounded bg-slate-900/60 border border-white/5"
               >
-                <span className="text-[10px] uppercase tracking-widest font-mono text-slate-500 shrink-0 w-12">
-                  {cand.source === "CB_GROUP" ? `Rank ${cand.rank}` : "Retail"}
+                <span className="text-[10px] uppercase tracking-widest font-mono text-slate-500 shrink-0 w-16">
+                  {cand.source === "CB_GROUP"
+                    ? isHouseGroup ? "House" : `CB Rank ${cand.rank}`
+                    : "Retail"}
                 </span>
                 <div className="flex-1 min-w-0 text-[11px]">
                   <div className="flex flex-wrap items-center gap-2">
@@ -705,7 +716,7 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[10px]">
-                    {cand.source === "CB_GROUP" && (
+                    {cand.source === "CB_GROUP" && !isHouseGroup && (
                       <span
                         title={`Promise delta vs primary: ${cand.promiseDelta}. NONE = same ship/date/port; PRICE_ONLY = price differs ≤10%; AMENITIES_CHANGED = nearby date or port changed; SHIP_OR_DATE_CHANGED = bigger drift.`}
                         className={
@@ -721,10 +732,15 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
                         {cand.promiseDelta.replace(/_/g, " ").toLowerCase()}
                       </span>
                     )}
+                    {isHouseGroup && (
+                      <span className="text-slate-500" title="CB owns this block — no agent personal link exists. This is expected for House groups; the Retail row below is the active booking path.">
+                        CB-owned block · retail path active
+                      </span>
+                    )}
                     {cand.matchScore > 0 && (
                       <span className="text-slate-500">match score: {cand.matchScore}</span>
                     )}
-                    {cand.failureReason && (
+                    {cand.failureReason && !isHouseGroup && (
                       <span className="text-red-400" title={cand.failureReason}>· {cand.failureReason}</span>
                     )}
                   </div>
@@ -739,9 +755,13 @@ function PhaseBCampaignRow({ campaign: c }: { campaign: PhaseBCampaignRef }) {
                     </a>
                   )}
                 </div>
-                <InventoryHealthBadge status={cand.healthStatus} />
+                {isHouseGroup
+                  ? <span className="text-[9px] uppercase tracking-widest font-mono px-1.5 py-0.5 rounded border bg-slate-700/30 border-slate-600 text-slate-400">house</span>
+                  : <InventoryHealthBadge status={cand.healthStatus} />
+                }
               </li>
-            ))}
+              );
+            })}
           </ol>
         </div>
       )}
@@ -777,15 +797,18 @@ function PricingBadge({ status, inventoryHealth, activeBookingMode }: { status: 
   }
 
   // Retail fallback writes inventoryHealth=HEALTHY too, so we need
-  // activeBookingMode to tell apart a real CB group match from a campaign
-  // that's only bookable via the Odysseus retail flow.
+  // activeBookingMode to tell apart a real CB group match from a House-owned
+  // group that books via the Odysseus retail flow. This is a SUCCESS state — the
+  // campaign is fully bookable with a live link — so it reads green like a CB
+  // confirm, just labeled "Retail" so the operator knows which booking surface
+  // it uses (CB group price advantage may not apply). NOT a warning.
   if (status === "CB_MATCHED" && inventoryHealth === "HEALTHY" && activeBookingMode === "RETAIL_MULTI_BOOKING") {
     return (
       <span
-        title="No agent-issued CB group personal link was found (likely a House-owned group). Bookable only via the Odysseus retail flow — CB group price advantage may not apply."
-        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-amber-500/15 border-amber-500/30 text-amber-300"
+        title="Bookable via the Odysseus retail flow — this is a House-owned group block (by design, no agent personal link). The retail booking link is live and confirmed. CB group price advantage may not apply."
+        className="text-[10px] uppercase tracking-widest font-mono px-2 py-1 rounded-full border bg-teal-500/15 border-teal-500/30 text-teal-300"
       >
-        🛟 Retail Confirmed
+        ✅ Retail Confirmed
       </span>
     );
   }
@@ -1259,11 +1282,12 @@ export default function DiscoveryTestPage() {
     if (!blueprint) return;
 
     const confirmed = window.confirm(
-      `Re-match "${blueprint.name}" to a different CB inventory block?\n\n` +
+      `Re-match "${blueprint.name}" to the best available CB inventory block?\n\n` +
         "The blueprint, niche, and all creative fields stay exactly as-is. " +
-        "Only the ship/date/group assignment is replaced using the current CB deals cache.\n\n" +
-        "The current failed group (" + (blueprint.cbagenttoolsGroupId ?? "unknown") + ") is automatically excluded. " +
-        "Run Phase B after rematch to validate the new link.\n\nContinue?",
+        "Only the ship/date/group assignment is replaced, using the smarter matcher against the current CB deals cache.\n\n" +
+        "The current group (" + (blueprint.cbagenttoolsGroupId ?? "unknown") + ") is excluded so it picks a fresh best-fit. " +
+        "Tip: re-scrape CB deals first if you want the latest inventory. " +
+        "Run Phase B after to validate the new link.\n\nContinue?",
     );
     if (!confirmed) return;
 
@@ -2622,17 +2646,21 @@ export default function DiscoveryTestPage() {
                               : "Revise"}
                           </button>
                         )}
-                        {bp.activeBookingMode === "INVENTORY_FAILED_PAUSED" && (
+                        {bp.pricingStatus === "CB_MATCHED" && (
                           <button
                             onClick={() => void handleRematchBlueprint(bp.id)}
                             disabled={rematchLoadingSlug === bp.id}
-                            title="Rematch: keep the blueprint and all creative fields exactly as-is, but find a different CB inventory block. Run Phase B after to validate the new link."
+                            title={
+                              bp.activeBookingMode === "INVENTORY_FAILED_PAUSED"
+                                ? "Rematch: this campaign's inventory failed — find a different CB block. Blueprint/creative untouched. Run Phase B after to validate."
+                                : "Re-optimize: re-run the (smarter) matcher to find the best available CB block for this campaign — e.g. a better-fitting ship class or an agent group with a real link. Blueprint/creative untouched. The current group is excluded; run Phase B after to validate."
+                            }
                             className="text-xs px-3 py-1.5 rounded border border-violet-500/30 text-violet-300 hover:text-violet-200 hover:border-violet-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             {rematchLoadingSlug === bp.id ? (
                               <><Loader2 className="w-3 h-3 animate-spin" /> Rematching…</>
                             ) : (
-                              "Rematch Ship"
+                              bp.activeBookingMode === "INVENTORY_FAILED_PAUSED" ? "Rematch Ship" : "Re-optimize Ship"
                             )}
                           </button>
                         )}

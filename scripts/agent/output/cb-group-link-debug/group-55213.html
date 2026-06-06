@@ -250,7 +250,7 @@
           </a>
           <div class="dropdown-contents">
             <form method="post" action="/accounts/logout/" class="nav-logout-form">
-              <input type="hidden" name="csrfmiddlewaretoken" value="GoAQgkOrUXTDjgylxLHhtkv4CUBXH3wlnG3N7vO8Xx7H76uQdnlkJBZcGSkbQPwN">
+              <input type="hidden" name="csrfmiddlewaretoken" value="SgaXDT9E9TVxbY1RXA0jUfZsbmRPSDqQzyDUu49lct9BZOXmDcEmawtAfkA31pqi">
               <button type="submit" class="dropdown-link nav-logout-btn">Logout</button>
             </form>
             <hr class="nav_hr" aria-hidden="true">
@@ -286,7 +286,7 @@
                 <div id="quick_search_id">
                   <div class="quick_search_interior">
                     <form method="get" action="/bookings/search_trip/?search_term=whatever_user_put_in_id_field">
-                      <input type="hidden" name="csrfmiddlewaretoken" value="GoAQgkOrUXTDjgylxLHhtkv4CUBXH3wlnG3N7vO8Xx7H76uQdnlkJBZcGSkbQPwN">
+                      <input type="hidden" name="csrfmiddlewaretoken" value="SgaXDT9E9TVxbY1RXA0jUfZsbmRPSDqQzyDUu49lct9BZOXmDcEmawtAfkA31pqi">
                       <p class="quick_search_sub_heading">Search by ID or by Name</p>
                       <label class="quick_search_label" for="id_search_term">Any ID:</label>
                       <input type="text" name="search_term" id="id_search_term">
@@ -297,7 +297,7 @@
                   </div>
                   <div class="quick_search_interior">
                     <form method="get" action="/bookings/search_trip/?name=whatever_name_user_searched">
-                      <input type="hidden" name="csrfmiddlewaretoken" value="GoAQgkOrUXTDjgylxLHhtkv4CUBXH3wlnG3N7vO8Xx7H76uQdnlkJBZcGSkbQPwN">
+                      <input type="hidden" name="csrfmiddlewaretoken" value="SgaXDT9E9TVxbY1RXA0jUfZsbmRPSDqQzyDUu49lct9BZOXmDcEmawtAfkA31pqi">
                       <label class="quick_search_label" for="id_name">Any Name:</label>
                       <input type="text" name="name" id="id_name">
                       <button class="quick_search_search_button button" aria-label="Search by Name" onclick="showModal();" value="Search" type="submit">
@@ -378,7 +378,7 @@
     fetch('/toggle-theme/', {
       method: 'POST',
       headers: {
-        'X-CSRFToken': 'GoAQgkOrUXTDjgylxLHhtkv4CUBXH3wlnG3N7vO8Xx7H76uQdnlkJBZcGSkbQPwN',
+        'X-CSRFToken': 'SgaXDT9E9TVxbY1RXA0jUfZsbmRPSDqQzyDUu49lct9BZOXmDcEmawtAfkA31pqi',
         'Content-Type': 'application/json'
       }
     })
