@@ -98,6 +98,25 @@ export interface SourceBreakdownEntry {
     passengers: number;
 }
 
+export interface TrafficBreakdownEntry {
+    sourceChannel: string;
+    provider: string;
+    providerDraftType?: string;
+    providerCampaignId?: string;
+    providerAdId?: string;
+    landingPath?: string;
+    count: number;
+    uniqueSessions: number;
+}
+
+export interface LandingTrafficSummary {
+    totalPageViews: number;
+    uniqueSessions: number;
+    sessionsWithSignup: number;
+    viewToLeadRate: number;
+    sourceBreakdown: TrafficBreakdownEntry[];
+}
+
 export function computeFunnelSummary(leads: CampaignWaitlistEntry[]): FunnelSummary {
     let totalPassengers = 0;
     let groupWaitLeads = 0;
@@ -165,5 +184,68 @@ export function computeFunnelSummary(leads: CampaignWaitlistEntry[]): FunnelSumm
         notifiedLeads,
         pendingLeads: leads.length - convertedLeads,
         sourceBreakdown: Array.from(sourceMap.values()).sort((a, b) => b.count - a.count),
+    };
+}
+
+export function computeLandingTrafficSummary(
+    events: CampaignLeadEvent[],
+    leads: CampaignWaitlistEntry[],
+): LandingTrafficSummary {
+    const pageViewEvents = events.filter((event) => event.eventType === 'landing_page_view');
+    const allSessions = new Set<string>();
+    const signupSessions = new Set(
+        leads
+            .map((lead) => lead.attribution?.sessionId)
+            .filter((sessionId): sessionId is string => Boolean(sessionId)),
+    );
+    const sourceMap = new Map<string, TrafficBreakdownEntry & { sessionIds: Set<string> }>();
+
+    for (const event of pageViewEvents) {
+        const sessionId = event.attribution.sessionId ?? event.eventId;
+        allSessions.add(sessionId);
+
+        const channel = event.attribution.sourceChannel ?? 'direct';
+        const provider = event.attribution.provider ?? 'direct';
+        const providerDraftType = event.attribution.providerDraftType;
+        const providerCampaignId = event.attribution.providerCampaignId;
+        const providerAdId = event.attribution.providerAdId;
+        const landingPath = event.attribution.landingPath;
+        const key = [channel, provider, providerDraftType ?? '', providerCampaignId ?? '', providerAdId ?? '', landingPath ?? ''].join('::');
+        const existing = sourceMap.get(key);
+
+        if (existing) {
+            existing.count += 1;
+            existing.sessionIds.add(sessionId);
+        } else {
+            sourceMap.set(key, {
+                sourceChannel: channel,
+                provider,
+                providerDraftType,
+                providerCampaignId,
+                providerAdId,
+                landingPath,
+                count: 1,
+                uniqueSessions: 1,
+                sessionIds: new Set([sessionId]),
+            });
+        }
+    }
+
+    const sourceBreakdown = Array.from(sourceMap.values())
+        .map(({ sessionIds, ...entry }) => ({
+            ...entry,
+            uniqueSessions: sessionIds.size,
+        }))
+        .sort((a, b) => b.uniqueSessions - a.uniqueSessions || b.count - a.count);
+
+    const uniqueSessions = allSessions.size;
+    const sessionsWithSignup = Array.from(signupSessions).filter((sessionId) => allSessions.has(sessionId)).length;
+
+    return {
+        totalPageViews: pageViewEvents.length,
+        uniqueSessions,
+        sessionsWithSignup,
+        viewToLeadRate: uniqueSessions === 0 ? 0 : leads.length / uniqueSessions,
+        sourceBreakdown,
     };
 }

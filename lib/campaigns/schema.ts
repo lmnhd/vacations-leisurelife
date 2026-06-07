@@ -407,6 +407,14 @@ export type CampaignSocialScale = z.infer<typeof CampaignSocialScaleEnum>;
  * - editorial_magazine → System 1 (premium, intellectual, literary, art, food, music prestige)
  * - travel_nostalgia  → System 2 (warm, sentimental, nostalgic, family, heritage)
  * - indie_zine        → System 3 (subcultural, fandom, indie, after-hours)
+ * - structural_broadsheet → System 5 (stark newsprint/brutalist grid; high-information,
+ *   high-conviction niches) — landing presentation only.
+ * - liquid_glass      → System 6 (frosted glass depth / aurora; aspirational, wellness,
+ *   luxe-sensory niches) — landing presentation only.
+ *
+ * NOTE: `structural_broadsheet` and `liquid_glass` are landing-page flavors only. They have no
+ * registered ad templates, so ad generation falls back to `travel_nostalgia` for those campaigns
+ * (see `buildCampaignAdInput`). They are safe to lock on a campaign for landing styling.
  *
  * See: .github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/VISUAL_SYSTEMS.md
  */
@@ -415,6 +423,8 @@ export const VisualFlavorEnum = z.enum([
     'editorial_magazine',
     'travel_nostalgia',
     'indie_zine',
+    'structural_broadsheet',
+    'liquid_glass',
 ]);
 export type VisualFlavor = z.infer<typeof VisualFlavorEnum>;
 

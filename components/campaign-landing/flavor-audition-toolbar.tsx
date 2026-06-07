@@ -24,6 +24,8 @@ const FLAVOR_OPTIONS: FlavorOption[] = [
     { flavor: 'travel_nostalgia', label: 'Nostalgia', sublabel: 'System 2 · Postcard' },
     { flavor: 'indie_zine', label: 'Zine', sublabel: 'System 3 · Polaroid' },
     { flavor: 'none', label: 'Modular', sublabel: 'System 4 · Brand' },
+    { flavor: 'structural_broadsheet', label: 'Broadsheet', sublabel: 'System 5 · Newsprint' },
+    { flavor: 'liquid_glass', label: 'Glass', sublabel: 'System 6 · Frosted' },
 ];
 
 export function FlavorAuditionToolbar({ slug, persistedFlavor, persistedIsLocked }: FlavorAuditionToolbarProps) {
@@ -41,6 +43,8 @@ export function FlavorAuditionToolbar({ slug, persistedFlavor, persistedIsLocked
             || overrideParam === 'travel_nostalgia'
             || overrideParam === 'indie_zine'
             || overrideParam === 'none'
+            || overrideParam === 'structural_broadsheet'
+            || overrideParam === 'liquid_glass'
         ) {
             return overrideParam;
         }

@@ -84,6 +84,11 @@ function fontsForSystem(system: VisualSystem): FontFamily[] {
         case 'system_2_nostalgia': return ['Sans', 'Serif', 'Hand', 'Mono'];
         case 'system_3_zine': return ['Sans', 'Marker', 'Hand'];
         case 'system_4_modular': return ['Sans', 'Serif', 'Mono'];
+        // system_5_broadsheet / system_6_glass are landing-presentation-only flavors that
+        // the ad pipeline never targets; fall back to the modular font set if reached.
+        case 'system_5_broadsheet':
+        case 'system_6_glass':
+            return ['Sans', 'Serif', 'Mono'];
     }
 }
 
@@ -156,6 +161,11 @@ function defaultSpecsForSystem(
                 { kind: 'type_hook_card', assetId: 'ad_type_hook_9x16', fileName: 'ads/type_hook_9x16.png', width: 1080, height: 1920, tags: ['designed_ad', 'type_hook', 'story', 'tiktok'] },
                 { kind: 'image_detail_ad', assetId: 'ad_image_detail_191x100', fileName: 'ads/image_detail_191x100.png', width: 1200, height: 628, tags: ['designed_ad', 'image_detail', 'facebook', 'google_display'], sourceImage: displayPrimary ?? trustPrimary ?? narrativeSecondary },
             ];
+        // system_5_broadsheet / system_6_glass are landing-presentation-only flavors that the
+        // ad pipeline never targets (tokens.system is a generation system). Fall back to the
+        // modular spec set defensively if one is ever reached.
+        case 'system_5_broadsheet':
+        case 'system_6_glass':
         case 'system_4_modular':
             return [
                 { kind: 'type_hook_card', assetId: 'ad_type_hook_9x16', fileName: 'ads/type_hook_9x16.png', width: 1080, height: 1920, tags: ['designed_ad', 'type_hook', 'story', 'tiktok'] },

@@ -111,6 +111,12 @@ const GROUPS: TestGroup[] = [
         badge: 'NEW',
       },
       {
+        label: 'Vertical Video Editor',
+        href: '/tests/vertical-video-editor',
+        description: 'Scene-by-scene TikTok/Reels beat editor — image, copy, and grain per beat, persisted to manifest and fed to the production renderer',
+        badge: 'NEW',
+      },
+      {
         label: 'Board Games Sandbox',
         href: '/tests/media-generation/board-games-sandbox',
         description: 'Legacy TikTok/package visual sandbox for the Board Games at Sea reference campaign',

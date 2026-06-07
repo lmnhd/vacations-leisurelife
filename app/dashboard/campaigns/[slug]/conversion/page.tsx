@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CampaignWaitlistEntry, CampaignLeadEvent } from '@/lib/campaigns/types';
-import type { FunnelSummary, SourceBreakdownEntry } from '@/lib/campaigns/conversion-store';
+import type { FunnelSummary, LandingTrafficSummary, SourceBreakdownEntry, TrafficBreakdownEntry } from '@/lib/campaigns/conversion-store';
 
 // ─── API response shapes ───────────────────────────────────────────────────────
 
@@ -21,6 +21,7 @@ interface LeadsResponse {
     success: boolean;
     campaign: CampaignMeta;
     funnel: FunnelSummary;
+    traffic: LandingTrafficSummary;
     leads: LeadDashboardRow[];
 }
 
@@ -82,8 +83,50 @@ function SourceTable({ rows }: { rows: SourceBreakdownEntry[] }) {
     );
 }
 
+function TrafficSourceTable({ rows }: { rows: TrafficBreakdownEntry[] }) {
+    if (rows.length === 0) {
+        return <p className="text-sm text-slate-400 italic">No landing traffic captured yet.</p>;
+    }
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-widest text-slate-500">
+                        <th className="pb-2 pr-4">Channel</th>
+                        <th className="pb-2 pr-4">Provider</th>
+                        <th className="pb-2 pr-4">Campaign / Ad</th>
+                        <th className="pb-2 pr-4">Landing Path</th>
+                        <th className="pb-2 pr-4 text-right">Views</th>
+                        <th className="pb-2 text-right">Unique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row) => (
+                        <tr
+                            key={`${row.sourceChannel}::${row.provider}::${row.providerCampaignId ?? ''}::${row.providerAdId ?? ''}::${row.landingPath ?? ''}`}
+                            className="border-b border-slate-100 last:border-0"
+                        >
+                            <td className="py-2 pr-4 font-medium text-slate-800">{row.sourceChannel}</td>
+                            <td className="py-2 pr-4 text-slate-600">{row.provider}</td>
+                            <td className="py-2 pr-4 text-xs text-slate-500">
+                                {row.providerAdId ?? row.providerCampaignId ?? row.providerDraftType ?? 'none'}
+                            </td>
+                            <td className="max-w-[360px] truncate py-2 pr-4 text-xs text-slate-500" title={row.landingPath ?? undefined}>
+                                {row.landingPath ?? 'unknown'}
+                            </td>
+                            <td className="py-2 pr-4 text-right tabular-nums">{row.count}</td>
+                            <td className="py-2 text-right tabular-nums">{row.uniqueSessions}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 function lifecycleStageLabel(eventType: string): string {
     const labels: Record<string, string> = {
+        landing_page_view: 'Landing page view',
         waitlist_submitted: 'Waitlist submitted',
         provider_lead_ingested: 'Provider lead ingested',
         nurture_queued: 'Nurture queued',
@@ -339,7 +382,7 @@ export default function ConversionPage() {
         }
 
         const confirmed = window.confirm(
-            `Remove all waitlist sign-ups and lifecycle events for ${campaign.name}? This is intended for testing and cannot be undone.`,
+            `Remove all waitlist sign-ups, lifecycle events, and landing traffic analytics for ${campaign.name}? This is intended for testing and cannot be undone.`,
         );
 
         if (!confirmed) {
@@ -381,6 +424,7 @@ export default function ConversionPage() {
     }
 
     const funnel = leadsData?.funnel;
+    const traffic = leadsData?.traffic;
     const campaign = leadsData?.campaign;
     const leads = leadsData?.leads ?? [];
     const thresholdPct = campaign && funnel
@@ -420,7 +464,28 @@ export default function ConversionPage() {
                     <div className="text-sm text-slate-400">Loading…</div>
                 ) : null}
 
-                {/* Section 1: Funnel Summary */}
+                {/* Section 1: Landing Traffic */}
+                {traffic ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Landing Traffic</CardTitle>
+                            <CardDescription>
+                                First-party page entries captured before signup. Useful for comparing against Meta Ads Manager clicks.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <StatCard label="Page Views" value={traffic.totalPageViews} />
+                                <StatCard label="Unique Sessions" value={traffic.uniqueSessions} />
+                                <StatCard label="View -> Lead" value={`${Math.round(traffic.viewToLeadRate * 100)}%`} />
+                                <StatCard label="Signup Sessions" value={traffic.sessionsWithSignup} />
+                            </div>
+                            <TrafficSourceTable rows={traffic.sourceBreakdown} />
+                        </CardContent>
+                    </Card>
+                ) : null}
+
+                {/* Section 2: Funnel Summary */}
                 {funnel ? (
                     <Card>
                         <CardHeader>
@@ -444,12 +509,12 @@ export default function ConversionPage() {
                     </Card>
                 ) : null}
 
-                {/* Section 2: Source Breakdown */}
+                {/* Section 3: Lead Source Breakdown */}
                 {funnel ? (
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">Source Breakdown</CardTitle>
-                            <CardDescription>Leads grouped by channel and provider</CardDescription>
+                            <CardDescription>Signups grouped by channel and provider</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <SourceTable rows={funnel.sourceBreakdown} />

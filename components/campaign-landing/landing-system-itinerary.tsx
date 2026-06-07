@@ -1,11 +1,13 @@
 import type { LandingStorySection } from '@/lib/campaigns/landing/view-model';
-import { alfa_slab_one, orbitron } from '@/lib/fonts';
+import { alfa_slab_one, orbitron, righteous } from '@/lib/fonts';
 
 type SystemKey =
     | 'system_1_editorial'
     | 'system_2_nostalgia'
     | 'system_3_zine'
-    | 'system_4_modular';
+    | 'system_4_modular'
+    | 'system_5_broadsheet'
+    | 'system_6_glass';
 
 interface SystemTheme {
     rule: string;
@@ -89,9 +91,49 @@ function ItineraryModular({ steps, theme, accentHex }: { steps: LandingStorySect
     );
 }
 
+function ItineraryBroadsheet({ steps, theme }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
+    return (
+        <ol className="border-[3px] border-black">
+            {steps.map((step, i) => (
+                <li key={step.title} className={`grid gap-4 px-5 py-5 md:grid-cols-[4rem_1fr] ${i > 0 ? 'border-t-[3px] border-black' : ''}`}>
+                    <span className={`${righteous.className} text-4xl leading-none`} style={{ color: '#000000' }}>
+                        <span className="inline-block bg-[#ffe600] px-1.5">{String(i + 1).padStart(2, '0')}</span>
+                    </span>
+                    <div>
+                        <h3 className={`${righteous.className} text-lg uppercase tracking-tight ${theme.pageText}`}>{step.title.replace(/^\d+\.\s*/, '')}</h3>
+                        <p className={`mt-2 text-sm leading-7 ${theme.softText}`}>{step.body}</p>
+                    </div>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
+function ItineraryGlass({ steps, theme, accentHex }: { steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
+    return (
+        <div className="grid gap-4 md:grid-cols-3">
+            {steps.map((step, i) => (
+                <div
+                    key={step.title}
+                    className="rounded-3xl border border-white/60 bg-white/45 p-6 shadow-[0_18px_50px_rgba(31,67,114,0.16)] backdrop-blur-xl"
+                >
+                    <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-slate-500">Step {String(i + 1).padStart(2, '0')}</span>
+                        <span className="block h-2 w-2 rounded-full" style={{ backgroundColor: accentHex }} />
+                    </div>
+                    <h3 className={`mt-5 text-lg font-semibold ${theme.pageText}`}>{step.title.replace(/^\d+\.\s*/, '')}</h3>
+                    <p className={`mt-3 text-sm leading-7 ${theme.softText}`}>{step.body}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export function Itinerary({ system, steps, theme, accentHex }: { system: SystemKey; steps: LandingStorySection[]; theme: SystemTheme; accentHex: string }) {
     if (system === 'system_1_editorial') return <ItineraryEditorial steps={steps} theme={theme} accentHex={accentHex} />;
     if (system === 'system_2_nostalgia') return <ItineraryNostalgia steps={steps} theme={theme} accentHex={accentHex} />;
     if (system === 'system_3_zine') return <ItineraryZine steps={steps} theme={theme} accentHex={accentHex} />;
+    if (system === 'system_5_broadsheet') return <ItineraryBroadsheet steps={steps} theme={theme} accentHex={accentHex} />;
+    if (system === 'system_6_glass') return <ItineraryGlass steps={steps} theme={theme} accentHex={accentHex} />;
     return <ItineraryModular steps={steps} theme={theme} accentHex={accentHex} />;
 }

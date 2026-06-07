@@ -556,6 +556,7 @@ export interface LeadAttribution {
 }
 
 export type LeadEventType =
+    | 'landing_page_view'
     | 'waitlist_submitted'
     | 'email_verified'
     | 'provider_lead_ingested'
@@ -584,6 +585,7 @@ export interface CampaignLeadEvent {
     SK: string;
     eventId: string;
     campaignSlug: string;
+    /** Lead email when known; anonymous campaign events use `anonymous`. */
     email: string;
     eventType: LeadEventType;
     occurredAt: string;

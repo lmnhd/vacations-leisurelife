@@ -60,6 +60,8 @@ const FLAVORS: { id: string; label: string }[] = [
     { id: 'travel_nostalgia', label: 'Nostalgia' },
     { id: 'indie_zine', label: 'Zine' },
     { id: 'none', label: 'Plain' },
+    { id: 'structural_broadsheet', label: 'Broadsheet' },
+    { id: 'liquid_glass', label: 'Glass' },
 ];
 
 export default function LandingStudioPage() {

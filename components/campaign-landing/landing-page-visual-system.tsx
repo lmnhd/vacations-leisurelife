@@ -10,9 +10,9 @@ import type {
 import { Button } from '@/components/ui/button';
 import { CampaignWaitlistForm } from '@/components/campaign-landing/waitlist-form';
 import { LandingPageTourConductor } from '@/components/campaign-landing/landing-page-tour-conductor';
-import { EditorialHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
+import { BroadsheetHero, EditorialHero, GlassHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
 import { Itinerary } from '@/components/campaign-landing/landing-system-itinerary';
-import { alfa_slab_one, orbitron, prompt } from '@/lib/fonts';
+import { alfa_slab_one, orbitron, prompt, righteous } from '@/lib/fonts';
 
 interface CampaignLandingPageVisualSystemProps {
     landing: CampaignLandingViewModel;
@@ -127,6 +127,48 @@ function buildTheme(system: SystemKey): SystemTheme {
             accentRingShadow: () => '6px 6px 0 rgba(255,90,61,0.9)',
         };
     }
+    if (system === 'system_5_broadsheet') {
+        return {
+            pageBg: 'bg-[#f4f1ea] text-black',
+            pageText: 'text-black',
+            sectionAlt: 'bg-[#e7e2d6]',
+            surface: 'bg-white border-[3px] border-black shadow-none',
+            surfaceText: 'text-black',
+            cardBorder: 'border-[3px] border-black',
+            softText: 'text-neutral-800',
+            softerText: 'text-neutral-600',
+            accentText: 'text-black',
+            eyebrowFont: 'font-mono',
+            headingFont: righteous.className,
+            rule: 'border-black',
+            badge: 'border-2 border-black bg-[#ffe600] text-black',
+            primaryBtnTextColor: '#000000',
+            secondaryBtnClasses: 'border-[3px] border-black bg-white text-black hover:bg-[#ffe600]',
+            chip: 'bg-black text-[#f4f1ea]',
+            accentRingShadow: () => '8px 8px 0 #000000',
+        };
+    }
+    if (system === 'system_6_glass') {
+        return {
+            pageBg: 'bg-[#eaf1f8] text-slate-900',
+            pageText: 'text-slate-900',
+            sectionAlt: 'bg-white/40',
+            surface: 'bg-white/45 border border-white/60 backdrop-blur-xl shadow-[0_20px_60px_rgba(31,67,114,0.18)]',
+            surfaceText: 'text-slate-900',
+            cardBorder: 'border border-white/60',
+            softText: 'text-slate-700',
+            softerText: 'text-slate-500',
+            accentText: 'text-sky-700',
+            eyebrowFont: 'font-mono',
+            headingFont: prompt.className,
+            rule: 'border-white/50',
+            badge: 'border border-white/60 bg-white/50 text-slate-700 backdrop-blur-md',
+            primaryBtnTextColor: '#0b2545',
+            secondaryBtnClasses: 'border border-white/60 bg-white/40 text-slate-800 backdrop-blur-md hover:bg-white/60',
+            chip: 'bg-white/45 text-slate-700 backdrop-blur-md border border-white/60',
+            accentRingShadow: (hex: string) => `0 24px 70px ${hex}33`,
+        };
+    }
     return {
         pageBg: 'bg-[#08090d] text-white',
         pageText: 'text-white',
@@ -153,6 +195,8 @@ function HeroDispatcher(props: { landing: CampaignLandingViewModel; primaryHref:
     if (system === 'system_1_editorial') return <EditorialHero {...props} />;
     if (system === 'system_2_nostalgia') return <NostalgiaHero {...props} />;
     if (system === 'system_3_zine') return <ZineHero {...props} />;
+    if (system === 'system_5_broadsheet') return <BroadsheetHero {...props} />;
+    if (system === 'system_6_glass') return <GlassHero {...props} />;
     return <ModularHero {...props} />;
 }
 
@@ -202,6 +246,8 @@ function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: S
     const filter = system === 'system_1_editorial' ? 'grayscale(0.2) contrast(1.05) saturate(0.85)'
         : system === 'system_2_nostalgia' ? 'sepia(0.18) saturate(0.9)'
         : system === 'system_3_zine' ? 'contrast(1.08) saturate(1.08)'
+        : system === 'system_5_broadsheet' ? 'grayscale(1) contrast(1.15)'
+        : system === 'system_6_glass' ? 'saturate(1.05) brightness(1.05) contrast(0.95)'
         : 'saturate(0.65) brightness(0.75)';
     return (
         <div className="grid overflow-hidden" style={{ gridTemplateColumns: `repeat(${active.length}, 1fr)`, height: 148 }}>
@@ -426,7 +472,11 @@ export function CampaignLandingPageVisualSystem({ landing, primaryHref: primaryH
                                                 ? 'bg-white/15 border border-white/25 rounded-sm'
                                                 : system === 'system_2_nostalgia'
                                                     ? 'bg-black/60 rounded-sm'
-                                                    : 'bg-black/60',
+                                                    : system === 'system_5_broadsheet'
+                                                        ? 'bg-black/85 border-l-[6px] border-[#ffe600]'
+                                                        : system === 'system_6_glass'
+                                                            ? 'bg-white/20 border border-white/40 rounded-2xl'
+                                                            : 'bg-black/60',
                                     ].join(' ')}>
                                         <p className="max-w-xl text-xl font-medium italic leading-8 text-white" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
                                             &ldquo;{landing.designSystem.quote}&rdquo;

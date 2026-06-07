@@ -249,15 +249,28 @@ function retargetManifestAssetReferences(
             selectedAssetId === oldAssetId ? newAssetId : selectedAssetId,
         ]),
     );
-    const landingGallery = manifest.landingImageSets?.gallery?.map((assetId) => (
-        assetId === oldAssetId ? newAssetId : assetId
-    ));
+    const retargetId = (assetId: string) => assetId === oldAssetId ? newAssetId : assetId;
+    const landingGallery = manifest.landingImageSets?.gallery?.map(retargetId);
+    const landingTrust = manifest.landingImageSets?.trust?.map(retargetId);
+    const landingPlacements = manifest.landingImageSets?.placements
+        ? Object.fromEntries(
+            Object.entries(manifest.landingImageSets.placements).map(([key, value]) => [
+                key,
+                Array.isArray(value) ? value.map(retargetId) : retargetId(value),
+            ]),
+        )
+        : undefined;
 
     return {
         ...manifest,
         imageSelections,
         landingImageSets: manifest.landingImageSets
-            ? { ...manifest.landingImageSets, ...(landingGallery ? { gallery: landingGallery } : {}) }
+            ? {
+                ...manifest.landingImageSets,
+                ...(landingGallery ? { gallery: landingGallery } : {}),
+                ...(landingTrust ? { trust: landingTrust } : {}),
+                ...(landingPlacements ? { placements: landingPlacements } : {}),
+            }
             : manifest.landingImageSets,
     };
 }

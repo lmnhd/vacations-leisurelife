@@ -18,23 +18,58 @@ import {
 interface FirstPartyAttribution {
     landingPath: string;
     referrer: string;
+    sourceChannel: string;
+    provider: string;
     utmSource: string;
     utmMedium: string;
     utmCampaign: string;
     utmContent: string;
     utmTerm: string;
+    sessionId: string;
 }
 
-function captureFirstPartyAttribution(): FirstPartyAttribution {
+const ANALYTICS_SESSION_KEY_PREFIX = 'campaign-analytics-session:v1:';
+
+function fallbackUuid(): string {
+    return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getCampaignSlugFromEndpoint(endpoint: string): string {
+    const match = endpoint.match(/\/api\/groups\/campaign\/([^/]+)\//);
+    return match?.[1] ?? 'unknown';
+}
+
+function getOrCreateAnalyticsSessionId(endpoint: string): string {
+    const key = `${ANALYTICS_SESSION_KEY_PREFIX}${getCampaignSlugFromEndpoint(endpoint)}`;
+    try {
+        const existing = sessionStorage.getItem(key);
+        if (existing) {
+            return existing;
+        }
+        const next = crypto.randomUUID?.() ?? fallbackUuid();
+        sessionStorage.setItem(key, next);
+        return next;
+    } catch {
+        return crypto.randomUUID?.() ?? fallbackUuid();
+    }
+}
+
+function captureFirstPartyAttribution(endpoint: string): FirstPartyAttribution {
     const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source') ?? '';
+    const fbclid = params.get('fbclid');
+    const gclid = params.get('gclid');
     return {
         landingPath: window.location.pathname,
         referrer: document.referrer,
-        utmSource: params.get('utm_source') ?? '',
+        sourceChannel: fbclid ? 'meta_paid' : gclid ? 'google_paid' : '',
+        provider: fbclid || /facebook|instagram|meta/i.test(utmSource) ? 'meta' : gclid || /google/i.test(utmSource) ? 'google' : '',
+        utmSource,
         utmMedium: params.get('utm_medium') ?? '',
         utmCampaign: params.get('utm_campaign') ?? '',
         utmContent: params.get('utm_content') ?? '',
         utmTerm: params.get('utm_term') ?? '',
+        sessionId: getOrCreateAnalyticsSessionId(endpoint),
     };
 }
 
@@ -104,8 +139,8 @@ export function CampaignWaitlistForm({
     const attributionRef = useRef<FirstPartyAttribution | null>(null);
 
     useEffect(() => {
-        attributionRef.current = captureFirstPartyAttribution();
-    }, []);
+        attributionRef.current = captureFirstPartyAttribution(endpoint);
+    }, [endpoint]);
 
     const isAwaitingVerification = result !== null && result.waitlist?.emailVerified !== true;
     const isVerified = result?.waitlist?.emailVerified === true;
@@ -123,7 +158,7 @@ export function CampaignWaitlistForm({
         setError(null);
 
         try {
-            const attribution = attributionRef.current ?? captureFirstPartyAttribution();
+            const attribution = attributionRef.current ?? captureFirstPartyAttribution(endpoint);
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -139,7 +174,8 @@ export function CampaignWaitlistForm({
                     bookingMode,
                     caller: 'human',
                     attribution: {
-                        // sourceChannel intentionally omitted — server normalizes from UTM/referrer
+                        sourceChannel: attribution.sourceChannel || undefined,
+                        provider: attribution.provider || undefined,
                         landingPath: attribution.landingPath || undefined,
                         referrer: attribution.referrer || undefined,
                         utmSource: attribution.utmSource || undefined,
@@ -147,6 +183,7 @@ export function CampaignWaitlistForm({
                         utmCampaign: attribution.utmCampaign || undefined,
                         utmContent: attribution.utmContent || undefined,
                         utmTerm: attribution.utmTerm || undefined,
+                        sessionId: attribution.sessionId || undefined,
                     },
                 }),
             });

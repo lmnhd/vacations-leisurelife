@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/dialog';
 import { CampaignWaitlistForm, type GuestIdentity } from '@/components/campaign-landing/waitlist-form';
 import { GroupChatHall } from '@/components/campaign-landing/group-chat-hall';
-import { EditorialHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
+import { BroadsheetHero, EditorialHero, GlassHero, ModularHero, NostalgiaHero, ZineHero } from '@/components/campaign-landing/landing-system-heroes';
 import { Itinerary } from '@/components/campaign-landing/landing-system-itinerary';
-import { alfa_slab_one, orbitron, prompt as promptFont } from '@/lib/fonts';
+import { alfa_slab_one, orbitron, prompt as promptFont, righteous } from '@/lib/fonts';
 
 interface GuestPortalProps {
     landing: CampaignLandingViewModel;
@@ -55,6 +55,8 @@ interface SystemTheme {
 }
 
 function buildTheme(system: SystemKey): SystemTheme {
+    if (system === 'system_5_broadsheet') return buildBroadsheetTheme();
+    if (system === 'system_6_glass') return buildGlassTheme();
     if (system === 'system_1_editorial') {
         return {
             pageBg: 'bg-[#f5f8f4] text-slate-950',
@@ -123,6 +125,42 @@ function buildTheme(system: SystemKey): SystemTheme {
     };
 }
 
+function buildBroadsheetTheme(): SystemTheme {
+    return {
+        pageBg: 'bg-[#f4f1ea] text-black',
+        pageText: 'text-black',
+        sectionAlt: 'bg-[#e7e2d6]',
+        surface: 'bg-white border-[3px] border-black shadow-none',
+        cardBorder: 'border-[3px] border-black',
+        softText: 'text-neutral-800',
+        softerText: 'text-neutral-600',
+        eyebrowFont: 'font-mono',
+        headingFont: righteous.className,
+        rule: 'border-black',
+        primaryBtnTextColor: '#000000',
+        secondaryBtnClasses: 'border-[3px] border-black bg-white text-black hover:bg-[#ffe600]',
+        accentRingShadow: () => '8px 8px 0 #000000',
+    };
+}
+
+function buildGlassTheme(): SystemTheme {
+    return {
+        pageBg: 'bg-[#eaf1f8] text-slate-900',
+        pageText: 'text-slate-900',
+        sectionAlt: 'bg-white/40',
+        surface: 'bg-white/45 border border-white/60 backdrop-blur-xl shadow-[0_20px_60px_rgba(31,67,114,0.18)]',
+        cardBorder: 'border border-white/60',
+        softText: 'text-slate-700',
+        softerText: 'text-slate-500',
+        eyebrowFont: 'font-mono',
+        headingFont: promptFont.className,
+        rule: 'border-white/50',
+        primaryBtnTextColor: '#0b2545',
+        secondaryBtnClasses: 'border border-white/60 bg-white/40 text-slate-800 backdrop-blur-md hover:bg-white/60',
+        accentRingShadow: (hex: string) => `0 24px 70px ${hex}33`,
+    };
+}
+
 function isDimHexOnDark(hex: string | undefined): boolean {
     if (!hex?.startsWith('#')) return false;
     const raw = hex.slice(1);
@@ -161,6 +199,8 @@ function HeroDispatcher(props: { landing: CampaignLandingViewModel; primaryHref:
     if (system === 'system_1_editorial') return <EditorialHero {...props} />;
     if (system === 'system_2_nostalgia') return <NostalgiaHero {...props} />;
     if (system === 'system_3_zine') return <ZineHero {...props} />;
+    if (system === 'system_5_broadsheet') return <BroadsheetHero {...props} />;
+    if (system === 'system_6_glass') return <GlassHero {...props} />;
     return <ModularHero {...props} />;
 }
 
@@ -223,6 +263,8 @@ function PhotoStrip({ images, system }: { images: LandingImageAsset[]; system: S
     const filter = system === 'system_1_editorial' ? 'contrast(1.07) saturate(1.12)'
         : system === 'system_2_nostalgia' ? 'contrast(1.04) saturate(1.18)'
         : system === 'system_3_zine' ? 'contrast(1.12) saturate(1.25)'
+        : system === 'system_5_broadsheet' ? 'grayscale(1) contrast(1.15)'
+        : system === 'system_6_glass' ? 'saturate(1.05) brightness(1.05) contrast(0.95)'
         : 'saturate(0.85) brightness(0.82)';
     return (
         <div className="grid h-[210px] w-full overflow-hidden border-y border-black/20 md:h-[240px]" style={{ gridTemplateColumns: `repeat(${active.length}, 1fr)` }}>
@@ -418,6 +460,8 @@ function FaqList({ items, theme }: { items: LandingFaqItem[]; theme: SystemTheme
 const IDENTITY_KEY_PREFIX = 'chat-guest:';
 const IDENTITY_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 const FORMING_NOTICE_KEY_PREFIX = 'campaign-forming-notice:v1:';
+const ANALYTICS_SESSION_KEY_PREFIX = 'campaign-analytics-session:v1:';
+const ANALYTICS_VIEW_KEY_PREFIX = 'campaign-landing-view-tracked:v1:';
 
 interface StoredIdentity extends GuestIdentity {
     expiresAt: number;
@@ -454,6 +498,95 @@ function writeStoredIdentity(slug: string, identity: GuestIdentity) {
     }
 }
 
+function fallbackAnalyticsUuid(): string {
+    return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getOrCreateAnalyticsSessionId(slug: string): string {
+    const key = `${ANALYTICS_SESSION_KEY_PREFIX}${slug}`;
+    try {
+        const existing = sessionStorage.getItem(key);
+        if (existing) {
+            return existing;
+        }
+        const next = crypto.randomUUID?.() ?? fallbackAnalyticsUuid();
+        sessionStorage.setItem(key, next);
+        return next;
+    } catch {
+        return crypto.randomUUID?.() ?? fallbackAnalyticsUuid();
+    }
+}
+
+function captureLandingPageAttribution(slug: string) {
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source') ?? '';
+    const utmMedium = params.get('utm_medium') ?? '';
+    const fbclid = params.get('fbclid');
+    const gclid = params.get('gclid');
+    const provider =
+        fbclid || /facebook|instagram|meta/i.test(utmSource)
+            ? 'meta'
+            : gclid || /google/i.test(utmSource)
+                ? 'google'
+                : undefined;
+    const sourceChannel =
+        fbclid
+            ? 'meta_paid'
+            : gclid
+                ? 'google_paid'
+                : undefined;
+
+    return {
+        attribution: {
+            sourceChannel,
+            provider,
+            landingPath: `${window.location.pathname}${window.location.search}`,
+            referrer: document.referrer || undefined,
+            utmSource: utmSource || undefined,
+            utmMedium: utmMedium || undefined,
+            utmCampaign: params.get('utm_campaign') ?? undefined,
+            utmContent: params.get('utm_content') ?? undefined,
+            utmTerm: params.get('utm_term') ?? undefined,
+            sessionId: getOrCreateAnalyticsSessionId(slug),
+        },
+        metadata: {
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            clickIdProvider: fbclid ? 'meta' : gclid ? 'google' : '',
+        },
+    };
+}
+
+function trackLandingPageView(slug: string) {
+    const trackedKey = `${ANALYTICS_VIEW_KEY_PREFIX}${slug}`;
+    try {
+        if (sessionStorage.getItem(trackedKey)) {
+            return;
+        }
+        sessionStorage.setItem(trackedKey, '1');
+    } catch {
+        // If storage is blocked, still try to record the page entry once for this mount.
+    }
+
+    const payload = JSON.stringify(captureLandingPageAttribution(slug));
+    const endpoint = `/api/groups/campaign/${slug}/analytics/page-view`;
+
+    if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        if (navigator.sendBeacon(endpoint, blob)) {
+            return;
+        }
+    }
+
+    void fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+    }).catch(() => {
+        // Analytics must never disturb the landing experience.
+    });
+}
+
 export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp, emailJustVerified, emailVerifyError, verifiedGuestToken }: GuestPortalProps) {
     const system = landing.designSystem.system;
     const theme = buildTheme(system);
@@ -474,6 +607,13 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
     const formBackdrop = placements.formBackdrop ?? images[0] ?? null;
     const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
     const [isCampaignNoticeOpen, setIsCampaignNoticeOpen] = useState(false);
+
+    useEffect(() => {
+        if (landing.preview) {
+            return;
+        }
+        trackLandingPageView(landing.slug);
+    }, [landing.preview, landing.slug]);
 
     // Restore identity from localStorage on mount (client-only).
     useEffect(() => {
@@ -771,7 +911,11 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
                                     ? 'bg-white/15 border border-white/25 rounded-sm'
                                     : system === 'system_2_nostalgia'
                                         ? 'bg-black/60 rounded-sm'
-                                        : 'bg-black/60', // system_1_editorial default
+                                        : system === 'system_5_broadsheet'
+                                            ? 'bg-black/85 border-l-[6px] border-[#ffe600]'
+                                            : system === 'system_6_glass'
+                                                ? 'bg-white/20 border border-white/40 rounded-2xl'
+                                                : 'bg-black/60', // system_1_editorial default
                         ].join(' ')}>
                             <p className="max-w-2xl text-2xl font-medium italic leading-9 text-white md:text-3xl" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                                 &ldquo;{landing.designSystem.quote}&rdquo;

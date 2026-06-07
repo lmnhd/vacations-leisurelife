@@ -59,6 +59,18 @@ const SYSTEM_COPY: Record<CampaignLandingViewModel['designSystem']['system'], {
         badge: 'border-zinc-950 bg-white text-zinc-950',
         label: 'DECK NOTES THREAD',
     },
+    system_5_broadsheet: {
+        shell: 'border-black bg-white text-black shadow-none',
+        input: 'border-black bg-white text-black placeholder:text-neutral-500',
+        badge: 'border-black bg-[#ffe600] text-black',
+        label: 'LETTERS TO THE EDITOR',
+    },
+    system_6_glass: {
+        shell: 'border-white/60 bg-white/45 text-slate-900 shadow-[0_26px_80px_rgba(31,67,114,0.18)] backdrop-blur-xl',
+        input: 'border-white/60 bg-white/50 text-slate-900 placeholder:text-slate-400 backdrop-blur-md',
+        badge: 'border-white/60 bg-white/50 text-slate-600 backdrop-blur-md',
+        label: 'CONCIERGE DESK',
+    },
 };
 
 function fallbackMessages(landing: CampaignLandingViewModel): ChatMessage[] {

@@ -7,7 +7,7 @@ import { FlavorAuditionToolbar } from '@/components/campaign-landing/flavor-audi
 
 export const dynamic = 'force-dynamic';
 
-const VALID_FLAVORS: VisualFlavor[] = ['editorial_magazine', 'travel_nostalgia', 'indie_zine', 'none'];
+const VALID_FLAVORS: VisualFlavor[] = ['editorial_magazine', 'travel_nostalgia', 'indie_zine', 'none', 'structural_broadsheet', 'liquid_glass'];
 
 function parseFlavorParam(value: string | string[] | undefined): VisualFlavor | undefined {
     if (typeof value !== 'string') return undefined;

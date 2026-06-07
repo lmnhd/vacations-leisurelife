@@ -1218,7 +1218,11 @@ export async function runMediaGeneration(
                 imageSelections: existingManifest?.imageSelections ?? {},
                 imageSlotControls: existingManifest?.imageSlotControls ?? {},
                 copySelections: existingManifest?.copySelections ?? {},
+                modelVersionSelections: existingManifest?.modelVersionSelections ?? {},
+                flyerControls: existingManifest?.flyerControls,
+                landingImageSets: existingManifest?.landingImageSets,
                 tiktokPromotionPackage: existingManifest?.tiktokPromotionPackage,
+                tiktokVideoEdits: existingManifest?.tiktokVideoEdits,
             };
 
             const adRenderProvider = process.env.AD_RENDER_PROVIDER ?? 'html_screenshot';
@@ -1475,11 +1479,16 @@ export async function runMediaGeneration(
             audio: mergedAudio,
             merch: mergedMerch,
             copy: mergedCopy,
+            governance: existingManifest?.governance,
             selections: existingManifest?.selections,
             imageSelections: existingManifest?.imageSelections ?? {},
             imageSlotControls: existingManifest?.imageSlotControls ?? {},
             copySelections: existingManifest?.copySelections ?? {},
+            modelVersionSelections: existingManifest?.modelVersionSelections ?? {},
+            flyerControls: existingManifest?.flyerControls,
+            landingImageSets: existingManifest?.landingImageSets,
             tiktokPromotionPackage: tiktokPromotionPackage ?? existingManifest?.tiktokPromotionPackage,
+            tiktokVideoEdits: existingManifest?.tiktokVideoEdits,
         };
 
         manifest = migrateManifestRoles(manifest);

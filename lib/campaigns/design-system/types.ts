@@ -36,6 +36,10 @@ export type CampaignEnergyProfile = 'calm' | 'warm' | 'energetic' | 'premium' | 
  * system_1_editorial   → Editorial magazine flavor (premium / intellectual niches)
  * system_2_nostalgia   → Travel nostalgia flavor (warm / sentimental / family niches)
  * system_3_zine        → Indie zine / liner notes flavor (subcultural / fandom niches)
+ * system_5_broadsheet  → Brutalist newsprint/broadsheet flavor — LANDING PRESENTATION ONLY,
+ *                        not produced by the generation pipeline.
+ * system_6_glass       → Frosted glass / aurora-depth flavor — LANDING PRESENTATION ONLY,
+ *                        not produced by the generation pipeline.
  *
  * See: .github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/VISUAL_SYSTEMS.md
  */
@@ -43,7 +47,9 @@ export type VisualSystem =
     | 'system_4_modular'
     | 'system_1_editorial'
     | 'system_2_nostalgia'
-    | 'system_3_zine';
+    | 'system_3_zine'
+    | 'system_5_broadsheet'
+    | 'system_6_glass';
 
 export interface NicheTokens {
     headline: string;

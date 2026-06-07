@@ -291,6 +291,8 @@ function visualFlavorForSystem(system: VisualSystem): VisualFlavor {
   if (system === "system_1_editorial") return "editorial_magazine";
   if (system === "system_2_nostalgia") return "travel_nostalgia";
   if (system === "system_3_zine") return "indie_zine";
+  if (system === "system_5_broadsheet") return "structural_broadsheet";
+  if (system === "system_6_glass") return "liquid_glass";
   return "none";
 }
 
@@ -298,6 +300,8 @@ function visualSystemForFlavor(flavor: VisualFlavor): VisualSystem {
   if (flavor === "editorial_magazine") return "system_1_editorial";
   if (flavor === "travel_nostalgia") return "system_2_nostalgia";
   if (flavor === "indie_zine") return "system_3_zine";
+  if (flavor === "structural_broadsheet") return "system_5_broadsheet";
+  if (flavor === "liquid_glass") return "system_6_glass";
   return "system_4_modular";
 }
 
@@ -305,6 +309,8 @@ function issueLabelForSystem(system: VisualSystem): string {
   if (system === "system_1_editorial") return "Issue 01";
   if (system === "system_2_nostalgia") return "Voyage 01";
   if (system === "system_3_zine") return "Vol. 1";
+  if (system === "system_5_broadsheet") return "Front Page";
+  if (system === "system_6_glass") return "Collection 01";
   return "Campaign";
 }
 
@@ -616,6 +622,8 @@ const SYSTEM_SURFACE: Record<VisualSystem, string> = {
   system_2_nostalgia: "#eef8f7",
   system_3_zine: "#fbf7ff",
   system_4_modular: "#08090d",
+  system_5_broadsheet: "#f4f1ea",
+  system_6_glass: "#eaf1f8",
 };
 
 function hexToRgb(hex: string): [number, number, number] | null {

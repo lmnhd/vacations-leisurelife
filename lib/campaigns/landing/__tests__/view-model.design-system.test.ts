@@ -91,16 +91,19 @@ const campaign = {
 } as Campaign;
 
 const cases = [
-    ['editorial_magazine', 'system_1_editorial'],
-    ['travel_nostalgia', 'system_2_nostalgia'],
-    ['indie_zine', 'system_3_zine'],
-    ['none', 'system_4_modular'],
+    ['editorial_magazine', 'system_1_editorial', 'Issue 01'],
+    ['travel_nostalgia', 'system_2_nostalgia', 'Voyage 01'],
+    ['indie_zine', 'system_3_zine', 'Vol. 1'],
+    ['none', 'system_4_modular', 'Campaign'],
+    ['structural_broadsheet', 'system_5_broadsheet', 'Front Page'],
+    ['liquid_glass', 'system_6_glass', 'Collection 01'],
 ] as const;
 
-for (const [visualFlavor, system] of cases) {
+for (const [visualFlavor, system, issueLabel] of cases) {
     const designSystem = buildLandingDesignSystem(campaign, makeBrief(visualFlavor));
     assert.equal(designSystem.visualFlavor, visualFlavor);
     assert.equal(designSystem.system, system);
+    assert.equal(designSystem.issueLabel, issueLabel);
     assert.equal(designSystem.accentHex, '#ff5a3d');
     assert.equal(designSystem.chat.sessionId, 'campaign-chat://board-games-at-sea');
     assert.ok(designSystem.sectionLabels.length >= 3);

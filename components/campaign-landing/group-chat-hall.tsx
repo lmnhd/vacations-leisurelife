@@ -6,7 +6,7 @@ import type { GuestIdentity } from '@/components/campaign-landing/waitlist-form'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { alfa_slab_one, orbitron, prompt as promptFont } from '@/lib/fonts';
+import { alfa_slab_one, orbitron, prompt as promptFont, righteous } from '@/lib/fonts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -320,6 +320,60 @@ function chatHallTheme(system: SystemKey, accentHex: string): ChatHallTheme {
             softText: 'text-zinc-800',
             softerText: 'text-zinc-600',
             roomLabel: 'BACKSTAGE BULLETIN',
+        };
+    }
+    if (system === 'system_5_broadsheet') {
+        return {
+            wrapper: 'bg-[#f4f1ea] text-black',
+            header: 'border-b-[3px] border-black bg-[#f4f1ea]',
+            rail: 'bg-white border-r-[3px] border-black',
+            aside: 'bg-white border-l-[3px] border-black',
+            panel: 'bg-[#e7e2d6]',
+            compose: 'border-t-[3px] border-black bg-white',
+            bubbleAssistant: 'bg-white text-black border-[3px] border-black',
+            bubbleGuest: 'bg-black text-[#f4f1ea]',
+            bubbleStarter: 'bg-[#ffe600] text-black border-[3px] border-black italic',
+            channelActive: 'bg-black text-[#f4f1ea]',
+            channelInactive: 'border-[3px] border-black bg-white text-black hover:bg-[#ffe600]',
+            displayFont: righteous.className,
+            badge: 'border-2 border-black bg-[#ffe600] text-black',
+            ideaCard: 'border-[3px] border-black bg-white text-black',
+            pinCard: 'border-[3px] border-black bg-[#ffe600] text-black',
+            input: 'border-[3px] border-black bg-white text-black placeholder:text-neutral-500',
+            gate: 'border-[3px] border-black bg-white text-black',
+            ambient: 'rgba(0,0,0,0.06)',
+            hostBadge: 'bg-black text-[#f4f1ea]',
+            guestBadge: 'bg-[#ffe600] text-black border-2 border-black',
+            softText: 'text-neutral-800',
+            softerText: 'text-neutral-600',
+            roomLabel: 'THE BULLETIN DESK',
+        };
+    }
+    if (system === 'system_6_glass') {
+        return {
+            wrapper: 'bg-[#eaf1f8] text-slate-900',
+            header: 'border-b border-white/50 bg-white/40 backdrop-blur-xl',
+            rail: 'bg-white/40 border-r border-white/50 backdrop-blur-xl',
+            aside: 'bg-white/40 border-l border-white/50 backdrop-blur-xl',
+            panel: 'bg-white/30',
+            compose: 'border-t border-white/50 bg-white/45 backdrop-blur-xl',
+            bubbleAssistant: 'bg-white/55 text-slate-900 border border-white/60 backdrop-blur-md',
+            bubbleGuest: 'bg-sky-600/85 text-white backdrop-blur-md',
+            bubbleStarter: 'bg-white/40 text-slate-700 border border-white/50 italic backdrop-blur-md',
+            channelActive: 'bg-sky-600/85 text-white backdrop-blur-md',
+            channelInactive: 'text-slate-600 hover:bg-white/50',
+            displayFont: promptFont.className,
+            badge: 'border border-white/60 bg-white/50 text-slate-700 backdrop-blur-md',
+            ideaCard: 'border border-white/60 bg-white/45 text-slate-900 backdrop-blur-md',
+            pinCard: 'border border-white/60 bg-white/55 text-slate-900 backdrop-blur-md',
+            input: 'border border-white/60 bg-white/50 text-slate-900 placeholder:text-slate-400 backdrop-blur-md',
+            gate: 'border border-white/60 bg-white/50 text-slate-900 backdrop-blur-md',
+            ambient: 'rgba(31,67,114,0.08)',
+            hostBadge: 'bg-sky-600/85 text-white',
+            guestBadge: 'bg-white/55 text-slate-700 border border-white/60',
+            softText: 'text-slate-700',
+            softerText: 'text-slate-500',
+            roomLabel: 'THE CONCIERGE LOUNGE',
         };
     }
     return {

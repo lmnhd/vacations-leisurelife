@@ -1,6 +1,6 @@
 import type { CampaignLandingViewModel, LandingImageAsset } from '@/lib/campaigns/landing/view-model';
 import { Button } from '@/components/ui/button';
-import { alfa_slab_one, orbitron } from '@/lib/fonts';
+import { alfa_slab_one, orbitron, prompt, righteous } from '@/lib/fonts';
 
 interface HeroProps {
     landing: CampaignLandingViewModel;
@@ -536,6 +536,193 @@ export function ZineHero({ landing, primaryHref, secondaryHref }: HeroProps) {
                             )}
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+// =============================================================================
+// SYSTEM 5 — Brutalist Broadsheet: ruled masthead, boxed press photo + caption
+// rail, hazard-yellow accent, 4-col ruled metadata strip.
+// =============================================================================
+
+export function BroadsheetHero({ landing, primaryHref, secondaryHref }: HeroProps) {
+    const heroImage = landing.heroImage?.url ? landing.heroImage : getImage(landing.galleryImages, 0);
+    const accent = '#ffe600';
+    const captionText = heroImage?.alt?.trim() || landing.designSystem.sectionLabels[0] || landing.title;
+
+    return (
+        <section className="bg-[#f4f1ea] text-black">
+            <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-8 md:px-6 lg:px-8 lg:pt-12">
+                {/* Masthead rule */}
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-[3px] border-black pb-2 font-mono text-[10px] uppercase tracking-[0.32em]">
+                    <span>The Leisure Broadsheet · {landing.designSystem.issueLabel}</span>
+                    <span>{landing.stateLabel}</span>
+                </div>
+
+                <div className="grid gap-8 border-b-[3px] border-black py-8 lg:grid-cols-[1.55fr_1fr] lg:gap-10">
+                    {/* Headline column */}
+                    <div className="flex flex-col justify-between gap-8">
+                        <div>
+                            <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-neutral-600">The Front Page</p>
+                            <h1 className={`${righteous.className} mt-3 text-4xl uppercase leading-[0.95] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl`}>
+                                {landing.heroSlogan}
+                            </h1>
+                            <p className="mt-5 max-w-xl text-base leading-7 text-neutral-800">{landing.subSlogan}</p>
+                        </div>
+
+                        <div className="grid gap-3 sm:max-w-md">
+                            <Button
+                                asChild
+                                disabled={landing.ctas.primary.disabled}
+                                className="min-h-[58px] rounded-none border-[3px] border-black px-6 text-base font-black uppercase"
+                                style={{ backgroundColor: accent, color: '#000000' }}
+                            >
+                                <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label} ▮</a>
+                            </Button>
+                            {secondaryHref.startsWith('http') && (
+                                <p className="text-sm font-bold uppercase tracking-[0.16em] text-neutral-700">
+                                    <span>Faster path: </span>
+                                    <a href={secondaryHref} {...externalTarget(secondaryHref)} className="underline underline-offset-4 transition hover:text-black">
+                                        {landing.ctas.secondary.label}
+                                    </a>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Boxed press photo + caption rail */}
+                    <figure className="flex flex-col">
+                        <div className="aspect-[4/5] overflow-hidden border-[3px] border-black bg-neutral-200">
+                            {heroImage?.url ? (
+                                <div
+                                    className="h-full w-full bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${heroImage.url})`, filter: 'grayscale(1) contrast(1.15)' }}
+                                />
+                            ) : (
+                                <div className="h-full w-full bg-[repeating-linear-gradient(45deg,#000_0,#000_2px,#f4f1ea_2px,#f4f1ea_10px)]" />
+                            )}
+                        </div>
+                        <figcaption className="border-x-[3px] border-b-[3px] border-black bg-white px-3 py-2 font-mono text-[10px] uppercase leading-snug tracking-[0.16em] text-neutral-700">
+                            FIG. 01 — {captionText}
+                        </figcaption>
+                    </figure>
+                </div>
+
+                {/* 4-col ruled metadata strip */}
+                <div className="grid grid-cols-2 md:grid-cols-4">
+                    {landing.facts.slice(0, 4).map((fact, i) => (
+                        <div key={fact.label} className={`py-4 ${i > 0 ? 'border-l-[3px] border-black pl-4' : ''}`}>
+                            <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-neutral-600">{fact.label}</p>
+                            <p className={`${righteous.className} mt-1 text-lg uppercase leading-tight`}>{fact.value}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+// =============================================================================
+// SYSTEM 6 — Liquid Glass: aurora backdrop (blurred hero + gallery), frosted
+// glass hero card, floating glass thumbnail chips.
+// =============================================================================
+
+export function GlassHero({ landing, primaryHref, secondaryHref }: HeroProps) {
+    const { before, italic, after } = splitItalicHeadline(landing.heroSlogan, landing.designSystem.italicWord);
+    const auroraPrimary = landing.heroImage?.url ? landing.heroImage : getImage(landing.galleryImages, 0);
+    const auroraSecondary = getImage(landing.galleryImages, 1) ?? getImage(landing.trustImages, 0);
+    const floatThumbs = [
+        landing.heroImage?.url ? landing.heroImage : getImage(landing.galleryImages, 0),
+        getImage(landing.galleryImages, 1),
+    ].filter((img): img is LandingImageAsset => Boolean(img?.url));
+    const accent = landing.designSystem.accentHex;
+    const palette = landing.designSystem.palette;
+
+    return (
+        <section className="relative overflow-hidden bg-[#eaf1f8] py-14 text-slate-900 md:py-20">
+            {/* Aurora backdrop — blurred composite of hero + gallery */}
+            <div className="pointer-events-none absolute inset-0">
+                {auroraPrimary?.url && (
+                    <div
+                        className="absolute -left-1/4 -top-1/4 h-[80%] w-[80%] rounded-full bg-cover bg-center opacity-50 blur-3xl saturate-150"
+                        style={{ backgroundImage: `url(${auroraPrimary.url})` }}
+                    />
+                )}
+                {auroraSecondary?.url && (
+                    <div
+                        className="absolute -bottom-1/4 -right-1/4 h-[70%] w-[70%] rounded-full bg-cover bg-center opacity-40 blur-3xl saturate-150"
+                        style={{ backgroundImage: `url(${auroraSecondary.url})` }}
+                    />
+                )}
+                <div className="absolute inset-0 bg-[#eaf1f8]/40" />
+            </div>
+
+            <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 text-center md:px-6">
+                {/* Frosted glass hero card */}
+                <div className="relative w-full rounded-[2rem] border border-white/60 bg-white/45 p-8 shadow-[0_24px_70px_rgba(31,67,114,0.18)] backdrop-blur-xl md:p-12">
+                    <div className="inline-flex items-center gap-3 rounded-full border border-white/60 bg-white/50 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.32em] text-slate-700 backdrop-blur-md">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
+                        {landing.designSystem.issueLabel} · {landing.stateLabel}
+                    </div>
+                    <h1 className={`${prompt.className} mx-auto mt-6 max-w-3xl text-4xl leading-[1.05] tracking-tight md:text-6xl`}>
+                        {before}
+                        <span className="text-sky-700">{italic}</span>
+                        {after}
+                    </h1>
+                    <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-slate-700 md:text-lg">{landing.subSlogan}</p>
+
+                    <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                        <Button
+                            asChild
+                            disabled={landing.ctas.primary.disabled}
+                            className="min-h-[56px] rounded-full px-8 text-base font-semibold"
+                            style={{ backgroundColor: accent, color: '#0b2545' }}
+                        >
+                            <a href={primaryHref} {...externalTarget(primaryHref)}>{landing.ctas.primary.label}</a>
+                        </Button>
+                        {secondaryHref.startsWith('http') && (
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="min-h-[56px] rounded-full border border-white/60 bg-white/40 px-8 text-base font-semibold text-slate-800 backdrop-blur-md hover:bg-white/60"
+                            >
+                                <a href={secondaryHref} {...externalTarget(secondaryHref)}>{landing.ctas.secondary.label}</a>
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Floating glass thumbnail chips */}
+                    {floatThumbs.length > 0 && (
+                        <div className="mt-9 flex items-center justify-center gap-4">
+                            {floatThumbs.map((img, i) => (
+                                <div
+                                    key={i}
+                                    className="h-20 w-28 overflow-hidden rounded-2xl border border-white/60 bg-white/40 p-1 shadow-[0_16px_40px_rgba(31,67,114,0.18)] backdrop-blur-md md:h-24 md:w-36"
+                                >
+                                    <div
+                                        className="h-full w-full rounded-xl bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${img.url})`, filter: 'saturate(1.05) brightness(1.05)' }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Fact chips */}
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                    {landing.facts.slice(0, 4).map((fact, i) => (
+                        <div
+                            key={fact.label}
+                            className="rounded-full border border-white/60 bg-white/45 px-4 py-2 backdrop-blur-md"
+                            style={{ boxShadow: `0 12px 30px ${(i % 2 === 0 ? palette.primary : palette.secondary)}22` }}
+                        >
+                            <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-slate-500">{fact.label}: </span>
+                            <span className="text-sm font-semibold text-slate-800">{fact.value}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </section>

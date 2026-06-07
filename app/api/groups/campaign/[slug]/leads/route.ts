@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { listCampaignWaitlistEntries } from '@/lib/campaigns/waitlist-store';
-import { computeFunnelSummary, listCampaignLeadEvents } from '@/lib/campaigns/conversion-store';
+import { computeFunnelSummary, computeLandingTrafficSummary, listCampaignLeadEvents } from '@/lib/campaigns/conversion-store';
 import type { CampaignLeadEvent, CampaignWaitlistEntry, LeadEventType } from '@/lib/campaigns/types';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +43,7 @@ export async function GET(
         listCampaignLeadEvents(slug),
     ]);
     const funnel = computeFunnelSummary(leads);
+    const traffic = computeLandingTrafficSummary(events, leads);
     const latestEvents = buildLatestEventMap(events);
     const dashboardLeads: LeadDashboardRow[] = leads.map((lead) => {
         const latestEvent = latestEvents.get(lead.email);
@@ -63,6 +64,7 @@ export async function GET(
             minCabinsRequired: campaign.minCabinsRequired,
         },
         funnel,
+        traffic,
         leads: dashboardLeads,
     });
 }
