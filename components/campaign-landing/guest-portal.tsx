@@ -462,6 +462,9 @@ const IDENTITY_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 const FORMING_NOTICE_KEY_PREFIX = 'campaign-forming-notice:v1:';
 const ANALYTICS_SESSION_KEY_PREFIX = 'campaign-analytics-session:v1:';
 const ANALYTICS_VIEW_KEY_PREFIX = 'campaign-landing-view-tracked:v1:';
+// One-time-per-browser engagement flag. Persists across sessions (localStorage),
+// unlike the per-session page-view flag above.
+const ANALYTICS_ENGAGED_KEY_PREFIX = 'campaign-landing-engaged-tracked:v1:';
 
 interface StoredIdentity extends GuestIdentity {
     expiresAt: number;
@@ -556,18 +559,13 @@ function captureLandingPageAttribution(slug: string) {
     };
 }
 
-function trackLandingPageView(slug: string) {
-    const trackedKey = `${ANALYTICS_VIEW_KEY_PREFIX}${slug}`;
-    try {
-        if (sessionStorage.getItem(trackedKey)) {
-            return;
-        }
-        sessionStorage.setItem(trackedKey, '1');
-    } catch {
-        // If storage is blocked, still try to record the page entry once for this mount.
-    }
+type LandingAnalyticsEvent = 'landing_page_view' | 'landing_engaged';
 
-    const payload = JSON.stringify(captureLandingPageAttribution(slug));
+function postLandingEvent(slug: string, eventType: LandingAnalyticsEvent) {
+    const payload = JSON.stringify({
+        ...captureLandingPageAttribution(slug),
+        eventType,
+    });
     const endpoint = `/api/groups/campaign/${slug}/analytics/page-view`;
 
     if (navigator.sendBeacon) {
@@ -585,6 +583,39 @@ function trackLandingPageView(slug: string) {
     }).catch(() => {
         // Analytics must never disturb the landing experience.
     });
+}
+
+// Raw reach: counted once per browser session (sessionStorage).
+function trackLandingPageView(slug: string) {
+    const trackedKey = `${ANALYTICS_VIEW_KEY_PREFIX}${slug}`;
+    try {
+        if (sessionStorage.getItem(trackedKey)) {
+            return;
+        }
+        sessionStorage.setItem(trackedKey, '1');
+    } catch {
+        // If storage is blocked, still try to record the page entry once for this mount.
+    }
+
+    postLandingEvent(slug, 'landing_page_view');
+}
+
+// Qualified, one-time view: counted once per browser, persisted forever (localStorage).
+// Fired when the visitor dismisses the pop-up notice, or — for campaigns with no
+// notice — on first load. Returns true if it actually recorded (i.e. first time).
+function trackLandingEngaged(slug: string): boolean {
+    const trackedKey = `${ANALYTICS_ENGAGED_KEY_PREFIX}${slug}`;
+    try {
+        if (localStorage.getItem(trackedKey)) {
+            return false;
+        }
+        localStorage.setItem(trackedKey, '1');
+    } catch {
+        // localStorage blocked — fall through and record once for this mount.
+    }
+
+    postLandingEvent(slug, 'landing_engaged');
+    return true;
 }
 
 export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHref: secondaryHrefProp, emailJustVerified, emailVerifyError, verifiedGuestToken }: GuestPortalProps) {
@@ -613,7 +644,12 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
             return;
         }
         trackLandingPageView(landing.slug);
-    }, [landing.preview, landing.slug]);
+        // Campaigns without a pop-up notice have no dismiss event to hook the
+        // one-time engagement onto, so fall back to first load here.
+        if (!landing.campaignNotice) {
+            trackLandingEngaged(landing.slug);
+        }
+    }, [landing.preview, landing.slug, landing.campaignNotice]);
 
     // Restore identity from localStorage on mount (client-only).
     useEffect(() => {
@@ -667,6 +703,8 @@ export function GuestPortal({ landing, primaryHref: primaryHrefProp, secondaryHr
         } catch {
             // localStorage unavailable — keep the dismissal in memory for this session.
         }
+        // The pop-up dismissal is our one-time qualified-engagement signal.
+        trackLandingEngaged(landing.slug);
         setIsCampaignNoticeOpen(false);
     }
 

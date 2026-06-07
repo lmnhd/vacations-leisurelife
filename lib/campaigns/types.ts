@@ -557,6 +557,7 @@ export interface LeadAttribution {
 
 export type LeadEventType =
     | 'landing_page_view'
+    | 'landing_engaged'
     | 'waitlist_submitted'
     | 'email_verified'
     | 'provider_lead_ingested'

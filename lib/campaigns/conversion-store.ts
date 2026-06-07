@@ -114,6 +114,10 @@ export interface LandingTrafficSummary {
     uniqueSessions: number;
     sessionsWithSignup: number;
     viewToLeadRate: number;
+    // One-time-per-browser qualified views (pop-up dismissed / first load).
+    engagedViews: number;
+    // Leads ÷ engaged views — a tighter conversion signal than viewToLeadRate.
+    engagedToLeadRate: number;
     sourceBreakdown: TrafficBreakdownEntry[];
 }
 
@@ -192,6 +196,7 @@ export function computeLandingTrafficSummary(
     leads: CampaignWaitlistEntry[],
 ): LandingTrafficSummary {
     const pageViewEvents = events.filter((event) => event.eventType === 'landing_page_view');
+    const engagedViews = events.filter((event) => event.eventType === 'landing_engaged').length;
     const allSessions = new Set<string>();
     const signupSessions = new Set(
         leads
@@ -246,6 +251,8 @@ export function computeLandingTrafficSummary(
         uniqueSessions,
         sessionsWithSignup,
         viewToLeadRate: uniqueSessions === 0 ? 0 : leads.length / uniqueSessions,
+        engagedViews,
+        engagedToLeadRate: engagedViews === 0 ? 0 : leads.length / engagedViews,
         sourceBreakdown,
     };
 }

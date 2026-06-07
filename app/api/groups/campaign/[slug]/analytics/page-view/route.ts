@@ -28,6 +28,9 @@ const AttributionSchema = z.object({
 const PageViewSchema = z.object({
     attribution: AttributionSchema,
     metadata: z.record(z.string().trim(), z.string().trim()).optional(),
+    // Which landing signal this is. 'landing_page_view' = raw per-session reach;
+    // 'landing_engaged' = one-time-per-browser qualified view (pop-up dismissed / first load).
+    eventType: z.enum(['landing_page_view', 'landing_engaged']).optional(),
 });
 
 function truncate(value: string | null, maxLength: number): string | undefined {
@@ -74,12 +77,17 @@ export async function POST(
         ...(userAgent ? { userAgent } : {}),
     };
 
+    const eventType = parsed.data.eventType ?? 'landing_page_view';
+    const notes = eventType === 'landing_engaged'
+        ? 'Anonymous one-time landing engagement.'
+        : 'Anonymous landing page view.';
+
     const event = await appendLeadEvent({
         campaignSlug: slug,
         email: 'anonymous',
-        eventType: 'landing_page_view',
+        eventType,
         attribution,
-        notes: 'Anonymous landing page view.',
+        notes,
         metadata,
     });
 
