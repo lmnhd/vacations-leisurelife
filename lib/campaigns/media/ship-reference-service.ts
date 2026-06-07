@@ -381,6 +381,23 @@ function shouldRejectKnownBadImageUrl(imageUrl: string): boolean {
         return true;
     }
 
+    // Facebook lookaside / photo.php endpoints return an HTML redirect page
+    // (200 OK, text/html) rather than image bytes. Google Images surfaces these
+    // both as page URLs (facebook.com/photo, from_lookaside=1) and as the
+    // crawler media host `lookaside.fbsbx.com`, which likewise serves HTML or
+    // 0-byte responses to server-side fetches. Rehosting them produces poisoned
+    // references (HTML under a `.jpg` key, or a blank external record) that fail
+    // every downstream fetch.
+    if (
+        normalizedUrl.includes('lookaside.facebook.com')
+        || normalizedUrl.includes('lookaside.fbsbx.com')
+        || normalizedUrl.includes('fbsbx.com')
+        || normalizedUrl.includes('facebook.com/photo')
+        || normalizedUrl.includes('from_lookaside=1')
+    ) {
+        return true;
+    }
+
     return false;
 }
 
@@ -577,6 +594,39 @@ export async function discoverShipReferenceCandidatesWithExclusions(
     return limitedCandidates;
 }
 
+/**
+ * Detect a real image format from a buffer's magic bytes. Third-party sources
+ * (and Google Image redirects) frequently return HTML error/redirect pages with
+ * a 200 status, so the HTTP content-type header alone cannot be trusted before
+ * we persist bytes to storage. Returns null when the buffer is not a known image.
+ */
+/**
+ * Thrown when a fetched reference body is confirmed to be non-image bytes (e.g.
+ * an HTML redirect page). Unlike a transient network failure, this candidate is
+ * permanently unusable, so the importer skips it entirely rather than falling
+ * back to an external record that would still point at the bad URL.
+ */
+class NonImageReferenceError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'NonImageReferenceError';
+    }
+}
+
+function detectImageMimeFromBytes(buf: Buffer): string | null {
+    if (buf.length < 12) return null;
+    // JPEG: FF D8 FF
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+    // PNG: 89 50 4E 47
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
+    // GIF: GIF8
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return 'image/gif';
+    // WebP: RIFF????WEBP
+    if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+        buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp';
+    return null;
+}
+
 function inferReferenceMimeType(candidate: ShipReferenceCandidate): string {
     const lowerUrl = candidate.imageUrl.toLowerCase();
     if (lowerUrl.includes('.png')) {
@@ -706,10 +756,22 @@ async function importCandidateAsAsset(
         const rawMimeType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
         const rawBuffer = Buffer.from(await response.arrayBuffer());
 
+        // Validate that the bytes are actually an image before we persist them.
+        // Sources like Facebook lookaside/photo.php return a 200 OK HTML redirect
+        // page instead of image bytes; storing those poisons R2 with HTML under a
+        // `.jpg` key that fails every downstream fetch with a content-type error.
+        // We trust magic bytes over the (often wrong) content-type header.
+        const detectedMime = detectImageMimeFromBytes(rawBuffer);
+        if (!detectedMime) {
+            throw new NonImageReferenceError(
+                `Fetched reference is not an image (content-type "${rawMimeType}", ${rawBuffer.length} bytes): ${candidate.imageUrl}`
+            );
+        }
+
         // Phase 8: normalize (downscale + recompress) BEFORE storage. Prevents
         // the 5 MB Anthropic limit and the 350 KB DynamoDB fallback from
         // pushing us to the external-record fallback for large references.
-        const normalized = await normalizeReferenceImageForStorage(rawBuffer, rawMimeType);
+        const normalized = await normalizeReferenceImageForStorage(rawBuffer, detectedMime);
         const mimeType = normalized.mimeType;
         const buffer = normalized.buffer;
         const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
@@ -754,6 +816,21 @@ async function importCandidateAsAsset(
         await saveAssetRecord(slug, record);
         return record;
     } catch (error) {
+        // Confirmed non-image bytes (e.g. an HTML redirect page): the candidate is
+        // permanently unusable. Skip it rather than persisting an external record
+        // that would still point at the bad URL and render as a blank tile.
+        if (error instanceof NonImageReferenceError) {
+            console.warn('[ShipReferenceService] Skipping non-image reference candidate', {
+                assetId,
+                imageUrl: candidate.imageUrl,
+                contextUrl: candidate.contextUrl,
+                error: error.message,
+            });
+            throw error;
+        }
+
+        // Transient failure (network error, sharp hiccup, storage blip): preserve
+        // the external candidate so a later fetch can still succeed.
         console.warn('[ShipReferenceService] Rehosting failed; preserving external reference candidate', {
             assetId,
             imageUrl: candidate.imageUrl,
