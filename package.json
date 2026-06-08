@@ -16,7 +16,10 @@
     "agent:worker": "npx tsx --env-file=.env.local scripts/agent-api-worker.ts --",
     "agent:check-brief": "npx tsx --env-file=.env.local scripts/check-brief-status.ts --",
     "scrape-cb-deals": "npx tsx scripts/scrape-cb-deals.ts",
-    "validate-cb-retail-links": "npx tsx scripts/validate-cb-retail-links.ts"
+    "scrape-cb-promos": "npx tsx scripts/scrape-cb-deals.ts --promos-only",
+    "validate-cb-retail-links": "npx tsx scripts/validate-cb-retail-links.ts",
+    "test:deals-schema": "npx tsx tests/deals-system-schema.ts",
+    "test:link-broker": "npx tsx tests/link-broker.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

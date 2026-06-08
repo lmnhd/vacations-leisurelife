@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "generatedAtIso": "2026-06-08T00:00:00.000Z",
+  "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+  "records": [],
+  "diagnostics": {
+    "promotionLinksFound": 0,
+    "detailPagesScraped": 0,
+    "extractionSucceeded": 0,
+    "extractionNeedsReview": 0,
+    "supportingFilesFound": 0,
+    "errors": []
+  }
+}

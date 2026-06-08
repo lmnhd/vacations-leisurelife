@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "generatedAtIso": "2026-06-08T00:00:00.000Z",
+  "briefs": [
+    {
+      "id": "brief-bahamas-quick-getaway",
+      "title": "Bahamas quick getaway",
+      "destinationKeywords": ["Bahamas", "Nassau", "CocoCay"],
+      "departurePort": "Miami",
+      "minNights": 3,
+      "maxNights": 5,
+      "marketingAngle": "Low-friction first cruise test drive",
+      "audienceFit": ["First-time cruisers", "Busy parents", "Quick escape seekers"]
+    }
+  ],
+  "deals": [
+    {
+      "id": "sample-deal-bahamas-not-published",
+      "status": "needs_review",
+      "source": "odysseus_curated_retail",
+      "briefId": "brief-bahamas-quick-getaway",
+      "capturedAtIso": "2026-06-08T00:00:00.000Z",
+      "packageId": "0000000",
+      "siid": "1049337",
+      "bookingUrl": "https://bookings.cbagenttools.com/swift/cruise/package/0000000?siid=1049337&lang=1",
+      "bookingUrlSource": "constructed_package_url",
+      "linkHealth": {
+        "status": "unknown",
+        "failureReason": "Sample record only; link never browser-validated, so this Deal must not publish."
+      },
+      "cruiseFacts": {
+        "title": "Sample 4-Night Bahamas Getaway",
+        "cruiseLine": "Sample Cruise Line",
+        "shipName": "Sample Ship",
+        "itineraryName": "4-Night Bahamas",
+        "nights": 4,
+        "sailDateIso": "2026-09-01",
+        "departurePort": "Miami",
+        "portsOfCall": ["Nassau", "Perfect Day at CocoCay"],
+        "cabinPrices": {
+          "inside": 0,
+          "currencyCode": "USD"
+        },
+        "promoSignals": []
+      },
+      "scoring": {
+        "score": 0,
+        "reasons": ["Hand-authored Phase 1 sample to prove the publishing gate."],
+        "warnings": ["Not a real sailing. Link health is unknown, so it stays internal."]
+      },
+      "packaging": {
+        "headline": "Sample Bahamas Getaway (internal only)",
+        "shortSummary": "Phase 1 sample Curated Deal used to verify schema loading and the no-publish-without-valid-link rule.",
+        "highlights": [],
+        "destinationNotes": [],
+        "bestFor": []
+      },
+      "agentOnlyNotes": [
+        "Internal sample. Do not publish. Demonstrates that a non-bookable Deal stays out of public surfaces."
+      ]
+    }
+  ]
+}

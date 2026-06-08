@@ -1,0 +1,42 @@
+/**
+ * Internal Link Broker (Phase 2).
+ *
+ * Public API per ODYSSEUS_LINK_BROKER_PLAN. Backend-only infrastructure: it
+ * produces, parses, and statically validates CB/Odysseus booking links. It never
+ * renders UI, sends email, opens URLs, or creates reservations.
+ */
+
+export { resolveBestBookingLink, refreshBookingLink } from "./broker";
+export type { ResolveOptions } from "./broker";
+export { parseCapturedOdysseusLink } from "./parse-captured-link";
+export { staticValidateLink } from "./validate";
+export { chooseBrokerLinkClass } from "./choose-link-class";
+
+// Lower-level builders and cache helpers (internal, but exported for tests and
+// advanced callers).
+export { buildPackageEntryLink } from "./build-package-link";
+export {
+  buildPreparedDetailsLink,
+  buildPreparedDetailsLinkEngineVariant,
+} from "./build-prepared-details-link";
+export {
+  getCachedBrokerLink,
+  upsertBrokerLink,
+  loadLinkBrokerCache,
+  saveLinkBrokerCache,
+  travelerSetupHash,
+  buildBrokerRecordId,
+} from "./cache";
+export {
+  redactPhone,
+  redactUrlForLog,
+  extractPackageId,
+  isOdysseusBookingsUrl,
+  slugifyItinerary,
+  detectOfficeIdMismatch,
+  DEFAULT_AGENT_SIID,
+  DEFAULT_OFFICE_ID,
+  DEFAULT_CURRENCY_ID,
+} from "./normalize";
+
+export * from "./types";
