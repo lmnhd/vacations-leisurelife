@@ -252,6 +252,9 @@ npm run scrape-cb-promo-intelligence
 
 ## Phase 5 - Structured Promo Extraction
 
+Status: implemented. Proof artifact: `npm run test:promo-extraction` (22/22 passing,
+asserted against a live GPT-5.4 extraction of the Celebrity Summer Sale).
+
 ### Goal
 
 Turn raw promo text into structured promotion rules.
@@ -1030,3 +1033,54 @@ Exit criteria met:
   promotion count, detail-page count, raw section text, and (when present)
   supporting-file links.
 - Raw agent instructions are preserved verbatim.
+
+### Phase 5 - Structured Promo Extraction
+
+Status: implemented.
+
+Shipped:
+
+- `lib/cb/deals-system/promo-extraction.ts` — `extractPromoIntelligence(record)`
+  runs GPT-5.4 through the LLM gateway (`generateStructuredObject`, default
+  `ModelName.GPT_5_HIGH` = gpt-5.4) against a Zod schema that mirrors
+  `CbPromoExtractedTerms` + `CbPromoMarketingUse`. The system prompt enforces the
+  hard rule: no invented values, every monetary perk must copy its supporting
+  phrase into `rawText`, combinability booleans must quote the agent-instruction
+  line, and public claims are separated into allowed / needs-qualifier /
+  agent-only with a "may qualify"-style visitor summary that points to the
+  booking portal.
+- `scripts/extract-cb-promo-intelligence.ts` — reads the Phase 4 cache, extracts
+  each `needs_review` record (or `--id` / `--force`), writes back `extracted` /
+  `marketingUse` and sets `diagnostics.status` to `succeeded` / `failed`. Pure
+  LLM over already-captured text; no CB login.
+- `npm run extract-cb-promo-intelligence`, `npm run test:promo-extraction`.
+
+Two implementation notes:
+
+- OpenAI strict JSON-Schema mode requires every property to be required, which
+  conflicts with the schema's optional inner fields (`depositType`,
+  `voyageLength`, ...). The extraction call passes `strictJsonSchema: false`; the
+  gateway still re-validates with Zod.
+- The Zod schema is deliberately tolerant (`looseNumber` coerces "$700"/"75%" to
+  numbers, unknown offer types fall back to `"other"`, arrays default to `[]`) so
+  a near-miss from the model still yields a usable record. Without this, 2 of the
+  6 records initially failed validation; with it, all 6 extracted cleanly.
+
+Live run (2026-06-08, GPT-5.4): all 6 records extracted, `needsReview=0`. The
+Celebrity Summer Sale record captured exactly what the plan's example calls for:
+
+- booking window Jun 2 – Jul 27 2026; sailing window Jun 3 2026 – May 10 2028
+- 75% off 2nd guest (non-refundable) and 50% (refundable), each with source text
+- per-stateroom savings/OBC tiers with voyage-length, cabin-category, and
+  booking-day context; the $700 top tier captured
+- GroupX and single-supplement combinability set false from the agent line
+- Galapagos exclusion captured
+- qualified public summary; 5 caution flags (incl. flagging the odd "those who
+  want to participate" market as not consumer-usable)
+
+Exit criteria met:
+
+- Each promo record has structured rules and warnings.
+- Public copy can be generated only from approved/qualified claims
+  (`marketingUse.publicClaimsAllowed` + a guarded visitor summary), and the test
+  asserts no guaranteed-perk language leaks into the summary.

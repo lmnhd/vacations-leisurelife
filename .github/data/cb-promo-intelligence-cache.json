@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-08T22:59:09.830Z",
+  "generatedAtIso": "2026-06-08T23:19:16.510Z",
   "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
   "records": [
     {
@@ -29,31 +29,298 @@
       "applicableMarketsRaw": ":  US, Canada, Latin America, and those who want to participate",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
-        "dollarSavings": [],
-        "onboardCredits": [],
-        "freeGuestOffers": [],
+        "offerTypes": [
+          "second_guest_discount",
+          "dollars_off",
+          "onboard_credit",
+          "free_extra_guests",
+          "instant_savings"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "2nd Guest",
+            "percentOff": 75,
+            "depositType": "non_refundable",
+            "rawText": "75% off the 2nd Guest – Non-Refundable Deposit Rates"
+          },
+          {
+            "appliesTo": "2nd Guest",
+            "percentOff": 50,
+            "depositType": "refundable",
+            "rawText": "50% off the 2nd Guest – Refundable Deposit Rates"
+          }
+        ],
+        "dollarSavings": [
+          {
+            "amountUsd": 700,
+            "appliesTo": "Per Stateroom bonus savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "Bonus Savings Up to $700 Per Stateroom – Weekly Friday to Monday"
+          },
+          {
+            "amountUsd": 600,
+            "appliesTo": "Per Stateroom bonus savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Weekly Tuesday to Wednesday",
+            "rawText": "Bonus Savings Up to $600 Per Stateroom – Weekly Tuesday to Wednesday"
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$100 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 200,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$200 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 350,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$350 Sky Suite and Above"
+          },
+          {
+            "amountUsd": 150,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$150 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 300,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$300 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 700,
+            "appliesTo": "Per Stateroom savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Weekly Friday to Monday",
+            "rawText": "$700 Sky Suite and Above"
+          },
+          {
+            "amountUsd": 50,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$50 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 150,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$150 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 300,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$300 Sky Suite and Above"
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$100 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 250,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$250 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 600,
+            "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "$600 Sky Suite and Above"
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Per Stateroom instant savings",
+            "bookingDayWindow": "Select Friday to Monday",
+            "rawText": "Weekend Flash Sales (WFS) – $100 Instant Savings Per Stateroom - Select Friday to Monday (varies by destination: Alaska, Caribbean or Europe)"
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Per Stateroom instant savings",
+            "bookingDayWindow": "Tuesday to Wednesday",
+            "rawText": "Book Now Bonus (BNB) - $100 Instant Savings Per Stateroom – Tuesday to Wednesday"
+          }
+        ],
+        "onboardCredits": [
+          {
+            "amountUsd": 600,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Weekly Thursday",
+            "rawText": "Bonus Onboard Credit Up to $600 Per Stateroom – Weekly Thursday"
+          },
+          {
+            "amountUsd": 50,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$50 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 150,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$150 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 300,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "3 to 5 Nights",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$300 Sky Suite and Above"
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Inside or Ocean View Stateroom",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$100 Inside or Ocean View Stateroom"
+          },
+          {
+            "amountUsd": 250,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$250 Veranda, Concierge Class or AquaClass Stateroom"
+          },
+          {
+            "amountUsd": 600,
+            "appliesTo": "Per Stateroom bonus onboard credit",
+            "voyageLength": "6 Nights or Longer",
+            "cabinCategory": "Sky Suite and Above",
+            "bookingDayWindow": "Thursday",
+            "rawText": "$600 Sky Suite and Above"
+          }
+        ],
+        "freeGuestOffers": [
+          {
+            "guestNumbers": "3rd/4th/5th",
+            "excludedCabins": [
+              "suites"
+            ],
+            "rawText": "Free 3rd/4th/5th Guest Cruise Fares on select sailing dates. not applicable to suites."
+          }
+        ],
         "combinability": {
-          "rawRules": []
+          "cruiseOnly": true,
+          "allIncluded": true,
+          "refundableDeposit": true,
+          "nonRefundableDeposit": true,
+          "groupXRates": false,
+          "singleSupplements": false,
+          "riverCruises": true,
+          "cruiseTours": true,
+          "rawRules": [
+            "Combinable with Cruise Only Rates (aka No Perk Rates) and All Included Pricing. Combinable as Refundable or Non-Refundable Deposit Pricing",
+            "BOGO promos are NOT combinable with GroupX rates or Single Supplements",
+            "BOGO Offers are combinable with Celebrity River Cruises",
+            "BOGO + Bonus Offers are combinable with 2026 & 2027 Alaska Cruisetours"
+          ]
         },
-        "exclusions": [],
-        "applicableProducts": [],
-        "applicableMarkets": []
+        "exclusions": [
+          "Free 3rd/4th/5th Guest Cruise Fares are not applicable to suites.",
+          "All except Galapagos sailings.",
+          "Bonus offers are applicable to All products (except Galapagos and Celebrity River Cruises)."
+        ],
+        "applicableProducts": [
+          "All except Galapagos sailings, including 9-Night and longer 2026 Alaska Cruisetours on Celebrity Summit and 2027 Alaska Cruisetours on Celebrity Solstice.",
+          "Applicable to All products (except Galapagos and Celebrity River Cruises) Bonus offers are applicable to prevailing or closed group standard or GroupX rates that are named during the booking period."
+        ],
+        "applicableMarkets": [
+          "US",
+          "Canada",
+          "Latin America",
+          "those who want to participate"
+        ]
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select sailings may qualify for 2nd guest savings.",
+          "Select sailings may qualify for bonus stateroom savings.",
+          "Select sailings may qualify for bonus onboard credit.",
+          "Select sailings may qualify for free 3rd, 4th, and 5th guest cruise fares."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "2nd guest savings depend on deposit type, with separate refundable and non-refundable rate offers.",
+          "Free 3rd/4th/5th guest fares apply only on select sailing dates and are not applicable to suites.",
+          "Bonus savings vary by booking day window, voyage length, and stateroom category.",
+          "Bonus onboard credit varies by booking day window, voyage length, and stateroom category.",
+          "Weekend Flash Sales vary by destination: Alaska, Caribbean or Europe.",
+          "Bonus offers apply within the stated booking and sailing windows and final eligibility depends on the booking portal."
+        ],
+        "agentOnlyNotes": [
+          "Combinable with Cruise Only Rates (aka No Perk Rates) and All Included Pricing.",
+          "Combinable as Refundable or Non-Refundable Deposit Pricing.",
+          "BOGO promos are NOT combinable with GroupX rates or Single Supplements.",
+          "BOGO Offers are combinable with Celebrity River Cruises.",
+          "BOGO + Bonus Offers are combinable with 2026 & 2027 Alaska Cruisetours.",
+          "Bonus offers are applicable to prevailing or closed group standard or GroupX rates that are named during the booking period."
+        ],
+        "suggestedAngles": [
+          "Second guest savings on select Celebrity sailings.",
+          "Stateroom savings that may vary by cabin and voyage length.",
+          "Thursday sailings booking angle focused on possible onboard credit.",
+          "Family offer angle for select sailings with free 3rd/4th/5th guest fares.",
+          "Short booking-window urgency around weekly bonus timing."
+        ],
+        "cautionFlags": [
+          "Do not advertise a flat savings or onboard credit amount without noting voyage length, stateroom category, and booking day window.",
+          "Do not imply free extra guests apply to suites.",
+          "Do not present GroupX or single supplement combinability as available for BOGO promos.",
+          "Do not imply bonus offers include Galapagos or Celebrity River Cruises.",
+          "'Those who want to participate' is not a standard market definition and should not be used in consumer-facing copy."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Celebrity Summer Sale sailings may qualify for second guest savings, bonus stateroom savings, onboard credit, or even free 3rd, 4th, and 5th guest fares on select departures. Offers vary by sailing, cabin, voyage length, booking timing, and deposit type, with final pricing and eligible perks confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: second_guest_discount, dollars_off, onboard_credit, free_extra_guests, instant_savings.",
+          "Public claims: 4, needs-qualifier: 6, caution flags: 5."
         ],
         "warnings": []
       }
@@ -84,31 +351,98 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
-        "dollarSavings": [],
+        "offerTypes": [
+          "dollars_off",
+          "free_extra_guests",
+          "instant_savings",
+          "other"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "first two guests in stateroom; fares/Launch Fare",
+            "percentOff": 40,
+            "rawText": "Up to 40% off fares Offer discount taken off Launch Fare and does not apply to Required Cruise Fees and Expenses and Government Taxes and Fees. Discount amount is determined by category and sailing and only applies to first two guests in stateroom."
+          }
+        ],
+        "dollarSavings": [
+          {
+            "amountUsd": 400,
+            "appliesTo": "per stateroom; first two guests in a stateroom",
+            "voyageLength": "9-12 day voyage",
+            "cabinCategory": "suite",
+            "rawText": "Up to $400 Instant Savings per stateroom (up to $200 per guest) is only applicable to the first two guests in a stateroom and amount awarded varies based on stateroom type and voyage length; see full terms for credit amounts. Advertised amount of $400 is per double occupancy stateroom ($200 per guest) on a 9-12 day voyage in a suite."
+          }
+        ],
         "onboardCredits": [],
-        "freeGuestOffers": [],
+        "freeGuestOffers": [
+          {
+            "guestNumbers": "3rd & 4th guests",
+            "rawText": "Bring your whole crew because 3rd & 4th guests sail FREE on select voyages (taxes and fees apply)."
+          },
+          {
+            "guestNumbers": "3rd & 4th guest",
+            "rawText": "† Free 3rd & 4th guest offer applies to cruise fare only for recipient and guests covered by the complimentary offer (if any) and excludes Government Taxes & Fees, the Required Cruise Fees & Expenses, other cruise-related expenses and travel expenses."
+          }
+        ],
         "combinability": {
-          "rawRules": []
+          "refundableDeposit": true,
+          "nonRefundableDeposit": true,
+          "rawRules": [
+            "$99 Deposit is applicable to both refundable and non-refundable deposits and applies to full deposit amount only.",
+            "May not be combined with other offers or promotions and will not further reduce any already-discounted deposits.",
+            "Not available for cruises requiring full, final payment at the time of booking."
+          ]
         },
-        "exclusions": [],
+        "exclusions": [
+          "40% off does not apply to Required Cruise Fees and Expenses and Government Taxes and Fees.",
+          "Free 3rd & 4th guest offer excludes Government Taxes & Fees, the Required Cruise Fees & Expenses, other cruise-related expenses and travel expenses.",
+          "Free 3rd & 4th guest offer excludes required deposit (if any).",
+          "$99 Deposit is not available for cruises requiring full, final payment at the time of booking."
+        ],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select sailings may qualify for up to 40% off fares.",
+          "Select voyages may qualify for free 3rd and 4th guests on cruise fare only.",
+          "Eligible bookings may qualify for reduced deposit offers.",
+          "Select bookings may qualify for instant savings per stateroom."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Up to 40% off fares applies only to the first two guests in a stateroom and excludes Required Cruise Fees and Expenses and Government Taxes and Fees.",
+          "Up to $400 instant savings per stateroom varies by stateroom type and voyage length; the advertised $400 is based on double occupancy on a 9-12 day voyage in a suite.",
+          "3rd and 4th guests sail free only on select voyages and taxes, fees, required cruise fees, expenses, deposits, and other travel-related charges still apply.",
+          "$99 deposit applies to full deposit amount only, is available on both refundable and non-refundable deposits, and is not available for cruises requiring full final payment at booking."
+        ],
+        "agentOnlyNotes": [
+          "$99 Deposit may not be combined with other offers or promotions and will not further reduce already-discounted deposits.",
+          "Discount amount is determined by category and sailing.",
+          "Actual amounts owed by recipient and applicable guests may vary and shall be calculated at the time of booking.",
+          "MEMORIAL DAY FLASH UP TO DOUBLE THE SAVINGS. SEE ONE SOURCE"
+        ],
+        "suggestedAngles": [
+          "Family cruise savings on select voyages",
+          "Potential fare discounts on eligible Princess sailings",
+          "Possible extra value with instant savings on qualifying staterooms",
+          "Reduced-deposit opportunity on eligible bookings"
+        ],
+        "cautionFlags": [
+          "Do not advertise 40% off as applying to all guests or all sailings.",
+          "Do not advertise $400 instant savings without noting suite, voyage-length, and double-occupancy qualifications.",
+          "Do not imply free 3rd and 4th guests includes taxes, fees, deposits, or all travel costs.",
+          "Do not imply the $99 deposit is combinable with other offers.",
+          "Offer values vary by category, sailing, stateroom type, and voyage length."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Eligible Princess Cruises bookings may qualify for fare discounts, instant savings, reduced deposits, and even free 3rd and 4th guests on select voyages. Availability and final pricing, taxes, fees, and perks are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: dollars_off, free_extra_guests, instant_savings, other.",
+          "Public claims: 4, needs-qualifier: 4, caution flags: 5."
         ],
         "warnings": []
       }
@@ -139,31 +473,88 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
+        "offerTypes": [
+          "onboard_credit",
+          "other"
+        ],
         "percentDiscounts": [],
         "dollarSavings": [],
-        "onboardCredits": [],
+        "onboardCredits": [
+          {
+            "amountUsd": 50,
+            "appliesTo": "per stateroom",
+            "rawText": "Onboard Credits: Up to $50 per stateroom"
+          },
+          {
+            "amountUsd": 25,
+            "appliesTo": "per person up to $25 per room",
+            "voyageLength": "2-5 day sailings",
+            "rawText": "2-5 day sailings: $12.50 per person up to $25 per room."
+          },
+          {
+            "amountUsd": 50,
+            "appliesTo": "per person up to $50 per room",
+            "voyageLength": "6+ day sailings",
+            "rawText": "6+ day sailings: $25 per person up to $50 per room"
+          }
+        ],
         "freeGuestOffers": [],
         "combinability": {
-          "rawRules": []
+          "rawRules": [
+            "book at goccl.com, Odysseus or call the agent reservation line"
+          ]
         },
         "exclusions": [],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select sailings may qualify for great rates through April 2028.",
+          "Some select sailings may qualify for onboard credit.",
+          "Certain Early Saver sailings may qualify for reduced deposits, onboard credit, and a 2-category upgrade.",
+          "Select sailings where Early Saver has expired may qualify for great rates and a 2-category upgrade.",
+          "Select Australia sailings may qualify for guarantee rates or reduced-deposit offers."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Up to $50 onboard credit is limited to select bookings and specific booking windows.",
+          "Early Saver benefits apply only where Early Saver is available.",
+          "Onboard credit varies by voyage length: 2-5 day sailings vs. 6+ day sailings.",
+          "Offers are limited to Cabin Assignment only where stated.",
+          "Australia reduced deposits are quoted in AUD and apply only to Carnival Australia sailings.",
+          "Reduced-deposit terms apply to 3rd, 4th, and 5th guests only where stated.",
+          "Some offers apply only on select dates or select sailings through specified end periods."
+        ],
+        "agentOnlyNotes": [
+          "Primary booking window in header: Must be booked between 06/01/2026 and 06/30/2026.",
+          "Promo segments use separate booking windows: June 2 - 8, 2026; June 9, 2026 – June 15, 2026; June 16, 2026 – June 22, 2026; June 9 - 13, 2026; 17 June 2026 (AEST) – 30 June 2026 (AEST).",
+          "Booking method instruction: book at goccl.com, Odysseus or call the agent reservation line.",
+          "Cabin Assignment only applies to multiple offer segments.",
+          "Australia deposit amounts are in AUD, not USD."
+        ],
+        "suggestedAngles": [
+          "Summer sale on select Carnival sailings",
+          "May-qualify onboard credit offer",
+          "Early Saver perks on eligible sailings",
+          "Australia market reduced-deposit opportunity",
+          "Select sailings with possible 2-category upgrade"
+        ],
+        "cautionFlags": [
+          "Do not advertise onboard credit as universal across the full promotion; it appears only in certain booking windows.",
+          "Do not imply all sailings include Early Saver, a 2-category upgrade, or reduced deposits.",
+          "Do not convert AUD deposit amounts into USD or present them as onboard credit/savings.",
+          "Do not treat 'great rates' as a quantifiable discount because no dollar or percent savings is stated.",
+          "Roatan/Isla Tropicale destination text is informational and not a booking incentive."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Carnival sailings booked during the stated June 2026 promotional windows may qualify for special rates and, on some offers, extras like onboard credit, reduced deposits, or a category upgrade. Availability and final pricing/perks vary by sailing, cabin type, booking date, and fare program, and are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: onboard_credit, other.",
+          "Public claims: 5, needs-qualifier: 7, caution flags: 5."
         ],
         "warnings": []
       }
@@ -194,31 +585,143 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
+        "offerTypes": [
+          "onboard_credit",
+          "free_extra_guests",
+          "all_included",
+          "other"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "pax 1 & 2",
+            "percentOff": 50,
+            "rawText": "For a limited time, enjoy 50% off pax 1 & 2 and more incredible perks, including an unlimited beverage package, specialty dining, excursion credits, and high-speed Wi-Fi."
+          },
+          {
+            "appliesTo": "voyage fare total",
+            "percentOff": 10,
+            "rawText": "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)"
+          },
+          {
+            "appliesTo": "voyage fare total",
+            "percentOff": 5,
+            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
+          }
+        ],
         "dollarSavings": [],
-        "onboardCredits": [],
-        "freeGuestOffers": [],
+        "onboardCredits": [
+          {
+            "amountUsd": 50,
+            "appliesTo": "per stateroom",
+            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
+          },
+          {
+            "amountUsd": 200,
+            "appliesTo": "per stateroom",
+            "rawText": "BONUS ONBOARD CREDIT UP TO $200 ON SELECT DATES BOOK BY JUNE 5! (will apply if applicable)"
+          },
+          {
+            "amountUsd": 200,
+            "appliesTo": "per stateroom for Balcony and above",
+            "voyageLength": "7+ night sailings",
+            "cabinCategory": "Balcony and above",
+            "bookingDayWindow": "5/25/26 – 6/5/26 11:59pm EST",
+            "rawText": "TLN Offer: Up to $200 USD Onboard Credit Per Stateroom for Balcony and above Booking Window: 5/25/26 – 6/5/26 11:59pm EST"
+          }
+        ],
+        "freeGuestOffers": [
+          {
+            "guestNumbers": "3rd & 4th kids",
+            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
+          },
+          {
+            "guestNumbers": "3rd & 4th guests",
+            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
+          }
+        ],
         "combinability": {
-          "rawRules": []
+          "allIncluded": true,
+          "groupRates": false,
+          "groupXRates": true,
+          "rawRules": [
+            "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)",
+            "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)",
+            "MIL, Teacher not applicable to groups",
+            "Does apply to Sail Away rates!"
+          ]
         },
-        "exclusions": [],
-        "applicableProducts": [],
+        "exclusions": [
+          "Beverage package not available on Great Stirrup Cay unless Free at Sea Plus is purchased for a slight upcharge from Free at Sea.",
+          "excluding select Holiday sailings",
+          "Bermuda (not applicable to sailings embarking/debarking from New York)"
+        ],
+        "applicableProducts": [
+          "All Norwegian Cruises",
+          "Applicable for sailings of three days or longer",
+          "Sail Away rates",
+          "All Open for Sale – 7+ night sailings starting August 1st through February 28th, 2027 based on the following ship & products",
+          "Alaska",
+          "Bahamas – 4+ night sailings only",
+          "Bermuda",
+          "Caribbean",
+          "Europe – Norwegian Dawn, Epic, Gem, Pearl, Sky & Star only",
+          "Balcony and above"
+        ],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select Norwegian sailings may qualify for 50% off guests 1 and 2.",
+          "Select Norwegian bookings may qualify for Free at Sea perks such as beverages, specialty dining, excursion credits, and Wi-Fi.",
+          "Some sailings may qualify for kids sail free or free extra guest offers.",
+          "Select bookings may qualify for onboard credit."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "50% off applies to pax 1 & 2.",
+          "Reduced deposit applies to balconies and below only.",
+          "Offer is applicable for sailings of three days or longer.",
+          "Kids sail free / 3rd & 4th guests free applies on select sailing dates.",
+          "Teacher discount is 5% off voyage fare total plus $50 USD onboard credit per stateroom, capacity controlled.",
+          "Military discount is 10% off voyage fare total, capacity controlled.",
+          "Bonus onboard credit is up to $200 on select dates and may apply only within stated booking and travel windows.",
+          "TLN onboard credit is for Balcony and above, 7+ night sailings, and specific destinations/ships only.",
+          "Bahamas applies to 4+ night sailings only.",
+          "Bermuda TLN offer is not applicable to sailings embarking/debarking from New York.",
+          "Europe TLN offer applies only to Norwegian Dawn, Epic, Gem, Pearl, Sky & Star.",
+          "Beverage package is not available on Great Stirrup Cay unless Free at Sea Plus is purchased."
+        ],
+        "agentOnlyNotes": [
+          "Military and Teacher offers are not combinable with groups.",
+          "MIL, Teacher not applicable to groups",
+          "Capacity controlled applies to Military and Teacher programs.",
+          "Upcoming Hawaii State Government Tax applies for cruises that include visits to Hawaii and embark on or after January 1, 2026.",
+          "Hawaii tax is 14% based on the portion of the cruise fare associated with time spent in Hawaiian ports.",
+          "See norwegiancentral.com and NCL promotion terms for Free at Sea Plus details and package terms."
+        ],
+        "suggestedAngles": [
+          "50% off guests 1 and 2 on select Norwegian sailings",
+          "Free at Sea perks may add beverage, dining, excursion, and Wi-Fi value",
+          "Family-focused dates with kids sail free or free 3rd and 4th guest offers",
+          "Select sailings may include bonus onboard credit",
+          "Reduced deposit available on balconies and below"
+        ],
+        "cautionFlags": [
+          "Do not advertise onboard credit as guaranteed; text says 'UP TO $200' and 'will apply if applicable'.",
+          "Do not imply Free at Sea perks apply everywhere; beverage package is not available on Great Stirrup Cay unless Free at Sea Plus is purchased.",
+          "Do not present kids sail free or free guest offers as fleetwide; they are on select sailing dates.",
+          "Do not present Military or Teacher discounts as generally available to all travelers.",
+          "Do not omit cabin, voyage-length, destination, ship, and booking-window restrictions tied to the TLN onboard credit offer.",
+          "Do not overlook Hawaii tax disclosures for eligible Hawaii cruises embarking on or after January 1, 2026."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Norwegian Cruise Line sailings may qualify for 50% off guests 1 and 2, Free at Sea perks, family-friendly free guest offers, and possible onboard credit on eligible bookings. Availability and final pricing, perks, and restrictions are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: onboard_credit, free_extra_guests, all_included, other.",
+          "Public claims: 4, needs-qualifier: 12, caution flags: 6."
         ],
         "warnings": []
       }
@@ -249,31 +752,69 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
+        "offerTypes": [
+          "dollars_off",
+          "onboard_credit",
+          "all_included"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "Explora Journeys yacht style luxury, all suite experience",
+            "percentOff": 25,
+            "rawText": "Offer Highlights: up to 25% off and up to $3,500 US / $4,200 CA Journey Credit."
+          }
+        ],
         "dollarSavings": [],
-        "onboardCredits": [],
+        "onboardCredits": [
+          {
+            "amountUsd": 3500,
+            "appliesTo": "Explora Journeys",
+            "rawText": "Offer Highlights: up to 25% off and up to $3,500 US / $4,200 CA Journey Credit."
+          }
+        ],
         "freeGuestOffers": [],
         "combinability": {
-          "rawRules": []
+          "rawRules": [
+            "see Explora TA portal for various promotions"
+          ]
         },
         "exclusions": [],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select Explora Journeys sailings may qualify for savings and Journey Credit.",
+          "Select Explora Journeys bookings may qualify for an all-inclusive luxury, all-suite experience offer."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Up to 25% off on select Explora Journeys bookings.",
+          "Up to $3,500 US Journey Credit on select Explora Journeys bookings.",
+          "Offer is tied to a specific booking window and sailing window."
+        ],
+        "agentOnlyNotes": [
+          "see Explora TA portal for various promotions"
+        ],
+        "suggestedAngles": [
+          "Luxury all-suite cruise savings",
+          "All-inclusive yacht-style experience",
+          "Potential Journey Credit on select sailings"
+        ],
+        "cautionFlags": [
+          "The promotion uses 'up to' language, so not all bookings will receive the maximum discount or Journey Credit.",
+          "CAD Journey Credit is mentioned, but this extraction only captures the USD value.",
+          "Booking window appears inconsistent between the header and promotion details (05/27/2026 vs May 24, 2026 start date).",
+          "Final offer details and applicable promotions should be confirmed in the Explora TA portal."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Explora Journeys sailings may qualify for savings and Journey Credit as part of a luxury all-suite, all-inclusive experience. Final pricing, eligibility, and any included perks are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: dollars_off, onboard_credit, all_included.",
+          "Public claims: 2, needs-qualifier: 3, caution flags: 4."
         ],
         "warnings": []
       }
@@ -304,31 +845,58 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
+        "offerTypes": [
+          "other"
+        ],
         "percentDiscounts": [],
         "dollarSavings": [],
         "onboardCredits": [],
         "freeGuestOffers": [],
         "combinability": {
-          "rawRules": []
+          "groupRates": true,
+          "rawRules": [
+            "CHECK OUR GROUP RATES - WE HAVE PRICE ADVANTAGES IN LATE 2026 and 2027 VOYAGES!"
+          ]
         },
         "exclusions": [],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+          "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Group-rate price advantages apply only where group rates are available.",
+          "Promotion is limited to bookings made between 06/05/2026 and 06/30/2026.",
+          "Sailings must be on or between 07/01/2026 and 03/31/2027.",
+          "Pricing advantage language references late 2026 and 2027 voyages."
+        ],
+        "agentOnlyNotes": [
+          "Agent instruction: \"find assets on west coast, microsite in loyaltoyoualways.com\"",
+          "Reference link provided in agent instructions: \"https://loyaltoyoualwaycom\""
+        ],
+        "suggestedAngles": [
+          "West Coast Royal Caribbean sailings from California",
+          "Possible group-rate advantages on select departures",
+          "California-based cruise options for Mexico and short getaways"
+        ],
+        "cautionFlags": [
+          "No specific discount amount, onboard credit, or included perk is stated.",
+          "Do not advertise a guaranteed savings value; only 'price advantages' is supported.",
+          "Applicable sailings, products, and markets are not explicitly listed in the supplied text.",
+          "Most promotional copy describes ships and destinations, not bookable offer inclusions."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Royal Caribbean West Coast sailings may qualify for group-rate pricing advantages during the stated booking window. Availability, pricing, and any applicable perks are confirmed in the booking portal at time of reservation."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: other.",
+          "Public claims: 2, needs-qualifier: 4, caution flags: 4."
         ],
         "warnings": []
       }
@@ -337,8 +905,8 @@
   "diagnostics": {
     "promotionLinksFound": 6,
     "detailPagesScraped": 6,
-    "extractionSucceeded": 0,
-    "extractionNeedsReview": 6,
+    "extractionSucceeded": 6,
+    "extractionNeedsReview": 0,
     "supportingFilesFound": 0,
     "errors": []
   }
