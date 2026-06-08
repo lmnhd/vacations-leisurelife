@@ -85,6 +85,38 @@ function buildBatchRevisionNote(
 
 interface TabEntry { entryKey: string; title: string; asset: AssetRecord; variants?: AssetRecord[] }
 
+// MULTI_MODEL_IMAGES (Phase F): collapse a section's per-model variants into one
+// card each. Members sharing a variantGroupId become a single entry whose shown
+// asset is the selected model-version (modelVersionSelections[gid]) or the first-
+// stored (primary). Sections with no variant groups behave exactly as before
+// (each asset its own single-member entry). `variants` is only set when >1 member
+// so review-asset-card renders the Gemini | GPT Image 2 source toggle.
+function groupVariantEntries(
+    assets: readonly AssetRecord[],
+    manifest: CampaignMediaManifest,
+    makeKey: (gid: string) => string,
+    makeTitle: (member: AssetRecord, index: number) => string,
+): TabEntry[] {
+    const groups = new Map<string, AssetRecord[]>();
+    const order: string[] = [];
+    assets.forEach((asset) => {
+        const gid = asset.variantGroupId ?? asset.assetId;
+        if (!groups.has(gid)) { groups.set(gid, []); order.push(gid); }
+        groups.get(gid)!.push(asset);
+    });
+    return order.map((gid, i) => {
+        const variants = groups.get(gid)!;
+        const wanted = manifest.modelVersionSelections?.[gid];
+        const selected = (wanted && variants.find((v) => v.generator === wanted)) || variants[0];
+        return {
+            entryKey: makeKey(gid),
+            title: makeTitle(selected, i),
+            asset: selected,
+            variants: variants.length > 1 ? variants : undefined,
+        };
+    });
+}
+
 function getTabEntries(
     tabId: string,
     manifest: CampaignMediaManifest,
@@ -128,12 +160,19 @@ function getTabEntries(
             break;
 
         case 'heroes':
-            manifest.images.hero.forEach((asset, i) => {
-                entries.push({ entryKey: `hero::${i}::${asset.assetId}`, title: `Hero ${i + 1}`, asset });
-            });
-            manifest.images.aestheticConcepts.forEach((asset, i) => {
-                entries.push({ entryKey: `concept::${i}::${asset.assetId}`, title: `Concept ${i + 1}`, asset });
-            });
+            // MULTI_MODEL_IMAGES: heroes + concepts are variant-grouped per model.
+            entries.push(...groupVariantEntries(
+                manifest.images.hero,
+                manifest,
+                (gid) => `hero::${gid}`,
+                (_asset, i) => `Hero ${i + 1}`,
+            ));
+            entries.push(...groupVariantEntries(
+                manifest.images.aestheticConcepts,
+                manifest,
+                (gid) => `concept::${gid}`,
+                (_asset, i) => `Concept ${i + 1}`,
+            ));
             break;
 
         case 'flyers': {
@@ -168,9 +207,13 @@ function getTabEntries(
             break;
 
         case 'documentary_details':
-            (manifest.images.documentaryDetails ?? []).forEach((asset, i) => {
-                entries.push({ entryKey: `detail::${i}::${asset.assetId}`, title: formatSourceDetailTitle(asset), asset });
-            });
+            // MULTI_MODEL_IMAGES: documentary details are variant-grouped per model.
+            entries.push(...groupVariantEntries(
+                manifest.images.documentaryDetails ?? [],
+                manifest,
+                (gid) => `detail::${gid}`,
+                (asset) => formatSourceDetailTitle(asset),
+            ));
             break;
 
         case 'alternate_art':
@@ -188,10 +231,15 @@ function getTabEntries(
             break;
 
         case 'scenes':
-            (manifest.images.sceneImages ?? []).forEach((asset, i) => {
-                const sceneId = asset.tags.find(t => t !== 'scene') ?? `scene_${i + 1}`;
-                entries.push({ entryKey: `scene::${i}::${asset.assetId}`, title: sceneId, asset });
-            });
+            // MULTI_MODEL_IMAGES: scenes are variant-grouped per model.
+            entries.push(...groupVariantEntries(
+                manifest.images.sceneImages ?? [],
+                manifest,
+                (gid) => `scene::${gid}`,
+                (asset, i) => asset.tags.find((t) => t !== 'scene'
+                    && t !== 'reference_applied' && t !== 'reference_unavailable' && t !== 'no_reference_available')
+                    ?? `scene_${i + 1}`,
+            ));
             break;
 
         case 'video':

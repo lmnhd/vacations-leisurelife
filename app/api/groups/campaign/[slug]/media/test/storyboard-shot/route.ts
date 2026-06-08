@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import { buildStoryboardShotPrompt } from '@/lib/campaigns/media/storyboard-motion-policy';
 import { buildProductionSafeMotionPrompt } from '@/lib/campaigns/media/generators/runway-generator';
 import { getPreferredTestDurationSeconds, getVideoModelPreset } from '@/lib/campaigns/media/video-models';
@@ -17,7 +18,11 @@ interface StoryboardShotRequestBody {
 }
 
 function getActiveSceneImageUrl(slug: string, sceneId: string, manifest: Awaited<ReturnType<typeof getMediaManifest>>) {
-    const sceneImage = manifest?.images.sceneImages?.find((record) => record.active && record.tags.includes(sceneId));
+    // MULTI_MODEL_IMAGES (Phase F): collapse scenes to the selected model-version.
+    const collapsedScenes = manifest
+        ? collapseAssetVariantGroups(manifest.images.sceneImages ?? [], manifest.modelVersionSelections)
+        : [];
+    const sceneImage = collapsedScenes.find((record) => record.active !== false && record.tags.includes(sceneId));
     if (!sceneImage) {
         throw new Error(`No active scene image found for ${sceneId} in ${slug}`);
     }

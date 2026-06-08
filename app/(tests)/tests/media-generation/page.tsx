@@ -9,7 +9,7 @@ import { ProbeResultsPanel } from "./probe-results-panel";
 import { useVideoModelPreference } from "@/lib/campaigns/media/use-video-model-preference";
 import { PRODUCTION_ALL_MEDIA_ASSET_TYPES } from "@/lib/campaigns/media/default-asset-types";
 import { MediaReviewPanel } from "./media-review-panel";
-import { FlyerControlsEditor } from "./flyer-controls-editor";
+import { MediaControlsTabs } from "./media-controls-tabs";
 import { CampaignSelector } from "./campaign-selector";
 import { ResearchContextPanel } from "../research-context-panel";
 import { approveAestheticBrief } from "@/lib/campaigns/aesthetic-workflow-client";
@@ -748,9 +748,10 @@ export default function MediaGenerationTestPage() {
                     )}
                 </div>
 
-                {/* Flyer Generation Controls — steers the flyer_image prompt */}
+                {/* Image Generation Controls — tabbed: flyer prompt controls +
+                    shared image-model selection for hero/concepts/documentary/scenes */}
                 {slug.trim() && (
-                    <FlyerControlsEditor
+                    <MediaControlsTabs
                         slug={slug.trim()}
                         defaultNicheHint={
                             normalizeCampaignResearchDossier(brief?.campaignResearchDossier)?.nicheResearch.nicheTitle

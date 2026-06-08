@@ -92,6 +92,7 @@ async function dispatchSupportedPlatforms(
             || post.platform === 'instagram_reels'
             || post.platform === 'instagram_story'
             || post.platform === 'facebook_ad'
+            || post.platform === 'facebook_page'
             || post.platform === 'google_display'
         ) {
             // For live paid-ad platforms, skip posts that already have a draft unless

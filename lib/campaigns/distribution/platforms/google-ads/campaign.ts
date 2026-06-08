@@ -1,5 +1,6 @@
 import { GoogleAdsApi, enums } from 'google-ads-api';
 import type { CampaignMediaManifest, ScheduledPost } from '../../../schema';
+import { collapseAssetVariantGroups } from '../../../media/image-selection';
 import { loadProviderToken } from '@/lib/integrations/provider-token-store';
 import type { GoogleTargetingPackage } from './targeting';
 
@@ -54,7 +55,10 @@ function selectGoogleDisplayImage(manifest: CampaignMediaManifest) {
         return designedDisplayImage;
     }
 
-    return manifest.images.hero.find((asset) => asset.active && !!asset.url) ?? manifest.images.hero[0];
+    // MULTI_MODEL_IMAGES (Phase F): collapse hero variants to the selected
+    // model-version so the Google Display image honors the operator's A/B pick.
+    const heroes = collapseAssetVariantGroups(manifest.images.hero, manifest.modelVersionSelections);
+    return heroes.find((asset) => asset.active && !!asset.url) ?? heroes[0];
 }
 
 function selectGoogleDisplaySquareImage(manifest: CampaignMediaManifest) {

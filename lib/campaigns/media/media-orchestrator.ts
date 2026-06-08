@@ -38,6 +38,7 @@ import { buildDefaultThemeMusicRecord, buildThemeMusicSelectionReason, selectDef
 import { scoreTikTokVideoReadiness } from './lint/video-lint';
 import { inferTikTokFormat } from './generators/tiktok-formats/index';
 import { collectSelectableImageGroups, type HtmlTemplateManifest } from '@/lib/ads/html-templates/core';
+import { collapseAssetVariantGroups } from './image-selection';
 import { calculateElevenLabsCreditsRequired, checkMediaCredits } from './credit-check-service';
 import { generatePlatformCopy, GeneratedCopy } from './generators/copy-generator';
 import { buildElevenLabsVoiceTags } from './elevenlabs-voices';
@@ -416,6 +417,10 @@ export async function runMediaGeneration(
         if (!campaign) {
             throw new Error(`Campaign not found: ${slug}`);
         }
+        // MULTI_MODEL_IMAGES (Phase F): shared active-image-backends list governing
+        // the non-flyer generated sections (hero/concepts, documentary, scenes).
+        // Unset/empty ⇒ primary backend only (single-model = legacy behavior).
+        const imageModels = existingManifest?.imageModelControls?.models as GeneratorService[] | undefined;
         const referenceDependentTypes: AssetType[] = [
             'ship_reference_image',
             'hero_image',
@@ -566,6 +571,7 @@ export async function runMediaGeneration(
                 runWithJob(slug, 'documentary_detail_image', getMediaImageGeneratorService(), 'documentary detail image modules', async () => {
                     const result = await generateDesignedAdArtifactPack(slug, brief!, campaign, {
                         includeDesignedAds: false,
+                        models: imageModels,
                     });
                     const stampedRecords = await Promise.all(result.documentaryDetails.map(async (record) => {
                         const next: AssetRecord = {
@@ -618,10 +624,10 @@ export async function runMediaGeneration(
 
                     // Use approved (includes auto_approved SerpAPI) candidates first; fall back to all active records.
                     const selectedHeroRecords = approvedReferenceCandidates.length > 0
-                        ? await importHeroAssetsFromReferences(slug, campaign, brief!, approvedReferenceCandidates, 5)
+                        ? await importHeroAssetsFromReferences(slug, campaign, brief!, approvedReferenceCandidates, 5, imageModels)
                         : availableReferenceCandidates.length > 0
-                            ? await importHeroAssetsFromReferences(slug, campaign, brief!, availableReferenceCandidates, 5)
-                            : await importHeroAssetsFromReferences(slug, campaign, brief!, [], 5);
+                            ? await importHeroAssetsFromReferences(slug, campaign, brief!, availableReferenceCandidates, 5, imageModels)
+                            : await importHeroAssetsFromReferences(slug, campaign, brief!, [], 5, imageModels);
 
                     const stampedHeroRecords = await Promise.all(selectedHeroRecords.map(async (record) => {
                         const next: AssetRecord = {
@@ -703,16 +709,18 @@ export async function runMediaGeneration(
         if (shouldRunAsset('aesthetic_concept', resolvedOptions.assetTypes)) {
             group1Promises.push(
                 runWithJob(slug, 'aesthetic_concept', getMediaImageGeneratorService(), 'concept art', async () => {
-                    const images = await generateAestheticConcepts(brief!);
+                    const { images, warnings } = await generateAestheticConcepts(brief!, 4, imageModels);
+                    warnings.forEach((w) => errors.push(`aesthetic_concept: ${w}`));
                     const records: AssetRecord[] = [];
                     for (const img of images) {
                         const rec = await uploadAndRecord(
-                            slug, img.assetId, 'aesthetic_concept', getMediaImageGeneratorService(),
+                            slug, img.assetId, 'aesthetic_concept', img.generator,
                             img.prompt, img.buffer, img.fileName, 'image/png',
                             ['concept', 'moodboard'], { width: 1080, height: 1080 },
                             undefined,
                             {
                                 eligibilityRole: 'source.editorial_alt',
+                                variantGroupId: img.variantGroupId,
                                 sourceQuality: computeSourceQualityForAsset({
                                     assetId: img.assetId,
                                     promptUsed: img.prompt,
@@ -952,14 +960,16 @@ export async function runMediaGeneration(
                         manifestReferenceRecords,
                     );
 
-                    const sceneImages = await generateSceneImages(
+                    const { images: sceneImages, warnings: sceneWarnings } = await generateSceneImages(
                         boundScenes,
                         sceneReferenceCandidates,
                         getAuthoritativeShipName(campaign) ?? 'TBD',
                         brief,
                         brief?.visual.plausibilityFramework.allowedProps.slice(0, 5) ?? [],
                         manifestReferenceRecords,
+                        imageModels,
                     );
+                    sceneWarnings.forEach((w) => errors.push(`scene_image: ${w}`));
                     // Phase 2: map each generated image back to its bound scene so
                     // preservedFeaturesReported can be stamped declaratively on the record.
                     // Phase 5 visual-compass lint will replace this declarative value with
@@ -998,17 +1008,18 @@ export async function runMediaGeneration(
                             : undefined;
                         const extras: Partial<AssetRecord> = {
                             eligibilityRole: 'source.group_action',
+                            variantGroupId: img.variantGroupId,
                         };
                         if (preservedFeaturesReported && preservedFeaturesReported.length > 0) {
                             extras.preservedFeaturesReported = preservedFeaturesReported;
                         }
                         if (sourceQuality) extras.sourceQuality = sourceQuality;
                         const rec = await uploadAndRecord(
-                            slug, img.assetId, 'scene_image', getMediaImageGeneratorService(),
+                            slug, img.assetId, 'scene_image', img.generator,
                             img.prompt, img.buffer, img.fileName, 'image/png',
                             tags, { width: 1920, height: 1080 },
                             undefined,
-                            Object.keys(extras).length > 0 ? extras : undefined,
+                            extras,
                         );
                         records.push(rec);
                     }
@@ -1132,9 +1143,13 @@ export async function runMediaGeneration(
         const cropsByFormat: Record<string, AssetRecord[]> = {};
 
         if (shouldRunAsset('platform_crop', resolvedOptions.assetTypes)) {
-            const effectiveHeroImages = mergeAssetRecords(existingManifest?.images.hero ?? [], heroRecords);
-            const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
-            const effectiveConcepts = mergeAssetRecords(existingManifest?.images.aestheticConcepts ?? [], conceptRecords);
+            // MULTI_MODEL_IMAGES (Phase F): collapse each multi-model section to the
+            // selected model-version before crop-source auto-selection, so platform
+            // crops are derived from the operator's chosen image, not a stale variant.
+            const cropSelections = existingManifest?.modelVersionSelections;
+            const effectiveHeroImages = collapseAssetVariantGroups(mergeAssetRecords(existingManifest?.images.hero ?? [], heroRecords), cropSelections);
+            const effectiveSceneImages = collapseAssetVariantGroups(mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords), cropSelections);
+            const effectiveConcepts = collapseAssetVariantGroups(mergeAssetRecords(existingManifest?.images.aestheticConcepts ?? [], conceptRecords), cropSelections);
             const cropSelectionManifest = existingManifest;
             const cropSourcePlan = planPlatformCropSources(
                 effectiveSceneImages,
@@ -1220,6 +1235,7 @@ export async function runMediaGeneration(
                 copySelections: existingManifest?.copySelections ?? {},
                 modelVersionSelections: existingManifest?.modelVersionSelections ?? {},
                 flyerControls: existingManifest?.flyerControls,
+                imageModelControls: existingManifest?.imageModelControls,
                 landingImageSets: existingManifest?.landingImageSets,
                 tiktokPromotionPackage: existingManifest?.tiktokPromotionPackage,
                 tiktokVideoEdits: existingManifest?.tiktokVideoEdits,
@@ -1307,8 +1323,13 @@ export async function runMediaGeneration(
         if (videoCreditsOk && hasProductionBible && brief!.productionBible!.storyboards.length > 0) {
             // Prefer freshly-generated scene image records; fall back to existing manifest
             const effectiveSceneImages = mergeAssetRecords(existingManifest?.images.sceneImages ?? [], sceneImageRecords);
+            // MULTI_MODEL_IMAGES (Phase F): collapse scene variant groups to the
+            // selected model-version BEFORE building the sceneId→url map. Both
+            // model-versions of a scene share the same sceneId tag, so without
+            // collapsing the last-stored variant would arbitrarily win and the
+            // storyboard video could assemble the non-selected image.
             const sceneImageMap = new Map<string, string>();
-            for (const rec of effectiveSceneImages) {
+            for (const rec of collapseAssetVariantGroups(effectiveSceneImages, existingManifest?.modelVersionSelections)) {
                 const sceneIdTag = rec.tags.find(t => t !== 'scene' && t !== 'revised');
                 if (sceneIdTag) sceneImageMap.set(sceneIdTag, rec.url);
             }
@@ -1486,6 +1507,7 @@ export async function runMediaGeneration(
             copySelections: existingManifest?.copySelections ?? {},
             modelVersionSelections: existingManifest?.modelVersionSelections ?? {},
             flyerControls: existingManifest?.flyerControls,
+            imageModelControls: existingManifest?.imageModelControls,
             landingImageSets: existingManifest?.landingImageSets,
             tiktokPromotionPackage: tiktokPromotionPackage ?? existingManifest?.tiktokPromotionPackage,
             tiktokVideoEdits: existingManifest?.tiktokVideoEdits,

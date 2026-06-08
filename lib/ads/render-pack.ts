@@ -11,6 +11,7 @@ import {
     getEffectivePriority,
     hasAllPreferredTags,
 } from '@/lib/campaigns/media/curation-contract';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import { lookupTemplate } from './template-registry';
 import type {
     AdCopySet,
@@ -137,12 +138,19 @@ function flattenManifestImages(manifest: CampaignMediaManifest | null, governanc
     // eligibilityRole: 'final.ad_artifact' and must never enter a source pool.
     // filterUsableAssets would also block them via isAdSourceEligible(), but
     // structural exclusion makes the contract explicit at the pool-build level.
+    //
+    // MULTI_MODEL_IMAGES (Phase F): collapse the multi-model sections to the
+    // operator-selected model-version BEFORE filtering, so an ad source pool
+    // carries one canonical image per logical item — never both the Gemini and
+    // OpenAI variant (which would double-count or let the slot resolver pick a
+    // non-selected version). Non-multi-model sections pass through unchanged.
+    const selections = manifest.modelVersionSelections;
     return {
-        hero: filterUsableAssets(manifest.images.hero ?? [], governance),
+        hero: filterUsableAssets(collapseAssetVariantGroups(manifest.images.hero ?? [], selections), governance),
         shipReferences: filterUsableAssets(manifest.images.shipReferences ?? [], governance),
-        sceneImages: filterUsableAssets(manifest.images.sceneImages ?? [], governance),
-        aestheticConcepts: filterUsableAssets(manifest.images.aestheticConcepts ?? [], governance),
-        documentaryDetails: filterUsableAssets(manifest.images.documentaryDetails ?? [], governance),
+        sceneImages: filterUsableAssets(collapseAssetVariantGroups(manifest.images.sceneImages ?? [], selections), governance),
+        aestheticConcepts: filterUsableAssets(collapseAssetVariantGroups(manifest.images.aestheticConcepts ?? [], selections), governance),
+        documentaryDetails: filterUsableAssets(collapseAssetVariantGroups(manifest.images.documentaryDetails ?? [], selections), governance),
         platformCrops: filterUsableAssets(Object.values(manifest.images.platformCrops ?? {}).flat(), governance),
         merchDesigns: filterUsableAssets(manifest.merch?.designs ?? [], governance),
         merchMockups: filterUsableAssets(manifest.merch?.mockups ?? [], governance),

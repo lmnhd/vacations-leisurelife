@@ -184,6 +184,69 @@ export function buildMetaAdsReviewUrl(adAccountId: string, adId: string): string
     return `https://adsmanager.facebook.com/adsmanager/manage/ads?${params.toString()}`;
 }
 
+export interface FacebookPagePostInput {
+    /** Caption / message body for the post. */
+    message: string;
+    /** Optional public image URL. When present the post is created via /photos. */
+    imageUrl?: string;
+    /** Optional outbound link (e.g. the campaign landing URL) for /feed posts. */
+    link?: string;
+    /**
+     * When false, the post is created unpublished (draft) so an operator can
+     * review it on the Page before it goes live. Defaults to false to match the
+     * repo's paused-ad / draft-for-approval safety pattern.
+     */
+    published?: boolean;
+}
+
+/**
+ * Publish (or stage) an organic post to the configured Facebook Page.
+ *
+ * - With an image: POST /{page-id}/photos { url, caption, published }.
+ *   Returns the photo's parent post id when available, else the photo id.
+ * - Without an image: POST /{page-id}/feed { message, link?, published }.
+ *
+ * This is organic Page posting — distinct from the paid ad path in
+ * distribution-marketing.ts which only ever creates paused Ads Manager drafts.
+ */
+export async function publishFacebookPagePost(
+    config: MetaAdsConfig,
+    input: FacebookPagePostInput,
+): Promise<{ postId: string; published: boolean }> {
+    const published = input.published ?? false;
+
+    if (input.imageUrl) {
+        const response = await postMetaGraphForm<{ id: string; post_id?: string }>(
+            `${config.pageId}/photos`,
+            config.accessToken,
+            {
+                url: input.imageUrl,
+                caption: input.message,
+                published: String(published),
+            },
+        );
+        const postId = response.post_id ?? response.id;
+        if (!postId) {
+            throw new Error('Facebook Page /photos did not return a post id');
+        }
+        return { postId, published };
+    }
+
+    const response = await postMetaGraphForm<{ id: string }>(
+        `${config.pageId}/feed`,
+        config.accessToken,
+        {
+            message: input.message,
+            published: String(published),
+            ...(input.link ? { link: input.link } : {}),
+        },
+    );
+    if (!response.id) {
+        throw new Error('Facebook Page /feed did not return a post id');
+    }
+    return { postId: response.id, published };
+}
+
 export async function getMetaProviderStatus(): Promise<MetaProviderStatus> {
     const config = getMetaAdsConfig();
     const lastValidatedAt = new Date().toISOString();

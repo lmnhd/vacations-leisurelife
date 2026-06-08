@@ -50,7 +50,9 @@ function RuleList({ rows, setRows, placeholder }: {
     );
 }
 
-export function FlyerControlsEditor({ slug, defaultNicheHint }: { slug: string; defaultNicheHint?: string | null }) {
+// Inner body (no <details> shell) — reused by the standalone editor and by the
+// tabbed media-controls container so the markup has a single source of truth.
+export function FlyerControlsBody({ slug, defaultNicheHint }: { slug: string; defaultNicheHint?: string | null }) {
     const [negations, setNegations] = useState<Row[]>([]);
     const [axes, setAxes] = useState<Row[]>([]);
     const [nicheHint, setNicheHint] = useState("");
@@ -133,20 +135,12 @@ export function FlyerControlsEditor({ slug, defaultNicheHint }: { slug: string; 
     const availableMap = new Map(backendAvailability.map((backend) => [backend.id, backend.available]));
 
     return (
-        <details className="border border-white/10 rounded-xl bg-slate-900/50">
-            <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-4 py-3 list-none">
-                <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-violet-400">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Flyer Generation Controls
-                </span>
-                <span className="flex items-center gap-2 text-[10px] text-slate-500">
+            <div className="space-y-4 px-4 py-3">
+                <div className="flex items-center justify-end gap-2 text-[10px] text-slate-500">
                     {loading && <Loader2 className="h-3 w-3 animate-spin" />}
                     {usingDefaults ? "using defaults" : "custom"}
                     <span className="text-slate-600">· {axisCount} renditions</span>
-                </span>
-            </summary>
-
-            <div className="space-y-4 border-t border-white/5 px-4 py-3">
+                </div>
                 <p className="text-[11px] text-slate-500">
                     These steer the production flyer prompt for <span className="text-slate-300">{slug || "this campaign"}</span>.
                     The pipeline generates one flyer per variation axis. Saved rules are used by both the Flyers
@@ -246,6 +240,24 @@ export function FlyerControlsEditor({ slug, defaultNicheHint }: { slug: string; 
                         Reset to Defaults
                     </button>
                 </div>
+            </div>
+    );
+}
+
+// Standalone editor — the <details> shell around the body, kept for any caller
+// that wants the flyer controls on their own (the media-generation page now uses
+// the tabbed MediaControlsTabs container instead).
+export function FlyerControlsEditor({ slug, defaultNicheHint }: { slug: string; defaultNicheHint?: string | null }) {
+    return (
+        <details className="border border-white/10 rounded-xl bg-slate-900/50">
+            <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-4 py-3 list-none">
+                <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-violet-400">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Flyer Generation Controls
+                </span>
+            </summary>
+            <div className="border-t border-white/5">
+                <FlyerControlsBody slug={slug} defaultNicheHint={defaultNicheHint} />
             </div>
         </details>
     );

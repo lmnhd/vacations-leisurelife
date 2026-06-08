@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import { AssetRecord } from '@/lib/campaigns/schema';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import { analyzeStoryboardShot, buildStoryboardShotPrompt } from '@/lib/campaigns/media/storyboard-motion-policy';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -31,8 +32,13 @@ export async function GET(
     const sceneLibrary = brief.productionBible.sceneLibrary;
     const storyboards = brief.productionBible.storyboards;
 
-    // Build sceneImageMap from existing manifest
-    const sceneImageRecords: AssetRecord[] = manifest?.images.sceneImages ?? [];
+    // Build sceneImageMap from existing manifest. MULTI_MODEL_IMAGES (Phase F):
+    // collapse scene variant groups to the selected model-version first (both
+    // variants share the sceneId tag), so the plan reflects the chosen image.
+    const sceneImageRecords: AssetRecord[] = collapseAssetVariantGroups(
+        manifest?.images.sceneImages ?? [],
+        manifest?.modelVersionSelections,
+    );
     const sceneImageMap: Record<string, { url: string; assetId: string }> = {};
     for (const rec of sceneImageRecords) {
         const sceneIdTag = rec.tags.find(t => t !== 'scene' && t !== 'revised');

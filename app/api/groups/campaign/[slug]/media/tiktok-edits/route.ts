@@ -3,6 +3,7 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest, updateManifestTikTokVideoEdits } from '@/lib/campaigns/media/media-store';
 import { inferTikTokFormat } from '@/lib/campaigns/media/generators/tiktok-formats/index';
 import { collectSelectableImageGroups, type HtmlTemplateManifest } from '@/lib/ads/html-templates/core';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import type { AssetRecord, CampaignMediaManifest, TikTokBeatEdit } from '@/lib/campaigns/schema';
 import type { TikTokSequenceBeat } from '@/lib/campaigns/media/generators/tiktok-formats/package-template';
 
@@ -48,7 +49,10 @@ function resolveBeatImage(beat: { imageAssetId?: string; sceneId: string }, mani
         const override = pool.find((r) => r.assetId === beat.imageAssetId);
         if (override) return { assetId: override.assetId, url: override.url, fromOverride: true, missing: false };
     }
-    const scene = manifest.images.sceneImages.find((r) => r.active && r.tags.includes(beat.sceneId));
+    // MULTI_MODEL_IMAGES (Phase F): search the already-collapsed `pool` (one
+    // canonical per variant group) rather than the raw sceneImages array, so the
+    // scene fallback resolves to the operator-selected model-version.
+    const scene = pool.find((r) => r.active !== false && r.tags?.includes(beat.sceneId) && r.assetType === 'scene_image');
     if (scene) return { assetId: scene.assetId, url: scene.url, fromOverride: false, missing: false };
     return { assetId: null, url: null, fromOverride: false, missing: true };
 }
@@ -189,9 +193,12 @@ export async function PATCH(
         const edits = updatedManifest.tiktokVideoEdits ?? null;
         const beats = format.buildSequenceBeats(brief, storyboard, promotionPackage, edits);
         const baselineBeats = format.buildSequenceBeats(brief, storyboard, promotionPackage, null);
+        // MULTI_MODEL_IMAGES (Phase F): collapse scenes to the selected version so
+        // the per-beat baseline resolves the chosen model-version.
+        const collapsedScenes = collapseAssetVariantGroups(updatedManifest.images.sceneImages, updatedManifest.modelVersionSelections);
         const resolved = beats.map((beat, index) => {
-            const sceneDefault = updatedManifest.images.sceneImages.find(
-                (r) => r.active && r.tags.includes(beat.sceneId),
+            const sceneDefault = collapsedScenes.find(
+                (r) => r.active !== false && r.tags.includes(beat.sceneId),
             );
             return {
                 index,

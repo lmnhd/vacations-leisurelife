@@ -581,6 +581,18 @@ export default function ConversionPage() {
         void loadLeads();
     }, [loadLeads]);
 
+    // Auto-refresh every 5 minutes so the ops view stays current without a manual click.
+    // Skips ticks while the tab is hidden to avoid pointless background fetches.
+    useEffect(() => {
+        const REFRESH_MS = 5 * 60 * 1000;
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                void loadLeads();
+            }
+        }, REFRESH_MS);
+        return () => clearInterval(interval);
+    }, [loadLeads]);
+
     async function handleResetCampaign() {
         if (!campaign) {
             return;

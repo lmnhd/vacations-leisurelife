@@ -256,8 +256,17 @@ export const SLOT_TYPES: Record<string, Record<string, AdAssetType[]>> = {
 // ── Image pool helpers ────────────────────────────────────────────────────────
 
 export function buildImagePool(manifest: HtmlTemplateManifest): ImagePool {
+    // MULTI_MODEL_IMAGES (Phase F): collapse each section's variant groups to the
+    // operator-selected model-version (default = primary backend) BEFORE building
+    // the auto-pick pool. Without this, a section with 2 model-versions per logical
+    // image would enumerate both and resolveSlotImages could place the same logical
+    // image twice (or pick a non-selected variant). Sections with no variant groups
+    // pass through unchanged.
     const active = (assets: HtmlTemplateAsset[] = []) =>
-        assets.filter((a) => a.active !== false).map((a) => a.url);
+        collapseVariantGroups(
+            assets.filter((a) => a.active !== false),
+            manifest.modelVersionSelections,
+        ).map((a) => a.url);
     return {
         // Flyer images live in their own manifest section now, so the grounded
         // hero pool here is just the heroes — no tag filtering needed. Flyers are

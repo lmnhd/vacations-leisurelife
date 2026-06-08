@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { Campaign } from '../types';
-import { AssetCuration, AssetRecord, CampaignAestheticBrief, ShipReferenceCandidate } from '../schema';
+import { AssetCuration, AssetRecord, CampaignAestheticBrief, GeneratorService, ShipReferenceCandidate } from '../schema';
 import { applyVisionEvaluationToCategory } from './vision-evaluator';
 import { searchGoogleImages } from '@/lib/services/media/google-images';
 import { saveAssetRecord } from './media-store';
@@ -12,7 +12,7 @@ import {
     generateReferenceGroundedHeroImages,
     measureImageFingerprintDistance,
 } from './generators/stability-generator';
-import { getMediaImageGeneratorService } from './media-pipeline-config';
+import { PRIMARY_IMAGE_BACKEND_ID } from './generators/image-backend-meta';
 import {
     getShipFamilyKeywords,
     getSiblingShipNames,
@@ -1072,60 +1072,85 @@ function selectHeroCandidates(candidates: ReadonlyArray<ShipReferenceCandidate>,
     return selected;
 }
 
+// MULTI_MODEL_IMAGES (Phase F): hero import is variant-aware. Per accepted hero
+// the PRIMARY (Gemini) variant drives near-duplicate detection + the logical
+// hero ordinal/cap; all model-versions of that hero share `variantGroupId =
+// img_hero_NNN` and are persisted alongside. With one active backend this is a
+// single-member group ⇒ identical to the legacy single-model output.
 export async function importHeroAssetsFromReferences(
     slug: string,
     campaign: Campaign,
     brief: CampaignAestheticBrief,
     candidates: ReadonlyArray<ShipReferenceCandidate>,
-    maxHeroCount: number = 5
+    maxHeroCount: number = 5,
+    models?: GeneratorService[],
 ): Promise<AssetRecord[]> {
     const selectedCandidates = selectHeroCandidates(candidates, Math.min(candidates.length, maxHeroCount + 4));
     const shipName = getResolvedShipName(campaign);
     const records: AssetRecord[] = [];
     const acceptedHeroBuffers: Buffer[] = [];
     const heroErrors: string[] = [];
+    let acceptedHeroCount = 0;
+
+    // Pick the canonical (primary) variant from a group for dedup/ordinal logic.
+    const pickPrimary = (images: { generator: GeneratorService; buffer: Buffer }[]) =>
+        images.find((img) => img.generator === PRIMARY_IMAGE_BACKEND_ID) ?? images[0];
+
     for (let index = 0; index < selectedCandidates.length; index += 1) {
-        if (records.length >= maxHeroCount) {
+        if (acceptedHeroCount >= maxHeroCount) {
             break;
         }
 
         const candidate = selectedCandidates[index];
         try {
-            const generatedHeroImages = await generateReferenceGroundedHeroImages(brief, shipName, candidate, records.length, 1);
-            const generatedHero = generatedHeroImages[0];
-            if (await isNearDuplicateHero(generatedHero.buffer, acceptedHeroBuffers)) {
+            const { images: heroVariants, warnings } = await generateReferenceGroundedHeroImages(
+                brief, shipName, candidate, acceptedHeroCount, models,
+            );
+            heroErrors.push(...warnings);
+            const primary = pickPrimary(heroVariants);
+            if (!primary) {
+                continue;
+            }
+            // Dedup on the primary variant only — the OpenAI version of the same
+            // hero is expected to differ and must not be independently rejected.
+            if (await isNearDuplicateHero(primary.buffer, acceptedHeroBuffers)) {
                 continue;
             }
 
-            const heroOrdinal = String(records.length + 1).padStart(3, '0');
-            const assetId = `img_hero_${heroOrdinal}`;
-            const fileName = `images/hero/hero_${heroOrdinal}_embellished.png`;
-            const url = await storeAsset(slug, assetId, fileName, generatedHero.buffer, 'image/png');
-            const record: AssetRecord = {
-                assetId,
-                assetType: 'hero_image',
-                url,
-                generator: getMediaImageGeneratorService(),
-                promptUsed: generatedHero.prompt,
-                sourcePageUrl: candidate.contextUrl,
-                sourceThumbnailUrl: candidate.thumbnailUrl,
-                sourceQuery: candidate.query,
-                selectionScore: scoreHeroCandidate(candidate),
-                dimensions: {
-                    width: candidate.width,
-                    height: candidate.height,
-                },
-                fileSizeBytes: generatedHero.buffer.length,
-                mimeType: 'image/png',
-                tags: ['ship-reference', candidate.category, 'hero', 'embellished'],
-                createdAt: new Date().toISOString(),
-                reviewStatus: 'needs_review',
-                version: 1,
-                active: true,
-            };
-            await saveAssetRecord(slug, record);
-            acceptedHeroBuffers.push(generatedHero.buffer);
-            records.push(record);
+            const heroOrdinal = String(acceptedHeroCount + 1).padStart(3, '0');
+            const variantGroupId = `img_hero_${heroOrdinal}`;
+            for (const variant of heroVariants) {
+                const assetId = `${variantGroupId}__${variant.generator}`;
+                const fileName = `images/hero/hero_${heroOrdinal}_embellished__${variant.generator}.png`;
+                const url = await storeAsset(slug, assetId, fileName, variant.buffer, 'image/png');
+                const record: AssetRecord = {
+                    assetId,
+                    assetType: 'hero_image',
+                    url,
+                    generator: variant.generator,
+                    variantGroupId,
+                    promptUsed: variant.prompt,
+                    sourcePageUrl: candidate.contextUrl,
+                    sourceThumbnailUrl: candidate.thumbnailUrl,
+                    sourceQuery: candidate.query,
+                    selectionScore: scoreHeroCandidate(candidate),
+                    dimensions: {
+                        width: candidate.width,
+                        height: candidate.height,
+                    },
+                    fileSizeBytes: variant.buffer.length,
+                    mimeType: 'image/png',
+                    tags: ['ship-reference', candidate.category, 'hero', 'embellished'],
+                    createdAt: new Date().toISOString(),
+                    reviewStatus: 'needs_review',
+                    version: 1,
+                    active: true,
+                };
+                await saveAssetRecord(slug, record);
+                records.push(record);
+            }
+            acceptedHeroBuffers.push(primary.buffer);
+            acceptedHeroCount += 1;
         } catch (error) {
             heroErrors.push(error instanceof Error ? error.message : String(error));
         }
@@ -1135,37 +1160,55 @@ export async function importHeroAssetsFromReferences(
         return records;
     }
 
-    const fallbackHeroes = await generateHeroImages(brief, shipName, maxHeroCount);
+    const { images: fallbackHeroes, warnings: fallbackWarnings } = await generateHeroImages(
+        brief, shipName, maxHeroCount, models,
+    );
+    heroErrors.push(...fallbackWarnings);
+
+    // Group fallback variants by their variantGroupId so dedup runs on the
+    // primary member and all members of an accepted hero are stored together.
+    const fallbackGroups = new Map<string, typeof fallbackHeroes>();
     for (const hero of fallbackHeroes) {
-        if (await isNearDuplicateHero(hero.buffer, acceptedHeroBuffers)) {
+        const batch = fallbackGroups.get(hero.variantGroupId) ?? [];
+        batch.push(hero);
+        fallbackGroups.set(hero.variantGroupId, batch);
+    }
+
+    for (const [, groupVariants] of fallbackGroups) {
+        if (acceptedHeroCount >= maxHeroCount) {
+            break;
+        }
+        const primary = pickPrimary(groupVariants);
+        if (!primary || await isNearDuplicateHero(primary.buffer, acceptedHeroBuffers)) {
             continue;
         }
 
-        const heroOrdinal = String(records.length + 1).padStart(3, '0');
-        const assetId = `img_hero_${heroOrdinal}`;
-        const fileName = `images/hero/hero_${heroOrdinal}_fallback.png`;
-        const url = await storeAsset(slug, assetId, fileName, hero.buffer, 'image/png');
-        const record: AssetRecord = {
-            assetId,
-            assetType: 'hero_image',
-            url,
-            generator: getMediaImageGeneratorService(),
-            promptUsed: hero.prompt,
-            fileSizeBytes: hero.buffer.length,
-            mimeType: 'image/png',
-            tags: ['hero', 'fallback'],
-            createdAt: new Date().toISOString(),
-            reviewStatus: 'needs_review',
-            version: 1,
-            active: true,
-        };
-        await saveAssetRecord(slug, record);
-        acceptedHeroBuffers.push(hero.buffer);
-        records.push(record);
-
-        if (records.length >= maxHeroCount) {
-            break;
+        const heroOrdinal = String(acceptedHeroCount + 1).padStart(3, '0');
+        const variantGroupId = `img_hero_${heroOrdinal}`;
+        for (const variant of groupVariants) {
+            const assetId = `${variantGroupId}__${variant.generator}`;
+            const fileName = `images/hero/hero_${heroOrdinal}_fallback__${variant.generator}.png`;
+            const url = await storeAsset(slug, assetId, fileName, variant.buffer, 'image/png');
+            const record: AssetRecord = {
+                assetId,
+                assetType: 'hero_image',
+                url,
+                generator: variant.generator,
+                variantGroupId,
+                promptUsed: variant.prompt,
+                fileSizeBytes: variant.buffer.length,
+                mimeType: 'image/png',
+                tags: ['hero', 'fallback'],
+                createdAt: new Date().toISOString(),
+                reviewStatus: 'needs_review',
+                version: 1,
+                active: true,
+            };
+            await saveAssetRecord(slug, record);
+            records.push(record);
         }
+        acceptedHeroBuffers.push(primary.buffer);
+        acceptedHeroCount += 1;
     }
 
     if (records.length === 0 && heroErrors.length > 0) {

@@ -625,6 +625,25 @@ export async function updateManifestFlyerControls(
     return finalizedManifest;
 }
 
+export async function updateManifestImageModelControls(
+    slug: string,
+    controls: { models?: string[] },
+): Promise<CampaignMediaManifest> {
+    const existingManifest = await getMediaManifest(slug);
+    if (!existingManifest) {
+        throw new Error(`No media manifest found for campaign ${slug}`);
+    }
+
+    const finalizedManifest = finalizeManifest({
+        ...existingManifest,
+        imageModelControls: {
+            ...(controls.models ? { models: controls.models.map((s) => s.trim()).filter(Boolean) } : {}),
+        },
+    });
+    await saveMediaManifest(finalizedManifest);
+    return finalizedManifest;
+}
+
 function updateAssetInManifest(manifest: CampaignMediaManifest, updatedRecord: AssetRecord): CampaignMediaManifest {
     return {
         ...manifest,

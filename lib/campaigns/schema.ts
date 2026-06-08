@@ -1559,6 +1559,12 @@ export const CampaignMediaManifestSchema = z.object({
         // Omitted/empty ⇒ primary backend only (single-model). GeneratorService ids.
         models: z.array(z.string()).optional(),
     }).optional(),
+    // MULTI_MODEL_IMAGES (Phase F): shared active-image-backends list governing the
+    // non-flyer generated sections — hero/concepts, documentary details, and scenes.
+    // Omitted/empty ⇒ primary backend only (single-model, identical to legacy).
+    imageModelControls: z.object({
+        models: z.array(z.string()).optional(),
+    }).optional(),
     // LANDING_IMAGE_STUDIO: operator-curated landing collections. Each is an
     // ordered list of assetIds. Present & non-empty ⇒ FULL-REPLACE that collection
     // (the view-model uses exactly this list/order); absent/empty ⇒ auto algorithm.
@@ -1682,6 +1688,7 @@ export const DistributionPlatformEnum = z.enum([
     'instagram_reels',
     'instagram_story',
     'facebook_ad',
+    'facebook_page',
     'google_display',
     'youtube',
     'pinterest',

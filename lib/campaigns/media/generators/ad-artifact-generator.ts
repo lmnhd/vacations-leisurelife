@@ -1,9 +1,12 @@
-import type { AssetRecord, CampaignAestheticBrief } from '../../schema';
+import type { AssetRecord, CampaignAestheticBrief, GeneratorService } from '../../schema';
 import type { Campaign } from '../../types';
-import { DESIGNED_MEDIA_CONFIG, getMediaImageGeneratorService } from '../media-pipeline-config';
+import { DESIGNED_MEDIA_CONFIG } from '../media-pipeline-config';
 import { storeAsset } from '../storage-client';
 import { getMediaManifest, saveAssetRecord } from '../media-store';
 import { generateImageFromPrompt } from './stability-generator';
+import { getActiveImageBackends } from './image-backends';
+import { generateGptImage2 } from './gpt-image';
+import { PRIMARY_IMAGE_BACKEND_ID } from './image-backend-meta';
 import { extractNicheTokens } from '../../design-system/niche-tokens';
 import { buildDocumentaryDetailSpecs } from '../../design-system/documentary-prompts';
 import { buildDesignedAdRenderSpecs, renderDesignedAdArtifact } from '../../design-system/ad-templates';
@@ -20,6 +23,7 @@ function makeRecord(input: {
     tags: string[];
     dimensions?: { width: number; height: number };
     sourceImageUrl?: string;
+    variantGroupId?: string;
 }): AssetRecord {
     return {
         assetId: input.assetId,
@@ -36,6 +40,7 @@ function makeRecord(input: {
         active: true,
         ...(input.dimensions ? { dimensions: input.dimensions } : {}),
         ...(input.sourceImageUrl ? { sourceImageUrl: input.sourceImageUrl } : {}),
+        ...(input.variantGroupId ? { variantGroupId: input.variantGroupId } : {}),
     };
 }
 
@@ -49,11 +54,38 @@ async function storeGeneratedRecord(
     return record;
 }
 
+// MULTI_MODEL_IMAGES (Phase F): produce one buffer per active backend for a
+// documentary-detail prompt. Documentary details are text-to-image only, so
+// every backend (Gemini via generateImageFromPrompt, gpt-image-2 text-only)
+// runs the same prompt. Failures are isolated per backend.
+async function generateDocumentaryDetailVariants(
+    prompt: string,
+    models?: GeneratorService[],
+): Promise<{
+    variants: Array<{ generator: GeneratorService; buffer: Buffer }>;
+    errors: string[];
+}> {
+    const backends = getActiveImageBackends(models);
+    const variants: Array<{ generator: GeneratorService; buffer: Buffer }> = [];
+    const errors: string[] = [];
+    for (const backend of backends) {
+        try {
+            const buffer = backend.id === 'gemini3_flash'
+                ? await generateImageFromPrompt(prompt)
+                : await generateGptImage2(prompt, { aspect: '16:9' });
+            variants.push({ generator: backend.id, buffer });
+        } catch (err) {
+            errors.push(`[${backend.id}] ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+    return { variants, errors };
+}
+
 export async function generateDesignedAdArtifactPack(
     slug: string,
     brief: CampaignAestheticBrief,
     campaign: Campaign | null,
-    options: { includeDesignedAds?: boolean } = {},
+    options: { includeDesignedAds?: boolean; models?: GeneratorService[] } = {},
 ): Promise<AdArtifactGenerationResult> {
     const existingManifest = await getMediaManifest(slug);
     const tokens = extractNicheTokens(brief, campaign);
@@ -64,30 +96,54 @@ export async function generateDesignedAdArtifactPack(
         DESIGNED_MEDIA_CONFIG.documentaryDetailBudget,
     );
 
+    // documentaryDetails returns ALL model-versions (each variant record). The
+    // designed-ad source set, however, must use exactly ONE canonical version
+    // per logical detail, so we track the primary record/buffer separately and
+    // feed only those into buildDesignedAdRenderSpecs below.
     const documentaryDetails: AssetRecord[] = [];
+    const canonicalDetails: AssetRecord[] = [];
     const sourceBuffers = new Map<string, Buffer>();
     for (const spec of detailSpecs) {
-        const buffer = await generateImageFromPrompt(spec.prompt);
-        const record = await storeGeneratedRecord(slug, {
-            assetId: spec.assetId,
-            assetType: 'documentary_detail_image',
-            generator: getMediaImageGeneratorService(),
-            promptUsed: spec.prompt,
-            buffer,
-            fileName: spec.fileName,
-            mimeType: 'image/png',
-            tags: ['documentary_detail', spec.kind, 'image_module'],
-            dimensions: { width: 1920, height: 1080 },
-        });
-        documentaryDetails.push(record);
-        sourceBuffers.set(record.assetId, buffer);
+        const variantGroupId = spec.assetId;
+        const { variants, errors } = await generateDocumentaryDetailVariants(spec.prompt, options.models);
+        if (errors.length > 0) {
+            console.warn(`[ad-artifact-generator] documentary detail ${variantGroupId} backend warnings: ${errors.join(' | ')}`);
+        }
+        for (const variant of variants) {
+            const isPrimary = variant.generator === PRIMARY_IMAGE_BACKEND_ID;
+            // Suffix multi-model variant ids/paths; keep the legacy id when a
+            // single backend runs so existing assets and bindings are stable.
+            const isMultiModel = variants.length > 1;
+            const assetId = isMultiModel ? `${variantGroupId}__${variant.generator}` : spec.assetId;
+            const fileName = isMultiModel
+                ? spec.fileName.replace(/(\.[a-z0-9]+)$/i, `__${variant.generator}$1`)
+                : spec.fileName;
+            const record = await storeGeneratedRecord(slug, {
+                assetId,
+                assetType: 'documentary_detail_image',
+                generator: variant.generator,
+                promptUsed: spec.prompt,
+                buffer: variant.buffer,
+                fileName,
+                mimeType: 'image/png',
+                tags: ['documentary_detail', spec.kind, 'image_module'],
+                dimensions: { width: 1920, height: 1080 },
+                ...(isMultiModel ? { variantGroupId } : {}),
+            });
+            documentaryDetails.push(record);
+            // Only the canonical (primary, or sole) variant seeds designed ads.
+            if (isPrimary || variants.length === 1) {
+                canonicalDetails.push(record);
+                sourceBuffers.set(record.assetId, variant.buffer);
+            }
+        }
     }
 
     const designedAds: AssetRecord[] = [];
     if (options.includeDesignedAds !== false) {
         const adFormatBias = brief.identityBlueprint?.adFormatBias ?? [];
         const trustImages = (existingManifest?.images.shipReferences ?? []).filter((record) => record.active && !!record.url);
-        for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, documentaryDetails, trustImages)) {
+        for (const spec of buildDesignedAdRenderSpecs(tokens, adFormatBias, canonicalDetails, trustImages)) {
             let sourceBuffer: Buffer | undefined;
             if (spec.sourceImage) {
                 sourceBuffer = sourceBuffers.get(spec.sourceImage.assetId);

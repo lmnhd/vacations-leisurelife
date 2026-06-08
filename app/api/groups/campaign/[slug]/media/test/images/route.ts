@@ -135,7 +135,7 @@ export async function POST(
         }
 
         if (generator === 'stability_concepts') {
-            const images = await generateAestheticConcepts(brief, 1);
+            const { images } = await generateAestheticConcepts(brief, 1);
             const img = images[0];
             const cdnUrl = await uploadAsset(slug, img.fileName, img.buffer, 'image/png');
             const record: AssetRecord = {
@@ -303,7 +303,7 @@ export async function POST(
             }
             const candidates = await discoverShipReferenceCandidates(campaign, 2);
             const shipName = campaign.matchedShipName ?? campaign.shipTarget ?? 'TBD';
-            const generatedImages = await generateSceneImages(
+            const { images: generatedImages } = await generateSceneImages(
                 brief.productionBible.sceneLibrary,
                 candidates,
                 shipName,

@@ -5,6 +5,7 @@ import { assertAestheticBriefReadyForMedia } from '@/lib/campaigns/aesthetic-red
 import { buildElevenLabsVoiceTags } from '@/lib/campaigns/media/elevenlabs-voices';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import { getMediaManifest, saveAssetRecord } from '@/lib/campaigns/media/media-store';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import {
     generateHeroExplainer,
     generateThresholdAnnouncement,
@@ -78,8 +79,9 @@ export async function POST(
                 return NextResponse.json({ error: 'TikTok seed generation now requires a Production Bible storyboard with deliverableId "tiktok_seed"' }, { status: 400 });
             }
 
+            // MULTI_MODEL_IMAGES (Phase F): collapse scenes to the selected version first.
             const sceneImageMap = new Map<string, string>();
-            for (const record of manifest.images.sceneImages ?? []) {
+            for (const record of collapseAssetVariantGroups(manifest.images.sceneImages ?? [], manifest.modelVersionSelections)) {
                 const sceneIdTag = record.tags.find((tag) => tag !== 'scene' && tag !== 'revised');
                 if (sceneIdTag) {
                     sceneImageMap.set(sceneIdTag, record.url);

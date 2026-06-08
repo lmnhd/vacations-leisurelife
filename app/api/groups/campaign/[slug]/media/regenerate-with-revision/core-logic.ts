@@ -11,14 +11,15 @@ import {
 } from '@/lib/campaigns/media/media-store';
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
 import { generateImageFromPrompt, generateNanoBananaImage } from '@/lib/campaigns/media/generators/stability-generator';
+import { getActiveImageBackends } from '@/lib/campaigns/media/generators/image-backends';
+import { generateGptImage2 } from '@/lib/campaigns/media/generators/gpt-image';
 import { generateAmbientNarration, generateHypeClip } from '@/lib/campaigns/media/generators/elevenlabs-generator';
 import { generateStoryboardVideo } from '@/lib/campaigns/media/generators/tiktok-seed-generator';
 import { buildElevenLabsVoiceTags, isElevenLabsVoiceTag } from '@/lib/campaigns/media/elevenlabs-voices';
-import { selectPreferredAssetForContext } from '@/lib/campaigns/media/image-selection';
-import { AssetRecord, AssetType, CampaignMediaManifest } from '@/lib/campaigns/schema';
+import { selectPreferredAssetForContext, collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
+import { AssetRecord, AssetType, CampaignMediaManifest, GeneratorService } from '@/lib/campaigns/schema';
 import {
     NANO_BANANA_CONFIG,
-    getMediaImageGeneratorService,
     getActiveVideoGeneratorService,
 } from '@/lib/campaigns/media/media-pipeline-config';
 import { randomUUID } from 'crypto';
@@ -238,6 +239,64 @@ function replaceSlotInManifest(
     return manifest;
 }
 
+// MULTI_MODEL_IMAGES (Phase F): replace EVERY member of an image asset's variant
+// group with a fresh set of model-versions. Removes all assets in `oldGroupAssetIds`
+// from the section and appends `newRecords`. Image sections only (the multi-model
+// revision path never touches video/audio). Falls back to identity for unknown types.
+function replaceVariantGroupInManifest(
+    manifest: CampaignMediaManifest,
+    oldGroupAssetIds: ReadonlySet<string>,
+    newRecords: readonly AssetRecord[],
+    assetType: AssetType,
+): CampaignMediaManifest {
+    const swap = (existing: AssetRecord[] = []) => [
+        ...existing.filter((r) => !oldGroupAssetIds.has(r.assetId)),
+        ...newRecords,
+    ];
+    switch (assetType) {
+        case 'scene_image':
+            return { ...manifest, images: { ...manifest.images, sceneImages: swap(manifest.images.sceneImages) } };
+        case 'hero_image':
+            return { ...manifest, images: { ...manifest.images, hero: swap(manifest.images.hero) } };
+        case 'flyer_image':
+            return { ...manifest, images: { ...manifest.images, flyerImages: swap(manifest.images.flyerImages) } };
+        case 'aesthetic_concept':
+            return { ...manifest, images: { ...manifest.images, aestheticConcepts: swap(manifest.images.aestheticConcepts) } };
+        case 'documentary_detail_image':
+            return { ...manifest, images: { ...manifest.images, documentaryDetails: swap(manifest.images.documentaryDetails) } };
+        default:
+            return manifest;
+    }
+}
+
+// MULTI_MODEL_IMAGES (Phase F): the active records for one image section, used to
+// enumerate every member of an existing variant group before replacing it.
+function getSectionAssets(manifest: CampaignMediaManifest, assetType: AssetType): AssetRecord[] {
+    switch (assetType) {
+        case 'scene_image': return manifest.images.sceneImages ?? [];
+        case 'hero_image': return manifest.images.hero ?? [];
+        case 'flyer_image': return manifest.images.flyerImages ?? [];
+        case 'aesthetic_concept': return manifest.images.aestheticConcepts ?? [];
+        case 'documentary_detail_image': return manifest.images.documentaryDetails ?? [];
+        default: return [];
+    }
+}
+
+// Deactivate every asset id in the old group. The triggering asset is always
+// included; sibling model-versions are deactivated too so a stale variant can't
+// linger in the pool after its group is regenerated.
+async function deactivateGroup(
+    slug: string,
+    groupAssetIds: ReadonlySet<string>,
+    triggeringAssetId: string,
+): Promise<void> {
+    const ids = new Set(groupAssetIds);
+    ids.add(triggeringAssetId);
+    for (const id of ids) {
+        await deactivateAssetRecord(slug, id);
+    }
+}
+
 function retargetManifestAssetReferences(
     manifest: CampaignMediaManifest,
     oldAssetId: string,
@@ -343,7 +402,6 @@ export async function handleRegenerateWithRevisionRequest(
 
         const { assetType } = existingAsset;
         const shortId = randomUUID().slice(0, 8);
-        const imageService = getMediaImageGeneratorService();
         const videoService = getActiveVideoGeneratorService();
 
         let newRecord: AssetRecord;
@@ -360,13 +418,6 @@ export async function handleRegenerateWithRevisionRequest(
                 revisionNote,
                 revisedPrompt
             );
-            const imageBuffer = assetType === 'flyer_image'
-                ? await generateNanoBananaImage(
-                    newPrompt,
-                    NANO_BANANA_CONFIG.conceptAspectRatio,
-                    NANO_BANANA_CONFIG.heroImageSize,
-                )
-                : await generateImageFromPrompt(newPrompt);
             const typePrefix = assetType === 'hero_image'
                 ? 'hero'
                 : assetType === 'aesthetic_concept'
@@ -376,29 +427,115 @@ export async function handleRegenerateWithRevisionRequest(
                         : assetType === 'flyer_image'
                             ? 'flyer'
                             : 'scene';
-            const newAssetId = `img_${typePrefix}_rev_${shortId}`;
-            const url = await storeAsset(slug, newAssetId, `images/${typePrefix}s/revised_${shortId}.png`, imageBuffer, 'image/png');
-            newRecord = {
-                assetId: newAssetId,
-                assetType,
-                url,
-                generator: imageService,
-                promptUsed: newPrompt,
-                fileSizeBytes: imageBuffer.length,
-                mimeType: 'image/png',
-                tags: [...existingAsset.tags, 'revised'],
-                createdAt: new Date().toISOString(),
-                reviewStatus: 'needs_review',
-                version: (existingAsset.version ?? 1) + 1,
-                active: true,
-                dimensions: assetType === 'flyer_image'
-                    ? { width: 2048, height: 2048 }
-                    : { width: 1920, height: 1080 },
-                eligibilityRole: existingAsset.eligibilityRole,
-                curation: buildRegeneratedCuration(existingAsset),
-                variantGroupId: existingAsset.variantGroupId,
+            const dimensions = assetType === 'flyer_image'
+                ? { width: 2048, height: 2048 }
+                : { width: 1920, height: 1080 };
+
+            // MULTI_MODEL_IMAGES (Phase F): a revision now respects the campaign's
+            // active image models. Flyers use their own flyerControls.models; every
+            // other image section uses the shared imageModelControls.models. With one
+            // active backend this is identical to the legacy single-asset replace;
+            // with two, the tile is regenerated as a Gemini/OpenAI variant pair that
+            // shares a variantGroupId so the review-panel source toggle appears.
+            const requestedModels = (assetType === 'flyer_image'
+                ? manifest.flyerControls?.models
+                : manifest.imageModelControls?.models) as GeneratorService[] | undefined;
+            const backends = getActiveImageBackends(requestedModels);
+            const isMultiModel = backends.length > 1;
+
+            // The revision path is text-to-image for every backend (it always was,
+            // even for heroes/scenes). Flyers keep their square nano aspect.
+            const renderBuffer = async (backendId: GeneratorService): Promise<Buffer> => {
+                if (backendId === 'gemini3_flash') {
+                    return assetType === 'flyer_image'
+                        ? generateNanoBananaImage(newPrompt, NANO_BANANA_CONFIG.conceptAspectRatio, NANO_BANANA_CONFIG.heroImageSize)
+                        : generateImageFromPrompt(newPrompt);
+                }
+                return generateGptImage2(newPrompt, { aspect: assetType === 'flyer_image' ? '1:1' : '16:9' });
             };
-            await saveAssetRecord(slug, newRecord);
+
+            // Stable group id for the regenerated set: reuse the existing group when
+            // present (so selections/bindings keyed on it survive), else mint one.
+            const variantGroupId = existingAsset.variantGroupId ?? `img_${typePrefix}_rev_${shortId}`;
+            const newRecords: AssetRecord[] = [];
+            const renderErrors: string[] = [];
+            for (const backend of backends) {
+                try {
+                    const imageBuffer = await renderBuffer(backend.id);
+                    const newAssetId = isMultiModel
+                        ? `${variantGroupId}__${backend.id}`
+                        : `img_${typePrefix}_rev_${shortId}`;
+                    const fileName = isMultiModel
+                        ? `images/${typePrefix}s/revised_${shortId}__${backend.id}.png`
+                        : `images/${typePrefix}s/revised_${shortId}.png`;
+                    const url = await storeAsset(slug, newAssetId, fileName, imageBuffer, 'image/png');
+                    newRecords.push({
+                        assetId: newAssetId,
+                        assetType,
+                        url,
+                        generator: backend.id,
+                        promptUsed: newPrompt,
+                        fileSizeBytes: imageBuffer.length,
+                        mimeType: 'image/png',
+                        tags: [...existingAsset.tags, 'revised'],
+                        createdAt: new Date().toISOString(),
+                        reviewStatus: 'needs_review',
+                        version: (existingAsset.version ?? 1) + 1,
+                        active: true,
+                        dimensions,
+                        eligibilityRole: existingAsset.eligibilityRole,
+                        curation: buildRegeneratedCuration(existingAsset),
+                        ...(isMultiModel ? { variantGroupId } : { variantGroupId: existingAsset.variantGroupId }),
+                    });
+                } catch (err) {
+                    renderErrors.push(`[${backend.id}] ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
+
+            if (newRecords.length === 0) {
+                return { status: 502, data: { error: `Regeneration failed for all image models: ${renderErrors.join(' | ')}` } };
+            }
+
+            for (const record of newRecords) {
+                await saveAssetRecord(slug, record);
+            }
+
+            // Remove every member of the OLD variant group (or just the single old
+            // asset), then append the freshly generated set. This keeps an A/B pair
+            // from being orphaned when the revised set replaces it.
+            const oldGroupAssetIds = new Set<string>(
+                existingAsset.variantGroupId
+                    ? getSectionAssets(manifest, assetType)
+                        .filter((r) => (r.variantGroupId ?? r.assetId) === existingAsset.variantGroupId)
+                        .map((r) => r.assetId)
+                    : [assetId],
+            );
+
+            await deactivateGroup(slug, oldGroupAssetIds, assetId);
+
+            const swappedManifest = replaceVariantGroupInManifest(manifest, oldGroupAssetIds, newRecords, assetType);
+            const retargetedManifest = retargetManifestAssetReferences(swappedManifest, assetId, newRecords[0].assetId);
+            const finalMultiManifest: CampaignMediaManifest = {
+                ...retargetedManifest,
+                generatedAt: new Date().toISOString(),
+                totalAssets: countManifestAssets(retargetedManifest),
+            };
+            await saveMediaManifest(finalMultiManifest);
+            await updateCampaignMediaStatus(slug, 'partial');
+
+            return {
+                status: 200,
+                data: {
+                    oldAssetId: assetId,
+                    newAssetId: newRecords[0].assetId,
+                    newAssetIds: newRecords.map((r) => r.assetId),
+                    variantGroupId: isMultiModel ? variantGroupId : undefined,
+                    models: newRecords.map((r) => r.generator),
+                    applyMode,
+                    revisedPrompt: newPrompt,
+                    manifest: finalMultiManifest,
+                },
+            };
 
         } else if (VIDEO_ASSET_TYPES.has(assetType)) {
             if (!brief.productionBible) {
@@ -415,13 +552,16 @@ export async function handleRegenerateWithRevisionRequest(
                 return { status: 422, data: { error: `Storyboard not found for deliverableId: ${delivId}` } };
             }
 
+            // MULTI_MODEL_IMAGES (Phase F): collapse scene variants to the selected
+            // model-version before mapping (both variants share the sceneId tag).
             const sceneImageMap = new Map<string, string>();
-            for (const rec of manifest.images.sceneImages) {
+            for (const rec of collapseAssetVariantGroups(manifest.images.sceneImages, manifest.modelVersionSelections)) {
                 const sceneIdTag = rec.tags.find(t => t !== 'scene' && t !== 'revised');
                 if (sceneIdTag) sceneImageMap.set(sceneIdTag, rec.url);
             }
-            const preferredHero = selectPreferredAssetForContext(manifest.images.hero, 'storyboard_fallback', manifest)
-                ?? selectPreferredAssetForContext(manifest.images.hero, 'landing_hero_primary', manifest);
+            const collapsedHeroes = collapseAssetVariantGroups(manifest.images.hero, manifest.modelVersionSelections);
+            const preferredHero = selectPreferredAssetForContext(collapsedHeroes, 'storyboard_fallback', manifest)
+                ?? selectPreferredAssetForContext(collapsedHeroes, 'landing_hero_primary', manifest);
             const fallbackUrl = preferredHero?.url ?? manifest.images.shipReferences[0]?.url ?? '';
 
             const resolvedRevisionNote = applyMode === 'append_note' ? revisionNote : undefined;

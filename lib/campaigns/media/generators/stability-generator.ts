@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import {
     AssetRecord,
     CampaignAestheticBrief,
+    GeneratorService,
     LandingStillSpec,
     ShipReferenceCandidate,
     SceneSpec,
@@ -16,6 +17,8 @@ import { resolveMediaStyle, type StyleId } from '../style-prompts';
 import { extractNanoBananaImageBuffer } from './nano-banana-response';
 import { assignExtendersToBatch, DEFAULT_PROMPT_EXTENDERS } from '../prompt-extender';
 import { selectFiltersForBatch, IMAGE_FILTER_REGISTRY } from '../image-filter-registry';
+import { getActiveImageBackends, type ImageAspect } from './image-backends';
+import { generateGptImage2 } from './gpt-image';
 
 const NANO_BANANA_PROMPT_CHAR_LIMIT = 6000;
 const NANO_BANANA_REFERENCE_MAX_DIMENSION = 1280;
@@ -961,16 +964,90 @@ export interface GeneratedImage {
     filterId: string | null;
 }
 
+// MULTI_MODEL_IMAGES (Phase F): a generated image plus the backend that produced
+// it and its variant group. When a section runs multi-model, each logical item
+// emits one of these per active backend; all members share `variantGroupId`.
+// With a single active backend this is a single-member group ⇒ identical to the
+// legacy single-model output.
+export interface VariantGeneratedImage extends GeneratedImage {
+    generator: GeneratorService;
+    variantGroupId: string;
+}
+
+// MULTI_MODEL_IMAGES (Phase F): run one prompt across the active backends,
+// honoring reference-grounding only where the backend supports it. Today only
+// the Gemini (Nano-Banana) backend accepts a reference image; gpt-image-2's
+// generations endpoint is text-only, so the OpenAI variant is generated from the
+// same prompt WITHOUT the reference. Failures are isolated per backend and
+// returned as `errors` so one model failing never sinks the others.
+async function generateReferenceAwareVariants(
+    prompt: string,
+    aspect: ImageAspect,
+    opts: {
+        models?: GeneratorService[];
+        referenceBuffer?: Buffer;
+        referenceMimeType?: string;
+        nanoAspectRatio: Parameters<typeof generateNanoBananaImage>[1];
+        nanoImageSize: Parameters<typeof generateNanoBananaImage>[2];
+    },
+): Promise<{
+    variants: Array<{ generator: GeneratorService; buffer: Buffer; usedReference: boolean }>;
+    errors: string[];
+}> {
+    const backends = getActiveImageBackends(opts.models);
+    const variants: Array<{ generator: GeneratorService; buffer: Buffer; usedReference: boolean }> = [];
+    const errors: string[] = [];
+
+    for (const backend of backends) {
+        try {
+            if (backend.id === 'gemini3_flash') {
+                const hasReference = Boolean(opts.referenceBuffer);
+                const buffer = await generateNanoBananaImage(
+                    prompt,
+                    opts.nanoAspectRatio,
+                    opts.nanoImageSize,
+                    opts.referenceBuffer,
+                    opts.referenceMimeType,
+                );
+                variants.push({ generator: backend.id, buffer, usedReference: hasReference });
+            } else if (backend.id === 'gpt_image_2') {
+                // Text-only: gpt-image-2 has no reference-image input here.
+                const buffer = await generateGptImage2(prompt, { aspect });
+                variants.push({ generator: backend.id, buffer, usedReference: false });
+            } else {
+                // Unknown backend — fall back to its uniform generate() (text-only).
+                const buffer = await backend.generate(prompt, { aspect });
+                variants.push({ generator: backend.id, buffer, usedReference: false });
+            }
+        } catch (err) {
+            errors.push(`[${backend.id}] ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+
+    return { variants, errors };
+}
+
 const HERO_FILTER_COUNT = 3;
 const SCENE_FILTER_COUNT = 3;
 
+export interface GenerateHeroImagesResult {
+    images: VariantGeneratedImage[];
+    /** Per-backend failures (one model failing never sinks the others). */
+    warnings: string[];
+}
+
+// MULTI_MODEL_IMAGES (Phase F): fallback (non-reference) hero generation. Each
+// hero prompt becomes a variant group (`img_hero_NNN`); each active backend runs
+// it text-to-image. One active backend ⇒ single-member group = legacy output.
 export async function generateHeroImages(
     brief: CampaignAestheticBrief,
     shipName: string,
-    count: number = 5
-): Promise<GeneratedImage[]> {
+    count: number = 5,
+    models?: GeneratorService[],
+): Promise<GenerateHeroImagesResult> {
     const prompts = buildHeroPrompts(brief, shipName).slice(0, count);
-    const results: GeneratedImage[] = [];
+    const images: VariantGeneratedImage[] = [];
+    const warnings: string[] = [];
 
     const extenderAssignment = assignExtendersToBatch(prompts.length, DEFAULT_PROMPT_EXTENDERS);
     const filterAssignment = selectFiltersForBatch(
@@ -985,84 +1062,125 @@ export async function generateHeroImages(
             ? `${prompts[i]}. ${extenders.join('. ')}`
             : prompts[i];
 
-        const rawBuffer = await generateNanoBananaImage(
-            finalPrompt,
-            NANO_BANANA_CONFIG.heroAspectRatio,
-            NANO_BANANA_CONFIG.heroImageSize,
-        );
-
-        const filter = filterAssignment[i];
-        const buffer = filter ? await filter.apply(rawBuffer) : rawBuffer;
-
         const idx = String(i + 1).padStart(3, '0');
-        results.push({
-            buffer,
-            prompt: finalPrompt,
-            filterId: filter?.id ?? null,
-            assetId: `img_hero_${idx}`,
-            fileName: `images/hero/hero_${idx}_source.png`,
-        });
+        const variantGroupId = `img_hero_${idx}`;
+        const filter = filterAssignment[i];
+
+        const { variants, errors } = await generateReferenceAwareVariants(
+            finalPrompt,
+            '16:9',
+            {
+                models,
+                nanoAspectRatio: NANO_BANANA_CONFIG.heroAspectRatio,
+                nanoImageSize: NANO_BANANA_CONFIG.heroImageSize,
+            },
+        );
+        warnings.push(...errors.map((e) => `${variantGroupId}: ${e}`));
+        for (const v of variants) {
+            const buffer = filter ? await filter.apply(v.buffer) : v.buffer;
+            images.push({
+                buffer,
+                prompt: finalPrompt,
+                filterId: filter?.id ?? null,
+                assetId: `${variantGroupId}__${v.generator}`,
+                fileName: `images/hero/hero_${idx}_source__${v.generator}.png`,
+                generator: v.generator,
+                variantGroupId,
+            });
+        }
     }
 
-    return results;
+    return { images, warnings };
 }
 
+// MULTI_MODEL_IMAGES (Phase F): reference-grounded hero generation for ONE
+// candidate at a given hero ordinal. The Gemini variant embellishes the fetched
+// ship reference; other backends (gpt-image-2) run text-only from the same
+// prompt. All variants share `variantGroupId = img_hero_<ordinal>`.
 export async function generateReferenceGroundedHeroImages(
     brief: CampaignAestheticBrief,
     shipName: string,
     referenceCandidate: ShipReferenceCandidate,
     heroIndex: number = 0,
-    count: number = 1
-): Promise<GeneratedImage[]> {
+    models?: GeneratorService[],
+): Promise<GenerateHeroImagesResult> {
     const prompt = buildReferenceGroundedHeroPrompt(brief, shipName, referenceCandidate, heroIndex);
-    const referenceImage = await fetchUsableReferenceImage(referenceCandidate.imageUrl);
-    const results: GeneratedImage[] = [];
+    const referenceImage = await fetchUsableReferenceImage(referenceCandidate.imageUrl).catch(() => undefined);
+    const itemIndex = String(heroIndex + 1).padStart(3, '0');
+    const variantGroupId = `img_hero_${itemIndex}`;
 
-    for (let index = 0; index < count; index += 1) {
-        const transformedBuffer = await generateNanoBananaImage(
-            prompt,
-            NANO_BANANA_CONFIG.heroAspectRatio,
-            NANO_BANANA_CONFIG.heroImageSize,
-            referenceImage?.buffer,
-            referenceImage?.mimeType
-        );
-        const itemIndex = String(heroIndex + index + 1).padStart(3, '0');
-        results.push({
-            buffer: transformedBuffer,
-            prompt,
-            filterId: null,
-            assetId: `img_hero_${itemIndex}`,
-            fileName: `images/hero/hero_${itemIndex}_embellished.png`,
-        });
-    }
+    const { variants, errors } = await generateReferenceAwareVariants(
+        prompt,
+        '16:9',
+        {
+            models,
+            referenceBuffer: referenceImage?.buffer,
+            referenceMimeType: referenceImage?.mimeType,
+            nanoAspectRatio: NANO_BANANA_CONFIG.heroAspectRatio,
+            nanoImageSize: NANO_BANANA_CONFIG.heroImageSize,
+        },
+    );
 
-    return results;
+    const images: VariantGeneratedImage[] = variants.map((v) => ({
+        buffer: v.buffer,
+        prompt,
+        filterId: null,
+        assetId: `${variantGroupId}__${v.generator}`,
+        fileName: `images/hero/hero_${itemIndex}_embellished__${v.generator}.png`,
+        generator: v.generator,
+        variantGroupId,
+    }));
+
+    return { images, warnings: errors.map((e) => `${variantGroupId}: ${e}`) };
 }
 
+export interface GenerateConceptsResult {
+    images: VariantGeneratedImage[];
+    /** Per-backend failures (one model failing never sinks the others). */
+    warnings: string[];
+}
+
+// MULTI_MODEL_IMAGES (Phase F): concepts are NOT reference-grounded, so every
+// active backend runs the same prompt text-to-image. Each concept becomes a
+// variant group (`img_concept_NNN`) with one member per active backend; ids and
+// R2 paths are generator-suffixed so they never collide. One active backend ⇒
+// single-member groups = legacy behavior.
 export async function generateAestheticConcepts(
     brief: CampaignAestheticBrief,
-    count: number = 4
-): Promise<GeneratedImage[]> {
+    count: number = 4,
+    models?: GeneratorService[],
+): Promise<GenerateConceptsResult> {
     const prompts = buildConceptPrompts(brief).slice(0, count);
-    const results: GeneratedImage[] = [];
+    const images: VariantGeneratedImage[] = [];
+    const warnings: string[] = [];
 
     for (let i = 0; i < prompts.length; i++) {
-        const buffer = await generateNanoBananaImage(
-            prompts[i],
-            NANO_BANANA_CONFIG.conceptAspectRatio,
-            NANO_BANANA_CONFIG.conceptImageSize
-        );
         const idx = String(i + 1).padStart(3, '0');
-        results.push({
-            buffer,
-            prompt: prompts[i],
-            filterId: null,
-            assetId: `img_concept_${idx}`,
-            fileName: `images/concepts/concept_${idx}.png`,
-        });
+        const variantGroupId = `img_concept_${idx}`;
+        const { variants, errors } = await generateReferenceAwareVariants(
+            prompts[i],
+            '1:1',
+            {
+                models,
+                nanoAspectRatio: NANO_BANANA_CONFIG.conceptAspectRatio,
+                nanoImageSize: NANO_BANANA_CONFIG.conceptImageSize,
+            },
+        );
+        warnings.push(...errors.map((e) => `${variantGroupId}: ${e}`));
+        for (const v of variants) {
+            images.push({
+                buffer: v.buffer,
+                prompt: prompts[i],
+                filterId: null,
+                assetId: `${variantGroupId}__${v.generator}`,
+                fileName: `images/concepts/concept_${idx}__${v.generator}.png`,
+                generator: v.generator,
+                variantGroupId,
+            });
+        }
     }
 
-    return results;
+    return { images, warnings };
 }
 
 /**
@@ -1122,6 +1240,11 @@ export interface GeneratedSceneImage extends GeneratedImage {
     sceneId: string;
     referenceStatus: SceneImageReferenceStatus;
     referenceFetchError?: string;
+    // MULTI_MODEL_IMAGES (Phase F): present so each scene variant carries its
+    // backend + variant group. With one active backend these are still set
+    // (single-member group); the orchestrator stamps them onto the AssetRecord.
+    generator: GeneratorService;
+    variantGroupId: string;
 }
 
 function buildStoryboardSafeSceneDirection(scene: SceneSpec): string {
@@ -1286,6 +1409,18 @@ export function buildSceneImagePrompt(
     ].filter(Boolean).join('. ');
 }
 
+export interface GenerateSceneImagesResult {
+    images: GeneratedSceneImage[];
+    /** Per-backend failures (one model failing never sinks the others). */
+    warnings: string[];
+}
+
+// MULTI_MODEL_IMAGES (Phase F): scenes are reference-grounded. The reference is
+// fetched ONCE per scene; the Gemini variant generates WITH it (carrying the
+// real reference status — applied/fetch_failed/none), while every other backend
+// (gpt-image-2 today) generates text-only and is tagged `no_reference_available`.
+// Each scene is a variant group keyed by its scene assetId; ids/paths are
+// generator-suffixed. One active backend ⇒ single-member group = legacy output.
 export async function generateSceneImages(
     scenes: readonly SceneSpec[],
     shipReferences: readonly ShipReferenceCandidate[],
@@ -1293,14 +1428,17 @@ export async function generateSceneImages(
     brief: CampaignAestheticBrief,
     themeAnchorProps: readonly string[] = [],
     manifestReferenceRecords: readonly AssetRecord[] = [],
-): Promise<GeneratedSceneImage[]> {
+    models?: GeneratorService[],
+): Promise<GenerateSceneImagesResult> {
     // Build a fast assetId → URL lookup from the stored manifest records so we
     // can honour scene.referenceAssetIds (the intelligently-scored binding).
     const recordUrlById = new Map<string, string>(
         manifestReferenceRecords.map((r) => [r.assetId, r.url]),
     );
 
-    const results: GeneratedSceneImage[] = [];
+    const images: GeneratedSceneImage[] = [];
+    const warnings: string[] = [];
+    const backends = getActiveImageBackends(models);
 
     const extenderAssignment = assignExtendersToBatch(scenes.length, DEFAULT_PROMPT_EXTENDERS);
     const filterAssignment = selectFiltersForBatch(
@@ -1330,74 +1468,77 @@ export async function generateSceneImages(
             ? `${scenePrompt}. ${extenders.join('. ')}`
             : scenePrompt;
 
-        // Phase 8 (IMAGE_GEN_REVAMP_5-26): track whether the reference image
-        // actually reached the generator. Before Phase 8 we silently produced
-        // text-only output whenever the fetch failed, which is the root cause
-        // documented in 06_WORKFLOW_DRIFT_AUDIT_REPORT.md Finding 4. The
-        // referenceStatus now travels with the result so the orchestrator can
-        // tag the AssetRecord and mark the manifest partial.
-        let buffer: Buffer;
-        let referenceStatus: SceneImageReferenceStatus;
+        // Phase 8 (IMAGE_GEN_REVAMP_5-26): fetch the reference once. The
+        // referenceStatus below applies to the Gemini (reference-grounded)
+        // variant; non-reference backends are tagged no_reference_available.
+        let referenceImage: { buffer: Buffer; mimeType: string } | undefined;
+        let geminiReferenceStatus: SceneImageReferenceStatus;
         let referenceFetchError: string | undefined;
-
         if (matchedReference) {
             try {
-                const referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
-                buffer = await generateNanoBananaImage(
-                    finalPrompt,
-                    NANO_BANANA_CONFIG.heroAspectRatio,
-                    NANO_BANANA_CONFIG.heroImageSize,
-                    referenceImage.buffer,
-                    referenceImage.mimeType
-                );
-                referenceStatus = 'reference_applied';
+                referenceImage = await fetchUsableReferenceImage(matchedReference.imageUrl);
+                geminiReferenceStatus = 'reference_applied';
             } catch (err) {
-                // Phase 8: loud failure. The scene STILL gets an image (text-only)
-                // so the campaign batch can complete, but the AssetRecord is
-                // flagged so the visual-compass lint and review UI can surface
-                // the gap. The orchestrator marks the manifest partial.
                 referenceFetchError = err instanceof Error ? err.message : String(err);
-                console.error('[stability-generator] reference fetch failed — scene will be text-only', {
+                console.error('[stability-generator] reference fetch failed — Gemini scene will be text-only', {
                     sceneId: scene.sceneId,
                     category: matchedReference.category,
                     referenceImageUrl: matchedReference.imageUrl,
                     error: referenceFetchError,
                 });
-                buffer = await generateNanoBananaImage(
-                    finalPrompt,
-                    NANO_BANANA_CONFIG.heroAspectRatio,
-                    NANO_BANANA_CONFIG.heroImageSize
-                );
-                referenceStatus = 'reference_fetch_failed';
+                geminiReferenceStatus = 'reference_fetch_failed';
             }
         } else {
-            buffer = await generateNanoBananaImage(
-                finalPrompt,
-                NANO_BANANA_CONFIG.heroAspectRatio,
-                NANO_BANANA_CONFIG.heroImageSize
-            );
-            referenceStatus = 'no_reference_available';
-        }
-
-        const sceneFilter = filterAssignment[i];
-        if (sceneFilter) {
-            buffer = await sceneFilter.apply(buffer);
+            geminiReferenceStatus = 'no_reference_available';
         }
 
         const idx = String(i + 1).padStart(3, '0');
-        results.push({
-            buffer,
-            prompt: finalPrompt,
-            filterId: sceneFilter?.id ?? null,
-            assetId: `img_scene_${scene.sceneId}_${idx}`,
-            fileName: `images/scenes/${scene.sceneId}_${idx}.png`,
-            sceneId: scene.sceneId,
-            referenceStatus,
-            referenceFetchError,
-        });
+        const variantGroupId = `img_scene_${scene.sceneId}_${idx}`;
+        const sceneFilter = filterAssignment[i];
+
+        for (const backend of backends) {
+            const isGemini = backend.id === 'gemini3_flash';
+            try {
+                let buffer: Buffer;
+                let referenceStatus: SceneImageReferenceStatus;
+                if (isGemini) {
+                    buffer = await generateNanoBananaImage(
+                        finalPrompt,
+                        NANO_BANANA_CONFIG.heroAspectRatio,
+                        NANO_BANANA_CONFIG.heroImageSize,
+                        referenceImage?.buffer,
+                        referenceImage?.mimeType,
+                    );
+                    referenceStatus = geminiReferenceStatus;
+                } else {
+                    // gpt-image-2 (and any future text-only backend): no reference input.
+                    buffer = await generateGptImage2(finalPrompt, { aspect: '16:9' });
+                    referenceStatus = 'no_reference_available';
+                }
+
+                if (sceneFilter) {
+                    buffer = await sceneFilter.apply(buffer);
+                }
+
+                images.push({
+                    buffer,
+                    prompt: finalPrompt,
+                    filterId: sceneFilter?.id ?? null,
+                    assetId: `${variantGroupId}__${backend.id}`,
+                    fileName: `images/scenes/${scene.sceneId}_${idx}__${backend.id}.png`,
+                    sceneId: scene.sceneId,
+                    referenceStatus,
+                    referenceFetchError: isGemini ? referenceFetchError : undefined,
+                    generator: backend.id,
+                    variantGroupId,
+                });
+            } catch (err) {
+                warnings.push(`${variantGroupId}: [${backend.id}] ${err instanceof Error ? err.message : String(err)}`);
+            }
+        }
     }
 
-    return results;
+    return { images, warnings };
 }
 
 // ────────────────────────────────────────────────────────────────────────────

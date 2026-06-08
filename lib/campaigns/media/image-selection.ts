@@ -165,3 +165,43 @@ export function selectPreferredAssetForContext(
 ): AssetRecord | null {
     return selectAssetsForContext(records, context, manifest, 1)[0] ?? null;
 }
+
+// MULTI_MODEL_IMAGES (Phase F): collapse variant groups to one canonical asset
+// per group, mirroring lib/ads/html-templates/core.ts collapseVariantGroups but
+// operating on AssetRecord so any media/landing consumer can use it without the
+// HtmlTemplateAsset dependency. Records without a variantGroupId pass through
+// untouched. Within a group the canonical is modelVersionSelections[groupId],
+// else the first-stored member (the primary backend, by generation order).
+// Original order is preserved (first appearance of each group wins its slot).
+//
+// Use this anywhere a section array is enumerated to AUTO-pick or AUTO-assemble
+// output (landing galleries, distribution pickers, video scene maps). Do NOT use
+// it where the operator's explicit per-asset override must resolve to a specific
+// variant (selectable-asset indexes, imageSelections lookups) — those stay
+// uncollapsed so a curated non-canonical variant still resolves.
+export function collapseAssetVariantGroups(
+    assets: readonly AssetRecord[],
+    selections?: Record<string, string>,
+): AssetRecord[] {
+    const groups = new Map<string, AssetRecord[]>();
+    for (const asset of assets) {
+        if (!asset.variantGroupId) continue;
+        const list = groups.get(asset.variantGroupId) ?? [];
+        list.push(asset);
+        groups.set(asset.variantGroupId, list);
+    }
+    if (groups.size === 0) return [...assets];
+
+    const emitted = new Set<string>();
+    const out: AssetRecord[] = [];
+    for (const asset of assets) {
+        if (!asset.variantGroupId) { out.push(asset); continue; }
+        if (emitted.has(asset.variantGroupId)) continue;
+        emitted.add(asset.variantGroupId);
+        const members = groups.get(asset.variantGroupId)!;
+        const wantGenerator = selections?.[asset.variantGroupId];
+        const canonical = (wantGenerator && members.find((m) => m.generator === wantGenerator)) || members[0];
+        out.push(canonical);
+    }
+    return out;
+}

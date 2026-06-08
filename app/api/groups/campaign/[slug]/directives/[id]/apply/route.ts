@@ -7,7 +7,6 @@ import { patchBriefForDirective, mergeActiveDirectivePatches } from '@/lib/campa
 import { generateDesignedAdArtifactPack, generateLegacyPremiumDisplayAd } from '@/lib/campaigns/media/generators/ad-artifact-generator';
 import { generateTemplatedAdArtifactPack } from '@/lib/campaigns/media/generators/templated-ad-generator';
 import { generateHeroImages, generateAestheticConcepts } from '@/lib/campaigns/media/generators/stability-generator';
-import { getMediaImageGeneratorService } from '@/lib/campaigns/media/media-pipeline-config';
 import { saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { uploadAsset } from '@/lib/campaigns/media/r2-client';
 import type { AssetRecord } from '@/lib/campaigns/schema';
@@ -57,7 +56,9 @@ export async function POST(
             const count = Math.max(staleHeroes.length, 1);
 
             try {
-                const generated = await generateHeroImages(patchedBrief, shipName, count);
+                // Single-model directive regen (no models passed ⇒ primary backend
+                // only). Each item is a single-member variant group.
+                const { images: generated } = await generateHeroImages(patchedBrief, shipName, count);
                 const newRecords: AssetRecord[] = [];
                 for (let index = 0; index < generated.length; index += 1) {
                     const img = generated[index];
@@ -66,7 +67,8 @@ export async function POST(
                         assetId: img.assetId,
                         assetType: 'hero_image',
                         url,
-                        generator: getMediaImageGeneratorService(),
+                        generator: img.generator,
+                        variantGroupId: img.variantGroupId,
                         promptUsed: img.prompt,
                         fileSizeBytes: img.buffer.length,
                         mimeType: 'image/png',
@@ -93,7 +95,9 @@ export async function POST(
             const count = Math.max(staleConcepts.length, 1);
 
             try {
-                const generated = await generateAestheticConcepts(patchedBrief, count);
+                // Single-model directive regen (no models passed ⇒ primary backend
+                // only). Each item is a single-member variant group.
+                const { images: generated } = await generateAestheticConcepts(patchedBrief, count);
                 const newRecords: AssetRecord[] = [];
                 for (let index = 0; index < generated.length; index += 1) {
                     const img = generated[index];
@@ -102,7 +106,8 @@ export async function POST(
                         assetId: img.assetId,
                         assetType: 'aesthetic_concept',
                         url,
-                        generator: getMediaImageGeneratorService(),
+                        generator: img.generator,
+                        variantGroupId: img.variantGroupId,
                         promptUsed: img.prompt,
                         fileSizeBytes: img.buffer.length,
                         mimeType: 'image/png',

@@ -7,6 +7,7 @@ import type {
     DistributionSchedule,
     ScheduledPost,
 } from './schema';
+import { collapseAssetVariantGroups } from './media/image-selection';
 
 interface PlannerOptions {
     caller: DistributionCaller;
@@ -69,8 +70,11 @@ function findManifestAssetId(manifest: CampaignMediaManifest, assetId: string | 
 }
 
 function getPrimaryHeroAssetId(manifest: CampaignMediaManifest): string | null {
+    // MULTI_MODEL_IMAGES (Phase F): the explicit override wins; the auto fallback
+    // collapses hero variants to the selected model-version so distribution never
+    // attaches a non-selected variant.
     return findManifestAssetId(manifest, manifest.imageSelections?.['section:landingHero:primary'])
-        ?? manifest.images.hero[0]?.assetId
+        ?? collapseAssetVariantGroups(manifest.images.hero, manifest.modelVersionSelections)[0]?.assetId
         ?? manifest.images.platformCrops.hero_16x9?.[0]?.assetId
         ?? null;
 }
@@ -188,7 +192,7 @@ export function buildDistributionSchedule(
     const hypeClipId = manifest.audio.hypeClip?.assetId ?? null;
     const countdownIds = manifest.videos.countdown.map((asset) => asset.assetId);
     const merchMockupId = manifest.merch.mockups[0]?.assetId ?? null;
-    const pinterestAssetId = manifest.images.aestheticConcepts[0]?.assetId ?? primaryHeroAssetId;
+    const pinterestAssetId = collapseAssetVariantGroups(manifest.images.aestheticConcepts, manifest.modelVersionSelections)[0]?.assetId ?? primaryHeroAssetId;
     const squareFeedAssetId = manifest.images.platformCrops.square_1x1?.[0]?.assetId ?? null;
     const instagramFeedAdAssetId = selectDesignedAdAssetId(manifest, ['instagram_feed'])
         ?? selectDesignedAdAssetId(manifest, ['instagram_square'])
@@ -216,6 +220,36 @@ export function buildDistributionSchedule(
         scheduledAt: new Date().toISOString(),
         campaignStage: 'prelaunch_setup',
         notes: ['Internal placeholder until landing preview distribution adapter exists.'],
+    } : null);
+
+    // ─── Organic launch announcement (Phase 1 social management) ────────────────
+    // Posts the campaign launch to the agency's own social pages at the same time
+    // ads are pushed. Rides the same distribution dispatch the operator already
+    // runs — no separate scheduler. Prefers the promotional flyer, falling back
+    // to the primary hero. Gated like the paid ads: fires now when gathering
+    // interest, otherwise waits for threshold.
+    const launchAnnouncementAssetId =
+        findManifestAssetId(manifest, manifest.images.flyerImages?.[0]?.assetId)
+        ?? primaryHeroAssetId;
+    const launchAnnouncementScheduledAt =
+        campaign.status === 'GATHERING_INTEREST' ? new Date().toISOString() : 'ON_THRESHOLD';
+
+    addIfPresent(drafts, launchAnnouncementAssetId ? {
+        platform: 'instagram_feed',
+        assetId: launchAnnouncementAssetId,
+        copyVariant: 'launch_announcement',
+        scheduledAt: launchAnnouncementScheduledAt,
+        campaignStage: 'launch_announcement',
+        notes: ['Organic Instagram launch announcement published via Instagram Graph alongside the ad push.'],
+    } : null);
+
+    addIfPresent(drafts, launchAnnouncementAssetId ? {
+        platform: 'facebook_page',
+        assetId: launchAnnouncementAssetId,
+        copyVariant: 'launch_announcement',
+        scheduledAt: launchAnnouncementScheduledAt,
+        campaignStage: 'launch_announcement',
+        notes: ['Organic Facebook Page launch announcement created unpublished (draft) for operator review.'],
     } : null);
 
     addIfPresent(drafts, facebookAdAssetId ? {

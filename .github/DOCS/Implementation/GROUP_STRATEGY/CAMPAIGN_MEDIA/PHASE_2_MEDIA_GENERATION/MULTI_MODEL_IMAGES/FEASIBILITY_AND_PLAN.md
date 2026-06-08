@@ -1,7 +1,7 @@
 # Multi-Model Image Generation — Feasibility Report & Plan
 
 **Created:** 2026-05-31
-**Status:** ✅ Flyer pilot COMPLETE (Phases A–E). Phase F (extend to heroes/scenes/concepts) is future work.
+**Status:** ✅ Flyer pilot COMPLETE (Phases A–E). ✅ Phase F COMPLETE (2026-06-07) — multi-model extended to hero/concepts, documentary details, and scenes with the per-tile A/B source toggle.
 
 ### Progress
 - **Phase A** ✅ `gpt-image.ts` (`generateGptImage2`, b64, retry) + `image-backends.ts` registry
@@ -164,8 +164,14 @@ So the flyer pilot needs: backend registry + `gptImage2Backend`, variant groupin
 - `app/(tests)/tests/media-generation/review-asset-card.tsx` — segmented **source-LLM toggle**; PATCH on change.
 - (later) `ImageSlotPicker` on canva-templates — same toggle for in-ad comparison.
 
-### Phase F — Extend beyond flyers (future)
-- Make curation pool-builders + `resolveSlotImages` variant-aware (collapse to selected member), then enable multi-model for heroes/scenes/concepts behind the per-section models config.
+### Phase F — Extend beyond flyers ✅ (2026-06-07)
+- **Config:** new manifest `imageModelControls.models` (one SHARED list governing hero/concepts + documentary + scenes; flyers keep their own `flyerControls.models`). Store: `updateManifestImageModelControls`. Route: `PATCH …/media/image-model-controls`.
+- **Generators (multi-model):** `generateAestheticConcepts`, `generateSceneImages`, `generateHeroImages` + `generateReferenceGroundedHeroImages` (+ `importHeroAssetsFromReferences`), and `generateDesignedAdArtifactPack` (documentary details). Reference-grounded sections (hero/scenes) ground only the **Gemini** variant on the ship reference; the **OpenAI (gpt-image-2)** variant is text-only (generations endpoint has no reference input) and tagged `no_reference_available`. New shared helper `generateReferenceAwareVariants` in `stability-generator.ts`.
+- **Variant grouping:** each logical item → `variantGroupId` with generator-suffixed `assetId`/`fileName` (`${gid}__${generator}`); one active backend ⇒ single-member group = legacy output.
+- **Downstream collapse (the prerequisite):** `buildImagePool` (`lib/ads/html-templates/core.ts`) now collapses every section to its selected model-version (default = primary) so ad auto-pick/curation/distribution never see the non-selected variant or double-count. `collectSelectableImageGroups`/`getFlyerImages` already collapsed; `collectSelectableImageAssets`/`buildImageAssetIndex` stay uncollapsed by design (explicit-override validation/resolution).
+- **UI:** new shared `ImageModelControlsBody` editor + `MediaControlsTabs` (one tabbed card: Flyer Controls | Image Models) on `/tests/media-generation`. Review panel grouping generalized from flyers-only to hero/concepts/documentary/scenes via `groupVariantEntries`; the `ReviewAssetCard` source toggle was already section-agnostic (keys off `variantGroupId`).
+- **Documentary nuance:** documentary details seed designed ads — only the **canonical** (primary) variant feeds `buildDesignedAdRenderSpecs`; all variants are still stored + reviewable.
+- **Out of scope:** OpenAI `/v1/images/edits` reference grounding (text-only OpenAI variant for now); per-section independent toggles (one shared control); `ImageSlotPicker` in-ad comparison.
 
 ---
 

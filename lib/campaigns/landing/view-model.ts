@@ -24,7 +24,7 @@ import {
 } from "@/lib/campaigns/waitlist-store";
 import { extractNicheTokens } from "@/lib/campaigns/design-system/niche-tokens";
 import type { VisualSystem } from "@/lib/campaigns/design-system/types";
-import { selectPreferredAssetForContext } from "@/lib/campaigns/media/image-selection";
+import { selectPreferredAssetForContext, collapseAssetVariantGroups } from "@/lib/campaigns/media/image-selection";
 import {
   sanitizeAestheticBriefShipCopyForCampaign,
   sanitizeShipCopyForCampaign,
@@ -803,11 +803,15 @@ export function selectLandingHeroAsset(
     return override;
   }
 
-  const candidates = [
+  // MULTI_MODEL_IMAGES (Phase F): collapse hero/concept variant groups to the
+  // operator-selected model-version before auto-picking, so the landing hero is
+  // never a non-selected variant. (Explicit overrides are handled above via
+  // findLandingSelectionOverride, which stays uncollapsed by design.)
+  const candidates = collapseAssetVariantGroups([
     ...(manifest.images.platformCrops.hero_16x9 ?? []),
     ...manifest.images.hero,
     ...manifest.images.aestheticConcepts,
-  ];
+  ], manifest.modelVersionSelections);
 
   const curatedPrimary =
     selectPreferredAssetForContext(candidates, "landing_hero_primary", manifest) ??
@@ -892,15 +896,19 @@ function buildGalleryImages(
     // Curated list resolved to nothing usable → fall through to the algorithm.
   }
 
-  const sceneCandidates = [...manifest.images.sceneImages];
+  // MULTI_MODEL_IMAGES (Phase F): collapse multi-model sections so the auto-built
+  // gallery shows ONE version per logical image (the selected model-version),
+  // never both the Gemini and OpenAI variant of the same hero/scene/detail.
+  const selections = manifest.modelVersionSelections;
+  const sceneCandidates = collapseAssetVariantGroups(manifest.images.sceneImages, selections);
   const trustCandidates = [
     ...manifest.images.shipReferences,
-    ...manifest.images.documentaryDetails,
+    ...collapseAssetVariantGroups(manifest.images.documentaryDetails, selections),
   ];
   const fallbackCandidates = [
-    ...manifest.images.hero,
+    ...collapseAssetVariantGroups(manifest.images.hero, selections),
     ...(manifest.images.platformCrops.hero_16x9 ?? []),
-    ...manifest.images.aestheticConcepts,
+    ...collapseAssetVariantGroups(manifest.images.aestheticConcepts, selections),
   ];
 
   function collectApproved(candidates: AssetRecord[]): LandingImageAsset[] {
@@ -959,9 +967,11 @@ function buildTrustImages(
     if (out.length > 0) return out;
   }
 
+  // MULTI_MODEL_IMAGES (Phase F): collapse documentary-detail variants so trust
+  // cards never show both model-versions of the same logical detail.
   const candidates = [
     ...manifest.images.shipReferences,
-    ...manifest.images.documentaryDetails,
+    ...collapseAssetVariantGroups(manifest.images.documentaryDetails, manifest.modelVersionSelections),
   ];
   const seen = new Set<string>();
   const out: LandingImageAsset[] = [];

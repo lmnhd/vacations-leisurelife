@@ -6,6 +6,7 @@ import type {
   DistributionPostStatus,
   ScheduledPost,
 } from "./schema";
+import { collapseAssetVariantGroups } from "./media/image-selection";
 
 // CTAs that are banned for shadow/waitlist campaigns.
 // When the manifest has stale copy with one of these, substitute the brief's
@@ -24,6 +25,7 @@ import {
   createMetaAdSet,
   createMetaCampaign,
   getMetaAdsConfig,
+  publishFacebookPagePost,
 } from "@/lib/integrations/meta-ads";
 import { synthesizeMetaTargeting } from "./distribution/platforms/meta-ads/targeting";
 
@@ -112,9 +114,11 @@ function resolveAssetRecord(
 }
 
 // First active hero image URL — used as a video-ad thumbnail fallback when the
-// video asset has no own thumbnail.
+// video asset has no own thumbnail. MULTI_MODEL_IMAGES (Phase F): collapse to the
+// operator-selected model-version first so the fallback honors the A/B pick.
 function getFirstHeroImageUrl(manifest: CampaignMediaManifest): string | null {
-  return manifest.images.hero.find((asset) => asset.active)?.url ?? null;
+  return collapseAssetVariantGroups(manifest.images.hero, manifest.modelVersionSelections)
+    .find((asset) => asset.active)?.url ?? null;
 }
 
 function resolveAssetUrls(
@@ -268,6 +272,20 @@ function buildPreviewPayload(
       cta: adCopy.cta,
       landingUrl: getCampaignLandingUrl(campaign),
       activationState: "paused",
+      campaignStage: post.campaignStage,
+    };
+  }
+
+  if (post.platform === "facebook_page") {
+    // Organic Facebook Page post. The caption reuses the Instagram caption
+    // resolution (brief heroSlogan → carousel slide → description) and appends
+    // the campaign landing URL so the Page post links back to the waitlist.
+    return {
+      endpoint: "/{page-id}/photos | /{page-id}/feed",
+      mediaType: "PAGE_POST",
+      caption: getInstagramCaption(manifest, campaign, brief),
+      mediaUrl: assetUrl,
+      link: getCampaignLandingUrl(campaign),
       campaignStage: post.campaignStage,
     };
   }
@@ -576,6 +594,57 @@ async function dispatchInstagramGraphLive(
       `instagram_graph_media_id=${publishedMediaId}`,
       `instagram_graph_media_type=${String(preview.mediaType ?? "IMAGE")}`,
       `instagram_graph_dispatched_at=${new Date().toISOString()}`,
+    ],
+  };
+}
+
+async function dispatchFacebookPageLive(
+  campaign: Campaign,
+  manifest: CampaignMediaManifest,
+  post: ScheduledPost,
+  preview: Record<string, unknown>,
+): Promise<{
+  externalPostId: string;
+  status: DistributionPostStatus;
+  metadataNotes: string[];
+}> {
+  const config = getMetaAdsConfig();
+  if (!config) {
+    throw new Error(
+      "Missing META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, or META_PAGE_ID for Facebook Page publishing.",
+    );
+  }
+
+  const caption =
+    typeof preview.caption === "string" ? preview.caption : campaign.description;
+  const link =
+    typeof preview.link === "string"
+      ? preview.link
+      : getCampaignLandingUrl(campaign);
+  const primaryAsset = resolveAssetRecord(manifest, post.assetId);
+  if (!primaryAsset?.url) {
+    throw new Error(
+      `Facebook Page dispatch could not resolve asset ${post.assetId}.`,
+    );
+  }
+
+  // Organic launch posts are created UNPUBLISHED (draft) so the operator can
+  // review them on the Page before they go live — consistent with the
+  // draft-for-approval safety pattern used for paid ads.
+  const result = await publishFacebookPagePost(config, {
+    message: `${caption}\n\n${link}`.trim(),
+    imageUrl: primaryAsset.url,
+    published: false,
+  });
+
+  return {
+    externalPostId: result.postId,
+    status: "draft_created",
+    metadataNotes: [
+      `facebook_page_id=${config.pageId}`,
+      `facebook_page_post_id=${result.postId}`,
+      `facebook_page_published=${result.published}`,
+      `facebook_page_dispatched_at=${new Date().toISOString()}`,
     ],
   };
 }
@@ -1225,6 +1294,37 @@ export async function dispatchMarketingPost(
           platform: post.platform,
           status: "failed",
           warning: `Meta Ads live dispatch failed: ${message}`,
+          preview,
+        };
+      }
+    }
+
+    if (post.platform === "facebook_page") {
+      try {
+        const liveResult = await dispatchFacebookPageLive(
+          campaign,
+          manifest,
+          post,
+          preview,
+        );
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: liveResult.status,
+          externalPostId: liveResult.externalPostId,
+          metadataNotes: liveResult.metadataNotes,
+          preview,
+        };
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown Facebook Page live dispatch error";
+        return {
+          postId: post.postId,
+          platform: post.platform,
+          status: "failed",
+          warning: `Facebook Page live dispatch failed: ${message}`,
           preview,
         };
       }

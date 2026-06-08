@@ -3,6 +3,7 @@ import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';
 import { inferTikTokFormat } from '@/lib/campaigns/media/generators/tiktok-formats/index';
 import { collectSelectableImageGroups, type HtmlTemplateManifest } from '@/lib/ads/html-templates/core';
+import { collapseAssetVariantGroups } from '@/lib/campaigns/media/image-selection';
 import type { AssetRecord, CampaignMediaManifest } from '@/lib/campaigns/schema';
 import type { TikTokSequenceBeat } from '@/lib/campaigns/media/generators/tiktok-formats/package-template';
 
@@ -117,8 +118,10 @@ function resolveBeatImage(
         // default rather than render nothing.
     }
 
-    const scene = manifest.images.sceneImages.find(
-        (record) => record.active && record.tags.includes(beat.sceneId),
+    // MULTI_MODEL_IMAGES (Phase F): collapse scenes to the selected model-version
+    // so the per-beat scene default resolves the operator's A/B pick.
+    const scene = collapseAssetVariantGroups(manifest.images.sceneImages, manifest.modelVersionSelections).find(
+        (record) => record.active !== false && record.tags.includes(beat.sceneId),
     );
     if (scene) {
         return { assetId: scene.assetId, url: scene.url, fromOverride: false, missing: false };
@@ -184,9 +187,10 @@ export async function GET(
         const baselineBeats = format.buildSequenceBeats(brief, storyboard, promotionPackage, null);
 
         const pool = selectableBeatAssets(manifest);
+        const collapsedScenes = collapseAssetVariantGroups(manifest.images.sceneImages, manifest.modelVersionSelections);
         const resolved: ResolvedBeat[] = beats.map((beat, index) => {
-            const sceneDefault = manifest.images.sceneImages.find(
-                (r) => r.active && r.tags.includes(beat.sceneId),
+            const sceneDefault = collapsedScenes.find(
+                (r) => r.active !== false && r.tags.includes(beat.sceneId),
             );
             return {
                 index,
