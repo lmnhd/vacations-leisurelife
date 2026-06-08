@@ -50,10 +50,16 @@ explicitly revised.
 ### 4. CBAT/Odysseus browser automation stays operator-run
 
 - Any authenticated portal interaction (CB Agent Tools, Odysseus search, share
-  link capture, browser link validation) runs as an operator command, not as a
-  request-time or visitor-triggered action.
-- Scrapers load a saved session (`.playwright-state.json`) or require
-  `CB_EMAIL` / `CB_PASSWORD`; no hardcoded credentials.
+  link capture, browser link validation) runs as an **operator command** — a CLI
+  script run from the operator's environment — not as a request-time or
+  visitor-triggered action inside the web app.
+- "Operator-run" does NOT mean a human must perform the login. The established
+  pattern (3+ months in production, see `scripts/scrape-cb-deals.ts` and
+  `.github/DOCS/PROCESSES/odysseus-playwright-automation.md`) is fully automated:
+  scripts load the saved Playwright session (`.playwright-state.json`) and, when
+  it has expired, log in headlessly with `CB_EMAIL` / `CB_PASSWORD` from
+  `.env.local`. An AI assistant running these scripts via the CLI is the operator
+  workflow. No hardcoded credentials.
 
 ### 5. No workflow creates holds, reservations, payments, stateroom selections, or passenger submissions
 

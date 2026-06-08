@@ -12,6 +12,26 @@ export { parseCapturedOdysseusLink } from "./parse-captured-link";
 export { staticValidateLink } from "./validate";
 export { chooseBrokerLinkClass } from "./choose-link-class";
 
+// Health rules (pure) and browser-aware validation (operator-run).
+export {
+  computeHealth,
+  staticHealth,
+  refreshHealthStaleness,
+  isStale,
+  addHoursIso,
+  DEFAULT_FRESHNESS_HOURS,
+} from "./health";
+export {
+  validateBrokerLink,
+  checkCbLink,
+  checkCbSwiftLink,
+  checkCbFetchLink,
+} from "./browser-validate";
+export type {
+  LinkCheckOutcome,
+  ValidateBrokerLinkOptions,
+} from "./browser-validate";
+
 // Lower-level builders and cache helpers (internal, but exported for tests and
 // advanced callers).
 export { buildPackageEntryLink } from "./build-package-link";

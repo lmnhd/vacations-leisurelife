@@ -17,12 +17,13 @@
 import { loadEnvConfig } from "@next/env";
 import path from "path";
 import { chromium } from "playwright";
-import type { Browser, BrowserContext } from "playwright";
+import type { BrowserContext } from "playwright";
 import * as fs from "fs";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { chatDynamoDocumentClient } from "../lib/chat/dynamo-client";
 import { scanAllCampaigns } from "../lib/campaigns/campaign-store";
 import type { Campaign } from "../lib/campaigns/types";
+import { checkCbLink } from "../lib/cb/link-broker/browser-validate";
 
 loadEnvConfig(path.join(process.cwd()));
 
@@ -40,78 +41,12 @@ const targetSlugs = args.reduce<string[]>((acc, val, idx) => {
   return acc;
 }, []);
 
-const CB_SWIFT_SPA_PATH = "/swift/cruise/package/";
-const CB_SPA_ERROR_MARKERS = ["Package Not Found", "Oops!"];
-const CB_FETCH_ERROR_MARKERS = ["Package Not Found", "No package details found", "package-not-found"];
-const PAGE_LOAD_TIMEOUT_MS = 15_000;
-
-async function isCbSwiftLinkValid(url: string, context: BrowserContext): Promise<boolean> {
-  const page = await context.newPage();
-  let apiIndicatedNotFound = false;
-
-  // Intercept all JSON API responses from the CB domain.
-  // The SPA calls its backend to load package data — if that API signals
-  // "not found" in the response body, the package is gone regardless of render timing.
-  page.on("response", async (response) => {
-    const respUrl = response.url();
-    if (!respUrl.includes("cbagenttools.com")) return;
-    const contentType = response.headers()["content-type"] ?? "";
-    if (!contentType.includes("json")) return;
-    try {
-      const text = await response.text();
-      const lower = text.toLowerCase();
-      if (
-        lower.includes("not found") ||
-        lower.includes("notfound") ||
-        lower.includes("package_not_found") ||
-        lower.includes('"error"') ||
-        response.status() >= 400
-      ) {
-        apiIndicatedNotFound = true;
-      }
-    } catch {
-      // ignore parse errors
-    }
-  });
-
-  try {
-    await page.goto(url, { waitUntil: "networkidle", timeout: PAGE_LOAD_TIMEOUT_MS });
-
-    if (apiIndicatedNotFound) return false;
-
-    // Final fallback: check visible rendered text
-    const bodyText = (await page.innerText("body").catch(() => ""));
-    return !CB_SPA_ERROR_MARKERS.some((m) => bodyText.includes(m));
-  } catch {
-    return false;
-  } finally {
-    await page.close();
-  }
-}
-
-async function isCbFetchLinkValid(url: string): Promise<boolean> {
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; LLI-LinkValidator/1.0)" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (response.status >= 400) return false;
-    const body = await response.text();
-    for (const marker of CB_FETCH_ERROR_MARKERS) {
-      if (body.includes(marker)) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
+// SPA-aware link checking now lives in lib/cb/link-broker/browser-validate.ts so
+// the Link Broker and this script share one implementation. checkCbLink returns
+// { passed, failureReason }; this script only needs the boolean.
 async function isCbLinkValid(url: string, swiftCtx: BrowserContext): Promise<boolean> {
-  if (url.includes(CB_SWIFT_SPA_PATH)) {
-    return isCbSwiftLinkValid(url, swiftCtx);
-  }
-  return isCbFetchLinkValid(url);
+  const outcome = await checkCbLink(url, swiftCtx);
+  return outcome.passed;
 }
 
 async function clearRetailLink(slug: string): Promise<void> {

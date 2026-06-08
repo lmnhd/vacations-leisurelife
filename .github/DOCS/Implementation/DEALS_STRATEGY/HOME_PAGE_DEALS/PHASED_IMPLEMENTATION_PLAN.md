@@ -169,6 +169,8 @@ Build the backend module that can produce the best booking link from cruise fact
 
 ## Phase 3 - Link Validation and Health
 
+Status: implemented. Proof artifact: `npm run test:link-broker-health` (18/18 passing).
+
 ### Goal
 
 Make links safe enough to publish or send.
@@ -919,3 +921,54 @@ Exit criteria met:
 - `clonebkg` and `brn` are never synthesized; static validation rejects a
   constructed link that carries either, and captured clone/cabin requests return
   `needs_operator_capture` (capture support is Phase 6).
+
+### Phase 3 - Link Validation and Health
+
+Status: implemented.
+
+Shipped:
+
+- `lib/cb/link-broker/health.ts` — pure, dependency-free health rules:
+  `computeHealth` (maps a pass/fail/inconclusive outcome to
+  `valid`/`stale`/`broken`/`unknown`), `isStale` + `refreshHealthStaleness`
+  (freshness-window staleness, default 24h), `addHoursIso`, and `staticHealth`
+  (labels `broken` on static-validation failure, otherwise `unknown` since a
+  clean static check cannot prove the package is live). Runs in scripts, the Next
+  runtime, and tests alike.
+- `lib/cb/link-broker/browser-validate.ts` — the SPA-aware browser validation
+  extracted from `scripts/validate-cb-retail-links.ts` so the broker and the
+  script share one implementation. `checkCbSwiftLink` / `checkCbFetchLink` /
+  `checkCbLink` return `{ passed, failureReason }`; `validateBrokerLink` wraps
+  them and returns a full `LinkBrokerHealth`. Playwright is imported dynamically,
+  so importing the broker does not pull Playwright into the Next bundle; the
+  module stays operator-run and never books/holds/submits.
+- `scripts/validate-cb-retail-links.ts` refactored to call the shared
+  `checkCbLink` (its ~70 lines of duplicated SPA-check logic removed), proving
+  the extraction.
+- Proof artifact: `tests/link-broker-health.ts`
+  (`npm run test:link-broker-health`).
+
+Health fields populated: `capturedAtIso`, `lastVerifiedAtIso`,
+`nextVerificationDueIso`, `status`, `failureReason`.
+
+Validation performed:
+
+```powershell
+npm run test:link-broker-health   # 18 passed, 0 failed
+npm run test:link-broker          # 47 passed, 0 failed
+npm run test:deals-schema         # 17 passed, 0 failed
+npx tsc --noEmit --pretty false   # 0 errors
+```
+
+Operator-run browser validation of a real link (when a CB session exists in
+`.playwright-state.json`):
+
+```powershell
+npx tsx -e "import('./lib/cb/link-broker').then(m => m.validateBrokerLink('<paste a real CB url>', { storageStatePath: '.playwright-state.json' }).then(h => console.log(JSON.stringify(h, null, 2))))"
+```
+
+Exit criteria met:
+
+- The Link Broker can label links `valid`, `stale`, `broken`, or `unknown`.
+- Public Deals can later depend on link health instead of blindly rendering
+  links (the curated-deal publishing gate already keys on `linkHealth.status`).
