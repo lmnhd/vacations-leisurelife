@@ -17,6 +17,7 @@
     "agent:check-brief": "npx tsx --env-file=.env.local scripts/check-brief-status.ts --",
     "scrape-cb-deals": "npx tsx scripts/scrape-cb-deals.ts",
     "scrape-cb-promos": "npx tsx scripts/scrape-cb-deals.ts --promos-only",
+    "scrape-cb-promo-intelligence": "npx tsx --env-file=.env.local scripts/scrape-cb-promo-intelligence.ts",
     "validate-cb-retail-links": "npx tsx scripts/validate-cb-retail-links.ts",
     "test:deals-schema": "npx tsx tests/deals-system-schema.ts",
     "test:link-broker": "npx tsx tests/link-broker.ts",

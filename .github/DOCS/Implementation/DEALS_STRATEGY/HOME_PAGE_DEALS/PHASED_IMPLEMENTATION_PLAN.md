@@ -202,6 +202,9 @@ Make links safe enough to publish or send.
 
 ## Phase 4 - CBAT Promo Intelligence Scraper
 
+Status: implemented. Proof artifact: `npm run scrape-cb-promo-intelligence`
+(ran live: 6 promotions captured, 0 errors, cache validates).
+
 ### Goal
 
 Capture Today's View promotions as auditable raw intelligence.
@@ -972,3 +975,58 @@ Exit criteria met:
 - The Link Broker can label links `valid`, `stale`, `broken`, or `unknown`.
 - Public Deals can later depend on link health instead of blindly rendering
   links (the curated-deal publishing gate already keys on `linkHealth.status`).
+
+### Phase 4 - CBAT Promo Intelligence Scraper
+
+Status: implemented.
+
+Shipped:
+
+- `scripts/scrape-cb-promo-intelligence.ts` — operator-run scraper that reuses
+  the established storageState auth pattern (load `.playwright-state.json`; on
+  expiry, headless login with `CB_EMAIL` / `CB_PASSWORD`). It navigates Today's
+  View, collects `/marketing/promotion/*` detail URLs, visits each, and extracts
+  raw sections by walking the known heading labels through the
+  `.view-promotion-wrapper` text: Promotion Details, Key features, Agent
+  Instructions, Applicable Sailings, Offer Applicable Products, Applicable
+  Markets, plus title/vendor and both date windows (with `MM/DD/YYYY -> ISO`
+  parsing) and any `/media/` supporting-file links and dynamic booking links.
+- Writes `CbPromoIntelligenceRecord[]` to
+  `.github/data/cb-promo-intelligence-cache.json` with `extracted`/`marketingUse`
+  left as empty scaffolds and `diagnostics.status = "needs_review"` (Phase 5
+  fills them via GPT). Cache validates against the Phase 1 schema.
+- `npm run scrape-cb-promo-intelligence`.
+
+Read-only safety: the scraper only calls `page.goto` + `page.evaluate` (DOM
+reads). It never clicks Book/Hold, never fills forms beyond login, and performs
+no booking/hold/reservation/guest-info action.
+
+Live run (2026-06-08, captured against the real CB session):
+
+```text
+records=6 detailPages=6 supportingFiles=0 errors=0
+  cbpromo-2837  Celebrity Cruises - SUMMER SALE - Dollars Off, Onboard Credit
+  cbpromo-2808  Princess Cruises - Discover the World - Dollars Off
+  cbpromo-2872  Carnival Cruises - Sunshine & Savings Sale
+  cbpromo-2458  Norwegian Cruise Line 50% Off + Free Extras - Onboard Credit
+  cbpromo-2873  Explora Journeys Savings - Luxury All Inclusive
+  cbpromo-2041  Royal Caribbean WEST COAST - Plan Today
+```
+
+The Celebrity Summer Sale record (the plan's canonical example) captured the
+full raw Promotion Details (75% off 2nd guest, tiered per-stateroom savings and
+OBC tiers), Agent Instructions combinability rules (BOGO not combinable with
+GroupX/single supplements), the Galapagos product exclusion, and both windows —
+verbatim, ready for Phase 5 extraction.
+
+Known limitation: supporting `.docx` files are referenced as plain text
+("Supporting File: /media/...") rather than `<a href>` on these pages, so 0 were
+captured as file links. Parsing those text references / downloading the docs is
+deferred (plan open question: parse in Phase 4 or later — later).
+
+Exit criteria met:
+
+- Current CB Today's View promotions are stored in an auditable cache with
+  promotion count, detail-page count, raw section text, and (when present)
+  supporting-file links.
+- Raw agent instructions are preserved verbatim.

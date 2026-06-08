@@ -1,13 +1,344 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-08T00:00:00.000Z",
+  "generatedAtIso": "2026-06-08T22:59:09.830Z",
   "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-  "records": [],
+  "records": [
+    {
+      "id": "cbpromo-2837",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2837/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Celebrity Cruises - SUMMER SALE - Dollars Off, Onboard Credit",
+      "vendor": "Celebrity Cruises",
+      "bookingWindow": {
+        "startsOn": "2026-06-02",
+        "endsOn": "2026-07-27",
+        "rawText": "Must be booked between 06/02/2026 and 07/27/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-06-03",
+        "endsOn": "2028-05-10",
+        "rawText": "For sailings on or between 06/03/2026 and 05/10/2028"
+      },
+      "promotionDetailsRaw": "CELEBRITY SUMMER SALE IS GOING ON NOW!  BONUS SAVINGS NO MATTER WHEN YOU RESERVE YOUR NEXT CRUISE!\n2nd Guest up to 75% off - Brothers Onboard Extras\n \n75% off the 2nd Guest – Non-Refundable Deposit Rates\n50% off the 2nd Guest – Refundable Deposit Rates\nFree 3rd/4th/5th Guest Cruise Fares on select sailing dates. not applicable to suites.\n \nBonus Savings Up to $700 Per Stateroom – Weekly Friday to Monday \nBonus Savings Up to $600 Per Stateroom – Weekly Tuesday to Wednesday \nBonus Onboard Credit Up to $600 Per Stateroom – Weekly Thursday\n \nPer Stateroom Savings Amounts – Tiered by Length of Voyage and Stateroom Category\n \n3 to 5 Nights\n$100 Inside or Ocean View Stateroom\n$200 Veranda, Concierge Class or AquaClass Stateroom\n$350 Sky Suite and Above\n \n6 Nights or Longer\n$150 Inside or Ocean View Stateroom\n$300 Veranda, Concierge Class or AquaClass Stateroom\n$700 Sky Suite and Above\n \nTuesday to Wednesday Bonus Offer \n3 to 5 Nights\n$50 Inside or Ocean View Stateroom\n$150 Veranda, Concierge Class or AquaClass Stateroom\n$300 Sky Suite and Above\n \n6 Nights or Longer\n$100 Inside or Ocean View Stateroom\n$250 Veranda, Concierge Class or AquaClass Stateroom\n$600 Sky Suite and Above\n \nThursday Bonus Onboard Credit Offer\n3 to 5 Nights\n$50 Inside or Ocean View Stateroom\n$150 Veranda, Concierge Class or AquaClass Stateroom\n$300 Sky Suite and Above\n \n6 Nights or Longer\n$100 Inside or Ocean View Stateroom\n$250 Veranda, Concierge Class or AquaClass Stateroom\n$600 Sky Suite and Above\n \nWeekend Flash Sales (WFS) – $100 Instant Savings Per Stateroom - Select Friday to Monday (varies by destination: Alaska, Caribbean or Europe)\n \nBook Now Bonus (BNB) - $100 Instant Savings Per Stateroom – Tuesday to Wednesday",
+      "agentInstructionsRaw": "·         Combinable with Cruise Only Rates (aka No Perk Rates) and All Included Pricing. Combinable as Refundable or Non-Refundable Deposit Pricing\n\n·         BOGO promos are NOT combinable with GroupX rates or Single Supplements\n\n·         BOGO Offers are combinable with Celebrity River Cruises\n\n·         BOGO + Bonus Offers are combinable with 2026 & 2027 Alaska Cruisetours",
+      "keyFeaturesRaw": ":\nPremium experience: Celebrity aims to provide an elevated, premium vacation with attentive service and upscale amenities, including gourmet cuisine and white-glove service.\n \nFleet and destinations: The company has a large fleet of ships, including the modern Edge-series, and travels to nearly 300 destinations across more than 70 countries and all seven continents. New River Cruise Fleet for 2027 and beyond.\n \nModern ships: The newer Edge-class ships are known for their sleek design, modern aesthetics, and unique features like the \"Magic Carpet,\" a floating platform that moves between decks.\n \nSuite class: For suite guests, Celebrity offers a premium experience called \"The Retreat,\" which includes access to exclusive areas, private restaurants, and personalized butler service.\n \nInnovation: Celebrity is known for integrating technology into its ships, such as using Starlink for high-speed internet on some vessels and displaying high-tech screens throughout the ships.",
+      "applicableSailingsRaw": ": \n\n·         BOGO + Savings or OBC || 06/02/26 through 05/10/28\n\n·         Free 3rd/4th/5th Guest Cruise Fares || Select Sailings 06/02/26 through 05/10/28",
+      "applicableProductsRaw": ":  All except Galapagos sailings, including 9-Night and longer 2026 Alaska Cruisetours on Celebrity Summit and 2027 Alaska Cruisetours on Celebrity Solstice.\n\n \n\nBonus Savings & OBC Applicability: Applicable to All products (except Galapagos and Celebrity River Cruises) Bonus offers are applicable to prevailing or closed group standard or GroupX rates that are named during the booking period.",
+      "applicableMarketsRaw": ":  US, Canada, Latin America, and those who want to participate",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2808",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2808/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Princess Cruises - Discover the World - Dollars Off",
+      "vendor": "Princess Cruises",
+      "bookingWindow": {
+        "startsOn": "2026-05-01",
+        "endsOn": "2026-06-15",
+        "rawText": "Must be booked between 05/01/2026 and 06/15/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2027-12-31",
+        "rawText": "For sailings on or between 10/01/2026 and 12/31/2027"
+      },
+      "promotionDetailsRaw": "PRINCESS CRUISES – DISCOVER THE WORLD SALE: BIG SAVINGS FOR YOU AND YOUR FAMILY!\n\nWhether you heat things up island hopping, soak in the culture on a European escapade, or play it cool in Alaska, these savings will have you smiling with up to 40% off fares and up to $400 off instantly.\n\nBring your whole crew because 3rd & 4th guests sail FREE on select voyages (taxes and fees apply). Plus, lock it all in with $99 deposit. Start planning today!\n\n*Book by June 15, 2026.",
+      "agentInstructionsRaw": "Up to 40% off fares Offer discount taken off Launch Fare and does not apply to Required Cruise Fees and Expenses and Government Taxes\nand Fees. Discount amount is determined by category and sailing and only applies to first two guests in stateroom. \n\nUp to $400 Instant Savings per stateroom (up to $200 per guest) is only applicable to the first two guests in a stateroom and amount awarded varies based on stateroom type and voyage length; see full terms for credit amounts. Advertised amount of $400 is per double occupancy\nstateroom ($200 per guest) on a 9-12 day voyage in a suite. \n\n$99 Deposit is applicable to both refundable and non-refundable deposits and applies to full deposit amount only. May not be \n combined with other offers or promotions and will not further reduce any already-discounted deposits. Not available for cruises requiring full,\nfinal payment at the time of booking. \n\n† Free 3rd & 4th guest offer applies to cruise fare only for recipient and guests covered by the complimentary offer (if any) and excludes Government Taxes & Fees, the Required Cruise Fees & Expenses, other cruise-related expenses and travel expenses. Also excludes required\ndeposit (if any) and other cruise-related expenses and travel expenses. Actual amounts owed by recipient and applicable guests may vary and shall be calculated at the time of booking. First or Second guest in stateroom will be responsible for their cruise rates as well as the free 3rd &\n4th guest’s out of pocket charges and expenses. Approximate value of free sailing for 3rd and 4th guests varies from $99 to $3,605 USD per\nperson.\n\nMEMORIAL DAY FLASH UP TO DOUBLE THE SAVINGS. SEE ONE SOURCE",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2872",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2872/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Carnival Cruises - Sunshine & Savings Sale",
+      "vendor": "Carnival Cruise Lines",
+      "bookingWindow": {
+        "startsOn": "2026-06-01",
+        "endsOn": "2026-06-30",
+        "rawText": "Must be booked between 06/01/2026 and 06/30/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-07-01",
+        "endsOn": "2028-04-30",
+        "rawText": "For sailings on or between 07/01/2026 and 04/30/2028"
+      },
+      "promotionDetailsRaw": "CARNIVAL JUNE PROMOTIONS - SUNSHINE ON SALE!\n\nGreat rates Available on sailings through April 2028 \n\nBooking Window: June 1, 2026 – June 30, 2026 \n\nCabin type: Cabin Assignment only\n\n***************************************************************\n\nGreat Rates + up to $50 onboard credit.\n\nBooking Window: June 2 - 8, 2026.\n\nCabin Assignment only on select dates through April 2028.\n\n****************************************************\n\nEarly Saver Rates + 50% reduced deposit per person + up to $50 onboard credit per room + 2 category upgrade\n\n50% Reduced deposits - 3rd, 4th, and 5th guests also qualify for the reduced deposit\n\nOnboard Credits: Up to $50 per stateroom\n\n2-5 day sailings: $12.50 per person up to $25 per room. 6+ day sailings: $25 per person up to $50 per room\n\nBooking window: June 9, 2026 – June 15, 2026\n\nSailing window: Sailings through April 2028 where Early Saver is available\n\n*****************************************************\n\nGreat rates + 2-category upgrade\n\nSelect sailings through September 2026 (where Early Saver has expired) \n\nBooking Window: June 16, 2026 – June 22, 2026 \n\nCabin type: Cabin Assignment only\n\n**************************************************************\n\nAUSTRALIA Great guarantee rates\n\nBooking dates: June 9 - 13, 2026\n\nAvailable on select Australia sailings through May 2027\n\n************************************************************************\n\nAUSTRALIA\n\nGreat rates + Reduced deposits starting from $50 AUD per person+ 2-category upgrade\n\nNon-refundable reduced deposits: 2-5 day sailings: $50 AUD per person, 6+ day sailings: $99 AUD per person, 3rd, 4th, and 5th guests also qualify for the reduced deposit \n\nBooking window: 17 June 2026 (AEST) – 30 June 2026 (AEST)\n\nAvailable on Carnival Australia sailings through July 2028\n\nCabin Assignment only\n\n********************************************************************************\n\nCarnival Cruise Lines private destination in Roatan, Honduras, formerly known as Mahogany Bay, has officially reopened as Isla Tropicale. This 24-acre, eco-friendly beach port features the stunning Mahogany Beach, accessible right off the ships. The $93 million upgrade has added brand new amenities such as Mangrove Bay Pool Complex, Kids Splash Pad, Premium Cabanas and 52 retail and local artisan ships, bars and restaurants. You can find it available on most Western Caribbean itineraries.",
+      "agentInstructionsRaw": "book at goccl.com, Odysseus or call the agent reservation line",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2458",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2458/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Norwegian Cruise Line 50% Off + Free Extras - Onboard Credit",
+      "vendor": "Norwegian Cruise Line",
+      "bookingWindow": {
+        "startsOn": "2025-11-05",
+        "endsOn": "2026-06-22",
+        "rawText": "Must be booked between 11/05/2025 and 06/22/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-05-05",
+        "endsOn": "2028-04-30",
+        "rawText": "For sailings on or between 05/05/2026 and 04/30/2028"
+      },
+      "promotionDetailsRaw": "NCL Cruises 50% OFF + Free at Sea\n\n\n\n\n\nIt's time to book your next getaway with 50% off all Norwegian Cruises, plus free unlimited bar*, free specialty dining* and more with Free at Sea™, and kids sail free on select dates.\n\nNCL FREE AT SEA: For a limited time, enjoy 50% off pax 1 & 2 and more incredible perks, including an unlimited beverage package, specialty dining, excursion credits, and high-speed Wi-Fi.\n\nExplore ancient ruins in Europe, marvel at Alaska’s glaciers, or bask in the Caribbean sun. This limited-time offer won’t last long, so book your dream vacation today on award-winning ships and experience more like never before.\n\nReduced Deposit balconies and below only. Applicable for sailings of three days or longer. Does apply to Sail Away rates!\n\nSelect Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids\n\n****************************************************************\n\nNCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)\n\nNCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)\n\n*****************************************************************************\n\nBONUS ONBOARD CREDIT UP TO $200 ON SELECT DATES BOOK BY JUNE 5! (will apply if applicable)",
+      "agentInstructionsRaw": "Beverage package not available on Great Stirrup Cay unless Free at Sea Plus is purchased for a slight upcharge from Free at Sea. See norwegiancentral.com for other additions on Free at Sea Plus. Unlimited Open Bar package includes a wide selection of spirits, cocktails, wine by the glass, and bottled or draft beer up to $15 per drink. https://www.ncl.com/cruise-deals/promotion-terms#free-at-sea Upcoming New Hawaii State Government Tax. For your awareness, effective for sailings embarking January 1, 2026, forward, Hawaii will expand its Transient Accommodations Tax (TAT), traditionally applied to hotels and other land-based accommodations, to now include all cruise ship passengers. For cruises that include visits to Hawaii and embark on or after January 1, 2026, a tax of 14% (11% State TAT and 3% County surcharge) will be applied based on the portion of the cruise fare associated with time spent in Hawaiian ports. MIL, Teacher not applicable to groups\n\n \n\nTLN Offer: Up to $200 USD Onboard Credit Per Stateroom for Balcony and above Booking Window: 5/25/26 – 6/5/26 11:59pm EST\n\nTravel Window: All Open for Sale – 7+ night sailings starting August 1st through February 28th, 2027 based on the following ship & products (excluding select Holiday sailings):\n\n➢ Alaska ➢ Bahamas – 4+ night sailings only ➢ Bermuda (not applicable to sailings embarking/debarking from New York)\n\n➢ Caribbean ➢ Europe – Norwegian Dawn, Epic, Gem, Pearl, Sky & Star only\n\nRR 05/13",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2873",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2873/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Explora Journeys Savings - Luxury All Inclusive",
+      "vendor": "Explora Journeys",
+      "bookingWindow": {
+        "startsOn": "2026-05-27",
+        "endsOn": "2026-06-27",
+        "rawText": "Must be booked between 05/27/2026 and 06/27/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2027-12-31",
+        "rawText": "For sailings on or between 10/01/2026 and 12/31/2027"
+      },
+      "promotionDetailsRaw": "EXPLORA JOURNEYS YACHT STYLE LUXURY, ALL SUITE EXPERIENCE SAVINGS\n\nEnjoy an Invitation to Discover Explora Journeys - Exceptional savings and Journey Credit.\n\nOffer Highlights: up to 25% off and up to $3,500 US / $4,200 CA Journey Credit.\n\nBooking Window: May 24 - June 27, 2026",
+      "agentInstructionsRaw": "see Explora TA portal for various promotions",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2041",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2041/",
+      "capturedAtIso": "2026-06-08T22:59:09.830Z",
+      "title": "Royal Caribbean WEST COAST - Plan Today",
+      "vendor": "Royal Caribbean International",
+      "bookingWindow": {
+        "startsOn": "2026-06-05",
+        "endsOn": "2026-06-30",
+        "rawText": "Must be booked between 06/05/2026 and 06/30/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-07-01",
+        "endsOn": "2027-03-31",
+        "rawText": "For sailings on or between 07/01/2026 and 03/31/2027"
+      },
+      "promotionDetailsRaw": "ROYAL CARIBBEAN CALIFORNIA LINEUP!\n\nCHECK OUR GROUP RATES - WE HAVE PRICE ADVANTAGES IN LATE 2026 and 2027 VOYAGES!\n\nRoyal Caribbean West coast goes bolder than ever this fall, with a powerhouse lineup of ships turning California into the capital of next-level vacations. Chase sunsets all week long onboard the newly Amplified Ovation of the Seas® and Voyager of the Seas® from Los Angeles. Or go scenery scoping on the show-stopping Serenade of the Seas® from San Diego. All with pulse-pounding thrills, sun-drenched chill, mouthwatering meals and unrivaled entertainment-everything you need for the best vacation ever.\n\nDive deeper into Baja California with extended adventures onboard Ovation of the Seas® and Quantum of the Seas®. This is the first Quantum Class showstoppers to sail from Los Angeles, bringing a new world of entertainment to the best coast. Scope the scenery from Ensenada to Cabo on the tallest viewing deck on a cruise ship, North Star®. Bounce bumper cars with your adventure crew at the SeaPlex® and flip into freefall on RipCord® by iFly®. Indulge in world-class cuisine onboard and onshore. Live \"la vida local\" with an unforgettable overnight in Cabo San Lucas. You’ve never done Mexico like this before. Not all weekends are created equal. Navigator of the Seas® delivers an amped-up adventure with record-breaking thrills and L.A. chill on every getaway. Explore epic entertainment and take your tastebuds on a delicious globetrotting tour. Dip over the edge of the ship on the Riptide℠ waterslide — or kick back and splash at the amplified pool deck. This is more family time per minute. Max out your vacay with a 3-night escape to Ensenada or stay one more day with 4-night sailings to Catalina. It’s time to win the weekend.",
+      "agentInstructionsRaw": "https://loyaltoyoualwaycom\n\nfind assets on west coast, microsite in loyaltoyoualways.com",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    }
+  ],
   "diagnostics": {
-    "promotionLinksFound": 0,
-    "detailPagesScraped": 0,
+    "promotionLinksFound": 6,
+    "detailPagesScraped": 6,
     "extractionSucceeded": 0,
-    "extractionNeedsReview": 0,
+    "extractionNeedsReview": 6,
     "supportingFilesFound": 0,
     "errors": []
   }
