@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { cbPicks } from "@/app/(dashboard)/(routes)/destinationdeal/[id]/index.js";
-import { generateDealContent } from "@/lib/deals-utils";
 import { CBPickData } from "@/lib/cb/cb-deal-types";
 import { buildStoredCbDealsPayload } from "@/lib/cb/cb-deals-refresh";
 import { getStoredCbDeals, storeCbDeals } from "@/lib/cb/cb-deals-store";
@@ -35,33 +34,20 @@ export async function GET(req: Request) {
 
     console.log(`Stored ${storedPayload.homepageDeals.length} homepage deals in Dynamo.`);
 
-    const results = [];
-
-    for (const pick of picks) {
-      console.log(`Processing deal: ${pick.id} - ${pick.what}`);
-      try {
-        const result = await generateDealContent(pick.id, pick);
-        results.push({
-          id: pick.id,
-          status: result ? "success" : "failed",
-          title: result?.data?.title || "N/A"
-        });
-      } catch (error: any) {
-        console.error(`Error processing deal ${pick.id}:`, error.message);
-        results.push({
-          id: pick.id,
-          status: "error",
-          error: error.message
-        });
-      }
-    }
-
     return NextResponse.json({
       message: "Deals updated successfully",
       processed: picks.length,
       homepageDealsStored: storedPayload.homepageDeals.length,
+      dealDetailsStored: storedPayload.dealDetails?.length ?? 0,
+      refreshDiagnostics: storedPayload.refreshDiagnostics,
       generatedAtIso: storedPayload.generatedAtIso,
-      details: results
+      details: storedPayload.dealDetails?.map((deal) => ({
+        id: deal.id,
+        status: deal.status,
+        title: deal.display.title,
+        bookingUrl: deal.booking.bookingUrl,
+        linkSource: deal.booking.linkSource,
+      })) ?? [],
     });
   } catch (error: any) {
     console.error("[DEALS_UPDATE_ERROR]", error);

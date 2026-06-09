@@ -32,6 +32,75 @@ export interface StoredCbHomepageDeal {
   pricePerPerson: string;
   detailsLink: string;
   toolTips?: CbHomepageDealToolTips;
+  status?: StoredCbDealStatus;
+  bookingUrl?: string;
+}
+
+export type StoredCbDealStatus = "bookable" | "info_only" | "needs_operator_review";
+
+export type StoredCbDealLinkSource =
+  | "cb_pick"
+  | "cb_agent_tools_promo"
+  | "operator_override"
+  | "none";
+
+export interface StoredCbDealDetail {
+  id: string;
+  status: StoredCbDealStatus;
+  sourcePick: CBPickData;
+  display: {
+    title: string;
+    subtitle: string;
+    heroImageSrc: string;
+    heroImageAlt: string;
+    shortSummary: string;
+    longSummary: string;
+    dealHighlights: string[];
+    itineraryHighlights: string[];
+    destinationHighlights: string[];
+    bestFor: string[];
+    urgencyCopy: string;
+  };
+  cruiseFacts: {
+    destination: string;
+    cruiseLine?: string;
+    shipName?: string;
+    nights?: string;
+    embarkationPort?: string;
+    sailDateLabel?: string;
+    priceFromLabel?: string;
+    includedPerks: string[];
+  };
+  booking: {
+    packageId?: string;
+    siid?: string;
+    bookingUrl?: string;
+    bookingUrlVerifiedAtIso?: string;
+    linkSource: StoredCbDealLinkSource;
+    matchScore?: number;
+    matchedShipName?: string;
+    matchedVendor?: string;
+    matchedSailDate?: string;
+    matchedNights?: string;
+    matchedItinerary?: string;
+  };
+  enrichment: {
+    model: "deterministic_v1" | "gpt-5.4-mini" | "gpt-5.4";
+    generatedAtIso: string;
+    sourceInputsHash: string;
+  };
+}
+
+export interface CbDealsRefreshDiagnostics {
+  picksFound: number;
+  cbAgentToolsPromosFound?: number;
+  cbAgentToolsBookablePromosFound?: number;
+  homepageDealsBuilt: number;
+  detailDealsBuilt: number;
+  bookableDeals: number;
+  infoOnlyDeals: number;
+  needsOperatorReview: number;
+  generatedAtIso: string;
 }
 
 export interface StoredCbDealsPayload {
@@ -40,4 +109,6 @@ export interface StoredCbDealsPayload {
   source: string;
   picks: CBPickData[];
   homepageDeals: StoredCbHomepageDeal[];
+  dealDetails?: StoredCbDealDetail[];
+  refreshDiagnostics?: CbDealsRefreshDiagnostics;
 }

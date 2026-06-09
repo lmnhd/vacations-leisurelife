@@ -16,10 +16,13 @@ export async function GET(request: Request) {
     }
 
     try {
+        const { searchParams } = new URL(request.url);
+        const promosOnly = searchParams.get('promosOnly') === '1' || searchParams.get('promosOnly') === 'true';
         const scriptPath = path.join(process.cwd(), 'scripts', 'scrape-cb-deals.ts');
+        const command = `npx tsx "${scriptPath}"${promosOnly ? ' --promos-only' : ''}`;
 
         // Use 'npx tsx' to execute the TypeScript Playwright script
-        const { stdout, stderr } = await execAsync(`npx tsx "${scriptPath}"`, {
+        const { stdout, stderr } = await execAsync(command, {
             cwd: process.cwd(),
             // Ensure child process runs with environment variables
             env: {
@@ -30,14 +33,17 @@ export async function GET(request: Request) {
 
         // Parse stdout to find the results output
         const promosMatch = stdout.match(/Promos: (\d+)/);
-        const advantagesMatch = stdout.match(/Price Advantages: (\d+)/);
+        const bookablePromosMatch = stdout.match(/Bookable Promos: (\d+)/);
+        const groupsMatch = stdout.match(/Groups: (\d+)/);
 
         return NextResponse.json({
             status: 'success',
             message: 'CB Deals Cache refreshed successfully.',
             details: {
+                promosOnly,
                 promosFound: promosMatch ? parseInt(promosMatch[1], 10) : 0,
-                advantagesFound: advantagesMatch ? parseInt(advantagesMatch[1], 10) : 0,
+                bookablePromosFound: bookablePromosMatch ? parseInt(bookablePromosMatch[1], 10) : 0,
+                groupsFound: groupsMatch ? parseInt(groupsMatch[1], 10) : 0,
             },
             logs: stdout.split('\n').filter(l => l.includes('[scrape-cb-deals]')),
             errors: stderr ? stderr.split('\n').filter(l => l.trim()) : []

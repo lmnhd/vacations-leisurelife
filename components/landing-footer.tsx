@@ -4,17 +4,16 @@ import Link from "next/link";
 import logo from "@/public/llv logo_color_sept23-3.png";
 
 const FOOTER_LINKS = [
-  { label: "Search Cruises", href: "/search" },
-  { label: "Deals", href: "#deals" },
+  { label: "Deals", href: "/#deals" },
+  { label: "Specials", href: "/#deals" },
   { label: "Contact Us", href: "/contact" },
-  { label: "Dashboard", href: "/dashboard" },
 ];
 
 export function LandingFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 py-10 px-6">
+    <footer className="border-t border-border bg-muted/35 px-6 py-10">
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
         {/* Brand */}
         <div className="flex flex-col items-center md:items-start gap-2">
@@ -26,7 +25,7 @@ export function LandingFooter() {
               style={{ objectFit: "contain", objectPosition: "left" }}
             />
           </div>
-          <p className="text-xs text-gray-500 font-light tracking-widest uppercase">
+          <p className="text-xs font-light uppercase tracking-widest text-muted-foreground">
             Let Us Make It Happen!
           </p>
         </div>
@@ -37,7 +36,7 @@ export function LandingFooter() {
             <Link
               key={link.label}
               href={link.href}
-              className="text-sm text-gray-600 hover:text-primary transition-colors font-medium"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               {link.label}
             </Link>
@@ -45,7 +44,7 @@ export function LandingFooter() {
         </nav>
       </div>
 
-      <div className="max-w-5xl mx-auto mt-8 pt-6 border-t border-gray-200 text-center text-xs text-gray-400">
+      <div className="mx-auto mt-8 max-w-5xl border-t border-border pt-6 text-center text-xs text-muted-foreground">
         &copy; {currentYear} Leisure Life Vacations. All rights reserved.
       </div>
     </footer>

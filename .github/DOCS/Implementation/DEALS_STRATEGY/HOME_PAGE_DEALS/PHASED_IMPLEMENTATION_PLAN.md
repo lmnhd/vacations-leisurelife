@@ -121,7 +121,7 @@ Create the schemas and local cache files that later phases will fill.
 
 ## Phase 2 - Internal Link Broker Foundation
 
-Status: implemented. Proof artifact: `npm run test:link-broker` (34/34 passing).
+Status: implemented. Proof artifact: `npm run test:link-broker` (47/47 passing).
 
 ### Goal
 

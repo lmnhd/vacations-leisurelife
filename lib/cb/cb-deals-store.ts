@@ -130,6 +130,8 @@ export async function storeCbDeals(payload: StoredCbDealsPayload): Promise<void>
           source: payload.source,
           picks: payload.picks,
           homepageDeals: payload.homepageDeals,
+          dealDetails: payload.dealDetails,
+          refreshDiagnostics: payload.refreshDiagnostics,
           updatedAt: timestamp,
           createdAt: timestamp,
           ttl,

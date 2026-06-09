@@ -13,6 +13,7 @@ export interface PromotionTileProps {
   description: string;
   price?: PriceProps;
   bookButton?: boolean;
+  bookButtonHref?: string;
   detailsLink?: string;
   toolTips?: ToolTipsProps;
 }
@@ -28,7 +29,7 @@ const PromotionTile = ({ promotion }: { promotion: PromotionTileProps }) => {
   const cleanPrice = priceLabel?.replace("$", "");
 
   return (
-    <div className="flex flex-col bg-white rounded-xl shadow-md w-80 border border-gray-100 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
+    <div className="flex w-80 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
 
       {/* Image area */}
       <div className="relative h-64 overflow-hidden">
@@ -48,7 +49,7 @@ const PromotionTile = ({ promotion }: { promotion: PromotionTileProps }) => {
 
         {/* Price badge — top right */}
         {cleanPrice && (
-          <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-md leading-tight text-center">
+          <div className="absolute top-3 right-3 rounded-full bg-primary px-3 py-1.5 text-center text-xs font-bold leading-tight text-primary-foreground shadow-md">
             <div>${cleanPrice}</div>
             <div className="font-normal opacity-80">{priceSuffix}</div>
           </div>
@@ -56,30 +57,35 @@ const PromotionTile = ({ promotion }: { promotion: PromotionTileProps }) => {
       </div>
 
       {/* Card body */}
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-bold text-gray-900 text-base mb-0.5">{promotion.header1}</h3>
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-0.5 text-base font-bold text-card-foreground">{promotion.header1}</h3>
         {promotion.header2 && (
-          <p className="text-xs font-medium text-primary/80 mb-2 line-clamp-1">
+          <p className="mb-2 line-clamp-1 text-xs font-medium text-primary">
             {promotion.header2}
           </p>
         )}
-        <p className="text-sm text-gray-600 line-clamp-3 flex-1">{promotion.description}</p>
+        <p className="line-clamp-3 flex-1 text-sm text-muted-foreground">{promotion.description}</p>
 
-        {promotion.bookButton && (
-          <button className="mt-4 w-full py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors">
+        {promotion.bookButton && promotion.bookButtonHref && (
+          <a
+            href={promotion.bookButtonHref}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 w-full rounded-lg bg-primary py-2 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
             Book Now
-          </button>
+          </a>
         )}
       </div>
 
       {/* Footer */}
       {(promotion.detailsLink || promotion.toolTips) && (
-        <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex flex-col gap-2">
+        <div className="flex flex-col gap-2 border-t border-border bg-muted/35 px-4 py-3">
           {promotion.toolTips && <FeaturesToolTip options={promotion.toolTips} />}
           {promotion.detailsLink && (
             <Link href={promotion.detailsLink} className="w-full">
-              <button className="w-full py-2 text-sm font-semibold text-primary border border-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors">
-                More Details
+              <button className="w-full rounded-lg border border-primary py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
+                View Deal
               </button>
             </Link>
           )}

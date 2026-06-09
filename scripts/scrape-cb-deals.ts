@@ -11,7 +11,7 @@
  */
 
 import { chromium } from 'playwright';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -29,6 +29,8 @@ const MIN_LEAD_DAYS = 180;
 const STATE_FILE = path.join(process.cwd(), '.playwright-state.json');
 const OUTPUT_DIRECTORY = path.join(process.cwd(), '.github', 'data');
 const OUTPUT_FILE_PATH = path.join(OUTPUT_DIRECTORY, 'cb-deals-cache.json');
+const ESBUILD_BROWSER_HELPER_STUB =
+    'window.__name = (f) => f; window.__publicField = (o,k,v) => { o[k] = v; return v; }; window.__defProp = Object.defineProperty;';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +40,10 @@ type PromoDeal = {
     validUntil: string;
     isFeatured: boolean;
     category: 'cruise' | 'land' | 'agent_incentive' | 'tln_amenity' | 'unknown';
+    detailUrl?: string;
+    primaryBookingLink?: string;
+    bookingLinks: string[];
+    allLinks: string[];
     sourceUrl: string;
 };
 
@@ -66,6 +72,27 @@ type DealsCache = {
     priceAdvantages: PriceAdvantageDeal[];
 };
 
+function hasArg(name: string): boolean {
+    return process.argv.includes(name);
+}
+
+function readExistingCache(): DealsCache {
+    if (!existsSync(OUTPUT_FILE_PATH)) {
+        return { generatedAtIso: '', promos: [], priceAdvantages: [] };
+    }
+
+    try {
+        const parsed = JSON.parse(readFileSync(OUTPUT_FILE_PATH, 'utf-8')) as Partial<DealsCache>;
+        return {
+            generatedAtIso: parsed.generatedAtIso ?? '',
+            promos: Array.isArray(parsed.promos) ? parsed.promos : [],
+            priceAdvantages: Array.isArray(parsed.priceAdvantages) ? parsed.priceAdvantages : [],
+        };
+    } catch {
+        return { generatedAtIso: '', promos: [], priceAdvantages: [] };
+    }
+}
+
 // ─── Auth (Odysseus pattern) ──────────────────────────────────────────────────
 
 async function getAuthenticatedContext(): Promise<{
@@ -79,6 +106,7 @@ async function getAuthenticatedContext(): Promise<{
         const browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({ storageState: STATE_FILE });
         const page = await context.newPage();
+        await page.addInitScript(ESBUILD_BROWSER_HELPER_STUB);
 
         await page.goto(`${CB_BASE_URL}/bookings/home/`, { waitUntil: 'networkidle' });
 
@@ -93,12 +121,17 @@ async function getAuthenticatedContext(): Promise<{
     }
 
     console.log('[scrape-cb-deals] No valid session. Performing automated login...');
-    const email = process.env.CB_EMAIL ?? 'cc.lemonhead@gmail.com';
-    const password = process.env.CB_PASSWORD ?? 'Rollpop1!';
+    const email = process.env.CB_EMAIL;
+    const password = process.env.CB_PASSWORD;
+
+    if (!email || !password) {
+        throw new Error('Missing CB_EMAIL or CB_PASSWORD. Set env vars or refresh .playwright-state.json manually.');
+    }
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
     const page = await context.newPage();
+    await page.addInitScript(ESBUILD_BROWSER_HELPER_STUB);
 
     await page.goto(`${CB_BASE_URL}/accounts/login/`, { waitUntil: 'domcontentloaded' });
 
@@ -134,40 +167,131 @@ async function scrapeTodaysPromos(
     await page.goto(TODAYS_PROMOS_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
-    const promos = await page.evaluate((sourceUrl: string) => {
+    const promos = await page.evaluate(({ sourceUrl, baseUrl }: { sourceUrl: string; baseUrl: string }) => {
         const cards = document.querySelectorAll('.result-wrapper.card, .card, [class*="promo"]');
         const results: PromoDeal[] = [];
+        const seenKeys = new Set<string>();
 
         cards.forEach((card) => {
             const titleEl = card.querySelector('h3, h4.card-title, .card-title');
             const descEl = card.querySelector('p, .card-text, .description');
             const footerEl = card.querySelector('.card-footer, footer, h4:last-child');
             const featuredEl = card.querySelector('.featured, .badge, [class*="featured"]');
+            const detailLinkEl = Array.from(card.querySelectorAll('a')).find((anchor) => {
+                const href = anchor.getAttribute('href') ?? '';
+                return href.includes('/marketing/promotion/');
+            });
 
             const title = titleEl?.textContent?.trim() ?? '';
             const description = descEl?.textContent?.trim() ?? '';
             const validUntil = footerEl?.textContent?.trim() ?? '';
             const isFeatured = featuredEl !== null;
+            let detailUrl: string | undefined;
 
-            if (title.length === 0 && description.length === 0) {
-                return;
+            try {
+                const href = detailLinkEl?.getAttribute('href') ?? '';
+                detailUrl = href ? new URL(href, baseUrl).href : undefined;
+            } catch {
+                detailUrl = undefined;
             }
 
-            results.push({
+            const key = detailUrl ?? `${title}:${description.slice(0, 80)}`;
+            if ((title.length > 0 || description.length > 0) && !seenKeys.has(key)) {
+              seenKeys.add(key);
+              results.push({
                 title,
                 description: description.slice(0, 500),
                 validUntil,
                 isFeatured,
                 category: 'unknown' as const,
+                detailUrl,
+                primaryBookingLink: undefined,
+                bookingLinks: [],
+                allLinks: [],
                 sourceUrl,
-            });
+              });
+            }
+        });
+
+        Array.from(document.querySelectorAll('a[href*="/marketing/promotion/"]')).forEach((anchor) => {
+            const title = anchor.textContent?.trim() ?? '';
+            let detailUrl: string | undefined;
+
+            try {
+                const href = anchor.getAttribute('href') ?? '';
+                detailUrl = href ? new URL(href, baseUrl).href : undefined;
+            } catch {
+                detailUrl = undefined;
+            }
+
+            const key = detailUrl ?? `${title}:`;
+            if (title.length > 0 && !seenKeys.has(key)) {
+              seenKeys.add(key);
+              results.push({
+                title,
+                description: '',
+                validUntil: '',
+                isFeatured: false,
+                category: 'unknown' as const,
+                detailUrl,
+                primaryBookingLink: undefined,
+                bookingLinks: [],
+                allLinks: [],
+                sourceUrl,
+              });
+            }
         });
 
         return results;
-    }, TODAYS_PROMOS_URL);
+    }, { sourceUrl: TODAYS_PROMOS_URL, baseUrl: CB_BASE_URL });
 
-    console.log(`[scrape-cb-deals] Scraped ${promos.length} promos from Today's Promos.`);
+    for (const promo of promos) {
+        if (!promo.detailUrl) {
+            continue;
+        }
+
+        const links = await scrapePromoDetailLinks(page, promo.detailUrl);
+        promo.bookingLinks = links.bookingLinks;
+        promo.primaryBookingLink = links.bookingLinks[0];
+        promo.allLinks = links.allLinks;
+    }
+
+    const bookablePromos = promos.filter((promo) => promo.primaryBookingLink).length;
+    console.log(`[scrape-cb-deals] Scraped ${promos.length} promos from Today's Promos (${bookablePromos} with dynamic booking links).`);
     return promos;
+}
+
+async function scrapePromoDetailLinks(
+    page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>,
+    detailUrl: string,
+): Promise<{ bookingLinks: string[]; allLinks: string[] }> {
+    await page.goto(detailUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1000);
+
+    return page.evaluate(({ baseUrl }: { baseUrl: string }) => {
+        const unique = (values: string[]) => Array.from(new Set(values));
+        const allLinks = unique(
+            Array.from(document.querySelectorAll('a'))
+                .map((anchor) => {
+                    const href = anchor.getAttribute('href') ?? '';
+                    try {
+                        return href ? new URL(href, baseUrl).href : '';
+                    } catch {
+                        return '';
+                    }
+                })
+                .filter((href) => href.startsWith('http')),
+        );
+
+        const bookingLinks = allLinks.filter((href) =>
+            /^https:\/\/bookings\.cbagenttools\.com\/swift\/cruise\/package\/[^/?#]+/i.test(href),
+        );
+
+        return {
+            bookingLinks,
+            allLinks,
+        };
+    }, { baseUrl: CB_BASE_URL });
 }
 
 // ─── Sail Date Filter ─────────────────────────────────────────────────────────
@@ -310,11 +434,17 @@ async function scrapePriceAdvantages(
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function runScraper(): Promise<void> {
+    const promosOnly = hasArg('--promos-only');
     const { browser, page } = await getAuthenticatedContext();
 
     try {
         const promos = await scrapeTodaysPromos(page);
+        const existingCache = readExistingCache();
+        let mergedGroups = existingCache.priceAdvantages;
 
+        if (promosOnly) {
+            console.log(`[scrape-cb-deals] Promos-only mode: preserving ${mergedGroups.length} cached group row(s).`);
+        } else {
         // Primary pass: all groups (paginated, cross-line inventory)
         console.log('[scrape-cb-deals] Starting primary all-groups scrape (paginated)...');
         const allGroups = await scrapeGroupInventory(page, ALL_GROUPS_URL, true);
@@ -328,7 +458,7 @@ async function runScraper(): Promise<void> {
         const priceAdvantageMap = new Map<string, PriceAdvantageDeal>(
             priceAdvantageGroups.map((g) => [g.groupId, g]),
         );
-        const mergedGroups = allGroups.map((g) => {
+        mergedGroups = allGroups.map((g) => {
             const priceAdvantage = priceAdvantageMap.get(g.groupId);
             if (!priceAdvantage) return g;
             return {
@@ -347,6 +477,7 @@ async function runScraper(): Promise<void> {
                 mergedGroups.push(pg);
             }
         }
+        }
 
         const cache: DealsCache = {
             generatedAtIso: new Date().toISOString(),
@@ -358,7 +489,7 @@ async function runScraper(): Promise<void> {
         await writeFile(OUTPUT_FILE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
 
         console.log(`[scrape-cb-deals] ✅ Cache written to: ${OUTPUT_FILE_PATH}`);
-        console.log(`[scrape-cb-deals] Promos: ${promos.length}, Groups: ${mergedGroups.length} (${allGroups.length} all-groups + ${priceAdvantageGroups.length} price-advantage)`);
+        console.log(`[scrape-cb-deals] Promos: ${promos.length}, Bookable Promos: ${promos.filter((promo) => promo.primaryBookingLink).length}, Groups: ${mergedGroups.length}`);
     } finally {
         await browser.close();
     }
