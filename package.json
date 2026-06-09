@@ -19,11 +19,13 @@
     "scrape-cb-promos": "npx tsx scripts/scrape-cb-deals.ts --promos-only",
     "scrape-cb-promo-intelligence": "npx tsx --env-file=.env.local scripts/scrape-cb-promo-intelligence.ts",
     "extract-cb-promo-intelligence": "npx tsx --env-file=.env.local scripts/extract-cb-promo-intelligence.ts",
+    "lookup-odysseus-package": "npx tsx --env-file=.env.local scripts/lookup-odysseus-package.ts",
     "test:promo-extraction": "npx tsx tests/promo-extraction.ts",
     "validate-cb-retail-links": "npx tsx scripts/validate-cb-retail-links.ts",
     "test:deals-schema": "npx tsx tests/deals-system-schema.ts",
     "test:link-broker": "npx tsx tests/link-broker.ts",
-    "test:link-broker-health": "npx tsx tests/link-broker-health.ts"
+    "test:link-broker-health": "npx tsx tests/link-broker-health.ts",
+    "test:package-lookup": "npx tsx tests/package-lookup.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

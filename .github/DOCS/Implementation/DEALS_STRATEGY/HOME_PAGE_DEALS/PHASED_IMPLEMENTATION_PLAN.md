@@ -408,6 +408,10 @@ Expected retail brief: Alaska cruise positioned for travelers who want to sketch
 
 ## Phase 6 - Odysseus Package Lookup
 
+Status: implemented. Proof artifact: `npm run test:package-lookup` (12/12) plus a
+live operator lookup that auto-selected a real package and, when under-specified,
+returned ranked candidates instead of guessing.
+
 ### Goal
 
 Let the Link Broker resolve ship/line/date facts into actual Odysseus packages.
@@ -1084,3 +1088,57 @@ Exit criteria met:
 - Public copy can be generated only from approved/qualified claims
   (`marketingUse.publicClaimsAllowed` + a guarded visitor summary), and the test
   asserts no guaranteed-perk language leaks into the summary.
+
+### Phase 6 - Odysseus Package Lookup
+
+Status: implemented.
+
+Shipped:
+
+- `lib/cb/link-broker/package-lookup.ts` — pure, dependency-free ranker.
+  `rankPackageCandidates(facts, results)` scores Odysseus `CruiseResult`s by sail
+  date (dominant), nights, cruise line, ship name, departure port, and
+  destination keyword, and returns `confident_match` (auto-select, gated on a
+  confidence threshold AND a margin over the runner-up), `ambiguous` (ranked
+  candidates for operator review — never a silent pick), or `no_match`. Date
+  normalization and proximity scoring adapted from the proven
+  `scripts/run-phase-b.ts` matcher.
+- `lib/cb/link-broker/odysseus-lookup.ts` — operator-run adapter.
+  `lookupOdysseusPackages(facts)` dynamically imports the Odysseus session
+  manager (keeps Playwright/engine out of the Next bundle), centers the search
+  window on the sail date, scopes by vendor when the line is recognized
+  (`resolveVendorId`), runs `engine.searchCruises`, and ranks the results.
+  Read-only; releases a broken session on error.
+- Broker wiring: `resolveBestBookingLink` now accepts an optional
+  `packageLookup` fn (`ResolveOptions.packageLookup`). When a request has no
+  package ID, it runs the lookup; a confident match injects the resolved package
+  ID and the resolve flow continues to a link; an ambiguous result returns
+  `needs_operator_capture` with ranked candidates in `warnings`. The broker file
+  itself imports nothing from Playwright/Odysseus (dependency injection).
+- `scripts/lookup-odysseus-package.ts` + `npm run lookup-odysseus-package`
+  (operator CLI; `--build-link` to chain straight into the broker).
+- `tests/package-lookup.ts` + `npm run test:package-lookup`.
+
+Validation performed:
+
+```powershell
+npm run test:package-lookup   # 12 passed, 0 failed
+npx tsc --noEmit --pretty false   # 0 errors
+```
+
+Live operator runs (2026-06-08, real Odysseus session, Royal Caribbean
+2026-11-08, 50 results parsed):
+
+- Under-specified (`line + date` only): 6 same-day RCL sailings tied at 0.65 ->
+  `ambiguous`, returned 25 candidates for review (did not pick one).
+- Specified (`line + date + nights=6 + destination="Southern Caribbean"`):
+  auto-selected real package `1619969` ("6 Night Southern Caribbean Cruise",
+  2026-11-08, confidence 0.85, +0.30 over runner-up).
+
+Exit criteria met:
+
+- The Link Broker can resolve a real cruise from ship/line/sail date to a package
+  ID (package `1619969` resolved live).
+- It can then return a package entry or prepared details link (the resolved ID
+  flows into `resolveBestBookingLink`; `--build-link` exercises this).
+- Ambiguous matches return candidates instead of silently picking.

@@ -37,10 +37,22 @@ import {
   slugifyItinerary,
 } from "./normalize";
 import { staticValidateLink } from "./validate";
+import type { PackageLookupResult } from "./package-lookup";
+
+/**
+ * Resolves cruise facts into ranked Odysseus package candidates. Injected so the
+ * broker stays free of any Playwright/Odysseus import (Next-bundle safe). The
+ * operator-run implementation is lookupOdysseusPackages in odysseus-lookup.ts.
+ */
+export type PackageLookupFn = (
+  facts: LinkBrokerRequest["cruise"]
+) => Promise<PackageLookupResult>;
 
 export interface ResolveOptions {
   /** When false, the broker does not read/write the local cache (pure construction). */
   useCache?: boolean;
+  /** Optional Odysseus package lookup, used when the request has no package ID. */
+  packageLookup?: PackageLookupFn;
 }
 
 function buildRecord(
@@ -103,22 +115,92 @@ export async function resolveBestBookingLink(
   };
 
   const warnings: string[] = [];
-  const choice = chooseBrokerLinkClass(normalizedRequest);
+  let activeRequest = normalizedRequest;
+  let choice = chooseBrokerLinkClass(activeRequest);
 
-  // No package ID and no portal token -> Phase 6 lookup is required.
+  // No package ID and no portal token -> Phase 6 lookup. If a lookup is injected,
+  // resolve the package now and re-run the choice; otherwise report the gap.
   if (!choice.linkClass) {
+    if (options.packageLookup) {
+      const lookup = await options.packageLookup(activeRequest.cruise);
+      warnings.push(...lookup.diagnostics);
+
+      if (lookup.status === "confident_match" && lookup.selected) {
+        activeRequest = {
+          ...activeRequest,
+          cruise: { ...activeRequest.cruise, packageId: lookup.selected.packageId },
+        };
+        warnings.push(
+          `Resolved package ${lookup.selected.packageId} from "${lookup.selected.cruiseName}" ` +
+            `(confidence ${lookup.selected.confidence.toFixed(2)}).`
+        );
+        choice = chooseBrokerLinkClass(activeRequest);
+      } else {
+        // No confident package: surface ranked candidates for operator review.
+        return {
+          status: lookup.status === "ambiguous" ? "needs_operator_capture" : "needs_package_lookup",
+          linkClass: "package_entry",
+          siid,
+          resolvedCruise: {
+            cruiseLine: activeRequest.cruise.cruiseLine,
+            shipName: activeRequest.cruise.shipName,
+            sailDate: activeRequest.cruise.sailDate,
+            nights: activeRequest.cruise.nights,
+            itineraryName: activeRequest.cruise.itineraryName,
+            departurePort: activeRequest.cruise.departurePort,
+          },
+          missingInputs: ["packageId"],
+          warnings: [
+            ...warnings,
+            ...lookup.candidates
+              .slice(0, 5)
+              .map(
+                (c) =>
+                  `candidate pkg ${c.packageId}: ${c.cruiseName} ` +
+                  `(${c.sailDateIso}${c.nights ? `, ${c.nights}n` : ""}, conf ${c.confidence.toFixed(2)})`
+              ),
+          ],
+          decision: {
+            selectedLinkClass: "none",
+            reason:
+              lookup.status === "ambiguous"
+                ? "multiple plausible packages; operator review required"
+                : "no package found for the supplied cruise facts",
+            alternativesConsidered: choice.alternativesConsidered,
+          },
+        };
+      }
+    } else {
+      return {
+        status: "needs_package_lookup",
+        linkClass: "package_entry",
+        siid,
+        resolvedCruise: {
+          cruiseLine: request.cruise.cruiseLine,
+          shipName: request.cruise.shipName,
+          sailDate: request.cruise.sailDate,
+          nights: request.cruise.nights,
+          itineraryName: request.cruise.itineraryName,
+          departurePort: request.cruise.departurePort,
+        },
+        missingInputs: ["packageId"],
+        warnings,
+        decision: {
+          selectedLinkClass: "none",
+          reason: choice.reason,
+          alternativesConsidered: choice.alternativesConsidered,
+        },
+      };
+    }
+  }
+
+  // After an optional lookup, a class is guaranteed (a packageId yields one).
+  const selectedClass = choice.linkClass;
+  if (!selectedClass) {
     return {
       status: "needs_package_lookup",
       linkClass: "package_entry",
       siid,
-      resolvedCruise: {
-        cruiseLine: request.cruise.cruiseLine,
-        shipName: request.cruise.shipName,
-        sailDate: request.cruise.sailDate,
-        nights: request.cruise.nights,
-        itineraryName: request.cruise.itineraryName,
-        departurePort: request.cruise.departurePort,
-      },
       missingInputs: ["packageId"],
       warnings,
       decision: {
@@ -131,11 +213,11 @@ export async function resolveBestBookingLink(
 
   // Captured clone/cabin classes require a portal token + fresh capture. Phase 2
   // does not capture; surface the operator-capture requirement.
-  if (choice.linkClass === "captured_clone" || choice.linkClass === "captured_cabin") {
+  if (selectedClass === "captured_clone" || selectedClass === "captured_cabin") {
     return {
       status: "needs_operator_capture",
-      linkClass: choice.linkClass,
-      packageId: request.cruise.packageId,
+      linkClass: selectedClass,
+      packageId: activeRequest.cruise.packageId,
       siid,
       missingInputs: [],
       warnings: [
@@ -143,16 +225,16 @@ export async function resolveBestBookingLink(
         "Captured clone/cabin links require fresh portal capture and validation (Phase 6).",
       ],
       decision: {
-        selectedLinkClass: choice.linkClass,
+        selectedLinkClass: selectedClass,
         reason: choice.reason,
         alternativesConsidered: choice.alternativesConsidered,
       },
     };
   }
 
-  const packageId = request.cruise.packageId as string;
-  const setup = request.travelerSetup ?? {};
-  const officeId = request.agent.officeId?.trim() || DEFAULT_OFFICE_ID;
+  const packageId = activeRequest.cruise.packageId as string;
+  const setup = activeRequest.travelerSetup ?? {};
+  const officeId = activeRequest.agent.officeId?.trim() || DEFAULT_OFFICE_ID;
 
   // officeId varies per package/vendor. If the caller supplied one that differs
   // from our default, surface a review note instead of silently trusting it.
@@ -174,8 +256,8 @@ export async function resolveBestBookingLink(
     const cached = getCachedBrokerLink({
       packageId,
       siid,
-      linkClass: choice.linkClass,
-      travelerSetupHash: choice.linkClass === "prepared_details" ? setupHash : "",
+      linkClass: selectedClass,
+      travelerSetupHash: selectedClass === "prepared_details" ? setupHash : "",
     });
     if (cached) {
       return {
@@ -198,7 +280,7 @@ export async function resolveBestBookingLink(
 
   // Build the chosen class.
   let url: string;
-  if (choice.linkClass === "prepared_details") {
+  if (selectedClass === "prepared_details") {
     url = buildPreparedDetailsLink({
       packageId,
       siid,
@@ -213,24 +295,24 @@ export async function resolveBestBookingLink(
     url = buildPackageEntryLink({
       packageId,
       siid,
-      slug: slugifyItinerary(request.cruise.itineraryName),
+      slug: slugifyItinerary(activeRequest.cruise.itineraryName),
     });
   }
 
   // Static validation gate.
-  const validation = staticValidateLink(url, choice.linkClass, { constructed: true });
+  const validation = staticValidateLink(url, selectedClass, { constructed: true });
   warnings.push(...validation.warnings);
   if (!validation.ok) {
     return {
       status: "invalid",
-      linkClass: choice.linkClass,
+      linkClass: selectedClass,
       url,
       packageId,
       siid,
       missingInputs: choice.missingForPreparedDetails,
       warnings: [...warnings, ...validation.errors],
       decision: {
-        selectedLinkClass: choice.linkClass,
+        selectedLinkClass: selectedClass,
         reason: choice.reason,
         alternativesConsidered: choice.alternativesConsidered,
       },
@@ -238,7 +320,7 @@ export async function resolveBestBookingLink(
     };
   }
 
-  const record = buildRecord(normalizedRequest, url, choice.linkClass, setupHash);
+  const record = buildRecord(activeRequest, url, selectedClass, setupHash);
   if (useCache) {
     upsertBrokerLink(record);
   }
@@ -246,18 +328,18 @@ export async function resolveBestBookingLink(
   // If the caller wanted prepared details but setup was incomplete, we returned
   // a safe package entry link; tell them what to supply to upgrade.
   const downgraded =
-    choice.linkClass === "package_entry" && choice.missingForPreparedDetails.length > 0;
+    selectedClass === "package_entry" && choice.missingForPreparedDetails.length > 0;
 
   return {
     status: downgraded ? "found_package_needs_inputs" : "needs_validation",
-    linkClass: choice.linkClass,
+    linkClass: selectedClass,
     url,
     packageId,
     siid,
     missingInputs: downgraded ? choice.missingForPreparedDetails : [],
     warnings,
     decision: {
-      selectedLinkClass: choice.linkClass,
+      selectedLinkClass: selectedClass,
       reason: choice.reason,
       alternativesConsidered: choice.alternativesConsidered,
     },

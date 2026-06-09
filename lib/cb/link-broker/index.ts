@@ -7,7 +7,22 @@
  */
 
 export { resolveBestBookingLink, refreshBookingLink } from "./broker";
-export type { ResolveOptions } from "./broker";
+export type { ResolveOptions, PackageLookupFn } from "./broker";
+
+// Package lookup: pure ranker + operator-run Odysseus adapter.
+export {
+  rankPackageCandidates,
+  normalizeDateKey,
+  CRUISE_LINE_NAMES,
+  SAIL_DATE_TOLERANCE_DAYS,
+} from "./package-lookup";
+export type {
+  RankedPackageCandidate,
+  PackageLookupResult,
+  RankOptions,
+} from "./package-lookup";
+export { lookupOdysseusPackages, resolveVendorId } from "./odysseus-lookup";
+export type { OdysseusLookupOptions } from "./odysseus-lookup";
 export { parseCapturedOdysseusLink } from "./parse-captured-link";
 export { staticValidateLink } from "./validate";
 export { chooseBrokerLinkClass } from "./choose-link-class";
