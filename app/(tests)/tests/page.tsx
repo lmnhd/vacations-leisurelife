@@ -62,6 +62,21 @@ const GROUPS: TestGroup[] = [
     ],
   },
   {
+    title: 'Deals System',
+    icon: '$',
+    color: 'text-cyan-400',
+    borderColor: 'border-cyan-500/30',
+    badgeColor: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
+    links: [
+      {
+        label: 'Deals Operator Workbench',
+        href: '/tests/deals-system',
+        description: 'Run safe Deals scripts, refresh promo intelligence, look up packages, and inspect homepage readiness gates',
+        badge: 'NEW',
+      },
+    ],
+  },
+  {
     title: 'Media Generation',
     icon: '🎬',
     color: 'text-emerald-400',

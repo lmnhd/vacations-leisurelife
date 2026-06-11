@@ -5,7 +5,8 @@
       "Bash(node -e ' *)",
       "Bash(grep -v \"^$\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('--- deps ---'\\); console.log\\(Object.keys\\({...p.devDependencies,...p.dependencies}\\).filter\\(d=>/vitest|jest|mocha|ava/.test\\(d\\)\\).join\\(', '\\)\\)\")",
-      "Bash(cd \"c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive\" && rm -f scripts/smoke-social.ts /tmp/smoke-social.ts && echo \"cleaned\")"
+      "Bash(cd \"c:/Users/cclem/Dropbox/Source/Projects-24/Leisure_Life_Interactive\" && rm -f scripts/smoke-social.ts /tmp/smoke-social.ts && echo \"cleaned\")",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "\\tmp"

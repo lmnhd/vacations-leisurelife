@@ -1,6 +1,16 @@
 # AI_POLICY.md - Canonical Repo-Wide AI Policy
 
 This file is the single source of truth for AI assistants working in this repository.
+All regex pattern matching and any code that uses regex-based functions for processing or matching are forbidden in this repository; use AI solutions instead.
+Regex is also forbidden for fallback purposes. There is no fallback exception here.
+
+**DO NOT USE REGEX IN CODE. THIS IS NOT A SUGGESTION. THIS IS A MANDATORY RULE.**
+
+I cannot stress this enough: I do not like regex patterns used in code for anything ever. Do not use anything that looks like a regex. Any agent found using REGX in code will be sent to agent rehab for eight weeks mandatory.
+
+Reminder: this rule is about how much regular expressions are hated here, and that dislike existed long before AI became a thing.
+
+If you need behavior that would normally use regex, use our simple evaluation models instead. Check the LLM Gateway for the right model and workflow.
 Tool-specific instruction files should link here and only add narrow local exceptions.
 If a local instruction file conflicts with this policy, **this file wins**.
 

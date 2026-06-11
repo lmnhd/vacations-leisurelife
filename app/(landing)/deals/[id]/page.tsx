@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Anchor, CalendarDays, CheckCircle2, CircleDollarSign, Ship, Sparkles } from "lucide-react";
 
+import { CuratedDealPage } from "@/components/cb/curated-deal-page";
 import { LandingFooter } from "@/components/landing-footer";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { Button } from "@/components/ui/button";
 import { getStoredCbDealDetailById } from "@/lib/cb/cb-deal-details";
+import { getPublicDealPageById } from "@/lib/cb/deals-system/public-deals";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,15 @@ export default async function DealDetailPage({
 
   if (!id) {
     return notFound();
+  }
+
+  // Phase 10: an operator-approved Curated Deal takes precedence. Only
+  // homepage-eligible Deals resolve here (getPublicDealPageById gates on
+  // bookable + approved + valid link); non-eligible curated Deals fall through
+  // and, if not in the legacy store either, render as notFound.
+  const curated = await getPublicDealPageById(id);
+  if (curated) {
+    return <CuratedDealPage deal={curated} />;
   }
 
   const deal = await getStoredCbDealDetailById(id);

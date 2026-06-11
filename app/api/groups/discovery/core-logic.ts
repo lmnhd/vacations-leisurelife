@@ -484,7 +484,7 @@ export async function runDiscoveryResearch(opts: DiscoveryResearchOptions = {}):
         psychographicData = cache.psychographicData;
         psychographicFromCache = true;
     } else {
-        console.log('[runDiscoveryResearch] Step 1: Psychographic Discovery');
+        console.log('[runDiscoveryResearch] Step 1: Niche Discovery');
         const psychographicPrompt = buildPsychographicPrompt({ existingThemesBlock: lightExclusionBlock, approvedCandidatesBlock: '', respinFeedbackBlock: '' });
         psychographicData = await callGeminiDeepResearch(psychographicPrompt);
         cache.psychographicData = psychographicData;
@@ -769,29 +769,30 @@ function buildPsychographicPrompt(blocks: {
 }): string {
     const { existingThemesBlock, approvedCandidatesBlock, respinFeedbackBlock } = blocks;
     return `
-    You are researching cruise vacation experiences for a vacation-first group cruise business.
+    You are researching niche communities for a future campaign concept.
 
     PRIMARY FRAMING RULE — read this before everything else:
-    ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
-    Start from the passionate community, not from the cruise. Find people who actively DO something together, who seek out others who share their enthusiasm, and ask: would a cruise be the ideal venue for this group to gather? The cruise is the venue. The shared activity or interest is the reason they chose it over any other trip.
+    This is a niche-only research pass. Do not mention cruises, ships, sailing, ports, cabins, decks, itineraries, onboard amenities, or venue fit in the main body of the answer.
+    Start from the passionate community, not from the travel product. Find people who actively DO something together, who seek out others who share their enthusiasm, and explain the community as it exists today, on its own terms.
 
     COMMUNITY-NATIVE NICHE EVIDENCE RULE:
     ${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
-    Do not validate a concept primarily by citing travel-sector growth such as astrotourism, culinary tourism, adventure travel, wellness tourism, experiential travel, or destination demand. Those signals may explain why the ship or itinerary is plausible, but the niche itself must be validated by non-travel community behavior and shared identity.
+    Do not validate a concept primarily by citing travel-sector growth such as astrotourism, culinary tourism, adventure travel, wellness tourism, experiential travel, or destination demand. The niche itself must be validated by non-travel community behavior and shared identity.
 
-    Identify 5 distinctive group cruise themes where a specific passionate community would love to gather together — people with a shared activity, interest, fandom, or identity who would find real value in being surrounded by others who share their enthusiasm. The sell is: "I heard there's a [fishing / gaming / birding / vintage fashion] cruise — we have to go."
+    Identify 5 distinctive niche communities where a specific passionate group would love to gather together — people with a shared activity, interest, fandom, or identity who would find real value in being surrounded by others who share their enthusiasm. The output should read like a current research memo about the community, not like a campaign pitch.
 
     Secondary filters:
     - the community must have genuine passion, identity, and social gravity — people who actively seek out others who share their interest
-    - the core activity or interest must be expressible using portable props a guest can carry in a day bag, or using existing ship spaces (deck rails, lounges, pool areas, dining rooms, cabin balconies, theaters, shore excursions)
     - likely to generate real word-of-mouth group pull — people recruit their friends and online communities
-    - visually distinctive: niche objects, gear, or social behaviors must be visible and recognizable in real cruise-environment photographs
+    - visually distinctive: niche objects, gear, or social behaviors must be visible and recognizable in real-world scenes
+    - explain why the group is active right now, not just historically interesting
 
     IMPORTANT AESTHETIC FILTER:
     - do not substitute broad luxury-travel language for the actual niche identity
     - "quiet luxury," "elevated escape," "refined sophistication," and "wellness getaway" are not niches by themselves
     - when evaluating slow-living, pastoral, bookish, or cozy communities, prefer handmade warmth, tactile rituals, scenic softness, casual social rituals, and modest beauty over status-signaling luxury cues
     - if a theme only sounds compelling after being translated into generic upscale travel language, reject it
+    - if you feel tempted to mention a cruise, stop and instead deepen the community evidence
 
     Explicitly avoid communities whose appeal depends on:
     - clinical or diagnostic culture
@@ -799,18 +800,17 @@ function buildPsychographicPrompt(blocks: {
     - professional advancement
     - formal workshops or masterclasses as the core attraction
     - industrial systems, activist labor, or technical infrastructure demos
-    - activities requiring fixed infrastructure, permanent installations, heavy machinery, safety-hazardous equipment, or spaces that do not exist on a cruise ship (welding labs, firearms ranges, large aquariums, forge rooms, etc.)
+    - activities requiring fixed infrastructure, permanent installations, heavy machinery, safety-hazardous equipment, or spaces that do not exist in ordinary daily life (welding labs, firearms ranges, large aquariums, forge rooms, etc.)
 
-    For each group cruise theme, describe in this order:
+    For each niche community, describe in this order:
     1. The passionate community: who they are, what they actively do together, and why they seek out others who share their interest
     2. What non-travel evidence proves this is a real, active community: platforms, tools, gear, creators, meetups, vocabulary, buying behavior, rituals, or social dynamics
-    3. Why a cruise is the ideal venue for this community to gather — what the ship provides that a hotel, retreat, or event venue cannot
-    4. What specific cruise-compatible activities or rituals make the niche visible and social on the ship without requiring fixed infrastructure
-    5. How the ship spaces, port stops, and sailing rhythm naturally enhance the shared interest
-    6. What spend and market signals show this community can convert, with travel-market data used only as secondary support
-    7. What portable props, gear, or visual cues will make this community recognizable and photographable on the ship
+    3. What current trend or social signal suggests this community is especially active now
+    4. What spend and market signals show this community can convert, with travel-market data used only as secondary support
+    5. What portable props, gear, or visual cues will make this community recognizable and photographable in real-world scenes
+    6. What would make this niche a weak or generic choice if it were over-broadened
 
-    Do not optimize for the most passive or atmospheric niche. Optimize for the best blend of genuine community passion, cruise plausibility, portable-prop activity compatibility, social gravity, and ownable visual identity.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
+    Do not optimize for the most passive or atmospheric niche. Optimize for the best blend of genuine community passion, current activity, social gravity, and ownable visual identity.${existingThemesBlock}${approvedCandidatesBlock}${respinFeedbackBlock}
         `.trim();
 }
 
@@ -823,7 +823,7 @@ function buildAestheticPrompt(blocks: {
 }): string {
     const { psychographicData, launchWindowPromptGuidance, cbInventoryContext, approvedCandidatesBlock, respinFeedbackBlock } = blocks;
     return `
-Based on the following vacation experiences and their self-selecting communities:
+Based on the following niche community research:
 ${psychographicData}
 
     ${CRUISE_REALISM_GOVERNING_PRINCIPLE}
@@ -833,11 +833,11 @@ ${psychographicData}
     ${COMMUNITY_NATIVE_NICHE_EVIDENCE_RULE}
     In this step, separate "niche proof" from "travel/ship fit." Travel trend data belongs only in ship or itinerary plausibility. The niche proof must name community-native behavior and artifacts that existed before the cruise concept.
 
-    For each vacation experience identified above, deepen the picture in this order:
+    For each niche community identified above, deepen the picture in this order:
 
-    1. What specific shipboard moments, port-day rhythms, and ambient social energy make this vacation work on its own — before any niche layer is considered?
-    2. How does the niche community's presence enhance those moments without replacing or disrupting them?
-    3. What would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward on a cruise?
+    1. What specific community-native moments, rituals, and ambient social energy make this niche feel real on its own — before any cruise layer is considered?
+    2. Which current behaviors, artifacts, and social signals from the niche are strongest evidence that the community is active now?
+    3. What would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward once translated into a leisure context?
     4. Only then, which cruise lines or ships could support the believable version of the experience naturally, without requiring major customization or infrastructure fantasy?
 
     Focus on:

@@ -145,13 +145,13 @@ function SonarResearchPanel({ research }: { research: SonarResearch }) {
   }> = [
     {
       key: "psychographic",
-      label: "Step 1 — Psychographic Discovery",
-      description: "Cruise-compatible community and leisure-fit analysis",
+      label: "Step 1 — Niche Discovery",
+      description: "Community evidence, current signals, and audience gravity",
     },
     {
       key: "aesthetic",
       label: "Step 2 — Cruise Expression / Ship Match",
-      description: "Believable theme expression × available CB inventory",
+      description: "Believable leisure expression × available CB inventory",
     },
   ];
 
@@ -160,10 +160,10 @@ function SonarResearchPanel({ research }: { research: SonarResearch }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
         <FlaskConical className="h-3.5 w-3.5 text-amber-400" />
         <span className="text-xs tracking-widest uppercase text-amber-400">
-          Gemini Deep Research
+          Niche Discovery
         </span>
         <span className="text-[10px] text-slate-600 ml-1">
-          Raw Gemini Deep Research responses — the foundation for all 5 blueprints
+          Raw research responses — the foundation for all 5 blueprints
         </span>
       </div>
       <div className="divide-y divide-amber-500/10">
@@ -2073,7 +2073,7 @@ export default function DiscoveryTestPage() {
                   Phase A — AI Discovery
                 </span>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  2× Gemini Deep Research + 1× GPT-5 structured generation
+                  2× Gemini niche research passes + 1× GPT-5 structured generation
                 </p>
               </div>
             </div>
@@ -2085,7 +2085,7 @@ export default function DiscoveryTestPage() {
                   <button
                     onClick={() => void handleGenerate(true)}
                     disabled={phaseALoading}
-                    title="Re-Spin (all-in-one): Runs all 3 steps (Gemini psychographic + Gemini aesthetic + GPT-5 blueprints) and adds new campaigns to the existing slate. Bypasses Gemini cache. For most iterative work, prefer the cheaper two-stage flow: Run Research → Generate from Research."
+                    title="Re-Spin (all-in-one): Runs all 3 steps (Gemini niche research + Gemini fit analysis + GPT-5 blueprints) and adds new campaigns to the existing slate. Bypasses Gemini cache. For most iterative work, prefer the cheaper two-stage flow: Run Research → Generate from Research."
                     className="text-xs px-3 py-1.5 rounded border border-fuchsia-500/30 text-fuchsia-400 hover:text-fuchsia-300 hover:border-fuchsia-400/60 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
                   >
                     <RotateCcw className="w-3 h-3" /> Re-Spin
@@ -2094,7 +2094,7 @@ export default function DiscoveryTestPage() {
                 <button
                   onClick={() => void handleGenerate(false)}
                   disabled={phaseALoading || hasPhaseAResults}
-                  title="Run the full 3-step discovery pipeline in one shot (Gemini psychographic + Gemini aesthetic + GPT-5 blueprints). Disabled once results are loaded — use Re-Spin to add more, or Reset to clear local state first."
+                  title="Run the full 3-step discovery pipeline in one shot (Gemini niche research + Gemini fit analysis + GPT-5 blueprints). Disabled once results are loaded — use Re-Spin to add more, or Reset to clear local state first."
                   className="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {phaseALoading ? (

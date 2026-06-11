@@ -1,16 +1,44 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-08T00:00:00.000Z",
+  "generatedAtIso": "2026-06-10T14:39:14.656Z",
   "briefs": [
     {
       "id": "brief-bahamas-quick-getaway",
       "title": "Bahamas quick getaway",
-      "destinationKeywords": ["Bahamas", "Nassau", "CocoCay"],
+      "destinationKeywords": [
+        "Bahamas",
+        "Nassau",
+        "CocoCay"
+      ],
       "departurePort": "Miami",
       "minNights": 3,
       "maxNights": 5,
       "marketingAngle": "Low-friction first cruise test drive",
-      "audienceFit": ["First-time cruisers", "Busy parents", "Quick escape seekers"]
+      "audienceFit": [
+        "First-time cruisers",
+        "Busy parents",
+        "Quick escape seekers"
+      ]
+    },
+    {
+      "id": "brief-southern-caribbean-warm-escape",
+      "title": "6 Night Southern Caribbean Cruise",
+      "destinationKeywords": [
+        "Perfect Day at CocoCay",
+        "Aruba",
+        "Curacao"
+      ],
+      "cruiseLine": "Royal Caribbean",
+      "shipName": "Liberty of the Seas",
+      "departurePort": "Fort Lauderdale",
+      "minNights": 6,
+      "maxNights": 6,
+      "marketingAngle": "A curated Perfect Day at CocoCay cruise on Liberty of the Seas",
+      "audienceFit": [
+        "travelers who want a specific, well-matched cruise experience gives the Deal a niche starting point instead of generic cruise targeting.",
+        "Perfect Day at CocoCay experience seekers",
+        "Premium convenience travelers"
+      ]
     }
   ],
   "deals": [
@@ -36,7 +64,10 @@
         "nights": 4,
         "sailDateIso": "2026-09-01",
         "departurePort": "Miami",
-        "portsOfCall": ["Nassau", "Perfect Day at CocoCay"],
+        "portsOfCall": [
+          "Nassau",
+          "Perfect Day at CocoCay"
+        ],
         "cabinPrices": {
           "inside": 0,
           "currencyCode": "USD"
@@ -44,19 +75,1196 @@
         "promoSignals": []
       },
       "scoring": {
-        "score": 0,
-        "reasons": ["Hand-authored Phase 1 sample to prove the publishing gate."],
-        "warnings": ["Not a real sailing. Link health is unknown, so it stays internal."]
+        "score": 90,
+        "reasons": [
+          "Has trip angle research.",
+          "Has Targeting-Demographic resource.",
+          "Has pitch brief (research-to-copy boundary).",
+          "Has visitor-safe copy package.",
+          "Has ad/campaign structure.",
+          "Has media plan."
+        ],
+        "warnings": [
+          "Link health is \"unknown\"."
+        ]
       },
       "packaging": {
-        "headline": "Sample Bahamas Getaway (internal only)",
-        "shortSummary": "Phase 1 sample Curated Deal used to verify schema loading and the no-publish-without-valid-link rule.",
-        "highlights": [],
-        "destinationNotes": [],
-        "bestFor": []
+        "headline": "4 nights to Nassau on Sample Ship — a sailing worth the trip.",
+        "shortSummary": "4-night 4-Night Bahamas • Sample Ship",
+        "highlights": [
+          "4 nights on Sample Ship.",
+          "Calls at Nassau, Perfect Day at CocoCay.",
+          "Departs from Miami.",
+          "Picked for Nassau and Sample Ship, not for a discount."
+        ],
+        "destinationNotes": [
+          "Sail to Nassau — a destination worth the trip.",
+          "Nassau is on the itinerary.",
+          "Perfect Day at CocoCay is on the itinerary."
+        ],
+        "bestFor": [
+          "specific-interest cruise travelers",
+          "Nassau experience seekers",
+          "Premium convenience travelers"
+        ]
       },
       "agentOnlyNotes": [
         "Internal sample. Do not publish. Demonstrates that a non-bookable Deal stays out of public surfaces."
+      ],
+      "operatorVisibility": {
+        "pinned": false
+      },
+      "pitchBrief": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "packageId": "0000000",
+        "generatedAtIso": "2026-06-10T00:53:09.474Z",
+        "generator": "deterministic_scaffold",
+        "tripSummary": "4 nights from Miami — visiting Nassau, Perfect Day at CocoCay on Sample Ship.",
+        "audienceStatement": "Travelers who want a specific, memorable sailing — not just any cruise deal.",
+        "primaryHook": "4 nights to Nassau on Sample Ship — a sailing worth the trip.",
+        "curatedReason": "Picked for Nassau and Sample Ship, not for a discount.",
+        "sellingFacts": [
+          "4 nights on Sample Ship.",
+          "Calls at Nassau, Perfect Day at CocoCay.",
+          "Departs from Miami."
+        ],
+        "researchRationale": "Research scaffold for 4-Night Bahamas."
+      },
+      "operatorApproval": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "status": "rejected",
+        "updatedAtIso": "2026-06-10T14:39:08.986Z",
+        "decidedBy": "operator",
+        "textOnlyLaunchWaived": false,
+        "gates": [
+          {
+            "id": "real_package",
+            "label": "Real Odysseus/CB package",
+            "passed": false,
+            "detail": "Package 0000000.",
+            "blocking": true
+          },
+          {
+            "id": "link_valid",
+            "label": "Link health is valid",
+            "passed": false,
+            "detail": "Link health is \"unknown\". Run operator browser validation to reach \"valid\".",
+            "blocking": true
+          },
+          {
+            "id": "pitch_brief_present",
+            "label": "Pitch brief generated (Phase 9B)",
+            "passed": true,
+            "detail": "Pitch brief present (deterministic_scaffold).",
+            "blocking": true
+          },
+          {
+            "id": "public_copy_clean",
+            "label": "Public copy passed guardrails",
+            "passed": true,
+            "detail": "No public-copy red flags.",
+            "blocking": true
+          },
+          {
+            "id": "targeting_present",
+            "label": "Targeting-Demographic exists",
+            "passed": true,
+            "detail": "Targeting resource attached.",
+            "blocking": true
+          },
+          {
+            "id": "media_ready",
+            "label": "Media/creative ready or text-only waived",
+            "passed": false,
+            "detail": "Media readiness is \"concepts_ready\".",
+            "blocking": true
+          }
+        ]
+      },
+      "angleResearch": {
+        "dealCandidateId": "sample-deal-bahamas-not-published",
+        "generatedAtIso": "2026-06-10T00:53:36.843Z",
+        "shipAppeal": [
+          "Sail on Sample Ship — Sample Cruise Line's ship for this itinerary."
+        ],
+        "amenityHighlights": [],
+        "destinationHooks": [
+          "Sail to Nassau — a destination worth the trip.",
+          "Nassau is on the itinerary.",
+          "Perfect Day at CocoCay is on the itinerary."
+        ],
+        "itineraryPacingNotes": [
+          "4 nights — enough time to settle in and explore without overstaying.",
+          "Departs from Miami."
+        ],
+        "nicheAudienceAngles": [],
+        "trendMatches": [
+          "experience-first travel",
+          "specific-interest travel"
+        ],
+        "competitorBlindSpots": [
+          "Most cruise listings lead with price; this one leads with the reason to go."
+        ],
+        "recommendedPrimaryAngle": {
+          "title": "A curated Nassau cruise on Sample Ship",
+          "rationale": "4 nights to Nassau on Sample Ship.",
+          "publicCopyHook": "A curated Nassau sailing with a clearer reason to book than price alone.",
+          "whyThisFeelsExclusive": "Leisure Life picks this sailing for a specific traveler, not a general audience."
+        },
+        "rejectedAngles": [
+          {
+            "title": "Generic cruise sale",
+            "reason": "Price and perks are supporting details, not the main reason to promote the trip."
+          },
+          {
+            "title": "Organized cohort trip",
+            "reason": "This retail Deal must not imply minimum cabins, interest collection, or planned onboard programming."
+          }
+        ],
+        "factualGuardrails": [
+          "Verify all ship amenities before public copy.",
+          "Verify that sailing date and itinerary support any seasonal or destination-specific claims.",
+          "Do not imply a group, instructor, workshop, or onboard event unless separately created.",
+          "Do not invent pricing, onboard credit, cabin availability, or promo eligibility."
+        ],
+        "sources": [
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/research",
+            "usedFor": "Niche angle and trip-quality research scaffold."
+          }
+        ]
+      },
+      "targetingDemographic": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "packageId": "0000000",
+        "generatedAtIso": "2026-06-10T00:53:47.328Z",
+        "primaryAudience": {
+          "label": "specific-interest cruise travelers",
+          "description": "Travelers whose interests match Nassau, 4-Night Bahamas, and the ship experience.",
+          "whyThisCruiseFits": "4 nights to Nassau on Sample Ship.",
+          "emotionalDrivers": [
+            "a trip that feels chosen for them rather than broadly advertised",
+            "a visually specific reason to imagine the cruise"
+          ],
+          "likelyObjections": [
+            "They may not think of themselves as cruise shoppers.",
+            "They may need confidence that the angle is grounded in the real itinerary, not generic copy.",
+            "They may want exact pricing, cabin, and perk confirmation before committing."
+          ]
+        },
+        "secondaryAudiences": [
+          {
+            "label": "Nassau experience seekers",
+            "description": "Travelers drawn to Nassau, the ports, and the seasonal itinerary context.",
+            "whyThisCruiseFits": "4-Night Bahamas gives them a ready-made way to experience Nassau.",
+            "targetingNotes": [
+              "Nassau",
+              "4-Night Bahamas",
+              "Miami",
+              "Perfect Day at CocoCay"
+            ]
+          },
+          {
+            "label": "Premium convenience travelers",
+            "description": "People who value a packaged, low-friction way to experience a destination.",
+            "whyThisCruiseFits": "The cruise bundles transport, lodging, ship amenities, and multiple destination moments into one booking path.",
+            "targetingNotes": [
+              "Sample Ship",
+              "Sample Cruise Line"
+            ]
+          }
+        ],
+        "nicheKeywords": {
+          "lifestyle": [],
+          "destination": [
+            "Nassau",
+            "4-Night Bahamas",
+            "Miami",
+            "Perfect Day at CocoCay"
+          ],
+          "shipExperience": [
+            "Sample Ship",
+            "Sample Cruise Line"
+          ],
+          "amenities": [],
+          "eventsAndSeasonality": [
+            "sailing 2026-09-01",
+            "4 night cruise",
+            "Nassau seasonality"
+          ],
+          "trendSignals": [
+            "experience-first travel",
+            "specific-interest travel"
+          ],
+          "exclusionKeywords": [
+            "free cruise",
+            "cruise job",
+            "crew job",
+            "cargo ship"
+          ]
+        },
+        "channelTargeting": {
+          "meta": {
+            "interestClusters": [
+              "Nassau",
+              "4-Night Bahamas",
+              "Miami",
+              "Perfect Day at CocoCay"
+            ],
+            "behaviorSignals": [
+              "engages with destination visuals",
+              "saves travel inspiration content",
+              "responds to niche lifestyle identity cues"
+            ],
+            "creativeHooks": [
+              "A curated Nassau sailing with a clearer reason to book than price alone.",
+              "Sail to Nassau — a destination worth the trip.",
+              "Nassau is on the itinerary.",
+              "Perfect Day at CocoCay is on the itinerary."
+            ],
+            "audienceWarnings": [
+              "Avoid broad cruise-interest targeting as the primary audience.",
+              "Do not imply organized onboard programming unless separately created."
+            ]
+          },
+          "google": {
+            "searchThemes": [
+              "Nassau cruise",
+              "4-Night Bahamas cruise",
+              "Miami cruise",
+              "Perfect Day at CocoCay cruise"
+            ],
+            "keywordIdeas": [
+              "Nassau",
+              "4-Night Bahamas",
+              "Miami",
+              "Perfect Day at CocoCay"
+            ],
+            "negativeKeywords": [
+              "free cruise",
+              "cruise job",
+              "crew job",
+              "cargo ship"
+            ],
+            "landingPageIntentNotes": [
+              "Landing page should lead with the niche/trend hook before price.",
+              "Booking CTA should confirm live pricing and availability in the CB portal."
+            ]
+          },
+          "tiktok": {
+            "creatorAngles": [
+              "specific-interest cruise travelers packing or prep video",
+              "Nassau visual inspiration",
+              "show the trip as a solution to a niche interest, not a cruise ad"
+            ],
+            "trendHooks": [
+              "experience-first travel",
+              "specific-interest travel"
+            ],
+            "shortVideoConcepts": [
+              "POV: your Nassau cruise is actually built around specific-interest cruise travelers.",
+              "Sail to Nassau — a destination worth the trip.",
+              "Nassau is on the itinerary.",
+              "Perfect Day at CocoCay is on the itinerary."
+            ]
+          },
+          "email": {
+            "segmentIdeas": [
+              "specific-interest cruise travelers",
+              "Nassau interested travelers",
+              "people who clicked but did not request a booking link"
+            ],
+            "subjectLineAngles": [
+              "A curated Nassau cruise on Sample Ship",
+              "A Nassau cruise with a more specific reason to go"
+            ],
+            "personalizationNotes": [
+              "Reference the specific interest angle before mentioning the cruise line.",
+              "Use live booking-link freshness and package details in follow-up."
+            ]
+          }
+        },
+        "researchSummary": {
+          "primaryInsight": "A curated Nassau sailing with a clearer reason to book than price alone.",
+          "whyNow": "The Deal becomes timely when package availability, price, and the destination season line up.",
+          "competitorBlindSpot": "Most cruise listings lead with price; this one leads with the reason to go.",
+          "positioningStatement": "4 nights to Nassau on Sample Ship."
+        },
+        "sources": [
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/research",
+            "usedFor": "Niche angle and trip-quality research scaffold."
+          },
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/targeting",
+            "usedFor": "Targeting-Demographic generation."
+          }
+        ],
+        "confidence": {
+          "score": 68,
+          "strengths": [
+            "Audience is more specific than generic cruise shoppers.",
+            "Creative hook is tied to the actual package research.",
+            "Negative keywords and channel-specific targeting are present."
+          ],
+          "risks": [
+            "Verify all ship amenities before public copy.",
+            "Verify that sailing date and itinerary support any seasonal or destination-specific claims.",
+            "Do not imply a group, instructor, workshop, or onboard event unless separately created.",
+            "Do not invent pricing, onboard credit, cabin availability, or promo eligibility."
+          ],
+          "needsHumanReview": [
+            "Confirm ship amenities before public ad copy.",
+            "Confirm package link health before launch.",
+            "Confirm target audience does not imply a hosted group or event."
+          ]
+        }
+      },
+      "copyPackage": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "packageId": "0000000",
+        "generatedAtIso": "2026-06-10T00:53:51.446Z",
+        "generator": "deterministic_scaffold",
+        "headlineOptions": [
+          "4 nights to Nassau on Sample Ship — a sailing worth the trip.",
+          "4 nights to 4-Night Bahamas on Sample Ship",
+          "4 nights from Miami — visiting Nassau, Perfect Day at CocoCay on Sample Ship."
+        ],
+        "shortTileCopy": "4-night 4-Night Bahamas • Sample Ship",
+        "heroCopy": "4 nights from Miami — visiting Nassau, Perfect Day at CocoCay on Sample Ship. 4 nights to Nassau on Sample Ship — a sailing worth the trip. Confirm live pricing, availability, and eligibility through the booking portal.",
+        "whyThisTrip": [
+          "4 nights on Sample Ship.",
+          "Calls at Nassau, Perfect Day at CocoCay.",
+          "Departs from Miami.",
+          "Picked for Nassau and Sample Ship, not for a discount."
+        ],
+        "offerLines": [
+          {
+            "text": "Ask our agent about current savings and onboard perks for this sailing. Confirm live pricing, availability, and eligibility through the booking portal.",
+            "needsQualifier": true
+          }
+        ],
+        "ctaCopy": [
+          {
+            "kind": "book_now",
+            "label": "Book now",
+            "supportingText": "Go straight to the prepared booking link for this sailing."
+          },
+          {
+            "kind": "email_link",
+            "label": "Email me the booking link",
+            "supportingText": "We will send the prepared link so you can book when you are ready."
+          },
+          {
+            "kind": "request_callback",
+            "label": "Request an agent callback",
+            "supportingText": "A Leisure Life agent will confirm pricing, cabins, and perks with you."
+          }
+        ],
+        "publicCopyRedFlags": [],
+        "agentOnlyNotes": []
+      },
+      "adStructure": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "packageId": "0000000",
+        "generatedAtIso": "2026-06-10T00:53:58.483Z",
+        "generator": "deterministic_scaffold",
+        "campaignThesis": "4 nights to Nassau on Sample Ship.",
+        "channels": [
+          {
+            "channel": "meta",
+            "primaryAngle": "A curated Nassau sailing with a clearer reason to book than price alone.",
+            "hooks": [
+              "A curated Nassau sailing with a clearer reason to book than price alone.",
+              "Sail to Nassau — a destination worth the trip.",
+              "Nassau is on the itinerary.",
+              "Perfect Day at CocoCay is on the itinerary."
+            ],
+            "proofPoints": [
+              "Itinerary highlights: Nassau, Perfect Day at CocoCay.",
+              "4 nights on Sample Ship."
+            ],
+            "notes": [
+              "Avoid broad cruise-interest targeting as the primary audience.",
+              "Do not imply organized onboard programming unless separately created."
+            ]
+          },
+          {
+            "channel": "google",
+            "primaryAngle": "4-Night Bahamas cruise with a specific-interest angle",
+            "hooks": [
+              "Nassau cruise",
+              "4-Night Bahamas cruise",
+              "Miami cruise",
+              "Perfect Day at CocoCay cruise"
+            ],
+            "proofPoints": [
+              "Itinerary highlights: Nassau, Perfect Day at CocoCay.",
+              "4 nights on Sample Ship."
+            ],
+            "notes": [
+              "Landing page should lead with the niche/trend hook before price.",
+              "Booking CTA should confirm live pricing and availability in the CB portal."
+            ]
+          },
+          {
+            "channel": "tiktok",
+            "primaryAngle": "specific-interest cruise travelers packing or prep video",
+            "hooks": [
+              "experience-first travel",
+              "specific-interest travel"
+            ],
+            "proofPoints": [
+              "Itinerary highlights: Nassau, Perfect Day at CocoCay.",
+              "4 nights on Sample Ship."
+            ],
+            "notes": [
+              "Show the trip as a solution to a niche interest, not a generic cruise ad."
+            ]
+          },
+          {
+            "channel": "email",
+            "primaryAngle": "A curated Nassau cruise on Sample Ship",
+            "hooks": [
+              "A curated Nassau cruise on Sample Ship",
+              "A Nassau cruise with a more specific reason to go"
+            ],
+            "proofPoints": [
+              "Itinerary highlights: Nassau, Perfect Day at CocoCay.",
+              "4 nights on Sample Ship."
+            ],
+            "notes": [
+              "Reference the specific interest angle before mentioning the cruise line.",
+              "Use live booking-link freshness and package details in follow-up."
+            ]
+          }
+        ],
+        "nicheKeywords": [
+          "Nassau",
+          "4-Night Bahamas",
+          "Miami",
+          "Perfect Day at CocoCay",
+          "Sample Ship",
+          "Sample Cruise Line"
+        ],
+        "trendKeywords": [
+          "experience-first travel",
+          "specific-interest travel"
+        ],
+        "negativeKeywords": [
+          "free cruise",
+          "cruise job",
+          "crew job",
+          "cargo ship"
+        ],
+        "creativeHypotheses": [
+          "A niche-interest hook outperforms a generic price-led cruise ad.",
+          "Nassau visuals carry stronger save/share intent than cabin photos.",
+          "Most cruise listings lead with price; this one leads with the reason to go."
+        ],
+        "offerProofPoints": [
+          "Itinerary highlights: Nassau, Perfect Day at CocoCay.",
+          "4 nights on Sample Ship."
+        ]
+      },
+      "mediaPlan": {
+        "dealId": "sample-deal-bahamas-not-published",
+        "packageId": "0000000",
+        "generatedAtIso": "2026-06-10T00:53:59.577Z",
+        "generator": "deterministic_scaffold",
+        "visualDirection": [
+          "POV: your Nassau cruise is actually built around specific-interest cruise travelers.",
+          "Sail to Nassau — a destination worth the trip.",
+          "Nassau is on the itinerary.",
+          "Perfect Day at CocoCay is on the itinerary.",
+          "Nassau scenery and Sample Ship experience moments"
+        ],
+        "imageSlots": [
+          {
+            "slot": "hero",
+            "purpose": "Deal page hero / homepage tile background.",
+            "visualConceptPrompt": "Nassau hero scene framing the A curated Nassau sailing with a clearer reason to book than price alone. angle, photo-real, no on-image text.",
+            "requiredSourceAssets": [
+              "Sample Ship exterior",
+              "Nassau landscape"
+            ]
+          },
+          {
+            "slot": "ship_experience",
+            "purpose": "Show the on-ship experience that supports the angle.",
+            "visualConceptPrompt": "Sample Ship interior/deck moment that matches the audience interest, natural light.",
+            "requiredSourceAssets": [
+              "Sample Ship deck/lounge reference"
+            ]
+          },
+          {
+            "slot": "destination_detail",
+            "purpose": "Port/destination proof point for ad and page.",
+            "visualConceptPrompt": "Nassau signature scene, editorial travel style.",
+            "requiredSourceAssets": [
+              "Nassau reference",
+              "Perfect Day at CocoCay reference"
+            ]
+          }
+        ],
+        "shortVideoConcepts": [
+          {
+            "concept": "Why this Nassau sailing fits the audience",
+            "hook": "A curated Nassau sailing with a clearer reason to book than price alone.",
+            "shots": [
+              "Nassau establishing shot",
+              "Sample Ship experience moment",
+              "Nassau highlight",
+              "Perfect Day at CocoCay highlight",
+              "CTA card: Book now / Email link / Request callback"
+            ]
+          }
+        ],
+        "requiredSourceAssets": [
+          "Sample Ship imagery",
+          "Nassau imagery",
+          "Perfect Day at CocoCay imagery"
+        ],
+        "readiness": "concepts_ready"
+      }
+    },
+    {
+      "id": "deal-rcl-southern-caribbean-1619969",
+      "status": "needs_review",
+      "source": "odysseus_curated_retail",
+      "briefId": "brief-southern-caribbean-warm-escape",
+      "capturedAtIso": "2026-06-10T14:38:55.012Z",
+      "packageId": "1619969",
+      "siid": "1049337",
+      "bookingUrl": "https://bookings.cbagenttools.com/swift/cruise/package/1619969?siid=1049337&lang=1",
+      "bookingUrlSource": "constructed_package_url",
+      "linkHealth": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated. Run operator link validation before approval."
+      },
+      "cruiseFacts": {
+        "title": "6 Night Southern Caribbean Cruise",
+        "cruiseLine": "Royal Caribbean",
+        "shipName": "Liberty of the Seas",
+        "itineraryName": "6 Night Southern Caribbean Cruise",
+        "nights": 6,
+        "sailDateIso": "2026-11-08",
+        "departurePort": "Fort Lauderdale",
+        "portsOfCall": [
+          "Perfect Day at CocoCay",
+          "Aruba",
+          "Curacao"
+        ],
+        "cabinPrices": {
+          "currencyCode": "USD"
+        },
+        "promoSignals": []
+      },
+      "scoring": {
+        "score": 90,
+        "reasons": [
+          "Has trip angle research.",
+          "Has Targeting-Demographic resource.",
+          "Has pitch brief (research-to-copy boundary).",
+          "Has visitor-safe copy package.",
+          "Has ad/campaign structure.",
+          "Has media plan."
+        ],
+        "warnings": [
+          "Link health is \"unknown\"."
+        ]
+      },
+      "packaging": {
+        "headline": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+        "shortSummary": "6-night 6 Night Southern Caribbean Cruise • Liberty of the Seas",
+        "highlights": [
+          "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages. Confirm live pricing, availability, and eligibility through the booking portal.",
+          "Calls at Perfect Day at CocoCay, Aruba, Curacao.",
+          "Departs from Fort Lauderdale.",
+          "Leisure Life picks this sailing for a specific traveler, not a general audience."
+        ],
+        "destinationNotes": [
+          "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+          "Perfect Day at CocoCay is on the itinerary.",
+          "Aruba is on the itinerary.",
+          "Curacao is on the itinerary."
+        ],
+        "bestFor": [
+          "specific-interest cruise travelers",
+          "Perfect Day at CocoCay experience seekers",
+          "Premium convenience travelers"
+        ]
+      },
+      "angleResearch": {
+        "dealCandidateId": "deal-rcl-southern-caribbean-1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.012Z",
+        "shipAppeal": [
+          "Sail on Liberty of the Seas — Royal Caribbean's ship for this itinerary."
+        ],
+        "amenityHighlights": [],
+        "destinationHooks": [
+          "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+          "Perfect Day at CocoCay is on the itinerary.",
+          "Aruba is on the itinerary.",
+          "Curacao is on the itinerary."
+        ],
+        "itineraryPacingNotes": [
+          "6 nights — enough time to settle in and explore without overstaying.",
+          "Departs from Fort Lauderdale.",
+          "Calls at Perfect Day at CocoCay, Aruba, Curacao."
+        ],
+        "nicheAudienceAngles": [],
+        "trendMatches": [
+          "experience-first travel",
+          "specific-interest travel"
+        ],
+        "competitorBlindSpots": [
+          "Most cruise listings lead with price; this one leads with the reason to go."
+        ],
+        "recommendedPrimaryAngle": {
+          "title": "A curated Perfect Day at CocoCay cruise on Liberty of the Seas",
+          "rationale": "6 nights to Perfect Day at CocoCay on Liberty of the Seas.",
+          "publicCopyHook": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+          "whyThisFeelsExclusive": "Leisure Life picks this sailing for a specific traveler, not a general audience."
+        },
+        "rejectedAngles": [
+          {
+            "title": "Generic cruise sale",
+            "reason": "Price and perks are supporting details, not the main reason to promote the trip."
+          },
+          {
+            "title": "Organized cohort trip",
+            "reason": "This retail Deal must not imply minimum cabins, interest collection, or planned onboard programming."
+          }
+        ],
+        "factualGuardrails": [
+          "Verify all ship amenities before public copy.",
+          "Verify that sailing date and itinerary support any seasonal or destination-specific claims.",
+          "Do not imply a group, instructor, workshop, or onboard event unless separately created.",
+          "Do not invent pricing, onboard credit, cabin availability, or promo eligibility."
+        ],
+        "sources": [
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/research",
+            "usedFor": "Niche angle and trip-quality research scaffold."
+          }
+        ]
+      },
+      "targetingDemographic": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "packageId": "1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.012Z",
+        "primaryAudience": {
+          "label": "specific-interest cruise travelers",
+          "description": "Travelers whose interests match Perfect Day at CocoCay, 6 Night Southern Caribbean Cruise, and the ship experience.",
+          "whyThisCruiseFits": "6 nights to Perfect Day at CocoCay on Liberty of the Seas.",
+          "emotionalDrivers": [
+            "a trip that feels chosen for them rather than broadly advertised",
+            "a visually specific reason to imagine the cruise"
+          ],
+          "likelyObjections": [
+            "They may not think of themselves as cruise shoppers.",
+            "They may need confidence that the angle is grounded in the real itinerary, not generic copy.",
+            "They may want exact pricing, cabin, and perk confirmation before committing."
+          ]
+        },
+        "secondaryAudiences": [
+          {
+            "label": "Perfect Day at CocoCay experience seekers",
+            "description": "Travelers drawn to Perfect Day at CocoCay, the ports, and the seasonal itinerary context.",
+            "whyThisCruiseFits": "6 Night Southern Caribbean Cruise gives them a ready-made way to experience Perfect Day at CocoCay.",
+            "targetingNotes": [
+              "Perfect Day at CocoCay",
+              "6 Night Southern Caribbean Cruise",
+              "Fort Lauderdale",
+              "Aruba",
+              "Curacao"
+            ]
+          },
+          {
+            "label": "Premium convenience travelers",
+            "description": "People who value a packaged, low-friction way to experience a destination.",
+            "whyThisCruiseFits": "The cruise bundles transport, lodging, ship amenities, and multiple destination moments into one booking path.",
+            "targetingNotes": [
+              "Liberty of the Seas",
+              "Royal Caribbean"
+            ]
+          }
+        ],
+        "nicheKeywords": {
+          "lifestyle": [],
+          "destination": [
+            "Perfect Day at CocoCay",
+            "6 Night Southern Caribbean Cruise",
+            "Fort Lauderdale",
+            "Aruba",
+            "Curacao"
+          ],
+          "shipExperience": [
+            "Liberty of the Seas",
+            "Royal Caribbean"
+          ],
+          "amenities": [],
+          "eventsAndSeasonality": [
+            "sailing 2026-11-08",
+            "6 night cruise",
+            "Perfect Day at CocoCay seasonality"
+          ],
+          "trendSignals": [
+            "experience-first travel",
+            "specific-interest travel"
+          ],
+          "exclusionKeywords": [
+            "free cruise",
+            "cruise job",
+            "crew job",
+            "cargo ship"
+          ]
+        },
+        "channelTargeting": {
+          "meta": {
+            "interestClusters": [
+              "Perfect Day at CocoCay",
+              "6 Night Southern Caribbean Cruise",
+              "Fort Lauderdale",
+              "Aruba"
+            ],
+            "behaviorSignals": [
+              "engages with destination visuals",
+              "saves travel inspiration content",
+              "responds to niche lifestyle identity cues"
+            ],
+            "creativeHooks": [
+              "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+              "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+              "Perfect Day at CocoCay is on the itinerary.",
+              "Aruba is on the itinerary."
+            ],
+            "audienceWarnings": [
+              "Avoid broad cruise-interest targeting as the primary audience.",
+              "Do not imply organized onboard programming unless separately created."
+            ]
+          },
+          "google": {
+            "searchThemes": [
+              "Perfect Day at CocoCay cruise",
+              "6 Night Southern Caribbean Cruise cruise",
+              "Fort Lauderdale cruise",
+              "Aruba cruise",
+              "Curacao cruise"
+            ],
+            "keywordIdeas": [
+              "Perfect Day at CocoCay",
+              "6 Night Southern Caribbean Cruise",
+              "Fort Lauderdale",
+              "Aruba",
+              "Curacao"
+            ],
+            "negativeKeywords": [
+              "free cruise",
+              "cruise job",
+              "crew job",
+              "cargo ship"
+            ],
+            "landingPageIntentNotes": [
+              "Landing page should lead with the niche/trend hook before price.",
+              "Booking CTA should confirm live pricing and availability in the CB portal."
+            ]
+          },
+          "tiktok": {
+            "creatorAngles": [
+              "specific-interest cruise travelers packing or prep video",
+              "Perfect Day at CocoCay visual inspiration",
+              "show the trip as a solution to a niche interest, not a cruise ad"
+            ],
+            "trendHooks": [
+              "experience-first travel",
+              "specific-interest travel"
+            ],
+            "shortVideoConcepts": [
+              "POV: your Perfect Day at CocoCay cruise is actually built around specific-interest cruise travelers.",
+              "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+              "Perfect Day at CocoCay is on the itinerary.",
+              "Aruba is on the itinerary."
+            ]
+          },
+          "email": {
+            "segmentIdeas": [
+              "specific-interest cruise travelers",
+              "Perfect Day at CocoCay interested travelers",
+              "people who clicked but did not request a booking link"
+            ],
+            "subjectLineAngles": [
+              "A curated Perfect Day at CocoCay cruise on Liberty of the Seas",
+              "A Perfect Day at CocoCay cruise with a more specific reason to go"
+            ],
+            "personalizationNotes": [
+              "Reference the specific interest angle before mentioning the cruise line.",
+              "Use live booking-link freshness and package details in follow-up."
+            ]
+          }
+        },
+        "researchSummary": {
+          "primaryInsight": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+          "whyNow": "The Deal becomes timely when package availability, price, and the destination season line up.",
+          "competitorBlindSpot": "Most cruise listings lead with price; this one leads with the reason to go.",
+          "positioningStatement": "6 nights to Perfect Day at CocoCay on Liberty of the Seas."
+        },
+        "sources": [
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/research",
+            "usedFor": "Niche angle and trip-quality research scaffold."
+          },
+          {
+            "title": "Cruise candidate facts",
+            "url": "internal://deals-system/targeting",
+            "usedFor": "Targeting-Demographic generation."
+          }
+        ],
+        "confidence": {
+          "score": 68,
+          "strengths": [
+            "Audience is more specific than generic cruise shoppers.",
+            "Creative hook is tied to the actual package research.",
+            "Negative keywords and channel-specific targeting are present."
+          ],
+          "risks": [
+            "Verify all ship amenities before public copy.",
+            "Verify that sailing date and itinerary support any seasonal or destination-specific claims.",
+            "Do not imply a group, instructor, workshop, or onboard event unless separately created.",
+            "Do not invent pricing, onboard credit, cabin availability, or promo eligibility."
+          ],
+          "needsHumanReview": [
+            "Confirm ship amenities before public ad copy.",
+            "Confirm package link health before launch.",
+            "Confirm target audience does not imply a hosted group or event."
+          ]
+        }
+      },
+      "pitchBrief": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "packageId": "1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.012Z",
+        "generator": "deterministic_scaffold",
+        "tripSummary": "6 nights from Fort Lauderdale — visiting Perfect Day at CocoCay, Aruba, Curacao on Liberty of the Seas.",
+        "audienceStatement": "For specific-interest cruise travelers.",
+        "primaryHook": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+        "curatedReason": "Leisure Life picks this sailing for a specific traveler, not a general audience.",
+        "sellingFacts": [
+          "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages. Confirm live pricing, availability, and eligibility through the booking portal.",
+          "Calls at Perfect Day at CocoCay, Aruba, Curacao.",
+          "Departs from Fort Lauderdale."
+        ],
+        "researchRationale": "Angle rationale: 6 nights to Perfect Day at CocoCay on Liberty of the Seas. | Competitor blind spot: Most cruise listings lead with price; this one leads with the reason to go. | Primary insight: A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone."
+      },
+      "copyPackage": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "packageId": "1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.013Z",
+        "generator": "deterministic_scaffold",
+        "headlineOptions": [
+          "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+          "6 nights to 6 Night Southern Caribbean Cruise on Liberty of the Seas",
+          "6 nights from Fort Lauderdale — visiting Perfect Day at CocoCay, Aruba, Curacao on Liberty of the Seas."
+        ],
+        "shortTileCopy": "6-night 6 Night Southern Caribbean Cruise • Liberty of the Seas",
+        "heroCopy": "6 nights from Fort Lauderdale — visiting Perfect Day at CocoCay, Aruba, Curacao on Liberty of the Seas. A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone. Confirm live pricing, availability, and eligibility through the booking portal.",
+        "whyThisTrip": [
+          "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages. Confirm live pricing, availability, and eligibility through the booking portal.",
+          "Calls at Perfect Day at CocoCay, Aruba, Curacao.",
+          "Departs from Fort Lauderdale.",
+          "Leisure Life picks this sailing for a specific traveler, not a general audience."
+        ],
+        "offerLines": [
+          {
+            "text": "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": false
+          },
+          {
+            "text": "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": false
+          },
+          {
+            "text": "Group-rate price advantages apply only where group rates are available. Confirm live pricing, availability, and eligibility through the booking portal.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": true
+          },
+          {
+            "text": "Promotion is limited to bookings made between 06/05/2026 and 06/30/2026. Confirm live pricing, availability, and eligibility through the booking portal.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": true
+          },
+          {
+            "text": "Sailings must be on or between 07/01/2026 and 03/31/2027. Confirm live pricing, availability, and eligibility through the booking portal.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": true
+          },
+          {
+            "text": "Pricing advantage language references late 2026 and 2027 voyages. Confirm live pricing, availability, and eligibility through the booking portal.",
+            "promoRecordId": "cbpromo-2041",
+            "needsQualifier": true
+          }
+        ],
+        "ctaCopy": [
+          {
+            "kind": "book_now",
+            "label": "Book now",
+            "supportingText": "Go straight to the prepared booking link for this sailing."
+          },
+          {
+            "kind": "email_link",
+            "label": "Email me the booking link",
+            "supportingText": "We will send the prepared link so you can book when you are ready."
+          },
+          {
+            "kind": "request_callback",
+            "label": "Request an agent callback",
+            "supportingText": "A Leisure Life agent will confirm pricing, cabins, and perks with you."
+          }
+        ],
+        "publicCopyRedFlags": [],
+        "agentOnlyNotes": [
+          "[Royal Caribbean International] Agent instruction: \"find assets on west coast, microsite in loyaltoyoualways.com\"",
+          "[Royal Caribbean International] Reference link provided in agent instructions: \"https://loyaltoyoualwaycom\""
+        ]
+      },
+      "adStructure": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "packageId": "1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.013Z",
+        "generator": "deterministic_scaffold",
+        "campaignThesis": "6 nights to Perfect Day at CocoCay on Liberty of the Seas.",
+        "channels": [
+          {
+            "channel": "meta",
+            "primaryAngle": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+            "hooks": [
+              "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+              "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+              "Perfect Day at CocoCay is on the itinerary.",
+              "Aruba is on the itinerary."
+            ],
+            "proofPoints": [
+              "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+              "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+              "Itinerary highlights: Perfect Day at CocoCay, Aruba, Curacao.",
+              "6 nights on Liberty of the Seas."
+            ],
+            "notes": [
+              "Avoid broad cruise-interest targeting as the primary audience.",
+              "Do not imply organized onboard programming unless separately created."
+            ]
+          },
+          {
+            "channel": "google",
+            "primaryAngle": "6 Night Southern Caribbean Cruise cruise with a specific-interest angle",
+            "hooks": [
+              "Perfect Day at CocoCay cruise",
+              "6 Night Southern Caribbean Cruise cruise",
+              "Fort Lauderdale cruise",
+              "Aruba cruise",
+              "Curacao cruise"
+            ],
+            "proofPoints": [
+              "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+              "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+              "Itinerary highlights: Perfect Day at CocoCay, Aruba, Curacao.",
+              "6 nights on Liberty of the Seas."
+            ],
+            "notes": [
+              "Landing page should lead with the niche/trend hook before price.",
+              "Booking CTA should confirm live pricing and availability in the CB portal."
+            ]
+          },
+          {
+            "channel": "tiktok",
+            "primaryAngle": "specific-interest cruise travelers packing or prep video",
+            "hooks": [
+              "experience-first travel",
+              "specific-interest travel"
+            ],
+            "proofPoints": [
+              "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+              "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+              "Itinerary highlights: Perfect Day at CocoCay, Aruba, Curacao."
+            ],
+            "notes": [
+              "Show the trip as a solution to a niche interest, not a generic cruise ad."
+            ]
+          },
+          {
+            "channel": "email",
+            "primaryAngle": "A curated Perfect Day at CocoCay cruise on Liberty of the Seas",
+            "hooks": [
+              "A curated Perfect Day at CocoCay cruise on Liberty of the Seas",
+              "A Perfect Day at CocoCay cruise with a more specific reason to go"
+            ],
+            "proofPoints": [
+              "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+              "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+              "Itinerary highlights: Perfect Day at CocoCay, Aruba, Curacao.",
+              "6 nights on Liberty of the Seas."
+            ],
+            "notes": [
+              "Reference the specific interest angle before mentioning the cruise line.",
+              "Use live booking-link freshness and package details in follow-up."
+            ]
+          }
+        ],
+        "nicheKeywords": [
+          "Perfect Day at CocoCay",
+          "6 Night Southern Caribbean Cruise",
+          "Fort Lauderdale",
+          "Aruba",
+          "Curacao",
+          "Liberty of the Seas",
+          "Royal Caribbean"
+        ],
+        "trendKeywords": [
+          "experience-first travel",
+          "specific-interest travel"
+        ],
+        "negativeKeywords": [
+          "free cruise",
+          "cruise job",
+          "crew job",
+          "cargo ship"
+        ],
+        "creativeHypotheses": [
+          "A niche-interest hook outperforms a generic price-led cruise ad.",
+          "Perfect Day at CocoCay visuals carry stronger save/share intent than cabin photos.",
+          "Most cruise listings lead with price; this one leads with the reason to go."
+        ],
+        "offerProofPoints": [
+          "Select West Coast Royal Caribbean sailings may qualify for group-rate pricing advantages.",
+          "Select California departures may offer access to Royal Caribbean West Coast itineraries during the stated booking and sailing windows.",
+          "Itinerary highlights: Perfect Day at CocoCay, Aruba, Curacao.",
+          "6 nights on Liberty of the Seas."
+        ]
+      },
+      "mediaPlan": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "packageId": "1619969",
+        "generatedAtIso": "2026-06-10T14:38:55.013Z",
+        "generator": "deterministic_scaffold",
+        "visualDirection": [
+          "POV: your Perfect Day at CocoCay cruise is actually built around specific-interest cruise travelers.",
+          "Sail to Perfect Day at CocoCay — a destination worth the trip.",
+          "Perfect Day at CocoCay is on the itinerary.",
+          "Aruba is on the itinerary.",
+          "Perfect Day at CocoCay scenery and Liberty of the Seas experience moments"
+        ],
+        "imageSlots": [
+          {
+            "slot": "hero",
+            "purpose": "Deal page hero / homepage tile background.",
+            "visualConceptPrompt": "Perfect Day at CocoCay hero scene framing the A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone. angle, photo-real, no on-image text.",
+            "requiredSourceAssets": [
+              "Liberty of the Seas exterior",
+              "Perfect Day at CocoCay landscape"
+            ]
+          },
+          {
+            "slot": "ship_experience",
+            "purpose": "Show the on-ship experience that supports the angle.",
+            "visualConceptPrompt": "Liberty of the Seas interior/deck moment that matches the audience interest, natural light.",
+            "requiredSourceAssets": [
+              "Liberty of the Seas deck/lounge reference"
+            ]
+          },
+          {
+            "slot": "destination_detail",
+            "purpose": "Port/destination proof point for ad and page.",
+            "visualConceptPrompt": "Perfect Day at CocoCay signature scene, editorial travel style.",
+            "requiredSourceAssets": [
+              "Perfect Day at CocoCay reference",
+              "Aruba reference",
+              "Curacao reference"
+            ]
+          }
+        ],
+        "shortVideoConcepts": [
+          {
+            "concept": "Why this Perfect Day at CocoCay sailing fits the audience",
+            "hook": "A curated Perfect Day at CocoCay sailing with a clearer reason to book than price alone.",
+            "shots": [
+              "Perfect Day at CocoCay establishing shot",
+              "Liberty of the Seas experience moment",
+              "Perfect Day at CocoCay highlight",
+              "Aruba highlight",
+              "CTA card: Book now / Email link / Request callback"
+            ]
+          }
+        ],
+        "requiredSourceAssets": [
+          "Liberty of the Seas imagery",
+          "Perfect Day at CocoCay imagery",
+          "Aruba imagery",
+          "Curacao imagery"
+        ],
+        "readiness": "concepts_ready"
+      },
+      "operatorApproval": {
+        "dealId": "deal-rcl-southern-caribbean-1619969",
+        "status": "rejected",
+        "updatedAtIso": "2026-06-10T14:39:14.656Z",
+        "decidedBy": "operator",
+        "textOnlyLaunchWaived": false,
+        "gates": [
+          {
+            "id": "real_package",
+            "label": "Real Odysseus/CB package",
+            "passed": true,
+            "detail": "Package 1619969.",
+            "blocking": true
+          },
+          {
+            "id": "link_valid",
+            "label": "Link health is valid",
+            "passed": false,
+            "detail": "Link health is \"unknown\". Run operator browser validation to reach \"valid\".",
+            "blocking": true
+          },
+          {
+            "id": "pitch_brief_present",
+            "label": "Pitch brief generated (Phase 9B)",
+            "passed": true,
+            "detail": "Pitch brief present (deterministic_scaffold).",
+            "blocking": true
+          },
+          {
+            "id": "public_copy_clean",
+            "label": "Public copy passed guardrails",
+            "passed": true,
+            "detail": "No public-copy red flags.",
+            "blocking": true
+          },
+          {
+            "id": "targeting_present",
+            "label": "Targeting-Demographic exists",
+            "passed": true,
+            "detail": "Targeting resource attached.",
+            "blocking": true
+          },
+          {
+            "id": "media_ready",
+            "label": "Media/creative ready or text-only waived",
+            "passed": false,
+            "detail": "Media readiness is \"concepts_ready\".",
+            "blocking": true
+          }
+        ]
+      },
+      "agentOnlyNotes": [
+        "[Royal Caribbean International] Agent instruction: \"find assets on west coast, microsite in loyaltoyoualways.com\"",
+        "[Royal Caribbean International] Reference link provided in agent instructions: \"https://loyaltoyoualwaycom\""
       ]
     }
   ]

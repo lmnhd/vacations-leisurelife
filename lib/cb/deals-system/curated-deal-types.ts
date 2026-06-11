@@ -11,6 +11,13 @@
  * Mirrors PRELIMINARY_PLAN.md (Curated Deal Record) and assembles in Phase 9.
  */
 
+import type {
+  DealAdStructure,
+  DealApprovalState,
+  DealCopyPackage,
+  DealMediaPlan,
+  DealPitchBrief,
+} from "./campaign-types";
 import type { LinkBrokerHealth } from "./link-broker-types";
 import type { PromoApplicabilityResult } from "./promo-intelligence-types";
 import type {
@@ -80,8 +87,34 @@ export interface CuratedOdysseusDeal {
   angleResearch?: DealAngleResearch;
   /** Package-specific targeting resource, generated before ad packaging. */
   targetingDemographic?: DealTargetingDemographic;
+  /**
+   * Editorial pitch brief (Phase 9B): the customer-voice decisions that sit
+   * between research and copy. Must exist before a DealCopyPackage is generated.
+   */
+  pitchBrief?: DealPitchBrief;
+  /** Visitor-safe copy package (Phase 9A/9B); sourced from pitchBrief, not raw research. */
+  copyPackage?: DealCopyPackage;
+  /** Ad/campaign structure (Phase 9A); generated as an independent stage. */
+  adStructure?: DealAdStructure;
+  /** Media plan (Phase 9A); generated as an independent stage. */
+  mediaPlan?: DealMediaPlan;
+  /**
+   * Operator approval gate (Phase 9A). The homepage may only render a Deal when
+   * this is "approved" AND status is "bookable" AND link health is "valid". A
+   * valid booking link alone is never enough to publish.
+   */
+  operatorApproval?: DealApprovalState;
   /** Internal-only notes; never rendered to public Deal fields. */
   agentOnlyNotes?: string[];
+  /**
+   * Operator-controlled homepage visibility (Phase 14). `pinned` Deals sort
+   * first among eligible Deals; `hidden` Deals never appear publicly even if
+   * otherwise eligible.
+   */
+  operatorVisibility?: {
+    pinned?: boolean;
+    hidden?: boolean;
+  };
 }
 
 export interface OdysseusDealBrief {

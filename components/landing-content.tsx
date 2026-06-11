@@ -3,6 +3,7 @@
 import { Card, CardContent, CardTitle } from "./ui/card";
 import PromotionTile, {PromotionTileProps} from '@/components/promotion-tile'
 import CBDestinationPicksTiles from "./cb/cbdestinationpickstile";
+import CuratedDealsTiles from "./cb/curated-deals-tiles";
 
 
 
@@ -89,8 +90,9 @@ export const LandingContent = async () => {
      //className="bg-primary/50 hover:bg-gradient-to-br hover:from-lime-400/70 hover:via-lime-500  hover:to-lime-400/70"
      //className="px-10 pb-20 bg-primary hover:bg-gradient-to-r hover:from-primary-foreground/70 hover:via-primary/70 hover:to-primary-foreground/70 transition-all ease-in-out duration-500 "
      >
+      <CuratedDealsTiles/>
       <CBDestinationPicksTiles/>
-       
+
      </div>
     </>
   );

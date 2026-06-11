@@ -26,6 +26,46 @@ The current Deal Info page is `app/(dashboard)/(routes)/destinationdeal/[id]/pag
 
 The legacy deal page relied on article-generation behavior through `lib/deals-utils.ts`, with request-time AI/image fallback risk. The replacement Deals pipeline should publish only records that already include a dynamic CB booking link.
 
+## Current Implementation Direction
+
+The implementation has moved beyond the original "refresh old CB picks" concept.
+
+Current reality:
+
+- Promo Intelligence now comes from CB Agent Tools Today's View.
+- Package selection now happens through Odysseus package lookup.
+- Booking links now come through the internal Link Broker.
+- Research/targeting foundations now exist for retail Deal angles.
+- The operator UI now lives at `/tests/deals-system` as the Deals Operator Workbench.
+
+Next stage:
+
+- Implement Phase 9 from `PHASED_IMPLEMENTATION_PLAN.md`: Curated Deal Assembly.
+- The immediate objective is to create one real `CuratedOdysseusDeal` record from a selected package, valid Link Broker output, optional promo applicability, trip research, Targeting-Demographic, and public-safe packaging.
+- Expand `/tests/deals-system` into the Deals Campaign Workbench so research, extraction, package copy, ad structure, media planning, and approval happen in one operator surface.
+- The homepage should not be wired to show real Deals until at least one Curated Deal is `bookable`, `operatorApproval.status === "approved"`, and `linkHealth.status === "valid"`.
+
+## Deals Campaign Workbench Direction
+
+The Deals workbench should become the central place to develop a Deal campaign with AI before it is finalized.
+
+It should support staged, rerunnable processes:
+
+- source package selection
+- promo intelligence extraction
+- trip and destination research
+- ship amenity and feature research
+- niche/trend research
+- competitor blind-spot analysis
+- Targeting-Demographic generation
+- package copy generation
+- ad structure generation
+- media plan generation
+- link validation
+- operator approval
+
+Deals should not automatically appear on the homepage when generated. The operator must approve them first.
+
 ## Product Direction
 
 Focus the public experience on:

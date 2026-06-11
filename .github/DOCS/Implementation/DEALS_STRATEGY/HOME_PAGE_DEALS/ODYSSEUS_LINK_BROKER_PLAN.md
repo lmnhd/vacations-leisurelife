@@ -14,6 +14,28 @@ Frontend flows such as:
 
 may consume Link Broker output, but those CTA flows should be implemented as separate UI/API workflows. The Link Broker's job is narrower: produce, normalize, validate, cache, and refresh usable CB/Odysseus links when the backend needs them.
 
+## Current Implementation Status and Next Stage
+
+Status as of the current Deals build:
+
+- The internal Link Broker foundation exists.
+- Package entry links and prepared-details links can be constructed from known package/traveler facts.
+- Captured clone/cabin links are parsed but not synthesized.
+- Link health rules exist and the public publishing gate depends on `linkHealth.status === "valid"`.
+- Package lookup can resolve cruise facts into ranked Odysseus candidates and feed a selected package into the broker.
+- The Deals Operator Workbench at `/tests/deals-system` exposes package lookup and safe validation controls.
+
+Important boundary:
+
+- Link Broker output is necessary but not sufficient for a homepage Deal.
+- A valid booking link proves a guest can reach CB/Odysseus, but it does not provide the curated packaging, targeting, promo applicability, or public-safe copy needed for a Leisure Life Deal.
+
+Next stage:
+
+- Implement Phase 9 from `PHASED_IMPLEMENTATION_PLAN.md`: Curated Deal Assembly.
+- Phase 9 should call the Link Broker as one dependency while building a full `CuratedOdysseusDeal`.
+- The operator should be able to assemble a `needs_review` Deal from package lookup output, validate the link, inspect the copy/research/targeting, and promote it to `bookable` only when the link is valid.
+
 ## Core Contract
 
 Given cruise facts and as much traveler setup data as we have, the Link Broker should return the best usable CB/Odysseus booking link.

@@ -9,15 +9,86 @@
  * Generation lands in Phase 7/8; these are the Phase 1 schemas.
  */
 
+import type { DealAiGenerationTrace } from "./campaign-types";
+
 export interface DealAngleSource {
   title: string;
   url: string;
   usedFor: string;
 }
 
+export interface GroupDiscoveryRetailSource {
+  id: string;
+  name: string;
+  researchRationale?: string;
+  audienceSignals: string[];
+  cruiseNativeMoments: string[];
+  targetDestination?: string;
+  targetDates?: string;
+  shipTarget?: string;
+  aestheticHooks?: string[];
+  targetableKeywords?: string[];
+}
+
+export interface RetailDiscoveryBrief {
+  id: string;
+  source: "group_discovery_retail_adapter";
+  sourceResearchId?: string;
+  retailAngleTitle: string;
+  audience: {
+    label: string;
+    communitySignals: string[];
+    emotionalDrivers: string[];
+    spendSignals: string[];
+  };
+  cruiseFit: {
+    idealDestinations: string[];
+    idealShipFeatures: string[];
+    idealTripLength?: string;
+    idealSeasonality?: string;
+    preferredDeparturePorts?: string[];
+  };
+  odysseusSearchHints: {
+    cruiseLines?: string[];
+    destinations?: string[];
+    dateWindows?: string[];
+    minNights?: number;
+    maxNights?: number;
+  };
+  retailPositioning: {
+    primaryHook: string;
+    whyThisIsNotAGroup: string;
+    quickSaleCTA: string;
+    visualDirection: string[];
+  };
+  targetingSeeds: {
+    nicheKeywords: string[];
+    trendKeywords: string[];
+    negativeKeywords: string[];
+    metaInterestSeeds: string[];
+    googleSearchThemes: string[];
+  };
+  risks: string[];
+}
+
+export interface DealResearchCruiseCandidate {
+  id: string;
+  cruiseLine?: string;
+  shipName?: string;
+  itineraryName: string;
+  destination: string;
+  nights?: number;
+  sailDateIso?: string;
+  departurePort?: string;
+  portsOfCall: string[];
+  shipFeatures?: string[];
+  amenities?: string[];
+}
+
 export interface DealAngleResearch {
   dealCandidateId: string;
   generatedAtIso: string;
+  retailDiscoveryBriefId?: string;
   shipAppeal: string[];
   amenityHighlights: string[];
   destinationHooks: string[];
@@ -37,6 +108,10 @@ export interface DealAngleResearch {
   }>;
   factualGuardrails: string[];
   sources: DealAngleSource[];
+  /** "gpt" when AI-generated. */
+  generator?: "gpt";
+  /** AI provenance when generator is "gpt". */
+  aiTrace?: DealAiGenerationTrace;
 }
 
 export interface DealTargetingDemographic {
@@ -102,4 +177,8 @@ export interface DealTargetingDemographic {
     risks: string[];
     needsHumanReview: string[];
   };
+  /** "gpt" when AI-generated. */
+  generator?: "gpt";
+  /** AI provenance when generator is "gpt". */
+  aiTrace?: DealAiGenerationTrace;
 }

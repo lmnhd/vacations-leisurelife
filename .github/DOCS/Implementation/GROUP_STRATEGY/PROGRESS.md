@@ -31,7 +31,7 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
   - In-flight lock (`isRunning` flag) — returns `409` if already running
   - Returns `message`, `count`, `skippedCount`, and `campaigns[]` with `fetchUrl` per blueprint
 - **`core-logic.ts`** — 3-step:
-  1. **Sonar Deep Research** — Psychographic trend-mining (§6.1)
+  1. **Sonar Deep Research** — Niche discovery (§6.1)
   2. **Sonar Deep Research** — Aesthetic gap / ship infrastructure cross-reference (§6.1)
   3. **GPT-5-mini `generateObject`** — Produces 5 structured `Campaign` blueprints
   4. **DynamoDB write** — Idempotent: skips slugs that already exist

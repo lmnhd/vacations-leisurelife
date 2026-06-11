@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         const cacheStatus = getDiscoveryResearchCacheStatus();
         return NextResponse.json({
             success: true,
-            message: `Research complete (${result.psychographicFromCache ? 'psychographic from cache' : 'psychographic fresh'}, ${result.aestheticFromCache ? 'aesthetic from cache' : 'aesthetic fresh'}). Cached at ${result.cachedAt}. Run POST /api/groups/discovery/generate next to produce blueprints.`,
+            message: `Research complete (${result.psychographicFromCache ? 'niche research from cache' : 'niche research fresh'}, ${result.aestheticFromCache ? 'aesthetic from cache' : 'aesthetic fresh'}). Cached at ${result.cachedAt}. Run POST /api/groups/discovery/generate next to produce blueprints.`,
             research: {
                 psychographic: result.psychographicData,
                 aesthetic: result.aestheticData,

@@ -9,6 +9,7 @@ This plan ties together:
 - `CB_AGENT_TOOLS_PROMO_INTELLIGENCE_PLAN.md`
 - `ODYSSEUS_LINK_BROKER_PLAN.md`
 - `PRELIMINARY_PLAN.md`
+- `NEXT_AGENT_HANDOFF.md`
 
 The build should proceed in slices that can be tested independently. Each phase should end with a working artifact, operator command, API route, UI surface, or data file that proves the phase is real before moving forward.
 
@@ -43,13 +44,60 @@ Build order matters.
 5. Retail adaptation of Group Discovery research
 6. Trip research and targeting resources
 7. Odysseus deal candidate discovery
-8. Curated Deal assembly
-9. Public Deal pages and CTAs
-10. Email-link and callback operations
-11. Dashboard and operator review
-12. Distribution readiness
+8. Curated Deal assembly + staged campaign workbench
+9. **Sales pitch development** — transform research into customer-voice copy
+10. Public Deal pages and CTAs
+11. Email-link and callback operations
+12. Dashboard and operator review
+13. Distribution readiness
 
-Do not start with frontend polish. The frontend should consume stable Deal records after the internal data and link systems are proven.
+Step 9 is a required transformation step, not an optional enrichment. Research output
+is written in operator voice ("what to investigate, what angle to consider"). Sales
+pitch output is written in customer voice ("why this trip matters to you"). These are
+two different jobs and neither can substitute for the other. The system must treat them
+as separate, sequenced stages.
+
+Do not start with frontend polish. The frontend should consume stable Deal records
+after the internal data and link systems are proven.
+
+## Current Next Stage
+
+**Phases 9, 9A, 9B, and 10 are now implemented.** The system is ready for
+**Phase 11 - CTA Workflow APIs**.
+
+What already exists:
+
+- CB promo intelligence scrape/extraction
+- Link Broker link construction and health rules
+- Odysseus package lookup
+- retail trip research and Targeting-Demographic foundations
+- Deals Operator Workbench at `/tests/deals-system`
+- Curated Deal assembly + staged campaign development (copy, ad structure, media
+  plan) and an operator approval gate (Phase 9 / 9A)
+- a real, non-sample `CuratedOdysseusDeal` (RCL Southern Caribbean, package
+  1619969) that has been assembled, link-marked valid, and operator-approved
+- an enforced approval path from `needs_review` to `bookable`
+- public homepage + `/deals/[id]` rendering of approval-gated Curated Deals
+  (Phase 10), filtered by `isDealHomepageEligible`
+- `DealPitchBrief` — the customer-voice editorial decision layer between research
+  and copy (Phase 9B): `tripSummary`, `audienceStatement`, `primaryHook`,
+  `curatedReason`, `sellingFacts`, `researchRationale` (internal-only)
+- `ANALYST_VOICE_FORBIDDEN` constant and expanded `detectRedFlags` covering
+  analyst-voice phrases and promotional risk terms
+- `generateDealCopyPackage` now requires a `DealPitchBrief` parameter — the
+  research → pitch → copy order is enforced at the type level
+
+What does not exist yet:
+
+- the three CTAs as real backends (Book now works as a link; Email link and
+  Request callback route to `/contact` until Phase 11)
+- live operator browser validation of the committed Deal's booking link (the
+  first real Deal's link was marked valid by operator assertion, not a fresh
+  Playwright check)
+
+Therefore the next implementation goal is not more reporting. It is to expand the Deals Operator Workbench into a campaign-development workbench where the operator can run research, extraction, package lookup, copy generation, ad-structure planning, media planning, and approval steps one by one. Only after a Curated Deal is approved there should it be eligible for homepage publishing.
+
+The next agent should treat `/tests/deals-system` as the working surface, similar in spirit to `/tests/media-generation` for group campaigns: a place to develop and inspect the campaign with AI before anything becomes public.
 
 ## Phase 0 - Baseline and Guardrails
 
@@ -296,6 +344,8 @@ Turn raw promo text into structured promotion rules.
 
 ## Phase 5A - Retail Discovery Adapter From Group Discovery
 
+Status: implemented. Proof artifact: `npm run test:retail-discovery-research` (22/22 passing).
+
 ### Goal
 
 Reuse the Group Discovery research process to generate niche and trend-led retail Deal ideas, without turning them into group campaigns.
@@ -445,6 +495,8 @@ Let the Link Broker resolve ship/line/date facts into actual Odysseus packages.
 
 ## Phase 7 - Trip Research and Angle Discovery
 
+Status: foundation implemented. Proof artifact: `npm run test:retail-discovery-research` (22/22 passing).
+
 ### Goal
 
 Research the trip itself before treating it as a Deal.
@@ -481,7 +533,16 @@ Research the trip itself before treating it as a Deal.
 - A cruise cannot become a promoted Deal using promo/perk data alone.
 - Each candidate has a trip-quality and sellability assessment.
 
+### Current Foundation
+
+- `lib/cb/deals-system/retail-discovery-adapter.ts` converts Group Discovery-style niche research into a quick-sale `RetailDiscoveryBrief`.
+- `lib/cb/deals-system/angle-research.ts` generates a deterministic `DealAngleResearch` scaffold from a cruise candidate and optional retail brief.
+- The Alaska sketching fixture proves the system can preserve niche value while stripping threshold/waitlist/cohort mechanics.
+- This foundation is deterministic and testable; richer GPT/research-source generation can replace the internals while preserving the same contracts.
+
 ## Phase 8 - Targeting-Demographic Resource
+
+Status: foundation implemented. Proof artifact: `npm run test:retail-discovery-research` (41/41 passing).
 
 ### Goal
 
@@ -519,15 +580,81 @@ Create targeting intelligence for each promoted Deal.
 
 - Every promoted Deal has a targeting-demographic resource before ad packaging.
 
+### Current Foundation
+
+- `lib/cb/deals-system/targeting-demographic.ts` generates a package-specific `DealTargetingDemographic`.
+- The generator consumes a cruise candidate, `DealAngleResearch`, and optional `RetailDiscoveryBrief`.
+- The Alaska sketching fixture proves niche keywords, trend keywords, destination keywords, amenity/ship-experience keywords, negative keywords, and channel notes are generated without falling back to generic cruise-buyer targeting.
+- This foundation is deterministic and testable; richer GPT/research-source generation can replace the internals while preserving the same contract.
+
 ## Phase 9 - Curated Deal Assembly
+
+Status: implemented (first slice). Proof artifact: `npm run test:curated-deal-assembly`
+(34/34 passing) plus a real, operator-approved Deal in
+`.github/data/odysseus-curated-deals-cache.json`
+(`deal-rcl-southern-caribbean-1619969`). Built through the Deals Campaign
+Workbench, not a hidden script-only flow.
 
 ### Goal
 
-Combine package, promo, research, targeting, and link data into publishable Deal records.
+Combine package, promo, research, targeting, and link data into real Curated Deal records that an operator can review and then publish to the homepage.
+
+This is the bridge between the working backend pieces and "real working deals posted on the home page." Until Phase 9 exists, the system can scrape, extract, look up, test, and inspect data, but it cannot reliably produce homepage-ready Deals.
+
+### Current State
+
+Implemented foundations:
+
+- Promo Intelligence cache exists and can be refreshed from CB Agent Tools Today's View.
+- Promo extraction exists and turns raw agent promo pages into structured rules, public-safe claims, caution flags, and agent-only notes.
+- Link Broker exists and can build package-entry or prepared-details links from package facts and traveler setup.
+- Package lookup exists and can resolve cruise facts to ranked Odysseus candidates.
+- Trip research and Targeting-Demographic foundations exist and can adapt Group Discovery-style insights into retail quick-sale Deal angles.
+- Deals Operator Workbench exists at `/tests/deals-system` with:
+  - safe test runner
+  - promo scrape/extraction actions
+  - package lookup form
+  - cache health and publish-readiness inspection
+
+Current blocker:
+
+- `.github/data/odysseus-curated-deals-cache.json` still contains only a sample/non-public Deal.
+- No real Deal currently combines:
+  - selected package
+  - valid broker link
+  - promo applicability
+  - research angle
+  - Targeting-Demographic
+  - public-safe packaging copy
+  - operator review status
+- Therefore the homepage should continue to show zero public Deals.
 
 ### Build
 
-- Create curated Deal builder.
+- Create a Curated Deal assembly module, tentatively:
+
+```text
+lib/cb/deals-system/curated-deal-assembly.ts
+```
+
+- Create an operator script, tentatively:
+
+```text
+scripts/assemble-curated-deal.ts
+npm run assemble-curated-deal
+```
+
+- Add an operator action/form to `/tests/deals-system` so a package candidate can be converted into a Curated Deal without hand-editing JSON.
+- The operator form should expose each major stage as a separate runnable action rather than one opaque "make deal" button:
+  - select/source package candidate
+  - attach promo intelligence
+  - run or refresh trip research
+  - run or refresh Targeting-Demographic
+  - generate package copy
+  - generate ad/campaign structure
+  - prepare media plan
+  - validate link health
+  - mark ready for operator approval
 - Merge:
   - Odysseus package facts
   - Link Broker output
@@ -538,6 +665,65 @@ Combine package, promo, research, targeting, and link data into publishable Deal
   - internal agent notes
   - link health
 - Write `.github/data/odysseus-curated-deals-cache.json`.
+- Keep status as `needs_review` until the operator approves it.
+- Only set status to `bookable` when:
+  - the package is a real Odysseus/CB package
+  - the booking link includes the correct `siid`
+  - link health is `valid`
+  - public copy is free of agent-only notes
+  - pricing/availability language is qualified
+  - Targeting-Demographic exists
+
+### Curated Deal Assembly Inputs
+
+Minimum input for the first implementation:
+
+```text
+packageId
+siid
+cruise line
+ship
+sail date
+nights
+destination/itinerary
+departure port
+starting price/cabin prices when available
+optional promoRecordId
+optional RetailDiscoveryBrief or angle seed
+optional traveler setup for prepared-details link
+```
+
+Preferred input path:
+
+1. Operator refreshes promo intelligence if needed.
+2. Operator runs package lookup from the Deals Operator Workbench.
+3. Operator selects a candidate package.
+4. Assembly module builds:
+   - Link Broker output
+   - promo applicability assessment
+   - trip research
+   - Targeting-Demographic
+   - visitor packaging
+   - agent-only notes
+5. Output is written as a `needs_review` Curated Deal.
+6. Operator approves, then the Deal can become `bookable` if link health is valid.
+
+### First Real Deal Target
+
+Use a tightly scoped first Deal rather than trying to automate the whole marketplace.
+
+Recommended first slice:
+
+- Pick one known package from a successful package lookup.
+- Prefer a package aligned with one existing promo record, such as:
+  - Celebrity Summer Sale
+  - Princess Discover the World
+  - Carnival Sunshine & Savings
+  - NCL 50% Off + Free Extras
+- Build one Curated Deal in `needs_review`.
+- Show it in the Deals Operator Workbench.
+- Validate its broker link.
+- Promote it to `bookable` only after review.
 
 ### Test
 
@@ -545,20 +731,300 @@ Combine package, promo, research, targeting, and link data into publishable Deal
 - Confirm no Deal publishes without valid link health.
 - Confirm promo claims are qualified.
 - Confirm agent-only notes do not appear in public fields.
+- Confirm the generated Deal includes `angleResearch`.
+- Confirm the generated Deal includes `targetingDemographic`.
+- Confirm the Deals Operator Workbench shows the Deal and explains why it is or is not homepage-ready.
 
 ### Exit Criteria
 
-- A single complete Curated Deal record can be built and inspected.
+- A single complete Curated Deal record can be built and inspected without hand-editing JSON.
+- The record remains hidden from the homepage while `needs_review`, `expired`, or non-valid link health.
+- The operator can promote a reviewed Deal to `bookable`.
+- The cache contains at least one real, non-sample Deal with valid link health.
+- Phase 10 can then wire homepage rendering to real curated Deals.
 
-## Phase 10 - Public Deal Page Integration
+## Phase 9A - Deals Campaign Workbench Expansion
+
+Status: implemented. Proof artifact: the expanded Deal Campaign Workbench at
+`/tests/deals-system` (assembly form, per-stage runners, and an approval/publish
+gate panel) plus `npm run test:curated-deal-assembly` (34/34 passing).
 
 ### Goal
 
-Render Curated Deals publicly without dashboard legacy pages or sidebar.
+Make `/tests/deals-system` the single operator surface for developing a Deal campaign with AI before it is finalized.
+
+This should feel closer to `/tests/media-generation` for group campaigns than a passive report. The workbench should let the operator see every moving part of the Deal/ad/promotion development cycle and run each process intentionally.
+
+### Build
+
+Expand the Deals Operator Workbench into staged panels:
+
+1. **Source and Package Selection**
+   - promo intelligence records
+   - package lookup results
+   - selected package facts
+   - Link Broker output and health
+
+2. **Research and Extraction**
+   - CB promo extraction
+   - ship amenity research
+   - destination and port research
+   - common ship-class feature extraction
+   - current trend and niche-audience research
+   - competitor/blind-spot notes
+   - source list and factual guardrails
+
+3. **Deal Packaging Copy**
+   - headline options
+   - short tile copy
+   - deal page hero copy
+   - "why this trip" section
+   - offer/perk language with qualifiers
+   - CTA copy for Book now / Email link / Request callback
+   - public-copy red flags and agent-only note separation
+
+4. **Ad and Promotion Structure**
+   - Meta campaign angle
+   - Google search/display themes
+   - TikTok/Reels hooks
+   - email segment angle
+   - niche/trend keywords
+   - negative keywords
+   - creative hypotheses
+   - offer proof points
+
+5. **Media Planning**
+   - visual concept prompts
+   - ship/destination imagery needs
+   - ad image slots
+   - short-form video concepts
+   - required source assets
+   - media generation status
+
+6. **Approval and Publish Gate**
+   - operator approval status
+   - link health
+   - public copy pass/fail
+   - targeting resource pass/fail
+   - media/ad readiness
+   - homepage publish eligibility
+
+### Data Requirements
+
+Add or extend Deal campaign resources so each process can be saved independently:
+
+```text
+CuratedOdysseusDeal
+DealAngleResearch
+DealTargetingDemographic
+DealCopyPackage
+DealAdStructure
+DealMediaPlan
+DealApprovalState
+```
+
+Do not collapse these into one text blob. The operator needs each layer visible, rerunnable, and reviewable.
+
+### Approval Rule
+
+Deals must not automatically appear on the homepage.
+
+The homepage may only render a Deal when all are true:
+
+- `status === "bookable"`
+- `operatorApproval.status === "approved"`
+- `linkHealth.status === "valid"`
+- public copy has passed guardrails
+- Targeting-Demographic exists
+- Deal media/creative status is acceptable for launch, or the Deal is explicitly approved for text-only launch
+
+### Test
+
+- Run each workbench process independently on one known package.
+- Confirm generated research can be inspected before copy is generated.
+- Confirm generated copy can be edited/regenerated before approval.
+- Confirm ad structure and media plan are visible before homepage publishing.
+- Confirm a non-approved Deal is hidden from the homepage even if it has a valid booking link.
+- Confirm approval state survives page refresh.
+
+### Exit Criteria
+
+- The operator can develop one Deal campaign end-to-end inside `/tests/deals-system`.
+- The operator can approve or reject the Deal from the workbench.
+- No Deal reaches the homepage without explicit operator approval.
+
+## Phase 9B - Deal Sales Pitch Development
+
+Status: implemented. Proof artifact: `npm run test:deal-pitch-brief` (33/33 passing).
+
+### The Missing Step
+
+The system currently has:
+
+```
+Research (DealAngleResearch)     — operator/analyst voice
+         ↓
+Copy scaffold (DealCopyPackage)  — directly reuses research strings
+         ↓
+Public page                      — leaks analyst rationale as visitor copy
+```
+
+What is required:
+
+```
+Research (DealAngleResearch)     — operator/analyst voice
+         ↓
+Pitch development                — explicit transform to customer voice
+         ↓
+Copy (DealCopyPackage)           — customer voice, ready to publish
+         ↓
+Public page                      — clean visitor copy
+```
+
+The pitch development step is not the same as copy generation. It is the job
+of reading the analyst's research notes — what is interesting about this trip,
+what audience angles exist, what the competitor blind spot is — and making a
+deliberate editorial decision: what is the *single best reason* a customer
+should care, stated in their voice, not the operator's? Only after that
+decision is made should copy be written.
+
+### Goal
+
+Make the research-to-copy boundary an explicit, testable stage. A `DealCopyPackage`
+should only be generated from a completed pitch brief, not assembled directly
+from raw research fields. The pitch brief is the editorial decision layer that
+sits between research and copy.
+
+### The Pitch Brief
+
+Add a new type, `DealPitchBrief`, that captures the editorial decisions needed
+before copy is written. It answers four questions in customer voice:
+
+1. **What is this trip?** One sentence a customer reads, not an analyst.
+2. **Why should this specific customer care?** The one reason that beats generic cruise copy.
+3. **What makes it feel chosen for them?** Not generic; not a discount notice.
+4. **What are the three strongest selling facts?** Verified, qualified, customer-readable.
+
+```ts
+interface DealPitchBrief {
+  dealId: string;
+  packageId: string;
+  generatedAtIso: string;
+  generator: "deterministic_scaffold" | "gpt";
+  // One clear customer-voice sentence. No analyst language.
+  tripSummary: string;
+  // Primary audience. Stated as a person, not a targeting category.
+  audienceStatement: string;
+  // The single best reason to care. Not a perk list.
+  primaryHook: string;
+  // Why this feels selected, not broadcast.
+  curatedReason: string;
+  // Three short, qualified, public-safe selling facts. Each one stands alone.
+  sellingFacts: [string, string, string];
+  // Raw research rationale that informed these decisions. Internal only.
+  // NEVER surfaces on a public page.
+  researchRationale: string;
+}
+```
+
+### Build
+
+1. Add `DealPitchBrief` to `campaign-types.ts`.
+2. Add `CuratedOdysseusDeal.pitchBrief?: DealPitchBrief`.
+3. Add `generateDealPitchBrief(input: CampaignStageInputs): DealPitchBrief` to
+   `campaign-generators.ts` as a deterministic scaffold that reads
+   `angleResearch` and `targetingDemographic` but writes everything in customer
+   voice. The scaffold must not let analyst phrasing pass through unchanged.
+4. Add a `"pitch"` stage to `DealCampaignStage` and `runDealCampaignStage`.
+5. Add the pitch stage as a panel in the Deals Campaign Workbench (between
+   research/targeting and copy).
+6. **Change `generateDealCopyPackage` to require a `DealPitchBrief` input.**
+   It should source `whyThisTrip`, `heroCopy`, and `headlineOptions` from the
+   pitch brief fields — not directly from `angleResearch`. This enforces the
+   research → pitch → copy order at the type level.
+7. Add the `"pitch"` stage to the workbench API route
+   (`app/api/tests/deals-system/curated-deal/route.ts`).
+8. Update `assemble-curated-deal.ts` to run the pitch stage before copy.
+
+### GPT Path
+
+When the `generator` is `"gpt"`, `generateDealPitchBrief` should call the LLM
+gateway with a prompt that:
+
+- provides all research fields as context
+- instructs the model to write in second-person customer voice
+- forbids analyst phrases: "gives the Deal", "can anchor", "should be evaluated",
+  "niche starting point", "source of truth", "operator-approved"
+- requires each field to be a complete, standalone sentence a customer would read
+- requires `sellingFacts` to be qualified ("may include", "subject to
+  availability") unless they are hard facts from cruise data (ship name, nights,
+  ports)
+- keeps `researchRationale` as a separate, internal-only field
+- validates output against the `DealPitchBrief` schema before saving
+
+### Voice Rules for All Copy Stages
+
+These apply to both the deterministic scaffold and the GPT path. They belong in
+the code as constants that feed red-flag detection and prompt guardrails.
+
+Forbidden in any public-facing field:
+
+- "gives the Deal" / "gives this Deal"
+- "can anchor" / "should anchor"
+- "should be evaluated"
+- "niche starting point"
+- "source of truth"
+- "retail Deal angle"
+- "operator-approved" / "operator review"
+- "deterministic scaffold" / "scaffold"
+- "The package needs"
+- "campaign development"
+- "ad targeting"
+- "confidence score"
+- Any phrase that ends in "before it should become a promoted Deal" or
+  "before public copy"
+
+Required in any pricing/perk claim:
+
+- One of: "may include", "subject to availability", "confirm live pricing",
+  "ask our agent", "eligibility confirmed in the booking portal"
+
+### Test
+
+- Generate a pitch brief from the Southern Caribbean Deal's angle research.
+- Assert every field reads in customer voice (no forbidden analyst phrases).
+- Assert `researchRationale` is internal-only and not present in any public
+  projection field.
+- Assert `generateDealCopyPackage` requires a pitch brief and sources
+  `whyThisTrip` from `pitchBrief.sellingFacts`, not from `angleResearch`.
+- Assert a copy package built without a pitch brief cannot be produced
+  (type error or runtime guard).
+
+### Exit Criteria
+
+- The `DealCopyPackage` for every curated Deal is sourced from a `DealPitchBrief`,
+  not assembled directly from research strings.
+- The pitch brief is a discrete, rerunnable, inspectable stage in the workbench.
+- No public page field contains analyst-voice phrasing.
+- The red-flag detection list in `campaign-generators.ts` covers forbidden phrases.
+- A GPT-backed pitch brief replaces the deterministic scaffold for any Deal
+  that reaches the homepage (the scaffold is acceptable for workbench development
+  but should not be the source of record for approved, published copy).
+
+## Phase 10 - Public Deal Page Integration
+
+Status: implemented. Proof artifact: `npm run test:public-deal-projection`
+(18/18 passing) plus the homepage Curated Deals section and the curated branch in
+`/deals/[id]`, both reading only `isDealHomepageEligible` Deals.
+
+### Goal
+
+Render only operator-approved Curated Deals publicly without dashboard legacy pages or sidebar.
 
 ### Build
 
 - Update homepage Deals source to use curated Deal records.
+- Filter the homepage source so it includes only Deals that passed the Phase 9A approval gate.
 - Update `/deals/[id]` to show:
   - hero
   - trip facts
@@ -566,6 +1032,13 @@ Render Curated Deals publicly without dashboard legacy pages or sidebar.
   - promo-safe offer summary
   - targeting-informed positioning
   - link health-aware CTA area
+- Pull public copy, campaign angle, and media plan from the approved workbench artifacts.
+- Never render:
+  - `needs_review` Deals
+  - rejected Deals
+  - non-valid link health Deals
+  - agent-only notes
+  - draft ad/media concepts not approved for public use
 - Preserve dark/light readability.
 
 ### Test
@@ -573,13 +1046,21 @@ Render Curated Deals publicly without dashboard legacy pages or sidebar.
 - Render one known curated Deal.
 - Confirm no old stubs or "booking pending" states appear publicly.
 - Confirm public fields do not expose agent-only notes.
+- Confirm a valid-link but non-approved Deal remains hidden.
+- Confirm approved workbench copy appears on the Deal page.
 - Confirm light/dark mode readability.
 
 ### Exit Criteria
 
-- The homepage and Deal page can publish one real curated Deal.
+- The homepage and Deal page can publish one real, operator-approved curated Deal.
 
 ## Phase 11 - CTA Workflow APIs
+
+Status: implemented. `POST /api/deals/link-request` and
+`POST /api/deals/callback-request` exist; `CuratedDealPage` calls both. The
+booking URL comes from the approved Deal's public projection (already
+broker-resolved at assembly time), so the routes read it from
+`getPublicDealPageById` rather than re-invoking the Link Broker.
 
 ### Goal
 
@@ -609,6 +1090,23 @@ Implement the three CTA options as consumers of the Link Broker.
 
 ## Phase 12 - Email-Link Delivery
 
+Status: implemented via Klaviyo. `lib/cb/deals-system/deal-link-email.ts`
+(`sendDealLinkEmail`) upserts a Klaviyo profile by email and tracks the
+`LLL Deal Link Requested` event with deal title, ship/cruise line, destination,
+sail date, price-from label, the prepared booking link, the deal page URL, and
+the standard availability caveat. A Klaviyo flow bound to that metric owns the
+template/copy/send, matching how Group campaign emails work
+(`lib/integrations/klaviyo.ts`, `lib/campaigns/email/`).
+
+`POST /api/deals/link-request` calls `sendDealLinkEmail` when an `email` is
+provided and returns `emailDelivered: false` (without failing the request) if
+the Klaviyo call throws — the booking link still opens, but the UI tells the
+visitor the email didn't go out.
+
+**Remaining for live verification**: a Klaviyo flow must exist for
+`LLL Deal Link Requested` before an end-to-end send can be observed. No code
+changes needed for that — it's a Klaviyo dashboard configuration step.
+
 ### Goal
 
 Send prepared booking links by email.
@@ -636,6 +1134,20 @@ Send prepared booking links by email.
 - Visitors can request and receive a prepared booking link by email.
 
 ## Phase 13 - Callback Operations
+
+Status: implemented (dashboard queue + status workflow). The `callback-request`
+route (Phase 11) writes `AgentCallbackRequest` records with
+`routing.dashboardQueued: true` on arrival and a Pushover admin notification.
+The operator workbench at `/tests/deals-system` shows a "Callback Requests"
+panel (`callback-requests-panel.tsx`) listing each request's deal/cruise
+context, visitor name/email/phone/notes, link health, routing badges, and
+status history. The operator can move a request through
+`new -> assigned -> contacted -> closed` (with an optional note) via
+`POST /api/tests/deals-system/callback-status`, which appends to
+`statusHistory` and clears `routing.dashboardQueued`. Email notification and
+Crisp hooks were intentionally not added in this pass — Pushover + the
+dashboard panel cover the operational need today; revisit if Crisp/email
+notification becomes a real requirement.
 
 ### Goal
 
@@ -675,21 +1187,54 @@ Turn callback requests into an operator workflow.
 
 - Callback requests are operationally visible and actionable.
 
-## Phase 14 - Admin Review Dashboard
+## Phase 14 - Production Deals Campaign Dashboard
+
+Status: implemented. `/admin/deals-system` renders the same
+`DealsSystemDashboardView` as `/tests/deals-system` (extracted into
+`app/(tests)/tests/deals-system/dashboard-view.tsx` and shared by both
+routes), so every existing view (promo intelligence, Curated Deals, research
+artifacts, copy/ad/media stages, link health, targeting-demographic, approval
+state, callback requests) is already present in the production dashboard.
+
+New operator actions added to `POST /api/tests/deals-system/curated-deal`:
+`pin`/`unpin` (homepage ordering via `operatorVisibility.pinned`,
+consumed by `getPublicDealTiles`), `hide`/`unhide`
+(`operatorVisibility.hidden`, enforced in `isDealHomepageEligible`),
+`refresh_link` (marks `linkHealth.status = "stale"` to pull a Deal off the
+homepage pending re-verification), and `request_capture` (appends an
+`agentOnlyNotes` flag for an operator CBAT/Odysseus capture run — it does not
+run any browser automation itself, consistent with CBAT/Odysseus being
+operator-controlled). "Mark callback status" was already delivered in Phase 13
+and is reused here via the shared `CallbackRequestsPanel`.
+
+`/admin/deals-system` has no additional auth layer — it is at the same trust
+level as `/tests/deals-system` today. Add access control if this dashboard is
+exposed beyond trusted operators.
 
 ### Goal
 
-Give operators control before and after publishing.
+Move the tested Deals Campaign Workbench from `/tests/deals-system` into a durable production/operator dashboard for before-and-after publishing control.
+
+Phase 9A creates the test workbench. Phase 14 is the hardened operational version.
 
 ### Build
 
-- Add dashboard views for:
+- Add production dashboard views for:
   - promo intelligence records
   - curated Deal candidates
+  - research/extraction artifacts
+  - package copy packages
+  - ad structures
+  - media plans
   - link health
   - targeting-demographic resources
+  - approval state
   - callback requests
 - Add actions:
+  - run/regenerate research
+  - run/regenerate copy
+  - run/regenerate ad structure
+  - run/regenerate media plan
   - approve/reject Deal
   - pin/unpin Deal
   - hide Deal
@@ -699,14 +1244,15 @@ Give operators control before and after publishing.
 
 ### Test
 
-- Approve one Deal.
+- Run and approve one Deal campaign from the production dashboard.
+- Regenerate one research/copy/ad/media layer without overwriting approved layers accidentally.
 - Hide one Deal.
 - Refresh one link.
 - Review one callback request.
 
 ### Exit Criteria
 
-- Operator can manage Deals without editing JSON by hand.
+- Operator can manage the full Deal campaign lifecycle without editing JSON by hand.
 
 ## Phase 15 - Scheduled Health and Refresh
 
@@ -736,12 +1282,15 @@ Keep public Deals safe over time.
 
 ### Goal
 
-Prepare Deals for paid and organic promotion.
+Prepare operator-approved Deals for paid and organic promotion, using the ad structure and media plan developed in the Deals Campaign Workbench.
 
 ### Build
 
 - Generate ad-ready package:
   - targeting-demographic resource
+  - approved Deal copy package
+  - approved ad structure
+  - approved media plan
   - landing page URL
   - CTA behavior
   - approved claims
@@ -751,16 +1300,20 @@ Prepare Deals for paid and organic promotion.
   - TikTok hooks
   - email segment notes
 - Connect to existing campaign distribution patterns where appropriate, without mixing Deals and Groups.
+- Reuse group-campaign media/ad tooling patterns where helpful, but keep Deal campaign artifacts separate from Shadow Group artifacts.
+- Require operator approval before exporting/submitting any paid ad package.
 
 ### Test
 
 - Produce one complete distribution package for one Deal.
 - Confirm targeting is niche/trend-based, not generic cruise-buyer targeting.
 - Confirm booking link passes pre-launch validation.
+- Confirm ad structure and media plan came from the approved Deal workbench artifacts.
+- Confirm a draft/unapproved Deal cannot be exported for ads.
 
 ### Exit Criteria
 
-- One Deal is ready to promote externally with targeting, copy, link health, and CTA handling complete.
+- One approved Deal is ready to promote externally with targeting, copy, ad structure, media plan, link health, and CTA handling complete.
 
 ## Recommended First Build Slice
 
@@ -1142,3 +1695,126 @@ Exit criteria met:
 - It can then return a package entry or prepared details link (the resolved ID
   flows into `resolveBestBookingLink`; `--build-link` exercises this).
 - Ambiguous matches return candidates instead of silently picking.
+
+### Phase 9 / 9A - Curated Deal Assembly and Campaign Workbench
+
+Status: implemented (first slice).
+
+Shipped:
+
+- New campaign data contracts in `lib/cb/deals-system/campaign-types.ts`:
+  `DealCopyPackage`, `DealAdStructure`, `DealMediaPlan`, and `DealApprovalState`
+  (with `DealApprovalGate`). `CuratedOdysseusDeal` now carries `copyPackage`,
+  `adStructure`, `mediaPlan`, and `operatorApproval` as independent, rerunnable
+  layers — not one text blob.
+- Deterministic stage generators in `campaign-generators.ts`
+  (`generateDealCopyPackage`, `generateDealAdStructure`, `generateDealMediaPlan`).
+  Public copy is built only from extracted public-safe / qualified promo claims;
+  agent-only promo notes are routed to `agentOnlyNotes` and never to visitor
+  fields; needs-qualifier claims get a live-pricing/availability qualifier; risky
+  phrasing is surfaced as `publicCopyRedFlags`.
+- Assembly module `curated-deal-assembly.ts`:
+  - `assembleCuratedDeal` merges package facts, booking URL + health, promo
+    applicability, research, targeting, copy, ad structure, and media into a
+    `needs_review` Deal. It NEVER returns a publishable Deal.
+  - `runDealCampaignStage` regenerates one stage and always returns the Deal to
+    `needs_review`, so a stale approval can never ride along.
+  - `evaluateApprovalGates` is the single source of truth for the five blocking
+    gates (real package, valid link, clean public copy, targeting present, media
+    ready or text-only waived).
+  - `approveCuratedDeal` promotes to `bookable` only when every blocking gate
+    passes; `rejectCuratedDeal` records a rejection; `isDealHomepageEligible`
+    is the one homepage filter (`bookable` + `approved` + link `valid`).
+- Validator now rejects a `bookable` Deal that is not operator-approved, so a
+  valid link alone can never publish even at the schema layer.
+- Cache helpers `curated-deal-cache.ts` (load/save/upsert) so Deals are saved and
+  re-loaded across stages without hand-editing JSON.
+- Operator script `scripts/assemble-curated-deal.ts`
+  (`npm run assemble-curated-deal`) with `--first-real`, `--stage`,
+  `--set-link-valid`, `--approve`, and `--reject`. No CB/Odysseus login, booking,
+  hold, or guest-info action.
+- Workbench expansion at `/tests/deals-system`: a staged Deal Campaign Workbench
+  (source/assemble form, per-stage regenerate buttons, public-copy red-flag
+  display, and an approval/publish gate panel) backed by
+  `app/api/tests/deals-system/curated-deal/route.ts`.
+- Proof artifact `tests/curated-deal-assembly.ts`
+  (`npm run test:curated-deal-assembly`, 34/34) asserts the core safety
+  property: a valid link alone never makes a Deal homepage-eligible; only an
+  operator approval with all blocking gates passing promotes it to `bookable`;
+  regenerating a stage clears a prior approval; and the validator rejects a
+  bookable-but-unapproved Deal.
+
+First real Deal: `deal-rcl-southern-caribbean-1619969` (RCL Southern Caribbean,
+package 1619969 from the live Phase 6 lookup) was assembled, marked link-valid by
+operator assertion, and operator-approved, so the cache now holds a real,
+non-sample, homepage-eligible Deal. Its booking link should still be re-validated
+with live browser validation before public launch.
+
+Validation performed:
+
+```powershell
+npm run test:curated-deal-assembly   # 34 passed, 0 failed
+npm run test:deals-schema            # 17 passed, 0 failed (real approved Deal validates)
+npm run test:deals-system:all        # all 7 suites passing
+npx tsc --noEmit --pretty false      # 0 errors
+```
+
+Exit criteria met:
+
+- A complete Curated Deal record can be built and inspected without hand-editing
+  JSON.
+- The record stays hidden from the homepage while `needs_review` or non-valid
+  link health, and a valid link alone is not enough — operator approval is
+  required.
+- The operator can develop one Deal campaign end-to-end inside
+  `/tests/deals-system` and approve or reject it from the workbench.
+- The cache contains a real, non-sample, approved Deal, so Phase 10 can wire
+  homepage rendering to `isDealHomepageEligible`.
+
+### Phase 10 - Public Deal Page Integration
+
+Status: implemented.
+
+Shipped:
+
+- `lib/cb/deals-system/public-deal-projection.ts` — turns an approved
+  `CuratedOdysseusDeal` into public-safe `PublicDealTile` / `PublicDealPage`
+  shapes. It exposes only `packaging`, visitor-safe `copyPackage` fields (hero,
+  why-this-trip, qualified offer lines, the three CTAs), the targeting
+  positioning statement, and the booking URL. It never projects `agentOnlyNotes`,
+  the ad structure, raw targeting keywords, approval internals, or unapproved
+  media.
+- `lib/cb/deals-system/public-deals.ts` — the single approval-gated public
+  loader. `getPublicDealTiles` / `getPublicDealPageById` read the cache and return
+  only `isDealHomepageEligible` Deals (bookable + operator-approved + valid link).
+  Resilient: a missing/malformed cache yields zero public Deals instead of
+  throwing or leaking a non-eligible Deal. Server-only.
+- `components/cb/curated-deals-tiles.tsx` — homepage section rendering approved
+  Curated Deals (renders nothing when there are none), wired into
+  `components/landing-content.tsx` ahead of the legacy CB tiles.
+- `components/cb/curated-deal-page.tsx` + a curated branch in
+  `app/(landing)/deals/[id]/page.tsx` — an approved Curated Deal renders the
+  public page; a non-eligible curated Deal falls through and 404s (it never
+  renders `needs_review`/rejected/non-valid-link Deals or agent-only notes). Book
+  now uses the approved booking URL; Email link and Request callback route to
+  `/contact` until Phase 11.
+- Proof artifact `tests/public-deal-projection.ts`
+  (`npm run test:public-deal-projection`, 18/18) asserts a valid link alone /
+  unapproved / needs_review / broken-link Deals are all excluded from the public
+  surface, and that the projection never leaks agent-only notes, ad structure, or
+  approval internals.
+
+Verified live against the committed cache: the approved RCL Deal yields one
+public tile and a resolvable page, while the Phase 1 `needs_review` Bahamas
+sample resolves to `null` (404), proving the gate.
+
+Exit criteria met:
+
+- The homepage and `/deals/[id]` publish the real, operator-approved curated
+  Deal, with no booking-pending stubs, no agent-only notes, and non-approved /
+  non-valid-link Deals hidden.
+
+Still open for the next agent: run live operator browser validation
+(`validateBrokerLink`) on the committed Deal's link before relying on it in
+production, and implement the Phase 11 CTA backends so Email link / Request
+callback stop routing to `/contact`.

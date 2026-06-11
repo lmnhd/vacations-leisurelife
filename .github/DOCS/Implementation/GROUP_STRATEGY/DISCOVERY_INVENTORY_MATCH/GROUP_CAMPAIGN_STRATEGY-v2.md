@@ -29,7 +29,7 @@ That infrastructure was useful, but it also proved that unconstrained iteration 
 
 Current discovery generation remains:
 
-1. Perplexity Sonar Deep Research — psychographic discovery
+1. Perplexity Sonar Deep Research — niche discovery
 2. Perplexity Sonar Deep Research — cruise-expression / ship-plausibility follow-up
 3. GPT-5 structured generation — typed campaign blueprints
 

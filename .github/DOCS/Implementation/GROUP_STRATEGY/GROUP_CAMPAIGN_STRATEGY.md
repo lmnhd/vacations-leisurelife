@@ -362,13 +362,13 @@ The pipeline executes two Perplexity Sonar Deep Research calls sequentially, the
 
 ---
 
-#### Step 1 — Psychographic Discovery (Perplexity Sonar)
+#### Step 1 — Niche Discovery (Perplexity Sonar)
 
 The pipeline sends this prompt to `sonar-deep-research`:
 
-> *"Identify 5 high-engagement niche communities whose identity can be expressed through a relaxed, sociable, hobby-forward cruise vacation. Prioritize communities that are visually ownable, conversation-rich, vacation-positive, and compatible with low-pressure mingling, scenic exploration, shared rituals, listening, reading, collecting, dressing the part, playful participation, or soft creative practice. Exclude communities whose appeal depends on clinical testing, optimization protocols, formal workshops, professional advancement, activist labor, industrial systems, or specialized gear-heavy practice. For each community, explain why it would feel natural in a laid-back shipboard getaway and what would make it feel too formal, technical, or retreat-like if interpreted too literally."*
+> *"Identify 5 high-engagement niche communities whose identity exists outside travel and could later be translated into a relaxed, sociable vacation concept. Prioritize communities that are visually ownable, conversation-rich, and active right now. Exclude communities whose appeal depends on clinical testing, optimization protocols, formal workshops, professional advancement, activist labor, industrial systems, or specialized gear-heavy practice. For each community, explain who they are, what they do together, what community-native evidence proves they are real, and what would make them too formal, technical, or generic if over-broadened."*
 
-**Reality Boundary:** Discovery must optimize for the best blend of demand, cruise plausibility, laid-back social chemistry, and ownable aesthetic — not simply the most intense or operationally interesting niche.
+**Reality Boundary:** Discovery must optimize for the best blend of demand, current community activity, laid-back social chemistry, and ownable aesthetic — not simply the most intense or operationally interesting niche.
 
 The full Sonar response is cached in `.github/data/discovery-research-cache.json` (keyed by date) and is **viewable in the discovery UI** — expand the "Sonar Deep Research → Step 1" panel after a run.
 
@@ -378,9 +378,9 @@ The full Sonar response is cached in `.github/data/discovery-research-cache.json
 
 Follow-up prompt fed back to `sonar-deep-research`, with the Step 1 output + live CB inventory context injected:
 
-> *"For each shortlisted theme, first identify the most believable cruise-native expressions of the niche: guest behaviors, moods, lightweight rituals, social scenes, and scenic participation that would feel delightful at sea. Then identify what would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward on a cruise. Only after defining the believable version, cross-reference which ships and cruise lines can support that version naturally without major customization or infrastructure fantasy."*
+> *"For each shortlisted community, first identify the most believable leisure-travel expressions of the niche: guest behaviors, moods, lightweight rituals, social scenes, and scenic participation that would feel delightful in a campaign concept. Then identify what would feel implausible, over-programmed, industrial, clinical, workshop-like, academic, or operationally awkward. Only after defining the believable version, cross-reference which ships and cruise lines can support that version naturally without major customization or infrastructure fantasy."*
 
-**Critical Order:** The system must analyze *experiential fit before infrastructure fit*. Ship amenities are secondary to whether the theme already feels pleasurable and cruise-native.
+**Critical Order:** The system must analyze *community truth before infrastructure fit*. Ship amenities are secondary to whether the theme already feels pleasurable and community-native.
 
 The CB inventory context (`cb-deals-cache.json`) is automatically appended if it exists. Run `scripts/scrape-cb-deals.ts` first for inventory-first theming. The full Step 2 response is also viewable in the "Step 2 — Aesthetic Gap / Ship Match" panel in the discovery UI.
 

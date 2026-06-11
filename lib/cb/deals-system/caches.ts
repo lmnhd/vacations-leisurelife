@@ -10,6 +10,10 @@ import path from "path";
 
 import type { CbPromoIntelligenceCache } from "./promo-intelligence-types";
 import type { CuratedOdysseusDealsCache } from "./curated-deal-types";
+import type { DealDiscoveryIdeasCache } from "./deal-discovery-types";
+import type { DealTripManifestsCache } from "./deal-trip-manifest-types";
+import type { DealUnifiedManifestsCache } from "./deal-unified-manifest-types";
+import type { DealAdCopyCache } from "./deal-ad-copy-types";
 import type { LinkBrokerCache } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -20,6 +24,10 @@ export const DEALS_CACHE_PATHS = {
   curatedDeals: path.join(DATA_DIR, "odysseus-curated-deals-cache.json"),
   linkBroker: path.join(DATA_DIR, "cb-link-broker-cache.json"),
   callbackRequests: path.join(DATA_DIR, "deal-callback-requests-cache.json"),
+  dealDiscoveryIdeas: path.join(DATA_DIR, "deal-discovery-ideas-cache.json"),
+  dealTripManifests: path.join(DATA_DIR, "deal-trip-manifests-cache.json"),
+  dealUnifiedManifests: path.join(DATA_DIR, "deal-unified-manifests-cache.json"),
+  dealAdCopy: path.join(DATA_DIR, "deal-ad-copy-cache.json"),
 } as const;
 
 export function emptyPromoIntelligenceCache(
@@ -69,5 +77,45 @@ export function emptyCallbackRequestsCache(
     version: 1,
     generatedAtIso,
     requests: [],
+  };
+}
+
+export function emptyDealDiscoveryIdeasCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealDiscoveryIdeasCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    ideas: [],
+  };
+}
+
+export function emptyDealTripManifestsCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealTripManifestsCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    manifests: [],
+  };
+}
+
+export function emptyDealUnifiedManifestsCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealUnifiedManifestsCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    manifests: [],
+  };
+}
+
+export function emptyDealAdCopyCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealAdCopyCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    adCopies: [],
   };
 }

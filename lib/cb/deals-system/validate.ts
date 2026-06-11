@@ -8,6 +8,10 @@
 
 import type { CbPromoIntelligenceCache } from "./promo-intelligence-types";
 import type { CuratedOdysseusDealsCache, CuratedOdysseusDeal } from "./curated-deal-types";
+import type { DealDiscoveryIdeasCache, DealDiscoveryIdea } from "./deal-discovery-types";
+import type { DealTripManifestsCache, DealTripManifest } from "./deal-trip-manifest-types";
+import type { DealUnifiedManifestsCache, DealUnifiedManifest } from "./deal-unified-manifest-types";
+import type { DealAdCopyCache, DealAdCopy } from "./deal-ad-copy-types";
 import type { LinkBrokerCache, LinkBrokerRecord } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -106,6 +110,19 @@ function validateCuratedDeal(deal: unknown, i: number, errors: string[]): void {
       )}" — only valid link health may publish`
     );
   }
+
+  // Approval gate (Phase 9A): a "bookable" deal must also be operator-approved.
+  // A valid booking link alone is never enough to publish.
+  if (d.status === "bookable") {
+    const approval = d.operatorApproval;
+    if (!isRecord(approval) || approval.status !== "approved") {
+      errors.push(
+        `deals[${i}] is "bookable" but operatorApproval.status is "${String(
+          isRecord(approval) ? approval.status : "missing"
+        )}" — only operator-approved Deals may publish`
+      );
+    }
+  }
 }
 
 export function validateCuratedDealsCache(
@@ -199,5 +216,181 @@ export function validateCallbackRequestsCache(
   }
   return errors.length === 0
     ? { ok: true, value: value as unknown as AgentCallbackRequestsCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealDiscoveryIdea(idea: unknown, i: number, errors: string[]): void {
+  if (!isRecord(idea)) {
+    errors.push(`ideas[${i}] is not an object`);
+    return;
+  }
+  const x = idea as Partial<DealDiscoveryIdea>;
+  if (typeof x.id !== "string" || !x.id) errors.push(`ideas[${i}].id missing`);
+  if (x.generator !== "gpt") errors.push(`ideas[${i}].generator must be "gpt"`);
+  if (!isIsoDate(x.generatedAtIso)) errors.push(`ideas[${i}].generatedAtIso must be an ISO date`);
+  if (typeof x.isolatedNiche !== "string" || !x.isolatedNiche) {
+    errors.push(`ideas[${i}].isolatedNiche missing`);
+  }
+  if (!isRecord(x.sailingAngleProfile)) {
+    errors.push(`ideas[${i}].sailingAngleProfile missing`);
+    return;
+  }
+  const p = x.sailingAngleProfile as Record<string, unknown>;
+  for (const key of [
+    "sailingAngleTitle",
+    "theCorePitch",
+    "visualAnchor",
+    "targetAudienceDescriptor",
+    "destinationAndTimeOfYearHints",
+    "onboardAssetRequirements",
+  ]) {
+    if (typeof p[key] !== "string" || !(p[key] as string)) {
+      errors.push(`ideas[${i}].sailingAngleProfile.${key} missing`);
+    }
+  }
+  if (!Array.isArray(p.relevantKeywords) || p.relevantKeywords.length === 0) {
+    errors.push(`ideas[${i}].sailingAngleProfile.relevantKeywords must be a non-empty array`);
+  }
+}
+
+export function validateDealDiscoveryIdeasCache(
+  value: unknown
+): ValidationResult<DealDiscoveryIdeasCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "ideas", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.ideas)) {
+    v.ideas.forEach((idea, i) => validateDealDiscoveryIdea(idea, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealDiscoveryIdeasCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealTripManifest(manifest: unknown, i: number, errors: string[]): void {
+  if (!isRecord(manifest)) {
+    errors.push(`manifests[${i}] is not an object`);
+    return;
+  }
+  const m = manifest as Partial<DealTripManifest>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`manifests[${i}].id missing`);
+  if (m.generator !== "gpt") errors.push(`manifests[${i}].generator must be "gpt"`);
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`manifests[${i}].generatedAtIso must be an ISO date`);
+  if (typeof m.sourceAngleId !== "string" || !m.sourceAngleId) {
+    errors.push(`manifests[${i}].sourceAngleId missing`);
+  }
+  if (!isRecord(m.assembleDraft)) {
+    errors.push(`manifests[${i}].assembleDraft missing`);
+  } else {
+    const d = m.assembleDraft as Record<string, unknown>;
+    for (const key of ["cruiseLine", "itineraryName", "destination", "suggestedDealId", "suggestedBriefId"]) {
+      if (typeof d[key] !== "string" || !(d[key] as string)) {
+        errors.push(`manifests[${i}].assembleDraft.${key} missing`);
+      }
+    }
+    if (!isRecord(d.sailWindow)) errors.push(`manifests[${i}].assembleDraft.sailWindow missing`);
+    // Guard the no-fabrication rule: live-resolved fields must never be present.
+    for (const forbidden of ["packageId", "shipName", "siid", "bookingUrl"]) {
+      if (forbidden in d && d[forbidden]) {
+        errors.push(
+          `manifests[${i}].assembleDraft must not carry "${forbidden}" — it is resolved by operator lookup, not the model`
+        );
+      }
+    }
+  }
+  if (!Array.isArray(m.appliedPromos)) errors.push(`manifests[${i}].appliedPromos must be an array`);
+  if (!isRecord(m.lookupQuery)) errors.push(`manifests[${i}].lookupQuery missing`);
+}
+
+export function validateDealTripManifestsCache(
+  value: unknown
+): ValidationResult<DealTripManifestsCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "manifests", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.manifests)) {
+    v.manifests.forEach((m, i) => validateDealTripManifest(m, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealTripManifestsCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealUnifiedManifest(manifest: unknown, i: number, errors: string[]): void {
+  if (!isRecord(manifest)) {
+    errors.push(`manifests[${i}] is not an object`);
+    return;
+  }
+  const m = manifest as Partial<DealUnifiedManifest>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`manifests[${i}].id missing`);
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`manifests[${i}].generatedAtIso must be an ISO date`);
+  if (typeof m.sourceAngleId !== "string") errors.push(`manifests[${i}].sourceAngleId missing`);
+  if (typeof m.sourceManifestId !== "string") errors.push(`manifests[${i}].sourceManifestId missing`);
+  if (!isRecord(m.creativeBrief) || !isRecord((m.creativeBrief as Record<string, unknown>).angle)) {
+    errors.push(`manifests[${i}].creativeBrief.angle missing`);
+  }
+  if (!isRecord(m.inventoryManifest) || !isRecord((m.inventoryManifest as Record<string, unknown>).assembleDraft)) {
+    errors.push(`manifests[${i}].inventoryManifest.assembleDraft missing`);
+  }
+}
+
+export function validateDealUnifiedManifestsCache(
+  value: unknown
+): ValidationResult<DealUnifiedManifestsCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "manifests", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.manifests)) {
+    v.manifests.forEach((m, i) => validateDealUnifiedManifest(m, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealUnifiedManifestsCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealAdCopy(adCopy: unknown, i: number, errors: string[]): void {
+  if (!isRecord(adCopy)) {
+    errors.push(`adCopies[${i}] is not an object`);
+    return;
+  }
+  const a = adCopy as Partial<DealAdCopy>;
+  if (typeof a.id !== "string" || !a.id) errors.push(`adCopies[${i}].id missing`);
+  if (a.generator !== "gpt") errors.push(`adCopies[${i}].generator must be "gpt"`);
+  if (!isIsoDate(a.generatedAtIso)) errors.push(`adCopies[${i}].generatedAtIso must be an ISO date`);
+  if (typeof a.sourceUnifiedManifestId !== "string") errors.push(`adCopies[${i}].sourceUnifiedManifestId missing`);
+  if (!Array.isArray(a.variants) || a.variants.length === 0) {
+    errors.push(`adCopies[${i}].variants must be a non-empty array`);
+    return;
+  }
+  a.variants.forEach((variant, vi) => {
+    if (!isRecord(variant)) {
+      errors.push(`adCopies[${i}].variants[${vi}] is not an object`);
+      return;
+    }
+    for (const key of ["headline", "bodyCopy", "callToAction"]) {
+      if (typeof variant[key] !== "string" || !(variant[key] as string)) {
+        errors.push(`adCopies[${i}].variants[${vi}].${key} missing`);
+      }
+    }
+  });
+}
+
+export function validateDealAdCopyCache(value: unknown): ValidationResult<DealAdCopyCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "adCopies", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.adCopies)) {
+    v.adCopies.forEach((a, i) => validateDealAdCopy(a, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealAdCopyCache, errors }
     : { ok: false, errors };
 }

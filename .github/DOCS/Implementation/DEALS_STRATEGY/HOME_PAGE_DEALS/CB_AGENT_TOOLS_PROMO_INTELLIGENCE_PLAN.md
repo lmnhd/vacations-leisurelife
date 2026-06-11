@@ -21,6 +21,26 @@ This component should support the new Home Page Deals strategy by answering:
 
 This is a promotion intelligence layer. A public Deal still needs an Odysseus package/share link before it can be published as click-and-buy-now.
 
+## Current Implementation Status and Next Stage
+
+Status as of the current Deals build:
+
+- CB Agent Tools Today's View scraping exists and writes `.github/data/cb-promo-intelligence-cache.json`.
+- Structured promo extraction exists and can turn raw agent promo pages into public-safe claims, qualified claims, caution flags, and agent-only notes.
+- The Deals Operator Workbench at `/tests/deals-system` can run the safe tests, refresh promo intelligence, run extraction, and inspect cache health.
+
+Important boundary:
+
+- Promo Intelligence does not create homepage Deals by itself.
+- A promo record answers "what can we safely say about a vendor/CB offer?"
+- A Curated Deal answers "which exact cruise package are we selling, why is it compelling, and where can the guest book it?"
+
+Next stage:
+
+- Implement Phase 9 from `PHASED_IMPLEMENTATION_PLAN.md`: Curated Deal Assembly.
+- Phase 9 must combine one selected Odysseus package, optional applicable promo intelligence, Link Broker output, trip research, Targeting-Demographic, public-safe copy, and operator review state into `.github/data/odysseus-curated-deals-cache.json`.
+- Only after a Curated Deal is real, reviewed, `bookable`, and link-health `valid` should the homepage render it.
+
 ## Product Direction
 
 The Deals system should have two complementary lanes:
@@ -420,11 +440,38 @@ Only `likely_applicable` and operator-approved `possibly_applicable_needs_review
 
 ### Step 5 - Deal Packaging
 
+**Important boundary.** This step has two sub-stages that must not be collapsed:
+
+**Step 5A — Pitch Development (operator/editorial decision layer)**
+
+Before any copy is written, a human or GPT editorial pass must translate the
+research output into a `DealPitchBrief`. Research fields are written in analyst
+voice ("what is interesting about this trip, what angle to consider"). A pitch brief
+is written in customer voice ("why this trip matters to you, right now"). These are
+different jobs. The pitch brief makes four explicit editorial decisions:
+
+- What is this trip in one customer-readable sentence?
+- Why should this specific person care (the primary hook)?
+- Why does this feel chosen for them rather than broadcast?
+- What are the three strongest, qualified selling facts?
+
+The pitch brief also stores the research rationale as an internal-only field that
+is never surfaced on a public page.
+
+**Step 5B — Copy and Packaging (from pitch brief, not from research)**
+
+Only after a pitch brief exists should deal copy be generated. The copy package
+(`DealCopyPackage`) must source its customer-facing fields from the pitch brief,
+not directly from research strings. This enforces the editorial boundary at the
+type and data level.
+
 For each bookable Odysseus deal:
 
 - attach applicable promo intelligence
-- attach researched ship, amenity, destination, and trend intelligence
-- create a visitor-safe perk summary
+- attach researched ship, amenity, destination, and trend intelligence (Step 5A input)
+- generate a `DealPitchBrief` from the research (Step 5A output)
+- create a `DealCopyPackage` from the pitch brief (Step 5B — visitor-safe perk summary,
+  headline options, hero copy, why-this-trip, CTAs)
 - create an internal agent note block
 - create a distinct selling angle or niche theme
 - create ad copy hooks for later Meta/Google work
@@ -476,8 +523,12 @@ interface DealAngleResearch {
   competitorBlindSpots: string[];
   recommendedPrimaryAngle: {
     title: string;
+    // INTERNAL ONLY. This is analyst rationale, not customer copy.
+    // Never surface directly on a public page. Feed to Step 5A pitch development.
     rationale: string;
+    // Customer-facing hook. Still must pass through Step 5A before use in copy.
     publicCopyHook: string;
+    // Customer-facing. Still must pass through Step 5A before use in copy.
     whyThisFeelsExclusive: string;
   };
   rejectedAngles: Array<{
@@ -491,6 +542,13 @@ interface DealAngleResearch {
   }>;
 }
 ```
+
+**Voice note:** All fields in `DealAngleResearch` are written for an operator or
+AI to read, not a visitor. Even `publicCopyHook` and `whyThisFeelsExclusive`
+are candidate inputs for the pitch development step — they are not finished copy.
+The pitch development step (Step 5A) is what converts these into customer-voice text.
+A `DealCopyPackage` that pulls directly from `DealAngleResearch` fields without a
+`DealPitchBrief` intermediary will leak analyst language into visitor-facing copy.
 
 ## Targeting-Demographic Resource
 
