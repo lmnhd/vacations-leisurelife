@@ -69,15 +69,20 @@ export interface OdysseusLookupOptions extends RankOptions {
  * Centers the date window on the requested sail date (±searchWindowDays) so the
  * API returns the target sailing, scopes by vendor when the cruise line is
  * recognized, then ranks. Returns a PackageLookupResult the broker can act on.
+ *
+ * Robustness: the session manager / engine import and search are ALL wrapped in
+ * one try/catch, so a module-load, login, or Playwright failure degrades to a
+ * graceful no_match diagnostic instead of crashing the operator script (which
+ * surfaced upstream as a hard "Command failed").
+ *
+ * bestEffort (deal system): when the scoped vendor search returns ZERO sailings,
+ * retry once without the vendor filter (same date window) so a ship is still
+ * found whenever CB has anything sailing in the window.
  */
 export async function lookupOdysseusPackages(
   facts: LinkBrokerCruiseFacts,
   options: OdysseusLookupOptions = {}
 ): Promise<PackageLookupResult> {
-  const { getOdysseusSession, releaseOdysseusSession } = await import(
-    "@/lib/services/odysseus/OdysseusSessionManager"
-  );
-
   const windowDays = options.searchWindowDays ?? 7;
   const sailMmDdYyyy = facts.sailDate ? toMmDdYyyy(facts.sailDate) : undefined;
   const startDate = sailMmDdYyyy ? shiftDays(sailMmDdYyyy, -windowDays) : undefined;
@@ -90,28 +95,51 @@ export async function lookupOdysseusPackages(
       ? options.travelerSetup.ages
       : Array.from({ length: passengers }, () => 35);
 
+  let releaseSession: (() => Promise<void>) | undefined;
+
   try {
+    const { getOdysseusSession, releaseOdysseusSession } = await import(
+      "@/lib/services/odysseus/OdysseusSessionManager"
+    );
+    releaseSession = releaseOdysseusSession;
+
     const engine = await getOdysseusSession();
-    const results = await engine.searchCruises({
+    const baseSearch = {
       passengers,
       guestAges,
-      ...(vendorId ? { vendorId } : {}),
       ...(startDate && endDate ? { startDate, endDate } : {}),
       ...(options.travelerSetup?.state ? { guestStateResidence: options.travelerSetup.state } : {}),
+    };
+
+    let results = await engine.searchCruises({
+      ...baseSearch,
+      ...(vendorId ? { vendorId } : {}),
     });
+    const searchNotes: string[] = [
+      `Odysseus search: vendor=${vendorId ?? "any"}, window=${startDate ?? "none"}..${endDate ?? "none"}, ` +
+        `returned ${results.length} result(s).`,
+    ];
+
+    // bestEffort widening: scoped vendor search came back empty — drop the
+    // vendor filter and search any line in the same window so we still find a ship.
+    if (results.length === 0 && options.bestEffort && vendorId) {
+      results = await engine.searchCruises(baseSearch);
+      searchNotes.push(
+        `Best-effort widened search (dropped vendor filter): returned ${results.length} result(s).`
+      );
+    }
 
     const ranked = rankPackageCandidates(facts, results, options);
-    ranked.diagnostics.unshift(
-      `Odysseus search: vendor=${vendorId ?? "any"}, window=${startDate ?? "none"}..${endDate ?? "none"}, ` +
-        `returned ${results.length} result(s).`
-    );
+    ranked.diagnostics.unshift(...searchNotes);
     return ranked;
   } catch (error) {
     // Release a broken session so the next call cold-starts cleanly.
-    try {
-      await releaseOdysseusSession();
-    } catch {
-      /* ignore */
+    if (releaseSession) {
+      try {
+        await releaseSession();
+      } catch {
+        /* ignore */
+      }
     }
     const message = error instanceof Error ? error.message : String(error);
     return {

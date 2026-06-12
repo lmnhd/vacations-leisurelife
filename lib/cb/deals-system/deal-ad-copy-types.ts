@@ -44,6 +44,12 @@ export interface DealAdCopy {
   /** The promo id the primary variant leans on. */
   primaryPromoApplied: string;
   variants: DealAdVariant[];
+  /**
+   * Index into `variants` the operator chose as the final/primary ad. Absent =
+   * not yet chosen (treated as 0). Downstream assembly promotes this variant to
+   * the headline/hero so the published deal page uses the operator's pick.
+   */
+  selectedVariantIndex?: number;
   aiTrace?: DealAiGenerationTrace;
 }
 

@@ -299,6 +299,76 @@ export function DealsSystemDashboardView({
           </div>
         </section>
 
+        {/* Step 4 · Funnel Synthesis */}
+        <section className="rounded-2xl border border-fuchsia-400/25 bg-fuchsia-500/[0.06] p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-fuchsia-300">
+                Deal Workflow · Step 4
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Funnel Synthesis</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                Split the copywriter&apos;s hyper-niche ad copy into a broad-market landing page
+                (segment paragraphs beside SERP imagery) and a hyper-niche 4-card Meta carousel.
+                Curate the deal&apos;s selectable image set here.
+              </p>
+            </div>
+            <a
+              href="/tests/deals-system/funnel-synthesis"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-300/40 bg-fuchsia-400/15 px-5 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/25"
+            >
+              Open Funnel Synthesis →
+            </a>
+          </div>
+        </section>
+
+        {/* Step 5 · Publish */}
+        <section className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
+                Deal Workflow · Step 5
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Publish</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                Assemble a Curated Deal from a resolved manifest + its ad copy, review approval
+                gates, mark the link valid, set an optional expiration, and approve it for the
+                homepage.
+              </p>
+            </div>
+            <a
+              href="/tests/deals-system/publish"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
+            >
+              Open Publish →
+            </a>
+          </div>
+        </section>
+
+        {/* Step 6 · Meta Ad Synthesis */}
+        <section className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-300">
+                Deal Workflow · Step 6
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Meta Ad Synthesis</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                Turn a published deal&apos;s landing page + carousel copy into ready-to-launch
+                Meta ad creative (primary text, headlines, descriptions, and the carousel card
+                set) for the ad platform. Coming soon.
+              </p>
+            </div>
+            <a
+              href="/tests/deals-system/meta-ad-synthesis"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-violet-300/40 bg-violet-400/15 px-5 text-sm font-semibold text-violet-100 transition hover:bg-violet-400/25"
+            >
+              Open Meta Ad Synthesis →
+            </a>
+          </div>
+        </section>
+
+
         <CollapsiblePanel title="Script Runner" eyebrow="Run allowlisted npm scripts" defaultOpen={false}>
           <DealsSystemControls actions={[...DEALS_SYSTEM_OPERATOR_ACTIONS]} />
         </CollapsiblePanel>

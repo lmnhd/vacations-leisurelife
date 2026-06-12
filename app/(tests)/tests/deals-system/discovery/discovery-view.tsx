@@ -7,6 +7,8 @@ import type {
   SavedDiscoveryResearchStatus,
 } from "@/lib/cb/deals-system";
 
+import { ResultList } from "../result-list";
+
 interface GenerateResponse {
   ok: boolean;
   error?: string;
@@ -15,23 +17,39 @@ interface GenerateResponse {
   skipped?: number;
   exhausted?: boolean;
   allIdeas?: DealDiscoveryIdea[];
+  ideas?: DealDiscoveryIdea[];
   researchStatus?: SavedDiscoveryResearchStatus;
 }
 
-function IdeaCard({ idea }: { idea: DealDiscoveryIdea }) {
-  const p = idea.sailingAngleProfile;
+function IdeaSummary({ idea }: { idea: DealDiscoveryIdea }) {
   return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-white">{p.sailingAngleTitle}</h3>
-        <span className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200">
-          angle
-        </span>
-      </div>
-
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="text-sm font-semibold text-white">{idea.sailingAngleProfile.sailingAngleTitle}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
         {idea.isolatedNiche}
-      </p>
+      </span>
+    </div>
+  );
+}
+
+function IdeaCard({ idea, bare = false }: { idea: DealDiscoveryIdea; bare?: boolean }) {
+  const p = idea.sailingAngleProfile;
+  const Wrapper = bare ? "div" : "article";
+  return (
+    <Wrapper className={bare ? "" : "rounded-xl border border-white/10 bg-white/[0.035] p-4"}>
+      {!bare && (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h3 className="text-sm font-semibold text-white">{p.sailingAngleTitle}</h3>
+            <span className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200">
+              angle
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
+            {idea.isolatedNiche}
+          </p>
+        </>
+      )}
       <p className="mt-2 text-xs leading-5 text-slate-300">{p.theCorePitch}</p>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -112,7 +130,7 @@ function IdeaCard({ idea }: { idea: DealDiscoveryIdea }) {
           Manifest this angle →
         </a>
       </div>
-    </article>
+    </Wrapper>
   );
 }
 
@@ -128,6 +146,24 @@ export function DealDiscoveryView({
   const [count, setCount] = useState(5);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+
+  async function removeIdea(id: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/tests/deals-system/discovery?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = (await res.json()) as GenerateResponse;
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Delete failed.");
+      if (data.ideas) setIdeas(data.ideas);
+      setMessage({ tone: "ok", text: "Angle removed." });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function generate() {
     setBusy(true);
@@ -251,17 +287,16 @@ export function DealDiscoveryView({
         </div>
       </section>
 
-      {ideas.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
-          No package ideas yet. Generate ideas from saved research above.
-        </div>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {ideas.map((idea) => (
-            <IdeaCard key={idea.id} idea={idea} />
-          ))}
-        </div>
-      )}
+      <ResultList
+        items={[...ideas].reverse()}
+        getId={(i) => i.id}
+        label="Angles"
+        emptyText="No package ideas yet. Generate ideas from saved research above."
+        busy={busy}
+        onDelete={(id) => void removeIdea(id)}
+        renderSummary={(i) => <IdeaSummary idea={i} />}
+        renderDetail={(i) => <IdeaCard idea={i} bare />}
+      />
     </div>
   );
 }

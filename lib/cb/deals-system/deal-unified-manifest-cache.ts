@@ -32,6 +32,7 @@ export function assembleDealUnifiedManifest(
   return {
     id: `unified-${tripManifest.id}`,
     generatedAtIso,
+    expiresOnIso: tripManifest.expiresOnIso,
     sourceAngleId: angle.id,
     sourceManifestId: tripManifest.id,
     sailingAngleTitle: angle.sailingAngleProfile.sailingAngleTitle,

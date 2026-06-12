@@ -190,5 +190,6 @@ The platform **must not** collect payments locally. No Stripe pre-authorizations
 - Check `.github/DOCS` before asking questions about existing systems.
 - Do not preserve stale routing guidance in wrappers; point back here instead.
 - If a local document needs a special exception, keep it narrow and explicit.
+- Treat user spelling from voice dictation as lower-confidence when it looks inconsistent. The user may be using Wispr Flow, which can mishear or misspell words like `CREWS` when `CRUISE` was intended; take spelling with a grain of salt and infer intent from context.
 - Append process deviations, workarounds, or operator exceptions to `.github/skills/campaign-generation/CAMPAIGN_PROCESS_MEMORY.md` — this is the shared memory layer across campaign sessions.
 - Do not silently continue past a persistent failure — escalate to the user.

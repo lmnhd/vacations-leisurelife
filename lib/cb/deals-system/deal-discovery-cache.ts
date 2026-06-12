@@ -52,3 +52,12 @@ export function upsertDealDiscoveryIdea(
   ideas.push(idea);
   return { ...cache, generatedAtIso: new Date().toISOString(), ideas };
 }
+
+/** Remove a discovery idea by id. Pure. No-op if the id isn't present. */
+export function removeDealDiscoveryIdea(
+  cache: DealDiscoveryIdeasCache,
+  id: string
+): DealDiscoveryIdeasCache {
+  const ideas = cache.ideas.filter((existing) => existing.id !== id);
+  return { ...cache, generatedAtIso: new Date().toISOString(), ideas };
+}

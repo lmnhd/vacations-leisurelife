@@ -19,8 +19,10 @@ import {
   loadDealDiscoveryIdeasCache,
   loadDealTripManifestsCache,
   loadDealUnifiedManifestsCache,
+  removeDealAdCopy,
   saveDealAdCopyCache,
   saveDealUnifiedManifestsCache,
+  selectDealAdCopyVariant,
   upsertDealAdCopy,
   upsertDealUnifiedManifest,
   type DealAdCopy,
@@ -35,6 +37,8 @@ interface Body {
   action?: unknown;
   manifestId?: unknown;
   variantCount?: unknown;
+  adCopyId?: unknown;
+  variantIndex?: unknown;
 }
 
 function loadManifests(): DealTripManifest[] {
@@ -61,12 +65,60 @@ export async function GET() {
   });
 }
 
+/** DELETE ?id=<adCopyId> — prune an unwanted ad copy from the cache. */
+export async function DELETE(request: Request) {
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "id is required." }, { status: 400 });
+  }
+  try {
+    const cache = removeDealAdCopy(loadDealAdCopyCache(), id);
+    saveDealAdCopyCache(cache);
+    return NextResponse.json({ ok: true, adCopies: cache.adCopies });
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   let body: Body;
   try {
     body = (await request.json()) as Body;
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  // Record the operator's chosen final ad variant. No AI; just persists the pick
+  // so downstream assembly (Step 5) promotes it to the deal-page headline/hero.
+  if (body.action === "select") {
+    const adCopyId = typeof body.adCopyId === "string" ? body.adCopyId.trim() : "";
+    const variantIndex = Number(body.variantIndex);
+    if (!adCopyId) {
+      return NextResponse.json({ ok: false, error: "adCopyId is required." }, { status: 400 });
+    }
+    if (!Number.isInteger(variantIndex)) {
+      return NextResponse.json(
+        { ok: false, error: "variantIndex must be an integer." },
+        { status: 400 }
+      );
+    }
+    try {
+      const cache = selectDealAdCopyVariant(loadDealAdCopyCache(), adCopyId, variantIndex);
+      saveDealAdCopyCache(cache);
+      return NextResponse.json({
+        ok: true,
+        adCopy: cache.adCopies.find((a) => a.id === adCopyId),
+        adCopies: cache.adCopies,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        { status: 400 }
+      );
+    }
   }
 
   if (body.action !== "write") {
@@ -86,6 +138,18 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, error: `No trip manifest found with id "${manifestId}".` },
       { status: 404 }
+    );
+  }
+
+  if (!tripManifest.resolvedPackage) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "This manifest has no resolvedPackage — it is not tied to one real cruise yet. " +
+          "Resolve it in Trip Manifestation (Step 2) before writing ad copy.",
+      },
+      { status: 409 }
     );
   }
 

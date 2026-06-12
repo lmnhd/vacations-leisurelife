@@ -41,6 +41,34 @@ export const CRUISE_LINE_NAMES: Record<number, string> = {
 /** Default: a candidate's sail date may differ from the requested date by this many days. */
 export const SAIL_DATE_TOLERANCE_DAYS = 3;
 
+/**
+ * Cabin pricing pulled from the Odysseus result's lowest price set. Values are the
+ * per-cabin-category lead fares Odysseus returned (the Inside/Outside/Balcony/Suite
+ * row in the package detail). Real data — never estimated.
+ */
+export interface PackageCabinPricing {
+  inside?: number;
+  outside?: number;
+  balcony?: number;
+  suite?: number;
+  currencyCode: string;
+  /** Lowest of the populated tiers, for a "from" price. */
+  leadFare?: number;
+}
+
+/** Structured itinerary captured from the Odysseus result (not the day-by-day detail). */
+export interface PackageItinerary {
+  durationNights?: number;
+  departurePortCode?: string;
+  arrivalPortCode?: string;
+  /** Ports-of-call as Odysseus returned them (human-readable string). */
+  portsOfCall?: string;
+  /** Normalized ports-of-call string, when present. */
+  normalizedPortsOfCall?: string;
+  /** Route map image path Odysseus provides, when present. */
+  mapPath?: string;
+}
+
 export interface RankedPackageCandidate {
   packageId: string;
   cruiseCode: string;
@@ -51,9 +79,51 @@ export interface RankedPackageCandidate {
   nights: number | null;
   departurePortCode?: string;
   portsOfCall?: string;
+  /** Structured itinerary (departure/arrival/ports/map) from the Odysseus result. */
+  itinerary?: PackageItinerary;
+  /** Cabin-category lead fares from the Odysseus result. */
+  cabinPricing?: PackageCabinPricing;
   /** 0..1 confidence this candidate is the requested cruise. */
   confidence: number;
   reasons: string[];
+}
+
+/** Map an Odysseus price set's items to cabin-category lead fares. Heuristic on name/code. */
+export function extractCabinPricing(result: CruiseResult): PackageCabinPricing | undefined {
+  // Prefer the result-level prices, else the cheapest package's prices.
+  const priceSets =
+    result.prices && result.prices.length > 0
+      ? result.prices
+      : (result.packages ?? []).flatMap((p) => p.prices ?? []);
+  if (priceSets.length === 0) return undefined;
+
+  const out: PackageCabinPricing = { currencyCode: priceSets[0].currencyCode || "USD" };
+  const bucket = (label: string): "inside" | "outside" | "balcony" | "suite" | null => {
+    const s = label.toLowerCase();
+    if (s.includes("suite")) return "suite";
+    if (s.includes("balcony") || s.includes("verandah") || s.includes("veranda")) return "balcony";
+    if (s.includes("ocean") || s.includes("outside") || s.includes("oceanview")) return "outside";
+    if (s.includes("inside") || s.includes("interior")) return "inside";
+    return null;
+  };
+
+  for (const set of priceSets) {
+    for (const item of set.items) {
+      const key = bucket(`${item.name ?? ""} ${item.code ?? ""}`);
+      if (!key) continue;
+      // Keep the lowest fare seen per category.
+      if (out[key] === undefined || item.value < (out[key] as number)) {
+        out[key] = item.value;
+      }
+    }
+  }
+
+  const tiers = [out.inside, out.outside, out.balcony, out.suite].filter(
+    (v): v is number => typeof v === "number"
+  );
+  if (tiers.length === 0) return undefined;
+  out.leadFare = Math.min(...tiers);
+  return out;
 }
 
 export interface PackageLookupResult {
@@ -69,6 +139,15 @@ export interface RankOptions {
   confidenceThreshold?: number;
   /** Min lead the top candidate must have over the runner-up to auto-select. */
   minConfidenceMargin?: number;
+  /**
+   * Deal-system "always find a ship" mode. When true, candidates are never
+   * excluded for being outside the sail-date tolerance, and the top-ranked
+   * candidate is ALWAYS auto-selected (confident_match) whenever at least one
+   * candidate with a usable package id exists — even if it's a low-confidence,
+   * coin-flip pick. Never returns no_match/ambiguous when real candidates exist.
+   * Group-campaign broker callers leave this off and keep strict behavior.
+   */
+  bestEffort?: boolean;
 }
 
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.7;
@@ -121,6 +200,92 @@ function cruiseLineName(result: CruiseResult): string | undefined {
 
 function norm(text: string | undefined): string {
   return (text ?? "").trim().toLowerCase();
+}
+
+// ─── Itinerary-type intelligence ────────────────────────────────────────────────
+// The angle's destination is a CONCEPT ("Transatlantic", "Caribbean", "fjords",
+// "repositioning / high-sea-day") — not a port code. To match it against a real
+// sailing we have to read what the cruise actually IS from its name + ports, not
+// just look for an exact substring. Without this, a genuine transatlantic crossing
+// scores the same as a 4-night Bahamas hop, and date-proximity noise wins.
+
+/** Continent bucket for a port code, coarse but enough to spot ocean crossings. */
+function portContinent(code: string | undefined): string | undefined {
+  const c = norm(code);
+  if (!c) return undefined;
+  // North America east coast / Caribbean embarkation hubs.
+  if (["fll", "pef", "pev", "mia", "pce", "tpa", "nyc", "bos", "cpr", "bayonne", "sju", "nas"].some((p) => c.includes(p))) return "americas";
+  if (["sfo", "lax", "sea", "van", "yvr", "hnl"].some((p) => c.includes(p))) return "americas-pacific";
+  // Europe / UK / Mediterranean embarkation hubs.
+  if (["sou", "lon", "dov", "har", "civ", "gen", "bcn", "sav", "mar", "lis", "fnc", "vgo", "lcg", "ath", "pir", "ven", "tri", "cph", "kie", "ams", "zbr"].some((p) => c.includes(p))) return "europe";
+  // Asia / Oceania.
+  if (["sin", "hkg", "syd", "auc", "inc", "tyo", "yok"].some((p) => c.includes(p))) return "asia-pacific";
+  return undefined;
+}
+
+/**
+ * Score how well a real sailing's itinerary matches the angle's destination concept.
+ * Returns 0..0.45 plus human reasons. This is the signal that was missing — it lets
+ * a "Transatlantic" angle actually find the transatlantic crossing in the pool.
+ */
+function scoreItineraryFit(
+  destinationConcept: string,
+  result: CruiseResult,
+  nights: number | null
+): { score: number; reasons: string[] } {
+  const want = norm(destinationConcept);
+  if (!want) return { score: 0, reasons: [] };
+
+  const name = norm(result.name);
+  const ports = `${norm(result.itinerary?.portsOfCalls)} ${norm(result.itinerary?.normalizedPortsOfCall)}`;
+  const dep = result.itinerary?.departure?.code;
+  const arr = result.itinerary?.arrival?.code;
+  const depCont = portContinent(dep);
+  const arrCont = portContinent(arr);
+  const reasons: string[] = [];
+  let score = 0;
+
+  const isOceanCrossing =
+    !!depCont && !!arrCont && depCont !== arrCont &&
+    // a real crossing is long and one-way (different start/end port)
+    norm(dep) !== norm(arr) && (nights === null || nights >= 6);
+
+  // TRANSATLANTIC / OPEN-OCEAN / CROSSING angles.
+  if (/transatlantic|crossing|open[- ]?ocean|repositioning|sea[- ]?day|high sea/.test(want)) {
+    if (/transatlantic|crossing/.test(name)) {
+      score += 0.45;
+      reasons.push(`itinerary IS a crossing ("${result.name}")`);
+    } else if (isOceanCrossing) {
+      score += 0.4;
+      reasons.push(`one-way ocean crossing (${dep}→${arr}, ${depCont}→${arrCont})`);
+    } else if (/world|grand voyage|round world/.test(name) && (nights ?? 0) >= 14) {
+      // World-voyage segments are sea-day-dense long ocean runs — strong fit for
+      // "open-ocean / high-sea-day / repositioning" angles.
+      score += 0.35;
+      reasons.push(`long ocean / world voyage (${nights}n) — high sea-day density`);
+    } else if ((nights ?? 0) >= 10 && ports.split("|").filter(Boolean).length <= 5) {
+      // Long itinerary with few port stops = lots of sea days.
+      score += 0.2;
+      reasons.push(`${nights}n with few ports — sea-day heavy`);
+    }
+    return { score, reasons };
+  }
+
+  // REGION / NAMED-DESTINATION angles (Caribbean, Mediterranean, Alaska, fjords, etc.).
+  // Pull the salient region words out of the concept and look for them in name/ports.
+  const regionWords = want
+    .split(/[^a-z]+/)
+    .filter((w) => w.length >= 4 && !["from", "cruise", "sailing", "voyage", "during", "season"].includes(w));
+  const hitName = regionWords.filter((w) => name.includes(w));
+  const hitPorts = regionWords.filter((w) => ports.includes(w));
+  if (hitName.length > 0) {
+    score += 0.35;
+    reasons.push(`itinerary name matches destination (${hitName.join(", ")})`);
+  } else if (hitPorts.length > 0) {
+    score += 0.2;
+    reasons.push(`ports match destination (${hitPorts.join(", ")})`);
+  }
+  return { score, reasons };
 }
 
 // ─── Scoring ────────────────────────────────────────────────────────────────────
@@ -203,12 +368,17 @@ function scoreOne(
     reasons.push(`departure port matches (${depCode})`);
   }
 
-  // Destination / itinerary keyword presence in ports-of-call text.
+  // Destination / itinerary-TYPE fit (the dominant signal for deal angles).
+  // Reads what the cruise actually IS (crossing / region / sea-day-heavy) and
+  // matches it against the angle's destination concept — so a "Transatlantic"
+  // angle finds the real crossing instead of a date-closest Bahamas hop.
   const ports = result.itinerary?.normalizedPortsOfCall || result.itinerary?.portsOfCalls || "";
-  const destNeedle = norm(facts.destination || facts.itineraryName);
-  if (destNeedle && norm(ports).includes(destNeedle)) {
-    confidence += 0.1;
-    reasons.push("destination/itinerary keyword present");
+  const itinFit = scoreItineraryFit(facts.destination || facts.itineraryName || "", result, resultNights);
+  if (itinFit.score > 0) {
+    confidence += itinFit.score;
+    reasons.push(...itinFit.reasons);
+  } else if (norm(facts.destination || facts.itineraryName)) {
+    reasons.push("itinerary does not match the destination concept");
   }
 
   confidence = Math.max(0, Math.min(1, confidence));
@@ -224,6 +394,15 @@ function scoreOne(
       nights: resultNights,
       departurePortCode: depCode,
       portsOfCall: ports || undefined,
+      itinerary: {
+        durationNights: result.itinerary?.duration,
+        departurePortCode: result.itinerary?.departure?.code,
+        arrivalPortCode: result.itinerary?.arrival?.code,
+        portsOfCall: result.itinerary?.portsOfCalls || undefined,
+        normalizedPortsOfCall: result.itinerary?.normalizedPortsOfCall || undefined,
+        mapPath: result.itinerary?.mapPath ?? undefined,
+      },
+      cabinPricing: extractCabinPricing(result),
       confidence,
       reasons,
     },
@@ -259,18 +438,38 @@ export function rankPackageCandidates(
     diagnostics.push(`${withoutPackage} result(s) had no usable package ID and were dropped.`);
   }
 
-  // If a sail date was given, require candidates within tolerance.
+  // If a sail date was given, require candidates within tolerance — UNLESS
+  // bestEffort is on, in which case every scored candidate stays eligible so a
+  // ship is always found (the ranking below still prefers the closest date).
   const haveDate = Boolean(normalizeDateKey(facts.sailDate));
-  const eligible = haveDate ? scored.filter((s) => s.withinTolerance) : scored;
-  if (haveDate && eligible.length < scored.length) {
+  const eligible = haveDate && !options.bestEffort ? scored.filter((s) => s.withinTolerance) : scored;
+  if (haveDate && !options.bestEffort && eligible.length < scored.length) {
     diagnostics.push(
       `${scored.length - eligible.length} candidate(s) outside the ${tolerance}-day sail-date tolerance were excluded.`
     );
   }
 
+  // Ranking. bestEffort sorts by CONFIDENCE first (so a genuine itinerary-type
+  // fit — e.g. the real transatlantic crossing — wins over a date-closer junk
+  // sailing) and uses date proximity only to break near-ties. The angle's
+  // requested date is a fabricated season-center, so it must never dominate a
+  // real fit. Strict mode keeps the original confidence-only ordering.
+  const byDayGap = new Map(eligible.map((s) => [s.candidate.packageId, s.dayGap]));
   const ranked = eligible
     .map((s) => s.candidate)
-    .sort((a, b) => b.confidence - a.confidence);
+    .sort((a, b) => {
+      if (Math.abs(a.confidence - b.confidence) > 0.02) {
+        return b.confidence - a.confidence;
+      }
+      if (options.bestEffort && haveDate) {
+        const ga = byDayGap.get(a.packageId);
+        const gb = byDayGap.get(b.packageId);
+        const na = ga === null || ga === undefined ? Number.POSITIVE_INFINITY : ga;
+        const nb = gb === null || gb === undefined ? Number.POSITIVE_INFINITY : gb;
+        if (na !== nb) return na - nb;
+      }
+      return b.confidence - a.confidence;
+    });
 
   if (ranked.length === 0) {
     diagnostics.push("No candidates matched the requested cruise facts.");
@@ -279,6 +478,19 @@ export function rankPackageCandidates(
 
   const top = ranked[0];
   const runnerUp = ranked[1];
+
+  // bestEffort: a real package exists, so ALWAYS select the top one. CB has
+  // thousands of sailings — we never bail to no_match/ambiguous here.
+  if (options.bestEffort) {
+    const gap = byDayGap.get(top.packageId);
+    diagnostics.push(
+      `Best-effort selected ${top.packageId} (confidence ${top.confidence.toFixed(2)}` +
+        `${gap !== null && gap !== undefined ? `, ${gap}d from requested date` : ""}` +
+        `${ranked.length > 1 ? `, closest of ${ranked.length} candidate(s)` : ", sole candidate"}).`
+    );
+    return { status: "confident_match", selected: top, candidates: ranked, diagnostics };
+  }
+
   const clearsThreshold = top.confidence >= threshold;
   const clearsMargin = !runnerUp || top.confidence - runnerUp.confidence >= margin;
 

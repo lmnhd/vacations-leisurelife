@@ -7,11 +7,27 @@ import type {
   DealTripManifest,
 } from "@/lib/cb/deals-system";
 
+import { ResultList } from "../result-list";
+
 interface PrefilterInfo {
   kept: number;
   dropped: Array<{ id: string; vendor: string; reason: string }>;
   diagnostics: string[];
 }
+
+interface Candidate {
+  packageId: string;
+  cruiseCode?: string;
+  cruiseName: string;
+  cruiseLine?: string;
+  sailDateIso: string;
+  nights?: number | null;
+  confidence: number;
+  reasons: string[];
+  departurePortCode?: string;
+}
+
+type LookupStatus = "confident_match" | "ambiguous" | "no_match" | "lookup_failed";
 
 interface ManifestResponse {
   ok: boolean;
@@ -20,6 +36,12 @@ interface ManifestResponse {
   prefilter?: PrefilterInfo;
   rejectedPromoIds?: string[];
   manifests?: DealTripManifest[];
+  lookupStatus?: LookupStatus;
+  candidates?: Candidate[];
+  lookupDiagnostics?: string[];
+  diagnostics?: string[];
+  /** AI fit-select rationale explaining why this real cruise best serves the angle. */
+  fitRationale?: string;
 }
 
 function Labeled({ label, value }: { label: string; value?: string | number }) {
@@ -32,30 +54,195 @@ function Labeled({ label, value }: { label: string; value?: string | number }) {
   );
 }
 
+function ManifestSummary({ manifest }: { manifest: DealTripManifest }) {
+  const d = manifest.assembleDraft;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="text-sm font-semibold text-white">{manifest.sailingAngleTitle}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
+        {manifest.isolatedNiche}
+      </span>
+      <span className="text-[10px] text-slate-500">
+        {d.cruiseLine} · {d.destination}
+      </span>
+      {manifest.resolvedPackage ? (
+        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-200">
+          resolved · {manifest.resolvedPackage.shipName ?? manifest.resolvedPackage.cruiseName}
+        </span>
+      ) : (
+        <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-200">
+          needs resolution
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** The real cruise this manifest resolved to: ship, dates, pricing, and the booking link. */
+function ResolvedPackagePanel({ manifest }: { manifest: DealTripManifest }) {
+  const r = manifest.resolvedPackage;
+  if (!r) return null;
+  const cp = r.cabinPricing;
+  return (
+    <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.05] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+        Resolved package — real Odysseus cruise
+      </p>
+      <div className="mt-2 grid gap-3 md:grid-cols-2">
+        <Labeled label="Package ID" value={r.packageId} />
+        <Labeled label="Cruise / ship" value={r.shipName ?? r.cruiseName} />
+        <Labeled label="Cruise line" value={r.cruiseLine} />
+        <Labeled label="Sail date" value={r.sailDateIso} />
+        <Labeled label="Nights" value={r.nights} />
+        <Labeled label="Departure port" value={r.departurePortCode} />
+        <Labeled label="Confidence" value={r.confidence.toFixed(2)} />
+      </div>
+      {cp && (
+        <div className="mt-2 grid gap-3 md:grid-cols-5">
+          <Labeled label="Inside" value={cp.inside} />
+          <Labeled label="Outside" value={cp.outside} />
+          <Labeled label="Balcony" value={cp.balcony} />
+          <Labeled label="Suite" value={cp.suite} />
+          <Labeled label="From" value={cp.leadFare ? `${cp.leadFare} ${cp.currencyCode}` : undefined} />
+        </div>
+      )}
+      {r.itinerary?.normalizedPortsOfCall && (
+        <div className="mt-2">
+          <Labeled label="Ports of call" value={r.itinerary.normalizedPortsOfCall} />
+        </div>
+      )}
+      {r.bookingUrl ? (
+        <div className="mt-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Booking link</p>
+          <a
+            href={r.bookingUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 block break-all text-xs text-cyan-300 underline"
+          >
+            {r.bookingUrl}
+          </a>
+        </div>
+      ) : (
+        <p className="mt-2 text-[11px] text-amber-200">
+          ⚠ No booking link was returned by the broker. {r.lookupDiagnostics.join("; ")}
+        </p>
+      )}
+      <p className="mt-2 text-[11px] text-slate-500">
+        Resolved {new Date(r.resolvedAtIso).toLocaleString()} · reasons: {r.reasons.join("; ")}
+      </p>
+    </div>
+  );
+}
+
+/** Inline candidate picker for an ambiguous lookup — operator must pick exactly one cruise. */
+function CandidatePicker({
+  manifestId,
+  candidates,
+  busy,
+  onResolve,
+}: {
+  manifestId: string;
+  candidates: Candidate[];
+  busy: boolean;
+  onResolve: (manifestId: string, candidate: Candidate) => void;
+}) {
+  const [pickedId, setPickedId] = useState<string | null>(candidates[0]?.packageId ?? null);
+  const picked = candidates.find((c) => c.packageId === pickedId) ?? null;
+
+  return (
+    <div className="mt-3 rounded-lg border border-amber-400/30 bg-amber-500/[0.06] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-300">
+        No confident match — pick the one real cruise this is
+      </p>
+      <p className="mt-1 text-[11px] leading-4 text-slate-400">
+        Odysseus returned multiple candidates and none cleared the auto-match threshold. Pick the
+        cruise this manifest is actually about — the booking link will be built for it immediately.
+      </p>
+      <div className="mt-2 space-y-2">
+        {candidates.map((c) => (
+          <button
+            key={c.packageId}
+            type="button"
+            onClick={() => setPickedId(c.packageId)}
+            className={`w-full text-left rounded-lg border px-3 py-2 transition ${
+              pickedId === c.packageId
+                ? "border-cyan-300/60 bg-cyan-400/10"
+                : "border-white/10 bg-white/[0.03] hover:border-white/25"
+            }`}
+          >
+            <div className="flex items-start gap-2">
+              <span
+                className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                  pickedId === c.packageId ? "bg-cyan-300" : "bg-slate-600"
+                }`}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-white">
+                  {c.cruiseLine ? `${c.cruiseLine} — ` : ""}
+                  {c.cruiseName}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  pkg {c.packageId} · {c.sailDateIso}
+                  {c.nights ? ` · ${c.nights}n` : ""}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  confidence {c.confidence.toFixed(2)} · {c.reasons.join("; ")}
+                </p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={busy || !picked}
+        onClick={() => picked && onResolve(manifestId, picked)}
+        className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-emerald-300/40 bg-emerald-400/10 px-4 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {busy ? "Resolving…" : picked ? `Resolve as package ${picked.packageId}` : "Pick a cruise"}
+      </button>
+    </div>
+  );
+}
+
 function ManifestCard({
   manifest,
   prefilter,
   rejectedPromoIds,
+  bare = false,
+  pendingCandidates,
+  busy = false,
+  onResolveCandidate,
+  fitRationale,
 }: {
   manifest: DealTripManifest;
   prefilter?: PrefilterInfo;
   rejectedPromoIds?: string[];
+  bare?: boolean;
+  pendingCandidates?: Candidate[];
+  busy?: boolean;
+  onResolveCandidate?: (manifestId: string, candidate: Candidate) => void;
+  fitRationale?: string;
 }) {
   const d = manifest.assembleDraft;
   const q = manifest.lookupQuery;
+  const Wrapper = bare ? "div" : "article";
   return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-white">{manifest.sailingAngleTitle}</h3>
-          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
-            {manifest.isolatedNiche}
-          </p>
+    <Wrapper className={bare ? "" : "rounded-xl border border-white/10 bg-white/[0.035] p-4"}>
+      {!bare && (
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-white">{manifest.sailingAngleTitle}</h3>
+            <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
+              {manifest.isolatedNiche}
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+            manifest
+          </span>
         </div>
-        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-          manifest
-        </span>
-      </div>
+      )}
 
       {/* Pre-fills SOURCE & ASSEMBLE */}
       <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.05] p-3">
@@ -78,21 +265,39 @@ function ManifestCard({
         <p className="mt-2 text-[11px] italic leading-4 text-slate-400">{d.sailWindow.rationale}</p>
       </div>
 
-      {/* Operator lookup query */}
-      <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/[0.05] p-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-300">
-          Run these in Package Lookup to resolve the real package + link
-        </p>
-        <div className="mt-2 grid gap-2 md:grid-cols-3">
-          <Labeled label="Line" value={q.line} />
-          <Labeled label="Ship" value={q.ship} />
-          <Labeled label="Destination" value={q.destination} />
-          <Labeled label="Date" value={q.date} />
-          <Labeled label="Nights" value={q.nights} />
-          <Labeled label="Port" value={q.port} />
-          <Labeled label="Window days" value={q.windowDays} />
+      {/* AI fit-select rationale (inventory-aware Step 2) */}
+      {fitRationale && (
+        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.05] p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Why this cruise was chosen (inventory-aware fit)
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-slate-300">{fitRationale}</p>
         </div>
-      </div>
+      )}
+
+      {/* Resolution: the one real cruise this manifest is about */}
+      {manifest.resolvedPackage ? (
+        <ResolvedPackagePanel manifest={manifest} />
+      ) : pendingCandidates && pendingCandidates.length > 0 ? (
+        <CandidatePicker
+          manifestId={manifest.id}
+          candidates={pendingCandidates}
+          busy={busy}
+          onResolve={onResolveCandidate ?? (() => {})}
+        />
+      ) : (
+        <div className="mt-3 rounded-lg border border-rose-400/30 bg-rose-500/[0.06] p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-rose-300">
+            Not resolved — no real cruise found
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-slate-400">
+            The Odysseus lookup found no usable candidates for this angle&apos;s search
+            ({q.line}, {q.destination}, {q.date ?? "?"}{q.nights ? `, ${q.nights}n` : ""}). This
+            manifest cannot proceed to ad copy. Discard it and try a different angle, or adjust the
+            angle&apos;s timing/destination and re-manifest.
+          </p>
+        </div>
+      )}
 
       {/* Applied promos */}
       <div className="mt-3">
@@ -140,12 +345,18 @@ function ManifestCard({
       )}
 
       <div className="mt-3">
-        <a
-          href={`/tests/deals-system/copywriter?manifestId=${encodeURIComponent(manifest.id)}`}
-          className="inline-flex h-8 items-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-3 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-        >
-          Write ad copy →
-        </a>
+        {manifest.resolvedPackage ? (
+          <a
+            href={`/tests/deals-system/copywriter?manifestId=${encodeURIComponent(manifest.id)}`}
+            className="inline-flex h-8 items-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-3 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            Write ad copy →
+          </a>
+        ) : (
+          <span className="inline-flex h-8 cursor-not-allowed items-center rounded-lg border border-white/10 bg-white/[0.02] px-3 text-[11px] font-semibold text-slate-500">
+            Write ad copy → (resolve a real cruise first)
+          </span>
+        )}
       </div>
 
       {manifest.aiTrace && (
@@ -164,7 +375,7 @@ function ManifestCard({
           </pre>
         </details>
       )}
-    </article>
+    </Wrapper>
   );
 }
 
@@ -187,7 +398,9 @@ export function TripManifestationView({
     manifest: DealTripManifest;
     prefilter?: PrefilterInfo;
     rejectedPromoIds?: string[];
+    fitRationale?: string;
   } | null>(null);
+  const [pendingCandidates, setPendingCandidates] = useState<Record<string, Candidate[]>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
@@ -195,6 +408,25 @@ export function TripManifestationView({
     () => angles.find((a) => a.id === selectedId) ?? null,
     [angles, selectedId]
   );
+
+  async function removeManifest(id: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/tests/deals-system/trip-manifestation?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = (await res.json()) as ManifestResponse;
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Delete failed.");
+      if (data.manifests) setManifests(data.manifests);
+      if (latest?.manifest.id === id) setLatest(null);
+      setMessage({ tone: "ok", text: "Manifest removed." });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function manifest() {
     if (!selectedId) return;
@@ -214,9 +446,66 @@ export function TripManifestationView({
         manifest: data.manifest,
         prefilter: data.prefilter,
         rejectedPromoIds: data.rejectedPromoIds,
+        fitRationale: data.fitRationale,
       });
       if (data.manifests) setManifests(data.manifests);
-      setMessage({ tone: "ok", text: "Trip manifested. Review and run the lookup query to resolve the package." });
+
+      if (data.lookupStatus === "confident_match" && data.manifest.resolvedPackage) {
+        setMessage({
+          tone: "ok",
+          text: `Manifested and resolved — ${data.manifest.resolvedPackage.shipName ?? data.manifest.resolvedPackage.cruiseName} (${data.manifest.resolvedPackage.sailDateIso}). Booking link ${
+            data.manifest.resolvedPackage.bookingUrl ? "ready." : "could not be built — see diagnostics."
+          }`,
+        });
+      } else if (data.candidates && data.candidates.length > 0) {
+        setPendingCandidates((prev) => ({ ...prev, [data.manifest!.id]: data.candidates! }));
+        setMessage({
+          tone: "error",
+          text: "No confident match. Pick the one real cruise this manifest is about below — nothing proceeds until it's resolved.",
+        });
+      } else {
+        setMessage({
+          tone: "error",
+          text: `No usable Odysseus match found for this angle. ${
+            data.lookupDiagnostics?.join(" ") ?? ""
+          } Discard this manifest and try a different angle.`,
+        });
+      }
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resolveCandidate(manifestId: string, candidate: Candidate) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/tests/deals-system/trip-manifestation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve_candidate", manifestId, candidate }),
+      });
+      const data = (await res.json()) as ManifestResponse;
+      if (!res.ok || !data.ok || !data.manifest) {
+        throw new Error(data.error ?? "Resolve failed.");
+      }
+      if (data.manifests) setManifests(data.manifests);
+      if (latest?.manifest.id === manifestId) {
+        setLatest({ ...latest, manifest: data.manifest });
+      }
+      setPendingCandidates((prev) => {
+        const next = { ...prev };
+        delete next[manifestId];
+        return next;
+      });
+      setMessage({
+        tone: "ok",
+        text: `Resolved — ${data.manifest.resolvedPackage?.shipName ?? data.manifest.resolvedPackage?.cruiseName} (${data.manifest.resolvedPackage?.sailDateIso}). Booking link ${
+          data.manifest.resolvedPackage?.bookingUrl ? "ready." : "could not be built — see diagnostics."
+        }`,
+      });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -234,9 +523,10 @@ export function TripManifestationView({
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">Trip Manifestation</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
             Pick a discovery angle, correlate it against the CB promo intelligence, and manifest the
-            cruise line, destination, sail window, and applicable perks. The result pre-fills SOURCE
-            &amp; ASSEMBLE — except the packageId, ship, and booking link, which you resolve by
-            running the manifest&apos;s lookup query in Package Lookup.
+            cruise line, destination, sail window, and applicable perks — then immediately look up
+            the real Odysseus cruise: ship, sail date, itinerary, cabin pricing, and booking link.
+            A confident match resolves automatically; an ambiguous result asks you to pick the one
+            real cruise before anything proceeds to ad copy.
           </p>
         </div>
         <a
@@ -317,24 +607,32 @@ export function TripManifestationView({
             manifest={latest.manifest}
             prefilter={latest.prefilter}
             rejectedPromoIds={latest.rejectedPromoIds}
+            pendingCandidates={pendingCandidates[latest.manifest.id]}
+            busy={busy}
+            onResolveCandidate={resolveCandidate}
+            fitRationale={latest.fitRationale}
           />
         </div>
       )}
 
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-        All manifests ({manifests.length})
-      </p>
-      {manifests.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
-          No manifests yet. Select an angle above and manifest it.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {manifests.map((m) => (
-            <ManifestCard key={m.id} manifest={m} />
-          ))}
-        </div>
-      )}
+      <ResultList
+        items={[...manifests].reverse()}
+        getId={(m) => m.id}
+        label="Manifests"
+        emptyText="No manifests yet. Select an angle above and manifest it."
+        busy={busy}
+        onDelete={(id) => void removeManifest(id)}
+        renderSummary={(m) => <ManifestSummary manifest={m} />}
+        renderDetail={(m) => (
+          <ManifestCard
+            manifest={m}
+            bare
+            pendingCandidates={pendingCandidates[m.id]}
+            busy={busy}
+            onResolveCandidate={resolveCandidate}
+          />
+        )}
+      />
     </div>
   );
 }

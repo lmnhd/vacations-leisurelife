@@ -22,6 +22,8 @@ import {
   type CbPromoIntelligenceRecord,
   type DealDiscoveryIdea,
 } from "../lib/cb/deals-system";
+import { reconcileAssembleDraftWithResolved } from "../lib/cb/deals-system/deal-package-resolver";
+import { selectBestFitCandidate } from "../lib/cb/deals-system/deal-trip-manifest-generator";
 import { installDealsAiStub } from "./deals-ai-stub";
 
 installDealsAiStub();
@@ -169,6 +171,62 @@ async function main(): Promise<void> {
   };
   const badValidation = validateDealTripManifestsCache(tampered);
   check("validator rejects a fabricated packageId in the draft", !badValidation.ok);
+
+  // --- Inventory-aware fit-select ------------------------------------------------
+  console.log("\nInventory-aware fit-select:");
+  const fakeCandidates = [
+    {
+      packageId: "1500001",
+      cruiseCode: "WONDER-7N",
+      cruiseName: "Wonder of the Seas 7-Night Caribbean",
+      cruiseLine: "Royal Caribbean",
+      sailDateIso: "2026-11-08",
+      nights: 7,
+      confidence: 0.95,
+      reasons: ["date match"],
+    },
+    {
+      packageId: "1500002",
+      cruiseCode: "INDY-4N",
+      cruiseName: "Independence of the Seas 4-Night Bahamas",
+      cruiseLine: "Royal Caribbean",
+      sailDateIso: "2026-12-20",
+      nights: 4,
+      confidence: 0.85,
+      reasons: ["line match"],
+    },
+  ];
+  const fitResult = await selectBestFitCandidate({ angle, candidates: fakeCandidates as unknown[] });
+  check("fit-select returns a candidate", fitResult.candidate !== undefined);
+  check("fit-select returns a fitRationale", fitResult.fitRationale.length > 0);
+
+  // --- Reconcile assembleDraft with resolved real cruise -------------------------
+  console.log("\nReconcile assembleDraft with resolved:");
+  const resolvedManifest = {
+    ...manifest,
+    resolvedPackage: {
+      resolvedAtIso: GEN_AT,
+      source: "operator_package_lookup" as const,
+      packageId: "1500001",
+      cruiseName: "Wonder of the Seas 7-Night Caribbean",
+      cruiseLine: "Royal Caribbean",
+      shipName: "Wonder of the Seas",
+      sailDateIso: "2026-11-08",
+      nights: 7,
+      departurePortCode: "MIA",
+      confidence: 0.95,
+      reasons: ["date match"],
+      siid: "1049337",
+      itinerary: { durationNights: 7, departurePortCode: "MIA", portsOfCall: "Nassau, Cozumel" },
+      lookupDiagnostics: [],
+    },
+  };
+  const reconciled = reconcileAssembleDraftWithResolved(resolvedManifest);
+  check("reconcile updates nights from resolved", reconciled.assembleDraft.nights === 7);
+  check("reconcile updates departure port", reconciled.assembleDraft.departurePortHint === "MIA");
+  check("reconcile updates ports", reconciled.assembleDraft.portsOfCall.join(", ") === "Nassau, Cozumel");
+  check("reconcile preserves itinerary name", reconciled.assembleDraft.itineraryName === manifest.assembleDraft.itineraryName);
+  check("reconcile preserves destination", reconciled.assembleDraft.destination === manifest.assembleDraft.destination);
 
   console.log(`\nResults: ${passed} passed, ${failed} failed`);
   if (failed > 0) {

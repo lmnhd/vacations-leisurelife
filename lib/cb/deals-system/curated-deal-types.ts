@@ -72,6 +72,11 @@ export interface CuratedOdysseusDeal {
   source: "odysseus_curated_retail";
   briefId: string;
   capturedAtIso: string;
+  /**
+   * Optional public visibility cutoff. When present as YYYY-MM-DD, the deal is
+   * still visible through the end of that date; omit to keep legacy deals live.
+   */
+  expiresOnIso?: string;
   packageId: string;
   siid: string;
   bookingUrl: string;

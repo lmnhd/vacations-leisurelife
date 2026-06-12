@@ -8,6 +8,8 @@ import type {
   DealTripManifest,
 } from "@/lib/cb/deals-system";
 
+import { ResultList } from "../result-list";
+
 interface WriteResponse {
   ok: boolean;
   error?: string;
@@ -16,16 +18,48 @@ interface WriteResponse {
   adCopies?: DealAdCopy[];
 }
 
-function VariantCard({ variant }: { variant: DealAdVariant }) {
+function VariantCard({
+  variant,
+  index,
+  selected,
+  onSelect,
+  busy,
+}: {
+  variant: DealAdVariant;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+  busy: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+    <div
+      className={`rounded-lg border p-4 transition ${
+        selected ? "border-emerald-400/50 bg-emerald-500/[0.06]" : "border-white/10 bg-black/20"
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
           {variant.variantLabel}
         </span>
-        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-slate-400">
-          promo: {variant.promoApplied}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-slate-400">
+            promo: {variant.promoApplied}
+          </span>
+          {selected ? (
+            <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200">
+              ★ final ad
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onSelect}
+              className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold text-slate-300 transition hover:border-emerald-300/50 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Use this as the final ad
+            </button>
+          )}
+        </div>
       </div>
 
       <h4 className="mt-2 text-base font-bold leading-snug text-white">{variant.headline}</h4>
@@ -74,23 +108,81 @@ function VariantCard({ variant }: { variant: DealAdVariant }) {
   );
 }
 
-function AdCopyCard({ adCopy }: { adCopy: DealAdCopy }) {
+/** Compact one-line summary for the collapsed result header. */
+function AdCopySummary({ adCopy }: { adCopy: DealAdCopy }) {
+  const selectedIndex = adCopy.selectedVariantIndex ?? 0;
   return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-white">{adCopy.campaignName}</h3>
-          <p className="mt-0.5 text-[11px] text-slate-400">{adCopy.targetAudienceTag}</p>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="text-sm font-semibold text-white">{adCopy.campaignName}</span>
+      <span className="text-[11px] text-slate-400">{adCopy.targetAudienceTag}</span>
+      <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200">
+        {adCopy.variants.length} variant(s)
+      </span>
+      <span className="text-[10px] text-slate-500">
+        final: {adCopy.variants[selectedIndex]?.variantLabel ?? "—"}
+      </span>
+    </div>
+  );
+}
+
+function AdCopyCard({
+  adCopy,
+  onSelectVariant,
+  busy,
+  bare = false,
+}: {
+  adCopy: DealAdCopy;
+  onSelectVariant: (adCopyId: string, variantIndex: number) => void;
+  busy: boolean;
+  /** When true, render without the outer card frame (e.g. inside a ResultList). */
+  bare?: boolean;
+}) {
+  const selectedIndex = adCopy.selectedVariantIndex ?? 0;
+  const Wrapper = bare ? "div" : "article";
+  return (
+    <Wrapper className={bare ? "" : "rounded-xl border border-white/10 bg-white/[0.035] p-4"}>
+      {!bare && (
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-white">{adCopy.campaignName}</h3>
+            <p className="mt-0.5 text-[11px] text-slate-400">{adCopy.targetAudienceTag}</p>
+          </div>
+          <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+            {adCopy.variants.length} variant(s)
+          </span>
         </div>
-        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-          {adCopy.variants.length} variant(s)
-        </span>
-      </div>
+      )}
+
+      <p className="mt-2 text-[11px] text-slate-400">
+        Final ad:{" "}
+        <span className="font-semibold text-emerald-200">
+          {adCopy.variants[selectedIndex]?.variantLabel ?? "—"}
+        </span>{" "}
+        {adCopy.selectedVariantIndex === undefined && (
+          <span className="text-slate-500">(defaulting to the primary — pick one to lock it in)</span>
+        )}
+      </p>
 
       <div className="mt-3 space-y-3">
         {adCopy.variants.map((v, i) => (
-          <VariantCard key={`${adCopy.id}-${i}`} variant={v} />
+          <VariantCard
+            key={`${adCopy.id}-${i}`}
+            variant={v}
+            index={i}
+            selected={i === selectedIndex}
+            onSelect={() => onSelectVariant(adCopy.id, i)}
+            busy={busy}
+          />
         ))}
+      </div>
+
+      <div className="mt-3">
+        <a
+          href={`/tests/deals-system/funnel-synthesis?adCopyId=${encodeURIComponent(adCopy.id)}`}
+          className="inline-flex h-8 items-center rounded-lg border border-fuchsia-300/40 bg-fuchsia-400/10 px-3 text-[11px] font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/20"
+        >
+          Synthesize funnel →
+        </a>
       </div>
 
       {adCopy.aiTrace && (
@@ -109,7 +201,7 @@ function AdCopyCard({ adCopy }: { adCopy: DealAdCopy }) {
           </pre>
         </details>
       )}
-    </article>
+    </Wrapper>
   );
 }
 
@@ -137,6 +229,51 @@ export function CopywriterView({
     () => manifests.find((m) => m.id === selectedId) ?? null,
     [manifests, selectedId]
   );
+
+  async function removeAdCopy(id: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/tests/deals-system/copywriter?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = (await res.json()) as WriteResponse;
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Delete failed.");
+      if (data.adCopies) setAdCopies(data.adCopies);
+      if (latest?.id === id) setLatest(null);
+      setMessage({ tone: "ok", text: "Ad copy removed." });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function selectVariant(adCopyId: string, variantIndex: number) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/tests/deals-system/copywriter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "select", adCopyId, variantIndex }),
+      });
+      const data = (await res.json()) as WriteResponse;
+      if (!res.ok || !data.ok || !data.adCopy) {
+        throw new Error(data.error ?? "Selecting the variant failed.");
+      }
+      if (data.adCopies) setAdCopies(data.adCopies);
+      if (latest && latest.id === adCopyId) setLatest(data.adCopy);
+      setMessage({
+        tone: "ok",
+        text: `Final ad set to "${data.adCopy.variants[variantIndex]?.variantLabel ?? variantIndex}". This variant becomes the deal-page headline at publish.`,
+      });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function write() {
     if (!selectedId) return;
@@ -214,33 +351,42 @@ export function CopywriterView({
           </p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {manifests.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(m.id)}
-                  className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                    selectedId === m.id
-                      ? "border-cyan-300/60 bg-cyan-400/10"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                  }`}
-                >
-                  <span
-                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      selectedId === m.id ? "bg-cyan-300" : "bg-slate-600"
+            {manifests.map((m) => {
+              const resolved = Boolean(m.resolvedPackage);
+              return (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    disabled={!resolved}
+                    onClick={() => setSelectedId(m.id)}
+                    className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
+                      !resolved
+                        ? "cursor-not-allowed border-white/5 bg-white/[0.015] opacity-50"
+                        : selectedId === m.id
+                          ? "border-cyan-300/60 bg-cyan-400/10"
+                          : "border-white/10 bg-white/[0.03] hover:border-white/25"
                     }`}
-                  />
-                  <span>
-                    <span className="block text-xs font-semibold text-white">
-                      {m.sailingAngleTitle}
+                  >
+                    <span
+                      className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                        !resolved ? "bg-rose-400/60" : selectedId === m.id ? "bg-cyan-300" : "bg-slate-600"
+                      }`}
+                    />
+                    <span>
+                      <span className="block text-xs font-semibold text-white">
+                        {m.sailingAngleTitle}
+                      </span>
+                      <span className="block text-[11px] text-slate-400">
+                        {m.isolatedNiche} · {m.assembleDraft.cruiseLine} · {m.assembleDraft.destination}
+                        {resolved
+                          ? ` · resolved · ${m.resolvedPackage?.shipName ?? m.resolvedPackage?.cruiseName}`
+                          : " · needs resolution in Step 2 (no real cruise found yet)"}
+                      </span>
                     </span>
-                    <span className="block text-[11px] text-slate-400">
-                      {m.isolatedNiche} · {m.assembleDraft.cruiseLine} · {m.assembleDraft.destination}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -277,24 +423,27 @@ export function CopywriterView({
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
             Latest ad copy
           </p>
-          <AdCopyCard adCopy={latest} />
+          <AdCopyCard adCopy={latest} onSelectVariant={(id, i) => void selectVariant(id, i)} busy={busy} />
         </div>
       )}
 
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-        All ad copy ({adCopies.length})
-      </p>
-      {adCopies.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
-          No ad copy yet. Select a manifest above and write it.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {adCopies.map((a) => (
-            <AdCopyCard key={a.id} adCopy={a} />
-          ))}
-        </div>
-      )}
+      <ResultList
+        items={[...adCopies].reverse()}
+        getId={(a) => a.id}
+        label="Ad copy"
+        emptyText="No ad copy yet. Select a manifest above and write it."
+        busy={busy}
+        onDelete={(id) => void removeAdCopy(id)}
+        renderSummary={(a) => <AdCopySummary adCopy={a} />}
+        renderDetail={(a) => (
+          <AdCopyCard
+            adCopy={a}
+            onSelectVariant={(id, i) => void selectVariant(id, i)}
+            busy={busy}
+            bare
+          />
+        )}
+      />
     </div>
   );
 }

@@ -14,7 +14,37 @@
  */
 
 import type { DealAiGenerationTrace } from "./campaign-types";
+import type { LinkBrokerHealth } from "./link-broker-types";
 import type { PromoApplicabilityResult } from "./promo-intelligence-types";
+
+/**
+ * Cabin-category lead fares the operator-run lookup captured from Odysseus. Real
+ * pricing — never estimated. Mirrors PackageCabinPricing from the link broker.
+ */
+export interface DealResolvedCabinPricing {
+  inside?: number;
+  outside?: number;
+  balcony?: number;
+  suite?: number;
+  currencyCode: string;
+  /** Lowest populated tier — the "from" price. */
+  leadFare?: number;
+}
+
+/**
+ * Structured itinerary captured from the Odysseus search result (departure/arrival
+ * ports, ports-of-call, route map). The per-DAY schedule with arrival/departure
+ * times comes from the package-detail parse (a follow-up); this is what the search
+ * result already carries.
+ */
+export interface DealResolvedItinerary {
+  durationNights?: number;
+  departurePortCode?: string;
+  arrivalPortCode?: string;
+  portsOfCall?: string;
+  normalizedPortsOfCall?: string;
+  mapPath?: string;
+}
 
 /** The sail-date window the angle implies; bounds the package lookup + promo match. */
 export interface DealManifestSailWindow {
@@ -32,6 +62,12 @@ export interface DealManifestAssembleDraft {
   suggestedDealId: string;
   suggestedBriefId: string;
   cruiseLine: string;
+  /**
+   * Ranked fallback cruise lines sharing this angle's onboard-asset/vibe profile.
+   * If `cruiseLine`'s live inventory has nothing that genuinely fits, Step 2's
+   * resolution loop tries these in order before giving up.
+   */
+  alternateCruiseLines?: string[];
   /** Ship CLASS hint only (e.g. "Radiance class"); the real ship is resolved by lookup. */
   shipClassHint?: string;
   itineraryName: string;
@@ -53,11 +89,49 @@ export interface DealManifestLookupQuery {
   windowDays: number;
 }
 
+/**
+ * The real package the OPERATOR resolved by running the manifest's lookupQuery
+ * through the live Package Lookup (Deal Workflow Step 4 — Resolve). Every field
+ * here comes from a real Odysseus search result + the link broker — never the
+ * model. Its presence means SOURCE & ASSEMBLE is fully fillable.
+ */
+export interface DealManifestResolvedPackage {
+  resolvedAtIso: string;
+  /** Provenance lock: only the operator-run lookup may write this object. */
+  source: "operator_package_lookup";
+  packageId: string;
+  cruiseName: string;
+  cruiseLine?: string;
+  shipName?: string;
+  sailDateIso: string;
+  nights?: number;
+  departurePortCode?: string;
+  /** Ranker confidence (0..1) of the candidate the operator selected. */
+  confidence: number;
+  /** Ranker reasons for the selected candidate, shown for traceability. */
+  reasons: string[];
+  siid: string;
+  bookingUrl?: string;
+  bookingLinkClass?: string;
+  linkHealth?: LinkBrokerHealth;
+  /** Real cabin pricing captured from the Odysseus result, when available. */
+  cabinPricing?: DealResolvedCabinPricing;
+  /** Structured itinerary (ports/map) captured from the Odysseus result. */
+  itinerary?: DealResolvedItinerary;
+  /** Diagnostics from the lookup + broker run that produced this resolution. */
+  lookupDiagnostics: string[];
+}
+
 export interface DealTripManifest {
   /** Slug derived from the angle + cruise line; idempotency key in the cache. */
   id: string;
   generatedAtIso: string;
   generator: "gpt";
+  /**
+   * Optional public visibility cutoff for promos with a known end date. Date-only
+   * values stay visible through that date; omit for backwards compatibility.
+   */
+  expiresOnIso?: string;
   /** The DealDiscoveryIdea this manifest was built from. */
   sourceAngleId: string;
   /** Carried from the angle for display + traceability. */
@@ -74,6 +148,13 @@ export interface DealTripManifest {
   manifestReasoning: string;
   /** What the operator pastes into Package Lookup to resolve packageId + link. */
   lookupQuery: DealManifestLookupQuery;
+
+  /**
+   * Step 4 — Resolve. Written ONLY when the operator runs the lookupQuery
+   * through the live Package Lookup and picks a real candidate. Never written
+   * by the model.
+   */
+  resolvedPackage?: DealManifestResolvedPackage;
 
   aiTrace?: DealAiGenerationTrace;
 }

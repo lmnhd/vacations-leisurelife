@@ -20,6 +20,7 @@
 import { z } from "zod";
 
 import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
+import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 
 import type { DealAiGenerationTrace } from "./campaign-types";
 import type { DealDiscoveryIdea } from "./deal-discovery-types";
@@ -42,6 +43,9 @@ type StructuredObjectFn = typeof generateStructuredObject;
 let structuredObjectFn: StructuredObjectFn = generateStructuredObject;
 export function __setManifestStructuredObjectGeneratorForTests(fn?: StructuredObjectFn): void {
   structuredObjectFn = fn ?? generateStructuredObject;
+  // Clear the fit-select cache when the generator is swapped so tests never
+  // reuse a result produced by a different stub.
+  __clearFitSelectCacheForTests();
 }
 
 function slugify(value: string): string {
@@ -146,6 +150,7 @@ const APPLICABILITY_STATUSES = [
 const manifestSchema = z.object({
   assembleDraft: z.object({
     cruiseLine: z.string(),
+    alternateCruiseLines: z.array(z.string()).optional(),
     shipClassHint: z.string().optional(),
     itineraryName: z.string(),
     destination: z.string(),
@@ -196,11 +201,36 @@ HARD RULES:
 - The sail window and destination must be plausible for the cruise line you pick and the angle's
   timing requirements.
 
-OUTPUT: assembleDraft (cruiseLine, optional shipClassHint, itineraryName, destination, optional
+LOOKUP QUERY = A BROAD SEARCH PROFILE, NOT A SINGLE CRUISE (CRITICAL):
+The lookupQuery is fed to a LIVE inventory search that then picks the real ship/sail-date that
+best fits this angle. Your job is to define the SEARCH NET — broad enough that real inventory
+almost always falls inside it — NOT to pin one specific sailing. The angle is about a transferable
+vibe + onboard assets + audience; the concrete ship, exact date, and exact nights are OUTPUTS of
+the inventory match, never inputs you dictate. So:
+- DO set 'line' to the single cruise line whose fleet best delivers the angle's onboard assets.
+- DO ALSO set 'alternateCruiseLines' on assembleDraft to a ranked list of 2-3 OTHER cruise lines
+  whose fleets deliver a similar onboard-asset/vibe profile for this angle (e.g. for a quiet,
+  library-and-sea-days angle: Cunard, then Holland America, then Princess). This agency's live
+  inventory feed for any single line can be thin or missing certain itinerary types — if 'line'
+  has nothing that genuinely fits, the matcher falls through to these alternates IN ORDER before
+  giving up. Pick alternates that could plausibly deliver the SAME onboard assets and feel, even
+  if the headline itinerary type might shift slightly (the matcher will reframe copy as needed).
+- DO set 'destination' to a BROAD region/category the angle fits (e.g. "Caribbean", "Mediterranean",
+  "Alaska", "Transatlantic or open-ocean") — not a single port-pinned route.
+- DO set 'date' to the CENTER of the angle's season and 'windowDays' WIDE (60–150) so the search
+  spans the whole plausible season. Prefer a wider window over a narrow one.
+- DO NOT set 'ship' (leave it empty) — never lock the search to one vessel; the matcher decides.
+- Treat 'nights' as a SOFT preference only; omit it unless the angle truly requires a specific
+  length. 'port' is optional and should be omitted unless the angle genuinely requires one homeport.
+- Never combine multiple narrow constraints (specific ship + exact date + rare route + exact nights)
+  — that boxes the search into a needle and is forbidden.
+
+OUTPUT: assembleDraft (cruiseLine, optional alternateCruiseLines[] (2-3 fallback lines with a
+similar onboard-asset/vibe profile), optional shipClassHint, itineraryName, destination, optional
 nights, sailWindow {earliestIso?, latestIso?, rationale}, optional departurePortHint, portsOfCall),
 appliedPromos (each: promoRecordId, status, matchedOn[], assumptions[], warnings[]), promoStrategy,
 manifestReasoning, and lookupQuery (line, ship?, destination, date?, nights?, port?, windowDays) —
-the exact inputs an operator pastes into Package Lookup to resolve the real package + link.`;
+the BROAD search profile the inventory matcher uses to find the real best-fit package + link.`;
 
 function promoBlock(records: CbPromoIntelligenceRecord[]): string {
   if (records.length === 0) return "No promo records survived prefiltering — return an empty appliedPromos array.";
@@ -234,9 +264,12 @@ Insider keywords: ${p.relevantKeywords.join(", ")}
 AVAILABLE PROMO RECORDS (already prefiltered to plausible matches — only cite ids from here):
 ${promoBlock(promos)}
 
-Produce the trip manifest. The cruiseLine and sailWindow you choose are authoritative. Make the
-lookupQuery concrete enough to drive a package search (windowDays = how many days around the date
-to search).`;
+Produce the trip manifest. The cruiseLine and sailWindow you choose are authoritative. The
+lookupQuery must be a BROAD search profile (single line, broad destination region, season-centered
+date with a WIDE windowDays of 60–150, NO ship, nights only as a soft preference) so the live
+inventory matcher can find the real best-fit sailing — do not pin one specific cruise. Also set
+alternateCruiseLines to 2-3 ranked fallback lines sharing this angle's onboard-asset/vibe profile,
+for the matcher to try if 'line' has nothing that fits.`;
 }
 
 export interface GenerateDealTripManifestOptions {
@@ -329,6 +362,7 @@ export async function generateDealTripManifest(
       suggestedDealId: `deal-${slugify(`${draft.cruiseLine}-${draft.destination}-${p.sailingAngleTitle}`)}`,
       suggestedBriefId: `brief-${slugify(p.sailingAngleTitle)}`,
       cruiseLine: draft.cruiseLine,
+      alternateCruiseLines: draft.alternateCruiseLines,
       shipClassHint: draft.shipClassHint,
       itineraryName: draft.itineraryName,
       destination: draft.destination,
@@ -360,5 +394,190 @@ export async function generateDealTripManifest(
       diagnostics: prefilter.diagnostics,
     },
     rejectedPromoIds,
+  };
+}
+
+// ── Inventory-aware best-fit selection (Step 2, after the live search) ─────────
+// The broad lookupQuery returns a pool of REAL sailings. This pass reads the
+// angle's transferable essence (onboard assets, audience, season feel) and picks
+// the single real candidate that best embodies it — so we build the manifest
+// around a cruise that exists AND fits, instead of jamming the idea onto a needle.
+
+const SELECT_FIT_MODEL = ModelName.CLAUDE_4_OPUS;
+
+const fitSelectSchema = z.object({
+  chosenPackageId: z.string(),
+  fitRationale: z.string(),
+  runnerUpPackageIds: z.array(z.string()).optional(),
+  needsReframe: z.boolean(),
+  reframedItineraryName: z.string().optional(),
+  reframedDestination: z.string().optional(),
+  reframedSailWindowRationale: z.string().optional(),
+});
+
+const SELECT_FIT_SYSTEM_PROMPT = `You are a cruise inventory matcher. You are given ONE direct-response Sailing
+Angle Profile and a list of REAL, bookable cruise sailings returned by a live inventory search.
+Choose the SINGLE sailing that best embodies the angle's transferable essence — its onboard-asset
+requirements, target audience, destination feel, and season — NOT merely the cheapest or the
+nearest date. Every listed sailing is real and bookable, so you MUST choose one; never refuse.
+Return the chosen sailing's exact packageId (copied verbatim from the list), a concise fitRationale
+explaining why it serves the angle, and optionally a couple of runner-up packageIds.
+
+REFRAME WHEN THE FIT IS LOOSE: the angle's draft itineraryName/destination/sail-season rationale
+were written before live inventory was checked, and the chosen sailing may not actually match that
+destination, region, or season (e.g. the draft says "Transatlantic crossing" but the only real
+sailings available are Northern Europe). Selling a real, bookable cruise always beats holding out
+for an exact-match itinerary that doesn't exist in inventory.
+
+Set needsReframe=true whenever the chosen sailing's actual destination/region/season meaningfully
+diverges from the angle's draft. When true, also return:
+- reframedItineraryName: a new thematic name that fits the CHOSEN sailing's real ports/region while
+  preserving as much of the angle's voice/hook as still applies
+- reframedDestination: the chosen sailing's real destination/region (plain, factual)
+- reframedSailWindowRationale: a short rewrite of the season rationale grounded in the chosen
+  sailing's actual sail date
+
+Set needsReframe=false (and omit the reframed* fields) only when the chosen sailing genuinely
+matches the angle's draft destination/region/season.`;
+
+function candidateBlock(candidates: RankedPackageCandidate[]): string {
+  return candidates
+    .map((c) => {
+      const ports = c.itinerary?.portsOfCall || c.portsOfCall || "";
+      const lead = c.cabinPricing?.leadFare;
+      return [
+        `- pkg ${c.packageId} | ${c.cruiseName}`,
+        `  line: ${c.cruiseLine ?? "?"} | sails: ${c.sailDateIso || "?"} | nights: ${c.nights ?? "?"}` +
+          `${lead !== undefined ? ` | from ${c.cabinPricing?.currencyCode ?? "USD"} ${lead}` : ""}`,
+        ports ? `  ports: ${ports}` : "  ports: (not listed)",
+      ].join("\n");
+    })
+    .join("\n");
+}
+
+/**
+ * AI pass that picks the best angle-fit sailing from the real inventory pool.
+ * Pure (no I/O): the caller supplies the live candidates. Falls back to the
+ * date-closest candidate if the model returns an id outside the pool, so a ship
+ * is ALWAYS chosen whenever the pool is non-empty.
+ *
+ * Inline option/return shapes (no new named types per repo type-ownership rule).
+ */
+type FitSelectResult = {
+  candidate?: RankedPackageCandidate;
+  fitRationale: string;
+  modelId?: string;
+  diagnostics: string[];
+  reframe?: { itineraryName?: string; destination?: string; sailWindowRationale?: string };
+};
+
+// In-memory fit-select cache. A `resolve` RETRY (or the multi-line loop) that
+// produces the SAME candidate pool for the SAME angle must not re-spend the
+// fit-select AI call — that pass is the per-attempt token cost. Keyed by angle
+// id + the sorted candidate package ids, so it only reuses when the inputs are
+// genuinely identical. Process-scoped (dev server lifetime), which is exactly
+// the window in which an operator retries a wedged lookup.
+const fitSelectCache = new Map<string, FitSelectResult>();
+function fitSelectCacheKey(angle: DealDiscoveryIdea, candidates: RankedPackageCandidate[]): string {
+  const ids = candidates.map((c) => c.packageId).sort().join(",");
+  return `${angle.id}::${ids}`;
+}
+/** Test seam: clear the fit-select cache (called when the generator stub swaps). */
+export function __clearFitSelectCacheForTests(): void {
+  fitSelectCache.clear();
+}
+
+export async function selectBestFitCandidate(
+  options: { angle: DealDiscoveryIdea; candidates: RankedPackageCandidate[]; timeoutMs?: number }
+): Promise<FitSelectResult> {
+  const { angle, candidates } = options;
+  const diagnostics: string[] = [];
+
+  if (candidates.length === 0) {
+    return { candidate: undefined, fitRationale: "No inventory candidates to choose from.", diagnostics };
+  }
+  if (candidates.length === 1) {
+    return {
+      candidate: candidates[0],
+      fitRationale: "Sole inventory candidate.",
+      diagnostics: ["Single candidate — selected without an AI pass."],
+    };
+  }
+
+  const cacheKey = fitSelectCacheKey(angle, candidates);
+  const cached = fitSelectCache.get(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      diagnostics: [...cached.diagnostics, "Reused cached fit-select for an identical candidate pool (no AI re-spend)."],
+    };
+  }
+
+  const p = angle.sailingAngleProfile;
+  const prompt = `SAILING ANGLE PROFILE:
+Isolated niche: ${angle.isolatedNiche}
+Title: ${p.sailingAngleTitle}
+Core pitch: ${p.theCorePitch}
+Target audience: ${p.targetAudienceDescriptor}
+Destination & time-of-year hints: ${p.destinationAndTimeOfYearHints}
+Onboard asset requirements: ${p.onboardAssetRequirements}
+Insider keywords: ${p.relevantKeywords.join(", ")}
+
+REAL BOOKABLE SAILINGS (choose exactly one by packageId):
+${candidateBlock(candidates)}
+
+Pick the one sailing that best embodies the angle's essence and explain the fit.`;
+
+  try {
+    const result = await structuredObjectFn({
+      model: SELECT_FIT_MODEL,
+      schema: fitSelectSchema,
+      system: SELECT_FIT_SYSTEM_PROMPT,
+      prompt,
+      timeoutMs: options.timeoutMs ?? MANIFEST_TIMEOUT_MS,
+    });
+
+    const chosen = candidates.find((c) => c.packageId === result.object.chosenPackageId);
+    if (chosen) {
+      const fitDiagnostics = [`AI selected pkg ${chosen.packageId} by angle fit.`];
+      let reframe: { itineraryName?: string; destination?: string; sailWindowRationale?: string } | undefined;
+      if (result.object.needsReframe) {
+        reframe = {
+          itineraryName: result.object.reframedItineraryName,
+          destination: result.object.reframedDestination,
+          sailWindowRationale: result.object.reframedSailWindowRationale,
+        };
+        fitDiagnostics.push(
+          "Chosen sailing diverged from the angle's draft destination/season — reframed itinerary name/destination/sail window to match real inventory."
+        );
+      }
+      const out: FitSelectResult = {
+        candidate: chosen,
+        fitRationale: result.object.fitRationale,
+        modelId: result.modelId,
+        diagnostics: fitDiagnostics,
+        reframe,
+      };
+      // Cache only a successful AI selection — a retry on an identical pool
+      // reuses it instead of paying again. The error/fallback paths below are
+      // deliberately NOT cached, so a retry genuinely re-attempts the AI.
+      fitSelectCache.set(cacheKey, out);
+      return out;
+    }
+    diagnostics.push(
+      `AI returned packageId "${result.object.chosenPackageId}" not in the pool; falling back to the date-closest candidate.`
+    );
+  } catch (error) {
+    diagnostics.push(
+      `Best-fit AI pass failed (${error instanceof Error ? error.message : String(error)}); falling back to the date-closest candidate.`
+    );
+  }
+
+  // Fallback: the search already ranks the pool best-first (date-closest in
+  // best-effort mode), so candidates[0] is the safe coin-flip pick.
+  return {
+    candidate: candidates[0],
+    fitRationale: "Fell back to the highest-ranked (date-closest) inventory candidate.",
+    diagnostics,
   };
 }

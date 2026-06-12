@@ -1,0 +1,751 @@
+{
+  "version": 1,
+  "generatedAtIso": "2026-06-12T20:31:47.660Z",
+  "syntheses": [
+    {
+      "id": "funnel-adcopy-sea-days-roll-differently-transatlantic-crossing-for-the-solo-journaling-",
+      "dealId": "manifest-sea-days-roll-differently-celebrity-cruises",
+      "generatedAtIso": "2026-06-12T18:19:11.400Z",
+      "generator": "gpt",
+      "sourceAdCopyId": "adcopy-sea-days-roll-differently-transatlantic-crossing-for-the-solo-journaling-rolepla",
+      "sailingAngleTitle": "Sea Days Roll Differently",
+      "landingPage": {
+        "heroHeadline": "An Ocean Crossing with Nothing Between You and the Horizon",
+        "heroSubhead": "All-suite. All-inclusive. Five thousand miles of open Atlantic — and every day is entirely yours.",
+        "segments": [
+          {
+            "segment": "cabins",
+            "heading": "The Cabins",
+            "body": "Every suite faces the ocean — not a sliver of it through a porthole, but a full, unbroken view from your own private terrace. Inside, the space feels more like a boutique residence than a ship's cabin: a proper desk, controlled lighting, and enough quiet to hear your own thoughts. This isn't a room you sleep in between activities. It's the reason you booked.",
+            "imageId": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-3"
+          },
+          {
+            "segment": "lounges",
+            "heading": "The Lounges",
+            "body": "Intimate ships carry fewer guests, and you feel it the moment you settle into one of the onboard lounges. Deep chairs, soft light, stable surfaces, and the kind of unhurried calm that makes you lose track of time. Whether you're reading, writing, or simply watching the sea darken at dusk, the space is yours without negotiation.",
+            "imageId": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-4"
+          },
+          {
+            "segment": "atrium",
+            "heading": "The Atrium",
+            "body": "The heart of the ship is designed to welcome, not overwhelm. A refined gathering point with clean architecture and natural light, the atrium sets the tone for the entire voyage — understated, warm, quietly sophisticated. It's the first sign that everything aboard has been scaled for comfort rather than capacity.",
+            "imageId": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-1"
+          },
+          {
+            "segment": "dining",
+            "heading": "The Dining Rooms",
+            "body": "Every meal is included — from your first morning espresso to a late-night bite you didn't plan on. Multiple specialty restaurants mean you never eat the same way twice, and there's no bill at the end to pull you out of the moment. Dining here is unhurried, beautifully plated, and built around the assumption that your time at the table matters.",
+            "imageId": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-3"
+          },
+          {
+            "segment": "excursions",
+            "heading": "The Excursions",
+            "body": "When the ship makes port — Madeira, the Azores, storied coastlines that feel a world apart — curated shore excursions put you in landscapes most travelers only see in photographs. Journey Credit can be applied toward these experiences, so the cost of spontaneity is already covered. New places have a way of reshaping how you see everything else.",
+            "imageId": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-7"
+          }
+        ],
+        "warnings": []
+      },
+      "carousel": {
+        "cards": [
+          {
+            "headline": "Your Solo RPG Deserves Sea Days",
+            "primaryText": "7 unbroken days of ocean horizon. No Wi-Fi guilt. No 45-min fragments. Just you, your journal, and a Starforged arc that finally breathes."
+          },
+          {
+            "headline": "All-Suite. All-Inclusive. All Yours.",
+            "primaryText": "Private ocean-facing desk. Espresso at 2 AM mid-session. No shared walls, no pool-deck DJ. The campaign journal residency you've been theorycrafting."
+          },
+          {
+            "headline": "More Than Your ZineQuest Pledges",
+            "primaryText": "Yes, it's an investment. But if you've ever rationed solo RPG time in stolen half-hours, one week of total analog immersion changes the practice."
+          },
+          {
+            "headline": "Up to 25% Off + $3,500 Credit",
+            "primaryText": "Select transatlantic suites on Explora Journeys. Book by 06/27/2026. Put new geography in your world-builder's reference library. Check sailings →"
+          }
+        ],
+        "warnings": [
+          "card 1 primaryText 138/125 chars",
+          "card 2 primaryText 149/125 chars",
+          "card 3 primaryText 145/125 chars",
+          "card 4 primaryText 146/125 chars"
+        ]
+      },
+      "candidates": [
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-0",
+          "imageUrl": "https://media.cntraveler.com/photos/6a00eacb685184503a21156a/4:3/w_4451,h_3338,c_limit/Celebrity%20Cruises%20Relaunches%20Celebrity%20Solstice%20with%20Eight%20New%20Experiences_Celebrity%20Solstice%20in%20Alaska.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxMtKHuL5XzLS0JP8ghcWGQYsLrKx0p9kbqA&s",
+          "contextUrl": "https://www.cntraveler.com/story/ive-sailed-with-celebrity-cruises-10-times-these-are-the-new-itineraries-im-most-excited-about",
+          "title": "I've Sailed With Celebrity Cruises 10 Times—These Are the New Itineraries  I'm Most Excited About | Condé Nast Traveler",
+          "width": 4451,
+          "height": 3338,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-1",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/cba210939d/celebrity-edge_celebrity-cruises_18170.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnTpzNe6mivfdY3wleGj2HstvB1r2cvMbtQw&s",
+          "contextUrl": "https://www.cruisecritic.com/articles/solstice-class-vs-edge-class-on-celebrity-cruises",
+          "title": "Solstice Class vs. Edge Class on Celebrity Cruises - Cruise Critic",
+          "width": 2048,
+          "height": 410,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-2",
+          "imageUrl": "https://assets.widgety.co.uk/2025/09/11/17/38/19/8d9b2ef2-456b-4c4e-9478-4b445314f541/Celebrity%20Solstice%20-%20Exterior%201,%20%C2%A9CEL.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwEYjcUwy7ba5fB25jDv5z5L-RwI84DWFpZg&s",
+          "contextUrl": "https://www.ukcruises.co.uk/celebrity-cruise-ship.aspx?ShipID=celebrity-solstice",
+          "title": "Celebrity Solstice from Celebrity Cruises | UK Cruises",
+          "width": 3240,
+          "height": 1973,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-3",
+          "imageUrl": "https://candidcruisetravel.com/wp-content/uploads/2025/06/CelebrityApex_ExteriorAerial-2-1200x800.jpeg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqkxV4kKnj0NzFrggZxgeTCvK_TYn0gn1qaA&s",
+          "contextUrl": "https://candidcruisetravel.com/celebrity-cruises-ships-by-class/",
+          "title": "Celebrity Cruises Ships by Class (2026) - Candid Cruise and Travel",
+          "width": 1200,
+          "height": 800,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-4",
+          "imageUrl": "https://d1s1eppccu7prd.cloudfront.net/ew0KICAiYnVja2V0IjogInByb2Qtc2VydmljZS1pdHJhdmVsY2RuLWVuaGFuY2VidWNrZXQtY2Y0cTZkcXY5djI4IiwNCiAgImtleSI6ICJlbmhhbmNlL2ltYWdlcy8zYjBjNDk5OC0zNDFlLTQ4OTEtYjU3NS1lMzFmYTZiZmViYWJfMS03MV8xXzEwMDBfNTg1LmpwZyIsDQogICJlZGl0cyI6IHsNCiAgICAicmVzaXplIjogew0KICAgICAgIndpZHRoIjogMTgwMCwNCiAgICAgICJoZWlnaHQiOiAxMjAwLA0KICAgICAgImZpdCI6ICJjb3ZlciIsDQogICAgICAiYmFja2dyb3VuZCI6ICIjRkZGRkZGIg0KICAgIH0sDQogICAgInRvRm9ybWF0IjogIndlYnAiLA0KICAgICJyb3VuZENyb3AiOiBmYWxzZSwNCiAgICAid2VicCI6IHsNCiAgICAgICJxdWFsaXR5IjogNjANCiAgICB9DQogIH0NCn0=",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXKkOYBBTIk6g259lv0Vz75EZHnbtQtsXTBg&s",
+          "contextUrl": "https://www.iglucruise.com/celebrity-cruises",
+          "title": "Celebrity Cruises | 2026 / 2027 / 2028 Itineraries, Ships & Information",
+          "width": 1800,
+          "height": 1200,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-5",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3488193170141414179",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQg1ZKtwBMKxMERBVI8zUSXlWx8JHYTyJIjow&s",
+          "contextUrl": "https://www.instagram.com/p/DBojTdwu7s_/",
+          "title": "Have you ever sailed on Celebrity Apex? Share your favorite port in the  comments below! 🛳️",
+          "width": 1440,
+          "height": 1795,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-6",
+          "imageUrl": "https://media.shermanstravel.com/xcel/celebrity-xcel-ship-exterior.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZ4v4y_KYwrlaO4bjr9vWL8q7hwk8iAFaT4w&s",
+          "contextUrl": "https://www.shermanstravel.com/ships/celebrity-xcel-review",
+          "title": "Celebrity Xcel | ShermansTravel",
+          "width": 1800,
+          "height": 1152,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-7",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3376576684227196786",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdZHYpAHaU0Pvv1IGYi5dnv7lqXfiZN9C3Hw&s",
+          "contextUrl": "https://www.instagram.com/reel/C7cApq8Ondy/",
+          "title": "Celebrity Ascent, where every view is picture-perfect. ​, ​, Drop a comment  if you’ve cruised or plan to cruise on Celebrity Ascent!​, ​, 📸:  @cruising_passion",
+          "width": 720,
+          "height": 1280,
+          "provenance": "serpapi_search",
+          "category": "hero",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic cruise ship exterior at sea aerial"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-0",
+          "imageUrl": "https://www.celebritycruises.com/content/dam/celebrity/new-images/true-eye-view/couple-taking-pictures-in-stateroom-tev.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTi3hZw_in44meoFpOGzQ2RlMjiuzDN0dWmDCmaapmPHQ&s=10",
+          "contextUrl": "https://www.celebritycruises.com/things-to-do-onboard/staterooms/veranda-stateroom",
+          "title": "Discover our Veranda Staterooms | Celebrity Cruises",
+          "width": 2560,
+          "height": 1708,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-1",
+          "imageUrl": "https://www.celebritycruises.com/content/dam/celebrity/new-images/health-and-safety/stateroom-schematic-image-v2.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWtgrGbNQLoTn53SYaPgP6OmPo6aCgouorBdj_0KhaaQ&s=10",
+          "contextUrl": "https://www.celebritycruises.com/things-to-do-onboard/staterooms/veranda-stateroom",
+          "title": "Discover our Veranda Staterooms | Celebrity Cruises",
+          "width": 2349,
+          "height": 696,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-2",
+          "imageUrl": "https://i.ytimg.com/vi/8tZpcr6kcRs/maxresdefault.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqm9LzNGFDosKZs-Zw7TQZMoL2HR51pKBjwGMx9cGm0w&s=10",
+          "contextUrl": "https://www.youtube.com/watch?v=8tZpcr6kcRs",
+          "title": "Celebrity Solstice | Veranda Stateroom | Full Walkthrough Tour & Review | 4K",
+          "width": 1280,
+          "height": 720,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-3",
+          "imageUrl": "https://www.celebritycruises.com/content/dam/celebrity/new-images/EG18-edge-villa-bedroom-R-2560x1440.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcREW-ehmpUU0OTVDwiRlOBBNEtlFSoLtYFWRURr98ZkqQ&s=10",
+          "contextUrl": "https://www.celebritycruises.com/cruise-ships/celebrity-edge/staterooms",
+          "title": "Accommodations on Celebrity Edge | Celebrity Cruises",
+          "width": 2560,
+          "height": 1400,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-4",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3882687536804641510",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6doCkuOrM-LLvUbndbr_kMkNyK-gW6RdfqcEGgV_C9g&s=10",
+          "contextUrl": "https://www.instagram.com/p/DXiE8Qvk9xw/",
+          "title": "We're comparing Celebrity Solstice and Edge across five categories. Cabins  are up… 😄 We've now spent 110+ nights in infinite veranda cabins on Edge,  and 58 nights in standard veranda cabins on",
+          "width": 1440,
+          "height": 1920,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-5",
+          "imageUrl": "https://i.ytimg.com/vi/bgmY_oyeTLI/maxresdefault.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl9_3QkW_mBCijeVApbZ00xjyYf7CndGxNjdDfoglcZA&s=10",
+          "contextUrl": "https://www.youtube.com/watch?v=bgmY_oyeTLI",
+          "title": "Edge Stateroom With Infinite Veranda | Celebrity Edge Full Walkthrough Tour  & Review 4K | 2021",
+          "width": 1280,
+          "height": 720,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-6",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3882687537618312671",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRggiclQYtLLH_NnUYKIMlNrOuJh7D9XY2iqh8WU5ZNVg&s=10",
+          "contextUrl": "https://www.instagram.com/p/DXiE8Qvk9xw/",
+          "title": "We're comparing Celebrity Solstice and Edge across five categories. Cabins  are up… 😄 We've now spent 110+ nights in infinite veranda cabins on Edge,  and 58 nights in standard veranda cabins on",
+          "width": 1440,
+          "height": 1920,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-cabins-celebrity-cruises-edge-class-or-solstice-class-s-7",
+          "imageUrl": "https://www.tripsavvy.com/thmb/oT_NWE5lGYh8kAckXlkIe8rKrdA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Balcony_01-56a1fa6d5f9b58b7d0c55c06.JPG",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRx_kjbCSoYx-KjKFHifvqWCzhLB1MXBkNaiABMDDFrtA&s=10",
+          "contextUrl": "https://www.tripsavvy.com/celebrity-solstice-cabins-and-suites-photos-4062025",
+          "title": "Celebrity Solstice Cruise: Cabins and Suites",
+          "width": 1200,
+          "height": 900,
+          "provenance": "serpapi_search",
+          "category": "cabins",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class stateroom balcony cabin interior veranda"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-0",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3871761201559186726",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt4plQNBFiquAtshoOdGvL2c4q0HnteWrhwQ&s",
+          "contextUrl": "https://www.instagram.com/p/DW7TID-k2cI/?img_index=11",
+          "title": "Yesterday we disembarked Celebrity Solstice and we weren't sure how we'd  feel about her when we boarded two weeks ago. We'll choose new and modern  ships every day, so an older ship",
+          "width": 1440,
+          "height": 1920,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-1",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3883483548947255398",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThOpFYPUefYEuG3MGCkFBHMyRWDta5dgzpLg&s",
+          "contextUrl": "https://www.instagram.com/p/DXk57vrE7m-/",
+          "title": "If you've been following along you'll know we've sailed Celebrity Edge Class  many times, and Eden is always one of our go-to places onboard 🌿 We're  currently in the middle of the",
+          "width": 1440,
+          "height": 1920,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-2",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3884876432535712654",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSkm6-Q3OsvWua2JyjcJSPelHAY1oJOB_K_QA&s",
+          "contextUrl": "https://www.instagram.com/p/DXp2oyQE5o_/",
+          "title": "We're comparing Solstice and Edge across five categories. This one covers  interior ship design - and it's the category that will arguably impact your  cruise the most 👀 The design philosophy of",
+          "width": 1080,
+          "height": 1350,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-3",
+          "imageUrl": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=10164903455471085",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT80NXDbezzftWK74kXqCFHs-Elf1a4Ewvncw&s",
+          "contextUrl": "https://www.facebook.com/groups/873639507622028/posts/1435188261467147/",
+          "title": "I just wanted to drop a note to say that we just left the Celebrity  Silhouette and much prefer this class over the Edge class ships. Might be a  little smaller, but",
+          "width": 2048,
+          "height": 1900,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-4",
+          "imageUrl": "https://runway-media-production.global.ssl.fastly.net/us/originals/2024/03/Magic-Carpet-Restaurant_CELEBRITY-CRUISES.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWywpj2DwTEgooNWcIt6kagWdDnhDR1PNjSA&s",
+          "contextUrl": "https://thepointsguy.com/cruise/celebrity-cruises-ship-class-guide/",
+          "title": "The 4 types of Celebrity Cruises ships, explained - The Points Guy",
+          "width": 1600,
+          "height": 1067,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-5",
+          "imageUrl": "https://postcardjar.com/wp-content/uploads/2022/03/celebrity-cruises-the-retreat-worth-it.png",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRP7YtQbNCwvJ4PnY9Wksu1vT0Eva-wGTK1hA&s",
+          "contextUrl": "https://postcardjar.com/is-the-retreat-worth-it-on-celebrity-cruises/",
+          "title": "Is The Retreat worth it on Celebrity Cruises? - Postcard Jar Blog",
+          "width": 1200,
+          "height": 680,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-6",
+          "imageUrl": "https://media.cntraveler.com/photos/6716b6f612e75700387ce5f8/16:9/w_2560%2Cc_limit/CEL_BY_Retreat_Sundeck_8%2520(1).jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFU-atGMTKFErNuSMgIITZ7QU7CdP9VuUJyg&s",
+          "contextUrl": "https://www.cntraveler.com/story/onboard-obsession-celebrity-cruises-the-retreat",
+          "title": "The Retreat' on Celebrity Cruises Is My New Favorite Travel Hack | Condé  Nast Traveler",
+          "width": 2560,
+          "height": 1440,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-lounges-celebrity-cruises-edge-class-or-solstice-class-l-7",
+          "imageUrl": "https://fooddrinklife.com/wp-content/uploads/2026/05/celebrity-cruise-enhanced-1.png",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQU1Ey3Vw8i5b4xl2rf-VISpPceRjh4wUEMQ&s",
+          "contextUrl": "https://fooddrinklife.com/celebrity-soltice-refresh-focused/",
+          "title": "Celebrity Solstice's refresh focused on something most cruise ships overlook",
+          "width": 1448,
+          "height": 991,
+          "provenance": "serpapi_search",
+          "category": "lounges",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class lounge library quiet seating interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-0",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3881061652959479967",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS00z1ttwZr-ZnX6oZdlV30tGwrfvpdakxazw&s",
+          "contextUrl": "https://www.instagram.com/p/DXcTxpwCpQZ/",
+          "title": "One of my absolute favourite classes of ships is the Solstice Class. These  five charming and elegant ships sail all over the World, with beautiful  design features and venues throughout. This includes",
+          "width": 1440,
+          "height": 1799,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-1",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3881061637616742994",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5uuesCR6k_PDToYhrHjwegCwm4g5l9AVaww&s",
+          "contextUrl": "https://www.instagram.com/p/DXcTxpwCpQZ/",
+          "title": "One of my absolute favourite classes of ships is the Solstice Class. These  five charming and elegant ships sail all over the World, with beautiful  design features and venues throughout. This includes",
+          "width": 1440,
+          "height": 1799,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-2",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3881061647490139544",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwRmUKB2f2Jq4oB-fJJpPtpNA4CktWwDctCA&s",
+          "contextUrl": "https://www.instagram.com/p/DXcTxpwCpQZ/",
+          "title": "One of my absolute favourite classes of ships is the Solstice Class. These  five charming and elegant ships sail all over the World, with beautiful  design features and venues throughout. This includes",
+          "width": 1440,
+          "height": 1799,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-3",
+          "imageUrl": "https://a-us.storyblok.com/f/1005231/4032x3024/f687f26e7d/celebrity-solstice-lido-deck.jpeg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-pJ43L7Wjve0QxqTSUwj3ctcLLXYqa0vf9A&s",
+          "contextUrl": "https://www.cruisecritic.com/cruise/celebrity/celebrity-solstice",
+          "title": "Celebrity Solstice Cruise Ship | Editor's Review",
+          "width": 4032,
+          "height": 3024,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-4",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3881061652825261891",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSjjD0g3gLFOV11LUdvQp78dSHnZEkHFyEQUw&s",
+          "contextUrl": "https://www.instagram.com/p/DXcTxpwCpQZ/",
+          "title": "One of my absolute favourite classes of ships is the Solstice Class. These  five charming and elegant ships sail all over the World, with beautiful  design features and venues throughout. This includes",
+          "width": 1440,
+          "height": 1799,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-5",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3861392877440404506",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaXGQFTy17-wuedz4Mk5GePUhbNFHTtoXsGA&s",
+          "contextUrl": "https://www.instagram.com/p/DWWcItmlINr/",
+          "title": "We've stepped onboard Celebrity Solstice four times now. Today felt  completely different 👀 Not just because the last time was 7 years ago and  our memories are not the best, but because",
+          "width": 1440,
+          "height": 1920,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-6",
+          "imageUrl": "https://assets.widgety.co.uk/2025/02/25/11/32/19/63bd9935-86c5-41e1-b681-9d843080c323/Celebrity%20Cruises,%20Celebrity%20Solstice,%20Main%20Dining%20Room,%20Copyrights%20-%20CEL%207.jpeg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyyxZbmZNOeLJm_71cedNpUrAsR3ZKityzBg&s",
+          "contextUrl": "https://www.sixstarcruises.co.uk/luxury-cruise/celebrity-solstice",
+          "title": "Celebrity Solstice ship | Luxury Cruises| SixStarCruises",
+          "width": 5616,
+          "height": 3744,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-atrium-celebrity-cruises-edge-class-or-solstice-class-a-7",
+          "imageUrl": "https://www.fodors.com/wp-content/uploads/2022/06/celebrity-cruisescelebrity-solsticecourt-scaled.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4IKz2rP95GbKzMxbMpy7iH1szDMYs5Ht8lw&s",
+          "contextUrl": "https://www.fodors.com/cruises/celebrity-cruises/ships/solstice",
+          "title": "Solstice",
+          "width": 2560,
+          "height": 1707,
+          "provenance": "serpapi_search",
+          "category": "atrium",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class atrium grand foyer multi-deck interior"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-0",
+          "imageUrl": "https://foreverkaren.com/wp-content/uploads/2023/04/Grand-Epernay-Restaurant-on-the-Celebrity-Solstice.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBa0dH3v0tLVKsJTujtSsKXQCX5ReMd1k_lQ&s",
+          "contextUrl": "https://foreverkaren.com/cruising/celebrity-solstice-restaurants/",
+          "title": "Celebrity Solstice Restaurants And Dining (With Menus) - Forever Karen",
+          "width": 1200,
+          "height": 700,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-1",
+          "imageUrl": "https://www.celebritycruises.com/content/dam/celebrity/new-images/celebrity-edge-project/restaurants/edge18-luminae-80-opacity-2560x1440.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqh_0AV9U-F96YAe6Fak_NDcqjUbnMM6xTWQ&s",
+          "contextUrl": "https://www.celebritycruises.com/cruise-ships/celebrity-edge/eat-and-drink",
+          "title": "Dining, Restaurants & Bars on Celebrity Edge | Celebrity Cruises",
+          "width": 2560,
+          "height": 1440,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-2",
+          "imageUrl": "https://www.celebritycruises.com/content/dam/celebrity/new-images/celebrity-edge-project/restaurants/edge18-cosmopolitan-80-opacity-2560x1440.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvzVRJaKf8P_Z1aezoAz9_Ljsj194Cfv6FXA&s",
+          "contextUrl": "https://www.celebritycruises.com/cruise-ships/celebrity-edge/eat-and-drink/main-dining",
+          "title": "Main Dining & Restaurants on Celebrity Edge | Celebrity Cruises",
+          "width": 2560,
+          "height": 1440,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-3",
+          "imageUrl": "https://www.myvirtualvacations.net/uploads/3/7/4/6/37461341/dscf6817-2_orig.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDfXvHdHVutzmjKdQgifdfBb-5YPblqWn_Eg&s",
+          "contextUrl": "https://www.myvirtualvacations.net/celebritycruisesdining.html",
+          "title": "Explore Celebrity Cruises main dining options including dining room  assignments, new menus, photographs and more. - MY VIRTUAL VACATIONS",
+          "width": 1100,
+          "height": 733,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-4",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3887837312768493980",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6fe4YAIJQtFYWWV6PuZUzVCoOuTZfJecMjw&s",
+          "contextUrl": "https://www.instagram.com/p/DX0X3PPk1ix/",
+          "title": "We're comparing Solstice and Edge across five categories. This one has the  clearest winner of the series - and it comes with a twist 🍽️ For a full  service dinner (fare-included), Solstice",
+          "width": 1440,
+          "height": 1439,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-5",
+          "imageUrl": "https://www.celebritycruises.com/blog/content/uploads/2020/02/celebrity-edge-restaurants-magic-carpet.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQavcuT7l5iJLbLAA_unznqVwm7zOcB8Y_olw&s",
+          "contextUrl": "https://www.celebritycruises.com/blog/video/video-celebrity-edge-dining-restaurant-guide",
+          "title": "Celebrity Edge Dining & Restaurant Guide",
+          "width": 1920,
+          "height": 1280,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-6",
+          "imageUrl": "https://cruise-panorama.com/wp-content/uploads/2026/03/Celebrity-Solstice-Fine-Cut-Steakhouse-Dining-Room.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRU8gbh4Ozh3Ro1PXx1D5Zc46i2pkbS18RF9Q&s",
+          "contextUrl": "https://cruise-panorama.com/celebrity-solstice-upgrades-introduce-new-venues-dining-and-entertainment-across-revitalized-ship/",
+          "title": "Celebrity Solstice Upgrades Add Dining, Entertainment And Suites",
+          "width": 1300,
+          "height": 776,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-dining-celebrity-cruises-edge-class-or-solstice-class-m-7",
+          "imageUrl": "https://www.myvirtualvacations.net/uploads/3/7/4/6/37461341/___6082101_orig.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpz44g37_NfKUkNaHKp-dQK4JvssJYNlMf1g&s",
+          "contextUrl": "https://www.myvirtualvacations.net/celebritycruisesdining.html",
+          "title": "Explore Celebrity Cruises main dining options including dining room  assignments, new menus, photographs and more. - MY VIRTUAL VACATIONS",
+          "width": 1066,
+          "height": 800,
+          "provenance": "serpapi_search",
+          "category": "dining",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class main dining room restaurant fine dining"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-1",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/4032x3024/929c427a29/img_9865.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJzoXh3wmHrK6vj0KsmPw7PdkwezuQKE2SyQ&s",
+          "contextUrl": "https://www.cruisecritic.com/articles/which-celebrity-cruise-ship-is-best-for-your-alaska-vacation",
+          "title": "Which Celebrity Cruise Ship Is Best for Your Alaska Vacation? - Cruise  Critic",
+          "width": 2048,
+          "height": 1536,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-2",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/1200x900/62b1176335/celebrity-edge-sydney-harbour.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMoVnsd_j0pvjUTT2t-aIZN159dLmK3GiOxg&s",
+          "contextUrl": "https://www.cruisecritic.com/news/celebrity-edge-arrives-down-under",
+          "title": "Celebrity Edge Commences Third Season Down Under, With Celebrity Solstice  Close Behind",
+          "width": 2048,
+          "height": 1536,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-3",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/1200x900/4e48c6d853/celebrity-solstice-sailing.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRctTSmUIw8JqMKzzy7W_pWkyuZL08nBfCvXg&s",
+          "contextUrl": "https://www.cruisecritic.com/articles/celebrity-cruises-new-age-for-solstice",
+          "title": "Celebrity Cruises Prepares a New Age for Solstice - Cruise Critic",
+          "width": 2048,
+          "height": 1536,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-4",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3915016043915777985",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmy2Ik8VuKAXAcbWje5t1jUcyluXaMWggfnw&s",
+          "contextUrl": "https://www.instagram.com/reel/DAY3JM8umu6/",
+          "title": "An Alaska cruise had long been on my bucket list, and my week on Celebrity  Edge exceeded all expectations. From the glaciers and wildlife sightings to  an ABBA sing-along, to witnessing the",
+          "width": 1440,
+          "height": 810,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-5",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/6851f6dc7d/celebrity-edge_celebrity-cruises_18675.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlcgBsakycHR_hCETmlbjCxfgiEiiI-i2RwQ&s",
+          "contextUrl": "https://www.cruisecritic.com/news/just-back-from-celebrity-edge-an-australian-s-first-impressions-of-an-edge-class-ship",
+          "title": "Celebrity Edge in Australia",
+          "width": 2048,
+          "height": 963,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-6",
+          "imageUrl": "https://frenchcruiser.info/wp-content/uploads/2021/07/IMG_5910-1.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRI1Jzmx1KPpVAgxY_0xdwdPrxaxQh1bPx7kQ&s",
+          "contextUrl": "https://frenchcruiser.info/en/2021/07/23/transatlantic-crossing-on-celebrity-edge-april-2019/",
+          "title": "Transatlantic crossing on Celebrity Edge (April 2019) – Cruise like a  Frenchy",
+          "width": 1024,
+          "height": 768,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-7",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/8192x5456/43ca16fd6f/celebrity-edge-arriving-in-auckland-12-december-2023.jpeg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuR5oQVlxWikrn2EyeihibwrnGgwBN8Svg-A&s",
+          "contextUrl": "https://www.cruisecritic.com/articles/what-is-the-biggest-celebrity-ship",
+          "title": "Celebrity Ships By Size, Ranked Largest to Smallest by Gross Tonnage -  Cruise Critic",
+          "width": 2048,
+          "height": 1364,
+          "provenance": "serpapi_search",
+          "category": "excursions",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic port shore excursion old town harbor"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-0",
+          "imageUrl": "https://assets.dm.rccl.com/is/image/RoyalCaribbeanCruises/celebrity/new-images/Celebrity-Edge-Alaska-Dawes-Glacier-2560x1440.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYKj9KMEE_6uKTbL_Vy9rhNuGlk7_BQPQacg&s",
+          "contextUrl": "https://www.celebritycruises.com/itinerary-details/7-night-alaska-dawes-glacier-cruise-from-seattle-washington?groupId=EG07SEA-4212612062&packageID=EG07A396&sDT=2026-07-03&cCD=CO&country=USA",
+          "title": "7 Night Alaska Dawes Glacier Cruise from Seattle | Celebrity Cruises",
+          "width": 1280,
+          "height": 700,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-1",
+          "imageUrl": "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2FqGMozrkaUUJiCfPGh63-59G9aYbms0eU-JFgHfpssZ5R2Sn4hjUnNHidzK4DNsPTRkIG6WSWf3KyG5NAbvuxuuGbG2nivtsZHpTA4k6R_lXQFPo_NcS2uaLjDTV635t3V3zkC8TQRg/s1600/Celebrity+Edge.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOvJyr6AiVWm2YUgbItI28zL_iMIZOm8D5Ew&s",
+          "contextUrl": "https://earlofcruise.blogspot.com/2017/04/cruise-newbuilts-celebrity-edge-class.html",
+          "title": "Cruise Newbuilts - CELEBRITY EDGE Class",
+          "width": 1200,
+          "height": 675,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-2",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/4dd84d346e/image_18912095.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=75&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUwWOZvdukT9a9Sb8DVhcuKVw8AzPTEl4Qbg&s",
+          "contextUrl": "https://www.cruisecritic.com/find-a-cruise/itinerary/13-night-celebrity-edge-to-australia-on-december-22-2027",
+          "title": "Celebrity Edge Cruise Itinerary to Australia & New Zealand on December 22,  2027",
+          "width": 2048,
+          "height": 1674,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-3",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3444747563809068879",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqEaHAWpUEjxQvbuEtrSaYr_DxXyNq3cntrQ&s",
+          "contextUrl": "https://www.instagram.com/p/C_OM6s0uR7K/",
+          "title": "Can you guess where all four Edge Series ships are in these photos? Comment  below👇 and check back tomorrow morning for the correct answers.",
+          "width": 1440,
+          "height": 1795,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-4",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/5712x4284/fa821d83d1/celebrity-solstice-dazzles-in-pago-pago-american-samoa.jpeg?auto=format%2Cenhance&fit=crop&crop=entropy&q=75&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtz3PvfviEeQ3bJSIfGbjQEf5IKfaCh7IpIQ&s",
+          "contextUrl": "https://www.cruisecritic.com/find-a-cruise/itinerary/10-night-celebrity-solstice-to-australia-on-october-31-2026",
+          "title": "Celebrity Solstice Cruise Itinerary to Australia & New Zealand on October  31, 2026",
+          "width": 2048,
+          "height": 1536,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-5",
+          "imageUrl": "https://media.loveitbookit.com/media/4buf1gan/celebrity-cruises-celebrity-edge-portofino.jpg",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEE0pi6lsdtPQqD-ZC5SytW7lohHQzph8K7g&s",
+          "contextUrl": "https://www.loveitbookit.com/cruise-lines/celebrity-cruises/celebrity-edge",
+          "title": "Celebrity Edge Ship Guide & Latest Deals | LoveitBookit",
+          "width": 5272,
+          "height": 3948,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-6",
+          "imageUrl": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3555054190176013828",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgWRCjMlVPHimhVmSfG1dTFoHMJV0GKZBXhg&s",
+          "contextUrl": "https://www.instagram.com/p/DFWFxMFpd4I/",
+          "title": "In case you were wondering, Celebrity Edge is having an amazing season down  under in 📍Australia!",
+          "width": 1440,
+          "height": 1800,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        },
+        {
+          "id": "img-destination-celebrity-cruises-edge-class-or-solstice-class-t-7",
+          "imageUrl": "https://img.cruisecritic.net/cms-sb/f/1005231/1200x900/46d7aa36f7/celebrity-edge-refreshed-look.jpg?auto=format%2Cenhance&fit=crop&crop=entropy&q=50&w=2048&ixlib=react-9.10.0",
+          "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9-tsNnJE-cSqnOjx62uIzJLrAi_MSxhUmTg&s",
+          "contextUrl": "https://www.cruisecritic.com/articles/celebrity-cruises-new-age-for-solstice",
+          "title": "Celebrity Cruises Prepares a New Age for Solstice - Cruise Critic",
+          "width": 2048,
+          "height": 1536,
+          "provenance": "serpapi_search",
+          "category": "destination",
+          "sourceQuery": "Celebrity Cruises Edge class or Solstice class Transatlantic scenic landscape travel"
+        }
+      ],
+      "galleryIds": [
+        "img-hero-celebrity-cruises-edge-class-or-solstice-class-t-0",
+        "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-3"
+      ],
+      "aiTrace": {
+        "model": "claude-opus-4-6",
+        "promptSent": "SYSTEM:\nYou are a conversion-rate-optimization (CRO) specialist. Your job is to take a verbose, hyper-niche ad copy draft and split it into two distinct digital assets: an inclusive, visually-driven Landing Page and a hyper-targeted Meta Carousel ad.\n\nINPUT: a single high-niche ad copy draft (headline + body + disclaimers + targeting), produced for one specific subculture.\n\nSTRICT TRANSFORMATION RULES:\n\nPART 1: THE PUBLIC LANDING PAGE (Broad Market Appeal)\n- Tone: sophisticated, relaxed, premium — \"a great cruise with great perks\".\n- Rule: COMPLETELY REMOVE all hyper-specific niche vocabulary. Kill every reference to the subculture's hobby, props, brands, in-jokes, and personas. A standard retail traveler, or a partner who is NOT into the niche, must read this and think \"this looks like an incredible upscale cruise.\"\n- Keep the VIBE the ad promised (peace, ocean views, quiet sophisticated spaces, unhurried dining, atmospheric ports) but strip the jargon.\n- Structure: write short, evocative paragraphs (MAXIMUM 3 sentences each) designed to sit next to premium imagery, broken down exactly by these ship segments, in this order:\n  1. cabins  (heading \"The Cabins\")\n  2. lounges (heading \"The Lounges\")\n  3. atrium  (heading \"The Atrium\")\n  4. dining  (heading \"The Dining Rooms\")\n  5. excursions (heading \"The Excursions\")\n- Also write a broad heroHeadline and a one-line heroSubhead with NO niche jargon.\n\nPART 2: THE META CAROUSEL AD (Hyper-Niche Target)\n- Tone: inside-baseball, urgent, direct-response.\n- Structure: a 4-card carousel sequence. Each card: headline (MAX 40 characters) and primaryText (MAX 125 characters).\n- Rule: DOUBLE DOWN on the niche terminology here to flag the exact consumer scrolling the feed. Use the subculture's exact words, props, and pain points from the draft.\n\nOUTPUT FORMAT:\nReturn a single valid JSON object: heroHeadline, heroSubhead, segments (array of {segment, heading, body}), carouselCards (array of 4 {headline, primaryText}). No prose outside the JSON.\n\nPROMPT:\n{{HIGH_NICHE_COPY_DRAFT}}:\n{\n  \"campaignName\": \"Sea Days Roll Differently — Transatlantic Crossing for the Solo Journaling Roleplayer\",\n  \"targetAudienceTag\": \"Solo RPG journalers, indie TTRPG zine collectors, analog world-builders (25–45, tech/education/creative fields) who crave deep, unbroken narrative sessions away from digital interruption\",\n  \"headline\": \"Every Suite Faces the Ocean. Every Surface Is Yours. No Pool-Deck DJ Bleeding Through the Walls.\",\n  \"bodyCopy\": \"If the idea of a transatlantic solo RPG crossing appeals but the real fantasy is removing every last friction layer — shared walls, ambient crowd noise, rationing your coffee budget — Explora Journeys runs the version of this trip your campaign journal deserves.\\n\\nAll-suite. All-inclusive. All ocean-facing. On Explora's intimate ships, your suite isn't a cabin with a balcony bolted on — it's a private writing studio that happens to move across the Atlantic. Stable desk surface. Controlled lighting. Your own terrace with nothing between you and five thousand miles of negative space. The ship carries a fraction of the passengers a mainstream vessel does, so the library, the lounges, the quiet indoor corners with soft light and stable tables — they're yours in a way that feels like a residency, not a resort.\\n\\nThrough the current Explora offer, select ocean-crossing sailings may qualify for up to 25% off published suite fares and up to $3,500 in Journey Credit — onboard credit that covers everything from specialty dining to the kind of curated shore excursion in Madeira or the Azores that puts new geography into your world-builder's reference library. The all-inclusive structure means your espresso, your afternoon tea, your late-night snack while you're three hours deep in a Starforged session — already covered. No nickel-and-dime arithmetic interrupting the fiction.\\n\\nThis is the investment tier. It costs more than a Kickstarter dice tower. It costs more than your entire ZineQuest pledge history. But if you've spent years playing solo RPGs in 45-minute fragments and you want one week where the practice gets the environment it actually needs — ocean horizon, total silence, unlimited unbroken days — this is what that looks like when nothing is compromised.\\n\\nBook within 05/27/2026–06/27/2026 to access promotional pricing on eligible sailings.\",\n  \"pricingDisclaimers\": \"Explora Journeys promotional offer: Up to 25% savings and up to $3,500 Journey Credit apply to select sailings and suite categories only. Actual discount percentage and Journey Credit amount vary by suite category, sailing date, and availability; figures quoted are maximum possible values and are not guaranteed. Offer valid for bookings made 05/27/2026–06/27/2026 only. Explora Journeys transatlantic or extended-ocean itinerary availability is limited and subject to fleet deployment; not all sailing windows may have qualifying inventory. All-inclusive amenities are defined by Explora Journeys' standard inclusions and may vary. Wi-Fi is included in the all-inclusive package (usage is at guest's discretion). Pricing excludes applicable taxes and fees. Solo-occupancy surcharges may apply. All availability must be confirmed via live lookup at time of booking. Explora Journeys reserves the right to modify or withdraw this offer at any time.\",\n  \"callToAction\": \"Explore available Explora Journeys ocean-crossing suites and check Journey Credit eligibility →\",\n  \"interestKeywords\": [\n    \"solo RPG journaling\",\n    \"Thousand Year Old Vampire\",\n    \"Ironsworn Starforged\",\n    \"oracle solo roleplaying\",\n    \"indie TTRPG zines\",\n    \"polyhedral dice\",\n    \"Leuchtturm1917\",\n    \"fountain pen journaling\",\n    \"luxury travel\",\n    \"boutique cruise\",\n    \"Explora Journeys\",\n    \"all-suite cruise\",\n    \"transatlantic crossing\",\n    \"creative retreat\",\n    \"analog journaling practice\",\n    \"world-building\",\n    \"cozy solo games\",\n    \"artisan dice\"\n  ]\n}\n\nProduce PART 1 (broad landing page: heroHeadline, heroSubhead, and exactly the five ship-segment paragraphs in order — cabins, lounges, atrium, dining, excursions — each <=3 sentences, jargon stripped) and PART 2 (exactly 4 hyper-niche carousel cards, headline <=40 chars, primaryText <=125 chars).",
+        "rawResponse": "{\n  \"heroHeadline\": \"An Ocean Crossing with Nothing Between You and the Horizon\",\n  \"heroSubhead\": \"All-suite. All-inclusive. Five thousand miles of open Atlantic — and every day is entirely yours.\",\n  \"segments\": [\n    {\n      \"segment\": \"cabins\",\n      \"heading\": \"The Cabins\",\n      \"body\": \"Every suite faces the ocean — not a sliver of it through a porthole, but a full, unbroken view from your own private terrace. Inside, the space feels more like a boutique residence than a ship's cabin: a proper desk, controlled lighting, and enough quiet to hear your own thoughts. This isn't a room you sleep in between activities. It's the reason you booked.\"\n    },\n    {\n      \"segment\": \"lounges\",\n      \"heading\": \"The Lounges\",\n      \"body\": \"Intimate ships carry fewer guests, and you feel it the moment you settle into one of the onboard lounges. Deep chairs, soft light, stable surfaces, and the kind of unhurried calm that makes you lose track of time. Whether you're reading, writing, or simply watching the sea darken at dusk, the space is yours without negotiation.\"\n    },\n    {\n      \"segment\": \"atrium\",\n      \"heading\": \"The Atrium\",\n      \"body\": \"The heart of the ship is designed to welcome, not overwhelm. A refined gathering point with clean architecture and natural light, the atrium sets the tone for the entire voyage — understated, warm, quietly sophisticated. It's the first sign that everything aboard has been scaled for comfort rather than capacity.\"\n    },\n    {\n      \"segment\": \"dining\",\n      \"heading\": \"The Dining Rooms\",\n      \"body\": \"Every meal is included — from your first morning espresso to a late-night bite you didn't plan on. Multiple specialty restaurants mean you never eat the same way twice, and there's no bill at the end to pull you out of the moment. Dining here is unhurried, beautifully plated, and built around the assumption that your time at the table matters.\"\n    },\n    {\n      \"segment\": \"excursions\",\n      \"heading\": \"The Excursions\",\n      \"body\": \"When the ship makes port — Madeira, the Azores, storied coastlines that feel a world apart — curated shore excursions put you in landscapes most travelers only see in photographs. Journey Credit can be applied toward these experiences, so the cost of spontaneity is already covered. New places have a way of reshaping how you see everything else.\"\n    }\n  ],\n  \"carouselCards\": [\n    {\n      \"headline\": \"Your Solo RPG Deserves Sea Days\",\n      \"primaryText\": \"7 unbroken days of ocean horizon. No Wi-Fi guilt. No 45-min fragments. Just you, your journal, and a Starforged arc that finally breathes.\"\n    },\n    {\n      \"headline\": \"All-Suite. All-Inclusive. All Yours.\",\n      \"primaryText\": \"Private ocean-facing desk. Espresso at 2 AM mid-session. No shared walls, no pool-deck DJ. The campaign journal residency you've been theorycrafting.\"\n    },\n    {\n      \"headline\": \"More Than Your ZineQuest Pledges\",\n      \"primaryText\": \"Yes, it's an investment. But if you've ever rationed solo RPG time in stolen half-hours, one week of total analog immersion changes the practice.\"\n    },\n    {\n      \"headline\": \"Up to 25% Off + $3,500 Credit\",\n      \"primaryText\": \"Select transatlantic suites on Explora Journeys. Book by 06/27/2026. Put new geography in your world-builder's reference library. Check sailings →\"\n    }\n  ]\n}",
+        "latencyMs": 21071,
+        "generatedAtIso": "2026-06-12T18:19:11.400Z"
+      },
+      "heroImageId": "img-excursions-celebrity-cruises-edge-class-or-solstice-class-t-3"
+    }
+  ]
+}

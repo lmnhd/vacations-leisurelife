@@ -18,6 +18,7 @@ import {
   generateDealDiscoveryIdeas,
   getSavedDiscoveryResearchStatus,
   loadDealDiscoveryIdeasCache,
+  removeDealDiscoveryIdea,
   saveDealDiscoveryIdeasCache,
   upsertDealDiscoveryIdea,
   type DealDiscoveryIdea,
@@ -46,6 +47,24 @@ export async function GET() {
     researchStatus: getSavedDiscoveryResearchStatus(),
     ideas: loadIdeas(),
   });
+}
+
+/** DELETE ?id=<ideaId> — prune an unwanted discovery angle from the cache. */
+export async function DELETE(request: Request) {
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "id is required." }, { status: 400 });
+  }
+  try {
+    const cache = removeDealDiscoveryIdea(loadDealDiscoveryIdeasCache(), id);
+    saveDealDiscoveryIdeasCache(cache);
+    return NextResponse.json({ ok: true, ideas: cache.ideas });
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {

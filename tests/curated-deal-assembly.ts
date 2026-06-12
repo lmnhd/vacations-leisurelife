@@ -14,6 +14,7 @@ import {
   approveCuratedDeal,
   assembleCuratedDeal,
   evaluateApprovalGates,
+  isDealExpired,
   isDealHomepageEligible,
   rejectCuratedDeal,
   runDealCampaignStage,
@@ -63,6 +64,7 @@ const baseInput: AssembleCuratedDealInput = {
     promoSignals: ["Caribbean"],
   },
   generatedAtIso: GEN_AT,
+  expiresOnIso: "2999-01-01",
 };
 
 // A promo record carrying both public-safe claims and agent-only notes plus a
@@ -116,6 +118,7 @@ const deal = await assembleCuratedDeal({ ...baseInput, promoRecords: [promoRecor
 
 console.log("Assembly:");
 check("deal id carried through", deal.id === baseInput.dealId);
+check("expiration date carried through", deal.expiresOnIso === baseInput.expiresOnIso);
 check("status is needs_review", deal.status === "needs_review");
 check("approval status is needs_review", deal.operatorApproval?.status === "needs_review");
 check("link health starts unknown", deal.linkHealth.status === "unknown");
@@ -197,6 +200,22 @@ check("approval succeeds with valid link + text-only waiver", approved.approved)
 check("approved deal becomes bookable", approved.deal.status === "bookable");
 check("approved deal approval status is approved", approved.deal.operatorApproval?.status === "approved");
 check("approved deal IS homepage eligible", isDealHomepageEligible(approved.deal));
+check("future-expiring deal is not expired", !isDealExpired(approved.deal, new Date("2026-06-09T12:00:00.000Z")));
+check(
+  "date-only expiration remains valid through end of date",
+  !isDealExpired({ expiresOnIso: "2026-06-09" }, new Date("2026-06-09T23:59:59.999Z"))
+);
+check(
+  "date-only expiration is expired after the date",
+  isDealExpired({ expiresOnIso: "2026-06-09" }, new Date("2026-06-10T00:00:00.000Z"))
+);
+
+const expiredApprovedDeal: CuratedOdysseusDeal = {
+  ...approved.deal,
+  expiresOnIso: "2000-01-01",
+};
+check("expired approved deal is not homepage eligible", !isDealHomepageEligible(expiredApprovedDeal));
+check("missing expiration keeps legacy approved deal eligible", isDealHomepageEligible({ ...approved.deal, expiresOnIso: undefined }));
 
 // --- Schema validator enforces the approval gate ------------------------------
 console.log("\nSchema validator enforcement:");

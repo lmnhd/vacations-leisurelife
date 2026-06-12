@@ -38,6 +38,8 @@ export interface DealUnifiedManifest {
   /** Slug; idempotency key in the cache. */
   id: string;
   generatedAtIso: string;
+  /** Optional public visibility cutoff carried from the trip manifest. */
+  expiresOnIso?: string;
   /** Provenance — the angle + trip-manifest this was stitched from. */
   sourceAngleId: string;
   sourceManifestId: string;

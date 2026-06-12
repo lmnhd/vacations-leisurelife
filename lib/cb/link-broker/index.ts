@@ -12,6 +12,7 @@ export type { ResolveOptions, PackageLookupFn } from "./broker";
 // Package lookup: pure ranker + operator-run Odysseus adapter.
 export {
   rankPackageCandidates,
+  extractCabinPricing,
   normalizeDateKey,
   CRUISE_LINE_NAMES,
   SAIL_DATE_TOLERANCE_DAYS,
@@ -19,6 +20,8 @@ export {
 export type {
   RankedPackageCandidate,
   PackageLookupResult,
+  PackageCabinPricing,
+  PackageItinerary,
   RankOptions,
 } from "./package-lookup";
 export { lookupOdysseusPackages, resolveVendorId } from "./odysseus-lookup";

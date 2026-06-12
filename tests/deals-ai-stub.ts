@@ -19,6 +19,7 @@ import type { generateStructuredObject } from "../lib/ai/llm-gateway";
 import {
   __setCopywriterStructuredObjectGeneratorForTests,
   __setDiscoveryStructuredObjectGeneratorForTests,
+  __setFunnelSynthesisStructuredObjectGeneratorForTests,
   __setManifestStructuredObjectGeneratorForTests,
   __setStructuredObjectGeneratorForTests,
 } from "../lib/cb/deals-system";
@@ -213,6 +214,7 @@ function candidates(prompt: string): unknown[] {
   const manifest = {
     assembleDraft: {
       cruiseLine: "Royal Caribbean",
+      alternateCruiseLines: ["Celebrity", "Princess"],
       shipClassHint: "Radiance class",
       itineraryName: `${firstPort} alternative-process sailing`,
       destination: firstPort,
@@ -291,7 +293,69 @@ function candidates(prompt: string): unknown[] {
     ],
   };
 
-  return [pitch, research, targeting, copy, ad, media, discoveryAngles, manifest, adCopy].map(pick);
+  // Funnel synthesis: broad landing page (jargon-free segment paragraphs) + a
+  // 4-card hyper-niche carousel. Card 2's headline is deliberately >40 chars so the
+  // length validator has something to flag.
+  const funnel = {
+    heroHeadline: "Fourteen Unhurried Nights Across the Atlantic",
+    heroSubhead: "An upscale repositioning crossing built for rest, ocean views, and quiet.",
+    segments: [
+      {
+        segment: "cabins",
+        heading: "The Cabins",
+        body: "Your Infinite Veranda stateroom is an ocean-facing sanctuary where indoor comfort meets open-air sea views. Premium bedding and quiet climate control make it a private retreat.",
+      },
+      {
+        segment: "lounges",
+        heading: "The Lounges",
+        body: "Sophisticated, low-traffic lounges offer plush seating and quiet alcoves. Settle in with a book in the sun-drenched library, far from any high-decibel distraction.",
+      },
+      {
+        segment: "atrium",
+        heading: "The Atrium",
+        body: "The soaring multi-deck atrium is lined with floor-to-ceiling windows that flood the space with light. A serene backdrop for a morning espresso or an evening cocktail.",
+      },
+      {
+        segment: "dining",
+        heading: "The Dining Rooms",
+        body: "Savor unhurried meals across multiple dining venues with rotating menus and an award-winning wine list. Impeccable service that respects your personal pace.",
+      },
+      {
+        segment: "excursions",
+        heading: "The Excursions",
+        body: "Step ashore in atmospheric ports like Ponta Delgada and Funchal. Wander cobblestone streets and centuries-old architecture on an itinerary made for discovery, not crowds.",
+      },
+    ],
+    carouselCards: [
+      {
+        headline: "Stuck on Prompt 34?",
+        primaryText:
+          "Your Thousand Year Old Vampire campaign didn't stall because you lost the thread. Land life won't stop interrupting you.",
+      },
+      {
+        headline: "Eight Unbroken Sea Days Await Your Oracle and Dice",
+        primaryText: "No commutes. No logistics. Just your balcony as a private writing carrel.",
+      },
+      {
+        headline: "Patronage for Your Pages",
+        primaryText: "Book the Summer Sale for onboard credit — morning espressos and golden-hour wine on deck.",
+      },
+      {
+        headline: "14 Nights. Zero Interruptions.",
+        primaryText: "A late-autumn transatlantic crossing is a socially sanctioned disappearance. Lock balcony pricing before July 27.",
+      },
+    ],
+  };
+
+  // Inventory-aware fit-select: picks a package by id and explains the fit.
+  const fitSelect = {
+    chosenPackageId: "1500001",
+    fitRationale: "Best date proximity and ship-class match for the angle's onboard asset needs.",
+    runnerUpPackageIds: ["1500002"],
+    needsReframe: false,
+  };
+
+  return [pitch, research, targeting, copy, ad, media, discoveryAngles, manifest, adCopy, funnel, fitSelect].map(pick);
 }
 
 /** Install the stub. Call once at the top of a proof script. */
@@ -312,4 +376,5 @@ export function installDealsAiStub(): void {
   __setDiscoveryStructuredObjectGeneratorForTests(stub);
   __setManifestStructuredObjectGeneratorForTests(stub);
   __setCopywriterStructuredObjectGeneratorForTests(stub);
+  __setFunnelSynthesisStructuredObjectGeneratorForTests(stub);
 }

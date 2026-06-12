@@ -84,6 +84,7 @@ export interface AssembleCuratedDealInput {
   promoApplicability?: PromoApplicabilityResult[];
   agentOnlyNotes?: string[];
   generatedAtIso?: string;
+  expiresOnIso?: string;
 }
 
 export interface AssembleCuratedDealOptions {
@@ -372,6 +373,7 @@ export async function assembleCuratedDeal(
     source: "odysseus_curated_retail",
     briefId: input.briefId,
     capturedAtIso: generatedAtIso,
+    expiresOnIso: input.expiresOnIso,
     packageId: input.packageId,
     siid: input.siid,
     bookingUrl,
@@ -566,6 +568,50 @@ export function rejectCuratedDeal(
   };
 }
 
+function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {
+  const trimmed = expiresOnIso?.trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.includes("T")) {
+    const exactDate = new Date(trimmed);
+    return Number.isNaN(exactDate.getTime()) ? undefined : exactDate;
+  }
+
+  const [yearRaw, monthRaw, dayRaw] = trimmed.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return undefined;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
+  return date;
+}
+
+export function isDealExpired(
+  deal: Pick<CuratedOdysseusDeal, "expiresOnIso">,
+  now = new Date()
+): boolean {
+  const expiresAt = dealExpiryDate(deal.expiresOnIso);
+  return expiresAt ? now.getTime() > expiresAt.getTime() : false;
+}
+
 /**
  * Single source of truth for homepage eligibility. The homepage filter must use
  * this; never re-derive the rule inline.
@@ -575,6 +621,7 @@ export function isDealHomepageEligible(deal: CuratedOdysseusDeal): boolean {
     deal.status === "bookable" &&
     deal.operatorApproval?.status === "approved" &&
     deal.linkHealth.status === "valid" &&
+    !isDealExpired(deal) &&
     !deal.operatorVisibility?.hidden
   );
 }

@@ -12,6 +12,7 @@ import type { DealDiscoveryIdeasCache, DealDiscoveryIdea } from "./deal-discover
 import type { DealTripManifestsCache, DealTripManifest } from "./deal-trip-manifest-types";
 import type { DealUnifiedManifestsCache, DealUnifiedManifest } from "./deal-unified-manifest-types";
 import type { DealAdCopyCache, DealAdCopy } from "./deal-ad-copy-types";
+import type { DealFunnelSynthesisCache, DealFunnelSynthesis } from "./deal-page-design-types";
 import type { LinkBrokerCache, LinkBrokerRecord } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -302,6 +303,30 @@ function validateDealTripManifest(manifest: unknown, i: number, errors: string[]
   }
   if (!Array.isArray(m.appliedPromos)) errors.push(`manifests[${i}].appliedPromos must be an array`);
   if (!isRecord(m.lookupQuery)) errors.push(`manifests[${i}].lookupQuery missing`);
+  // Step 4 — Resolve: optional, but when present it must carry operator provenance.
+  if (m.resolvedPackage !== undefined) {
+    if (!isRecord(m.resolvedPackage)) {
+      errors.push(`manifests[${i}].resolvedPackage must be an object`);
+    } else {
+      const r = m.resolvedPackage as Record<string, unknown>;
+      if (r.source !== "operator_package_lookup") {
+        errors.push(
+          `manifests[${i}].resolvedPackage.source must be "operator_package_lookup" — only the operator-run lookup may resolve a package`
+        );
+      }
+      for (const key of ["packageId", "cruiseName", "sailDateIso", "siid"]) {
+        if (typeof r[key] !== "string" || !(r[key] as string)) {
+          errors.push(`manifests[${i}].resolvedPackage.${key} missing`);
+        }
+      }
+      if (!isIsoDate(r.resolvedAtIso)) {
+        errors.push(`manifests[${i}].resolvedPackage.resolvedAtIso must be an ISO date`);
+      }
+      if (typeof r.confidence !== "number") {
+        errors.push(`manifests[${i}].resolvedPackage.confidence must be a number`);
+      }
+    }
+  }
 }
 
 export function validateDealTripManifestsCache(
@@ -368,6 +393,18 @@ function validateDealAdCopy(adCopy: unknown, i: number, errors: string[]): void 
     errors.push(`adCopies[${i}].variants must be a non-empty array`);
     return;
   }
+  if (a.selectedVariantIndex !== undefined) {
+    if (
+      typeof a.selectedVariantIndex !== "number" ||
+      !Number.isInteger(a.selectedVariantIndex) ||
+      a.selectedVariantIndex < 0 ||
+      a.selectedVariantIndex >= a.variants.length
+    ) {
+      errors.push(
+        `adCopies[${i}].selectedVariantIndex must be an integer in [0, ${a.variants.length - 1}]`
+      );
+    }
+  }
   a.variants.forEach((variant, vi) => {
     if (!isRecord(variant)) {
       errors.push(`adCopies[${i}].variants[${vi}] is not an object`);
@@ -392,5 +429,48 @@ export function validateDealAdCopyCache(value: unknown): ValidationResult<DealAd
   }
   return errors.length === 0
     ? { ok: true, value: value as unknown as DealAdCopyCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealFunnelSynthesis(s: unknown, i: number, errors: string[]): void {
+  if (!isRecord(s)) {
+    errors.push(`syntheses[${i}] is not an object`);
+    return;
+  }
+  const f = s as Partial<DealFunnelSynthesis>;
+  if (typeof f.id !== "string" || !f.id) errors.push(`syntheses[${i}].id missing`);
+  if (f.generator !== "gpt") errors.push(`syntheses[${i}].generator must be "gpt"`);
+  if (!isIsoDate(f.generatedAtIso)) errors.push(`syntheses[${i}].generatedAtIso must be an ISO date`);
+  if (typeof f.sourceAdCopyId !== "string") errors.push(`syntheses[${i}].sourceAdCopyId missing`);
+
+  if (!isRecord(f.landingPage)) {
+    errors.push(`syntheses[${i}].landingPage missing`);
+  } else if (!Array.isArray(f.landingPage.segments) || f.landingPage.segments.length === 0) {
+    errors.push(`syntheses[${i}].landingPage.segments must be a non-empty array`);
+  }
+
+  if (!isRecord(f.carousel)) {
+    errors.push(`syntheses[${i}].carousel missing`);
+  } else if (!Array.isArray(f.carousel.cards) || f.carousel.cards.length === 0) {
+    errors.push(`syntheses[${i}].carousel.cards must be a non-empty array`);
+  }
+
+  if (!Array.isArray(f.candidates)) errors.push(`syntheses[${i}].candidates must be an array`);
+  if (!Array.isArray(f.galleryIds)) errors.push(`syntheses[${i}].galleryIds must be an array`);
+}
+
+export function validateDealFunnelSynthesisCache(
+  value: unknown
+): ValidationResult<DealFunnelSynthesisCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "syntheses", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.syntheses)) {
+    v.syntheses.forEach((s, i) => validateDealFunnelSynthesis(s, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealFunnelSynthesisCache, errors }
     : { ok: false, errors };
 }

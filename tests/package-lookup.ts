@@ -179,6 +179,58 @@ const r6 = rankPackageCandidates(
 check("result with no package ID is dropped -> no_match", r6.status === "no_match", r6.status);
 check("diagnostics mention dropped result", r6.diagnostics.some((d) => /no usable package id/i.test(d)));
 
+// --- bestEffort: far-off date still resolves (deal system "always find a ship") ---
+console.log("\nBest-effort (deal system):");
+const r7 = rankPackageCandidates(
+  { shipName: "Wonder of the Seas", sailDate: "2026-11-08" } satisfies LinkBrokerCruiseFacts,
+  [decoy], // sails 12/20, far from 11/08 — strict mode returns no_match
+  { bestEffort: true }
+);
+check("best-effort far-off date -> confident_match (not no_match)", r7.status === "confident_match", r7.status);
+check("best-effort selects the sole real package", r7.selected?.packageId === "1500002", r7.selected?.packageId);
+
+// --- bestEffort: ambiguous twins -> still auto-picks the closest, never ambiguous ---
+const r8 = rankPackageCandidates(
+  { cruiseLine: "Royal Caribbean", sailDate: "2026-09-05" } satisfies LinkBrokerCruiseFacts,
+  [twinA, twinB],
+  { bestEffort: true }
+);
+check("best-effort indistinguishable twins -> confident_match (coin flip)", r8.status === "confident_match", r8.status);
+check("best-effort still returns a selection", r8.selected !== undefined);
+check("best-effort keeps both candidates", r8.candidates.length === 2);
+
+// --- bestEffort: prefers the candidate closest to the requested date ---
+const near = makeResult({
+  pkgId: 1800001,
+  code: "NEAR",
+  name: "7-Night Caribbean",
+  cruiselineId: 8,
+  startDateTime: "2026-11-10T00:00:00", // 2 days off
+  duration: 7,
+});
+const far = makeResult({
+  pkgId: 1800002,
+  code: "FAR",
+  name: "7-Night Caribbean",
+  cruiselineId: 8,
+  startDateTime: "2027-02-01T00:00:00", // far off
+  duration: 7,
+});
+const r9 = rankPackageCandidates(
+  { cruiseLine: "Royal Caribbean", sailDate: "2026-11-08" } satisfies LinkBrokerCruiseFacts,
+  [far, near],
+  { bestEffort: true }
+);
+check("best-effort picks the date-closest candidate", r9.selected?.packageId === "1800001", r9.selected?.packageId);
+
+// --- bestEffort with zero candidates still returns no_match (nothing to pick) ---
+const r10 = rankPackageCandidates(
+  { shipName: "Wonder of the Seas", sailDate: "2026-11-08" } satisfies LinkBrokerCruiseFacts,
+  [noPkg],
+  { bestEffort: true }
+);
+check("best-effort with no usable package -> no_match", r10.status === "no_match", r10.status);
+
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
   process.exit(1);

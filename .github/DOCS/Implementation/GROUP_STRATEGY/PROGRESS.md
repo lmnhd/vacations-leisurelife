@@ -94,6 +94,7 @@ Full 2-phase discovery pipeline is operational and battle-tested. Phase A genera
 ### Dev Environment Notes
 - Windows + Dropbox can lock `.next` during Next.js manifest rewrites and surface `EPERM` rename failures under Turbopack.
 - Repo recovery helper: `npm run next:prepare-local-cache` moves `.next` behind a junction rooted in `%LOCALAPPDATA%\LeisureLifeInteractive\next-cache` so generated build artifacts stop competing with Dropbox sync.
+- If the current symptom is an `EPERM` rename failure against `.next/dev/server/next-font-manifest.json` or another dev manifest, stop the dev server, run `npm run next:repair-dev-cache`, then restart with `npm run dev:webpack`.
 - Recommended local dev command after preparing the cache: `npm run dev:webpack`
 
 **test campaign**: `analog-film-and-darkroom-odyssey-2026`

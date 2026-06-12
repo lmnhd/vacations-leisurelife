@@ -17,9 +17,11 @@ import {
   assembleDealUnifiedManifest,
   emptyDealAdCopyCache,
   generateDealAdCopy,
+  selectDealAdCopyVariant,
   upsertDealAdCopy,
   validateAdCopyVoice,
   validateDealAdCopyCache,
+  withSelectedVariantPrimary,
   type DealDiscoveryIdea,
   type DealTripManifest,
 } from "../lib/cb/deals-system";
@@ -142,6 +144,40 @@ async function main(): Promise<void> {
     callToAction: "Unwind now",
   });
   check("voice check flags banned vocabulary", dirty.length >= 3, dirty.join(", "));
+
+  // --- Variant selection -----------------------------------------------------
+  console.log("\nVariant selection (operator picks the final ad):");
+  check("ad copy starts with no explicit selection", adCopy.selectedVariantIndex === undefined);
+
+  let selCache = upsertDealAdCopy(emptyDealAdCopyCache(GEN_AT), adCopy);
+  selCache = selectDealAdCopyVariant(selCache, adCopy.id, 1);
+  const selected = selCache.adCopies.find((a) => a.id === adCopy.id)!;
+  check("selecting variant 1 persists selectedVariantIndex", selected.selectedVariantIndex === 1);
+  check("selection cache still validates", validateDealAdCopyCache(selCache).ok);
+
+  let threw = false;
+  try {
+    selectDealAdCopyVariant(selCache, adCopy.id, 99);
+  } catch {
+    threw = true;
+  }
+  check("selecting an out-of-range variant throws", threw);
+
+  // Assembly promotes the selected variant to primary (index 0).
+  const promoted = withSelectedVariantPrimary(selected);
+  check(
+    "selected variant is promoted to primary slot",
+    promoted.variants[0].headline === adCopy.variants[1].headline
+  );
+  check(
+    "promoted primaryPromoApplied tracks the chosen variant",
+    promoted.primaryPromoApplied === adCopy.variants[1].promoApplied
+  );
+  check("promotion keeps every variant (none dropped)", promoted.variants.length === adCopy.variants.length);
+  check(
+    "no selection is a no-op for assembly ordering",
+    withSelectedVariantPrimary(adCopy).variants[0].headline === adCopy.variants[0].headline
+  );
 
   // --- Cache validation ------------------------------------------------------
   console.log("\nCache upsert + validation:");

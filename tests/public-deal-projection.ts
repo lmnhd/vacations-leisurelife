@@ -15,14 +15,63 @@
 import {
   approveCuratedDeal,
   assembleCuratedDeal,
+  dealFunnelSynthesisLookupKeys,
+  findDealFunnelSynthesisForDeal,
+  findDealTripManifestForDeal,
   isDealHomepageEligible,
   projectPublicDealPage,
   projectPublicDealTile,
   type AssembleCuratedDealInput,
   type CbPromoIntelligenceRecord,
   type CuratedOdysseusDeal,
+  type DealFunnelSynthesis,
 } from "../lib/cb/deals-system";
 import { installDealsAiStub } from "./deals-ai-stub";
+
+/** Minimal funnel synthesis fixture: hero + 5 segments + per-segment images. */
+function synthesisFor(dealId: string): DealFunnelSynthesis {
+  const cat = (c: string, id: string) => ({
+    id,
+    imageUrl: `https://img.example.com/${id}.jpg`,
+    thumbnailUrl: `https://img.example.com/${id}-t.jpg`,
+    title: `${c} photo`,
+    provenance: "serpapi_search" as const,
+    category: c as DealFunnelSynthesis["candidates"][number]["category"],
+  });
+  return {
+    id: dealId,
+    dealId,
+    generatedAtIso: GEN_AT,
+    generator: "gpt",
+    sourceAdCopyId: "adcopy-x",
+    sailingAngleTitle: "Sea Days Roll Differently",
+    landingPage: {
+      heroHeadline: "An Ocean Crossing with Nothing Between You and the Horizon",
+      heroSubhead: "All-suite. All-inclusive. Every day is entirely yours.",
+      segments: [
+        { segment: "cabins", heading: "The Cabins", body: "Every suite faces the ocean.", imageId: "img-cabins" },
+        { segment: "lounges", heading: "The Lounges", body: "Deep chairs, soft light.", imageId: "img-lounges" },
+        { segment: "atrium", heading: "The Atrium", body: "A refined gathering point.", imageId: "img-atrium" },
+        { segment: "dining", heading: "The Dining Rooms", body: "Every meal is included.", imageId: "img-dining" },
+        { segment: "excursions", heading: "The Excursions", body: "Curated shore excursions.", imageId: "img-excursions" },
+      ],
+      warnings: [],
+    },
+    carousel: { cards: [], warnings: [] },
+    candidates: [
+      cat("hero", "img-hero"),
+      cat("hero", "img-hero-backup"),
+      cat("cabins", "img-cabins"),
+      cat("lounges", "img-lounges"),
+      cat("atrium", "img-atrium"),
+      cat("dining", "img-dining"),
+      cat("excursions", "img-excursions"),
+      cat("excursions", "img-excursions-backup"),
+    ],
+    galleryIds: [],
+    heroImageId: "img-hero",
+  };
+}
 
 installDealsAiStub();
 
@@ -137,6 +186,14 @@ check("valid-link but unapproved deal excluded", !isDealHomepageEligible(validLi
 check("approved + valid-link deal included", isDealHomepageEligible(approved));
 check("approved deal with broken link excluded", !isDealHomepageEligible(approvedThenLinkBroke));
 check("exactly one of four pool deals is eligible", eligible.length === 1);
+check(
+  "expired approved deal excluded",
+  !isDealHomepageEligible({ ...approved, expiresOnIso: "2000-01-01" })
+);
+check(
+  "future-expiring approved deal included",
+  isDealHomepageEligible({ ...approved, expiresOnIso: "2999-01-01" })
+);
 
 // --- Projection safety --------------------------------------------------------
 console.log("\nProjection safety:");
@@ -184,6 +241,186 @@ check(
   "non-waived approved deal projects textOnlyLaunchWaived=false",
   projectPublicDealPage(mediaReadyDeal).textOnlyLaunchWaived === false
 );
+
+// --- Premium Deal Page (designPage) -------------------------------------------
+console.log("\nPremium Deal Page (designPage):");
+
+// Without a synthesis, no designPage (route falls back to legacy rendering).
+check("no synthesis -> no designPage", projectPublicDealPage(approved).designPage === undefined);
+
+// With a synthesis, a resolved deal yields a full premium page view. `approved`
+// was waived text-only, so use a media-ready approval for the hero-image check.
+const mediaReadyForHero = approveCuratedDeal(
+  { ...validLinkUnapproved, mediaPlan: { ...assembled.mediaPlan!, readiness: "ready" } },
+  { decidedAtIso: GEN_AT }
+).deal;
+const resolvedPage = projectPublicDealPage(mediaReadyForHero, synthesisFor(mediaReadyForHero.id)).designPage;
+check("synthesis present -> designPage built", resolvedPage !== undefined);
+check("designPage readiness is resolved (ship+date+price present)", resolvedPage?.readiness === "resolved");
+check("hero uses the synthesis headline", resolvedPage?.hero.headline.startsWith("An Ocean Crossing"));
+check("hero image resolves from heroImageId", resolvedPage?.hero.imageUrl === "https://img.example.com/img-hero.jpg",
+  resolvedPage?.hero.imageUrl);
+check("hero carries same-set fallback images",
+  resolvedPage?.hero.imageFallbacks?.some((image) => image.imageUrl === "https://img.example.com/img-hero-backup.jpg") === true);
+check("hero tries selected thumbnail before other fallbacks",
+  resolvedPage?.hero.imageFallbacks?.[0]?.imageUrl === "https://img.example.com/img-hero-t.jpg",
+  resolvedPage?.hero.imageFallbacks?.[0]?.imageUrl);
+// A funnel synthesis carries operator-selected imagery, so it should override
+// the older text-only media waiver from the curated-deal publish step.
+check("text-only-waived deal still uses selected synthesis hero image",
+  projectPublicDealPage(approved, synthesisFor(approved.id)).designPage?.hero.imageUrl === "https://img.example.com/img-hero.jpg");
+check("five segments in fixed order", resolvedPage?.segments.length === 5 &&
+  resolvedPage?.segments[0].heading === "The Cabins" &&
+  resolvedPage?.segments[4].heading === "The Excursions");
+check("segment images resolve from per-segment imageId",
+  resolvedPage?.segments.every((s) => typeof s.imageUrl === "string" && s.imageUrl.length > 0) === true);
+check("segment image alt text is public-safe, not source-page title",
+  resolvedPage?.segments.find((s) => s.heading === "The Atrium")?.imageAlt === "Atrium aboard the ship");
+check("segment image carries same-category fallback images",
+  resolvedPage?.segments.find((s) => s.heading === "The Excursions")?.imageFallbacks?.some((image) =>
+    image.imageUrl === "https://img.example.com/img-excursions-backup.jpg"
+  ) === true);
+check("segment image tries selected thumbnail before category fallbacks",
+  resolvedPage?.segments.find((s) => s.heading === "The Excursions")?.imageFallbacks?.[0]?.imageUrl ===
+    "https://img.example.com/img-excursions-t.jpg");
+check("segment index labels are 01..05",
+  resolvedPage?.segments.map((s) => s.index).join(",") === "01,02,03,04,05");
+check("resolved pricing is a table with a lead fare",
+  resolvedPage?.pricing.kind === "table" &&
+    resolvedPage.pricing.rows.some((r) => r.lead === true));
+check("resolved from-price reflects the lowest cabin fare", resolvedPage?.fromPriceLabel === "$699");
+check("resolved itinerary lists every port as days",
+  resolvedPage?.itinerary.kind === "days" && resolvedPage.itinerary.rows.length === approved.cruiseFacts.portsOfCall.length);
+check("designPage carries the booking url", resolvedPage?.bookingUrl === approved.bookingUrl);
+check("designPage never leaks the agent-only note",
+  !allText(resolvedPage).includes("tc credit") && !allText(resolvedPage).includes("group economics"));
+
+// Published deals use live package ids, but the funnel synthesis cache is
+// keyed to the source manifest/ad-copy trace carried in agentOnlyNotes.
+const sourceManifestId = "manifest-sea-days-roll-differently-celebrity-cruises";
+const sourceAdCopyId = "adcopy-sea-days-roll-differently";
+const manifestKeyedDeal: CuratedOdysseusDeal = {
+  ...mediaReadyForHero,
+  id: "1665442",
+  packageId: "1665442",
+  copyPackage: {
+    ...mediaReadyForHero.copyPackage!,
+    agentOnlyNotes: [`Assembled from manifest unified-${sourceManifestId} + ad copy ${sourceAdCopyId}`],
+  },
+  agentOnlyNotes: [`Assembled from manifest unified-${sourceManifestId} + ad copy ${sourceAdCopyId}`],
+};
+const lookupKeys = dealFunnelSynthesisLookupKeys(manifestKeyedDeal);
+check("synthesis lookup includes public package id", lookupKeys.includes("1665442"));
+check("synthesis lookup includes source manifest id", lookupKeys.includes(sourceManifestId));
+check("synthesis lookup includes source ad-copy id", lookupKeys.includes(sourceAdCopyId));
+const manifestKeyedSynthesis: DealFunnelSynthesis = {
+  ...synthesisFor(sourceManifestId),
+  id: "funnel-source-manifest",
+  dealId: sourceManifestId,
+  sourceAdCopyId,
+};
+check(
+  "manifest-keyed synthesis resolves for package-keyed deal",
+  findDealFunnelSynthesisForDeal(manifestKeyedDeal, [manifestKeyedSynthesis]) === manifestKeyedSynthesis
+);
+check(
+  "package-keyed deal builds premium designPage from manifest-keyed synthesis",
+  projectPublicDealPage(manifestKeyedDeal, manifestKeyedSynthesis).designPage !== undefined
+);
+check(
+  "source manifest resolves for package-keyed deal",
+  findDealTripManifestForDeal(manifestKeyedDeal, [{ id: sourceManifestId } as never])?.id === sourceManifestId
+);
+
+const screenshotBugDeal: CuratedOdysseusDeal = {
+  ...manifestKeyedDeal,
+  cruiseFacts: {
+    ...manifestKeyedDeal.cruiseFacts,
+    itineraryName: "Sea Days Roll Differently - Transatlantic Crossing for the Solo Journaling Roleplayer",
+    shipName: "13-Night Westbound Transatlantic Cruise From Southampton Ending In Fort Lauderdale",
+    sailDateIso: "2026-09-14",
+    portsOfCall: ["Southampton | Vigo | Lisbon | Madeira | Port Everglades"],
+    cabinPrices: { currencyCode: "USD" },
+  },
+  promoApplicability: [
+    { promoRecordId: "likely", status: "likely_applicable", matchedOn: ["Celebrity match"], assumptions: ["Likely applies"], warnings: [] },
+    { promoRecordId: "possible", status: "possibly_applicable_needs_review", matchedOn: ["Fallback line"], assumptions: ["Maybe"], warnings: [] },
+  ],
+};
+const screenshotBugPage = projectPublicDealPage(screenshotBugDeal, manifestKeyedSynthesis).designPage;
+check(
+  "cruise-name ship field becomes itinerary, not ship",
+  screenshotBugPage?.factBand.some((f) =>
+    f.label === "Itinerary" &&
+    f.value === "13-Night Westbound Transatlantic Cruise From Southampton Ending In Fort Lauderdale"
+  ) === true
+);
+check(
+  "pipe-delimited ports split into individual ports",
+  screenshotBugPage?.factBand.some((f) =>
+    f.label === "Ports of Call" &&
+    f.value === "Southampton · Vigo · Lisbon · Madeira · Port Everglades"
+  ) === true
+);
+check(
+  "known sail date is shown even when pricing is still draft",
+  screenshotBugPage?.factBand.some((f) => f.label === "Sail Date" && f.value === "September 14, 2026") === true
+);
+check(
+  "fallback/possible promos do not duplicate public offer cards",
+  screenshotBugPage?.specials.length === 1
+);
+check(
+  "promo matcher internals do not render on the design page",
+  !allText(screenshotBugPage).includes("celebrity match") &&
+    !allText(screenshotBugPage).includes("likely applies") &&
+    !allText(screenshotBugPage).includes("fallback line")
+);
+
+const safePromoDeal: CuratedOdysseusDeal = {
+  ...manifestKeyedDeal,
+  promoApplicability: [
+    {
+      promoRecordId: promoRecord.id,
+      status: "likely_applicable",
+      matchedOn: ["Vendor match: internal-only reasoning"],
+      assumptions: ["Operator should never see this on the public page"],
+      warnings: ["Do not headline this internal warning"],
+    },
+  ],
+};
+const safePromoPage = projectPublicDealPage(safePromoDeal, manifestKeyedSynthesis, [promoRecord]).designPage;
+check(
+  "safe promo page uses visitor-safe promo claims",
+  safePromoPage?.specials[0]?.claims.some((claim) =>
+    claim.includes("Sail the Southern Caribbean with onboard credit on select cabins")
+  ) === true
+);
+check(
+  "safe promo page excludes applicability reasoning and warnings",
+  !allText(safePromoPage).includes("vendor match") &&
+    !allText(safePromoPage).includes("operator should never") &&
+    !allText(safePromoPage).includes("do not headline")
+);
+
+// Draft fork: a deal with no ship/date/pricing must show graceful fallbacks and
+// NEVER an invented price.
+const draftDeal: CuratedOdysseusDeal = {
+  ...approved,
+  cruiseFacts: {
+    ...approved.cruiseFacts,
+    shipName: "",
+    sailDateIso: "",
+    cabinPrices: { currencyCode: "USD" },
+  },
+};
+const draftPage = projectPublicDealPage(draftDeal, synthesisFor(draftDeal.id)).designPage;
+check("draft deal -> readiness draft", draftPage?.readiness === "draft");
+check("draft pricing shows no invented number", draftPage?.pricing.kind === "draft");
+check("draft has no from-price label", draftPage?.fromPriceLabel === undefined);
+check("draft itinerary falls back to named ports", draftPage?.itinerary.kind === "ports");
+check("draft fact band marks ship/date confirmed at booking",
+  draftPage?.factBand.some((e) => e.value === "Confirmed at booking") === true);
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 if (failed > 0) {

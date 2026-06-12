@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-08T00:00:00.000Z",
+  "generatedAtIso": "2026-06-12T18:13:26.788Z",
   "records": [
     {
       "id": "sample-link-broker-1636340-package-entry",
@@ -23,6 +23,87 @@
       },
       "parameterSummary": {
         "officeId": "192",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1663947::1049337::1f4fcd78c088e80d",
+      "packageId": "1663947",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1663947?siid=1049337&lang=1",
+      "urlHash": "9d2c25f74b6460af6626ac54",
+      "source": "constructed",
+      "createdAtIso": "2026-06-12T17:43:07.476Z",
+      "updatedAtIso": "2026-06-12T17:43:07.476Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Cunard",
+        "shipName": "Round World From San Francisco",
+        "sailDateIso": "2027-01-03",
+        "nights": 51
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1621696::1049337::1f4fcd78c088e80d",
+      "packageId": "1621696",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1621696?siid=1049337&lang=1",
+      "urlHash": "6e26cd61f23ab52163808c8c",
+      "source": "constructed",
+      "createdAtIso": "2026-06-12T18:07:44.441Z",
+      "updatedAtIso": "2026-06-12T18:07:44.441Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Celebrity",
+        "shipName": "13-Night Westbound Transatlantic Cruise From Southampton Ending In Fort Lauderdale",
+        "sailDateIso": "2026-09-14",
+        "nights": 13
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1576802::1049337::1f4fcd78c088e80d",
+      "packageId": "1576802",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1576802?siid=1049337&lang=1",
+      "urlHash": "849b4907b115e0f8cf178be0",
+      "source": "constructed",
+      "createdAtIso": "2026-06-12T18:13:26.787Z",
+      "updatedAtIso": "2026-06-12T18:13:26.787Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Royal Caribbean",
+        "shipName": "7 Night Eastern Caribbean & Perfect Day",
+        "sailDateIso": "2027-03-14",
+        "nights": 7
+      },
+      "parameterSummary": {
+        "officeId": "286",
         "hasPhone": false,
         "hasCloneBookingToken": false,
         "hasBookingReference": false

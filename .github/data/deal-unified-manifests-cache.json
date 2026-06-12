@@ -1,111 +1,135 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-11T00:35:39.448Z",
+  "generatedAtIso": "2026-06-12T18:15:22.739Z",
   "manifests": [
     {
-      "id": "unified-manifest-roll-the-dice-write-the-wake-celebrity-cruises",
-      "generatedAtIso": "2026-06-11T00:35:39.448Z",
-      "sourceAngleId": "angle-roll-the-dice-write-the-wake",
-      "sourceManifestId": "manifest-roll-the-dice-write-the-wake-celebrity-cruises",
-      "sailingAngleTitle": "Roll the Dice, Write the Wake",
+      "id": "unified-manifest-sea-days-roll-differently-celebrity-cruises",
+      "generatedAtIso": "2026-06-12T18:15:22.738Z",
+      "sourceAngleId": "angle-sea-days-roll-differently",
+      "sourceManifestId": "manifest-sea-days-roll-differently-celebrity-cruises",
+      "sailingAngleTitle": "Sea Days Roll Differently",
       "creativeBrief": {
         "isolatedNiche": "The Solo Journaling Tabletop Roleplayer",
         "angle": {
-          "sailingAngleTitle": "Roll the Dice, Write the Wake",
-          "theCorePitch": "Your Thousand Year Old Vampire campaign has been stuck on Prompt 34 for two months because your house won't stop interrupting you mid-sentence. Book a floating week of enforced disconnection where every sea day is a blank calendar, your balcony is a private writing carrel, and the oracle finally gets the unbroken hours of cognitive silence it's been starving for.",
-          "visualAnchor": "A top-down, cozy flat-lay shot on a small teak balcony table overlooking a calm, deep-blue ocean at golden hour. A beautifully worn Leuchtturm1917 journal lies open, its cream pages dense with neat handwriting and quick ink sketches of a fictional map in the margins. A curated scatter of jewel-toned polyhedral dice rests beside the journal, alongside a capped brass fountain pen and a small, staple-bound indie RPG zine with richly illustrated cover art. A half-drunk espresso sits at the edge of the frame.",
-          "targetAudienceDescriptor": "Introverted writers, world-builders, and analog gamers—typically aged 25 to 45, often in knowledge-work or creative professions—who spend heavily on premium stationery, artisanal dice sets, and indie RPG zines from itch.io or ZineQuest Kickstarters, and who crave structured solitary creative time free from domestic obligation and digital noise.",
+          "sailingAngleTitle": "Sea Days Roll Differently",
+          "theCorePitch": "At home, your solo RPG sessions get carved into 45-minute scraps between obligations, and the oracle always loses to the group chat. A week at sea hands you full, unbroken days of deep narrative flow—balcony mornings with your Leuchtturm open, a d10 on the nightstand, and no WiFi algorithm competing with the story your dice are building.",
+          "visualAnchor": "A cozy, overhead flat-lay shot on a small teak balcony table at sea. A beautifully worn staple-bound indie zine (its cover illustrated with hand-drawn maps) lies open beside a premium leather-bound journal filled with neat handwriting and marginal sketches. A small constellation of translucent, jewel-toned polyhedral dice rests mid-roll on the pages. A half-finished cup of black coffee and a capped fountain pen complete the scene, while the blurred turquoise wake of the ship trails away in the background below the balcony railing.",
+          "targetAudienceDescriptor": "Introverted writers, world-builders, and analog game enthusiasts—often in tech, education, or creative fields, aged 25 to 45—who spend on premium stationery, artisanal dice sets, and indie RPG zines from itch.io and ZineQuest Kickstarters, and who crave structured solitary creative time free from digital interruption.",
           "relevantKeywords": [
             "solo RPG journaling",
             "Thousand Year Old Vampire",
-            "GM-less tabletop RPG",
-            "solo roleplaying oracle",
-            "analog journaling game",
-            "indie TTRPG zine",
-            "polyhedral dice set",
-            "cozy solo RPG"
+            "GM-less tabletop games",
+            "oracle solo roleplaying",
+            "indie TTRPG zines",
+            "analog journaling practice",
+            "polyhedral dice",
+            "cozy solo games"
           ],
-          "destinationAndTimeOfYearHints": "High sea-day itineraries that maximize unstructured writing time—transatlantic repositioning cruises, long Caribbean or Pacific coastal runs, or open-ocean segments through the Azores or Canaries. Schedule during late autumn or post-holiday winter windows (late December through February) when the introverted demographic is actively seeking recharge after peak social-obligation seasons.",
-          "onboardAssetRequirements": "Vessels with a high ratio of private balcony staterooms, a well-stocked and genuinely quiet ship library with individual reading carrels or semi-private seating nooks, multiple low-traffic indoor lounges with comfortable chairs and small side tables, and reliable but non-intrusive cabin service. The ship's general programming philosophy should lean toward self-directed leisure rather than mandatory fun or high-decibel entertainment schedules."
+          "destinationAndTimeOfYearHints": "Itineraries with a high ratio of consecutive sea days—transatlantic repositioning cruises in spring or autumn, or extended open-ocean segments through the Azores or Canary Islands—scheduled during shoulder seasons when onboard public spaces are quieter and private balcony weather is mild but not oppressively hot.",
+          "onboardAssetRequirements": "Vessels offering a high proportion of private ocean-facing balcony staterooms, a dedicated and well-stocked ship library with individual carrel-style seating, multiple quiet indoor lounges with stable writing surfaces and soft ambient lighting, and minimal reliance on loud pool-deck programming that bleeds into adjacent quiet zones."
         }
       },
       "inventoryManifest": {
         "assembleDraft": {
-          "suggestedDealId": "deal-celebrity-cruises-transatlantic-roll-the-dice-write-the-wake",
-          "suggestedBriefId": "brief-roll-the-dice-write-the-wake",
+          "suggestedDealId": "deal-celebrity-cruises-transatlantic-sea-days-roll-differently",
+          "suggestedBriefId": "brief-sea-days-roll-differently",
           "cruiseLine": "Celebrity Cruises",
-          "shipClassHint": "Edge class",
-          "itineraryName": "Transatlantic Westbound Repositioning — Fort Lauderdale to Lisbon (or reverse)",
+          "alternateCruiseLines": [
+            "Cunard",
+            "Holland America Line",
+            "Princess Cruises"
+          ],
+          "shipClassHint": "Edge class or Solstice class",
+          "itineraryName": "Sea Days Roll Differently — Transatlantic Crossing for the Solo Journaling Roleplayer",
           "destination": "Transatlantic",
-          "nights": 14,
+          "nights": 13,
           "sailWindow": {
-            "earliestIso": "2026-11-01",
-            "latestIso": "2027-01-31",
-            "rationale": "Late-autumn through post-holiday winter is the sweet spot for this audience: social-obligation season has just ended, the introvert's recharge impulse is at maximum, and transatlantic repositioning sailings cluster in November–December (westbound) and January (eastbound). These dates sit comfortably inside the Celebrity Summer Sale sailing window (through 05/10/2028) and give the operator a wide repositioning corridor to search."
+            "earliestIso": "2026-09-15",
+            "latestIso": "2027-05-10",
+            "rationale": "Transatlantic repositioning cruises cluster in two shoulder-season windows: autumn (late September through November) when ships reposition Europe→Caribbean, and spring (March through May) when they return. Both windows deliver the mild-but-not-oppressive balcony weather the angle demands, quieter onboard public spaces due to lower passenger counts on repo legs, and the maximum consecutive sea-day ratio (typically 5–7 unbroken sea days on a crossing). The wide window captures both autumn and spring repo seasons across multiple ship deployments, giving the inventory matcher maximum latitude to find a real sailing with a high sea-day count."
           },
-          "departurePortHint": "Fort Lauderdale or Barcelona (either direction — operator should search both)",
+          "departurePortHint": "SOU",
           "portsOfCall": [
-            "Ponta Delgada, Azores",
-            "Funchal, Madeira",
-            "Lisbon, Portugal"
+            "Southampton | Vigo | Lisbon | Madeira | Port Everglades"
           ]
         },
         "lookupQuery": {
           "line": "Celebrity Cruises",
-          "ship": "Edge class",
+          "ship": "",
           "destination": "Transatlantic",
-          "date": "2026-11-15",
-          "nights": 14,
-          "port": "Fort Lauderdale",
-          "windowDays": 60
+          "date": "2027-01-15",
+          "nights": 12,
+          "port": "",
+          "windowDays": 150
         },
         "appliedPromos": [
           {
             "promoRecordId": "cbpromo-2837",
             "status": "likely_applicable",
             "matchedOn": [
-              "Vendor match: Celebrity Cruises",
-              "Sailing window overlap: angle targets late autumn / winter 2026–2027, promo covers sailings 06/03/2026–05/10/2028",
-              "Booking window 06/02/2026–07/27/2026 is actionable for a direct-response push timed to early-summer decision-making",
-              "Bonus onboard credit and bonus stateroom savings can be positioned as subsidizing the solo journaler's balcony upgrade — the private writing carrel that makes the whole angle work",
-              "Dollars-off / instant savings reduce sticker shock for a solo traveler paying single occupancy or convincing one travel partner"
+              "Vendor match: Celebrity Cruises is the primary cruise line for this angle.",
+              "Sailing window overlap: The promo covers sailings 06/03/2026–05/10/2028, which encompasses the entire autumn 2026 through spring 2027 repositioning season targeted by this angle.",
+              "Stateroom category relevance: Bonus savings and bonus onboard credit vary by stateroom category — balcony staterooms (the angle's core requirement) are typically eligible tiers for these tiered bonuses.",
+              "Voyage length relevance: Transatlantic crossings of 10–14 nights fall into the longer-voyage tier where bonus savings and OBC amounts tend to be higher."
             ],
             "assumptions": [
-              "A transatlantic repositioning sailing of 12–14 nights on an Edge-class ship in the Nov 2026–Jan 2027 window is among the 'select sailings' that qualify for bonus OBC, bonus savings, and 2nd-guest discount tiers",
-              "Balcony stateroom category qualifies for the advertised bonus savings and bonus OBC tiers — suite-level is not required",
-              "The booking is completed within the 06/02/2026–07/27/2026 booking window"
+              "The specific transatlantic repositioning sailing matched by inventory falls within the 06/03/2026–05/10/2028 sailing window and is among the 'select sailings' that qualify.",
+              "Booking occurs within the 06/02/2026–07/27/2026 booking window; if the operator or customer books outside that window, this promo expires.",
+              "The solo traveler books as a single occupant; 2nd-guest savings and free 3rd/4th/5th guest perks would only apply if a second berth is booked — not typical for this solo-focused angle, so the primary value here is the bonus stateroom savings (dollars off) and bonus onboard credit.",
+              "Bonus OBC and savings tiers for a 10–14 night balcony booking are assumed to be in the mid-to-upper range of the tiered structure, but exact dollar amounts depend on the specific sailing the matcher resolves."
             ],
             "warnings": [
-              "All savings are described as 'select sailings may qualify' — final eligibility depends on the specific sailing date and stateroom category surfaced by the booking portal",
-              "2nd-guest savings are irrelevant if the traveler books true solo occupancy; they matter only if a companion or the single-supplement structure involves a second-guest fare",
-              "Free 3rd/4th/5th guest fares are unlikely to be relevant to this solo-focused angle and should not be highlighted in copy",
-              "Bonus OBC and bonus savings amounts vary by voyage length and booking day within the window — operator must verify exact amounts at package lookup"
+              "Solo occupancy may mean the 2nd-guest discount and free-extra-guests perks have zero practical value for this audience — do not headline those in copy.",
+              "Weekend Flash Sale sub-offers reference Alaska, Caribbean, or Europe destinations specifically; a transatlantic crossing may or may not be classified under 'Europe' in Celebrity's system — confirm at booking.",
+              "Bonus savings and OBC amounts are not guaranteed until the exact sailing and stateroom category are confirmed in the booking portal.",
+              "Booking window closes 07/27/2026 — any autumn repo sailing would need to be booked by that date to lock the promo."
+            ]
+          },
+          {
+            "promoRecordId": "cbpromo-2808",
+            "status": "possibly_applicable_needs_review",
+            "matchedOn": [
+              "Princess Cruises is listed as the third alternate cruise line — if inventory falls through to Princess, this promo becomes relevant.",
+              "Sailing window overlap: Promo covers sailings 10/01/2026–12/31/2027, which overlaps the autumn repositioning season (Oct–Nov 2026) and potentially spring 2027 crossings.",
+              "Up to 40% off fares and up to $400 instant savings per stateroom could meaningfully reduce the cost of a balcony stateroom on a 9–12+ night transatlantic."
+            ],
+            "assumptions": [
+              "Only applies if the inventory matcher falls through Celebrity and Cunard/Holland America to Princess as the fulfilling line.",
+              "Booking must occur within 05/01/2026–06/15/2026 — a narrower window than the Celebrity promo.",
+              "The matched Princess sailing must be among 'select sailings' that qualify for the up-to-40%-off tier.",
+              "$99 reduced deposit assumed available for a transatlantic repo sailing, but final eligibility depends on voyage-specific rules."
+            ],
+            "warnings": [
+              "Booking window (through 06/15/2026) is tighter than Celebrity's — operator must book early if Princess is the fallback.",
+              "Solo traveler won't benefit from free 3rd/4th guest offers.",
+              "'Up to 40% off' is a ceiling, not a guarantee; the actual discount on a transatlantic balcony could be substantially less.",
+              "Princess ships vary widely in quiet-space quality; only certain vessels (e.g., Royal-class ships with the Library and Sanctuary) deliver the carrel-style seating and quiet-lounge density this angle requires — confirm ship assignment."
             ]
           },
           {
             "promoRecordId": "cbpromo-2873",
             "status": "possibly_applicable_needs_review",
             "matchedOn": [
-              "Explora Journeys is a luxury, all-suite line with an ultra-quiet onboard atmosphere and high balcony ratio — arguably the single best onboard-asset fit for the solo journaling angle",
-              "Sailing window (10/01/2026–12/31/2027) overlaps the angle's late-autumn / winter target",
-              "All-inclusive positioning removes transactional friction for a solo traveler who just wants to sit and write",
-              "Up to $3,500 Journey Credit could meaningfully offset the premium price point for this audience"
+              "Explora Journeys offers an ultra-quiet, all-suite, all-inclusive experience that aligns exceptionally well with the angle's need for private ocean-facing suites, serene public spaces, and minimal loud pool-deck programming.",
+              "Sailing window overlap: Promo covers 10/01/2026–12/31/2027, overlapping the autumn and spring repositioning/ocean-crossing seasons.",
+              "Up to 25% off and up to $3,500 Journey Credit could offset the premium price point and make a luxury crossing accessible to this audience's mid-career income bracket."
             ],
             "assumptions": [
-              "Explora Journeys operates a transatlantic or Canary Islands / Azores repositioning itinerary within the Nov 2026–Jan 2027 corridor — operator must verify itinerary availability",
-              "The solo journaler's budget can stretch to luxury-tier pricing even after the up-to-25%-off discount",
-              "Booking is completed within the 05/27/2026–06/27/2026 window"
+              "Explora Journeys would need to operate a transatlantic or extended-ocean itinerary with high sea-day ratio within the promo's sailing window — their deployment schedule is limited compared to major lines.",
+              "Booking must occur 05/27/2026–06/27/2026.",
+              "The all-inclusive nature means Wi-Fi is included — which could actually work against the 'no WiFi algorithm competing' angle, though the traveler can simply choose not to use it.",
+              "This is a premium/luxury tier; the audience skews 25–45 in tech/education/creative fields — some can afford this, but it's a narrower subset."
             ],
             "warnings": [
-              "Explora is a significantly higher price tier than Celebrity; this may price out the core 25–45 knowledge-worker demographic unless the Journey Credit and discount are substantial",
-              "Explora's fleet is small and repositioning routes are limited — the exact itinerary may not exist in this window",
-              "This promo is flagged as 'possibly applicable' and is included as an upsell alternative, not the primary recommendation",
-              "All claims are 'select sailings may qualify' — nothing is guaranteed until the operator confirms at lookup"
+              "Explora Journeys is NOT listed as an alternate cruise line for the primary inventory search (Celebrity → Cunard → Holland America → Princess); this promo is flagged for review as a premium upsell option only.",
+              "Limited fleet size (currently 1–2 ships) means transatlantic inventory may be extremely scarce or nonexistent in certain windows.",
+              "Journey Credit amounts are 'up to' figures — actual credit depends on suite category and sailing.",
+              "Price point even after 25% off may exceed what much of this audience would consider without explicit framing as a splurge/investment."
             ]
           }
         ],
-        "promoStrategy": "The primary play is cbpromo-2837 (Celebrity Summer Sale) layered onto a transatlantic repositioning sailing — the angle's dream scenario. Here's why it works and how to frame it in direct-response copy:\n\n1. **Bonus OBC as \"Dice-and-Ink Fund.\"** The bonus onboard credit becomes the journaler's floating stationery budget — specialty coffees in the library, a bottle of wine delivered to the balcony writing carrel at golden hour, maybe a spa session to unknot the hand that's been scrawling vampire memories for six straight hours. Position the OBC not as a generic cruise perk but as patronage for the creative process.\n\n2. **Bonus stateroom savings as the balcony unlock.** The entire angle hinges on the balcony as a private writing carrel. The bonus savings by stateroom category give the operator room to show a balcony fare that doesn't feel punitive for a solo traveler. If the Celebrity pricing structure allows a single-occupancy balcony at a reasonable rate after the discount, that's the headline number.\n\n3. **Do NOT lean on 2nd-guest or free-extra-guest language.** This audience is booking solo or with one quiet companion. Group-discount framing (\"bring the whole family!\") would instantly break trust with the introverted-solo-journaler persona. Mention 2nd-guest savings only in the context of \"if you're bringing your co-GM or writing partner, their fare drops too.\"\n\n4. **Explora Journeys (cbpromo-2873) as the aspirational upsell.** For the segment of this audience that has crossed into senior-creative-professional income territory — the 35-year-old staff engineer who drops $200 on a leather-bound Leuchtturm and artisanal brass dice — Explora's all-suite, all-inclusive quietness is the ultimate pitch. The up-to-25%-off and Journey Credit soften the premium. Present it as the \"if you want the library to yourself\" tier.\n\n5. **Timing the booking-window push.** Both promos require booking by late June / late July 2026. The direct-response cadence should be: teaser content drops late May, the main sales page goes live June 2, urgency messaging escalates through June with a \"last call\" around June 20 (catching both promo windows), and a final 48-hour push before the Celebrity window closes July 27.\n\nPromos NOT applied: Norwegian (cbpromo-2458) was considered but NCL's \"Freestyle\" atmosphere and high-energy entertainment philosophy conflicts with the quiet, self-directed leisure requirement. Princess (cbpromo-2808) was considered — decent library ships — but the repositioning transatlantic inventory is weaker than Celebrity's, and the promo's instant savings cap at $400 on suites, which is less compelling than the Celebrity bonus structure for balcony-category bookings. Carnival (cbpromo-2872) and Royal Caribbean (cbpromo-2041) are poor fits for the quiet-introvert onboard-asset profile and were excluded.",
-        "manifestReasoning": "**Why Celebrity Transatlantic Repositioning is the canonical match for this angle:**\n\nThe Solo Journaling Tabletop Roleplayer angle has three non-negotiable requirements: (1) maximum consecutive sea days for unbroken creative flow, (2) a genuinely quiet ship with a real library and low-traffic lounges, and (3) private balcony staterooms that function as personal writing carrels.\n\n**Sea-day density:** A 14-night transatlantic repositioning crossing delivers 8–10 consecutive sea days. No Caribbean island-hopping itinerary comes close. This is the structural foundation — the journaler isn't paying for ports, they're paying for uninterrupted ocean time where nobody knocks on the door except room service.\n\n**Celebrity's onboard DNA:** Edge-class ships (Celebrity Edge, Apex, Beyond, Ascent) are designed around a \"new luxury\" ethos that skews quiet-adult, architecturally sophisticated, and self-directed. The library and retreat-style spaces (The Retreat sundeck for suite guests, the Eden lounge during off-peak hours, the Craft Social bar with its low-key board-game-adjacent vibe) align with the journaler's need for comfortable chairs, small side tables, and ambient cognitive silence. Celebrity doesn't do waterslide-and-belly-flop-contest energy. That matters here.\n\n**Balcony ratio:** Edge-class ships have an extremely high percentage of balcony and veranda staterooms — the Infinite Veranda design means even standard cabins have a semi-outdoor writing space. This is the angle's killer feature: every stateroom is a potential writing carrel with an ocean view.\n\n**Routing through the Azores / Madeira / Canaries:** The transatlantic repositioning typically stops in Ponta Delgada (Azores) and/or Funchal (Madeira) — atmospheric, low-key ports that fit the world-builder's aesthetic (cobblestone streets, volcanic landscapes, centuries-old libraries). These aren't theme-park ports. They're the kind of places where the journaler steps off the ship, walks to a quiet café, rolls a few oracles, and writes a scene set in a Portuguese colonial vampire's crumbling estate.\n\n**Late-autumn / post-holiday timing:** Celebrity repositions ships from Europe back to the Caribbean in October–November and occasionally runs January eastbound crossings. This window precisely matches the angle's demographic insight: the introvert who has just survived Thanksgiving, Christmas, and New Year's social obligations and is desperate for enforced solitude. A January transatlantic crossing is essentially a socially sanctioned disappearance.\n\n**Why not other lines?** Norwegian's Freestyle Cruising philosophy and mega-ship entertainment load (go-karts, laser tag) creates exactly the high-decibel environment this audience is fleeing. Carnival's party-forward brand is a non-starter. Royal Caribbean's West Coast promo (cbpromo-2041) is geographically wrong and the ships trend family-mega. Princess has decent quiet spaces but weaker transatlantic repositioning inventory and a less compelling promo structure. Explora Journeys is the aspirational alternative — genuinely quieter than Celebrity, all-suite, all-inclusive — but the price point may overshoot the core 25–45 knowledge-worker budget. It's included as a secondary promo option for the high-income segment."
+        "promoStrategy": "The lead promo is cbpromo-2837 (Celebrity Summer Sale). For a solo journaler booking a 10–14-night transatlantic repositioning cruise in a balcony stateroom, the most compelling hooks are the bonus stateroom savings (dollars off the fare itself) and bonus onboard credit — the OBC can be positioned as \"money back in your pocket for the ship's bookshop, a specialty coffee to fuel your afternoon session, or that overpriced but irresistible leather journal in the gift shop.\" The 2nd-guest and free-extra-guests perks are structurally irrelevant for a solo traveler and should be omitted from any direct-response copy to avoid undermining the intimate, one-person framing. If the inventory matcher resolves to Princess instead, cbpromo-2808's up-to-40%-off fare discount becomes the headline — frame it as \"your Solo RPG retreat just got meaningfully cheaper\" and pair with the $99 reduced deposit as a low-commitment entry point (\"less than the cost of that Kickstarter dice tower you backed last month\"). The Explora promo (cbpromo-2873) is a premium upsell card only — if the audience segment includes higher earners in tech, the all-inclusive all-suite pitch writes itself: \"Every suite faces the ocean, every surface is yours, and there's no pool-deck DJ bleeding through the walls.\" But don't lead with it; it narrows the funnel. Across all promos, the copy discipline is: never promise a specific dollar amount, always say \"may qualify,\" and keep the tone insider-analog (\"the cost of a Leuchtturm1917 refill\" as a unit of measure, not \"$14.95\").",
+        "manifestReasoning": "This angle lives and dies on three environmental conditions: (1) maximum consecutive sea days for unbroken narrative flow, (2) a private balcony stateroom as the primary \"play space\" with ocean ambiance, and (3) quiet, well-lit indoor lounges and a real ship library as secondary session venues. Transatlantic repositioning cruises are the single best itinerary type in commercial cruising for condition #1 — typically 5–7 consecutive sea days on a 10–14-night crossing, with only 1–2 port calls (often Azores, Madeira, or Bermuda as mid-ocean stops). No Caribbean island-hopper or Mediterranean port-intensive itinerary comes close.\n\nCelebrity Cruises is the primary line because: (a) Edge-class and Solstice-class ships have an unusually high proportion of ocean-facing balcony staterooms relative to inside/oceanview cabins; (b) Celebrity's onboard vibe skews adult, quieter, and more refined than mass-market competitors — the Library and Card Room on Solstice-class ships, and the curated public spaces on Edge-class ships, provide exactly the carrel-style seating and soft-lit lounge environment the angle needs; (c) Celebrity regularly runs transatlantic repositioning sailings in both the autumn (Europe→Florida/Caribbean) and spring (Florida→Europe) windows; (d) pool-deck programming is present but far less aggressive than on Royal Caribbean, Carnival, or NCL ships — less bleed into adjacent quiet zones.\n\nAlternate lines are ranked by onboard-asset fit: Cunard first (the quintessential library-at-sea experience, purpose-built for transatlantic crossings, the quietest mainstream option — but limited ship count means inventory may be thin); Holland America second (well-stocked libraries, Explorations Café with writing surfaces, older/quieter passenger demographic, regular transatlantic repo cruises); Princess third (The Sanctuary quiet zone, onboard libraries, somewhat noisier than the first two but still viable, and cbpromo-2808 sweetens the deal).\n\nI excluded Norwegian (cbpromo-2458) despite the 50% off headline because NCL's onboard environment — loud pool decks, party-forward programming, open-bar Free at Sea culture — is antithetical to the quiet-analog-solitude vibe. The \"Free at Sea\" Wi-Fi perk actively contradicts the \"no WiFi algorithm\" pitch. Similarly, Carnival (cbpromo-2872) is excluded for vibe mismatch — the Sunshine & Savings Sale is irrelevant when the ship environment would sabotage the angle. Royal Caribbean's West Coast promo (cbpromo-2041) is excluded on both vibe (mega-ship entertainment focus) and geography (West Coast departures don't serve transatlantic crossings).\n\nThe sail window of September 15, 2026 through May 10, 2027 is deliberately wide to capture both the autumn eastbound→westbound repositioning season (late Sep–Nov) and the spring westbound→eastbound season (Mar–May). Shoulder-season timing means: fewer families onboard (school is in session), milder mid-Atlantic weather for balcony sessions, and generally lower passenger counts on repo legs versus peak-season Caribbean or Mediterranean sailings. The 12-night soft preference reflects the typical transatlantic crossing length but is not a hard constraint — the matcher should consider anything from 9 to 16 nights.\n\nPorts of call listed (Azores, Canaries, Bermuda, Madeira) are the typical mid-ocean stops on transatlantic crossings — they're listed as possibilities, not requirements. The angle actually benefits from FEWER port stops (more sea days), so a sailing with only one mid-ocean call is ideal."
       }
     }
   ]

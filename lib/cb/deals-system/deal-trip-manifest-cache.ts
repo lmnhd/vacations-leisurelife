@@ -52,3 +52,12 @@ export function upsertDealTripManifest(
   manifests.push(manifest);
   return { ...cache, generatedAtIso: new Date().toISOString(), manifests };
 }
+
+/** Remove a trip manifest by id. Pure. No-op if the id isn't present. */
+export function removeDealTripManifest(
+  cache: DealTripManifestsCache,
+  id: string
+): DealTripManifestsCache {
+  const manifests = cache.manifests.filter((existing) => existing.id !== id);
+  return { ...cache, generatedAtIso: new Date().toISOString(), manifests };
+}
