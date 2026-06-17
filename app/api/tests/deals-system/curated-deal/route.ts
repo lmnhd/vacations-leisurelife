@@ -23,28 +23,24 @@
  * browser operations remain operator-controlled.
  */
 
-import { readFileSync } from "node:fs";
-
 import { NextResponse } from "next/server";
 
 import {
   approveCuratedDeal,
   assembleCuratedDeal,
-  DEALS_CACHE_PATHS,
-  findCuratedDeal,
-  loadCuratedDealsCache,
+  getCuratedDeal,
+  getDealBrief,
+  getPromoRecordsByIds,
   rejectCuratedDeal,
   runDealCampaignStage,
-  saveCuratedDealsCache,
-  upsertCuratedDeal,
-  upsertDealBrief,
-  validatePromoIntelligenceCache,
+  upsertCuratedDealRecord,
+  upsertDealBriefRecord,
   type AssembleCuratedDealInput,
-  type CbPromoIntelligenceRecord,
   type CuratedDealCruiseFacts,
   type CuratedOdysseusDeal,
   type DealCampaignStage,
 } from "@/lib/cb/deals-system";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -75,18 +71,6 @@ const STAGE_NAMES: DealCampaignStage[] = [
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function loadPromoRecords(ids: string[]): CbPromoIntelligenceRecord[] {
-  if (ids.length === 0) return [];
-  try {
-    const raw = readFileSync(DEALS_CACHE_PATHS.promoIntelligence, "utf8");
-    const result = validatePromoIntelligenceCache(JSON.parse(raw) as unknown);
-    if (!result.ok || !result.value) return [];
-    return result.value.records.filter((record) => ids.includes(record.id));
-  } catch {
-    return [];
-  }
 }
 
 function parseCruiseFacts(value: unknown): CuratedDealCruiseFacts | undefined {
@@ -120,6 +104,9 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -133,13 +120,6 @@ export async function POST(request: Request) {
   const promoRecordIds = Array.isArray(body.promoRecordIds)
     ? body.promoRecordIds.map((id) => String(id))
     : [];
-
-  let cache;
-  try {
-    cache = loadCuratedDealsCache();
-  } catch (error) {
-    return bad(error instanceof Error ? error.message : String(error), 500);
-  }
 
   try {
     if (action === "assemble") {
@@ -157,12 +137,13 @@ export async function POST(request: Request) {
         siid: str(body.siid) ?? process.env.CB_AGENT_SIID ?? "1049337",
         cruiseFacts,
         bookingUrl: str(body.bookingUrl),
-        promoRecords: loadPromoRecords(promoRecordIds),
+        promoRecords: promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [],
       };
       const deal = await assembleCuratedDeal(input);
-      let next = upsertCuratedDeal(cache, deal);
-      if (!next.briefs.some((b) => b.id === deal.briefId)) {
-        next = upsertDealBrief(next, {
+      await upsertCuratedDealRecord(deal);
+      const existingBrief = await getDealBrief(deal.briefId);
+      if (!existingBrief) {
+        await upsertDealBriefRecord({
           id: deal.briefId,
           title: deal.cruiseFacts.title,
           destinationKeywords: deal.cruiseFacts.portsOfCall,
@@ -175,13 +156,12 @@ export async function POST(request: Request) {
           audienceFit: deal.packaging.bestFor,
         });
       }
-      saveCuratedDealsCache(next);
       return ok(deal);
     }
 
     const dealId = str(body.dealId);
     if (!dealId) return bad("dealId is required for this action.");
-    const existing = findCuratedDeal(cache, dealId);
+    const existing = await getCuratedDeal(dealId);
     if (!existing) return bad(`No Deal found with id "${dealId}".`, 404);
 
     if (action === "stage") {
@@ -192,9 +172,9 @@ export async function POST(request: Request) {
       const updated = await runDealCampaignStage(
         existing,
         stage as Exclude<DealCampaignStage, "approval">,
-        { promoRecords: loadPromoRecords(promoRecordIds) }
+        { promoRecords: promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [] }
       );
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -208,7 +188,7 @@ export async function POST(request: Request) {
           capturedAtIso: existing.linkHealth.capturedAtIso ?? nowIso,
         },
       };
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -217,7 +197,7 @@ export async function POST(request: Request) {
         decisionNote: str(body.decisionNote),
         textOnlyLaunchWaived: body.textOnlyLaunchWaived === true,
       });
-      saveCuratedDealsCache(upsertCuratedDeal(cache, result.deal));
+      await upsertCuratedDealRecord(result.deal);
       return ok(result.deal, {
         approved: result.approved,
         blockingFailures: result.blockingFailures,
@@ -226,7 +206,7 @@ export async function POST(request: Request) {
 
     if (action === "reject") {
       const updated = rejectCuratedDeal(existing, { decisionNote: str(body.decisionNote) });
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -238,7 +218,7 @@ export async function POST(request: Request) {
           pinned: action === "pin",
         },
       };
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -250,7 +230,7 @@ export async function POST(request: Request) {
           hidden: action === "hide",
         },
       };
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -263,7 +243,7 @@ export async function POST(request: Request) {
           failureReason: str(body.decisionNote) ?? "Operator requested link re-verification.",
         },
       };
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -274,7 +254,7 @@ export async function POST(request: Request) {
         ...existing,
         agentOnlyNotes: [...(existing.agentOnlyNotes ?? []), `[capture requested] ${note}`],
       };
-      saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 

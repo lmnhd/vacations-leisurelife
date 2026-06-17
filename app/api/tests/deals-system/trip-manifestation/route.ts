@@ -2,40 +2,33 @@
  * Trip Manifestation route (deal workflow step 2).
  *
  * GET  -> { ok, angles, manifests } — cached discovery angles to pick from + manifests.
- * POST { action: "manifest", angleId } -> correlate the selected angle + raw promo
- *        intelligence into a DealTripManifest, upsert into the manifest cache, return
- *        the manifest + prefilter diagnostics.
+ * POST { action: "manifest", angleId } -> correlate the selected angle (already
+ *        grounded on a real Odysseus candidate at discovery time) + raw promo
+ *        intelligence into a DealTripManifest, resolve the booking link for that
+ *        exact package, upsert into the manifest cache, return the manifest.
  *
- * Safety: never runs the CB/Odysseus browser. The manifest fills SOURCE & ASSEMBLE
- * EXCEPT packageId/shipName/siid/bookingUrl; it emits a lookupQuery the operator
- * runs via Package Lookup. AI-only/hard-fail through the gateway.
+ * The angle's cruise line/ship/sail date/nights/ports are real, verified facts from
+ * Discovery (angle.groundedCandidate) — this step never searches inventory or
+ * fit-selects; it only writes marketing framing/promos and resolves the booking link
+ * for the known packageId. AI draft is hard-fail through the gateway.
  */
-
-import { readFileSync } from "node:fs";
 
 import { NextResponse } from "next/server";
 
 import {
-  DEALS_CACHE_PATHS,
+  deleteDealTripManifestRecord,
   generateDealTripManifest,
+  getDealTripManifest,
+  listDealTripManifests,
+  listPromoRecords,
   loadDealDiscoveryIdeasCache,
-  loadDealTripManifestsCache,
-  removeDealTripManifest,
-  saveDealTripManifestsCache,
-  upsertDealTripManifest,
-  validatePromoIntelligenceCache,
+  upsertDealTripManifestRecord,
   type CbPromoIntelligenceRecord,
   type DealDiscoveryIdea,
   type DealTripManifest,
 } from "@/lib/cb/deals-system";
-import {
-  reconcileAssembleDraftWithResolved,
-} from "@/lib/cb/deals-system/deal-package-resolver";
-import {
-  resolveCandidateOntoManifest,
-  runOdysseusLookup,
-} from "@/lib/cb/deals-system/deal-package-resolution";
-import { selectBestFitCandidate } from "@/lib/cb/deals-system/deal-trip-manifest-generator";
+import { resolveCandidateOntoManifest } from "@/lib/cb/deals-system/deal-package-resolution";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 
 export const dynamic = "force-dynamic";
@@ -59,74 +52,40 @@ interface ResolutionOutcome {
 }
 
 /**
- * INVENTORY-AWARE RESOLUTION (multi-line fallback) — the slow, browser-driven
- * half of Step 2, split out so it can run (and RETRY) independently of the paid
- * AI draft. Pure of cache I/O; the caller persists the result.
+ * RESOLUTION — the angle is ALREADY GROUNDED on a real, verified Odysseus
+ * candidate (angle.groundedCandidate), so this no longer searches inventory,
+ * fit-selects, or reframes. It resolves the booking link for that EXACT known
+ * package via the link broker and stamps the resolution onto the manifest.
  *
- * 1. Try the draft's preferred cruise line's broad Odysseus search; if its
- *    allotment is empty, fall through to alternateCruiseLines IN ORDER until one
- *    returns a non-empty pool.
- * 2. AI fit-select picks the candidate that best embodies the angle, reframing
- *    copy when the fit is loose (fit-select always chooses one).
- * 3. Broker builds the booking link; factual fields reconcile from the real cruise.
- *
- * A wedged Odysseus session no longer throws away the AI draft — the draft is
- * already saved, and this just reports lookup_failed so the operator can retry.
+ * Retryable: a wedged broker call leaves the draft intact for another attempt.
  */
 async function resolveManifestAgainstInventory(
   angle: DealDiscoveryIdea,
   draftManifest: DealTripManifest
 ): Promise<ResolutionOutcome> {
-  let manifest = draftManifest;
-  let candidates: RankedPackageCandidate[] = [];
-  let lookupStatus: ResolutionOutcome["lookupStatus"] = "lookup_failed";
-  const lookupDiagnostics: string[] = [];
-  let fitRationale = "";
-  let resolvedLookupQuery = draftManifest.lookupQuery;
+  const g = angle.groundedCandidate;
+  const candidate: RankedPackageCandidate = {
+    packageId: g.packageId,
+    cruiseCode: "",
+    cruiseName: g.cruiseName,
+    cruiseLine: g.cruiseLine,
+    sailDateIso: g.sailDateIso,
+    nights: g.nights ?? null,
+    departurePortCode: g.departurePortCode,
+    portsOfCall: g.portsOfCall,
+    confidence: g.confidence,
+    reasons: g.reasons,
+  };
 
-  const candidateLines = [
-    draftManifest.lookupQuery.line,
-    ...(draftManifest.assembleDraft.alternateCruiseLines ?? []),
-  ].filter((line, index, all) => line && all.indexOf(line) === index);
+  const { manifest, diagnostics } = await resolveCandidateOntoManifest(draftManifest, candidate);
 
-  for (const line of candidateLines) {
-    const lookupQuery = { ...draftManifest.lookupQuery, line };
-    const lookup = await runOdysseusLookup(lookupQuery);
-
-    if (!lookup.ok || !lookup.result) {
-      lookupDiagnostics.push(lookup.error ?? `Odysseus lookup failed for ${line}.`);
-      continue;
-    }
-
-    lookupStatus = lookup.result.status;
-    lookupDiagnostics.push(...lookup.result.diagnostics, ...lookup.diagnostics);
-
-    if (lookup.result.candidates.length === 0) {
-      lookupDiagnostics.push(`No candidates found for ${line}; trying next candidate line.`);
-      continue;
-    }
-
-    candidates = lookup.result.candidates;
-    resolvedLookupQuery = lookupQuery;
-    break;
-  }
-
-  if (candidates.length > 0) {
-    const { candidate: chosen, fitRationale: rationale, diagnostics: fitDiagnostics, reframe } =
-      await selectBestFitCandidate({ angle, candidates });
-    lookupDiagnostics.push(...fitDiagnostics);
-
-    if (chosen) {
-      fitRationale = rationale;
-      const { manifest: resolved, diagnostics: resolveDiagnostics } =
-        await resolveCandidateOntoManifest({ ...draftManifest, lookupQuery: resolvedLookupQuery }, chosen);
-      manifest = reconcileAssembleDraftWithResolved(resolved, reframe);
-      lookupDiagnostics.push(...resolveDiagnostics);
-      lookupStatus = "confident_match";
-    }
-  }
-
-  return { manifest, candidates, lookupStatus, lookupDiagnostics, fitRationale };
+  return {
+    manifest,
+    candidates: [candidate],
+    lookupStatus: "confident_match",
+    lookupDiagnostics: diagnostics,
+    fitRationale: "Grounded at discovery time — no inventory search or fit-select needed.",
+  };
 }
 
 function loadAngles(): DealDiscoveryIdea[] {
@@ -137,42 +96,45 @@ function loadAngles(): DealDiscoveryIdea[] {
   }
 }
 
-function loadManifests(): DealTripManifest[] {
+async function loadManifests(): Promise<DealTripManifest[]> {
   try {
-    return loadDealTripManifestsCache().manifests;
+    return await listDealTripManifests();
   } catch {
     return [];
   }
 }
 
-function loadPromoRecords(): CbPromoIntelligenceRecord[] {
+async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
   try {
-    const raw = readFileSync(DEALS_CACHE_PATHS.promoIntelligence, "utf8");
-    const result = validatePromoIntelligenceCache(JSON.parse(raw) as unknown);
-    return result.ok && result.value ? result.value.records : [];
+    return await listPromoRecords();
   } catch {
     return [];
   }
 }
 
 export async function GET() {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   return NextResponse.json({
     ok: true,
     angles: loadAngles(),
-    manifests: loadManifests(),
+    manifests: await loadManifests(),
   });
 }
 
 /** DELETE ?id=<manifestId> — prune an unwanted trip manifest from the cache. */
 export async function DELETE(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   const id = new URL(request.url).searchParams.get("id")?.trim();
   if (!id) {
     return NextResponse.json({ ok: false, error: "id is required." }, { status: 400 });
   }
   try {
-    const cache = removeDealTripManifest(loadDealTripManifestsCache(), id);
-    saveDealTripManifestsCache(cache);
-    return NextResponse.json({ ok: true, manifests: cache.manifests });
+    await deleteDealTripManifestRecord(id);
+    return NextResponse.json({ ok: true, manifests: await loadManifests() });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : String(error) },
@@ -182,6 +144,9 @@ export async function DELETE(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -197,16 +162,14 @@ export async function POST(request: Request) {
     if (!manifestId) {
       return NextResponse.json({ ok: false, error: "manifestId is required." }, { status: 400 });
     }
-    const cache = loadDealTripManifestsCache();
-    const manifest = cache.manifests.find((m) => m.id === manifestId);
+    const manifest = await getDealTripManifest(manifestId);
     if (!manifest) {
       return NextResponse.json({ ok: false, error: `No manifest found with id "${manifestId}".` }, { status: 404 });
     }
     try {
       const { manifest: resolved, diagnostics } = await resolveCandidateOntoManifest(manifest, body.candidate);
-      const next = upsertDealTripManifest(cache, resolved);
-      saveDealTripManifestsCache(next);
-      return NextResponse.json({ ok: true, manifest: resolved, manifests: next.manifests, diagnostics });
+      await upsertDealTripManifestRecord(resolved);
+      return NextResponse.json({ ok: true, manifest: resolved, manifests: await loadManifests(), diagnostics });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },
@@ -228,16 +191,15 @@ export async function POST(request: Request) {
     try {
       const { manifest, prefilter, rejectedPromoIds } = await generateDealTripManifest({
         angle: angle.value,
-        promoRecords: loadPromoRecords(),
+        promoRecords: await loadPromoRecords(),
       });
-      const cache = upsertDealTripManifest(loadDealTripManifestsCache(), manifest);
-      saveDealTripManifestsCache(cache);
+      await upsertDealTripManifestRecord(manifest);
       return NextResponse.json({
         ok: true,
         manifest,
         prefilter,
         rejectedPromoIds,
-        manifests: cache.manifests,
+        manifests: await loadManifests(),
         lookupStatus: "draft",
         note: "Draft saved (unresolved). Run { action: \"resolve\", manifestId } to match live inventory.",
       });
@@ -259,8 +221,7 @@ export async function POST(request: Request) {
     if (!manifestId) {
       return NextResponse.json({ ok: false, error: "manifestId is required." }, { status: 400 });
     }
-    const cache = loadDealTripManifestsCache();
-    const draftManifest = cache.manifests.find((m) => m.id === manifestId);
+    const draftManifest = await getDealTripManifest(manifestId);
     if (!draftManifest) {
       return NextResponse.json({ ok: false, error: `No manifest found with id "${manifestId}".` }, { status: 404 });
     }
@@ -273,12 +234,11 @@ export async function POST(request: Request) {
     }
     try {
       const outcome = await resolveManifestAgainstInventory(angle, draftManifest);
-      const next = upsertDealTripManifest(loadDealTripManifestsCache(), outcome.manifest);
-      saveDealTripManifestsCache(next);
+      await upsertDealTripManifestRecord(outcome.manifest);
       return NextResponse.json({
         ok: true,
         manifest: outcome.manifest,
-        manifests: next.manifests,
+        manifests: await loadManifests(),
         lookupStatus: outcome.lookupStatus,
         candidates: outcome.candidates,
         lookupDiagnostics: outcome.lookupDiagnostics,
@@ -308,20 +268,19 @@ export async function POST(request: Request) {
   try {
     const { manifest: draftManifest, prefilter, rejectedPromoIds } = await generateDealTripManifest({
       angle: angle.value,
-      promoRecords: loadPromoRecords(),
+      promoRecords: await loadPromoRecords(),
     });
 
     const outcome = await resolveManifestAgainstInventory(angle.value, draftManifest);
 
-    const cache = upsertDealTripManifest(loadDealTripManifestsCache(), outcome.manifest);
-    saveDealTripManifestsCache(cache);
+    await upsertDealTripManifestRecord(outcome.manifest);
 
     return NextResponse.json({
       ok: true,
       manifest: outcome.manifest,
       prefilter,
       rejectedPromoIds,
-      manifests: cache.manifests,
+      manifests: await loadManifests(),
       lookupStatus: outcome.lookupStatus,
       candidates: outcome.candidates,
       lookupDiagnostics: outcome.lookupDiagnostics,

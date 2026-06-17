@@ -21,6 +21,7 @@ import {
   __setDiscoveryStructuredObjectGeneratorForTests,
   __setFunnelSynthesisStructuredObjectGeneratorForTests,
   __setManifestStructuredObjectGeneratorForTests,
+  __setNicheReformerStructuredObjectGeneratorForTests,
   __setStructuredObjectGeneratorForTests,
 } from "../lib/cb/deals-system";
 
@@ -209,24 +210,13 @@ function candidates(prompt: string): unknown[] {
   };
 
   // Trip manifest: references a known promo id (cbpromo-test) plus a deliberately
-  // hallucinated one (cbpromo-FAKE) the generator must drop. Carries no packageId/
-  // shipName/siid/bookingUrl in the draft.
+  // hallucinated one (cbpromo-FAKE) the generator must drop. The cruise line/ship/
+  // sail date/nights/ports come from angle.groundedCandidate, not this object —
+  // the AI only writes framing + promo correlation.
   const manifest = {
-    assembleDraft: {
-      cruiseLine: "Royal Caribbean",
-      alternateCruiseLines: ["Celebrity", "Princess"],
-      shipClassHint: "Radiance class",
-      itineraryName: `${firstPort} alternative-process sailing`,
-      destination: firstPort,
-      nights: 7,
-      sailWindow: {
-        earliestIso: "2026-05-01",
-        latestIso: "2026-09-30",
-        rationale: "High-UV season for reliable sun-printing exposure.",
-      },
-      departurePortHint: "Fort Lauderdale",
-      portsOfCall: [firstPort, "scenic coastline"],
-    },
+    itineraryName: `${firstPort} alternative-process sailing`,
+    destination: firstPort,
+    shipClassHint: "Radiance class",
     appliedPromos: [
       {
         promoRecordId: "cbpromo-test",
@@ -245,14 +235,6 @@ function candidates(prompt: string): unknown[] {
     ],
     promoStrategy: "Lead with onboard credit framed as deck-time flexibility for the practice.",
     manifestReasoning: "Radiance-class panoramic decks and high-UV itinerary fulfil the angle's asset needs.",
-    lookupQuery: {
-      line: "Royal Caribbean",
-      destination: firstPort,
-      date: "2026-07-01",
-      nights: 7,
-      port: "Fort Lauderdale",
-      windowDays: 60,
-    },
   };
 
   // Ad copy: two variants. Primary references a known promo (cbpromo-test) + an
@@ -347,6 +329,33 @@ function candidates(prompt: string): unknown[] {
     ],
   };
 
+  // Niche re-former (Step 1B): given a REAL selected cruise + research, claims a
+  // high-conviction niche fit and re-forms an angle whose destination/onboard
+  // fields describe the real sailing. fitConfidence clears NICHE_FIT_THRESHOLD.
+  const reform = {
+    nicheFits: true,
+    fitConfidence: 0.88,
+    fitReasoning: `This ${nights}-night sailing aboard ${ship} with few ports is the ideal venue for a sea-day-dependent practice.`,
+    isolatedNiche: "The Solo Journaling Tabletop Roleplayer",
+    angle: {
+      sailingAngleTitle: `Write the Wake aboard ${ship}`,
+      theCorePitch: `Your campaign stalls because land life keeps interrupting you mid-sentence. ${nights} nights of consecutive sea days aboard ${ship} turn your balcony into an uninterrupted writing carrel.`,
+      visualAnchor: `A worn journal open on a teak balcony table at golden hour aboard ${ship}, dice resting on the page.`,
+      targetAudienceDescriptor:
+        "Introverted solo-RPG writers and analog gamers, 25-45, in knowledge-work professions.",
+      relevantKeywords: [
+        "solo rpg journaling",
+        "thousand year old vampire",
+        "polyhedral dice set",
+        "indie ttrpg zine",
+        "analog journaling",
+        "sea day writing",
+      ],
+      destinationAndTimeOfYearHints: `A ${nights}-night itinerary calling at ${firstPort}, scheduled for high sea-day density.`,
+      onboardAssetRequirements: `${ship} with a high balcony ratio, a genuinely quiet library, and low-traffic lounges for unbroken writing time.`,
+    },
+  };
+
   // Inventory-aware fit-select: picks a package by id and explains the fit.
   const fitSelect = {
     chosenPackageId: "1500001",
@@ -355,7 +364,7 @@ function candidates(prompt: string): unknown[] {
     needsReframe: false,
   };
 
-  return [pitch, research, targeting, copy, ad, media, discoveryAngles, manifest, adCopy, funnel, fitSelect].map(pick);
+  return [pitch, research, targeting, copy, ad, media, discoveryAngles, manifest, adCopy, funnel, reform, fitSelect].map(pick);
 }
 
 /** Install the stub. Call once at the top of a proof script. */
@@ -377,4 +386,5 @@ export function installDealsAiStub(): void {
   __setManifestStructuredObjectGeneratorForTests(stub);
   __setCopywriterStructuredObjectGeneratorForTests(stub);
   __setFunnelSynthesisStructuredObjectGeneratorForTests(stub);
+  __setNicheReformerStructuredObjectGeneratorForTests(stub);
 }

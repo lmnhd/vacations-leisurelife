@@ -12,26 +12,23 @@
  * component.
  */
 
-import fs from "fs/promises";
-
-import { DEALS_CACHE_PATHS } from "./caches";
 import { isDealHomepageEligible } from "./curated-deal-assembly";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
+  listCuratedDeals,
+  listDealFunnelSyntheses,
+  listDealTripManifests,
+  listPromoRecords,
+} from "./deals-dynamo-store";
+import {
   projectPublicDealPage,
   projectPublicDealTile,
   type PublicDealPage,
   type PublicDealTile,
 } from "./public-deal-projection";
-import {
-  validateCuratedDealsCache,
-  validateDealFunnelSynthesisCache,
-  validateDealTripManifestsCache,
-  validatePromoIntelligenceCache,
-} from "./validate";
 
 function addLookupKey(keys: Set<string>, value: string | undefined): void {
   const trimmed = value?.trim();
@@ -39,24 +36,14 @@ function addLookupKey(keys: Set<string>, value: string | undefined): void {
 }
 
 async function loadEligibleDeals(): Promise<CuratedOdysseusDeal[]> {
-  let raw: string;
+  let deals: CuratedOdysseusDeal[];
   try {
-    raw = await fs.readFile(DEALS_CACHE_PATHS.curatedDeals, "utf8");
+    deals = await listCuratedDeals();
   } catch {
-    return [];
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return [];
-  }
-  const result = validateCuratedDealsCache(parsed);
-  if (!result.ok || !result.value) {
     return [];
   }
   // Pinned Deals (Phase 14) sort first; order is otherwise stable cache order.
-  return result.value.deals
+  return deals
     .filter(isDealHomepageEligible)
     .sort((a, b) => {
       const aPinned = a.operatorVisibility?.pinned ? 1 : 0;
@@ -154,39 +141,21 @@ function hydrateDealFromManifest(
 }
 
 async function loadTripManifestForDeal(deal: CuratedOdysseusDeal): Promise<DealTripManifest | undefined> {
-  let raw: string;
+  let manifests: DealTripManifest[];
   try {
-    raw = await fs.readFile(DEALS_CACHE_PATHS.dealTripManifests, "utf8");
+    manifests = await listDealTripManifests();
   } catch {
     return undefined;
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-  const result = validateDealTripManifestsCache(parsed);
-  if (!result.ok || !result.value) return undefined;
-  return findDealTripManifestForDeal(deal, result.value.manifests);
+  return findDealTripManifestForDeal(deal, manifests);
 }
 
 async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
-  let raw: string;
   try {
-    raw = await fs.readFile(DEALS_CACHE_PATHS.promoIntelligence, "utf8");
+    return await listPromoRecords();
   } catch {
     return [];
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return [];
-  }
-  const result = validatePromoIntelligenceCache(parsed);
-  if (!result.ok || !result.value) return [];
-  return result.value.records;
 }
 
 /**
@@ -197,21 +166,13 @@ async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
  * notes instead of only the public deal id.
  */
 async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<DealFunnelSynthesis | undefined> {
-  let raw: string;
+  let syntheses: DealFunnelSynthesis[];
   try {
-    raw = await fs.readFile(DEALS_CACHE_PATHS.dealFunnelSyntheses, "utf8");
+    syntheses = await listDealFunnelSyntheses();
   } catch {
     return undefined;
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-  const result = validateDealFunnelSynthesisCache(parsed);
-  if (!result.ok || !result.value) return undefined;
-  return findDealFunnelSynthesisForDeal(deal, result.value.syntheses);
+  return findDealFunnelSynthesisForDeal(deal, syntheses);
 }
 
 /**

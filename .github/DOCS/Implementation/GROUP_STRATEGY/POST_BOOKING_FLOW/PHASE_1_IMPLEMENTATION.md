@@ -58,8 +58,9 @@ without coordinating with Klaviyo template authors**.
 | `preferred_cabin_type` | lead | template personalization |
 | `hero_image_url` | landing view model | email header visual |
 | `landing_page_url` | derived from `NEXT_PUBLIC_SITE_URL` + slug | primary CTA |
+| `campaign_chat_url` | derived from landing URL + `#group-chat-hall` | on-page campaign chat CTA |
 | `booking_link_url` | CB link, falls back to Odysseus retail | threshold/booking CTA |
-| `community_channel_url` | campaign | community CTA |
+| `community_channel_url` | campaign | external community CTA, when configured |
 | `merchandise_store_url` | campaign | merch CTA |
 | `ship_name`, `sail_date`, `departure_port` | campaign (post-match) | travel details |
 
@@ -81,7 +82,7 @@ stage-specific knobs templates branch on.
 | `campaign_slug`, `campaign_name`, `campaign_status`, `campaign_description` | campaign snapshot |
 | `first_name`, `booking_mode`, `passenger_count`, `preferred_cabin_type`, `waitlist_joined_at` | lead snapshot |
 | `threshold_required_cabins`, `threshold_joined_entries`, `threshold_joined_passengers`, `threshold_converted_entries`, `threshold_percent`, `threshold_remaining_cabins` | threshold snapshot (powers Day 7 momentum module) |
-| `landing_page_url`, `booking_link_url` | CTA overrides |
+| `landing_page_url`, `campaign_chat_url`, `booking_link_url` | CTA overrides |
 | `ship_name`, `sail_date`, `departure_port` | populated post-match |
 | `share_invite_copy` | suggested one-line invite for the Day 7 invite-a-friend module |
 
@@ -113,6 +114,7 @@ lead records.
   "preferred_cabin_type": "Balcony",
   "hero_image_url": "https://cdn.example/hero.png",
   "landing_page_url": "https://www.leisurelifeinteractive.com/groups/retro-future-2026",
+  "campaign_chat_url": "https://www.leisurelifeinteractive.com/groups/retro-future-2026#group-chat-hall",
   "booking_link_url": "https://bookings.cbagenttools.com/group/abc",
   "community_channel_url": "https://discord.gg/example",
   "ship_name": "Carnival Celebration",
@@ -166,9 +168,9 @@ properties above. Three template briefs follow.
   2. Theme story — 2 short paragraphs of theme atmosphere. Static per template,
      personalized via campaign name + description.
   3. Guest idea prompt — "Drop a moment you'd want on board" → link to the
-     idea-board chat at `{{ person.landing_page_url }}#ideas`.
+     on-page campaign chat at `{{ event.campaign_chat_url }}`.
   4. Sample onboard rituals — bullet list (template-authored per campaign).
-- **Primary CTA:** "Drop an idea in the campaign chat" → `{{ person.landing_page_url }}#ideas`
+- **Primary CTA:** "Drop an idea in the campaign chat" → `{{ event.campaign_chat_url }}`
 - **Footer:** Same as Brief 1.
 
 ### Brief 3 — `LLL Nurture Day 7` (visual_mode `status_briefing`)
@@ -238,6 +240,9 @@ Per plan §11 and §12, Phase 1 stops short of:
 - Several profile fields stay `undefined` for un-matched campaigns:
   `ship_name`, `sail_date`, `departure_port`, `community_channel_url`,
   `merchandise_store_url`. The preview surface surfaces these as warnings.
+- `campaign_chat_url` is always derived from the landing page and points to
+  `#group-chat-hall`; use it for the Day 3 on-page chat CTA instead of
+  `community_channel_url`, which is only for an external community channel.
 - Phase 2 will need to extend `EmailEventStage` and add new metric names. The
   builders are designed to be additive — just add new entries to
   `KLAVIYO_METRIC_NAMES` and `STAGE_VISUAL_MODES`.

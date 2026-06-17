@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { NextResponse } from "next/server";
 
 import { getDealsSystemOperatorAction } from "@/lib/cb/deals-system/operator-actions";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,6 +27,9 @@ function isExecFailure(error: unknown): error is ExecFailure {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: RunRequestBody;
   try {
     body = (await request.json()) as RunRequestBody;

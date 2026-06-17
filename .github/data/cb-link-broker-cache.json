@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-12T18:13:26.788Z",
+  "generatedAtIso": "2026-06-16T21:26:10.382Z",
   "records": [
     {
       "id": "sample-link-broker-1636340-package-entry",
@@ -101,6 +101,195 @@
         "shipName": "7 Night Eastern Caribbean & Perfect Day",
         "sailDateIso": "2027-03-14",
         "nights": 7
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1622160::1049337::1f4fcd78c088e80d",
+      "packageId": "1622160",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1622160?siid=1049337&lang=1",
+      "urlHash": "31199dcbcdc34b32ea607104",
+      "source": "constructed",
+      "createdAtIso": "2026-06-15T23:28:24.248Z",
+      "updatedAtIso": "2026-06-15T23:28:24.248Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Carnival",
+        "shipName": "Journeys - 15-Day South America",
+        "sailDateIso": "2027-01-04",
+        "nights": 15
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1583429::1049337::1f4fcd78c088e80d",
+      "packageId": "1583429",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1583429?siid=1049337&lang=1",
+      "urlHash": "84fa2e415dbc0a35e38cd74e",
+      "source": "constructed",
+      "createdAtIso": "2026-06-15T22:47:01.460Z",
+      "updatedAtIso": "2026-06-15T22:47:01.460Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Carnival",
+        "shipName": "Journeys - 14-Day Southeast Asia",
+        "sailDateIso": "2027-01-27",
+        "nights": 14
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1583431::1049337::1f4fcd78c088e80d",
+      "packageId": "1583431",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1583431?siid=1049337&lang=1",
+      "urlHash": "11ae87223d7c0f76652136c3",
+      "source": "constructed",
+      "createdAtIso": "2026-06-15T23:25:11.022Z",
+      "updatedAtIso": "2026-06-15T23:25:11.022Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Carnival",
+        "shipName": "Journeys - 16-Day Southeast Asia",
+        "sailDateIso": "2027-03-08",
+        "nights": 16
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1622162::1049337::1f4fcd78c088e80d",
+      "packageId": "1622162",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1622162?siid=1049337&lang=1",
+      "urlHash": "a22eb2d92388c7b7ffc41e5e",
+      "source": "constructed",
+      "createdAtIso": "2026-06-15T22:49:29.410Z",
+      "updatedAtIso": "2026-06-15T22:49:29.410Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Carnival",
+        "shipName": "Journeys - 16-Day South America",
+        "sailDateIso": "2027-02-02",
+        "nights": 16
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1582993::1049337::1f4fcd78c088e80d",
+      "packageId": "1582993",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1582993?siid=1049337&lang=1",
+      "urlHash": "bc75b7104acb54c922238ac3",
+      "source": "constructed",
+      "createdAtIso": "2026-06-16T18:18:53.296Z",
+      "updatedAtIso": "2026-06-16T18:18:53.296Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Regent",
+        "shipName": "35-Day World Cruise: Panama Canal Crossing & Polynesia",
+        "sailDateIso": "2027-01-05",
+        "nights": 35
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1575128::1049337::1f4fcd78c088e80d",
+      "packageId": "1575128",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1575128?siid=1049337&lang=1",
+      "urlHash": "5f07ef0fcc3fc7c80063cd70",
+      "source": "constructed",
+      "createdAtIso": "2026-06-16T21:13:13.457Z",
+      "updatedAtIso": "2026-06-16T21:13:13.457Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Princess",
+        "shipName": "World Cruise",
+        "sailDateIso": "2027-01-08",
+        "nights": 139
+      },
+      "parameterSummary": {
+        "officeId": "286",
+        "hasPhone": false,
+        "hasCloneBookingToken": false,
+        "hasBookingReference": false
+      }
+    },
+    {
+      "id": "package_entry::1578937::1049337::1f4fcd78c088e80d",
+      "packageId": "1578937",
+      "siid": "1049337",
+      "linkClass": "package_entry",
+      "url": "https://bookings.cbagenttools.com/swift/cruise/package/1578937?siid=1049337&lang=1",
+      "urlHash": "1b1511682660ac3be5ca964e",
+      "source": "constructed",
+      "createdAtIso": "2026-06-16T21:26:10.382Z",
+      "updatedAtIso": "2026-06-16T21:26:10.382Z",
+      "health": {
+        "status": "unknown",
+        "failureReason": "Constructed link not yet browser-validated (Phase 3)."
+      },
+      "cruiseFingerprint": {
+        "cruiseLine": "Silversea",
+        "shipName": "Eastbound Transatlantic Crossing",
+        "sailDateIso": "2027-01-02",
+        "nights": 9
       },
       "parameterSummary": {
         "officeId": "286",

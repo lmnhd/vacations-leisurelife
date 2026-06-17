@@ -49,23 +49,18 @@ export function upsertDealFunnelSynthesis(
 }
 
 /**
- * Record the operator's curated image set (ordered gallery + hero + per-segment
- * picks) onto an existing synthesis. Pure: returns a new cache. Throws on unknown id
- * or when an image id isn't among the synthesis candidates.
+ * Apply the operator's curated image set (ordered gallery + hero + per-segment
+ * picks) to a single synthesis. Pure: returns a new synthesis. Throws when an
+ * image id isn't among the synthesis candidates.
  */
-export function setDealFunnelImageSelection(
-  cache: DealFunnelSynthesisCache,
-  synthesisId: string,
+export function applyDealFunnelImageSelection(
+  synthesis: DealFunnelSynthesis,
   selection: {
     galleryIds?: string[];
     heroImageId?: string;
     segmentImageIds?: Partial<Record<string, string>>;
   }
-): DealFunnelSynthesisCache {
-  const synthesis = cache.syntheses.find((s) => s.id === synthesisId);
-  if (!synthesis) {
-    throw new Error(`No funnel synthesis found with id "${synthesisId}".`);
-  }
+): DealFunnelSynthesis {
   const candidateIds = new Set(synthesis.candidates.map((c) => c.id));
   const assertKnown = (id: string, where: string) => {
     if (!candidateIds.has(id)) {
@@ -92,11 +87,32 @@ export function setDealFunnelImageSelection(
     });
   }
 
-  const updated: DealFunnelSynthesis = {
+  return {
     ...synthesis,
     galleryIds,
     heroImageId,
     landingPage: { ...synthesis.landingPage, segments },
   };
+}
+
+/**
+ * Record the operator's curated image set onto an existing synthesis in a
+ * cache. Pure: returns a new cache. Throws on unknown id or when an image id
+ * isn't among the synthesis candidates.
+ */
+export function setDealFunnelImageSelection(
+  cache: DealFunnelSynthesisCache,
+  synthesisId: string,
+  selection: {
+    galleryIds?: string[];
+    heroImageId?: string;
+    segmentImageIds?: Partial<Record<string, string>>;
+  }
+): DealFunnelSynthesisCache {
+  const synthesis = cache.syntheses.find((s) => s.id === synthesisId);
+  if (!synthesis) {
+    throw new Error(`No funnel synthesis found with id "${synthesisId}".`);
+  }
+  const updated = applyDealFunnelImageSelection(synthesis, selection);
   return upsertDealFunnelSynthesis(cache, updated);
 }

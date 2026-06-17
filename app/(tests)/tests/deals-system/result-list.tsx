@@ -114,7 +114,7 @@ export function ResultList<T>({
                   type="button"
                   onClick={() => setOpenMap((m) => ({ ...m, [id]: !open }))}
                   className="flex min-w-0 flex-1 items-start gap-3 text-left"
-                  aria-expanded={open}
+                  aria-expanded={open ? "true" : "false"}
                 >
                   <svg
                     className={`mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}

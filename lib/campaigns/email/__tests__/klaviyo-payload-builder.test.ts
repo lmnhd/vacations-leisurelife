@@ -79,6 +79,7 @@ test('buildKlaviyoProfile copies identity, lead, and CTA fields with stable snak
     assert.equal(profile.passenger_count, 2);
     assert.equal(profile.preferred_cabin_type, 'Balcony');
     assert.equal(profile.hero_image_url, 'https://cdn.example/hero.png');
+    assert.equal(profile.campaign_chat_url, 'https://leisurelifeinteractive.net/groups/retro-future-2026#group-chat-hall');
     assert.equal(profile.booking_link_url, 'https://bookings.cbagenttools.com/group/abc');
     assert.equal(profile.community_channel_url, 'https://discord.gg/example');
     assert.equal(profile.merchandise_store_url, 'https://leisurelife.printful/store/abc');
@@ -99,6 +100,7 @@ test('buildKlaviyoProfile omits undefined fields rather than sending nulls', () 
     assert.equal(profile.sail_date, undefined);
     assert.equal(profile.departure_port, undefined);
     assert.equal(profile.community_channel_url, undefined);
+    assert.equal(profile.campaign_chat_url, 'https://leisurelifeinteractive.net/groups/retro-future-2026#group-chat-hall');
     assert.equal(profile.merchandise_store_url, undefined);
     // Should fall back to status label map when landing model not provided.
     assert.equal(profile.campaign_stage_label, 'Now Forming');
@@ -130,6 +132,7 @@ test('buildKlaviyoEvent selects the correct metric name + visual mode per stage'
     const d3 = buildKlaviyoEvent({ stage: 'nurture_day3', ...args });
     assert.equal(d3.metricName, 'LLL Nurture Day 3');
     assert.equal(d3.properties.visual_mode, 'field_note');
+    assert.equal(d3.properties.campaign_chat_url, 'https://leisurelifeinteractive.net/groups/retro-future-2026#group-chat-hall');
 
     const d7 = buildKlaviyoEvent({ stage: 'nurture_day7', ...args });
     assert.equal(d7.metricName, 'LLL Nurture Day 7');

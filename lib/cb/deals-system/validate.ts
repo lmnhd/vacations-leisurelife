@@ -13,6 +13,8 @@ import type { DealTripManifestsCache, DealTripManifest } from "./deal-trip-manif
 import type { DealUnifiedManifestsCache, DealUnifiedManifest } from "./deal-unified-manifest-types";
 import type { DealAdCopyCache, DealAdCopy } from "./deal-ad-copy-types";
 import type { DealFunnelSynthesisCache, DealFunnelSynthesis } from "./deal-page-design-types";
+import type { DealMetaAdSynthesisCache, DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
+import type { DealMetaDistributionCache, DealMetaDistribution } from "./deal-meta-distribution-types";
 import type { LinkBrokerCache, LinkBrokerRecord } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -472,5 +474,91 @@ export function validateDealFunnelSynthesisCache(
   }
   return errors.length === 0
     ? { ok: true, value: value as unknown as DealFunnelSynthesisCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealMetaAdSynthesis(s: unknown, i: number, errors: string[]): void {
+  if (!isRecord(s)) {
+    errors.push(`syntheses[${i}] is not an object`);
+    return;
+  }
+  const m = s as Partial<DealMetaAdSynthesis>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`syntheses[${i}].id missing`);
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`syntheses[${i}].generatedAtIso must be an ISO date`);
+  if (typeof m.sourceFunnelSynthesisId !== "string" || !m.sourceFunnelSynthesisId) {
+    errors.push(`syntheses[${i}].sourceFunnelSynthesisId missing`);
+  }
+  if (typeof m.promptTemplate !== "string" || !m.promptTemplate) {
+    errors.push(`syntheses[${i}].promptTemplate missing`);
+  }
+  if (!Array.isArray(m.cards) || m.cards.length === 0) {
+    errors.push(`syntheses[${i}].cards must be a non-empty array`);
+  } else {
+    m.cards.forEach((card, j) => {
+      if (!isRecord(card)) {
+        errors.push(`syntheses[${i}].cards[${j}] is not an object`);
+        return;
+      }
+      if (typeof card.cardIndex !== "number") errors.push(`syntheses[${i}].cards[${j}].cardIndex missing`);
+      if (typeof card.headline !== "string") errors.push(`syntheses[${i}].cards[${j}].headline missing`);
+      if (typeof card.primaryText !== "string") errors.push(`syntheses[${i}].cards[${j}].primaryText missing`);
+      if (!["pending", "generating", "ready", "error"].includes(String(card.status))) {
+        errors.push(`syntheses[${i}].cards[${j}].status invalid: ${String(card.status)}`);
+      }
+    });
+  }
+}
+
+export function validateDealMetaAdSynthesisCache(
+  value: unknown
+): ValidationResult<DealMetaAdSynthesisCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "syntheses", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.syntheses)) {
+    v.syntheses.forEach((s, i) => validateDealMetaAdSynthesis(s, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealMetaAdSynthesisCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealMetaDistribution(d: unknown, i: number, errors: string[]): void {
+  if (!isRecord(d)) {
+    errors.push(`distributions[${i}] is not an object`);
+    return;
+  }
+  const m = d as Partial<DealMetaDistribution>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`distributions[${i}].id missing`);
+  if (typeof m.dealId !== "string" || !m.dealId) errors.push(`distributions[${i}].dealId missing`);
+  if (typeof m.sourceMetaAdSynthesisId !== "string" || !m.sourceMetaAdSynthesisId) {
+    errors.push(`distributions[${i}].sourceMetaAdSynthesisId missing`);
+  }
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`distributions[${i}].generatedAtIso must be an ISO date`);
+  if (!["simulate", "live"].includes(String(m.mode))) {
+    errors.push(`distributions[${i}].mode invalid: ${String(m.mode)}`);
+  }
+  if (!["planned", "dispatched", "error"].includes(String(m.status))) {
+    errors.push(`distributions[${i}].status invalid: ${String(m.status)}`);
+  }
+  if (!isRecord(m.plan)) errors.push(`distributions[${i}].plan missing`);
+  if (!Array.isArray(m.notes)) errors.push(`distributions[${i}].notes must be an array`);
+}
+
+export function validateDealMetaDistributionCache(
+  value: unknown
+): ValidationResult<DealMetaDistributionCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "distributions", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.distributions)) {
+    v.distributions.forEach((d, i) => validateDealMetaDistribution(d, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealMetaDistributionCache, errors }
     : { ok: false, errors };
 }

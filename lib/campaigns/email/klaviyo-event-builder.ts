@@ -19,7 +19,7 @@ import {
     STAGE_VISUAL_MODES,
     type EmailEventStage,
 } from './email-event-types';
-import { getCampaignLandingUrl } from './klaviyo-profile-builder';
+import { getCampaignChatUrl, getCampaignLandingUrl } from './klaviyo-profile-builder';
 
 export interface BuildKlaviyoEventInput {
     stage: EmailEventStage;
@@ -184,10 +184,12 @@ export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBu
 
     const metricName = KLAVIYO_METRIC_NAMES[stage];
     const remainingCabins = Math.max(0, requiredCabins - summary.totalEntries);
+    const landingPageUrl = getCampaignLandingUrl(campaign.id);
 
     const stagePhase2: Record<string, string | number | boolean | undefined> = {};
     if (stage === 'waitlist_confirmation' && lead.verificationToken) {
-        const verifyUrl = `${getCampaignLandingUrl(campaign.id).replace(/\/groups\/.*/, '')}/api/groups/campaign/${campaign.id}/verify?email=${encodeURIComponent(lead.email)}&token=${lead.verificationToken}`;
+        const [siteBaseUrl] = landingPageUrl.split('/groups/');
+        const verifyUrl = `${siteBaseUrl}/api/groups/campaign/${campaign.id}/verify?email=${encodeURIComponent(lead.email)}&token=${lead.verificationToken}`;
         stagePhase2.verification_url = verifyUrl;
     }
     if (stage === 'threshold_met') {
@@ -299,7 +301,8 @@ export function buildKlaviyoEvent(input: BuildKlaviyoEventInput): KlaviyoEventBu
         threshold_remaining_cabins: remainingCabins,
 
         // CTAs (also on profile, surfaced again for stage-specific overrides)
-        landing_page_url: getCampaignLandingUrl(campaign.id),
+        landing_page_url: landingPageUrl,
+        campaign_chat_url: getCampaignChatUrl(campaign.id),
         booking_link_url:
             campaign.cbagenttoolsBookingLink ?? campaign.odysseusRetailBookingLink,
 

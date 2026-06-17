@@ -83,6 +83,17 @@ export interface CuratedOdysseusDeal {
   bookingUrlSource: CuratedDealBookingUrlSource;
   /** Link health gates public publishing; see baseline rule 2. */
   linkHealth: LinkBrokerHealth;
+  /**
+   * How confidently Step 2's package lookup matched this packageId to the
+   * angle's requested cruise facts (carried from manifest.resolvedPackage).
+   * Gates approval — see evaluateApprovalGates "match_confidence" — so a
+   * low-confidence/best-effort pick can't reach the homepage without an
+   * operator override.
+   */
+  packageMatch?: {
+    confidence: number;
+    reasons: string[];
+  };
   cruiseFacts: CuratedDealCruiseFacts;
   scoring: CuratedDealScoring;
   packaging: CuratedDealPackaging;

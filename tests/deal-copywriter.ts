@@ -58,6 +58,18 @@ const angle: DealDiscoveryIdea = {
     destinationAndTimeOfYearHints: "Transatlantic repositioning, late autumn through post-holiday winter 2026.",
     onboardAssetRequirements: "High balcony ratio, a genuinely quiet library, low-traffic lounges.",
   },
+  groundedCandidate: {
+    resolvedAtIso: GEN_AT,
+    packageId: "1500001",
+    cruiseName: "Celebrity Edge Transatlantic Crossing",
+    cruiseLine: "Celebrity",
+    sailDateIso: "2026-11-08",
+    nights: 14,
+    departurePortCode: "FLL",
+    portsOfCall: "Ponta Delgada, Funchal",
+    confidence: 0.9,
+    reasons: ["date match", "line match"],
+  },
 };
 
 const tripManifest: DealTripManifest = {

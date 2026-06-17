@@ -3,25 +3,15 @@ import fs from "fs/promises";
 import {
   DEALS_CACHE_PATHS,
   emptyCallbackRequestsCache,
-  emptyCuratedDealsCache,
   emptyLinkBrokerCache,
-  emptyPromoIntelligenceCache,
 } from "./caches";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
-import type {
-  CuratedOdysseusDeal,
-  CuratedOdysseusDealsCache,
-} from "./curated-deal-types";
+import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import type { LinkBrokerCache } from "./link-broker-types";
-import type {
-  CbPromoIntelligenceCache,
-  CbPromoIntelligenceRecord,
-} from "./promo-intelligence-types";
+import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
   validateCallbackRequestsCache,
-  validateCuratedDealsCache,
   validateLinkBrokerCache,
-  validatePromoIntelligenceCache,
   type ValidationResult,
 } from "./validate";
 import {
@@ -32,8 +22,9 @@ import { validatePitchBriefVoice } from "./ai-generators";
 import type { DealAiGenerationTrace } from "./campaign-types";
 import { getSavedDiscoveryResearchStatus } from "./discovery-research-source";
 import { loadDealDiscoveryIdeasCache } from "./deal-discovery-cache";
-import { loadDealTripManifestsCache } from "./deal-trip-manifest-cache";
 import { loadDealAdCopyCache } from "./deal-ad-copy-cache";
+import { listCuratedDeals, listDealTripManifests, listPromoRecords } from "./deals-dynamo-store";
+import type { DealTripManifest } from "./deal-trip-manifest-types";
 
 type CacheKey = keyof typeof DEALS_CACHE_PATHS;
 
@@ -213,8 +204,8 @@ export interface DealsSystemDashboardData {
   caches: Array<{
     key: string;
     label: string;
-    path: string;
-    exists: boolean;
+    path?: string;
+    exists?: boolean;
     modifiedAtIso?: string;
     ok: boolean;
     errors: string[];
@@ -430,16 +421,19 @@ function summarizeCallbacks(
 }
 
 function buildPhases(
-  promoCache: CbPromoIntelligenceCache,
-  curatedCache: CuratedOdysseusDealsCache,
+  promoRecords: CbPromoIntelligenceRecord[],
+  curatedDeals: CuratedOdysseusDeal[],
   linkCache: LinkBrokerCache,
   callbackCache: AgentCallbackRequestsCache
 ): DealsSystemPhaseStatus[] {
-  const publishableDeals = curatedCache.deals.filter(isDealHomepageEligible).length;
-  const dealsInDevelopment = curatedCache.deals.filter(
+  const publishableDeals = curatedDeals.filter(isDealHomepageEligible).length;
+  const dealsInDevelopment = curatedDeals.filter(
     (deal) => deal.copyPackage || deal.adStructure || deal.mediaPlan
   ).length;
   const validLinks = linkCache.records.filter((record) => record.health.status === "valid").length;
+  const extractionSucceeded = promoRecords.filter(
+    (record) => record.diagnostics.status === "succeeded"
+  ).length;
   return [
     {
       phase: "0-1",
@@ -457,8 +451,8 @@ function buildPhases(
     {
       phase: "4-5",
       name: "Promo intelligence",
-      status: promoCache.records.length > 0 ? "complete" : "pending",
-      evidence: `${promoCache.records.length} promo record(s), ${promoCache.diagnostics.extractionSucceeded} extracted successfully.`,
+      status: promoRecords.length > 0 ? "complete" : "pending",
+      evidence: `${promoRecords.length} promo record(s), ${extractionSucceeded} extracted successfully.`,
     },
     {
       phase: "5A",
@@ -477,7 +471,7 @@ function buildPhases(
     {
       phase: "7-8",
       name: "Trip research and targeting",
-      status: curatedCache.deals.some((deal) => deal.angleResearch || deal.targetingDemographic)
+      status: curatedDeals.some((deal) => deal.angleResearch || deal.targetingDemographic)
         ? "complete"
         : "foundation",
       evidence:
@@ -519,19 +513,7 @@ function buildPhases(
 }
 
 export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboardData> {
-  const [promoRead, curatedRead, linkRead, callbackRead] = await Promise.all([
-    readCache(
-      "promoIntelligence",
-      "CB Promo Intelligence",
-      emptyPromoIntelligenceCache(),
-      validatePromoIntelligenceCache
-    ),
-    readCache(
-      "curatedDeals",
-      "Curated Odysseus Deals",
-      emptyCuratedDealsCache(),
-      validateCuratedDealsCache
-    ),
+  const [linkRead, callbackRead, promoRecords, curatedDeals] = await Promise.all([
     readCache("linkBroker", "Link Broker", emptyLinkBrokerCache(), validateLinkBrokerCache),
     readCache(
       "callbackRequests",
@@ -539,13 +521,16 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
       emptyCallbackRequestsCache(),
       validateCallbackRequestsCache
     ),
+    listPromoRecords().catch(() => []),
+    listCuratedDeals().catch(() => []),
   ]);
 
-  const promoCache = cacheValue(promoRead, emptyPromoIntelligenceCache());
-  const curatedCache = cacheValue(curatedRead, emptyCuratedDealsCache());
   const linkCache = cacheValue(linkRead, emptyLinkBrokerCache());
   const callbackCache = cacheValue(callbackRead, emptyCallbackRequestsCache());
-  const publishableDeals = curatedCache.deals.filter(isDealHomepageEligible);
+  const publishableDeals = curatedDeals.filter(isDealHomepageEligible);
+  const extractedPromos = promoRecords.filter(
+    (record) => record.diagnostics.status === "succeeded"
+  ).length;
 
   const researchStatus = getSavedDiscoveryResearchStatus();
   let discoveryIdeas: ReturnType<typeof loadDealDiscoveryIdeasCache>["ideas"] = [];
@@ -554,9 +539,9 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
   } catch {
     discoveryIdeas = [];
   }
-  let manifests: ReturnType<typeof loadDealTripManifestsCache>["manifests"] = [];
+  let manifests: DealTripManifest[] = [];
   try {
-    manifests = loadDealTripManifestsCache().manifests;
+    manifests = await listDealTripManifests();
   } catch {
     manifests = [];
   }
@@ -597,31 +582,54 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
       })),
     },
     summary: {
-      promoRecords: promoCache.records.length,
-      extractedPromos: promoCache.diagnostics.extractionSucceeded,
-      curatedDeals: curatedCache.deals.length,
+      promoRecords: promoRecords.length,
+      extractedPromos,
+      curatedDeals: curatedDeals.length,
       publishableDeals: publishableDeals.length,
       linkBrokerRecords: linkCache.records.length,
       validLinks: linkCache.records.filter((record) => record.health.status === "valid").length,
       callbackRequests: callbackCache.requests.length,
     },
-    caches: [promoRead, curatedRead, linkRead, callbackRead].map((cache) => ({
-      key: cache.key,
-      label: cache.label,
-      path: cache.path,
-      exists: cache.exists,
-      modifiedAtIso: cache.modifiedAtIso,
-      ok: cache.validation.ok,
-      errors: cache.validation.errors,
-    })),
-    phases: buildPhases(promoCache, curatedCache, linkCache, callbackCache),
-    promoRecords: promoCache.records.map(summarizePromo),
-    promoOptions: promoCache.records.map((record) => ({
+    caches: [
+      {
+        key: "promoRecords",
+        label: "Promo Intelligence Records",
+        ok: true,
+        errors: [],
+      },
+      {
+        key: "curatedDeals",
+        label: "Curated Deals",
+        ok: true,
+        errors: [],
+      },
+      {
+        key: linkRead.key,
+        label: linkRead.label,
+        path: linkRead.path,
+        exists: linkRead.exists,
+        modifiedAtIso: linkRead.modifiedAtIso,
+        ok: linkRead.validation.ok,
+        errors: linkRead.validation.errors,
+      },
+      {
+        key: callbackRead.key,
+        label: callbackRead.label,
+        path: callbackRead.path,
+        exists: callbackRead.exists,
+        modifiedAtIso: callbackRead.modifiedAtIso,
+        ok: callbackRead.validation.ok,
+        errors: callbackRead.validation.errors,
+      },
+    ],
+    phases: buildPhases(promoRecords, curatedDeals, linkCache, callbackCache),
+    promoRecords: promoRecords.map(summarizePromo),
+    promoOptions: promoRecords.map((record) => ({
       id: record.id,
       title: record.title,
       vendor: record.vendor,
     })),
-    curatedDeals: curatedCache.deals.map(summarizeDeal),
+    curatedDeals: curatedDeals.map(summarizeDeal),
     linkBrokerRecords: summarizeLinkBroker(linkCache),
     callbackRequests: summarizeCallbacks(callbackCache),
     nextActions: [

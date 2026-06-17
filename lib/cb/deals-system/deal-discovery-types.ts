@@ -7,10 +7,11 @@
  * produced by the Group pipeline) and emits one or more SAILING ANGLE PROFILES —
  * direct-response retail cruise angles pitched to a passionate consumer/household.
  *
- * A profile is not a Deal: there is no ship lock-in and no inventory match. Its two
- * match fields (onboardAssetRequirements, destinationAndTimeOfYearHints) are written
- * so the booking engine can scan live inventory for a ship + sail date in a LATER
- * phase. The other five fields are the ad-creative payload.
+ * An angle is only accepted into the cache once it is GROUNDED: its two match
+ * fields (onboardAssetRequirements, destinationAndTimeOfYearHints) are used to
+ * search live Odysseus inventory right here in Discovery, and only an angle with
+ * a real, high-confidence candidate (`groundedCandidate`) is kept. An angle must
+ * never exist without real ship + sail-date candidates — see DealDiscoveryGroundedCandidate.
  */
 
 import type { DealAiGenerationTrace } from "./campaign-types";
@@ -36,6 +37,27 @@ export interface SailingAngleProfile {
   onboardAssetRequirements: string;
 }
 
+/**
+ * A real, bookable Odysseus sailing found at Discovery time that grounds this
+ * angle — its ship, sail date, and nights ACTUALLY EXIST in inventory. Carried
+ * forward into Step 2 (Trip Manifestation) so the manifest is built around this
+ * verified candidate instead of re-searching and risking a different pick.
+ */
+export interface DealDiscoveryGroundedCandidate {
+  /** When the grounding search ran. */
+  resolvedAtIso: string;
+  packageId: string;
+  cruiseName: string;
+  cruiseLine?: string;
+  sailDateIso: string;
+  nights?: number;
+  departurePortCode?: string;
+  portsOfCall?: string;
+  /** 0..1 ranker confidence — gated at >= MATCH_CONFIDENCE_THRESHOLD to be accepted. */
+  confidence: number;
+  reasons: string[];
+}
+
 export interface DealDiscoveryIdea {
   /** Slug derived from the sailing angle title; idempotency key in the cache. */
   id: string;
@@ -48,6 +70,12 @@ export interface DealDiscoveryIdea {
   isolatedNiche: string;
   /** The direct-response sailing angle (Step 2 output). */
   sailingAngleProfile: SailingAngleProfile;
+  /**
+   * The real Odysseus sailing that grounds this angle. REQUIRED for an angle to
+   * exist in the cache — see the header comment. Step 2 builds its manifest
+   * around this candidate instead of re-searching.
+   */
+  groundedCandidate: DealDiscoveryGroundedCandidate;
   /** AI provenance (model + prompt + raw response + latency). */
   aiTrace?: DealAiGenerationTrace;
 }

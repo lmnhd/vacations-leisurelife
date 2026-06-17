@@ -409,12 +409,18 @@ export function assembleCuratedDealFromManifest(
   mediaPlan.dealId = dealId;
   mediaPlan.packageId = packageId;
 
+  const packageMatch = {
+    confidence: resolved.confidence,
+    reasons: resolved.reasons,
+  };
+
   const partial: Partial<CuratedOdysseusDeal> = {
     packageId,
     linkHealth: resolved.linkHealth ?? {
       status: "unknown",
       failureReason: "Resolved package link not yet validated.",
     },
+    packageMatch,
     angleResearch,
     targetingDemographic,
     pitchBrief,
@@ -438,6 +444,7 @@ export function assembleCuratedDealFromManifest(
     bookingUrl: resolved.bookingUrl ?? `https://bookings.cbagenttools.com/swift/cruise/package/${packageId}?siid=${siid}&lang=1`,
     bookingUrlSource: resolved.bookingUrl ? "share_button" : "constructed_package_url",
     linkHealth: partial.linkHealth!,
+    packageMatch,
     cruiseFacts,
     scoring: buildScoring(partial),
     packaging,

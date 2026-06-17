@@ -1,20 +1,24 @@
 /**
  * Deal Trip Manifestation — Step 2 agent.
  *
- * Takes a selected SailingAngleProfile + the raw CB promo intelligence and produces
- * a DealTripManifest: the cruise line / destination / sail window / nights and the
- * applicable perks/discounts, shaped to pre-fill SOURCE & ASSEMBLE for Step 3.
+ * Takes a selected DealDiscoveryIdea — which is ALREADY GROUNDED on a real,
+ * verified Odysseus inventory candidate (angle.groundedCandidate: real packageId,
+ * cruise line, ship, sail date, nights, ports) — and produces a DealTripManifest:
+ * the applicable perks/discounts + promo strategy, shaped to pre-fill SOURCE &
+ * ASSEMBLE for Step 3.
  *
- * Hard constraint: live Odysseus package search is operator-run Playwright, so this
- * agent NEVER fabricates a packageId, shipName, siid, or booking URL. It emits an
- * assembleDraft (cruise facts minus those) plus a lookupQuery the operator pastes
- * into Package Lookup to resolve them; the link broker then builds the link.
+ * The cruise line / ship / sail date / nights / ports come directly from
+ * angle.groundedCandidate, not from the model. The itineraryName / destination
+ * framing is DERIVED DETERMINISTICALLY from those real facts (deriveDestination /
+ * deriveItineraryName) — it is NOT AI-written, so it can never drift from the
+ * niche-reformer's framing of the same cruise. The AI's ONLY job here is promo
+ * correlation: which prefiltered promos apply, the promo strategy, and why the real
+ * sailing fulfils the angle's onboard-asset needs.
  *
- * Pipeline: (1) deterministically seed a coarse cruise line + sail window from the
- * angle's timing hints; (2) prefilter the promo records by that seed to cut noise;
- * (3) AI correlates the angle + surviving promos into the manifest. AI-only/hard-fail
- * via the LLM gateway (AI_POLICY §5). Promo ids the model returns are validated
- * against the prefiltered input — hallucinated ids are dropped.
+ * Pipeline: (1) prefilter the promo records against the grounded candidate's real
+ * cruise line + sail date to cut noise; (2) AI correlates the surviving promos.
+ * AI-only/hard-fail via the LLM gateway (AI_POLICY §5). Promo ids the model returns
+ * are validated against the prefiltered input — hallucinated ids are dropped.
  */
 
 import { z } from "zod";
@@ -24,11 +28,8 @@ import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup
 
 import type { DealAiGenerationTrace } from "./campaign-types";
 import type { DealDiscoveryIdea } from "./deal-discovery-types";
-import type {
-  DealManifestSailWindow,
-  DealTripManifest,
-} from "./deal-trip-manifest-types";
-import { cruiseLineMatches, prefilterPromoRecords } from "./promo-prefilter";
+import type { DealTripManifest } from "./deal-trip-manifest-types";
+import { prefilterPromoRecords } from "./promo-prefilter";
 import type {
   CbPromoIntelligenceRecord,
   PromoApplicabilityResult,
@@ -52,92 +53,6 @@ function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 
-// ── Deterministic seed: a coarse cruise line + sail window from the angle ──────
-// Used ONLY to prefilter promos before the AI call. The AI's manifest is the
-// authoritative line/window; this is a noise-reduction heuristic, intentionally
-// loose and permissive (it never narrows more than it can justify).
-
-const KNOWN_CRUISE_LINES = [
-  "Royal Caribbean",
-  "Celebrity",
-  "Carnival",
-  "Norwegian",
-  "Princess",
-  "Holland America",
-  "MSC",
-  "Disney",
-  "Cunard",
-  "Regent",
-  "Silversea",
-  "Oceania",
-  "Azamara",
-  "Virgin Voyages",
-];
-
-const MONTHS: Record<string, number> = {
-  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
-};
-
-const SEASONS: Record<string, [number, number]> = {
-  "early spring": [3, 4], spring: [3, 5], "late spring": [5, 6],
-  "early summer": [6, 7], summer: [6, 8], "late summer": [8, 9],
-  "early autumn": [9, 10], autumn: [9, 11], fall: [9, 11], "late autumn": [11, 12],
-  winter: [12, 2], "shoulder season": [4, 5],
-};
-
-function endOfMonthIso(year: number, month: number): string {
-  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return `${year}-${String(month).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
-}
-function startOfMonthIso(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, "0")}-01`;
-}
-
-function seedCruiseLine(angleText: string): string | undefined {
-  const lower = angleText.toLowerCase();
-  return KNOWN_CRUISE_LINES.find((line) => cruiseLineMatches(line, lower) || lower.includes(line.toLowerCase()));
-}
-
-/** Parse a coarse sail window from timing hints. Permissive; returns undefined bounds if unsure. */
-function seedSailWindow(hints: string): DealManifestSailWindow {
-  const lower = hints.toLowerCase();
-  const yearMatch = lower.match(/\b(20\d{2})\b/);
-  const year = yearMatch ? Number(yearMatch[1]) : new Date().getUTCFullYear() + 1;
-
-  // Explicit month range or single month.
-  const monthsFound = Object.keys(MONTHS).filter((m) => lower.includes(m));
-  if (monthsFound.length > 0) {
-    const nums = monthsFound.map((m) => MONTHS[m]).sort((a, b) => a - b);
-    return {
-      earliestIso: startOfMonthIso(year, nums[0]),
-      latestIso: endOfMonthIso(year, nums[nums.length - 1]),
-      rationale: `Seeded from month hint(s): ${monthsFound.join(", ")} ${year}.`,
-    };
-  }
-
-  // Season phrase.
-  const season = Object.keys(SEASONS).find((s) => lower.includes(s));
-  if (season) {
-    const [a, b] = SEASONS[season];
-    if (a <= b) {
-      return {
-        earliestIso: startOfMonthIso(year, a),
-        latestIso: endOfMonthIso(year, b),
-        rationale: `Seeded from season hint "${season}" ${year}.`,
-      };
-    }
-    // Wraps year-end (e.g. winter Dec–Feb).
-    return {
-      earliestIso: startOfMonthIso(year, a),
-      latestIso: endOfMonthIso(year + 1, b),
-      rationale: `Seeded from season hint "${season}" spanning ${year}-${year + 1}.`,
-    };
-  }
-
-  return { rationale: "No parseable timing in the angle; promo sail-window filter not applied." };
-}
-
 // ── AI output schema ──────────────────────────────────────────────────────────
 
 const APPLICABILITY_STATUSES = [
@@ -148,21 +63,6 @@ const APPLICABILITY_STATUSES = [
 ] as const;
 
 const manifestSchema = z.object({
-  assembleDraft: z.object({
-    cruiseLine: z.string(),
-    alternateCruiseLines: z.array(z.string()).optional(),
-    shipClassHint: z.string().optional(),
-    itineraryName: z.string(),
-    destination: z.string(),
-    nights: z.number().optional(),
-    sailWindow: z.object({
-      earliestIso: z.string().optional(),
-      latestIso: z.string().optional(),
-      rationale: z.string(),
-    }),
-    departurePortHint: z.string().optional(),
-    portsOfCall: z.array(z.string()),
-  }),
   appliedPromos: z.array(
     z.object({
       promoRecordId: z.string(),
@@ -174,63 +74,67 @@ const manifestSchema = z.object({
   ),
   promoStrategy: z.string(),
   manifestReasoning: z.string(),
-  lookupQuery: z.object({
-    line: z.string(),
-    ship: z.string().optional(),
-    destination: z.string(),
-    date: z.string().optional(),
-    nights: z.number().optional(),
-    port: z.string().optional(),
-    windowDays: z.number(),
-  }),
 });
 
-const SYSTEM_PROMPT = `You are a cruise inventory and promo-intelligence strategist. You take a single
-direct-response "Sailing Angle Profile" and the available CB promotion records, and you
-meticulously correlate the ideal cruise line, destination, sail window, and nights that
-fulfil the angle's onboard-asset requirements and timing — then determine exactly which
-promotions' perks/discounts apply and how they strengthen the angle.
+// ── Deterministic framing (no AI) ──────────────────────────────────────────────
+// itineraryName + destination used to be AI-written here, re-deriving region/season
+// framing the grounded candidate's REAL facts already carry — overlapping with the
+// niche-reformer's angle prose. They are now derived deterministically from those
+// facts, so Step 2's AI call is promo-correlation ONLY and the two steps can never
+// drift on what region the cruise is.
+
+/** Coarse region label inferred from a sailing's name + ports of call. */
+function deriveDestination(g: DealDiscoveryIdea["groundedCandidate"]): string {
+  const hay = `${g.cruiseName} ${g.portsOfCall ?? ""}`.toLowerCase();
+  const REGIONS: Array<[RegExp, string]> = [
+    [/transatlantic|crossing/, "Transatlantic Crossing"],
+    [/transpacific/, "Transpacific Crossing"],
+    [/mediterranean|barcelona|rome|civitavecchia|naples|santorini|athens/, "Mediterranean"],
+    [/caribbean|nassau|cozumel|st\.? thomas|st\.? maarten|grand cayman|jamaica/, "Caribbean"],
+    [/alaska|juneau|ketchikan|skagway|glacier/, "Alaska"],
+    [/norway|fjord|geiranger|bergen/, "Norwegian Fjords"],
+    [/iceland|reykjavik/, "Iceland"],
+    [/south america|buenos aires|rio|santiago|valparaiso|montevideo/, "South America"],
+    [/southeast asia|singapore|bali|bangkok|ho chi minh|phuket/, "Southeast Asia"],
+    [/australia|sydney|melbourne|brisbane|tasmania/, "Australia & South Pacific"],
+    [/new england|canada|halifax|quebec|bar harbor/, "New England & Canada"],
+    [/hawaii|honolulu|maui|kona/, "Hawaii"],
+    [/bahamas|coco ?cay|freeport/, "Bahamas"],
+    [/bermuda/, "Bermuda"],
+    [/panama canal/, "Panama Canal"],
+  ];
+  for (const [re, label] of REGIONS) {
+    if (re.test(hay)) return label;
+  }
+  // Fallback: the sailing's own name with any leading "N-Day/Night" stripped.
+  return g.cruiseName.replace(/^\s*\d+\s*-?\s*(day|night)s?\s*/i, "").trim() || g.cruiseName;
+}
+
+/** A thematic-but-truthful itinerary name from the real nights + derived region. */
+function deriveItineraryName(g: DealDiscoveryIdea["groundedCandidate"], destination: string): string {
+  const nights = g.nights ? `${g.nights}-Night ` : "";
+  return `${nights}${destination}`.trim();
+}
+
+const SYSTEM_PROMPT = `You are a cruise promo-intelligence strategist. You are given a direct-response
+"Sailing Angle Profile" AND the REAL, ALREADY-VERIFIED sailing it is grounded on (real cruise line,
+ship, sail date, nights, ports — found in live Odysseus inventory before this step ever ran). The
+cruise is chosen and its marketing framing (itinerary name / destination) is derived elsewhere —
+do NOT name the itinerary or restate the destination. Your ONLY job is promo correlation:
+
+1. Determine exactly which of the PROVIDED promo records apply to THIS REAL sailing.
+2. Write promoStrategy: how the applicable perks/discounts strengthen the angle, in its insider voice.
+3. Write manifestReasoning: why this real sailing fulfils the angle's onboard-asset requirements and timing.
 
 HARD RULES:
-- NEVER invent a packageId, exact ship name, siid, or booking URL. Those are resolved by an
-  operator-run package lookup, not by you. Provide a ship CLASS hint only (e.g. "Radiance class").
-- Only reference promotions from the PROVIDED promo records. Never cite a promo id that is not
-  in the list. If none apply, return an empty appliedPromos array and say so in promoStrategy.
-- Qualify every perk/discount claim; do not promise guaranteed savings. Match the angle's
-  insider, direct-response voice — no mass-group language, no generic travel clichés.
-- The sail window and destination must be plausible for the cruise line you pick and the angle's
-  timing requirements.
+- The cruise line, ship, sail date, nights, and ports are FACTS — you cannot change them.
+- Only reference promotions from the PROVIDED promo records. Never cite a promo id that is not in
+  the list. If none apply, return an empty appliedPromos array and say so in promoStrategy.
+- Qualify every perk/discount claim; do not promise guaranteed savings. Match the angle's insider,
+  direct-response voice — no mass-group language, no generic travel clichés.
 
-LOOKUP QUERY = A BROAD SEARCH PROFILE, NOT A SINGLE CRUISE (CRITICAL):
-The lookupQuery is fed to a LIVE inventory search that then picks the real ship/sail-date that
-best fits this angle. Your job is to define the SEARCH NET — broad enough that real inventory
-almost always falls inside it — NOT to pin one specific sailing. The angle is about a transferable
-vibe + onboard assets + audience; the concrete ship, exact date, and exact nights are OUTPUTS of
-the inventory match, never inputs you dictate. So:
-- DO set 'line' to the single cruise line whose fleet best delivers the angle's onboard assets.
-- DO ALSO set 'alternateCruiseLines' on assembleDraft to a ranked list of 2-3 OTHER cruise lines
-  whose fleets deliver a similar onboard-asset/vibe profile for this angle (e.g. for a quiet,
-  library-and-sea-days angle: Cunard, then Holland America, then Princess). This agency's live
-  inventory feed for any single line can be thin or missing certain itinerary types — if 'line'
-  has nothing that genuinely fits, the matcher falls through to these alternates IN ORDER before
-  giving up. Pick alternates that could plausibly deliver the SAME onboard assets and feel, even
-  if the headline itinerary type might shift slightly (the matcher will reframe copy as needed).
-- DO set 'destination' to a BROAD region/category the angle fits (e.g. "Caribbean", "Mediterranean",
-  "Alaska", "Transatlantic or open-ocean") — not a single port-pinned route.
-- DO set 'date' to the CENTER of the angle's season and 'windowDays' WIDE (60–150) so the search
-  spans the whole plausible season. Prefer a wider window over a narrow one.
-- DO NOT set 'ship' (leave it empty) — never lock the search to one vessel; the matcher decides.
-- Treat 'nights' as a SOFT preference only; omit it unless the angle truly requires a specific
-  length. 'port' is optional and should be omitted unless the angle genuinely requires one homeport.
-- Never combine multiple narrow constraints (specific ship + exact date + rare route + exact nights)
-  — that boxes the search into a needle and is forbidden.
-
-OUTPUT: assembleDraft (cruiseLine, optional alternateCruiseLines[] (2-3 fallback lines with a
-similar onboard-asset/vibe profile), optional shipClassHint, itineraryName, destination, optional
-nights, sailWindow {earliestIso?, latestIso?, rationale}, optional departurePortHint, portsOfCall),
-appliedPromos (each: promoRecordId, status, matchedOn[], assumptions[], warnings[]), promoStrategy,
-manifestReasoning, and lookupQuery (line, ship?, destination, date?, nights?, port?, windowDays) —
-the BROAD search profile the inventory matcher uses to find the real best-fit package + link.`;
+OUTPUT: appliedPromos (each: promoRecordId, status, matchedOn[], assumptions[], warnings[]),
+promoStrategy, manifestReasoning.`;
 
 function promoBlock(records: CbPromoIntelligenceRecord[]): string {
   if (records.length === 0) return "No promo records survived prefiltering — return an empty appliedPromos array.";
@@ -252,6 +156,7 @@ function promoBlock(records: CbPromoIntelligenceRecord[]): string {
 
 function buildPrompt(angle: DealDiscoveryIdea, promos: CbPromoIntelligenceRecord[]): string {
   const p = angle.sailingAngleProfile;
+  const g = angle.groundedCandidate;
   return `SELECTED SAILING ANGLE:
 Isolated niche: ${angle.isolatedNiche}
 Title: ${p.sailingAngleTitle}
@@ -261,15 +166,21 @@ Destination & time-of-year hints: ${p.destinationAndTimeOfYearHints}
 Onboard asset requirements: ${p.onboardAssetRequirements}
 Insider keywords: ${p.relevantKeywords.join(", ")}
 
+THE REAL, VERIFIED SAILING THIS ANGLE IS GROUNDED ON (found in live Odysseus inventory — facts,
+not negotiable):
+- Cruise line: ${g.cruiseLine ?? "?"}
+- Ship: ${g.cruiseName}
+- Sail date: ${g.sailDateIso}
+- Nights: ${g.nights ?? "?"}
+- Departure port: ${g.departurePortCode ?? "?"}
+- Ports of call: ${g.portsOfCall ?? "(not listed)"}
+
 AVAILABLE PROMO RECORDS (already prefiltered to plausible matches — only cite ids from here):
 ${promoBlock(promos)}
 
-Produce the trip manifest. The cruiseLine and sailWindow you choose are authoritative. The
-lookupQuery must be a BROAD search profile (single line, broad destination region, season-centered
-date with a WIDE windowDays of 60–150, NO ship, nights only as a soft preference) so the live
-inventory matcher can find the real best-fit sailing — do not pin one specific cruise. Also set
-alternateCruiseLines to 2-3 ranked fallback lines sharing this angle's onboard-asset/vibe profile,
-for the matcher to try if 'line' has nothing that fits.`;
+Determine which of the promo records above apply to THIS real sailing and how their perks/discounts
+strengthen the angle. Do not name the itinerary or restate the destination — that framing is derived
+from the real facts elsewhere.`;
 }
 
 export interface GenerateDealTripManifestOptions {
@@ -296,21 +207,15 @@ export async function generateDealTripManifest(
   const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
   const p = angle.sailingAngleProfile;
 
-  // (1) deterministic seed from the angle's timing/asset text.
-  const seedText = `${p.destinationAndTimeOfYearHints} ${p.onboardAssetRequirements} ${p.sailingAngleTitle}`;
-  const seedLine = seedCruiseLine(seedText);
-  const seedWindow = seedSailWindow(p.destinationAndTimeOfYearHints);
-
-  // (2) prefilter promos by the seed (cuts noise before the AI call).
+  // (1) prefilter promos by the grounded candidate's real cruise line + sail date
+  // (cuts noise before the AI call).
+  const g = angle.groundedCandidate;
   const prefilter = prefilterPromoRecords(options.promoRecords, {
-    cruiseLine: seedLine,
-    sailWindow:
-      seedWindow.earliestIso || seedWindow.latestIso
-        ? { earliestIso: seedWindow.earliestIso, latestIso: seedWindow.latestIso }
-        : undefined,
+    cruiseLine: g.cruiseLine,
+    sailWindow: { earliestIso: g.sailDateIso, latestIso: g.sailDateIso },
   });
 
-  // (3) AI correlation over the survivors.
+  // (2) AI correlation over the survivors.
   const prompt = buildPrompt(angle, prefilter.kept);
   const startedAt = Date.now();
   const result = await structuredObjectFn({
@@ -348,8 +253,15 @@ export async function generateDealTripManifest(
     });
   }
 
-  const draft = result.object.assembleDraft;
-  const manifestId = `manifest-${slugify(`${p.sailingAngleTitle}-${draft.cruiseLine}`) || angle.id}`;
+  const cruiseLine = g.cruiseLine ?? "";
+  // Framing derived deterministically from the REAL grounded facts (no AI) — see
+  // the deriveDestination/deriveItineraryName helpers above.
+  const destination = deriveDestination(g);
+  const itineraryName = deriveItineraryName(g, destination);
+  const manifestId = `manifest-${slugify(`${p.sailingAngleTitle}-${cruiseLine}`) || angle.id}`;
+  const portsOfCall = g.portsOfCall
+    ? g.portsOfCall.split(/\s*[,>]\s*/).filter((port) => port.length > 0)
+    : [];
 
   const manifest: DealTripManifest = {
     id: manifestId,
@@ -359,29 +271,34 @@ export async function generateDealTripManifest(
     isolatedNiche: angle.isolatedNiche,
     sailingAngleTitle: p.sailingAngleTitle,
     assembleDraft: {
-      suggestedDealId: `deal-${slugify(`${draft.cruiseLine}-${draft.destination}-${p.sailingAngleTitle}`)}`,
+      suggestedDealId: `deal-${slugify(`${cruiseLine}-${destination}-${p.sailingAngleTitle}`)}`,
       suggestedBriefId: `brief-${slugify(p.sailingAngleTitle)}`,
-      cruiseLine: draft.cruiseLine,
-      alternateCruiseLines: draft.alternateCruiseLines,
-      shipClassHint: draft.shipClassHint,
-      itineraryName: draft.itineraryName,
-      destination: draft.destination,
-      nights: draft.nights,
-      sailWindow: draft.sailWindow,
-      departurePortHint: draft.departurePortHint,
-      portsOfCall: draft.portsOfCall,
+      cruiseLine,
+      // shipClassHint was AI-written for imagery sourcing; no longer part of the
+      // promo-only AI output. Left undefined (optional) — derive later if needed.
+      shipClassHint: undefined,
+      itineraryName,
+      destination,
+      nights: g.nights,
+      sailWindow: {
+        earliestIso: g.sailDateIso,
+        latestIso: g.sailDateIso,
+        rationale: `Grounded on a verified sailing departing ${g.sailDateIso}.`,
+      },
+      departurePortHint: g.departurePortCode,
+      portsOfCall,
     },
     appliedPromos,
     promoStrategy: result.object.promoStrategy,
     manifestReasoning: result.object.manifestReasoning,
     lookupQuery: {
-      line: result.object.lookupQuery.line,
-      ship: result.object.lookupQuery.ship,
-      destination: result.object.lookupQuery.destination,
-      date: result.object.lookupQuery.date,
-      nights: result.object.lookupQuery.nights,
-      port: result.object.lookupQuery.port,
-      windowDays: result.object.lookupQuery.windowDays,
+      line: cruiseLine,
+      ship: g.cruiseName,
+      destination,
+      date: g.sailDateIso,
+      nights: g.nights,
+      port: g.departurePortCode,
+      windowDays: 0,
     },
     aiTrace: trace,
   };

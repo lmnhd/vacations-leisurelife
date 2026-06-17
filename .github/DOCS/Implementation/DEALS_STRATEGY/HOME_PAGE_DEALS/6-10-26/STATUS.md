@@ -1,5 +1,128 @@
 # Status — Deal Workflow Build
 
+## DONE — Step 2 narrowed: promo-only AI + deterministic framing (2026-06-15)
+
+After the inversion, Step 1B (niche-reformer) and Step 2 both wrote AI marketing framing for
+the SAME real cruise — Step 2's AI re-derived `itineraryName`/`destination` from facts the
+grounded candidate already carried (a drift risk, since both fed the Step 3 copywriter prompt).
+Traced the full 1B→2→3 field flow and collapsed only the redundant part (option 1, not a full
+step removal — promo correlation + booking-link resolution are genuinely unique to Step 2):
+
+- **`deal-trip-manifest-generator.ts`** — `manifestSchema` reduced to `appliedPromos` +
+  `promoStrategy` + `manifestReasoning` (dropped AI `itineraryName`/`destination`/`shipClassHint`).
+  Added pure `deriveDestination()` (region from cruiseName + ports) + `deriveItineraryName()`
+  (real nights + region) — framing is now DETERMINISTIC from `groundedCandidate`, so it can never
+  drift from the reformer. SYSTEM_PROMPT + buildPrompt narrowed to promo correlation only;
+  `shipClassHint` left unset (optional). Header doc updated.
+- **`deal-trip-manifest-types.ts`** — fixed STALE docs that described the pre-inversion manual
+  "operator pastes lookupQuery into Package Lookup / Step 4 Resolve / agent CANNOT fetch packageId"
+  flow. Now describes inventory-first reality (packageId known from Discovery; framing derived;
+  AI = promos only; link broker resolves the booking link).
+- **`tests/deal-trip-manifestation.ts`** — added assertions that `destination`/`itineraryName`
+  are derived from the grounded ports (Nassau,Cozumel → "Caribbean" / "7-Night Caribbean"),
+  NOT from the AI stub (which no longer emits them). 25/25.
+- Net: Step 2's AI call is now promo-only (cheaper prompt, no quality loss); each step's job is
+  crisp — Discovery = real deal + niche; Step 2 = promos + booking link; framing = facts.
+- Full deals suite green (268 assertions, 0 fail); tsc clean. NOTE: live route needs a dev-server
+  restart to pick up the new generator (proof scripts already run the new code via tsx).
+
+## DONE — Inventory-first Discovery: killed "nothing matches this angle" by inversion (2026-06-15)
+
+The root cause of "nothing in inventory matches this angle" was never the scorer — it was
+the **direction of the workflow**. Old Discovery: AI invents a niche → invents a fabricated
+destination/season/cruise-line → we hunt inventory trying to make a real ship fit the
+fiction → almost nothing fits → angle discarded. The niche was the cause; the ship was
+forced to be the effect. That inversion made the failure *structural*.
+
+**New direction (re-envisioned with the operator, 2026-06-15):** start from REAL, bookable
+inventory. A broad sweep pulls genuine sailings, a deterministic scorer selects the best
+"excellent deals" by objective signals, and only THEN does the AI re-form a niche to fit
+each winning cruise. The ship is the cause; the niche is the effect — so an angle can no
+longer exist without a real ship, **by construction**. Operator decisions locked:
+- **Deal selection = inventory signals only** (no research-steering of the search; the net
+  is cast broad and objective deal-quality wins).
+- **Niche matching = match-or-discard** (if no honest, specific niche fits a strong cruise,
+  the cruise is held as "strong deal, no angle yet" — never a contrived audience).
+
+### DONE — Step 1A: Deep Cruise Search & Select (2026-06-15)
+
+- **`lib/cb/deals-system/deep-cruise-search.ts`** — pure, deterministic scorer + selector
+  (no browser / network / AI). Scores each real `CruiseResult` on five objective signals,
+  all read from real inventory data (zero fabrication):
+  - **value** (≤0.35) — per-night lead fare vs an $80–$350/night band (via `extractCabinPricing`).
+  - **sea-day density** (≤0.20) — `nights − ports`, normalized; rewards restful long voyages.
+  - **itinerary distinctiveness** (≤0.30) — ocean crossings, world/grand voyages, expedition
+    regions (fjords/Antarctic/Galápagos), long one-way repositionings; the deal-merit version
+    of the broker's itinerary intelligence, scoring the sailing on its OWN terms (not fit-to-a-query).
+  - **group-rate** (≤0.08) — margin sweetener (facet not yet surfaced by `searchCruises`; defaults false).
+  - **promo overlap** (≤0.07) — live CB promo whose vendor + sail window could apply (via `prefilterPromoRecords`).
+  `qualityScore` = Σpoints / maxPoints, clamped 0..1, with a per-signal breakdown for transparency.
+  `selectDealsFromSweep()` de-dups by packageId (keeps higher-scored) and returns top-N best-first.
+- **`scripts/deep-cruise-search.ts`** (+ `npm run deep-cruise-search`) — operator-run broad
+  sweep over forward date windows (`--months 6,12,18` default, each ~3-month span),
+  vendor-unfiltered so all lines compete; emits a `---DEEP_CRUISE_SEARCH_RESULT_JSON---` block.
+- **`tests/deep-cruise-search.ts`** (+ `npm run test:deep-cruise-search`) — **21/21 pass.**
+- **Proven against LIVE Odysseus:** swept **100 real sailings**, surfaced genuinely excellent
+  deals — e.g. a 15-Day South America repositioning (Carnival, real pkg `1622160`) at **$74/night**
+  with a live promo applying → 0.82; 14-Day Southeast Asia Sydney→Singapore at $71/night → 0.81.
+  Every selected deal is a real, bookable cruise with real fares + itineraries.
+- No regressions: deal-discovery (23), trip-manifestation (23), copywriter (27) green; tsc clean.
+
+### DONE — Step 1B: Match & Re-Form Niche (2026-06-15)
+
+- **`lib/cb/deals-system/niche-reformer.ts`** — `reformNicheForDeal(deal, opts)` feeds ONE
+  real `SelectedDeal` + saved niche research to the model with the inverted question: "which
+  niche is THIS real cruise the uniquely ideal venue for? Re-form its angle to fit this exact
+  ship/itinerary/season." The cruise facts are non-negotiable truth; the AI only picks the
+  niche + writes framing. Reuses the `SailingAngleProfile` schema + `validateSailingAngleProfile`
+  voice rules, so downstream is unchanged.
+- **Match-or-discard** (operator-locked): model returns `nicheFits` + `fitConfidence` +
+  `fitReasoning`. Below `NICHE_FIT_THRESHOLD` (0.7) or an explicit decline → `held` outcome
+  ("strong deal, no angle yet"), never a forced/contrived audience. A `matched` outcome is a
+  full `DealDiscoveryIdea` whose `groundedCandidate` is populated from the REAL deal facts
+  (packageId/line/sailDate/nights/ports), with the deal's qualityScore as its confidence —
+  nothing fabricated. AI failure propagates (hard fail). NOTE: this threshold gates NICHE FIT,
+  not inventory reality (the cruise is already real by construction).
+- Test seam `__setNicheReformerStructuredObjectGeneratorForTests` + a `reform` stub candidate
+  added to `tests/deals-ai-stub.ts` (schema-discriminated, no cross-stage interference).
+- **`tests/niche-reformer.ts`** (+ `npm run test:niche-reformer`) — **17/17 pass** (matched,
+  decline, below-threshold, missing-research guard).
+- No regressions: deal-discovery (23), trip-manifestation (23), copywriter (27), funnel (28),
+  deep-cruise-search (21) all green; tsc clean.
+
+### DONE — Step 1C: Rewrote the discovery route + view (2026-06-15)
+
+- **`app/api/tests/deals-system/discovery/route.ts`** — POST now runs Step 1A (`runDeepCruiseSearch`,
+  a new route-only child-process runner in `deep-cruise-search-runner.ts` that shells the
+  operator sweep + parses its JSON) then Step 1B (`reformNicheForDeal` per selected deal,
+  match-or-discard). Over-pulls `max(2×count, count+3)` deals so held deals don't starve the
+  batch; skips deals already cached (idempotent re-runs by packageId); seeds + grows a
+  `usedNiches` exclusion across the batch for niche diversity. Deleted the old
+  `groundAngleAgainstInventory` function and all `buildAngleSearchSeed` / `runOdysseusLookup` /
+  `MATCH_CONFIDENCE_THRESHOLD` imports from the route. Response carries `dealsConsidered` +
+  `heldCount`; "exhausted" now means "every fresh deal held for lack of a niche fit," never
+  "no inventory." (`buildAngleSearchSeed` / `MATCH_CONFIDENCE_THRESHOLD` remain in the lib —
+  still used by Step 2 targeted resolution; only Discovery stopped using them.)
+- **`discovery-view.tsx`** — message rewritten: "N new angle(s) matched to real deals from M
+  real deal(s) considered (K strong deal(s) held for lack of a niche fit)." No more
+  "discarded — no inventory match," because inventory is never the missing thing now.
+- **Niche-diversity refinement** added to `niche-reformer.ts`: `usedNiches` option → a
+  "prefer a different niche" exclusion block (mirrors the old generator's dedup), so a batch
+  of long sea-day voyages doesn't get the same niche stamped on every one.
+
+### PROVEN END-TO-END (live Odysseus, 2026-06-15)
+
+`POST /api/tests/deals-system/discovery {count:4}` → **4 angles, 4 DISTINCT niches**, each
+grounded on a different real Carnival "Journeys" sailing with a real package id:
+Solo-Journaling RPG → 15-Day South America (pkg 1622160); Cyanotype Alchemists → 14-Day SE
+Asia (1583429); Sashiko Menders → 16-Day SE Asia (1583431); Mechanical Puzzle Solvers →
+16-Day South America (1622162). `generated:4, dealsConsidered:8, heldCount:0`. Every angle
+born from real, bookable inventory — the ship-before-niche guarantee holds by construction.
+
+**Full suite green:** deep-cruise-search 21, niche-reformer 17, deal-discovery 23,
+trip-manifestation 23, copywriter 27, funnel 28, page-facts 28, curated-deal-assembly 40,
+public-deal-projection 59 (266 assertions, 0 fail). tsc clean.
+
 ## DONE — Deal expiration flow (2026-06-12)
 
 Optional `expiresOnIso` on the trip manifest → unified manifest → curated deal. Omitted =

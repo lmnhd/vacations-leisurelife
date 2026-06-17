@@ -59,6 +59,18 @@ const angle: DealDiscoveryIdea = {
       "Tropical or high-sun regions (Caribbean) during high-UV seasons (late spring through early autumn 2026).",
     onboardAssetRequirements: "Expansive open-air top decks, ocean-facing balconies, fresh-water rinsing stations.",
   },
+  groundedCandidate: {
+    resolvedAtIso: GEN_AT,
+    packageId: "1500001",
+    cruiseName: "Wonder of the Seas 7-Night Caribbean",
+    cruiseLine: "Royal Caribbean",
+    sailDateIso: "2026-07-04",
+    nights: 7,
+    departurePortCode: "MIA",
+    portsOfCall: "Nassau, Cozumel",
+    confidence: 0.92,
+    reasons: ["date match", "line match"],
+  },
 };
 
 function promo(id: string, vendor: string, sailing: { startsOn?: string; endsOn?: string; rawText: string }): CbPromoIntelligenceRecord {
@@ -131,6 +143,21 @@ async function main(): Promise<void> {
   check("manifest carries the source angle id", manifest.sourceAngleId === angle.id);
   check("assembleDraft has a cruise line", manifest.assembleDraft.cruiseLine.length > 0);
   check("assembleDraft has a sail window rationale", manifest.assembleDraft.sailWindow.rationale.length > 0);
+
+  // Framing is DERIVED from the grounded candidate's real facts (no AI). The
+  // grounded ports are "Nassau, Cozumel" → region "Caribbean", and the itinerary
+  // name templates the real nights onto that region. This must NOT come from the
+  // AI stub (which no longer emits itineraryName/destination at all).
+  check(
+    "destination is derived from the real ports (Caribbean)",
+    manifest.assembleDraft.destination === "Caribbean",
+    manifest.assembleDraft.destination
+  );
+  check(
+    "itineraryName is derived from real nights + region",
+    manifest.assembleDraft.itineraryName === "7-Night Caribbean",
+    manifest.assembleDraft.itineraryName
+  );
 
   // No fabricated live-resolved fields.
   const draftKeys = Object.keys(manifest.assembleDraft);

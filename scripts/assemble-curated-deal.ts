@@ -2,10 +2,10 @@
  * Operator-run Curated Deal assembly (Phase 9 / 9A proof artifact).
  *
  * Builds a real CuratedOdysseusDeal candidate from package facts and writes it to
- * `.github/data/odysseus-curated-deals-cache.json` as `needs_review`. The Deal is
- * NEVER publishable from this script: only an explicit operator approval (here via
- * `--approve`, after link health is valid) can promote it to `bookable`, and only
- * when every blocking gate passes.
+ * the Dynamo-backed deals store as `needs_review`. The Deal is NEVER publishable
+ * from this script: only an explicit operator approval (here via `--approve`,
+ * after link health is valid) can promote it to `bookable`, and only when every
+ * blocking gate passes.
  *
  * No CB/Odysseus login, booking, hold, or guest-info action occurs. Link
  * construction is the deterministic package-entry fallback unless --booking-url is
@@ -36,14 +36,13 @@
 import {
   approveCuratedDeal,
   assembleCuratedDeal,
-  findCuratedDeal,
+  getCuratedDeal,
+  getDealBrief,
   isDealHomepageEligible,
-  loadCuratedDealsCache,
   rejectCuratedDeal,
   runDealCampaignStage,
-  saveCuratedDealsCache,
-  upsertCuratedDeal,
-  upsertDealBrief,
+  upsertCuratedDealRecord,
+  upsertDealBriefRecord,
   type AssembleCuratedDealInput,
   type CuratedDealCruiseFacts,
   type CuratedOdysseusDeal,
@@ -139,17 +138,15 @@ function explicitInput(): AssembleCuratedDealInput {
 }
 
 async function main(): Promise<void> {
-  const cache = loadCuratedDealsCache();
-
   const dealId = arg("deal-id") ?? (flag("first-real") ? firstRealInput().dealId : undefined);
-  const existing = dealId ? findCuratedDeal(cache, dealId) : undefined;
+  const existing = dealId ? await getCuratedDeal(dealId) : undefined;
 
   // Stage re-run on an existing Deal.
   const stageName = arg("stage") as Exclude<DealCampaignStage, "approval"> | undefined;
   if (stageName && existing) {
     console.log(`[assemble] Re-running stage "${stageName}" on ${existing.id}...`);
     const updated = await runDealCampaignStage(existing, stageName);
-    saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+    await upsertCuratedDealRecord(updated);
     describeDeal(updated);
     return;
   }
@@ -162,7 +159,7 @@ async function main(): Promise<void> {
       lastVerifiedAtIso: nowIso,
       capturedAtIso: existing.linkHealth.capturedAtIso ?? nowIso,
     };
-    saveCuratedDealsCache(upsertCuratedDeal(cache, existing));
+    await upsertCuratedDealRecord(existing);
     console.log(`[assemble] Marked link health valid for ${existing.id} (operator-verified).`);
     describeDeal(existing);
     return;
@@ -173,7 +170,7 @@ async function main(): Promise<void> {
       decisionNote: arg("note"),
       textOnlyLaunchWaived: flag("text-only"),
     });
-    saveCuratedDealsCache(upsertCuratedDeal(cache, result.deal));
+    await upsertCuratedDealRecord(result.deal);
     if (result.approved) {
       console.log(`[assemble] APPROVED ${existing.id} -> bookable.`);
     } else {
@@ -188,7 +185,7 @@ async function main(): Promise<void> {
 
   if (existing && flag("reject")) {
     const updated = rejectCuratedDeal(existing, { decisionNote: arg("note") });
-    saveCuratedDealsCache(upsertCuratedDeal(cache, updated));
+    await upsertCuratedDealRecord(updated);
     console.log(`[assemble] Rejected ${existing.id}.`);
     describeDeal(updated);
     return;
@@ -199,10 +196,11 @@ async function main(): Promise<void> {
   console.log(`[assemble] Assembling Curated Deal ${input.dealId} (needs_review)...`);
   const deal = await assembleCuratedDeal(input);
 
-  let next = upsertCuratedDeal(cache, deal);
+  await upsertCuratedDealRecord(deal);
+
   // Register a minimal brief if the referenced brief does not exist yet.
-  if (!next.briefs.some((b) => b.id === deal.briefId)) {
-    next = upsertDealBrief(next, {
+  if (!(await getDealBrief(deal.briefId))) {
+    await upsertDealBriefRecord({
       id: deal.briefId,
       title: deal.cruiseFacts.title,
       destinationKeywords: deal.cruiseFacts.portsOfCall,
@@ -215,7 +213,6 @@ async function main(): Promise<void> {
       audienceFit: deal.packaging.bestFor,
     });
   }
-  saveCuratedDealsCache(next);
   describeDeal(deal);
   console.log(
     "\n[assemble] Wrote needs_review Deal. It will NOT publish until link health is valid AND an operator approves it."

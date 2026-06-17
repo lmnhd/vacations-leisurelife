@@ -15,6 +15,8 @@ import type { DealTripManifestsCache } from "./deal-trip-manifest-types";
 import type { DealUnifiedManifestsCache } from "./deal-unified-manifest-types";
 import type { DealAdCopyCache } from "./deal-ad-copy-types";
 import type { DealFunnelSynthesisCache } from "./deal-page-design-types";
+import type { DealMetaAdSynthesisCache } from "./deal-meta-ad-synthesis-types";
+import type { DealMetaDistributionCache } from "./deal-meta-distribution-types";
 import type { LinkBrokerCache } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -30,6 +32,8 @@ export const DEALS_CACHE_PATHS = {
   dealUnifiedManifests: path.join(DATA_DIR, "deal-unified-manifests-cache.json"),
   dealAdCopy: path.join(DATA_DIR, "deal-ad-copy-cache.json"),
   dealFunnelSyntheses: path.join(DATA_DIR, "deal-funnel-syntheses-cache.json"),
+  dealMetaAdSyntheses: path.join(DATA_DIR, "deal-meta-ad-syntheses-cache.json"),
+  dealMetaDistributions: path.join(DATA_DIR, "deal-meta-distributions-cache.json"),
 } as const;
 
 export function emptyPromoIntelligenceCache(
@@ -129,5 +133,25 @@ export function emptyDealFunnelSynthesisCache(
     version: 1,
     generatedAtIso,
     syntheses: [],
+  };
+}
+
+export function emptyDealMetaAdSynthesisCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealMetaAdSynthesisCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    syntheses: [],
+  };
+}
+
+export function emptyDealMetaDistributionCache(
+  generatedAtIso: string = new Date().toISOString()
+): DealMetaDistributionCache {
+  return {
+    version: 1,
+    generatedAtIso,
+    distributions: [],
   };
 }

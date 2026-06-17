@@ -38,8 +38,20 @@ export interface RunOdysseusLookupOutput {
   durationMs: number;
 }
 
-/** Run the live Odysseus package lookup via the npm script (operator-run). */
-export async function runOdysseusLookup(query: DealManifestLookupQuery): Promise<RunOdysseusLookupOutput> {
+/**
+ * Run the live Odysseus package lookup via the npm script (operator-run).
+ *
+ * `bestEffort` (default true): the deal workflow's Step 2 resolution always
+ * wants a ship, so best-effort never bails to no_match/ambiguous when CB
+ * returns any sailing — it picks the closest real package (coin-flip if
+ * needed). Discovery's grounding check passes `bestEffort: false` so it only
+ * accepts a STRICT confident_match (confidence >= threshold) — a low-confidence
+ * pick must never ground an angle.
+ */
+export async function runOdysseusLookup(
+  query: DealManifestLookupQuery,
+  options: { bestEffort?: boolean } = {}
+): Promise<RunOdysseusLookupOutput> {
   const args: string[] = [];
   if (query.line) args.push("--line", quoteShell(query.line));
   if (query.ship) args.push("--ship", quoteShell(query.ship));
@@ -48,9 +60,9 @@ export async function runOdysseusLookup(query: DealManifestLookupQuery): Promise
   if (query.destination) args.push("--destination", quoteShell(query.destination));
   if (query.port) args.push("--port", quoteShell(query.port));
   if (query.windowDays) args.push("--window", String(query.windowDays));
-  // Deal workflow always wants a ship: best-effort never bails to no_match/ambiguous
-  // when CB returns any sailing — it picks the closest real package (coin-flip if needed).
-  args.push("--best-effort");
+  if (options.bestEffort ?? true) {
+    args.push("--best-effort");
+  }
 
   const command = `npm run lookup-odysseus-package -- ${args.join(" ")}`;
   const startedAt = Date.now();

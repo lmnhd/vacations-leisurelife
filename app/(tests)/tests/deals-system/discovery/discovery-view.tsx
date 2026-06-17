@@ -14,7 +14,12 @@ interface GenerateResponse {
   error?: string;
   hint?: string;
   generated?: number;
+  /** Real deals selected by the deep-cruise-search sweep this run. */
+  dealsConsidered?: number;
+  /** Strong real deals held for lack of an honest niche fit. */
+  heldCount?: number;
   skipped?: number;
+  skippedDetail?: Array<{ isolatedNiche: string; sailingAngleTitle: string; reason: string }>;
   exhausted?: boolean;
   allIdeas?: DealDiscoveryIdea[];
   ideas?: DealDiscoveryIdea[];
@@ -181,20 +186,26 @@ export function DealDiscoveryView({
       if (data.allIdeas) setIdeas(data.allIdeas);
       if (data.researchStatus) setStatus(data.researchStatus);
       const newCount = data.generated ?? 0;
-      const skippedCount = data.skipped ?? 0;
-      if (data.exhausted || newCount === 0) {
+      const dealsConsidered = data.dealsConsidered ?? 0;
+      const heldCount = data.heldCount ?? (data.skippedDetail ?? []).length;
+
+      // Inventory is never the missing thing now — the sweep pulls real deals
+      // first. A held deal is a strong real cruise with no honest niche fit yet.
+      const consideredNote = dealsConsidered > 0 ? ` from ${dealsConsidered} real deal(s) considered` : "";
+      const heldNote = heldCount > 0 ? ` (${heldCount} strong deal(s) held for lack of a niche fit)` : "";
+
+      if (newCount === 0) {
+        const exhaustedNote = data.exhausted
+          ? " Every fresh deal was held — refresh discovery research to find niches that fit current inventory."
+          : "";
         setMessage({
           tone: "error",
-          text: `No new angles this run${
-            skippedCount > 0 ? ` (${skippedCount} duplicate(s) skipped)` : ""
-          }. The current research looks exhausted — refresh discovery research to find new niches.`,
+          text: `No new angles matched this run${consideredNote}${heldNote}.${exhaustedNote}`,
         });
       } else {
         setMessage({
           tone: "ok",
-          text: `${newCount} new angle(s) generated${
-            skippedCount > 0 ? `, ${skippedCount} duplicate(s) skipped` : ""
-          }.`,
+          text: `${newCount} new angle(s) matched to real deals${consideredNote}${heldNote}.`,
         });
       }
     } catch (err) {

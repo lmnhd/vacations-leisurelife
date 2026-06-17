@@ -40,7 +40,9 @@ If the URL field is entered as `event.verification_url`, Klaviyo treats it as li
 | `{{ event.booking_link_url }}`           | Cruise Brothers booking and payment CTA |
 | `{{ event.booking_reference }}`          | Booking confirmation                    |
 | `{{ person.landing_page_url }}`          | Campaign page / dashboard CTA           |
-| `{{ person.community_channel_url }}`     | Campaign chat / community CTA           |
+| `{{ event.campaign_chat_url }}`          | On-page campaign chat CTA               |
+| `{{ person.campaign_chat_url }}`         | On-page campaign chat profile fallback  |
+| `{{ person.community_channel_url }}`     | External community channel CTA, when one exists |
 | `{{ person.ship_name }}`                 | Travel / countdown references           |
 | `{{ person.sail_date }}`                 | Countdown references                    |
 | `{{ person.departure_port }}`            | Travel prep references                  |
@@ -157,7 +159,14 @@ If you want to help shape that energy, drop an idea in the campaign chat. Even a
 
 **Primary CTA:**
 
-- `Open campaign chat` → `{{ person.community_channel_url }}`
+- `Open campaign chat` → `{{ event.campaign_chat_url }}`
+
+**Klaviyo button setup:**
+
+- Button text: `Open campaign chat`
+- URL field: `{{ event.campaign_chat_url }}`
+- Expected rendered shape: `https://leisurelifeinteractive.net/groups/<campaign-slug>#group-chat-hall`
+- Do not use `{{ person.community_channel_url }}` for this step unless the campaign has a separate external community channel configured.
 
 ---
 

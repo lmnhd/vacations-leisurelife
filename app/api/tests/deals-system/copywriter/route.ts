@@ -15,9 +15,9 @@ import { NextResponse } from "next/server";
 import {
   assembleDealUnifiedManifest,
   generateDealAdCopy,
+  listDealTripManifests,
   loadDealAdCopyCache,
   loadDealDiscoveryIdeasCache,
-  loadDealTripManifestsCache,
   loadDealUnifiedManifestsCache,
   removeDealAdCopy,
   saveDealAdCopyCache,
@@ -28,6 +28,7 @@ import {
   type DealAdCopy,
   type DealTripManifest,
 } from "@/lib/cb/deals-system";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -41,9 +42,9 @@ interface Body {
   variantIndex?: unknown;
 }
 
-function loadManifests(): DealTripManifest[] {
+async function loadManifests(): Promise<DealTripManifest[]> {
   try {
-    return loadDealTripManifestsCache().manifests;
+    return await listDealTripManifests();
   } catch {
     return [];
   }
@@ -58,15 +59,21 @@ function loadAdCopies(): DealAdCopy[] {
 }
 
 export async function GET() {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   return NextResponse.json({
     ok: true,
-    manifests: loadManifests(),
+    manifests: await loadManifests(),
     adCopies: loadAdCopies(),
   });
 }
 
 /** DELETE ?id=<adCopyId> — prune an unwanted ad copy from the cache. */
 export async function DELETE(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   const id = new URL(request.url).searchParams.get("id")?.trim();
   if (!id) {
     return NextResponse.json({ ok: false, error: "id is required." }, { status: 400 });
@@ -84,6 +91,9 @@ export async function DELETE(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -133,7 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "manifestId is required." }, { status: 400 });
   }
 
-  const tripManifest = loadManifests().find((m) => m.id === manifestId);
+  const tripManifest = (await loadManifests()).find((m) => m.id === manifestId);
   if (!tripManifest) {
     return NextResponse.json(
       { ok: false, error: `No trip manifest found with id "${manifestId}".` },

@@ -235,9 +235,17 @@ export interface GenerateDealDiscoveryIdeasOptions {
   generatedAtIso?: string;
 }
 
+/**
+ * A candidate angle, generated but not yet grounded against live inventory.
+ * The caller (Discovery route) must run the inventory-grounding search and
+ * attach `groundedCandidate` before this can become a real DealDiscoveryIdea —
+ * see deal-discovery-types.ts header comment.
+ */
+export type UngroundedDealDiscoveryIdea = Omit<DealDiscoveryIdea, "groundedCandidate">;
+
 export interface GenerateDealDiscoveryIdeasResult {
-  /** Newly generated, de-duplicated angles. */
-  ideas: DealDiscoveryIdea[];
+  /** Newly generated, de-duplicated angle candidates — NOT YET GROUNDED. */
+  ideas: UngroundedDealDiscoveryIdea[];
   /** Returned angles dropped because their niche/title already existed. */
   skipped: Array<{ isolatedNiche: string; sailingAngleTitle: string; reason: string }>;
   /**
@@ -299,7 +307,7 @@ export async function generateDealDiscoveryIdeas(
     existingAngles.map((a) => normalizeForDedup(a.sailingAngleProfile.sailingAngleTitle))
   );
 
-  const ideas: DealDiscoveryIdea[] = [];
+  const ideas: UngroundedDealDiscoveryIdea[] = [];
   const skipped: GenerateDealDiscoveryIdeasResult["skipped"] = [];
 
   result.object.angles.forEach((raw, index) => {

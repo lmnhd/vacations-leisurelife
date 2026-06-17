@@ -1,16 +1,19 @@
 /**
  * Deal Trip Manifest data contracts (Deal Workflow Step 2 — Trip Manifestation).
  *
- * Step 1 (Discovery) produces a SailingAngleProfile. Step 2 takes a selected angle
- * + the raw CB promo intelligence and correlates the perfect cruise line /
- * destination / sail window and the perks/discounts that apply, producing the object
- * that pre-fills the SOURCE & ASSEMBLE form for Step 3 (targeting/pitch/copy).
+ * Under the inventory-first workflow, Step 1 (Discovery) produces a SailingAngleProfile
+ * that is ALREADY GROUNDED on a real, verified Odysseus sailing (angle.groundedCandidate:
+ * real packageId, cruise line, ship, sail date, nights, ports). Step 2 therefore does NOT
+ * search for or choose a cruise. It takes that grounded angle + the raw CB promo
+ * intelligence and produces the object that pre-fills SOURCE & ASSEMBLE for Step 3:
+ *   - itineraryName / destination / cruiseLine / nights / ports / sail window — derived
+ *     deterministically from the grounded candidate's REAL facts (no model framing).
+ *   - appliedPromos / promoStrategy / manifestReasoning — the AI's only job (promo correlation).
  *
- * Hard constraint: live Odysseus package search is operator-run Playwright, so the
- * agent CANNOT fetch a real packageId. The manifest fills everything in SOURCE &
- * ASSEMBLE EXCEPT packageId, shipName, siid, and bookingUrl — those are resolved by
- * the operator-run package lookup + the link broker. `lookupQuery` is the exact set
- * of inputs the operator pastes into Package Lookup to resolve them.
+ * The booking link for the known packageId is resolved by the link broker
+ * (resolveCandidateOntoManifest), writing `resolvedPackage`. `lookupQuery` is retained for
+ * back-compat / traceability but the packageId is already known from Discovery — no manual
+ * paste-into-lookup step is required anymore.
  */
 
 import type { DealAiGenerationTrace } from "./campaign-types";
@@ -54,21 +57,15 @@ export interface DealManifestSailWindow {
 }
 
 /**
- * Draft cruise facts that pre-fill SOURCE & ASSEMBLE. Deliberately omits the
- * live-resolved fields (packageId, shipName, siid, bookingUrl) — those come from
- * the operator-run lookup + link broker, never from the model.
+ * Draft cruise facts that pre-fill SOURCE & ASSEMBLE. Carries framing derived from
+ * the grounded candidate's real facts; the live-resolved booking fields (shipName,
+ * siid, bookingUrl) still come from the link broker via `resolvedPackage`, not the model.
  */
 export interface DealManifestAssembleDraft {
   suggestedDealId: string;
   suggestedBriefId: string;
   cruiseLine: string;
-  /**
-   * Ranked fallback cruise lines sharing this angle's onboard-asset/vibe profile.
-   * If `cruiseLine`'s live inventory has nothing that genuinely fits, Step 2's
-   * resolution loop tries these in order before giving up.
-   */
-  alternateCruiseLines?: string[];
-  /** Ship CLASS hint only (e.g. "Radiance class"); the real ship is resolved by lookup. */
+  /** Optional ship CLASS hint (e.g. "Radiance class") for imagery sourcing; often unset now. */
   shipClassHint?: string;
   itineraryName: string;
   destination: string;
@@ -78,7 +75,11 @@ export interface DealManifestAssembleDraft {
   portsOfCall: string[];
 }
 
-/** Exact inputs the operator pastes into Package Lookup to resolve packageId + link. */
+/**
+ * The cruise facts (line/ship/date/nights/port) for this manifest. Retained for
+ * traceability + the link-broker resolution; under inventory-first Discovery the
+ * packageId is already known, so this is no longer a manual paste-into-lookup query.
+ */
 export interface DealManifestLookupQuery {
   line: string;
   ship?: string;
@@ -90,10 +91,11 @@ export interface DealManifestLookupQuery {
 }
 
 /**
- * The real package the OPERATOR resolved by running the manifest's lookupQuery
- * through the live Package Lookup (Deal Workflow Step 4 — Resolve). Every field
- * here comes from a real Odysseus search result + the link broker — never the
- * model. Its presence means SOURCE & ASSEMBLE is fully fillable.
+ * The real, resolved package for this manifest. Under inventory-first Discovery the
+ * packageId is already known from angle.groundedCandidate; resolving the booking link
+ * for it (via the link broker) stamps this object on. Every field here comes from a
+ * real Odysseus search result + the link broker — never the model. Its presence means
+ * SOURCE & ASSEMBLE is fully fillable.
  */
 export interface DealManifestResolvedPackage {
   resolvedAtIso: string;

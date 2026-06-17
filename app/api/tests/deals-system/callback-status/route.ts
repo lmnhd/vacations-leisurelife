@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import { NextResponse } from "next/server";
 
 import { DEALS_CACHE_PATHS, emptyCallbackRequestsCache } from "@/lib/cb/deals-system/caches";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 import type {
   AgentCallbackRequestsCache,
   AgentCallbackStatus,
@@ -54,6 +55,9 @@ function saveCallbackCache(cache: AgentCallbackRequestsCache): void {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

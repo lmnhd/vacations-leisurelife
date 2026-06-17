@@ -26,14 +26,13 @@ import { NextResponse } from "next/server";
 import {
   approveCuratedDeal,
   assembleCuratedDealFromManifest,
-  findCuratedDeal,
-  loadCuratedDealsCache,
+  getCuratedDeal,
+  listDealTripManifests,
   loadDealAdCopyCache,
-  loadDealTripManifestsCache,
-  saveCuratedDealsCache,
-  upsertCuratedDeal,
+  upsertCuratedDealRecord,
 } from "@/lib/cb/deals-system";
 import type { CuratedOdysseusDeal } from "@/lib/cb/deals-system";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,6 +60,9 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -77,8 +79,8 @@ export async function POST(request: Request) {
     if (!manifestId) return bad("manifestId is required.");
     if (!adCopyId) return bad("adCopyId is required.");
 
-    const manifestCache = loadDealTripManifestsCache();
-    const manifest = manifestCache.manifests.find((m) => m.id === manifestId);
+    const manifests = await listDealTripManifests();
+    const manifest = manifests.find((m) => m.id === manifestId);
     if (!manifest) return bad(`No manifest found with id "${manifestId}".`, 404);
 
     if (!manifest.resolvedPackage) {
@@ -102,9 +104,7 @@ export async function POST(request: Request) {
 
     try {
       const deal = assembleCuratedDealFromManifest({ manifest, adCopy });
-      const curatedCache = loadCuratedDealsCache();
-      const next = upsertCuratedDeal(curatedCache, deal);
-      saveCuratedDealsCache(next);
+      await upsertCuratedDealRecord(deal);
       return ok(deal, { gates: deal.operatorApproval?.gates ?? [] });
     } catch (error) {
       return bad(error instanceof Error ? error.message : String(error), 500);
@@ -115,8 +115,7 @@ export async function POST(request: Request) {
     const dealId = str(body.dealId);
     if (!dealId) return bad("dealId is required.");
 
-    const curatedCache = loadCuratedDealsCache();
-    const existing = findCuratedDeal(curatedCache, dealId);
+    const existing = await getCuratedDeal(dealId);
     if (!existing) return bad(`No Deal found with id "${dealId}".`, 404);
 
     if (action === "set_link_valid") {
@@ -129,7 +128,7 @@ export async function POST(request: Request) {
           capturedAtIso: existing.linkHealth.capturedAtIso ?? nowIso,
         },
       };
-      saveCuratedDealsCache(upsertCuratedDeal(curatedCache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -147,7 +146,7 @@ export async function POST(request: Request) {
       } else {
         delete updated.expiresOnIso;
       }
-      saveCuratedDealsCache(upsertCuratedDeal(curatedCache, updated));
+      await upsertCuratedDealRecord(updated);
       return ok(updated);
     }
 
@@ -156,7 +155,7 @@ export async function POST(request: Request) {
       decisionNote: str(body.decisionNote),
       textOnlyLaunchWaived: body.textOnlyLaunchWaived === true,
     });
-    saveCuratedDealsCache(upsertCuratedDeal(curatedCache, result.deal));
+    await upsertCuratedDealRecord(result.deal);
     return ok(result.deal, {
       approved: result.approved,
       blockingFailures: result.blockingFailures,

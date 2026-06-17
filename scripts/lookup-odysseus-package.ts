@@ -61,8 +61,8 @@ async function main(): Promise<void> {
     departurePort: arg("port"),
   };
 
-  if (!facts.cruiseLine && !facts.shipName) {
-    throw new Error("Provide at least --line or --ship (and ideally --date).");
+  if (!facts.cruiseLine && !facts.shipName && !facts.sailDate && !facts.destination) {
+    throw new Error("Provide at least --line, --ship, --date, or --destination.");
   }
 
   const bestEffort = flag("best-effort");

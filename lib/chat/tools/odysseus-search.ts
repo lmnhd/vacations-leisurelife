@@ -1,28 +1,13 @@
 import { getOdysseusSession, releaseOdysseusSession } from '@/lib/services/odysseus/OdysseusSessionManager';
 import type { CruiseResult, CruiseSearchCriteria } from '@/lib/services/odysseus/types';
 import { resolvePortCode } from '@/lib/campaigns/landing/port-codes';
+// Single source of truth for vendor-id -> line name (verified against live Odysseus).
+// Previously this file kept its own hand-assumed copy that had drifted wrong.
+import { CRUISE_LINE_NAMES } from '@/lib/cb/link-broker/package-lookup';
 
 function resolvePort(code: string): string {
     return resolvePortCode(code) ?? code;
 }
-
-const CRUISE_LINE_NAMES: Record<number, string> = {
-    1: 'Carnival',
-    2: 'Norwegian',
-    3: 'Princess',
-    4: 'Celebrity',
-    5: 'Holland America',
-    6: 'Costa',
-    7: 'MSC',
-    8: 'Royal Caribbean',
-    9: 'Disney',
-    10: 'Cunard',
-    11: 'Regent',
-    12: 'Silversea',
-    13: 'Oceania',
-    14: 'Azamara',
-    982: 'MSC',
-};
 
 export type OdysseusSearchInput = {
     vendorId?: number | null;

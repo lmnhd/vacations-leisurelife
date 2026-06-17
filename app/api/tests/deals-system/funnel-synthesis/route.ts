@@ -24,28 +24,26 @@
 
 import { NextResponse } from "next/server";
 
-import { readFileSync } from "fs";
-
 import {
+  applyDealFunnelImageSelection,
   assembleDealPageFacts,
   DEAL_IMAGE_CATEGORIES,
-  DEALS_CACHE_PATHS,
   generateDealFunnelSynthesis,
+  getDealFunnelSynthesis,
+  listDealFunnelSyntheses,
+  listDealTripManifests,
+  listPromoRecords,
   loadDealAdCopyCache,
-  loadDealFunnelSynthesisCache,
-  loadDealTripManifestsCache,
-  saveDealFunnelSynthesisCache,
   searchDealImagesAllCategories,
   searchDealImagesByCategory,
-  setDealFunnelImageSelection,
-  upsertDealFunnelSynthesis,
-  validatePromoIntelligenceCache,
+  upsertDealFunnelSynthesisRecord,
   type CbPromoIntelligenceRecord,
   type DealAdCopy,
   type DealFunnelSynthesis,
   type DealImageCategory,
   type DealTripManifest,
 } from "@/lib/cb/deals-system";
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -77,46 +75,47 @@ function loadAdCopies(): DealAdCopy[] {
   }
 }
 
-function loadManifests(): DealTripManifest[] {
+async function loadManifests(): Promise<DealTripManifest[]> {
   try {
-    return loadDealTripManifestsCache().manifests;
+    return await listDealTripManifests();
   } catch {
     return [];
   }
 }
 
-function loadSyntheses(): DealFunnelSynthesis[] {
+async function loadSyntheses(): Promise<DealFunnelSynthesis[]> {
   try {
-    return loadDealFunnelSynthesisCache().syntheses;
+    return await listDealFunnelSyntheses();
   } catch {
     return [];
   }
 }
 
 /** Find the trip manifest behind an ad copy (via unified-${manifestId}). */
-function manifestForAdCopy(adCopy: DealAdCopy): DealTripManifest | undefined {
+async function manifestForAdCopy(adCopy: DealAdCopy): Promise<DealTripManifest | undefined> {
   const manifestId = adCopy.sourceUnifiedManifestId.replace(/^unified-/, "");
-  return loadManifests().find((m) => m.id === manifestId);
+  return (await loadManifests()).find((m) => m.id === manifestId);
 }
 
-function loadPromoRecords(): CbPromoIntelligenceRecord[] {
+async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
   try {
-    const raw = readFileSync(DEALS_CACHE_PATHS.promoIntelligence, "utf8");
-    const result = validatePromoIntelligenceCache(JSON.parse(raw) as unknown);
-    return result.ok && result.value ? result.value.records : [];
+    return await listPromoRecords();
   } catch {
     return [];
   }
 }
 
 export async function GET() {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   const adCopies = loadAdCopies();
-  const promoRecords = loadPromoRecords();
+  const promoRecords = await loadPromoRecords();
   // The COMPLETE public-safe cruise facts per ad copy (ship/date/itinerary/stops/
   // pricing/promos) so the lab can hand a self-sufficient payload to Claude Design.
   const dealFacts: Record<string, ReturnType<typeof assembleDealPageFacts>> = {};
   for (const adCopy of adCopies) {
-    const manifest = manifestForAdCopy(adCopy);
+    const manifest = await manifestForAdCopy(adCopy);
     if (manifest) {
       dealFacts[adCopy.id] = assembleDealPageFacts(manifest, promoRecords);
     }
@@ -124,13 +123,16 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     adCopies,
-    manifests: loadManifests(),
-    syntheses: loadSyntheses(),
+    manifests: await loadManifests(),
+    syntheses: await loadSyntheses(),
     dealFacts,
   });
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -154,7 +156,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const manifest = manifestForAdCopy(adCopy);
+    const manifest = await manifestForAdCopy(adCopy);
     const variantIndex = Number(body.variantIndex);
     const wantImages = body.sourceImages !== false;
 
@@ -182,12 +184,14 @@ export async function POST(request: Request) {
         variantIndex: Number.isInteger(variantIndex) ? variantIndex : undefined,
         candidates,
         sailingAngleTitle: manifest?.sailingAngleTitle,
+        dealId: manifest?.resolvedPackage?.packageId,
+        destinationLabel: manifest?.assembleDraft.itineraryName ?? manifest?.assembleDraft.destination,
+        nights: manifest?.resolvedPackage?.nights ?? manifest?.assembleDraft.nights,
       });
 
-      const cache = upsertDealFunnelSynthesis(loadDealFunnelSynthesisCache(), synthesis);
-      saveDealFunnelSynthesisCache(cache);
+      await upsertDealFunnelSynthesisRecord(synthesis);
 
-      return NextResponse.json({ ok: true, synthesis, syntheses: cache.syntheses });
+      return NextResponse.json({ ok: true, synthesis, syntheses: await loadSyntheses() });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },
@@ -202,7 +206,7 @@ export async function POST(request: Request) {
     if (!synthesisId) {
       return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
     }
-    const existing = loadSyntheses().find((s) => s.id === synthesisId);
+    const existing = (await loadSyntheses()).find((s) => s.id === synthesisId);
     if (!existing) {
       return NextResponse.json(
         { ok: false, error: `No synthesis found with id "${synthesisId}".` },
@@ -210,7 +214,7 @@ export async function POST(request: Request) {
       );
     }
     const adCopy = loadAdCopies().find((a) => a.id === existing.sourceAdCopyId);
-    const manifest = adCopy ? manifestForAdCopy(adCopy) : undefined;
+    const manifest = adCopy ? await manifestForAdCopy(adCopy) : undefined;
     if (!manifest) {
       return NextResponse.json(
         { ok: false, error: "Source manifest not found — cannot build an image query." },
@@ -236,8 +240,7 @@ export async function POST(request: Request) {
         ...newCandidates.filter((c) => !seen.has(c.imageUrl)),
       ];
       const updated: DealFunnelSynthesis = { ...existing, candidates: merged };
-      const cache = upsertDealFunnelSynthesis(loadDealFunnelSynthesisCache(), updated);
-      saveDealFunnelSynthesisCache(cache);
+      await upsertDealFunnelSynthesisRecord(updated);
       return NextResponse.json({ ok: true, synthesis: updated, category: category ?? "all" });
     } catch (error) {
       return NextResponse.json(
@@ -254,7 +257,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
     }
     try {
-      const cache = setDealFunnelImageSelection(loadDealFunnelSynthesisCache(), synthesisId, {
+      const synthesis = await getDealFunnelSynthesis(synthesisId);
+      if (!synthesis) {
+        return NextResponse.json(
+          { ok: false, error: `No synthesis found with id "${synthesisId}".` },
+          { status: 404 }
+        );
+      }
+      const updated = applyDealFunnelImageSelection(synthesis, {
         galleryIds: Array.isArray(body.galleryIds)
           ? (body.galleryIds as unknown[]).filter((x): x is string => typeof x === "string")
           : undefined,
@@ -264,11 +274,8 @@ export async function POST(request: Request) {
             ? (body.segmentImageIds as Record<string, string>)
             : undefined,
       });
-      saveDealFunnelSynthesisCache(cache);
-      return NextResponse.json({
-        ok: true,
-        synthesis: cache.syntheses.find((s) => s.id === synthesisId),
-      });
+      await upsertDealFunnelSynthesisRecord(updated);
+      return NextResponse.json({ ok: true, synthesis: updated });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },

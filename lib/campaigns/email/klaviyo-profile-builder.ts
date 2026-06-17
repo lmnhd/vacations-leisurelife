@@ -69,6 +69,10 @@ export function getCampaignLandingUrl(campaignSlug: string): string {
     return `${getPublicSiteBaseUrl()}/groups/${campaignSlug}`;
 }
 
+export function getCampaignChatUrl(campaignSlug: string): string {
+    return `${getCampaignLandingUrl(campaignSlug)}#group-chat-hall`;
+}
+
 /** Drop undefined-valued keys so Klaviyo doesn't blow away existing profile fields with nulls. */
 function compact(props: Record<string, string | number | boolean | undefined>): KlaviyoProfileProperties {
     const out: KlaviyoProfileProperties = { email: String(props.email ?? '') };
@@ -111,6 +115,7 @@ export function buildKlaviyoProfile(input: BuildKlaviyoProfileInput): KlaviyoPro
         // Visual + CTA URLs
         hero_image_url: landing?.heroImage?.url,
         landing_page_url: getCampaignLandingUrl(campaign.id),
+        campaign_chat_url: getCampaignChatUrl(campaign.id),
         booking_link_url:
             campaign.cbagenttoolsBookingLink ?? campaign.odysseusRetailBookingLink,
         community_channel_url: campaign.communityChannelUrl,

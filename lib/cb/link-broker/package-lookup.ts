@@ -19,23 +19,33 @@ import type { CruiseResult } from "@/lib/services/odysseus/types";
 
 import type { LinkBrokerCruiseFacts } from "./types";
 
-/** Odysseus cruiseline.id -> human name. Mirrors lib/chat/tools/odysseus-search. */
+/**
+ * Odysseus cruiseline.id -> human name. THE single source of truth for vendor ids.
+ *
+ * VERIFIED 2026-06-16 against live CBAgentTools/Odysseus by reading each line's
+ * real name off the rendered package page (the search API's cruiseline.id merely
+ * echoes the vendorId filter, so it is NOT independent truth). The previous map
+ * was hand-assumed and almost entirely wrong (2→Celebrity not Norwegian, 4→Disney
+ * not Celebrity, 10→Costa not Cunard, 12→Cunard not Silversea, etc.), which is why
+ * campaigns were mislabeled. Do NOT edit these from memory — re-probe the portal.
+ */
 export const CRUISE_LINE_NAMES: Record<number, string> = {
   1: "Carnival",
-  2: "Norwegian",
-  3: "Princess",
-  4: "Celebrity",
+  2: "Celebrity",
+  3: "Crystal",
+  4: "Disney",
   5: "Holland America",
-  6: "Costa",
-  7: "MSC",
+  6: "Norwegian",
+  7: "Princess",
   8: "Royal Caribbean",
-  9: "Disney",
-  10: "Cunard",
-  11: "Regent",
-  12: "Silversea",
-  13: "Oceania",
-  14: "Azamara",
+  10: "Costa",
+  11: "Seabourn",
+  12: "Cunard",
+  14: "Oceania",
   982: "MSC",
+  1043: "Azamara",
+  8115: "Silversea",
+  8116: "Regent Seven Seas",
 };
 
 /** Default: a candidate's sail date may differ from the requested date by this many days. */
@@ -134,7 +144,15 @@ export interface PackageLookupResult {
 }
 
 export interface RankOptions {
+  /**
+   * Override for date-proximity scoring/eligibility. Defaults to
+   * `searchWindowDays` (the window actually searched) so a deliberately wide,
+   * season-centered search isn't graded against a much narrower yardstick —
+   * falling back to SAIL_DATE_TOLERANCE_DAYS if neither is given.
+   */
   sailDateToleranceDays?: number;
+  /** Days each side of the sail date the search itself covered (see odysseus-lookup.ts). */
+  searchWindowDays?: number;
   /** Min confidence to auto-select the top candidate. */
   confidenceThreshold?: number;
   /** Min lead the top candidate must have over the runner-up to auto-select. */
@@ -424,7 +442,7 @@ export function rankPackageCandidates(
   results: CruiseResult[],
   options: RankOptions = {}
 ): PackageLookupResult {
-  const tolerance = options.sailDateToleranceDays ?? SAIL_DATE_TOLERANCE_DAYS;
+  const tolerance = options.sailDateToleranceDays ?? options.searchWindowDays ?? SAIL_DATE_TOLERANCE_DAYS;
   const threshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
   const margin = options.minConfidenceMargin ?? DEFAULT_CONFIDENCE_MARGIN;
   const diagnostics: string[] = [];

@@ -50,6 +50,14 @@ import type {
 } from "./research-types";
 
 /**
+ * Minimum Step 2 package-lookup confidence to clear the "match_confidence"
+ * approval gate. Mirrors DEFAULT_CONFIDENCE_THRESHOLD in package-lookup.ts —
+ * a resolvedPackage below this was a best-effort/low-confidence pick and may
+ * be the wrong cruise (wrong ship/line/date/nights for the booking link).
+ */
+export const MATCH_CONFIDENCE_THRESHOLD = 0.7;
+
+/**
  * Stages an operator can run independently from the workbench.
  * Order matters: research → targeting → pitch → copy → ad_structure → media → approval.
  * "pitch" is the Phase 9B boundary stage — must run before "copy".
@@ -234,6 +242,20 @@ export function evaluateApprovalGates(
       label: "Link health is valid",
       passed: deal.linkHealth?.status === "valid",
       detail: `Link health is "${deal.linkHealth?.status ?? "unknown"}". Run operator browser validation to reach "valid".`,
+      blocking: true,
+    },
+    {
+      id: "match_confidence",
+      label: "Package match confidence",
+      passed:
+        deal.packageMatch === undefined ||
+        deal.packageMatch.confidence >= MATCH_CONFIDENCE_THRESHOLD,
+      detail:
+        deal.packageMatch === undefined
+          ? "No package-match confidence recorded — re-run Step 2 · Trip Manifestation."
+          : deal.packageMatch.confidence >= MATCH_CONFIDENCE_THRESHOLD
+            ? `Match confidence ${deal.packageMatch.confidence.toFixed(2)} clears the ${MATCH_CONFIDENCE_THRESHOLD} threshold.`
+            : `Match confidence ${deal.packageMatch.confidence.toFixed(2)} is below ${MATCH_CONFIDENCE_THRESHOLD} — this packageId may be the wrong cruise. Reasons: ${deal.packageMatch.reasons.join("; ")}. Re-run Step 2 · Trip Manifestation and verify the booking link's actual ship before approving.`,
       blocking: true,
     },
     {

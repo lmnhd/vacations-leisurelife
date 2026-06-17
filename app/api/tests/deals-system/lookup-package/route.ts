@@ -3,6 +3,8 @@ import { promisify } from "node:util";
 
 import { NextResponse } from "next/server";
 
+import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -47,6 +49,9 @@ function quoteShell(value: string): string {
 }
 
 export async function POST(request: Request) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   let body: LookupRequestBody;
   try {
     body = (await request.json()) as LookupRequestBody;

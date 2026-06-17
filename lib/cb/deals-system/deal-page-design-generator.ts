@@ -93,6 +93,52 @@ export function validateCarouselCard(card: DealCarouselCard, index: number): str
   return warnings;
 }
 
+/** Common cruise region/ocean labels checked against carousel copy. */
+const KNOWN_DESTINATION_REGIONS = [
+  "caribbean",
+  "bahamas",
+  "alaska",
+  "alaskan",
+  "mediterranean",
+  "south pacific",
+  "mexican riviera",
+  "mexico",
+  "bermuda",
+  "hawaii",
+  "hawaiian",
+  "panama canal",
+  "transatlantic",
+  "northern europe",
+  "baltic",
+  "asia",
+  "australia",
+  "new zealand",
+  "galapagos",
+];
+
+/**
+ * Warn if NO carousel card mentions the cruise's destination/region — either
+ * the exact `destinationLabel` (e.g. itinerary name) or a known region word
+ * (e.g. "Caribbean", "Alaska"). Validate-and-warn only; never rewritten.
+ */
+export function validateCarouselDestinationMention(
+  cards: DealCarouselCard[],
+  destinationLabel?: string
+): string[] {
+  if (!destinationLabel?.trim()) return [];
+  const haystack = cards.map((c) => `${c.headline} ${c.primaryText}`.toLowerCase()).join(" ");
+  const labelWords = destinationLabel
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w.length > 3);
+  const mentionsLabel = labelWords.some((w) => haystack.includes(w));
+  const mentionsKnownRegion = KNOWN_DESTINATION_REGIONS.some((r) => haystack.includes(r));
+  if (!mentionsLabel && !mentionsKnownRegion) {
+    return [`no carousel card mentions the destination/region ("${destinationLabel}")`];
+  }
+  return [];
+}
+
 // ── Output schema ─────────────────────────────────────────────────────────────
 
 const segmentSchema = z.object({
@@ -136,11 +182,18 @@ PART 2: THE META CAROUSEL AD (Hyper-Niche Target)
 - Tone: inside-baseball, urgent, direct-response.
 - Structure: a 4-card carousel sequence. Each card: headline (MAX 40 characters) and primaryText (MAX 125 characters).
 - Rule: DOUBLE DOWN on the niche terminology here to flag the exact consumer scrolling the feed. Use the subculture's exact words, props, and pain points from the draft.
+- Rule: AT LEAST ONE of the 4 cards MUST clearly signal the cruise's destination/region (e.g. "Caribbean", "Alaska", "Mediterranean", "South Pacific", "Mexican Riviera") in its headline or primaryText, so a scroller instantly knows where this cruise sails to. Weave it in naturally — don't break the niche tone to do it.
+- Rule: TRIP-LENGTH CLARITY. The ad copy draft may describe sub-durations that are SHORTER than the cruise's actual total length (e.g. "7 consecutive sea days" within a 13-night crossing, a "3-night stopover" within a longer itinerary). The draft's total length is given as {{NIGHTS}} nights. If a carousel card calls out ANY day/night count that differs from {{NIGHTS}}, that card (or an adjacent card) MUST also state the total trip length, so no card reads as if the sub-duration IS the whole cruise (e.g. "13 Nights, 7 Pure Sea Days" — not just "7 Unbroken Days"). Never let a sub-duration stand alone where it could be mistaken for the total cruise length.
 
 OUTPUT FORMAT:
 Return a single valid JSON object: heroHeadline, heroSubhead, segments (array of {segment, heading, body}), carouselCards (array of 4 {headline, primaryText}). No prose outside the JSON.`;
 
-function buildPrompt(variant: DealAdVariant, adCopy: DealAdCopy): string {
+function buildPrompt(
+  variant: DealAdVariant,
+  adCopy: DealAdCopy,
+  destinationLabel?: string,
+  nights?: number
+): string {
   const draft = {
     campaignName: adCopy.campaignName,
     targetAudienceTag: adCopy.targetAudienceTag,
@@ -149,11 +202,13 @@ function buildPrompt(variant: DealAdVariant, adCopy: DealAdCopy): string {
     pricingDisclaimers: variant.pricingDisclaimers,
     callToAction: variant.callToAction,
     interestKeywords: variant.adPlatformTargetingHooks.interestKeywords,
+    ...(destinationLabel ? { destination: destinationLabel } : {}),
+    ...(nights ? { nights } : {}),
   };
   return `{{HIGH_NICHE_COPY_DRAFT}}:
 ${JSON.stringify(draft, null, 2)}
 
-Produce PART 1 (broad landing page: heroHeadline, heroSubhead, and exactly the five ship-segment paragraphs in order — cabins, lounges, atrium, dining, excursions — each <=3 sentences, jargon stripped) and PART 2 (exactly 4 hyper-niche carousel cards, headline <=40 chars, primaryText <=125 chars).`;
+Produce PART 1 (broad landing page: heroHeadline, heroSubhead, and exactly the five ship-segment paragraphs in order — cabins, lounges, atrium, dining, excursions — each <=3 sentences, jargon stripped) and PART 2 (exactly 4 hyper-niche carousel cards, headline <=40 chars, primaryText <=125 chars, at least 1 mentioning the destination/region, and no card implying a trip length other than ${nights ? `${nights} nights` : "the actual total"}).`;
 }
 
 function orderSegments(
@@ -183,7 +238,29 @@ export interface GenerateDealFunnelSynthesisOptions {
   /** SERP candidates to attach (sourced separately). Default empty. */
   candidates?: DealImageCandidate[];
   sailingAngleTitle?: string;
+  /**
+   * The curated deal id (CuratedOdysseusDeal.id, i.e. the resolved package's
+   * packageId) this synthesis belongs to. Falls back to the unified manifest
+   * id (with its "unified-" prefix stripped) when not provided, but that
+   * fallback does NOT match any CuratedOdysseusDeal.id — downstream stages
+   * (e.g. Step 9 Meta distribution) need the real packageId.
+   */
+  dealId?: string;
   generatedAtIso?: string;
+  /**
+   * Human destination/region label (e.g. "7-Night Eastern Caribbean" or
+   * "Alaska") from the source trip manifest. When provided, the prompt
+   * instructs the model to surface it in at least one carousel card, and
+   * the carousel is validated for a destination/region mention.
+   */
+  destinationLabel?: string;
+  /**
+   * The cruise's actual total nights, from the source trip manifest. When
+   * provided, the prompt instructs the model not to let a shorter
+   * sub-duration (e.g. "7 sea days" within a 13-night crossing) read as the
+   * whole trip's length.
+   */
+  nights?: number;
 }
 
 export interface GenerateDealFunnelSynthesisResult {
@@ -204,7 +281,7 @@ export async function generateDealFunnelSynthesis(
   }
   const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
 
-  const prompt = buildPrompt(variant, adCopy);
+  const prompt = buildPrompt(variant, adCopy, options.destinationLabel, options.nights);
   const startedAt = Date.now();
   const result = await structuredObjectFn({
     model: SYNTHESIS_MODEL,
@@ -245,12 +322,15 @@ export async function generateDealFunnelSynthesis(
   }));
   const carousel: DealCarouselAd = {
     cards,
-    warnings: cards.flatMap((c, i) => validateCarouselCard(c, i)),
+    warnings: [
+      ...cards.flatMap((c, i) => validateCarouselCard(c, i)),
+      ...validateCarouselDestinationMention(cards, options.destinationLabel),
+    ],
   };
 
   const synthesis: DealFunnelSynthesis = {
     id: `funnel-${slugify(adCopy.id)}`,
-    dealId: adCopy.sourceUnifiedManifestId.replace(/^unified-/, ""),
+    dealId: options.dealId ?? adCopy.sourceUnifiedManifestId.replace(/^unified-/, ""),
     generatedAtIso,
     generator: "gpt",
     sourceAdCopyId: adCopy.id,
