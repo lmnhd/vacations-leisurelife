@@ -76,6 +76,67 @@ interface BroadcastResult {
   failures: Array<{ email: string; error: string }>;
 }
 
+interface KlaviyoDiagnosticEvent {
+  id: string;
+  datetime?: string;
+  metric?: string;
+  stage?: string;
+  subject?: string;
+  flowId?: string;
+  messageId?: string;
+  inboxProvider?: string;
+  emailDomain?: string;
+}
+
+interface KlaviyoDiagnosticFlowAction {
+  id: string;
+  actionType?: string;
+  status?: string;
+  updated?: string;
+}
+
+interface KlaviyoDiagnosticFlow {
+  id: string;
+  name?: string;
+  status?: string;
+  archived?: boolean;
+  triggerType?: string;
+  updated?: string;
+  actions?: KlaviyoDiagnosticFlowAction[];
+}
+
+interface KlaviyoDiagnostics {
+  slug: string;
+  email: string;
+  stage: Stage;
+  expectedMetric: string | null;
+  profile: null | {
+    id: string;
+    created?: string;
+    updated?: string;
+    firstName?: string;
+    lastName?: string;
+    campaignSlug?: string;
+    canReceiveEmailMarketing?: boolean;
+    consent?: string;
+    suppressionCount: number;
+    listSuppressionCount: number;
+  };
+  flowStatus: {
+    allRelevantFlowsLive: boolean;
+    flows: KlaviyoDiagnosticFlow[];
+  };
+  recentExpectedEvents: KlaviyoDiagnosticEvent[];
+  recentRelevantReceivedEmails: KlaviyoDiagnosticEvent[];
+  hasRecentRelevantReceivedEmail: boolean;
+  priorReceivedForRelevantFlow: KlaviyoDiagnosticEvent[];
+  likelyCause: string | null;
+  recommendedAction: string | null;
+  recentReceivedEmails: KlaviyoDiagnosticEvent[];
+  hasRecentReceivedEmail: boolean;
+  recentEvents: KlaviyoDiagnosticEvent[];
+}
+
 export default function KlaviyoEmailsTestPage() {
   const [slug, setSlug] = useState("");
   const [leads, setLeads] = useState<LeadRef[]>([]);
@@ -131,6 +192,9 @@ export default function KlaviyoEmailsTestPage() {
     | { kind: "error"; message: string }
   >({ kind: "idle" });
   const [broadcastResult, setBroadcastResult] = useState<BroadcastResult | null>(null);
+  const [diagnostics, setDiagnostics] = useState<KlaviyoDiagnostics | null>(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
 
   const currentStageDef = STAGES.find((s) => s.id === stage)!;
   const isPhase2 = currentStageDef.phase === 2;
@@ -291,7 +355,7 @@ export default function KlaviyoEmailsTestPage() {
             message:
               mode === "dry"
                 ? "Dry-run recorded. Ledger event `nurture_queued` written; no Klaviyo call made."
-                : "Live event dispatched.",
+                : "Live trigger event accepted by Klaviyo. Run diagnostics after 1-2 minutes to verify whether the flow produced a Received Email event.",
           });
         }
       } catch (err) {
@@ -330,6 +394,30 @@ export default function KlaviyoEmailsTestPage() {
       setSchedRunning(false);
     }
   }, [slug, schedDryRun, schedToday]);
+
+  const runDiagnostics = useCallback(async () => {
+    if (!slug || !email) {
+      setDiagnosticsError("Pick a campaign and a lead first.");
+      return;
+    }
+    setDiagnostics(null);
+    setDiagnosticsError(null);
+    setDiagnosticsLoading(true);
+    try {
+      const qs = new URLSearchParams({ email, stage });
+      const res = await fetch(`/api/groups/campaign/${slug}/email-diagnostics?${qs.toString()}`);
+      const data = await res.json();
+      if (!data.success) {
+        setDiagnosticsError(data.error ?? "Diagnostics failed.");
+      } else {
+        setDiagnostics(data.diagnostics as KlaviyoDiagnostics);
+      }
+    } catch (err) {
+      setDiagnosticsError(err instanceof Error ? err.message : "Diagnostics failed.");
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  }, [slug, email, stage]);
 
   const dispatchBroadcast = useCallback(
     async (mode: "dry" | "live") => {
@@ -747,6 +835,13 @@ export default function KlaviyoEmailsTestPage() {
           >
             Single: LIVE
           </button>
+          <button
+            onClick={() => void runDiagnostics()}
+            disabled={diagnosticsLoading || !slug || !email}
+            className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-40"
+          >
+            {diagnosticsLoading ? "Checking Klaviyo..." : "Run diagnostics"}
+          </button>
           {currentStageDef.broadcast && (
             <>
               <button
@@ -777,7 +872,191 @@ export default function KlaviyoEmailsTestPage() {
             {dispatchStatus.message}
           </p>
         )}
+        <p className="text-[11px] text-slate-500">
+          A live dispatch means Klaviyo accepted the trigger event. Diagnostics checks the downstream Klaviyo
+          profile, flow, and delivery/open/click events for this lead.
+        </p>
       </section>
+
+      {/* Klaviyo black-box diagnostics */}
+      {(diagnostics || diagnosticsError) && (
+        <section className="space-y-4 rounded-xl border border-cyan-500/30 bg-slate-900/60 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-cyan-300">Klaviyo diagnostics</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Use this after a live test send to verify what Klaviyo recorded beyond our local lead metrics.
+              </p>
+            </div>
+            {diagnostics && (
+              <div className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+                <span className="font-mono">{diagnostics.email}</span>
+                <span className="mx-2 text-slate-600">|</span>
+                <span className="font-mono">{diagnostics.stage}</span>
+              </div>
+            )}
+          </div>
+
+          {diagnosticsError && (
+            <p className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">
+              {diagnosticsError}
+            </p>
+          )}
+
+          {diagnostics && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">Profile</div>
+                  <div className={diagnostics.profile ? "mt-1 text-sm text-emerald-300" : "mt-1 text-sm text-rose-300"}>
+                    {diagnostics.profile ? "Found" : "Missing"}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">Suppression</div>
+                  <div
+                    className={
+                      diagnostics.profile &&
+                      diagnostics.profile.suppressionCount === 0 &&
+                      diagnostics.profile.listSuppressionCount === 0
+                        ? "mt-1 text-sm text-emerald-300"
+                        : "mt-1 text-sm text-amber-300"
+                    }
+                  >
+                    {diagnostics.profile
+                      ? `${diagnostics.profile.suppressionCount} global / ${diagnostics.profile.listSuppressionCount} list`
+                      : "Unknown"}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">Flow</div>
+                  <div className={diagnostics.flowStatus.allRelevantFlowsLive ? "mt-1 text-sm text-emerald-300" : "mt-1 text-sm text-amber-300"}>
+                    {diagnostics.flowStatus.allRelevantFlowsLive ? "Live" : "Check flow"}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">Stage delivery</div>
+                  <div className={diagnostics.hasRecentRelevantReceivedEmail ? "mt-1 text-sm text-emerald-300" : "mt-1 text-sm text-amber-300"}>
+                    {diagnostics.hasRecentRelevantReceivedEmail ? "Received event" : "None found yet"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-slate-950 p-3 text-xs text-slate-300">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <span className="text-slate-500">Expected metric:</span>{" "}
+                    <span className="font-mono text-cyan-200">{diagnostics.expectedMetric ?? "Unknown"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Marketing consent:</span>{" "}
+                    <span className="font-mono text-cyan-200">{diagnostics.profile?.consent ?? "Unknown"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Can receive marketing:</span>{" "}
+                    <span className="font-mono text-cyan-200">
+                      {diagnostics.profile?.canReceiveEmailMarketing === undefined
+                        ? "Unknown"
+                        : String(diagnostics.profile.canReceiveEmailMarketing)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Profile updated:</span>{" "}
+                    <span className="font-mono text-cyan-200">{diagnostics.profile?.updated ?? "Unknown"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {(diagnostics.likelyCause || diagnostics.recommendedAction) && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-100">
+                  {diagnostics.likelyCause && (
+                    <p>
+                      <span className="font-semibold uppercase tracking-widest text-amber-300">Likely cause:</span>{" "}
+                      {diagnostics.likelyCause}
+                    </p>
+                  )}
+                  {diagnostics.recommendedAction && (
+                    <p className="mt-2">
+                      <span className="font-semibold uppercase tracking-widest text-amber-300">Recommended action:</span>{" "}
+                      {diagnostics.recommendedAction}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {diagnostics.flowStatus.flows.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-cyan-300">Relevant flows</h3>
+                  <div className="space-y-2">
+                    {diagnostics.flowStatus.flows.map((flow) => (
+                      <div key={flow.id} className="rounded border border-white/10 bg-slate-900 p-2 text-xs text-slate-300">
+                        <div className="flex flex-wrap justify-between gap-2">
+                          <span className="font-semibold text-white">{flow.name ?? flow.id}</span>
+                          <span className="font-mono text-cyan-200">{flow.status ?? "unknown"}</span>
+                        </div>
+                        <div className="mt-1 text-slate-500">
+                          {flow.triggerType ?? "Unknown trigger"} | archived: {String(flow.archived)}
+                        </div>
+                        {flow.actions && flow.actions.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {flow.actions.map((action) => (
+                              <span key={action.id} className="rounded bg-slate-800 px-2 py-1 font-mono text-[11px] text-slate-300">
+                                {action.actionType}:{action.status}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-300">Stage received emails</h3>
+                  {diagnostics.recentRelevantReceivedEmails.length === 0 ? (
+                    <p className="text-xs text-slate-500">No matching Received Email event found after the latest stage trigger.</p>
+                  ) : (
+                    <ul className="space-y-2 text-xs text-slate-300">
+                      {diagnostics.recentRelevantReceivedEmails.slice(0, 5).map((event) => (
+                        <li key={event.id} className="rounded border border-white/10 bg-slate-900 p-2">
+                          <div className="font-mono text-emerald-200">{event.datetime ?? "Unknown time"}</div>
+                          <div>{event.subject ?? "No subject"}</div>
+                          <div className="text-slate-500">{event.inboxProvider ?? "Unknown provider"} | {event.emailDomain ?? "Unknown domain"}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-300">Recent stage events</h3>
+                  {diagnostics.recentExpectedEvents.length === 0 ? (
+                    <p className="text-xs text-slate-500">No recent matching trigger events found for this stage.</p>
+                  ) : (
+                    <ul className="space-y-2 text-xs text-slate-300">
+                      {diagnostics.recentExpectedEvents.slice(0, 5).map((event) => (
+                        <li key={event.id} className="rounded border border-white/10 bg-slate-900 p-2">
+                          <div className="font-mono text-violet-200">{event.datetime ?? "Unknown time"}</div>
+                          <div>{event.metric ?? "Unknown metric"}</div>
+                          <div className="text-slate-500">stage: {event.stage ?? "not set"}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              <details className="rounded-lg border border-white/10 bg-slate-950 p-3">
+                <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Raw recent Klaviyo events
+                </summary>
+                <pre className="mt-3 overflow-auto text-xs text-slate-300">{JSON.stringify(diagnostics.recentEvents, null, 2)}</pre>
+              </details>
+            </>
+          )}
+        </section>
+      )}
 
       {/* Broadcast result */}
       {broadcastResult && (

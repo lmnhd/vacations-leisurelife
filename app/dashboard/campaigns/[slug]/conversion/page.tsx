@@ -13,9 +13,11 @@ import {
     Eye,
     Gauge,
     LayoutDashboard,
+    MessageCircle,
     Moon,
     MousePointerClick,
     RefreshCw,
+    Send,
     RotateCcw,
     Ship,
     Sun,
@@ -50,6 +52,9 @@ interface LeadsResponse {
 interface LeadDashboardRow extends CampaignWaitlistEntry {
     latestLifecycleStage: string | null;
     latestEventAt: string | null;
+    latestEmailStage: string | null;
+    latestEmailAt: string | null;
+    verifiedAt: string | null;
 }
 
 interface EventsResponse {
@@ -59,7 +64,35 @@ interface EventsResponse {
     events: CampaignLeadEvent[];
 }
 
-type TabKey = 'overview' | 'traffic' | 'leads';
+type TabKey = 'overview' | 'traffic' | 'leads' | 'chat';
+
+// ─── Chat (Group Chat Hall mirror) ──────────────────────────────────────────────
+
+type ChatChannelId = 'main' | 'ideas' | 'logistics' | 'meetups';
+
+interface ChatMessageRow {
+    id: string;
+    role: 'user' | 'assistant';
+    displayName: string;
+    content: string;
+    createdAt: string;
+    channel?: ChatChannelId;
+    isStarterMessage?: boolean;
+}
+
+interface ChatHistoryResponse {
+    success?: boolean;
+    sessionId?: string;
+    messages?: ChatMessageRow[];
+    error?: string;
+}
+
+const CHAT_CHANNELS: { id: ChatChannelId; label: string }[] = [
+    { id: 'main', label: '# voyage-main' },
+    { id: 'ideas', label: '# ideas' },
+    { id: 'logistics', label: '# logistics' },
+    { id: 'meetups', label: '# meetups' },
+];
 
 // ─── Primitives ────────────────────────────────────────────────────────────────
 
@@ -244,6 +277,7 @@ function lifecycleStageLabel(eventType: string): string {
         landing_page_view: 'Landing page view',
         landing_engaged: 'Landing engaged',
         waitlist_submitted: 'Waitlist submitted',
+        email_verified: 'Email verified',
         provider_lead_ingested: 'Provider lead ingested',
         nurture_queued: 'Nurture queued',
         nurture_sent: 'Nurture sent',
@@ -255,8 +289,52 @@ function lifecycleStageLabel(eventType: string): string {
         converted: 'Converted',
         expired: 'Expired',
         lead_error: 'Error',
+        booking_change: 'Booking change',
+        booking_change_acknowledged: 'Booking change acknowledged',
     };
     return labels[eventType] ?? eventType;
+}
+
+function emailStageLabel(stage: string): string {
+    const labels: Record<string, string> = {
+        waitlist_confirmation: 'Waitlist confirmation',
+        nurture_day3: 'Day 3 nurture',
+        nurture_day7: 'Day 7 nurture',
+        threshold_met: 'Threshold met',
+        threshold_sms: 'Threshold SMS',
+        booking_link_ready: 'Booking link ready',
+        booking_confirmed: 'Booking confirmed',
+        campaign_expired: 'Campaign expired',
+        travel_prep: 'Travel prep',
+        final_countdown: 'Final countdown',
+        final_itinerary_published: 'Final itinerary',
+        tour_conductor_announced: 'Tour conductor',
+        booking_change: 'Booking change',
+        post_cruise_welcome_home: 'Welcome home',
+        post_cruise_survey: 'Post-cruise survey',
+        alumni_rebooking_invite: 'Alumni rebooking',
+    };
+    return labels[stage] ?? stage;
+}
+
+function formatDateTime(value?: string | null): string {
+    return value ? new Date(value).toLocaleString() : '-';
+}
+
+function VerificationBadge({ verified }: { verified: boolean }) {
+    return (
+        <Badge
+            variant="outline"
+            className={cn(
+                'rounded-md text-[11px] font-medium',
+                verified
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300',
+            )}
+        >
+            {verified ? 'Verified' : 'Unverified'}
+        </Badge>
+    );
 }
 
 function eventDotColor(eventType: string): string {
@@ -377,7 +455,10 @@ function LeadDetailPanel({ lead, events }: { lead: LeadDashboardRow; events: Cam
                 <Field label="Manifest" value={lead.manifestStatus ?? 'PENDING'} />
                 <Field label="Notified" value={lead.notified ? 'Yes' : 'No'} />
                 <Field label="Converted" value={lead.converted ? 'Yes' : 'No'} />
-                <Field label="Latest stage" value={lead.latestLifecycleStage ?? '—'} />
+                <Field label="Email verified" value={lead.emailVerified ? 'Yes' : 'No'} />
+                <Field label="Verified at" value={lead.verifiedAt ? formatDateTime(lead.verifiedAt) : 'Not verified'} />
+                <Field label="Latest activity" value={lead.latestLifecycleStage ? lifecycleStageLabel(lead.latestLifecycleStage) : 'No events yet'} />
+                <Field label="Latest email" value={lead.latestEmailStage ? `${emailStageLabel(lead.latestEmailStage)} (${formatDateTime(lead.latestEmailAt)})` : 'No email event'} />
                 <Field label="Phone" value={lead.phoneNumber ?? '—'} />
             </div>
             <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -440,6 +521,9 @@ function LeadRow({
                 </Badge>
             </td>
             <td className="py-3 pr-3">
+                <VerificationBadge verified={lead.emailVerified} />
+            </td>
+            <td className="py-3 pr-3">
                 <Badge
                     variant={lead.manifestStatus === 'SUBMITTED' ? 'default' : 'outline'}
                     className="rounded-md text-[11px] font-medium"
@@ -452,7 +536,14 @@ function LeadRow({
                     ? <CheckCircle2 className="mx-auto h-4 w-4 text-emerald-500" />
                     : <span className="text-slate-300">—</span>}
             </td>
-            <td className="py-3 pr-3 text-xs text-slate-600 dark:text-slate-400">{lead.latestLifecycleStage ? lifecycleStageLabel(lead.latestLifecycleStage) : 'No events yet'}</td>
+            <td className="py-3 pr-3 text-xs text-slate-600 dark:text-slate-400">
+                <span className="block">{lead.latestLifecycleStage ? lifecycleStageLabel(lead.latestLifecycleStage) : 'No events yet'}</span>
+                {lead.latestEmailStage ? (
+                    <span className="block text-[11px] text-slate-400 dark:text-slate-500">
+                        Email: {emailStageLabel(lead.latestEmailStage)}
+                    </span>
+                ) : null}
+            </td>
             <td className="py-3 pr-4 text-right">
                 <ChevronRight className={cn('ml-auto h-4 w-4 transition-colors', selected ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600')} />
             </td>
@@ -528,6 +619,186 @@ function TabButton({
                 </span>
             ) : null}
         </button>
+    );
+}
+
+// ─── Chat panel (read history + post as Tour Conductor) ─────────────────────────
+
+function ChatPanel({ slug }: { slug: string }) {
+    const [messages, setMessages] = useState<ChatMessageRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [channel, setChannel] = useState<ChatChannelId>('main');
+    const [draft, setDraft] = useState('');
+    const [posting, setPosting] = useState(false);
+    const [postError, setPostError] = useState<string | null>(null);
+    const scrollRef = useState<HTMLDivElement | null>(null);
+    const [scrollEl, setScrollEl] = scrollRef;
+
+    const loadHistory = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/chat`, { cache: 'no-store' });
+            const data = (await res.json()) as ChatHistoryResponse;
+            if (res.ok && Array.isArray(data.messages)) {
+                setMessages(data.messages);
+                setError(null);
+            } else {
+                setError(data.error ?? 'Failed to load chat history.');
+            }
+        } catch {
+            setError('Failed to load chat history.');
+        } finally {
+            setLoading(false);
+        }
+    }, [slug]);
+
+    useEffect(() => {
+        void loadHistory();
+        // Mirror the public hall's 15s poll so operator posts + new guest
+        // messages appear here without a manual refresh.
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') void loadHistory();
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [loadHistory]);
+
+    const visible = useMemo(
+        () => messages.filter((m) => (m.channel ?? 'main') === channel),
+        [messages, channel],
+    );
+
+    useEffect(() => {
+        if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+    }, [visible, scrollEl]);
+
+    async function handlePost() {
+        const message = draft.trim();
+        if (!message || posting) return;
+        setPosting(true);
+        setPostError(null);
+
+        // Optimistic: show the operator post immediately as a TC turn.
+        const optimistic: ChatMessageRow = {
+            id: `local-${Date.now()}`,
+            role: 'assistant',
+            displayName: 'Tour Conductor',
+            content: message,
+            channel,
+            createdAt: new Date().toISOString(),
+        };
+        setMessages((cur) => [...cur, optimistic]);
+        setDraft('');
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/chat/operator`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, channel }),
+            });
+            const data = (await res.json()) as { success?: boolean; error?: string };
+            if (!res.ok || !data.success) {
+                throw new Error(data.error ?? 'Failed to post message.');
+            }
+            await loadHistory();
+        } catch (err) {
+            setPostError(err instanceof Error ? err.message : 'Failed to post message.');
+            // Roll the optimistic message back so the operator can retry.
+            setMessages((cur) => cur.filter((m) => m.id !== optimistic.id));
+            setDraft(message);
+        } finally {
+            setPosting(false);
+        }
+    }
+
+    return (
+        <Panel className="flex h-[calc(100vh-220px)] flex-col">
+            <PanelHeader
+                icon={MessageCircle}
+                title="Group Chat Hall"
+                description="The shared guest conversation. Post here as the Tour Conductor — your message goes out verbatim."
+                action={
+                    <div className="inline-flex items-center gap-1 rounded-lg bg-slate-100/80 p-0.5 dark:bg-slate-800/60">
+                        {CHAT_CHANNELS.map((c) => (
+                            <button
+                                key={c.id}
+                                onClick={() => setChannel(c.id)}
+                                className={cn(
+                                    'rounded-md px-2.5 py-1 font-mono text-[11px] font-medium transition-colors',
+                                    channel === c.id
+                                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-50'
+                                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200',
+                                )}
+                            >
+                                {c.label}
+                            </button>
+                        ))}
+                    </div>
+                }
+            />
+
+            <div ref={setScrollEl} className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+                {loading ? (
+                    <p className="py-4 text-sm text-slate-400 dark:text-slate-500">Loading conversation…</p>
+                ) : error ? (
+                    <p className="py-4 text-sm text-rose-500">{error}</p>
+                ) : visible.length === 0 ? (
+                    <EmptyState icon={MessageCircle} text={`No messages in ${channel} yet.`} />
+                ) : (
+                    visible.map((m) => {
+                        const isAssistant = m.role === 'assistant';
+                        return (
+                            <div key={m.id} className={cn('flex flex-col gap-1', isAssistant ? 'items-start' : 'items-end')}>
+                                <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                        'text-[10px] font-semibold uppercase tracking-wider',
+                                        isAssistant ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400',
+                                    )}>
+                                        {isAssistant ? 'Tour Conductor' : m.displayName}
+                                    </span>
+                                    {m.isStarterMessage ? (
+                                        <span className="font-mono text-[9px] uppercase tracking-wider text-slate-300 dark:text-slate-600">starter</span>
+                                    ) : (
+                                        <span className="text-[10px] text-slate-300 dark:text-slate-600">{new Date(m.createdAt).toLocaleString()}</span>
+                                    )}
+                                </div>
+                                <div className={cn(
+                                    'max-w-[80%] rounded-xl px-3.5 py-2 text-sm leading-relaxed',
+                                    m.isStarterMessage
+                                        ? 'border border-slate-200 bg-slate-50 italic text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300'
+                                        : isAssistant
+                                            ? 'border border-indigo-200 bg-indigo-50 text-slate-800 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-slate-100'
+                                            : 'bg-slate-800 text-white dark:bg-slate-700',
+                                )}>
+                                    {m.content}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            <div className="border-t border-slate-100 px-6 py-4 dark:border-slate-800">
+                {postError ? <p className="mb-2 text-xs text-rose-500">{postError}</p> : null}
+                <div className="flex items-end gap-2">
+                    <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                e.preventDefault();
+                                void handlePost();
+                            }
+                        }}
+                        placeholder={`Post to ${CHAT_CHANNELS.find((c) => c.id === channel)?.label} as the Tour Conductor… (⌘/Ctrl+Enter)`}
+                        className="min-h-[60px] flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
+                    <Button type="button" onClick={() => void handlePost()} disabled={posting || !draft.trim()} className="shrink-0">
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                        {posting ? 'Posting…' : 'Post'}
+                    </Button>
+                </div>
+            </div>
+        </Panel>
     );
 }
 
@@ -693,6 +964,7 @@ export default function ConversionPage() {
                         <TabButton active={activeTab === 'overview'} icon={LayoutDashboard} label="Overview" onClick={() => setActiveTab('overview')} />
                         <TabButton active={activeTab === 'traffic'} icon={TrendingUp} label="Traffic" onClick={() => setActiveTab('traffic')} />
                         <TabButton active={activeTab === 'leads'} icon={Users} label="Leads" count={leads.length} onClick={() => setActiveTab('leads')} />
+                        <TabButton active={activeTab === 'chat'} icon={MessageCircle} label="Chat" onClick={() => setActiveTab('chat')} />
                     </div>
                 </div>
             </header>
@@ -809,9 +1081,10 @@ export default function ConversionPage() {
                                                 <th className="py-3 pr-3 font-medium">Created</th>
                                                 <th className="py-3 pr-3 text-center font-medium">Pax</th>
                                                 <th className="py-3 pr-3 font-medium">Mode</th>
+                                                <th className="py-3 pr-3 font-medium">Verified</th>
                                                 <th className="py-3 pr-3 font-medium">Manifest</th>
                                                 <th className="py-3 pr-3 text-center font-medium">Conv.</th>
-                                                <th className="py-3 pr-3 font-medium">Stage</th>
+                                                <th className="py-3 pr-3 font-medium">Latest activity</th>
                                                 <th className="py-3 pr-4" />
                                             </tr>
                                         </thead>
@@ -862,6 +1135,9 @@ export default function ConversionPage() {
                         </div>
                     </div>
                 ) : null}
+
+                {/* ── CHAT TAB ── */}
+                {activeTab === 'chat' ? <ChatPanel slug={slug} /> : null}
             </main>
         </div>
     );

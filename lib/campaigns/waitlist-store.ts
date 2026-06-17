@@ -36,9 +36,8 @@ function normalizeEmail(email: string): string {
 }
 
 /**
- * HMAC-SHA256 token tied to the campaign + email. The secret is a random
- * nonce persisted on the entry itself so each signup gets a unique token
- * even for the same email + slug combination (resends generate new tokens).
+ * HMAC-SHA256 token tied to the campaign + email. A random nonce makes each
+ * newly generated token unique even for the same email + slug combination.
  */
 function generateVerificationToken(slug: string, email: string): { token: string; nonce: string } {
     const nonce = randomBytes(16).toString('hex');
@@ -83,7 +82,10 @@ export async function upsertCampaignWaitlistEntry(
     const existing = await getCampaignWaitlistEntry(input.slug, normalizedEmail);
     const now = new Date().toISOString();
 
-    const { token, nonce } = generateVerificationToken(input.slug, normalizedEmail);
+    const { token } = generateVerificationToken(input.slug, normalizedEmail);
+    const verificationToken = existing?.emailVerified
+        ? undefined
+        : existing?.verificationToken ?? token;
 
     const entry: CampaignWaitlistEntry = {
         PK: `CAMPAIGN#${input.slug}`,
@@ -99,7 +101,7 @@ export async function upsertCampaignWaitlistEntry(
         fulfillmentMode: existing?.fulfillmentMode ?? 'AUTO',
         manifestStatus: existing?.manifestStatus ?? 'PENDING',
         emailVerified: existing?.emailVerified ?? false,
-        verificationToken: existing?.emailVerified ? undefined : token,
+        verificationToken,
         notified: existing?.notified ?? false,
         converted: existing?.converted ?? false,
         attribution: input.attribution ?? existing?.attribution,

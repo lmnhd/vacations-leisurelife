@@ -9,19 +9,72 @@ export const dynamic = 'force-dynamic';
 interface LeadDashboardRow extends CampaignWaitlistEntry {
     latestLifecycleStage: LeadEventType | null;
     latestEventAt: string | null;
+    latestEmailStage: string | null;
+    latestEmailAt: string | null;
+    verifiedAt: string | null;
+}
+
+function emailKey(email: string): string {
+    return email.trim().toLowerCase();
 }
 
 function buildLatestEventMap(events: CampaignLeadEvent[]): Map<string, CampaignLeadEvent> {
     const latestByEmail = new Map<string, CampaignLeadEvent>();
 
     for (const event of events) {
-        const current = latestByEmail.get(event.email);
+        if (event.email === 'anonymous') continue;
+
+        const key = emailKey(event.email);
+        const current = latestByEmail.get(key);
         if (!current || event.occurredAt > current.occurredAt) {
-            latestByEmail.set(event.email, event);
+            latestByEmail.set(key, event);
         }
     }
 
     return latestByEmail;
+}
+
+function buildEventsByEmail(events: CampaignLeadEvent[]): Map<string, CampaignLeadEvent[]> {
+    const eventsByEmail = new Map<string, CampaignLeadEvent[]>();
+
+    for (const event of events) {
+        if (event.email === 'anonymous') continue;
+
+        const key = emailKey(event.email);
+        const bucket = eventsByEmail.get(key) ?? [];
+        bucket.push(event);
+        eventsByEmail.set(key, bucket);
+    }
+
+    return eventsByEmail;
+}
+
+function getLatestMatchingEvent(
+    events: CampaignLeadEvent[],
+    predicate: (event: CampaignLeadEvent) => boolean,
+): CampaignLeadEvent | null {
+    let latestEvent: CampaignLeadEvent | null = null;
+
+    for (const event of events) {
+        if (!predicate(event)) continue;
+        if (!latestEvent || event.occurredAt > latestEvent.occurredAt) {
+            latestEvent = event;
+        }
+    }
+
+    return latestEvent;
+}
+
+function isEmailWorkflowEvent(event: CampaignLeadEvent): boolean {
+    if (!event.metadata?.stage) return false;
+
+    return (
+        event.eventType === 'nurture_queued' ||
+        event.eventType === 'nurture_sent' ||
+        event.eventType === 'threshold_met_notified' ||
+        event.eventType === 'booking_link_sent' ||
+        event.eventType === 'lead_error'
+    );
 }
 
 export async function GET(
@@ -45,13 +98,21 @@ export async function GET(
     const funnel = computeFunnelSummary(leads);
     const traffic = computeLandingTrafficSummary(events, leads);
     const latestEvents = buildLatestEventMap(events);
+    const eventsByEmail = buildEventsByEmail(events);
     const dashboardLeads: LeadDashboardRow[] = leads.map((lead) => {
-        const latestEvent = latestEvents.get(lead.email);
+        const key = emailKey(lead.email);
+        const leadEvents = eventsByEmail.get(key) ?? [];
+        const latestEvent = latestEvents.get(key);
+        const latestEmailEvent = getLatestMatchingEvent(leadEvents, isEmailWorkflowEvent);
+        const verifiedEvent = getLatestMatchingEvent(leadEvents, (event) => event.eventType === 'email_verified');
 
         return {
             ...lead,
             latestLifecycleStage: latestEvent?.eventType ?? null,
             latestEventAt: latestEvent?.occurredAt ?? null,
+            latestEmailStage: latestEmailEvent?.metadata?.stage ?? null,
+            latestEmailAt: latestEmailEvent?.occurredAt ?? null,
+            verifiedAt: verifiedEvent?.occurredAt ?? null,
         };
     });
 

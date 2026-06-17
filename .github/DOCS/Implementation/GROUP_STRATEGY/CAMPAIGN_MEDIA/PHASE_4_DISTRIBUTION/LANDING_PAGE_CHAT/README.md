@@ -1,5 +1,7 @@
 # Landing Page Chat System Brainstorm
 
+> **Proactive TC (operator posting + autonomous TC Pulse):** See [PROACTIVE_TC_SYSTEM.md](./PROACTIVE_TC_SYSTEM.md) — implemented 2026-06-17. Adds a dashboard Chat tab, operator-as-TC posting, and the operator-run TC Pulse nudge engine.
+>
 > **Active spec for the rebuild:** See [GUEST_PORTAL_REDESIGN.md](./GUEST_PORTAL_REDESIGN.md). The page is being reframed from "landing page with sidebar chat widget" to "Interactive Guest Portal with full-width Group Chat Hall as centerpiece" — and gains a manual visual-flavor override + audition workflow so any of the four Claude Design systems can be selected per campaign before launch.
 >
 > The brainstorm and feature notes below remain accurate as the *behavioral* requirements (TC persona, signup gating, shared history, idea capture). Phase A of the redesign ships the structural reframe and audition mechanism. Phase C is where the chat-as-data-collector requirements in this README get their full backend wiring.
