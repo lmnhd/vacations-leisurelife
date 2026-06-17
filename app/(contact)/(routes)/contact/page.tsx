@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import PreRegisterForm2 from "@/components/contactforms/preRegisterForm2";
 import { Button } from "@/components/ui/button";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import {
   Dialog,
@@ -45,6 +46,11 @@ export default function Contact() {
               Request Agent
             </DialogTrigger>
             <DialogContent size={"full"} className="w-[600px] bg-black">
+              {/* Required by Radix for screen-reader accessibility; the form
+                  carries its own visible heading, so this title is hidden. */}
+              <VisuallyHidden asChild>
+                <DialogTitle>Request an agent</DialogTitle>
+              </VisuallyHidden>
               <Quicksignup />
             </DialogContent>
           </Dialog>

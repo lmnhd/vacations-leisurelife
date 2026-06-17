@@ -18,7 +18,7 @@ export default function Schooldazefooter() {
           <p>&copy;2023 Leisure Life Vacations</p>
           <p>2280 Shepard St. Jacksonville, FL. 32211</p>
           <p>Contact : admin@LeisureLifeVacations.net</p>
-          <p>{process.env.REACT_APP_LLV_PHONE}</p>
+          <p>{process.env.NEXT_PUBLIC_LLV_PHONE}</p>
         </div>
         <div>
           <Link href={'http://www.cbagenttools.com/groups/new_leadform/c62cb6e1-3520-4b40-9b7d-167bc93b18cb/?name=School%20Days%20Party%20At%20Sea'}>

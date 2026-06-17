@@ -8,7 +8,7 @@ import Image from "next/image";
 const HERO_IMAGE_URL =
   "https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=2070&q=80";
 
-export const LandingHero = () => {
+export const LandingHero = ({ hasDeals = false }: { hasDeals?: boolean }) => {
   return (
     <div>
       <div className="image-container max-h-[800px] overflow-hidden">
@@ -36,7 +36,10 @@ export const LandingHero = () => {
               Your source for finding
             </h1>
 
-            <div className="text-transparent bg-clip-text bg-gradient-to-r from-primary-foreground to-primary text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold z-[80]">
+            {/* Fixed yellow→blue gradient (theme-independent). Was
+                from-primary-foreground/to-primary, but those CSS vars flip to
+                near-black/near-white in dark mode, washing the text out gray. */}
+            <div className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-sky-500 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold z-[80] drop-shadow-lg">
               <TypewriterComponent
                 options={{
                   strings: [
@@ -69,14 +72,16 @@ export const LandingHero = () => {
                   Search Cruises
                 </Button>
               </Link>
-              <a href="#deals">
-                <Button
-                  variant="outline"
-                  className="p-4 font-semibold rounded-full md:text-lg md:p-6 bg-transparent text-white border-white/70 hover:bg-white/10"
-                >
-                  View Deals ↓
-                </Button>
-              </a>
+              {hasDeals && (
+                <a href="#deals">
+                  <Button
+                    variant="outline"
+                    className="p-4 font-semibold rounded-full md:text-lg md:p-6 bg-transparent text-white border-white/70 hover:bg-white/10"
+                  >
+                    View Deals ↓
+                  </Button>
+                </a>
+              )}
             </div>
 
             <p className="text-xs md:text-sm text-zinc-300 pt-1">

@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import ManualBooking from '@/app/Booking/ManualBooking'
 import { Quicksand } from "next/font/google";
 import Quicksignup from "./contactforms/quicksignup";
@@ -29,6 +30,11 @@ const Navbar = () => {
             color={"blue"}
             className="flex h-screen bg-primary/20 items-center justify-center "
             >
+              {/* Required by Radix for screen-reader accessibility; the form
+                  carries its own visible heading, so this title is hidden. */}
+              <VisuallyHidden asChild>
+                <DialogTitle>Request a booking</DialogTitle>
+              </VisuallyHidden>
               <Quicksignup/>
             </DialogContent>
           </Dialog>

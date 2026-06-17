@@ -7,7 +7,6 @@ import {Container1, Container1Header, containerProps} from '@/components/contain
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image, { StaticImageData } from "next/image.js";
 import { StaticImport } from "next/dist/shared/lib/get-img-props.js";
-import Link from "next/link";
 import { CleanText } from "@/app/utils/CleanText.js";
 
 
@@ -16,28 +15,6 @@ async function check() {
   console.log("checked");
 }
 
-function buildPromotionHref(link: string) {
-  if (!link) {
-    return "/promotions";
-  }
-
-  try {
-    const url = new URL(link, "https://www.cruisebrothers.com");
-    const parts = url.pathname.split("/").filter(Boolean);
-
-    if (parts[0] === "cb" && parts[1] === "special" && parts[2]) {
-      return `/promotions/cb/special-${parts[2]}`;
-    }
-
-    if (parts[0] === "specials" && parts[1] && parts[2]) {
-      return `/promotions/${parts[1]}/${parts[2]}`;
-    }
-  } catch (error) {
-    // ignore invalid URLs
-  }
-
-  return "/promotions";
-}
 export default async function Promotions() {
   const promos: any = await getCBSpecials();
   const picks: any = await cbPicks();
@@ -68,19 +45,18 @@ export default async function Promotions() {
                 const logo = shipLogos(item.header);
                 const cleanedHeader = CleanText(item.header ?? "");
                 const cleanedMessage = CleanText(item.message ?? "");
-                const internalHref = buildPromotionHref(item.link);
-                //console.log(logo);
+                // Tiles are display-only for now. The per-click detail route
+                // live-scraped cruisebrothers.com and 404'd; it will be rebuilt
+                // from our own promo intelligence.
                 return (
-                  <Link 
-                  key={`${item.header}-${index}`}
-                  href={internalHref}>
+                  <div key={`${item.header}-${index}`}>
                     <Container1
                       messages={cleanedMessage ? [cleanedMessage] : []}
                       header={cleanedHeader}
                       logo={logo}
                       height="500px"
                     />
-                  </Link>
+                  </div>
                 );
               })}
             </div>

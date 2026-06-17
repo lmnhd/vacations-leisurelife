@@ -101,7 +101,13 @@ const Sidebar = ({
         <p className="text-xs uppercase tracking-[0.4em] text-white/60">Need Help?</p>
         {phoneNumber ? (
           <p className="text-sm font-light leading-relaxed text-white/80">
-            Call the concierge at <span className="font-semibold text-amber-300">{phoneNumber}</span>
+            Call the concierge at{" "}
+            <a
+              href={`tel:${phoneNumber.replace(/[^+\d]/g, "")}`}
+              className="font-semibold text-amber-300 hover:underline"
+            >
+              {phoneNumber}
+            </a>
           </p>
         ) : (
           <p className="text-sm font-light leading-relaxed text-white/80">

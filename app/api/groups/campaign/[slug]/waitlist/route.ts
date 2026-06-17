@@ -282,8 +282,9 @@ export async function POST(
   const guestToken = Buffer.from(`${slug}:${entry.email}`).toString('base64url');
   const displayName = `${parsed.data.firstName} ${parsed.data.lastName.charAt(0)}.`;
 
-  // Use the total summary for display (so the guest sees all entries including
-  // unverified), but verifiedSummary is used for threshold percent.
+  // Use the total summary for display AND for the threshold percent, so the
+  // progress bar matches the "<n> entries" count the guest sees (they used to
+  // disagree — percent was verified-only while the label showed all entries).
   const displaySummary = await getCampaignWaitlistSummary(slug);
 
   return NextResponse.json({
@@ -305,7 +306,7 @@ export async function POST(
       requiredCabins,
       percentOfThreshold: getPublicThresholdPercent(
         requiredCabins,
-        verifiedSummary.totalEntries,
+        displaySummary.totalEntries,
       ),
     },
     nextStep,

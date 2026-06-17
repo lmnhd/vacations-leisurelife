@@ -4,16 +4,13 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/sidebar";
-import { useState, useEffect } from "react";
 
+// NOTE: this component must render the SAME tree on server and client. A previous
+// `if (!isMounted) return null` gate removed this whole subtree during SSR, which
+// shifted every subsequent Radix useId() — causing the Dialog (Request Booking)
+// aria-controls hydration mismatch in the navbar. Render unconditionally; the
+// trigger is already md:hidden so it only shows on mobile.
 const MobileSidebar = () => {
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, [])
-
-    if(!isMounted) return null;
   return (
     <Sheet>
       <SheetTrigger asChild>

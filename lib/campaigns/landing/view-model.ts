@@ -1594,11 +1594,14 @@ function buildLandingViewModel(
     galleryImages,
     trustImages,
   );
-  // Use verified entries for threshold progress when available.
-  const thresholdSource = verifiedSummary ?? waitlistSummary;
+  // Threshold progress must match the "<n> entries" count shown beside it, so it
+  // is computed from the SAME total-entries figure used for joinedEntries below.
+  // (Previously this used verifiedSummary, so the bar % and the entries label
+  // disagreed — e.g. "7 entries · 50%" when only 4 of 7 were email-verified.)
+  void verifiedSummary;
   const percentOfThreshold = getPublicThresholdPercent(
     targetCabins,
-    thresholdSource.totalEntries,
+    waitlistSummary.totalEntries,
   );
   const designSystem = buildLandingDesignSystem(
     campaign,
