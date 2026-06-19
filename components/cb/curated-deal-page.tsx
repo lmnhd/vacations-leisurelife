@@ -26,18 +26,17 @@ import type { PublicDealPage } from "@/lib/cb/deals-system/public-deal-projectio
  *
  * Book now: opens the approved booking URL.
  * Email me the link: opens an inline email form, then calls
- *   POST /api/deals/link-request with { dealId, email }. The booking URL also
- *   opens in a new tab immediately; the response reports whether the Klaviyo
- *   email send (Phase 12) actually went out.
- * Request a callback: calls POST /api/deals/callback-request — stores the request
- *   and sends an admin Pushover notification (Phase 13 adds the operator dashboard).
+ *   POST /api/deals/link-request with { dealId, email }. The response reports
+ *   whether the Klaviyo email send (Phase 12) actually went out.
+ * Request a callback: calls POST /api/deals/callback-request â€” stores the request
+ *   queues the request for the operator dashboard and sends an admin Pushover notification.
  *
  * Email me the link captures only an email address. Callback captures name,
  * email, phone, and notes from a minimal inline form.
  */
 export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
   const [linkState, setLinkState] = useState<
-    "idle" | "form" | "submitting" | "sent" | "opened_only" | "error"
+    "idle" | "form" | "submitting" | "sent" | "not_sent" | "error"
   >("idle");
   const [linkEmail, setLinkEmail] = useState("");
   const [linkError, setLinkError] = useState("");
@@ -76,15 +75,21 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
       });
       const data = (await res.json()) as {
         ok: boolean;
-        url?: string;
         emailDelivered?: boolean;
+        emailError?: string;
+        error?: string;
       };
-      if (data.ok && data.url) {
-        window.open(data.url, "_blank", "noreferrer");
-        setLinkState(data.emailDelivered ? "sent" : "opened_only");
-      } else {
+      if (!data.ok) {
+        setLinkError(data.error ?? "We couldn't prepare that link right now.");
         setLinkState("error");
+        return;
       }
+      if (!data.emailDelivered) {
+        setLinkError(data.emailError ?? "We couldn't send that email right now.");
+        setLinkState("not_sent");
+        return;
+      }
+      setLinkState("sent");
     } catch {
       setLinkState("error");
     }
@@ -110,8 +115,13 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
           notes: callbackNotes || undefined,
         }),
       });
-      const data = (await res.json()) as { ok: boolean };
-      setCallbackState(data.ok ? "done" : "error");
+      const data = (await res.json()) as { ok: boolean; requestId?: string; error?: string };
+      if (!data.ok) {
+        setCallbackError(data.error ?? "We couldn't save that request right now.");
+        setCallbackState("error");
+        return;
+      }
+      setCallbackState("done");
     } catch {
       setCallbackState("error");
     }
@@ -150,7 +160,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <p className="max-w-2xl text-lg leading-8 text-white/82">{deal.heroSummary}</p>
                 {deal.textOnlyLaunchWaived && (
                   <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur">
-                    Images coming soon — book now while rates are available.
+                    Images coming soon â€” book now while rates are available.
                   </p>
                 )}
               </div>
@@ -164,19 +174,19 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <Button
                   variant="outline"
                   size="lg"
-                  disabled={linkState === "sent" || linkState === "opened_only"}
+                  disabled={linkState === "sent" || linkState === "not_sent"}
                   onClick={() => setLinkState(linkState === "form" ? "idle" : "form")}
                   className="rounded-full border-white/35 bg-white/10 px-6 text-white hover:bg-white hover:text-slate-950 disabled:opacity-60"
                 >
-                  {linkState === "sent" || linkState === "opened_only" ? (
+                  {linkState === "sent" || linkState === "not_sent" ? (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   ) : (
                     <Mail className="mr-2 h-4 w-4" />
                   )}
                   {linkState === "sent"
                     ? "Link sent"
-                    : linkState === "opened_only"
-                      ? "Link opened"
+                    : linkState === "not_sent"
+                      ? "Email not sent"
                       : "Email me the booking link"}
                 </Button>
 
@@ -214,20 +224,19 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                     className="w-full rounded-full font-semibold"
                   >
                     {isLinkSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLinkSubmitting ? "Sending…" : "Send me the link"}
+                    {isLinkSubmitting ? "Sendingâ€¦" : "Send me the link"}
                   </Button>
                 </form>
               )}
 
               {linkState === "sent" && (
                 <p className="text-sm text-emerald-300">
-                  Link sent to your email — also opened in a new tab.
+                  Link sent to your email.
                 </p>
               )}
-              {linkState === "opened_only" && (
+              {linkState === "not_sent" && (
                 <p className="text-sm text-amber-300">
-                  Link opened in a new tab. We couldn&apos;t send the email right now — try again
-                  or contact us directly.
+                  We couldn&apos;t send the email right now. Try again, use Book now, or contact us directly.
                 </p>
               )}
 
@@ -279,14 +288,14 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                     {isSubmitting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isSubmitting ? "Sending…" : "Send request"}
+                    {isSubmitting ? "Sendingâ€¦" : "Send request"}
                   </Button>
                 </form>
               )}
 
               {callbackState === "done" && (
                 <p className="text-sm text-emerald-300">
-                  Request received — an agent will be in touch.
+                  Request received â€” an agent will be in touch.
                 </p>
               )}
               {(callbackState === "error" || linkState === "error") && !linkError && (
@@ -418,18 +427,18 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <Button
                   variant="outline"
                   className="w-full rounded-full font-semibold"
-                  disabled={linkState === "sent" || linkState === "opened_only"}
+                  disabled={linkState === "sent" || linkState === "not_sent"}
                   onClick={() => setLinkState(linkState === "form" ? "idle" : "form")}
                 >
-                  {linkState === "sent" || linkState === "opened_only" ? (
+                  {linkState === "sent" || linkState === "not_sent" ? (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   ) : (
                     <Mail className="mr-2 h-4 w-4" />
                   )}
                   {linkState === "sent"
                     ? "Link sent"
-                    : linkState === "opened_only"
-                      ? "Link opened"
+                    : linkState === "not_sent"
+                      ? "Email not sent"
                       : "Email me the link"}
                 </Button>
                 <Button
@@ -444,7 +453,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
 
               {callbackState === "done" && (
                 <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  Request received — an agent will be in touch.
+                  Request received â€” an agent will be in touch.
                 </p>
               )}
               {linkState === "sent" && (

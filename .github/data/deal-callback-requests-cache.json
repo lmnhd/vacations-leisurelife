@@ -1,5 +1,74 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-08T00:00:00.000Z",
-  "requests": []
+  "generatedAtIso": "2026-06-19T19:56:49.553Z",
+  "requests": [
+    {
+      "id": "cbr-1578937-1781898089879",
+      "createdAtIso": "2026-06-19T19:41:29.879Z",
+      "status": "closed",
+      "ctaSource": "request_callback",
+      "visitor": {
+        "name": "Nathaniel Orange Jr.",
+        "email": "halimedetech@gmail.com",
+        "phone": "9049303575"
+      },
+      "deal": {
+        "dealId": "1578937",
+        "dealTitle": "Nine Nights. Seven Sea Days. Zero GMs. One Leuchtturm You'll Actually Fill.",
+        "cruiseLine": "Cunard",
+        "shipName": "Eastbound Transatlantic Crossing",
+        "sailDateIso": "2027-01-02"
+      },
+      "linkHealthStatus": "valid",
+      "brokerLinkUrl": "https://bookings.cbagenttools.com/swift/cruise/package/1578937?siid=1049337&lang=1",
+      "routing": {
+        "emailNotified": false,
+        "dashboardQueued": false
+      },
+      "statusHistory": [
+        {
+          "status": "new",
+          "changedAtIso": "2026-06-19T19:41:29.879Z"
+        },
+        {
+          "status": "contacted",
+          "changedAtIso": "2026-06-19T19:55:32.604Z"
+        },
+        {
+          "status": "closed",
+          "changedAtIso": "2026-06-19T19:55:39.907Z"
+        }
+      ]
+    },
+    {
+      "id": "cbr-1578937-1781899009553",
+      "createdAtIso": "2026-06-19T19:56:49.553Z",
+      "status": "new",
+      "ctaSource": "request_callback",
+      "visitor": {
+        "name": "Brenda",
+        "email": "cc.lemonhead@gmail.com",
+        "phone": "9049303575"
+      },
+      "deal": {
+        "dealId": "1578937",
+        "dealTitle": "Nine Nights. Seven Sea Days. Zero GMs. One Leuchtturm You'll Actually Fill.",
+        "cruiseLine": "Cunard",
+        "shipName": "Eastbound Transatlantic Crossing",
+        "sailDateIso": "2027-01-02"
+      },
+      "linkHealthStatus": "valid",
+      "brokerLinkUrl": "https://bookings.cbagenttools.com/swift/cruise/package/1578937?siid=1049337&lang=1",
+      "routing": {
+        "emailNotified": false,
+        "dashboardQueued": true
+      },
+      "statusHistory": [
+        {
+          "status": "new",
+          "changedAtIso": "2026-06-19T19:56:49.553Z"
+        }
+      ]
+    }
+  ]
 }

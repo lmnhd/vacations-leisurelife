@@ -7,11 +7,11 @@ develops a Deal end-to-end inside the workbench at `/tests/deals-system` before
 anything reaches the public. The pipeline stages run independently and in order:
 
 ```text
-research → targeting → pitch → copy → ad_structure → media → approval
+research -> targeting -> pitch -> copy -> ad_structure -> media -> approval
 ```
 
 The pitch stage (Phase 9B) is the explicit boundary between internal research
-and customer-facing copy. Research output is analyst voice — context for the
+and customer-facing copy. Research output is analyst voice - context for the
 operator and the AI. The pitch brief is the first thing written in customer
 voice. Copy is then generated from the pitch brief, not from research strings.
 
@@ -41,8 +41,8 @@ A Deal may appear publicly only after all of these are true:
 | media          | `DealMediaPlan`           | Internal    |
 | approval       | `DealApprovalState`       | Gate        |
 
-`generateDealCopyPackage` requires a `DealPitchBrief` parameter. The research →
-pitch → copy order is enforced at the type level.
+`generateDealCopyPackage` requires a `DealPitchBrief` parameter. The research ->
+pitch -> copy order is enforced at the type level.
 
 ### Public surface
 
@@ -56,18 +56,18 @@ agent-only notes, ad structure, targeting internals, or approval state.
 `deal-rcl-southern-caribbean-1619969` (RCL Southern Caribbean, package 1619969)
 is in the cache as `bookable` / `approved` / `valid`. It has a pitch brief, copy
 package, and all campaign stages. Its link was marked valid by operator assertion
-— run live `validateBrokerLink` before using it in production.
+- run live `validateBrokerLink` before using it in production.
 
 ### CTA workflow (Phase 11/12)
 
 | CTA                       | Route                              | Behavior |
 |---------------------------|-------------------------------------|----------|
 | Book now                  | (direct link)                       | opens `bookingUrl` |
-| Email me the booking link | `POST /api/deals/link-request`      | opens `bookingUrl`; if `email` is supplied, also upserts a Klaviyo profile and tracks `LLL Deal Link Requested` (a Klaviyo flow owns the email template) |
+| Email me the booking link | `POST /api/deals/link-request`      | upserts a Klaviyo profile and tracks `LLL Deal Link Requested`; the Klaviyo flow sends the prepared booking link by email and the UI does not open the booking portal |
 | Request an agent callback | `POST /api/deals/callback-request`  | stores an `AgentCallbackRequest` in `deal-callback-requests-cache.json`, sends a Pushover admin notification |
 
 `LLL Deal Link Requested` needs a Klaviyo flow configured against that metric
-before live email delivery is observable end-to-end — `sendDealLinkEmail` in
+before live email delivery is observable end-to-end - `sendDealLinkEmail` in
 `lib/cb/deals-system/deal-link-email.ts` reports `emailDelivered: false` if the
 Klaviyo call itself fails, so the UI never claims a silent send.
 
@@ -81,7 +81,9 @@ health, routing badges, and status history, plus buttons to mark the request
 `assigned` / `contacted` / `closed` (with an optional note) via
 `POST /api/tests/deals-system/callback-status`. `routing.dashboardQueued` is
 set to `true` when the callback-request route creates the record, and flips
-back to `false` the first time the operator changes its status.
+back to `false` the first time the operator changes its status. The route also
+sends a Pushover admin alert using `PUSHOVER_API_TOKEN` and
+`PUSHOVER_RECIPIENT_KEY`; supplied email and phone details are included in the alert so the operator can respond immediately.
 
 ### Production operator dashboard (Phase 14)
 
@@ -89,7 +91,7 @@ back to `false` the first time the operator changes its status.
 is the production operator dashboard, rendering the same
 `DealsSystemDashboardView` (`app/(tests)/tests/deals-system/dashboard-view.tsx`)
 as `/tests/deals-system`. Both routes share every panel and component; only the
-header copy and refresh link differ. There is no additional auth layer yet —
+header copy and refresh link differ. There is no additional auth layer yet -
 this matches the existing `/tests/deals-system` exposure level. Add access
 control here if/when this dashboard is exposed beyond trusted operators.
 
@@ -101,7 +103,7 @@ link/capture operator actions, all via `POST /api/tests/deals-system/curated-dea
 | `pin` / `unpin`   | Sets `operatorVisibility.pinned`; pinned Deals sort first in `getPublicDealTiles`. |
 | `hide` / `unhide` | Sets `operatorVisibility.hidden`; hidden Deals are excluded from `isDealHomepageEligible` even if otherwise eligible. |
 | `refresh_link`    | Sets `linkHealth.status` to `"stale"` with a note, so the Deal drops out of the homepage gate until the operator re-verifies and runs `set_link_valid`. |
-| `request_capture` | Appends a `[capture requested]` note to `agentOnlyNotes` — flags the Deal for an operator CBAT/Odysseus capture run. Does not trigger any browser automation itself. |
+| `request_capture` | Appends a `[capture requested]` note to `agentOnlyNotes` - flags the Deal for an operator CBAT/Odysseus capture run. Does not trigger any browser automation itself. |
 
 ### Useful files
 
@@ -138,7 +140,7 @@ scripts/assemble-curated-deal.ts              operator CLI
 .github/data/cb-promo-intelligence-cache.json
 .github/data/cb-link-broker-cache.json
 .github/data/odysseus-curated-deals-cache.json
-.github/data/deal-callback-requests-cache.json  ← populated/updated by callback-request and callback-status routes
+.github/data/deal-callback-requests-cache.json  <- populated/updated by callback-request and callback-status routes
 ```
 
 ### Test suite
@@ -163,9 +165,7 @@ Other remaining open items are operational, not code:
   email-link delivery (Phase 12) is observable end-to-end.
 - Run live `validateBrokerLink` against the committed Deal's booking link
   before any production use.
-- Decide whether email/Crisp notification (`routing.emailNotified` /
-  `routing.crispNotified`) should be implemented, or whether Pushover +
-  the dashboard panel are sufficient for now.
+- Pushover plus the dashboard panel are the active callback notification path. Additional callback notification channels are out of scope unless deliberately reintroduced.
 
 ## Safety and Operational Notes
 

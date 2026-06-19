@@ -1,0 +1,25 @@
+{
+  "slug": "grand-costumed-promenade-explorer",
+  "campaignExists": true,
+  "name": "The Grand Costumed Promenade",
+  "status": "GATHERING_INTEREST",
+  "pricingStatus": "UNMATCHED",
+  "aestheticBriefStatus": "approved",
+  "activeBookingMode": "RETAIL_MULTI_BOOKING",
+  "inventoryHealth": "HEALTHY",
+  "inventoryLastCheckedAt": "2026-06-17T22:28:25.733Z",
+  "matchedShipName": "Explorer of the Seas",
+  "matchedSailDate": "Jan. 13, 2027",
+  "startingPrice": 507.5,
+  "retiredAt": null,
+  "brief": {
+    "exists": true,
+    "themeName": "The Grand Costumed Promenade",
+    "reviewStatus": "approved",
+    "productionBuildStatus": "pass",
+    "generatedAt": "2026-06-04T23:45:54.973Z",
+    "hasProductionBible": true,
+    "sceneCount": 10
+  },
+  "checkedAt": "2026-06-17T22:28:41.612Z"
+}

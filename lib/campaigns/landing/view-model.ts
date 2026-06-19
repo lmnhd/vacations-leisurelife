@@ -449,6 +449,9 @@ function buildItinerarySummary(campaign: Campaign): LandingItinerarySummary {
   const ship = campaign.matchedShipName ?? campaign.shipTarget ?? campaign.name;
   const destination = campaign.targetDestination?.trim() || '';
   const nights = campaign.matchedNights?.trim() || '';
+  const manualItineraryTimeline = Array.isArray(campaign.manualItineraryTimeline)
+    ? campaign.manualItineraryTimeline.filter((entry) => typeof entry === 'string' && entry.trim().length > 0)
+    : [];
   const rawItinerarySummary = campaign.odysseusItinerarySummary?.trim() || '';
   const rawPortsOfCall = campaign.odysseusPortsOfCall?.trim() || '';
   const departurePort = campaign.matchedDeparturePort?.trim()
@@ -493,13 +496,16 @@ function buildItinerarySummary(campaign: Campaign): LandingItinerarySummary {
       .join(' · ')
     || 'Itinerary still forming';
 
-  const details = [
+  const summaryDetails = [
     sailDate ? `Sail date: ${sailDate}` : '',
     departurePort ? `Departure port: ${departurePort}` : '',
     destination ? `Region: ${destination}` : '',
     nights ? `Duration: ${formatNightLabel(nights)}` : '',
     resolvedPortsOfCall ? `Ports of call: ${resolvedPortsOfCall}` : '',
   ].filter(Boolean);
+  const details = manualItineraryTimeline.length > 0
+    ? [...manualItineraryTimeline, ...summaryDetails]
+    : summaryDetails;
   const notes = campaign.finalItineraryUrl
     ? [
         'A final itinerary link has been published for this sailing.',
@@ -1578,9 +1584,11 @@ function buildLandingViewModel(
     : null;
   const targetCabins = getPublicGroupCabinTarget(campaign);
   const pricing = getPricingDetail(campaign);
+  // Public-facing counts are VERIFIED-only (see threshold note below).
+  const publicSummary = verifiedSummary ?? waitlistSummary;
   const thresholdCopy = getThresholdCopy(
     campaign,
-    waitlistSummary,
+    publicSummary,
     targetCabins,
   );
   const ctas = getCtas(campaign, displayBrief);
@@ -1594,14 +1602,15 @@ function buildLandingViewModel(
     galleryImages,
     trustImages,
   );
-  // Threshold progress must match the "<n> entries" count shown beside it, so it
-  // is computed from the SAME total-entries figure used for joinedEntries below.
-  // (Previously this used verifiedSummary, so the bar % and the entries label
-  // disagreed — e.g. "7 entries · 50%" when only 4 of 7 were email-verified.)
-  void verifiedSummary;
+  // Public threshold progress is VERIFIED-only: only email-confirmed entries
+  // count toward the launch threshold (matching the auto-promotion logic in the
+  // /verify route). Both the bar % AND the "<n> guests" labels below read from
+  // verifiedSummary so they stay consistent with each other — the earlier
+  // mismatch ("7 entries · 50%") is avoided by counting verified on BOTH sides,
+  // not by reverting to total entries.
   const percentOfThreshold = getPublicThresholdPercent(
     targetCabins,
-    waitlistSummary.totalEntries,
+    publicSummary.totalEntries,
   );
   const designSystem = buildLandingDesignSystem(
     campaign,
@@ -1637,7 +1646,7 @@ function buildLandingViewModel(
     ),
     designSystem,
     itinerary,
-    facts: buildFacts(campaign, waitlistSummary),
+    facts: buildFacts(campaign, publicSummary),
     story: {
       whatItIs: buildWhatItIs(campaign, displayBrief),
       whyJoinNow: buildWhyJoinNow(campaign),
@@ -1647,9 +1656,9 @@ function buildLandingViewModel(
     },
     threshold: {
       requiredCabins: targetCabins,
-      joinedEntries: waitlistSummary.totalEntries,
-      joinedPassengers: waitlistSummary.totalPassengers,
-      convertedEntries: waitlistSummary.convertedEntries,
+      joinedEntries: publicSummary.totalEntries,
+      joinedPassengers: publicSummary.totalPassengers,
+      convertedEntries: publicSummary.convertedEntries,
       percentOfThreshold: percentOfThreshold,
       headline: thresholdCopy.headline,
       detail: thresholdCopy.detail,

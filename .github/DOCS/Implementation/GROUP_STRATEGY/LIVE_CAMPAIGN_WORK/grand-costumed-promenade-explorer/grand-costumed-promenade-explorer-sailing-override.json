@@ -1,0 +1,27 @@
+{
+  "shipName": "Explorer of the Seas",
+  "sailDate": "Jan. 13, 2027",
+  "departurePort": "Orlando (Port Canaveral), Fl",
+  "nights": "5",
+  "startingPrice": 507.5,
+  "targetDestination": "Western Caribbean",
+  "itinerarySummary": "5 Nights · Departing Orlando Port Canaveral FL · Puerto Costa Maya Mexico · Cozumel Mexico · Arriving Orlando Port Canaveral FL",
+  "portsOfCall": "Orlando Port Canaveral FL|Puerto Costa Maya Mexico|Cozumel Mexico|Orlando Port Canaveral FL",
+  "itineraryDetails": [
+    "Day 1: Orlando (Port Canaveral), Fl — Wed Jan 13, 2027 — Depart 04:00 PM",
+    "Day 2: Cruising — Thu Jan 14, 2027",
+    "Day 3: Puerto Costa Maya, Mexico — Fri Jan 15, 2027 — 09:30 AM to 06:00 PM",
+    "Day 4: Cozumel, Mexico — Sat Jan 16, 2027 — 07:00 AM to 05:00 PM",
+    "Day 5: Cruising — Sun Jan 17, 2027",
+    "Day 6: Orlando (Port Canaveral), Fl — Mon Jan 18, 2027 — Arrive 07:00 AM"
+  ],
+  "priceSource": "MANUAL_RETAIL_OVERRIDE",
+  "pricingStatus": "UNMATCHED",
+  "activeBookingMode": "RETAIL_MULTI_BOOKING",
+  "inventoryHealth": "HEALTHY",
+  "replaceStrings": {
+    "Symphony of the Seas": "Explorer of the Seas",
+    "#symphonyoftheseas": "#exploreroftheseas"
+  },
+  "exportPath": ".github/DOCS/Implementation/GROUP_STRATEGY/CAMPAIGN_MEDIA/PHASE_4_DISTRIBUTION/LANDING_PAGE_CHAT/grand-costumed-promenade-explorer-media-manifest.json"
+}

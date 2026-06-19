@@ -395,7 +395,9 @@ export async function assembleCuratedDeal(
     source: "odysseus_curated_retail",
     briefId: input.briefId,
     capturedAtIso: generatedAtIso,
-    expiresOnIso: input.expiresOnIso,
+    // Expiration is non-optional: default to exactly DEFAULT_DEAL_EXPIRY_DAYS (90)
+    // days from assembly when the operator does not supply one.
+    expiresOnIso: input.expiresOnIso?.trim() || defaultDealExpiresOnIso(generatedAtIso),
     packageId: input.packageId,
     siid: input.siid,
     bookingUrl,
@@ -588,6 +590,22 @@ export function rejectCuratedDeal(
       }),
     },
   };
+}
+
+/** Default public-visibility window: a deal expires 90 days after it is assembled. */
+export const DEFAULT_DEAL_EXPIRY_DAYS = 90;
+
+/**
+ * The expiration a deal gets when the operator does not supply one: exactly
+ * `DEFAULT_DEAL_EXPIRY_DAYS` days from `fromIso`, as a `YYYY-MM-DD` date (end-of-day
+ * UTC per `dealExpiryDate`).
+ */
+export function defaultDealExpiresOnIso(fromIso: string = new Date().toISOString()): string {
+  const base = new Date(fromIso);
+  const from = Number.isNaN(base.getTime()) ? new Date() : base;
+  const expires = new Date(from.getTime());
+  expires.setUTCDate(expires.getUTCDate() + DEFAULT_DEAL_EXPIRY_DAYS);
+  return expires.toISOString().slice(0, 10);
 }
 
 function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {

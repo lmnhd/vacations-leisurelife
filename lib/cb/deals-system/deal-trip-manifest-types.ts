@@ -35,10 +35,25 @@ export interface DealResolvedCabinPricing {
 }
 
 /**
- * Structured itinerary captured from the Odysseus search result (departure/arrival
- * ports, ports-of-call, route map). The per-DAY schedule with arrival/departure
- * times comes from the package-detail parse (a follow-up); this is what the search
- * result already carries.
+ * One day of the real day-by-day schedule from the Odysseus itinerary-detail
+ * endpoint. Real data — never fabricated. `day` is 1-based from embarkation.
+ */
+export interface DealItineraryDay {
+  day: number;
+  /** Readable port/description (e.g. "San Juan, Puerto Rico" or "At Sea"). */
+  portName: string;
+  portCode?: string;
+  atSea: boolean;
+  /** Raw "HH:MM:SS" Odysseus times; absent when not applicable. */
+  arrivalTime?: string;
+  departureTime?: string;
+}
+
+/**
+ * Structured itinerary captured from the Odysseus result. `dayByDay` is the REAL
+ * per-day schedule (port names, arrival/departure times, sea days) from the
+ * itinerary-detail endpoint, captured for the resolved sailing; the coarse
+ * departure/arrival/ports fields come from the search result.
  */
 export interface DealResolvedItinerary {
   durationNights?: number;
@@ -47,6 +62,8 @@ export interface DealResolvedItinerary {
   portsOfCall?: string;
   normalizedPortsOfCall?: string;
   mapPath?: string;
+  /** Real day-by-day schedule from the itinerary-detail endpoint, when captured. */
+  dayByDay?: DealItineraryDay[];
 }
 
 /** The sail-date window the angle implies; bounds the package lookup + promo match. */

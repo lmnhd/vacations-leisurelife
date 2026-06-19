@@ -131,6 +131,39 @@ export async function lookupOdysseusPackages(
 
     const ranked = rankPackageCandidates(facts, results, options);
     ranked.diagnostics.unshift(...searchNotes);
+
+    // Enrich the SELECTED candidate with the real day-by-day itinerary. The search
+    // API only gives a coarse ports-of-call string; the per-day schedule (port
+    // names, arrival/departure times, sea days) lives at a separate endpoint keyed
+    // by itinerary id. Fetch it once for the chosen sailing only. Best-effort: a
+    // failure leaves the coarse data intact (we never fabricate a schedule).
+    const itineraryId = ranked.selected?.itinerary?.itineraryId;
+    if (ranked.selected && itineraryId) {
+      try {
+        const { normalizeItineraryDetail } = await import("@/lib/services/odysseus/types");
+        const detail = await engine.fetchItineraryDetail(itineraryId);
+        const dayByDay = normalizeItineraryDetail(detail);
+        if (dayByDay) {
+          ranked.selected.itinerary = { ...ranked.selected.itinerary, dayByDay };
+          // Keep the candidates[] entry in sync (same object identity is not
+          // guaranteed across the array, so patch by packageId).
+          const match = ranked.candidates.find((c) => c.packageId === ranked.selected!.packageId);
+          if (match) match.itinerary = { ...match.itinerary, dayByDay };
+          ranked.diagnostics.push(
+            `Captured day-by-day itinerary (${dayByDay.days.length} day node(s)) for ${ranked.selected.packageId}.`
+          );
+        } else {
+          ranked.diagnostics.push(
+            `Itinerary detail unavailable for ${ranked.selected.packageId}; kept coarse ports only.`
+          );
+        }
+      } catch (err) {
+        ranked.diagnostics.push(
+          `Itinerary detail fetch failed for ${ranked.selected.packageId}: ${err instanceof Error ? err.message : String(err)}.`
+        );
+      }
+    }
+
     return ranked;
   } catch (error) {
     // Release a broken session so the next call cold-starts cleanly.

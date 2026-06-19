@@ -12,6 +12,7 @@
  */
 
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
+import type { DayByDayItinerary, ItineraryDay } from "@/lib/services/odysseus/types";
 
 import type { LinkBrokerCruiseFacts, LinkBrokerHealth } from "./link-broker-types";
 import type {
@@ -75,10 +76,30 @@ export function applyResolvedPackage(
     bookingLinkClass: input.bookingLinkClass,
     linkHealth: input.linkHealth,
     cabinPricing: c.cabinPricing,
-    itinerary: c.itinerary,
+    itinerary: toResolvedItinerary(c.itinerary),
     lookupDiagnostics: input.lookupDiagnostics ?? [],
   };
   return { ...manifest, resolvedPackage };
+}
+
+/**
+ * Map the link-broker `PackageItinerary` onto the stored `DealResolvedItinerary`,
+ * flattening the captured day-by-day schedule into the storage shape. Keeps the
+ * cache schema decoupled from the Odysseus service type.
+ */
+function toResolvedItinerary(
+  itinerary: RankedPackageCandidate["itinerary"]
+): DealManifestResolvedPackage["itinerary"] {
+  if (!itinerary) return undefined;
+  return {
+    durationNights: itinerary.durationNights,
+    departurePortCode: itinerary.departurePortCode,
+    arrivalPortCode: itinerary.arrivalPortCode,
+    portsOfCall: itinerary.portsOfCall,
+    normalizedPortsOfCall: itinerary.normalizedPortsOfCall,
+    mapPath: itinerary.mapPath,
+    dayByDay: itinerary.dayByDay?.days.map((d) => ({ ...d })),
+  };
 }
 
 /** Parse and structurally validate a candidate payload posted back by the lab UI. */
@@ -118,13 +139,40 @@ function parseItinerary(value: unknown): RankedPackageCandidate["itinerary"] {
   if (typeof value !== "object" || value === null) return undefined;
   const v = value as Record<string, unknown>;
   return {
+    itineraryId: num(v.itineraryId),
     durationNights: num(v.durationNights),
     departurePortCode: str(v.departurePortCode),
     arrivalPortCode: str(v.arrivalPortCode),
     portsOfCall: str(v.portsOfCall),
     normalizedPortsOfCall: str(v.normalizedPortsOfCall),
     mapPath: str(v.mapPath),
+    dayByDay: parseDayByDay(v.dayByDay),
   };
+}
+
+/** Preserve the captured day-by-day schedule across the unknown→typed boundary. */
+function parseDayByDay(value: unknown): DayByDayItinerary | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const v = value as Record<string, unknown>;
+  if (!Array.isArray(v.days)) return undefined;
+  const days = v.days
+    .map((d): ItineraryDay | undefined => {
+      if (typeof d !== "object" || d === null) return undefined;
+      const dv = d as Record<string, unknown>;
+      const day = num(dv.day);
+      if (day === undefined) return undefined;
+      return {
+        day,
+        portName: typeof dv.portName === "string" ? dv.portName : "",
+        portCode: str(dv.portCode),
+        atSea: dv.atSea === true,
+        arrivalTime: str(dv.arrivalTime),
+        departureTime: str(dv.departureTime),
+      };
+    })
+    .filter((d): d is ItineraryDay => d !== undefined);
+  if (days.length === 0) return undefined;
+  return { days, portsOfCall: str(v.portsOfCall), mapPath: str(v.mapPath) };
 }
 
 function parseCabinPricing(value: unknown): RankedPackageCandidate["cabinPricing"] {

@@ -28,6 +28,14 @@ interface SynthResponse {
   category?: string;
 }
 
+function firstSynthesisIdForAdCopy(
+  syntheses: DealFunnelSynthesis[],
+  adCopyId: string | null
+): string | null {
+  if (!adCopyId) return null;
+  return syntheses.find((s) => s.sourceAdCopyId === adCopyId)?.id ?? null;
+}
+
 function candidateById(s: DealFunnelSynthesis, id?: string): DealImageCandidate | undefined {
   if (!id) return undefined;
   return s.candidates.find((c) => c.id === id);
@@ -427,13 +435,16 @@ export function FunnelSynthesisView({
   dealFacts: Record<string, DealPageFacts>;
   preselectedAdCopyId: string | null;
 }) {
-  const [selectedAdCopyId, setSelectedAdCopyId] = useState<string | null>(
+  const initialSelectedAdCopyId =
     preselectedAdCopyId && adCopies.some((a) => a.id === preselectedAdCopyId)
       ? preselectedAdCopyId
-      : adCopies[0]?.id ?? null
-  );
+      : adCopies[0]?.id ?? null;
+
+  const [selectedAdCopyId, setSelectedAdCopyId] = useState<string | null>(initialSelectedAdCopyId);
   const [syntheses, setSyntheses] = useState<DealFunnelSynthesis[]>(initialSyntheses);
-  const [activeId, setActiveId] = useState<string | null>(initialSyntheses[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(
+    firstSynthesisIdForAdCopy(initialSyntheses, initialSelectedAdCopyId) ?? initialSyntheses[0]?.id ?? null
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -497,7 +508,16 @@ export function FunnelSynthesisView({
       next.push(s);
       return next;
     });
+    setSelectedAdCopyId(s.sourceAdCopyId);
     setActiveId(s.id);
+  }
+
+  function selectAdCopy(adCopyId: string) {
+    setSelectedAdCopyId(adCopyId);
+    const matchingId = firstSynthesisIdForAdCopy(syntheses, adCopyId);
+    if (matchingId) {
+      setActiveId(matchingId);
+    }
   }
 
   async function post(body: Record<string, unknown>): Promise<SynthResponse> {
@@ -636,7 +656,7 @@ export function FunnelSynthesisView({
                 <li key={a.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedAdCopyId(a.id)}
+                    onClick={() => selectAdCopy(a.id)}
                     className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
                       selectedAdCopyId === a.id
                         ? "border-cyan-300/60 bg-cyan-400/10"

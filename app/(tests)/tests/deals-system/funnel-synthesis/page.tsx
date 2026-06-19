@@ -3,9 +3,9 @@ import { readFileSync } from "fs";
 import {
   assembleDealPageFacts,
   DEALS_CACHE_PATHS,
+  listDealFunnelSyntheses,
+  listDealTripManifests,
   loadDealAdCopyCache,
-  loadDealFunnelSynthesisCache,
-  loadDealTripManifestsCache,
   validatePromoIntelligenceCache,
   type CbPromoIntelligenceRecord,
   type DealAdCopy,
@@ -41,16 +41,17 @@ export default async function FunnelSynthesisPage({
   } catch {
     adCopies = [];
   }
+  // DynamoDB store (canonical write path), not the stale local JSON cache.
   let syntheses: DealFunnelSynthesis[] = [];
   try {
-    syntheses = loadDealFunnelSynthesisCache().syntheses;
+    syntheses = await listDealFunnelSyntheses();
   } catch {
     syntheses = [];
   }
 
   let manifests: DealTripManifest[] = [];
   try {
-    manifests = loadDealTripManifestsCache().manifests;
+    manifests = await listDealTripManifests();
   } catch {
     manifests = [];
   }

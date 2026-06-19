@@ -32,6 +32,7 @@
     "test:link-broker": "npx tsx tests/link-broker.ts",
     "test:link-broker-health": "npx tsx tests/link-broker-health.ts",
     "test:package-lookup": "npx tsx tests/package-lookup.ts",
+    "test:itinerary-detail": "npx tsx tests/itinerary-detail.ts",
     "test:retail-discovery-research": "npx tsx tests/retail-discovery-research.ts",
     "test:curated-deal-assembly": "npx tsx tests/curated-deal-assembly.ts",
     "test:public-deal-projection": "npx tsx tests/public-deal-projection.ts",
@@ -43,7 +44,7 @@
     "test:deal-copywriter": "npx tsx tests/deal-copywriter.ts",
     "test:deal-funnel-synthesis": "npx tsx tests/deal-funnel-synthesis.ts",
     "test:deal-page-facts": "npx tsx tests/deal-page-facts.ts",
-    "test:deals-system:all": "npm run test:deals-schema && npm run test:link-broker && npm run test:link-broker-health && npm run test:promo-extraction && npm run test:package-lookup && npm run test:retail-discovery-research && npm run test:curated-deal-assembly && npm run test:public-deal-projection && npm run test:deal-pitch-brief && npm run test:deal-discovery && npm run test:trip-manifestation && npm run test:deal-copywriter && npm run test:deal-funnel-synthesis && npm run test:deal-page-facts"
+    "test:deals-system:all": "npm run test:deals-schema && npm run test:link-broker && npm run test:link-broker-health && npm run test:promo-extraction && npm run test:package-lookup && npm run test:itinerary-detail && npm run test:retail-discovery-research && npm run test:curated-deal-assembly && npm run test:public-deal-projection && npm run test:deal-pitch-brief && npm run test:deal-discovery && npm run test:trip-manifestation && npm run test:deal-copywriter && npm run test:deal-funnel-synthesis && npm run test:deal-page-facts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

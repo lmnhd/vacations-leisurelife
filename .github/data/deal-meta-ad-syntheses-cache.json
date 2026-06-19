@@ -1,5 +1,60 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-15T00:40:15.997Z",
-  "syntheses": []
+  "generatedAtIso": "2026-06-19T20:17:12.643Z",
+  "syntheses": [
+    {
+      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "dealId": "1578937",
+      "generatedAtIso": "2026-06-19T20:14:26.069Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "sailingAngleTitle": "Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "Zero GMs. Nine Nights. One Ocean.",
+          "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nZero GMs. Nine Nights. One Ocean.\n9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-19T20:16:36.650Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "The Ship's Library Is Your Table",
+          "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Ship's Library Is Your Table\n8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-19T20:17:10.370Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "NYC → Southampton. No Ports Between.",
+          "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNYC → Southampton. No Ports Between.\nMid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-19T20:16:35.493Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "Fill That Leuchtturm for Real",
+          "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFill That Leuchtturm for Real\nIronsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-19T20:16:49.012Z",
+          "previousImages": []
+        }
+      ]
+    }
+  ]
 }

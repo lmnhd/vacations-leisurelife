@@ -16,7 +16,7 @@ Before running any script, classify it using this table:
 
 | Class | Scripts | Rule |
 |---|---|---|
-| **Playwright-dependent** | `run-phase-b.ts`, `scrape-cb-deals.ts`, `cb-inventory-scraper.ts`, `lib/campaigns/booking-link-validator.ts`, `test-package-link.ts`, `odysseus-booking-flow.ts`, all `scrape-*.ts` | **NEVER run autonomously** â€” requires active CB/Odysseus browser session. Hard stop: give operator the command and ask them to run it. |
+| **Playwright-dependent** | `run-phase-b.ts`, `scrape-cb-deals.ts`, `cb-inventory-scraper.ts`, `lib/campaigns/booking-link-validator.ts`, `test-package-link.ts`, `odysseus-booking-flow.ts`, all `scrape-*.ts` | **Allowed autonomously for non-booking work** â€” agents may use these for CB/Odysseus inventory checks, pricing validation, and link research. Hard stop only if the action would create a hold, reservation, payment step, or real booking. |
 | **HTTP-dependent** | `diagnose-discovery-iteration.ts`, `test-booking-prototype.ts`, any script calling `localhost:3000` | **Conditional** â€” only run after operator confirms dev server is up at `localhost:3000`. |
 | **Pure Node/DynamoDB** | `check-brief-status.ts`, `check-campaign-exists.ts`, `enqueue-and-run-brief.ts`, `check-agent-job.ts` | **Safe to run autonomously** â€” no browser, no HTTP. |
 
@@ -36,7 +36,7 @@ All other scripts write to DynamoDB only. Do not expect or poll for an output fi
 
 **Mitigation:**
 - Apply the classification table above before calling any script.
-- Playwright-dependent scripts â†’ hard stop (see Â§1c Hard Stop List below).
+- Playwright-dependent scripts may be run autonomously for non-booking CB/Odysseus work; treat only booking-creating actions as a hard stop (see Â§1c Hard Stop List below).
 - HTTP-dependent scripts â†’ ask user to confirm dev server first.
 - Safe scripts â†’ capture stdout with `$output = npx tsx scripts/... 2>&1` and parse `$output`.
 
@@ -113,18 +113,16 @@ Write-Host $output
 
 ---
 
-### Hard Stop List â€” Operator Must Run Manually
+### Hard Stop List â€” Approval Required Before Real Booking Actions
 
-The agent must **stop and not attempt** the following. Give the user the exact command and ask them to run it, then paste back stdout or confirm what the UI shows:
+The agent must **stop and ask for approval before attempting** the following:
 
-1. **`npx tsx scripts/scrape-cb-deals.ts`** â€” CB inventory cache refresh (Playwright; requires CB Agent Tools session)
-2. **`npx tsx scripts/run-phase-b.ts [--slug X]`** â€” Phase B inventory confirmation + link validation (Playwright; requires CB + Odysseus sessions)
-3. **Any step requiring a live browser session** â€” booking link validation, Odysseus flow testing, CB group scraping
-4. **Confirming or restarting the dev server** â€” agent cannot manage `npm run dev`
+1. Any step that would create a **hold**, **reservation**, **payment step**, or **real booking**
+2. Any submission of real traveler information into a live supplier checkout flow
+3. Confirming or restarting the dev server when operator awareness is needed
 
 **Agent behavior at a hard stop:**
-1. State clearly: "This operation requires Playwright / the dev server and cannot be run autonomously."
-2. Provide the exact command to run.
-3. Ask the user to run it and report back (stdout paste or UI observation).
-4. Wait for confirmation before continuing.
+1. State clearly that the next step would create or advance a real booking action.
+2. Ask the user for approval before continuing.
+3. Do not click through or submit that action until approval is given.
 

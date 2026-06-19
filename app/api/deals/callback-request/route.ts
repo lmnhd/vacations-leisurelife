@@ -14,8 +14,8 @@
  * Output:
  *   { ok: true, requestId: string } | { ok: false, error: string }
  *
- * At least one contact field (email or phone) is required. Phone is redacted from
- * the Pushover message body; it is stored in the cache for the operator only.
+ * At least one contact field (email or phone) is required. The Pushover message
+ * includes supplied contact details so the operator can call back immediately.
  */
 
 import * as fs from "node:fs";
@@ -119,7 +119,6 @@ export async function POST(request: Request) {
     routing: {
       emailNotified: false,
       dashboardQueued: true,
-      crispNotified: false,
     },
     statusHistory: [
       { status: "new", changedAtIso: nowIso },
@@ -131,12 +130,22 @@ export async function POST(request: Request) {
   cache.generatedAtIso = nowIso;
   saveCallbackCache(cache);
 
-  // Pushover notification — phone is omitted from the message body.
-  const contactLine = email ? `Email: ${email}` : "No email provided";
-  const nameLine = name ? `Name: ${name}` : "Name not provided";
-  void sendAdminPushNotification(
-    `Callback request — ${deal.title}\n${nameLine}\n${contactLine}\nDeal: ${dealId}`
-  );
+  const emailLine = email ? `Email: ${email}` : "Email: not provided";
+  const phoneLine = phone ? `Phone: ${phone}` : "Phone: not provided";
+  const nameLine = name ? `Name: ${name}` : "Name: not provided";
+  try {
+    await sendAdminPushNotification(
+      `Callback request - ${deal.title}\n${nameLine}\n${emailLine}\n${phoneLine}\nDeal: ${dealId}`,
+      {
+        priority: "1",
+        title: "Leisure Life Callback Request",
+        url: deal.bookingUrl,
+        urlTitle: "Open booking link",
+      }
+    );
+  } catch (error) {
+    console.error("[CALLBACK_PUSHOVER_ERROR]", error);
+  }
 
   return NextResponse.json({ ok: true, requestId });
 }

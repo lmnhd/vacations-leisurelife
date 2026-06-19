@@ -57,7 +57,7 @@ This skill is split across sub-documents. Load only what you need for the curren
 ## 3. Hard Rules (non-negotiable, always active)
 
 1. **Never call `read_url_content` on localhost** — blocked permanently. See `AGENT_ENV.md` for alternatives.
-2. **Never run Playwright scripts autonomously** — `run-phase-b.ts`, `scrape-cb-deals.ts`, and all `scrape-*.ts` scripts require operator browser sessions. Give the command; ask the user to run it.
+2. **Playwright autonomy is allowed for CB research/inventory work** — agents may run `run-phase-b.ts`, `scrape-cb-deals.ts`, and other CB/Odysseus Playwright scripts autonomously for inventory checks, pricing validation, and link research when credentials/session state exist. The only approval boundary is actions that would create a hold, reservation, payment step, or real booking.
 3. **Never assume the dev server is running** — `fetch()` to localhost silently times out if the server is down. Always ask first.
 4. **One repair pass per layer** — if a warning persists after one auto-repair, stop and ask the user for a decision. Do not silently continue to the next phase.
 5. **Never use `read_url_content` with localhost** — same as rule 1, stated again because it has been attempted repeatedly.

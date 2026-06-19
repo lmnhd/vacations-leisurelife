@@ -132,7 +132,7 @@ export async function POST(req: Request) {
   try {
     
 
-    const client = await prismadb.registerShort.create({
+    await prismadb.registerShort.create({
       data: {
         firstName: firstName,
         lastName: lastName,
@@ -144,13 +144,23 @@ export async function POST(req: Request) {
         
       },
     });
-    
 
-
+    const contactValue = contactMethod === "email" ? email : phone;
+    try {
+      await sendAdminPushNotification(
+        `New Leisure Life Contact Request: ${firstName} ${lastName}\nMethod: ${contactMethod}\nContact: ${contactValue || "not provided"}\nComments: ${comments || "none"}`
+      );
+    } catch (pushError) {
+      console.error("[CONTACT_PUSHOVER_ERROR]", pushError);
+    }
    return new NextResponse("complete", { status: 200 })
   } catch (error: any) {
     console.error("[DB_ERROR]", error);
-    sendAdminPushNotification( `DB_ERROR_153 : ${error.message}`)
+    try {
+      await sendAdminPushNotification(`DB_ERROR_153 : ${error.message}`)
+    } catch (pushError) {
+      console.error("[CONTACT_DB_ERROR_PUSHOVER_ERROR]", pushError);
+    }
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

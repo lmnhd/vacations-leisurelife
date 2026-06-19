@@ -312,3 +312,15 @@ Keep entries short and concrete. The goal is to preserve operational learning, n
 **Trigger / Context:** `/tests/media-generation/test`, `/tests/media-generation`, and `/tests/vertical-video-editor` could surface or select different music beds for the same campaign because default-library selection was page-triggered and tie-broken randomly.  
 **The Change / Rule:** Treat `manifest.audio.themeMusic` as the single campaign music source of truth. Manual library selection should update that manifest slot immediately and generation-lock the selected record. Video/editor renders should consume the existing track instead of requesting a fresh `theme_music` asset unless no track exists.  
 **Broader Lesson:** Audio choices are downstream creative commitments like landing hero selections. They need one shared operator control and deterministic fallback behavior, otherwise later video/Reel renders drift without a visible reason.
+
+### 2026-06-17: Same-Ship Nearest-Sailing Override Is Valid When Momentum Exists
+
+**Trigger / Context:** `grand-costumed-promenade-explorer` had real waitlist momentum, but the originally advertised sailing no longer existed cleanly in the current inventory path. The closest viable replacement was a nearby sailing on the same ship, with group status not yet confirmed.  
+**The Change / Rule:** When a forming campaign already has meaningful guest momentum, agents may manually override the campaign to the nearest same-ship fallback sailing instead of freezing the campaign, as long as the replacement is presented honestly. Update the campaign metadata and manifest copy together, keep `activeBookingMode` on the retail / unverified path until group status is confirmed, and avoid implying confirmed CB group pricing when only the fallback sailing is known.  
+**Broader Lesson:** Inventory truth can shift after audience momentum has already formed. The durable workflow needs a supported manual sailing-override path that preserves trust, keeps the campaign live, and records the difference between a real replacement sailing and a confirmed group block.
+
+### 2026-06-17: CB Inventory Autonomy Is Allowed; Booking Creation Is The Only Approval Boundary
+
+**Trigger / Context:** The user explicitly granted full autonomy for Cruise Brothers inventory work and asked that agents stop pushing all CB checks back onto them.  
+**The Change / Rule:** Agents may run CB / Odysseus Playwright scripts autonomously for inventory scraping, price checks, group discovery, link validation, and non-booking research. The only step that still requires user approval is any action that would create or advance a real booking, hold, reservation, or payment flow.  
+**Broader Lesson:** The workflow should distinguish between supplier research and supplier commitment. Over-broad "operator must run all CB scripts" rules create unnecessary friction and hide useful autonomous tooling.

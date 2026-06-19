@@ -1,6 +1,6 @@
 import {
+  listDealTripManifests,
   loadDealDiscoveryIdeasCache,
-  loadDealTripManifestsCache,
   type DealDiscoveryIdea,
   type DealTripManifest,
 } from "@/lib/cb/deals-system";
@@ -22,9 +22,12 @@ export default async function TripManifestationPage({
   } catch {
     angles = [];
   }
+  // Read from the DynamoDB store (canonical write path), not the local JSON cache,
+  // so the manifest list is fresh on first render and matches what the dashboard /
+  // copywriter pages see.
   let manifests: DealTripManifest[] = [];
   try {
-    manifests = loadDealTripManifestsCache().manifests;
+    manifests = await listDealTripManifests();
   } catch {
     manifests = [];
   }

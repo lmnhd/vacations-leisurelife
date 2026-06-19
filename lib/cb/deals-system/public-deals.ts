@@ -55,7 +55,20 @@ async function loadEligibleDeals(): Promise<CuratedOdysseusDeal[]> {
 /** Public homepage tiles for every approval-gated, link-valid, bookable Deal. */
 export async function getPublicDealTiles(): Promise<PublicDealTile[]> {
   const deals = await loadEligibleDeals();
-  return deals.map(projectPublicDealTile);
+
+  // Pull the funnel syntheses so each tile can show the operator-selected hero
+  // image (matching the /deals/[id] page), not just the stock fallback. Resilient:
+  // a missing/malformed synthesis cache yields no images and the fallback applies.
+  let syntheses: DealFunnelSynthesis[] = [];
+  try {
+    syntheses = await listDealFunnelSyntheses();
+  } catch {
+    syntheses = [];
+  }
+
+  return deals.map((deal) =>
+    projectPublicDealTile(deal, findDealFunnelSynthesisForDeal(deal, syntheses))
+  );
 }
 
 export function dealFunnelSynthesisLookupKeys(deal: CuratedOdysseusDeal): string[] {

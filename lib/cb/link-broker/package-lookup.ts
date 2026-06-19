@@ -15,7 +15,7 @@
  * odysseus-lookup.ts and feeds results into rankPackageCandidates().
  */
 
-import type { CruiseResult } from "@/lib/services/odysseus/types";
+import type { CruiseResult, DayByDayItinerary } from "@/lib/services/odysseus/types";
 
 import type { LinkBrokerCruiseFacts } from "./types";
 
@@ -66,8 +66,10 @@ export interface PackageCabinPricing {
   leadFare?: number;
 }
 
-/** Structured itinerary captured from the Odysseus result (not the day-by-day detail). */
+/** Structured itinerary captured from the Odysseus result. */
 export interface PackageItinerary {
+  /** Odysseus itinerary id — the key to fetch the day-by-day detail endpoint. */
+  itineraryId?: number;
   durationNights?: number;
   departurePortCode?: string;
   arrivalPortCode?: string;
@@ -77,6 +79,12 @@ export interface PackageItinerary {
   normalizedPortsOfCall?: string;
   /** Route map image path Odysseus provides, when present. */
   mapPath?: string;
+  /**
+   * The real day-by-day schedule (port names, arrival/departure times, sea days)
+   * from /nitroapi/v2/cruise/itinerary/{id}. Populated post-rank by the operator
+   * lookup adapter for the SELECTED candidate only; absent on others.
+   */
+  dayByDay?: DayByDayItinerary;
 }
 
 export interface RankedPackageCandidate {
@@ -413,6 +421,7 @@ function scoreOne(
       departurePortCode: depCode,
       portsOfCall: ports || undefined,
       itinerary: {
+        itineraryId: result.itinerary?.id,
         durationNights: result.itinerary?.duration,
         departurePortCode: result.itinerary?.departure?.code,
         arrivalPortCode: result.itinerary?.arrival?.code,

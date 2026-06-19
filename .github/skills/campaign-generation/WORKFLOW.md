@@ -12,7 +12,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 ### Phase 1: Discovery & Blueprint
 
-1. **CB Inventory Pre-scrape:** Ensure `cb-deals-cache.json` is fresh (<24h old). If stale, **this is a Playwright-dependent operation â€” the agent must not run it autonomously.** Tell the user: *"Please run `npx tsx scripts/scrape-cb-deals.ts` in your terminal and paste back the output, or confirm the file `.github/data/cb-deals-cache.json` was updated."* Wait for confirmation before continuing. See Â§1c Hard Stop List.
+1. **CB Inventory Pre-scrape:** Ensure `cb-deals-cache.json` is fresh (<24h old). If stale, the agent may run `npx tsx scripts/scrape-cb-deals.ts` autonomously for inventory refresh, as long as the work does not create a hold, reservation, payment step, or real booking. See Â§1c Hard Stop List.
 2. **Check for existing campaign first (zero-cost):** Before running any discovery pipeline, verify the campaign already exists by calling `GET /api/groups/discovery?load=true`. This returns existing campaigns from the store with **no LLM calls**. Only proceed to Step 3 if the campaign is missing.
    - **NEVER call bare `GET /api/groups/discovery`** to check existence â€” it triggers expensive Gemini Deep Research (~10M tokens). Use `?load=true` exclusively for existence checks.
 3. **Choose your discovery flow (only if campaign is missing):**
@@ -35,7 +35,7 @@ The agent must follow these steps linearly. At the end of each major phase, the 
 
 ### Phase 2: Inventory Confirmation & Retail Link
 
-1. **Live CB Confirmation + Link Validation:** **This is a Playwright-dependent operation â€” the agent must not run Phase B autonomously.** Tell the user: *"Please run `npx tsx scripts/run-phase-b.ts` (or `npx tsx scripts/run-phase-b.ts --slug <slug>` for one campaign) in your terminal and paste back the output."* Wait for confirmation before continuing. See Â§1c Hard Stop List. What Phase B does: re-scrapes live CB inventory, ranks up to 3 candidates per campaign, scrapes the personal booking link for each, and validates it with Playwright before accepting it as primary.
+1. **Live CB Confirmation + Link Validation:** The agent may run `npx tsx scripts/run-phase-b.ts` (or `npx tsx scripts/run-phase-b.ts --slug <slug>`) autonomously for inventory confirmation, personal-link recovery, and retail fallback validation, as long as no real booking action is taken. See Â§1c Hard Stop List. What Phase B does: re-scrapes live CB inventory, ranks up to 3 candidates per campaign, scrapes the personal booking link for each, and validates it with Playwright before accepting it as primary.
 2. **Automatic Tier 1 Backup Promotion:** If the primary (rank 0) candidate fails validation, Phase B automatically promotes the rank 1 candidate if it has `promiseDelta: NONE` or `PRICE_ONLY` (same ship, same date, same port). Tier 2+ candidates (different date or port) are stored but not auto-promoted â€” they require operator review.
 3. **Retail Link Generation:** Phase B generates the Odysseus retail booking link and validates it as an `ODYSSEUS_RETAIL` candidate alongside the CB group candidates.
 4. **Failure handling:** If all candidates fail validation, the campaign is marked `INVENTORY_FAILED_PAUSED` and the write is skipped. The operator must resolve this manually before the campaign can go live.

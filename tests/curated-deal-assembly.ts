@@ -13,6 +13,7 @@
 import {
   approveCuratedDeal,
   assembleCuratedDeal,
+  defaultDealExpiresOnIso,
   evaluateApprovalGates,
   isDealExpired,
   isDealHomepageEligible,
@@ -119,6 +120,21 @@ const deal = await assembleCuratedDeal({ ...baseInput, promoRecords: [promoRecor
 console.log("Assembly:");
 check("deal id carried through", deal.id === baseInput.dealId);
 check("expiration date carried through", deal.expiresOnIso === baseInput.expiresOnIso);
+
+// --- Expiration is non-optional: defaults to exactly 90 days from assembly -------
+{
+  const { expiresOnIso: _omit, ...withoutExpiry } = baseInput;
+  void _omit;
+  const dealNoExpiry = await assembleCuratedDeal({
+    ...withoutExpiry,
+    promoRecords: [promoRecord],
+  });
+  check(
+    "omitted expiration defaults to 90 days from assembly",
+    dealNoExpiry.expiresOnIso === defaultDealExpiresOnIso(baseInput.generatedAtIso)
+  );
+  check("defaulted expiration is present (non-optional)", Boolean(dealNoExpiry.expiresOnIso));
+}
 check("status is needs_review", deal.status === "needs_review");
 check("approval status is needs_review", deal.operatorApproval?.status === "needs_review");
 check("link health starts unknown", deal.linkHealth.status === "unknown");

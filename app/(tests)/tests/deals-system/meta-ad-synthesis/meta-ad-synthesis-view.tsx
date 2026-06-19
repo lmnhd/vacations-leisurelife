@@ -736,7 +736,7 @@ export function MetaAdSynthesisView({
         </p>
         {funnelSyntheses.length === 0 ? (
           <p className="mt-2 text-sm text-amber-200">
-            No funnel syntheses cached yet. Run Step 7 · Funnel Synthesis first.
+            No funnel syntheses found yet. Run Step 7 - Funnel Synthesis first.
           </p>
         ) : (
           <ul className="mt-3 space-y-2">

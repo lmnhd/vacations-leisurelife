@@ -50,8 +50,8 @@ explicitly revised.
 ### 4. CBAT/Odysseus browser automation stays operator-run
 
 - Any authenticated portal interaction (CB Agent Tools, Odysseus search, share
-  link capture, browser link validation) runs as an **operator command** — a CLI
-  script run from the operator's environment — not as a request-time or
+  link capture, browser link validation) runs as an **operator command** â€” a CLI
+  script run from the operator's environment â€” not as a request-time or
   visitor-triggered action inside the web app.
 - "Operator-run" does NOT mean a human must perform the login. The established
   pattern (3+ months in production, see `scripts/scrape-cb-deals.ts` and
@@ -82,7 +82,7 @@ explicitly revised.
   are accepted only when freshly captured from the portal and validated.
   Note: real Share links carry a structured-looking `clonebkg` such as
   `07A__BESTPRICE__07A__`. The structured appearance does NOT make it safe to
-  build — it remains capture-only. A details.aspx link that carries a `clonebkg`
+  build â€” it remains capture-only. A details.aspx link that carries a `clonebkg`
   classifies as Class 3 (captured clone), not Class 2.
 
 ## Locked Vocabulary
@@ -96,7 +96,7 @@ All follow-on phases share these terms:
 | **Curated Deal** | A publishable retail Deal record merging package facts, Link Broker output, promo applicability, trip research, targeting, visitor-safe copy, and link health. |
 | **Targeting-Demographic** | A package-specific targeting research artifact (audiences, niche/trend keywords, channel notes, confidence) generated before ad packaging. |
 | **CTA workflow** | The three public actions a Deal exposes: Book now, Email me the booking link, Request an agent callback. Consumers of the Link Broker, not owners of it. |
-| **Callback request** | A stored `AgentCallbackRequest` capturing a visitor's request for an agent to call back, with full deal/package/link context, routed to email/dashboard/Crisp where practical. |
+| **Callback request** | A stored `AgentCallbackRequest` capturing a visitor's request for an agent to call back, with full deal/package/link context, routed to the dashboard and Pushover notification path. |
 
 ## Link Class Reference (Locked)
 

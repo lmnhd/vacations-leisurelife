@@ -282,9 +282,12 @@ export async function POST(
   const guestToken = Buffer.from(`${slug}:${entry.email}`).toString('base64url');
   const displayName = `${parsed.data.firstName} ${parsed.data.lastName.charAt(0)}.`;
 
-  // Use the total summary for display AND for the threshold percent, so the
-  // progress bar matches the "<n> entries" count the guest sees (they used to
-  // disagree — percent was verified-only while the label showed all entries).
+  // Public progress is VERIFIED-only: only email-confirmed entries count toward
+  // the launch threshold, matching the landing view-model and the /verify
+  // auto-promotion. The bar % and the "<n> guests" label both read verified so
+  // they stay consistent. `totalEntries` is still exposed so the client can
+  // show pending-verification context (e.g. a just-signed-up guest who hasn't
+  // clicked their email link yet is not yet counted).
   const displaySummary = await getCampaignWaitlistSummary(slug);
 
   return NextResponse.json({
@@ -300,13 +303,14 @@ export async function POST(
       emailVerified: entry.emailVerified,
     },
     progress: {
-      joinedEntries: displaySummary.totalEntries,
-      joinedPassengers: displaySummary.totalPassengers,
+      joinedEntries: verifiedSummary.totalEntries,
+      joinedPassengers: verifiedSummary.totalPassengers,
       verifiedEntries: verifiedSummary.totalEntries,
+      totalEntries: displaySummary.totalEntries,
       requiredCabins,
       percentOfThreshold: getPublicThresholdPercent(
         requiredCabins,
-        displaySummary.totalEntries,
+        verifiedSummary.totalEntries,
       ),
     },
     nextStep,

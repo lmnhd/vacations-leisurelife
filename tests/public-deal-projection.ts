@@ -212,6 +212,19 @@ console.log("\nProjection content:");
 check("tile links to the deal page", tile.href === `/deals/${encodeURIComponent(approved.id)}`);
 check("tile carries the approved booking url", tile.bookingUrl === approved.bookingUrl);
 check("tile shows a per-person price from cabin prices", tile.pricePerPersonLabel === "$699 USD");
+
+// Tile hero image: operator-selected synthesis image when present, stock fallback otherwise.
+check(
+  "tile without synthesis falls back to a stock hero image",
+  tile.imageSrc.includes("pexels.com"),
+  tile.imageSrc
+);
+const tileWithSynthesis = projectPublicDealTile(approved, synthesisFor(approved.id));
+check(
+  "tile WITH synthesis uses the operator-selected hero image",
+  tileWithSynthesis.imageSrc === "https://img.example.com/img-hero.jpg",
+  tileWithSynthesis.imageSrc
+);
 check("page title is present", page.title.length > 0);
 check("page hero summary is present", page.heroSummary.length > 20);
 check(
@@ -294,6 +307,71 @@ check("resolved itinerary lists every port as days",
 check("designPage carries the booking url", resolvedPage?.bookingUrl === approved.bookingUrl);
 check("designPage never leaks the agent-only note",
   !allText(resolvedPage).includes("tc credit") && !allText(resolvedPage).includes("group economics"));
+
+// Real day-by-day itinerary (port names + arrival/departure times + sea days)
+// is preferred over the coarse ports string when present on the deal facts.
+const dayByDayDeal: CuratedOdysseusDeal = {
+  ...mediaReadyForHero,
+  cruiseFacts: {
+    ...mediaReadyForHero.cruiseFacts,
+    dayByDayItinerary: [
+      { day: 1, portName: "Orlando (Port Canaveral), Fl", atSea: false, departureTime: "15:30:00" },
+      { day: 2, portName: "At Sea", atSea: true },
+      { day: 3, portName: "San Juan, Puerto Rico", atSea: false, arrivalTime: "10:30:00", departureTime: "18:00:00" },
+      { day: 4, portName: "Orlando (Port Canaveral), Fl", atSea: false, arrivalTime: "07:00:00" },
+    ],
+  },
+};
+const dayByDayPage = projectPublicDealPage(dayByDayDeal, synthesisFor(dayByDayDeal.id)).designPage;
+const dbdItinerary = dayByDayPage?.itinerary;
+check(
+  "day-by-day itinerary renders as day rows",
+  dbdItinerary?.kind === "days" && dbdItinerary.rows.length === 4,
+  `kind=${dbdItinerary?.kind}`
+);
+if (dbdItinerary?.kind === "days") {
+  check("embarkation row formats the departure time", dbdItinerary.rows[0]?.timing === "Depart 3:30 PM", dbdItinerary.rows[0]?.timing);
+  check("sea day row is flagged atSea", dbdItinerary.rows[1]?.atSea === true && dbdItinerary.rows[1]?.text === "At Sea");
+  check(
+    "port call shows arrival + departure",
+    dbdItinerary.rows[2]?.timing === "Arrive 10:30 AM · Depart 6:00 PM",
+    dbdItinerary.rows[2]?.timing
+  );
+  check("disembarkation shows arrival only", dbdItinerary.rows[3]?.timing === "Arrive 7:00 AM", dbdItinerary.rows[3]?.timing);
+  check("real port names render (San Juan)", dbdItinerary.rows[2]?.text === "San Juan, Puerto Rico");
+}
+
+// Port codes (e.g. "NYC", "SOU") resolve to readable names on the public page.
+const codedPortsDeal: CuratedOdysseusDeal = {
+  ...mediaReadyForHero,
+  cruiseFacts: {
+    ...mediaReadyForHero.cruiseFacts,
+    departurePort: "NYC",
+    portsOfCall: ["NYC | SOU"],
+  },
+};
+const codedPortsPage = projectPublicDealPage(codedPortsDeal, synthesisFor(codedPortsDeal.id)).designPage;
+const codedItineraryText =
+  codedPortsPage?.itinerary.kind === "days"
+    ? codedPortsPage.itinerary.rows.map((r) => r.text)
+    : codedPortsPage?.itinerary.kind === "ports"
+      ? codedPortsPage.itinerary.ports
+      : [];
+check(
+  "port codes resolve to readable names in the itinerary",
+  codedItineraryText.includes("New York, NY") && codedItineraryText.includes("Southampton, UK"),
+  codedItineraryText.join(" / ")
+);
+check(
+  "raw port codes do not leak to the itinerary",
+  !codedItineraryText.includes("NYC") && !codedItineraryText.includes("SOU"),
+  codedItineraryText.join(" / ")
+);
+check(
+  "departure port code resolves on the page facts",
+  projectPublicDealPage(codedPortsDeal).facts.departurePort === "New York, NY",
+  projectPublicDealPage(codedPortsDeal).facts.departurePort
+);
 
 // Published deals use live package ids, but the funnel synthesis cache is
 // keyed to the source manifest/ad-copy trace carried in agentOnlyNotes.

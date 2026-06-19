@@ -420,6 +420,10 @@ export async function dispatchDealMetaDistribution(
       name: card.headline,
       description: card.primaryText,
       image_hash: imageHashes[idx],
+      call_to_action: {
+        type: "LEARN_MORE",
+        value: { link: plan.destinationUrl },
+      },
     }));
 
     const objectStorySpec = {
@@ -429,7 +433,10 @@ export async function dispatchDealMetaDistribution(
         message: plan.caption,
         child_attachments: childAttachments,
         multi_share_end_card: false,
-        ...(config.instagramActorId ? {} : {}),
+        call_to_action: {
+          type: "LEARN_MORE",
+          value: { link: plan.destinationUrl },
+        },
       },
       ...(config.instagramActorId ? { instagram_actor_id: config.instagramActorId } : {}),
     };

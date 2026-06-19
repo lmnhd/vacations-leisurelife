@@ -1,5 +1,65 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-15T00:40:15.994Z",
-  "manifests": []
+  "generatedAtIso": "2026-06-18T21:07:46.138Z",
+  "manifests": [
+    {
+      "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
+      "generatedAtIso": "2026-06-18T21:07:46.138Z",
+      "sourceAngleId": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
+      "sourceManifestId": "manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
+      "sailingAngleTitle": "Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+      "creativeBrief": {
+        "isolatedNiche": "Solo Journaling Tabletop Roleplayers",
+        "angle": {
+          "sailingAngleTitle": "Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+          "theCorePitch": "Seven consecutive days of open North Atlantic. No ports. No Wi-Fi worth mentioning. Just you, your journal, your dice, and a wood-paneled Cunard library while the ocean rolls beneath you. This January transatlantic crossing from New York to Southampton is the ultimate GM-less campaign setting — a liminal passage between continents that mirrors the thematic bones of every oracle-driven narrative you've ever rolled. Bring your Thousand Year Old Vampire prompts, your Apothecaria reagent deck, your Ironsworn vow tracker. Bring the Leuchtturm you've been saving. The ship's rhythm — morning tea, afternoon light shifting across the reading room, the low thrum of engines through the hull — becomes the ambient soundtrack to the deepest solo play session you've ever run. By the time Southampton's cranes appear on the horizon, you'll have filled more pages than you thought possible, and every entry will carry the specific, unrepeatable atmosphere of a winter Atlantic crossing.",
+          "visualAnchor": "A leather-bound journal open on a polished wooden table beside a window showing nothing but grey-green Atlantic swells. A set of artisanal polyhedral dice — a d10 and a d6 — rest on the page next to handwritten in-character entries. A fountain pen cap sits beside an untouched cup of tea. The scene is warm, quiet, and deeply analog.",
+          "targetAudienceDescriptor": "Introverted solo TTRPG players aged 25-55 who invest in premium stationery, indie zines from itch.io, and artisanal dice sets; people who play Thousand Year Old Vampire, Ironsworn, or Apothecaria and journal by hand; practitioners who use spark tables and oracles rather than a GM; readers of r/Solo_Roleplaying who romanticize deep-focus analog sessions free from digital noise",
+          "relevantKeywords": [
+            "solo RPG",
+            "journaling game",
+            "GM-less",
+            "oracle-driven",
+            "transatlantic crossing",
+            "analog play",
+            "Thousand Year Old Vampire",
+            "sea day journaling"
+          ],
+          "destinationAndTimeOfYearHints": "Eastbound transatlantic crossing, New York City to Southampton, early January. Winter North Atlantic — short daylight hours create cozy interior lighting conditions in the ship's library and lounges. Approximately 7 consecutive sea days with no port interruptions. Grey seas, dramatic skies, and the particular quiet of a ship in mid-ocean during the off-season. January timing follows directly after the holiday social gauntlet, making it ideal for introverted creative retreat.",
+          "onboardAssetRequirements": "Cunard's onboard reality already serves this niche without modification. The ship features an extensive, well-stocked library — one of the largest at sea — with comfortable reading chairs and writing desks. Multiple quiet lounges with wood paneling, soft lighting, and table service provide additional solo play environments. The ship's enrichment culture (lectures, afternoon tea rituals) provides natural rhythm breaks between deep journaling sessions. Stateroom desks and balconies (weather permitting in January) offer private play spaces. No organized programming, workshops, or structured events are needed — the niche requires only quiet space, good light, and the permission to sit still for hours. Limited mid-Atlantic Wi-Fi reinforces the analog disconnection that is core to the practice."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Cunard",
+          "departurePortHint": "NYC",
+          "nights": 9,
+          "itineraryName": "9-Night Transatlantic Crossing",
+          "portsOfCall": [
+            "NYC|SOU"
+          ],
+          "destination": "Transatlantic Crossing",
+          "sailWindow": {
+            "latestIso": "2027-01-02",
+            "rationale": "Grounded on a verified sailing departing 2027-01-02.",
+            "earliestIso": "2027-01-02"
+          },
+          "suggestedBriefId": "brief-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
+          "suggestedDealId": "deal-cunard-transatlantic-crossing-seven-sea-days-one-thousand-years-a-mid-atlantic-s"
+        },
+        "lookupQuery": {
+          "date": "2027-01-02",
+          "port": "NYC",
+          "line": "Cunard",
+          "nights": 9,
+          "destination": "Transatlantic Crossing",
+          "ship": "Eastbound Transatlantic Crossing",
+          "windowDays": 0
+        },
+        "appliedPromos": [],
+        "promoStrategy": "No promotional records survived prefiltering for this sailing, so there are no line-sponsored perks or discount levers to layer into the pitch. That said, the angle doesn't need a promo crutch — its power lives in the irreducible value of nine nights and seven consecutive sea days aboard a ship whose built environment already functions as the ultimate solo-play sanctum. The absence of a flashy \"free drinks package\" or \"onboard credit\" offer actually reinforces the narrative: this isn't a deal-stacked mass-market cruise dressed up for hobbyists. It's a purposeful booking made by someone who understands that the passage itself is the product. If Cunard releases any applicable promotions closer to the sail date — early-saver fares, solo-traveller supplements, or onboard credit offers for transatlantic voyages — those should be flagged and folded in immediately. Until then, the strategy is straightforward: lead with the singular, non-replicable nature of the experience and let the niche's own value calculus (cost per uninterrupted analog hour, measured against the price of any comparable creative residency ashore) do the persuasion work.",
+        "manifestReasoning": "This verified sailing checks every box the angle requires, and several it didn't explicitly ask for. The sailing departs January 2, 2027 — the day after New Year's, meaning the target audience escapes the holiday social gauntlet at the earliest structurally possible moment. Nine nights with only NYC and Southampton as port calls means roughly seven full, unbroken sea days in the mid-winter North Atlantic — exactly the extended liminal corridor the angle's creative-retreat promise depends on. No port interruptions means no pressure to \"go see something\"; every morning begins at a writing desk or library chair instead of a tender queue.\n\nThe ship is Cunard's transatlantic vessel — which in practice means Queen Mary 2, the only ship in the world running a scheduled liner service across the Atlantic. This is not incidental; it is the single most important onboard-asset match. QM2 carries the largest library at sea (~8,000 volumes), with dedicated reading rooms, writing desks, and the kind of wood-paneled, soft-lit quiet lounges that define the aesthetic this niche romanticizes. The enrichment programme — guest lecturers, planetarium shows, the ritual cadence of afternoon tea in the Queens Room — provides exactly the natural rhythm breaks between deep journaling sessions that the angle specifies, without demanding social participation.\n\nJanuary timing delivers the atmospheric conditions the pitch leans on: short daylight hours that make interior spaces glow, dramatic grey Atlantic skies visible through panoramic windows, and off-season passenger counts that translate to emptier lounges and more available library seating. Mid-ocean Wi-Fi limitations on a transatlantic crossing are a structural reality, not a marketing spin — the ship is genuinely beyond reliable satellite coverage for meaningful stretches, which enforces the analog disconnection that is the entire premise.\n\nStaterooms include writing desks; balcony cabins offer a private outdoor space (bundled up in January, but atmospherically powerful for the kind of person who wants to roll oracle dice while watching the Atlantic horizon). Every physical and temporal requirement the angle articulates — quiet space, good light, permission to sit for hours, no mandatory social programming, a multi-day unbroken passage — is native to this specific sailing on this specific ship at this specific time of year. The manifest match is as close to perfect as inventory allows."
+      }
+    }
+  ]
 }

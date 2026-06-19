@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { sendAdminPushNotification } from "@/lib/pushover";
 import { monoton, orbitron, prompt } from "@/lib/fonts";
 
 import Error from "next/error";
@@ -62,14 +61,6 @@ export default function Quicksignup() {
     try {
       // const res = await axios.post("/api/register", data);
       // console.log(res);
-      sendAdminPushNotification(
-        `New Leisure Life Contact Request: ${data.firstName} ${
-          data.lastName
-        } - ${data.contactMethod} - ${
-          data.contactMethod === "email" ? data.email : data.phone
-        } - ${data.comments}`
-      );
-      console.log("push sent");
       await axios.post("/api/contact", data);
       setSuccessMessage(
         `Thank you for your request ${data.firstName}, someone will be in touch soon!`

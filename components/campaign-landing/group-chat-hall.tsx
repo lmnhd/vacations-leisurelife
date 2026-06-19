@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { CampaignLandingViewModel } from '@/lib/campaigns/landing/view-model';
 import type { GuestIdentity } from '@/components/campaign-landing/waitlist-form';
 import { Button } from '@/components/ui/button';
@@ -1064,12 +1064,6 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
         };
     }, [ideasEndpoint]);
 
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages, activeChannel]);
-
     const activeChannelConfig = useMemo(
         () => CHANNELS.find((c) => c.id === activeChannel) ?? CHANNELS[0],
         [activeChannel],
@@ -1083,6 +1077,12 @@ export function GroupChatHall({ landing, guestIdentity, onGuestIdentityRestored 
         () => messages.filter((item) => (item.channel ?? 'main') === activeChannel),
         [messages, activeChannel],
     );
+
+    useLayoutEffect(() => {
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
+        scrollContainer.scrollTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+    }, [visibleMessages]);
 
     // "Active now" presence — derive from recent guest message authors so the
     // rail doesn't sit empty before websockets are added.

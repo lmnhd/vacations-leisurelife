@@ -53,7 +53,13 @@ export interface CampaignEngagement {
     name: string;
     sessionId: string;
     status: Campaign['status'];
-    /** Verified signups only — matches what counts toward the public threshold. */
+    /**
+     * Total waitlist entries — verified or not. This is the milestone +
+     * engagement basis so the Pulse matches the signup number shown in the
+     * discovery/conversion dashboard.
+     */
+    totalSignups: number;
+    /** Verified signups only — drives the public threshold %, which gates real launch. */
     verifiedSignups: number;
     thresholdPercent: number;
     requiredCabins: number;
@@ -94,6 +100,12 @@ export interface CampaignPulseResult {
     engagement: CampaignEngagement;
     decisions: PulseDecision[];
     plans: PulsePlan[];
+    /**
+     * Set when a decision was reached but suppressed by the rate cap. The
+     * `decisions` array is still populated so the report shows what WOULD have
+     * fired; `plans` stays empty (nothing generated/posted).
+     */
+    rateCappedReason?: string;
     skippedReason?: string;
 }
 
@@ -140,6 +152,7 @@ async function readEngagement(campaign: Campaign, now: number): Promise<Campaign
         getPostedPulseDedupeKeys({ sessionId, limit: SESSION_SCAN_LIMIT }),
     ]);
 
+    const totalSignups = entries.length;
     const verifiedSignups = entries.filter((e) => e.emailVerified).length;
     const requiredCabins = getPublicGroupCabinTarget(campaign);
     const thresholdPercent = getPublicThresholdPercent(requiredCabins, verifiedSignups);
@@ -167,6 +180,7 @@ async function readEngagement(campaign: Campaign, now: number): Promise<Campaign
         name: campaign.name,
         sessionId,
         status: campaign.status,
+        totalSignups,
         verifiedSignups,
         thresholdPercent,
         requiredCabins,
@@ -190,16 +204,22 @@ async function readEngagement(campaign: Campaign, now: number): Promise<Campaign
 export function evaluateRules(e: CampaignEngagement): PulseDecision[] {
     const decisions: PulseDecision[] = [];
 
-    // Rule 1 — MILESTONE: every Nth verified signup, deduped by the exact count.
-    if (e.verifiedSignups >= MILESTONE_EVERY) {
-        const milestone = Math.floor(e.verifiedSignups / MILESTONE_EVERY) * MILESTONE_EVERY;
+    // Signup basis for momentum rules = TOTAL entries (verified or not), so the
+    // Pulse matches the signup count shown on the dashboard. The threshold % it
+    // reports stays verified-only (real launch math).
+    const signups = e.totalSignups;
+
+    // Rule 1 — MILESTONE: every Nth signup, deduped by the exact count.
+    if (signups >= MILESTONE_EVERY) {
+        const milestone = Math.floor(signups / MILESTONE_EVERY) * MILESTONE_EVERY;
         const key = `milestone:${milestone}`;
         if (!e.postedKeys.has(key)) {
             decisions.push({
                 rule: 'milestone',
                 channel: 'main',
                 dedupeKey: key,
-                reason: `${e.verifiedSignups} verified signups crossed the ${milestone}-signup mark.`,
+                reason: `${signups} signups crossed the ${milestone}-signup mark`
+                    + (e.verifiedSignups !== signups ? ` (${e.verifiedSignups} verified).` : '.'),
             });
         }
     }
@@ -207,7 +227,7 @@ export function evaluateRules(e: CampaignEngagement): PulseDecision[] {
     const isSilent = e.daysSinceLastGuestMessage === null || e.daysSinceLastGuestMessage >= SILENCE_DAYS;
 
     // Rule 2 — LONELINESS: empty/near-empty room that has gone quiet.
-    if (isSilent && e.verifiedSignups <= LONELINESS_SIGNUP_CEILING) {
+    if (isSilent && signups <= LONELINESS_SIGNUP_CEILING) {
         // Re-arm per countdown window so the tone can escalate as expiry nears,
         // but never more than once per window.
         const window = e.daysToExpiry === null
@@ -221,23 +241,23 @@ export function evaluateRules(e: CampaignEngagement): PulseDecision[] {
                 rule: 'loneliness',
                 channel: 'main',
                 dedupeKey: key,
-                reason: `Quiet room (${e.verifiedSignups} signups, ${e.daysSinceLastGuestMessage ?? 'no'} days since a guest spoke)`
+                reason: `Quiet room (${signups} signups, ${e.daysSinceLastGuestMessage ?? 'no'} days since a guest spoke)`
                     + (e.daysToExpiry !== null ? `, ${e.daysToExpiry} days to expiry.` : '.'),
             });
         }
     }
 
     // Rule 3 — ENCOURAGEMENT: guests present but not collaborating.
-    if (isSilent && e.verifiedSignups > LONELINESS_SIGNUP_CEILING && e.guestIdeaCount <= 2) {
+    if (isSilent && signups > LONELINESS_SIGNUP_CEILING && e.guestIdeaCount <= 2) {
         // Re-arm per signup tier so it nudges again as the room grows but stays silent.
-        const tier = Math.floor(e.verifiedSignups / MILESTONE_EVERY);
+        const tier = Math.floor(signups / MILESTONE_EVERY);
         const key = `encouragement:${tier}`;
         if (!e.postedKeys.has(key)) {
             decisions.push({
                 rule: 'encouragement',
                 channel: 'main',
                 dedupeKey: key,
-                reason: `${e.verifiedSignups} signups but only ${e.guestIdeaCount} ideas and ${e.daysSinceLastGuestMessage ?? 'no'} days of chat silence.`,
+                reason: `${signups} signups but only ${e.guestIdeaCount} ideas and ${e.daysSinceLastGuestMessage ?? 'no'} days of chat silence.`,
             });
         }
     }
@@ -251,7 +271,7 @@ function buildPrompt(rule: PulseRuleId, e: CampaignEngagement): string {
     const shared = [
         `You are the Tour Conductor — the warm, lightly witty host of the shared chat for the group cruise campaign "${e.name}".`,
         `Write ONE short message (1-3 sentences) to post into the #main channel. No greeting headers, no signature, no emoji spam (at most one).`,
-        `Context: ${e.verifiedSignups} guests have joined (${e.thresholdPercent}% toward ${e.requiredCabins} cabins).`,
+        `Context: ${e.totalSignups} guests have joined (${e.thresholdPercent}% toward ${e.requiredCabins} cabins).`,
         e.guestIdeaCount > 0 ? `The idea board has ${e.guestIdeaCount} guest ideas.` : `The idea board is empty so far.`,
     ];
 
@@ -285,6 +305,25 @@ async function generateMessage(rule: PulseRuleId, e: CampaignEngagement): Promis
     return response.content.trim();
 }
 
+// ─── Eligibility ──────────────────────────────────────────────────────────────
+
+/**
+ * Whether a campaign is even worth scanning. Mirrors the discovery view's
+ * default filter so the report shows real, live campaigns — not the full
+ * DynamoDB table (DRAFT concepts, archived, retired blueprints).
+ *
+ * Returns a reason string when ineligible, or null when the campaign should be
+ * swept.
+ */
+function ineligibleReason(campaign: Campaign): string | null {
+    if (campaign.status !== 'GATHERING_INTEREST') {
+        return `status=${campaign.status} (pulse only runs on GATHERING_INTEREST)`;
+    }
+    if (campaign.archived) return 'archived';
+    if (campaign.discoveryIteration?.retiredAt) return 'retired';
+    return null;
+}
+
 // ─── Sweep ──────────────────────────────────────────────────────────────────
 
 async function sweepCampaign(
@@ -294,19 +333,18 @@ async function sweepCampaign(
 ): Promise<CampaignPulseResult> {
     const engagement = await readEngagement(campaign, now);
 
-    // Only campaigns actively gathering interest get autonomous nudges.
-    if (campaign.status !== 'GATHERING_INTEREST') {
-        return {
-            slug: campaign.id,
-            name: campaign.name,
-            engagement,
-            decisions: [],
-            plans: [],
-            skippedReason: `status=${campaign.status} (pulse only runs on GATHERING_INTEREST)`,
-        };
+    // Single-campaign inspection can reach an ineligible campaign (DRAFT,
+    // archived, retired). Report the reason and do no work.
+    const skip = ineligibleReason(campaign);
+    if (skip) {
+        return { slug: campaign.id, name: campaign.name, engagement, decisions: [], plans: [], skippedReason: skip };
     }
 
-    // Rate cap: at most one autonomous post per campaign per window.
+    const decisions = evaluateRules(engagement);
+
+    // Rate cap: at most one autonomous post per campaign per window. We still
+    // surface the decision so the report shows what WOULD fire once the window
+    // clears — it just isn't generated or posted this run.
     if (engagement.lastPulseAt) {
         const hoursSince = (now - new Date(engagement.lastPulseAt).getTime()) / (1000 * 60 * 60);
         if (hoursSince < PULSE_RATE_CAP_HOURS) {
@@ -314,14 +352,13 @@ async function sweepCampaign(
                 slug: campaign.id,
                 name: campaign.name,
                 engagement,
-                decisions: [],
+                decisions,
                 plans: [],
-                skippedReason: `rate-capped (last pulse ${hoursSince.toFixed(1)}h ago, cap ${PULSE_RATE_CAP_HOURS}h)`,
+                rateCappedReason: `last pulse ${hoursSince.toFixed(1)}h ago, cap ${PULSE_RATE_CAP_HOURS}h`,
             };
         }
     }
 
-    const decisions = evaluateRules(engagement);
     // One autonomous post per sweep — take the highest-precedence decision.
     const chosen = decisions[0] ? [decisions[0]] : [];
 
@@ -364,7 +401,14 @@ export async function runTcPulse(opts: PulseOptions = {}): Promise<PulseRunResul
 
     let campaigns = await scanAllCampaigns();
     if (opts.onlyCampaignSlug) {
+        // Single-campaign mode is an explicit operator choice — honor it even
+        // for DRAFT/archived so the operator can inspect any campaign by slug.
         campaigns = campaigns.filter((c) => c.id === opts.onlyCampaignSlug);
+    } else {
+        // Full sweep: only live, non-archived, non-retired campaigns, matching
+        // the discovery view. Keeps the report focused instead of dumping the
+        // whole table of DRAFT concepts.
+        campaigns = campaigns.filter((c) => ineligibleReason(c) === null);
     }
 
     const perCampaign: CampaignPulseResult[] = [];
@@ -377,7 +421,7 @@ export async function runTcPulse(opts: PulseOptions = {}): Promise<PulseRunResul
                 name: campaign.name,
                 engagement: {
                     slug: campaign.id, name: campaign.name, sessionId: sessionIdFor(campaign),
-                    status: campaign.status, verifiedSignups: 0, thresholdPercent: 0, requiredCabins: 0,
+                    status: campaign.status, totalSignups: 0, verifiedSignups: 0, thresholdPercent: 0, requiredCabins: 0,
                     guestIdeaCount: 0, lastGuestMessageAt: null, daysSinceLastGuestMessage: null,
                     lastPulseAt: null, daysToExpiry: null, postedKeys: new Set(),
                 },

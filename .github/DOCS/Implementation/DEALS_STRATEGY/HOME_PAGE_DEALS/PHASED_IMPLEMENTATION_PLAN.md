@@ -29,7 +29,7 @@ The completed system should:
   - Book now
   - Email me the booking link
   - Request an agent callback
-- route callback requests to email, dashboard, and Crisp notification where practical
+- route callback requests to the operator dashboard and Pushover admin notifications
 - keep Groups separate from Deals
 - support future Meta, Google, TikTok, email, and landing-page promotion workflows
 
@@ -45,7 +45,7 @@ Build order matters.
 6. Trip research and targeting resources
 7. Odysseus deal candidate discovery
 8. Curated Deal assembly + staged campaign workbench
-9. **Sales pitch development** — transform research into customer-voice copy
+9. **Sales pitch development** â€” transform research into customer-voice copy
 10. Public Deal pages and CTAs
 11. Email-link and callback operations
 12. Dashboard and operator review
@@ -79,13 +79,13 @@ What already exists:
 - an enforced approval path from `needs_review` to `bookable`
 - public homepage + `/deals/[id]` rendering of approval-gated Curated Deals
   (Phase 10), filtered by `isDealHomepageEligible`
-- `DealPitchBrief` — the customer-voice editorial decision layer between research
+- `DealPitchBrief` â€” the customer-voice editorial decision layer between research
   and copy (Phase 9B): `tripSummary`, `audienceStatement`, `primaryHook`,
   `curatedReason`, `sellingFacts`, `researchRationale` (internal-only)
 - `ANALYST_VOICE_FORBIDDEN` constant and expanded `detectRedFlags` covering
   analyst-voice phrases and promotional risk terms
-- `generateDealCopyPackage` now requires a `DealPitchBrief` parameter — the
-  research → pitch → copy order is enforced at the type level
+- `generateDealCopyPackage` now requires a `DealPitchBrief` parameter â€” the
+  research â†’ pitch â†’ copy order is enforced at the type level
 
 What does not exist yet:
 
@@ -862,28 +862,28 @@ Status: implemented. Proof artifact: `npm run test:deal-pitch-brief` (33/33 pass
 The system currently has:
 
 ```
-Research (DealAngleResearch)     — operator/analyst voice
-         ↓
-Copy scaffold (DealCopyPackage)  — directly reuses research strings
-         ↓
-Public page                      — leaks analyst rationale as visitor copy
+Research (DealAngleResearch)     â€” operator/analyst voice
+         â†“
+Copy scaffold (DealCopyPackage)  â€” directly reuses research strings
+         â†“
+Public page                      â€” leaks analyst rationale as visitor copy
 ```
 
 What is required:
 
 ```
-Research (DealAngleResearch)     — operator/analyst voice
-         ↓
-Pitch development                — explicit transform to customer voice
-         ↓
-Copy (DealCopyPackage)           — customer voice, ready to publish
-         ↓
-Public page                      — clean visitor copy
+Research (DealAngleResearch)     â€” operator/analyst voice
+         â†“
+Pitch development                â€” explicit transform to customer voice
+         â†“
+Copy (DealCopyPackage)           â€” customer voice, ready to publish
+         â†“
+Public page                      â€” clean visitor copy
 ```
 
 The pitch development step is not the same as copy generation. It is the job
-of reading the analyst's research notes — what is interesting about this trip,
-what audience angles exist, what the competitor blind spot is — and making a
+of reading the analyst's research notes â€” what is interesting about this trip,
+what audience angles exist, what the competitor blind spot is â€” and making a
 deliberate editorial decision: what is the *single best reason* a customer
 should care, stated in their voice, not the operator's? Only after that
 decision is made should copy be written.
@@ -940,8 +940,8 @@ interface DealPitchBrief {
    research/targeting and copy).
 6. **Change `generateDealCopyPackage` to require a `DealPitchBrief` input.**
    It should source `whyThisTrip`, `heroCopy`, and `headlineOptions` from the
-   pitch brief fields — not directly from `angleResearch`. This enforces the
-   research → pitch → copy order at the type level.
+   pitch brief fields â€” not directly from `angleResearch`. This enforces the
+   research â†’ pitch â†’ copy order at the type level.
 7. Add the `"pitch"` stage to the workbench API route
    (`app/api/tests/deals-system/curated-deal/route.ts`).
 8. Update `assemble-curated-deal.ts` to run the pitch stage before copy.
@@ -1100,12 +1100,16 @@ template/copy/send, matching how Group campaign emails work
 
 `POST /api/deals/link-request` calls `sendDealLinkEmail` when an `email` is
 provided and returns `emailDelivered: false` (without failing the request) if
-the Klaviyo call throws — the booking link still opens, but the UI tells the
-visitor the email didn't go out.
+the Klaviyo call throws. The email-link CTA does not open the booking portal;
+only the Book now CTA opens the broker-resolved `bookingUrl`.
+
+The event payload now also includes email-friendly fields
+`email_trip_title` and `email_trip_summary_line` so the Klaviyo template can
+use the literal sailing name/context instead of the public marketing headline.
 
 **Remaining for live verification**: a Klaviyo flow must exist for
 `LLL Deal Link Requested` before an end-to-end send can be observed. No code
-changes needed for that — it's a Klaviyo dashboard configuration step.
+changes needed for that â€” it's a Klaviyo dashboard configuration step.
 
 ### Goal
 
@@ -1137,17 +1141,17 @@ Send prepared booking links by email.
 
 Status: implemented (dashboard queue + status workflow). The `callback-request`
 route (Phase 11) writes `AgentCallbackRequest` records with
-`routing.dashboardQueued: true` on arrival and a Pushover admin notification.
-The operator workbench at `/tests/deals-system` shows a "Callback Requests"
-panel (`callback-requests-panel.tsx`) listing each request's deal/cruise
-context, visitor name/email/phone/notes, link health, routing badges, and
-status history. The operator can move a request through
+`routing.dashboardQueued: true` on arrival and sends a Pushover admin
+notification using `PUSHOVER_API_TOKEN` and `PUSHOVER_RECIPIENT_KEY`. The
+operator workbench at `/tests/deals-system` shows a "Callback Requests" panel
+(`callback-requests-panel.tsx`) listing each request's deal/cruise context,
+visitor name/email/phone/notes, link health, routing badges, and status
+history. The operator can move a request through
 `new -> assigned -> contacted -> closed` (with an optional note) via
 `POST /api/tests/deals-system/callback-status`, which appends to
-`statusHistory` and clears `routing.dashboardQueued`. Email notification and
-Crisp hooks were intentionally not added in this pass — Pushover + the
-dashboard panel cover the operational need today; revisit if Crisp/email
-notification becomes a real requirement.
+`statusHistory` and clears `routing.dashboardQueued`. Email and Crisp callback
+notifications are intentionally out of scope for now; Pushover plus the
+dashboard panel are the active operational path.
 
 ### Goal
 
@@ -1156,8 +1160,7 @@ Turn callback requests into an operator workflow.
 ### Build
 
 - Store `AgentCallbackRequest` records.
-- Notify operator by email.
-- Add Crisp notification/conversation hook where practical.
+- Notify the operator through Pushover.
 - Add callback dashboard queue.
 - Include:
   - visitor phone/email
@@ -1179,14 +1182,13 @@ Turn callback requests into an operator workflow.
 
 - Submit callback request.
 - Confirm dashboard row appears.
-- Confirm email notification is received.
-- Confirm Crisp notification/conversation behavior if enabled.
+- Confirm the Pushover notification is received.
+- Confirm missing Pushover configuration logs a server error without losing the saved dashboard request.
 - Confirm status transitions persist.
 
 ### Exit Criteria
 
 - Callback requests are operationally visible and actionable.
-
 ## Phase 14 - Production Deals Campaign Dashboard
 
 Status: implemented. `/admin/deals-system` renders the same
@@ -1202,12 +1204,12 @@ consumed by `getPublicDealTiles`), `hide`/`unhide`
 (`operatorVisibility.hidden`, enforced in `isDealHomepageEligible`),
 `refresh_link` (marks `linkHealth.status = "stale"` to pull a Deal off the
 homepage pending re-verification), and `request_capture` (appends an
-`agentOnlyNotes` flag for an operator CBAT/Odysseus capture run — it does not
+`agentOnlyNotes` flag for an operator CBAT/Odysseus capture run â€” it does not
 run any browser automation itself, consistent with CBAT/Odysseus being
 operator-controlled). "Mark callback status" was already delivered in Phase 13
 and is reused here via the shared `CallbackRequestsPanel`.
 
-`/admin/deals-system` has no additional auth layer — it is at the same trust
+`/admin/deals-system` has no additional auth layer â€” it is at the same trust
 level as `/tests/deals-system` today. Add access control if this dashboard is
 exposed beyond trusted operators.
 
@@ -1375,21 +1377,21 @@ Shipped:
 
 - New schema module `lib/cb/deals-system/` (kept separate from the existing
   `lib/cb/cb-deal-types.ts` homepage pipeline so neither disturbs the other):
-  - `link-broker-types.ts` — request/output/health/record/cache + default preference
-  - `promo-intelligence-types.ts` — promo record, extracted terms, marketing use,
+  - `link-broker-types.ts` â€” request/output/health/record/cache + default preference
+  - `promo-intelligence-types.ts` â€” promo record, extracted terms, marketing use,
     applicability result, cache
-  - `research-types.ts` — `DealAngleResearch` and `DealTargetingDemographic`
-  - `curated-deal-types.ts` — `CuratedOdysseusDeal`, `OdysseusDealBrief`, cache
-  - `callback-request-types.ts` — `AgentCallbackRequest`, cache
-  - `caches.ts` — cache file paths + empty-payload factories
-  - `validate.ts` — dependency-free runtime validators (no zod) that also enforce
+  - `research-types.ts` â€” `DealAngleResearch` and `DealTargetingDemographic`
+  - `curated-deal-types.ts` â€” `CuratedOdysseusDeal`, `OdysseusDealBrief`, cache
+  - `callback-request-types.ts` â€” `AgentCallbackRequest`, cache
+  - `caches.ts` â€” cache file paths + empty-payload factories
+  - `validate.ts` â€” dependency-free runtime validators (no zod) that also enforce
     the publishing gate (a `bookable` Deal must have `valid` link health) and the
     portal-token rule (clone/cabin tokens only on captured classes)
-  - `index.ts` — barrel export
+  - `index.ts` â€” barrel export
 - Local development caches under `.github/data/`:
   - `cb-promo-intelligence-cache.json` (empty)
   - `odysseus-curated-deals-cache.json` (one Deal Brief + one hand-authored
-    sample Deal that does NOT publish — `needs_review` status, `unknown` link health)
+    sample Deal that does NOT publish â€” `needs_review` status, `unknown` link health)
   - `cb-link-broker-cache.json` (one hand-authored sample `package_entry` record)
   - `deal-callback-requests-cache.json` (empty)
 - Proof artifact: `tests/deals-system-schema.ts`, runnable via
@@ -1418,22 +1420,22 @@ Shipped:
 
 - New backend-only module `lib/cb/link-broker/` (no UI, no email, no URL opening,
   no reservations):
-  - `normalize.ts` — host detection, package-ID extraction, age/residency
+  - `normalize.ts` â€” host detection, package-ID extraction, age/residency
     encoding, phone redaction, slugify, and env-backed `DEFAULT_OFFICE_ID` /
     `DEFAULT_AGENT_SIID` / occupancy payload constants
-  - `build-package-link.ts` — Class 1 package entry builder
-  - `build-prepared-details-link.ts` — Class 2 prepared details builder
-  - `parse-captured-link.ts` — classifies package/details/clone/cabin URLs and
+  - `build-package-link.ts` â€” Class 1 package entry builder
+  - `build-prepared-details-link.ts` â€” Class 2 prepared details builder
+  - `parse-captured-link.ts` â€” classifies package/details/clone/cabin URLs and
     extracts params (phone redacted in `rawParams`)
-  - `choose-link-class.ts` — decision ladder from request inputs/preferences
-  - `validate.ts` — static validation (required params, siid, package ID, age/
+  - `choose-link-class.ts` â€” decision ladder from request inputs/preferences
+  - `validate.ts` â€” static validation (required params, siid, package ID, age/
     passenger match, and a guard that a constructed link never carries a
     portal-generated token)
-  - `cache.ts` — local `cb-link-broker-cache.json` lookup/upsert keyed by
+  - `cache.ts` â€” local `cb-link-broker-cache.json` lookup/upsert keyed by
     package + siid + class + traveler-setup hash; persistence is opt-in so tests
     and batch callers can mutate an in-memory cache without writing to disk
-  - `broker.ts` — `resolveBestBookingLink` / `refreshBookingLink` orchestration
-  - `index.ts` — public API barrel
+  - `broker.ts` â€” `resolveBestBookingLink` / `refreshBookingLink` orchestration
+  - `index.ts` â€” public API barrel
 - Proof artifact: `tests/link-broker.ts`, runnable via `npm run test:link-broker`.
 
 Source-of-truth note (corrected against a real captured Share link): the
@@ -1461,7 +1463,7 @@ The `OdysseusEngine.ts` shape (single slash, camelCase `skipDetails`,
 
 clonebkg note: real Share links are details.aspx URLs that ALSO carry a
 structured-looking `clonebkg` (e.g. `07A__BESTPRICE__07A__`). The broker still
-NEVER synthesizes `clonebkg` — it is trusted only when captured from the Share
+NEVER synthesizes `clonebkg` â€” it is trusted only when captured from the Share
 button. Such links classify as `captured_clone` because the token encodes
 captured deep booking state. This upholds baseline rule that `clonebkg`/`brn` are
 portal-generated only.
@@ -1491,14 +1493,14 @@ Status: implemented.
 
 Shipped:
 
-- `lib/cb/link-broker/health.ts` — pure, dependency-free health rules:
+- `lib/cb/link-broker/health.ts` â€” pure, dependency-free health rules:
   `computeHealth` (maps a pass/fail/inconclusive outcome to
   `valid`/`stale`/`broken`/`unknown`), `isStale` + `refreshHealthStaleness`
   (freshness-window staleness, default 24h), `addHoursIso`, and `staticHealth`
   (labels `broken` on static-validation failure, otherwise `unknown` since a
   clean static check cannot prove the package is live). Runs in scripts, the Next
   runtime, and tests alike.
-- `lib/cb/link-broker/browser-validate.ts` — the SPA-aware browser validation
+- `lib/cb/link-broker/browser-validate.ts` â€” the SPA-aware browser validation
   extracted from `scripts/validate-cb-retail-links.ts` so the broker and the
   script share one implementation. `checkCbSwiftLink` / `checkCbFetchLink` /
   `checkCbLink` return `{ passed, failureReason }`; `validateBrokerLink` wraps
@@ -1542,7 +1544,7 @@ Status: implemented.
 
 Shipped:
 
-- `scripts/scrape-cb-promo-intelligence.ts` — operator-run scraper that reuses
+- `scripts/scrape-cb-promo-intelligence.ts` â€” operator-run scraper that reuses
   the established storageState auth pattern (load `.playwright-state.json`; on
   expiry, headless login with `CB_EMAIL` / `CB_PASSWORD`). It navigates Today's
   View, collects `/marketing/promotion/*` detail URLs, visits each, and extracts
@@ -1576,13 +1578,13 @@ records=6 detailPages=6 supportingFiles=0 errors=0
 The Celebrity Summer Sale record (the plan's canonical example) captured the
 full raw Promotion Details (75% off 2nd guest, tiered per-stateroom savings and
 OBC tiers), Agent Instructions combinability rules (BOGO not combinable with
-GroupX/single supplements), the Galapagos product exclusion, and both windows —
+GroupX/single supplements), the Galapagos product exclusion, and both windows â€”
 verbatim, ready for Phase 5 extraction.
 
 Known limitation: supporting `.docx` files are referenced as plain text
 ("Supporting File: /media/...") rather than `<a href>` on these pages, so 0 were
 captured as file links. Parsing those text references / downloading the docs is
-deferred (plan open question: parse in Phase 4 or later — later).
+deferred (plan open question: parse in Phase 4 or later â€” later).
 
 Exit criteria met:
 
@@ -1597,7 +1599,7 @@ Status: implemented.
 
 Shipped:
 
-- `lib/cb/deals-system/promo-extraction.ts` — `extractPromoIntelligence(record)`
+- `lib/cb/deals-system/promo-extraction.ts` â€” `extractPromoIntelligence(record)`
   runs GPT-5.4 through the LLM gateway (`generateStructuredObject`, default
   `ModelName.GPT_5_HIGH` = gpt-5.4) against a Zod schema that mirrors
   `CbPromoExtractedTerms` + `CbPromoMarketingUse`. The system prompt enforces the
@@ -1606,7 +1608,7 @@ Shipped:
   line, and public claims are separated into allowed / needs-qualifier /
   agent-only with a "may qualify"-style visitor summary that points to the
   booking portal.
-- `scripts/extract-cb-promo-intelligence.ts` — reads the Phase 4 cache, extracts
+- `scripts/extract-cb-promo-intelligence.ts` â€” reads the Phase 4 cache, extracts
   each `needs_review` record (or `--id` / `--force`), writes back `extracted` /
   `marketingUse` and sets `diagnostics.status` to `succeeded` / `failed`. Pure
   LLM over already-captured text; no CB login.
@@ -1626,7 +1628,7 @@ Two implementation notes:
 Live run (2026-06-08, GPT-5.4): all 6 records extracted, `needsReview=0`. The
 Celebrity Summer Sale record captured exactly what the plan's example calls for:
 
-- booking window Jun 2 – Jul 27 2026; sailing window Jun 3 2026 – May 10 2028
+- booking window Jun 2 â€“ Jul 27 2026; sailing window Jun 3 2026 â€“ May 10 2028
 - 75% off 2nd guest (non-refundable) and 50% (refundable), each with source text
 - per-stateroom savings/OBC tiers with voyage-length, cabin-category, and
   booking-day context; the $700 top tier captured
@@ -1648,15 +1650,15 @@ Status: implemented.
 
 Shipped:
 
-- `lib/cb/link-broker/package-lookup.ts` — pure, dependency-free ranker.
+- `lib/cb/link-broker/package-lookup.ts` â€” pure, dependency-free ranker.
   `rankPackageCandidates(facts, results)` scores Odysseus `CruiseResult`s by sail
   date (dominant), nights, cruise line, ship name, departure port, and
   destination keyword, and returns `confident_match` (auto-select, gated on a
   confidence threshold AND a margin over the runner-up), `ambiguous` (ranked
-  candidates for operator review — never a silent pick), or `no_match`. Date
+  candidates for operator review â€” never a silent pick), or `no_match`. Date
   normalization and proximity scoring adapted from the proven
   `scripts/run-phase-b.ts` matcher.
-- `lib/cb/link-broker/odysseus-lookup.ts` — operator-run adapter.
+- `lib/cb/link-broker/odysseus-lookup.ts` â€” operator-run adapter.
   `lookupOdysseusPackages(facts)` dynamically imports the Odysseus session
   manager (keeps Playwright/engine out of the Next bundle), centers the search
   window on the sail date, scopes by vendor when the line is recognized
@@ -1706,7 +1708,7 @@ Shipped:
   `DealCopyPackage`, `DealAdStructure`, `DealMediaPlan`, and `DealApprovalState`
   (with `DealApprovalGate`). `CuratedOdysseusDeal` now carries `copyPackage`,
   `adStructure`, `mediaPlan`, and `operatorApproval` as independent, rerunnable
-  layers — not one text blob.
+  layers â€” not one text blob.
 - Deterministic stage generators in `campaign-generators.ts`
   (`generateDealCopyPackage`, `generateDealAdStructure`, `generateDealMediaPlan`).
   Public copy is built only from extracted public-safe / qualified promo claims;
@@ -1764,7 +1766,7 @@ Exit criteria met:
 - A complete Curated Deal record can be built and inspected without hand-editing
   JSON.
 - The record stays hidden from the homepage while `needs_review` or non-valid
-  link health, and a valid link alone is not enough — operator approval is
+  link health, and a valid link alone is not enough â€” operator approval is
   required.
 - The operator can develop one Deal campaign end-to-end inside
   `/tests/deals-system` and approve or reject it from the workbench.
@@ -1777,23 +1779,23 @@ Status: implemented.
 
 Shipped:
 
-- `lib/cb/deals-system/public-deal-projection.ts` — turns an approved
+- `lib/cb/deals-system/public-deal-projection.ts` â€” turns an approved
   `CuratedOdysseusDeal` into public-safe `PublicDealTile` / `PublicDealPage`
   shapes. It exposes only `packaging`, visitor-safe `copyPackage` fields (hero,
   why-this-trip, qualified offer lines, the three CTAs), the targeting
   positioning statement, and the booking URL. It never projects `agentOnlyNotes`,
   the ad structure, raw targeting keywords, approval internals, or unapproved
   media.
-- `lib/cb/deals-system/public-deals.ts` — the single approval-gated public
+- `lib/cb/deals-system/public-deals.ts` â€” the single approval-gated public
   loader. `getPublicDealTiles` / `getPublicDealPageById` read the cache and return
   only `isDealHomepageEligible` Deals (bookable + operator-approved + valid link).
   Resilient: a missing/malformed cache yields zero public Deals instead of
   throwing or leaking a non-eligible Deal. Server-only.
-- `components/cb/curated-deals-tiles.tsx` — homepage section rendering approved
+- `components/cb/curated-deals-tiles.tsx` â€” homepage section rendering approved
   Curated Deals (renders nothing when there are none), wired into
   `components/landing-content.tsx` ahead of the legacy CB tiles.
 - `components/cb/curated-deal-page.tsx` + a curated branch in
-  `app/(landing)/deals/[id]/page.tsx` — an approved Curated Deal renders the
+  `app/(landing)/deals/[id]/page.tsx` â€” an approved Curated Deal renders the
   public page; a non-eligible curated Deal falls through and 404s (it never
   renders `needs_review`/rejected/non-valid-link Deals or agent-only notes). Book
   now uses the approved booking URL; Email link and Request callback route to

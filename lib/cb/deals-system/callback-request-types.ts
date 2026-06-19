@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Agent Callback Request data contracts.
  *
  * One of the three public CTA options (Book now / Email me the booking link /
  * Request an agent callback). A callback request stores full deal/package/link
- * context and routes to email, dashboard, and Crisp where practical.
+ * context and routes to the operator dashboard plus Pushover notifications.
  *
  * The Link Broker never creates these directly (PHASE_0_BASELINE_GUARDRAILS.md
  * rule 3); a thin CTA route does. Operations land in Phase 13; this is the
@@ -46,7 +46,6 @@ export interface AgentCallbackRequest {
   routing: {
     emailNotified?: boolean;
     dashboardQueued?: boolean;
-    crispNotified?: boolean;
   };
   assignedTo?: string;
   statusHistory: Array<{
@@ -61,3 +60,5 @@ export interface AgentCallbackRequestsCache {
   generatedAtIso: string;
   requests: AgentCallbackRequest[];
 }
+
+

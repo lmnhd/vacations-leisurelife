@@ -32,7 +32,7 @@ import type {
   DealMediaPlan,
   DealPitchBrief,
 } from "./campaign-types";
-import { evaluateApprovalGates } from "./curated-deal-assembly";
+import { defaultDealExpiresOnIso, evaluateApprovalGates } from "./curated-deal-assembly";
 import type { DealAngleResearch, DealTargetingDemographic } from "./research-types";
 
 export interface AssembleFromManifestInput {
@@ -94,6 +94,10 @@ function buildCruiseFacts(manifest: DealTripManifest): CuratedDealCruiseFacts {
     sailDateIso: r?.sailDateIso ?? d.sailWindow.earliestIso ?? "",
     departurePort: r?.departurePortCode ?? d.departurePortHint,
     portsOfCall: resolvedPorts.length > 0 ? resolvedPorts : splitPortList(d.portsOfCall),
+    dayByDayItinerary:
+      r?.itinerary?.dayByDay && r.itinerary.dayByDay.length > 0
+        ? r.itinerary.dayByDay
+        : undefined,
     cabinPrices: {
       inside: cabinPricing?.inside,
       outside: cabinPricing?.outside,
@@ -438,7 +442,9 @@ export function assembleCuratedDealFromManifest(
     source: "odysseus_curated_retail",
     briefId,
     capturedAtIso: generatedAtIso,
-    expiresOnIso: manifest.expiresOnIso,
+    // Expiration is non-optional: default to exactly 90 days from assembly when the
+    // manifest does not carry an operator-chosen cutoff.
+    expiresOnIso: manifest.expiresOnIso?.trim() || defaultDealExpiresOnIso(generatedAtIso),
     packageId,
     siid,
     bookingUrl: resolved.bookingUrl ?? `https://bookings.cbagenttools.com/swift/cruise/package/${packageId}?siid=${siid}&lang=1`,

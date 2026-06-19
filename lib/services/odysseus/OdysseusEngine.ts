@@ -1,7 +1,7 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CruiseSearchCriteria, CruiseResult } from './types';
+import { CruiseSearchCriteria, CruiseResult, ItineraryDetail, ItineraryDetailSchema } from './types';
 
 // Store state locally in the project root for now
 // When moving to Render, this could be stored in Redis or an S3 bucket
@@ -353,6 +353,79 @@ export class OdysseusEngine {
 
         console.log(`[OdysseusEngine] Search Complete. Successfully parsed ${cruiseResults.length} cruise results.`);
         return cruiseResults;
+    }
+
+    /**
+     * Fetches the DAY-BY-DAY itinerary for a sailing from
+     * GET /nitroapi/v2/cruise/itinerary/{itineraryId}.
+     *
+     * The search result's `itinerary` field only carries a coarse ports-of-call
+     * STRING (codes). This endpoint returns the real per-day schedule the booking
+     * page shows: each port with arrival/departure times, sea days, and readable
+     * names. Same auth model as searchCruises — replay the captured SPA headers and
+     * run the request from inside the page so session cookies attach natively.
+     *
+     * Returns the parsed `ItineraryDetail`, or null on any failure (caller falls
+     * back to the coarse ports string — we never fabricate a schedule).
+     */
+    async fetchItineraryDetail(itineraryId: number | string): Promise<ItineraryDetail | null> {
+        const page = this.odysseusPage;
+        if (!page) throw new Error('Engine not initialized or Odysseus tab not opened.');
+
+        const id = String(itineraryId).trim();
+        if (!id) return null;
+
+        console.log(`[OdysseusEngine] Fetching day-by-day itinerary detail for ${id}...`);
+
+        const capturedHeaders = await this.ensureCruiseRequestHeaders();
+        const headers: Record<string, string> = {};
+        if (capturedHeaders) {
+            for (const [k, v] of Object.entries(capturedHeaders)) {
+                const lower = k.toLowerCase();
+                if (
+                    lower === 'host' || lower === 'content-length' || lower === 'cookie' ||
+                    lower.startsWith(':') || lower === 'connection' || lower === 'accept-encoding'
+                ) continue;
+                headers[k] = v;
+            }
+        }
+        headers['accept'] = 'application/json, text/plain, */*';
+
+        const url = `https://bookings.cbagenttools.com/nitroapi/v2/cruise/itinerary/${encodeURIComponent(id)}?requestSource=1`;
+
+        await page.evaluate("window.__name = window.__name || function (f) { return f; };");
+
+        const resultJson = await page.evaluate(
+            async ([u, h]: [string, Record<string, string>]) => {
+                try {
+                    const res = await fetch(u, { method: 'GET', credentials: 'include', headers: h });
+                    const text = await res.text();
+                    return JSON.stringify({ status: res.status, ok: res.ok, text });
+                } catch (e) {
+                    return JSON.stringify({ status: 0, ok: false, text: '', error: e instanceof Error ? e.message : String(e) });
+                }
+            },
+            [url, headers] as [string, Record<string, string>],
+        );
+
+        try {
+            const parsed = JSON.parse(resultJson) as { status: number; ok: boolean; text: string; error?: string };
+            if (!parsed.ok) {
+                console.warn(`[OdysseusEngine] Itinerary detail ${id} returned status ${parsed.status}${parsed.error ? ` (${parsed.error})` : ''}.`);
+                return null;
+            }
+            const json = JSON.parse(parsed.text) as { data?: unknown };
+            const detail = ItineraryDetailSchema.safeParse(json?.data);
+            if (!detail.success) {
+                console.warn(`[OdysseusEngine] Itinerary detail ${id} failed schema validation:`, detail.error.issues[0]?.message);
+                return null;
+            }
+            console.log(`[OdysseusEngine] Itinerary ${id}: ${detail.data.nodes.length} day node(s) parsed.`);
+            return detail.data;
+        } catch (err) {
+            console.warn('[OdysseusEngine] Failed to parse itinerary detail response:', err instanceof Error ? err.message : err);
+            return null;
+        }
     }
 
     /**

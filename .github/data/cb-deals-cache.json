@@ -1,16 +1,6 @@
 {
-  "generatedAtIso": "2026-06-08T13:13:48.838Z",
+  "generatedAtIso": "2026-06-17T22:37:15.776Z",
   "promos": [
-    {
-      "title": "ALG Vacations and Hyatt Inclusives - Save up to 25% off",
-      "description": "Hyatt Inclusive Collection, Savor the Sunshine Savings When you book with Cruise Brothers!\nSave up to 25%, Kids Stay Free, Exclusive Perks, & More!\nDestinations: Caribbean, Central America, Europe, Mexico\nSavor the Sunshine at Hyatt's Inclusive Collection with:•Hotel Discounts up to 25%•10% off spa ...",
-      "validUntil": "FEATURED",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
     {
       "title": "Carnival Cruises - Sunshine & Savings Sale",
       "description": "CARNIVAL JUNE PROMOTIONS - SUNSHINE ON SALE!\n\nGreat rates Available on sailings through April 2028 \nBooking Window: June 1, 2026 – June 30, 2026 \nCabin type: Cabin Assignment only\n***************************************************************\nGreat Rates + up to $50 onboard credit.\nBooking Window: ...",
@@ -42,6 +32,16 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
+      "title": "Holland America - Free Grats with Have it All",
+      "description": "Holland America Summer Sale is going on now! Prepaid Gratuities, Beverage package, WIFI and more!\nPlan today with Have It ALL savings + Free Kids on select dates and Reduced Deposits\nBONUS: Caribbean Only Verandah Staterooms & Suites (Guests 1 & 2) Onboard Credit:\n\n7-day itineraries: $150 Onboard Cr...",
+      "validUntil": "FEATURED",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
       "title": "Royal Caribbean up to 30% Dollars Off - 3rd & 4th Sail Free",
       "description": "ROYAL CARIBBEAN - JUNE MONTHLONG PROMOTION - DOLLARS OFF + FREE 3RD & 4TH GUESTS\n\n\nBooking Window: June 2, 2026 – July 2, 202\nSailing Window: Sailings departing on or after June 3, 2026\nOffer details: Buy One Guest, Get Second Guest 60% Off\n\nKids Sail Free\n\nBooking Window: June 2, 2026 – July 2, 202...",
       "validUntil": "FEATURED",
@@ -52,8 +52,8 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
-      "title": "Seabourn Luxury Ocean and Expedition Cruising - Dollars Off, Onboard Credit",
-      "description": "SEABOURN SAVINGS - UP TO $1,000 SHIPBOARD CREDIT*\n\nYou can enhance your voyage with up to $1,000USD shipboard credit* on select voyages, personalizing your time on board, from spa treatments to shore excursions and more.  \nYou can sail to yacht harbors in Japan, Southeast Asia and the Caribbean, or ...",
+      "title": "SANDALS Luxury - Summer Loving - Caribbean On Sale",
+      "description": "SANDALS LUXURY ALL-INCLUSIVE RESORTS - SUMMER LOVING SALE\n\n \n\n✔ Get up to $1,500 Instant Credit\n✔ $175 Spa Credit when you stay 5-nights or longer\n✔ 1 Free Night at Select Resorts with 7+ nights\nAir Credit up to $750\n\nBooking Window: June 9 - July 6, 2026\n \nTravel Window: July 1, 2026 - September 30...",
       "validUntil": "FEATURED",
       "isFeatured": false,
       "category": "unknown",
@@ -75,6 +75,16 @@
       "title": "Windstar Cruises - Luxury Included",
       "description": "WINDSTAR LUXURY CRUISES - COMPLIMENTARY ALL-INCLUSIVE PACKAGE ON SAILINGS THROUGH June 2027\nGetting closer changes everything. Windstar’s yacht-style cruises take you far beyond the expected — through scenic canals other cruises can’t access, in harbors exclusive to yachts, across Old Towns in the m...",
       "validUntil": "FEATURED",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
+      "title": "ALG Vacations and Hyatt Inclusives - Save up to 25% off",
+      "description": "Hyatt Inclusive Collection, Savor the Sunshine Savings When you book with Cruise Brothers!\nSave up to 25%, Kids Stay Free, Exclusive Perks, & More!\nDestinations: Caribbean, Central America, Europe, Mexico\nSavor the Sunshine at Hyatt's Inclusive Collection with:•Hotel Discounts up to 25%•10% off spa ...",
+      "validUntil": "Valid Until 06/30/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -122,9 +132,29 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
+      "title": "Blue Sky Tours, Apple Vacations, Funjet - ALG Brands June Exclusive",
+      "description": "EXCLUSIVE PROMO CODE FOR TLN'S PRESIDENT CIRCLE AGENCY ADVISORS\nSave up to $175 on vacation packages!Package Type: Exclusive Nonstop Vacation Flights (ENVF) / Scheduled Air + Hotel PackagesPromo Code: TLNJUN26 (4% off hotel portion of the package)Applicable Hotel Packages: HIC, Playa, Bahia, Riu, Ro...",
+      "validUntil": "Valid Until 06/30/2026",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
+      "title": "CARNIVAL Journeys - Europe, New Zealand, Unique Voyages",
+      "description": "Carnival Journeys Cruises\nIf you hear “vacation” and think “where to” you are what we would call a destination person. Destination folks take note: a CARNIVAL JOURNEYS cruise is the one for you. On these unique longer voyages, you can make your way to great spots while enjoying all the comfort and f...",
+      "validUntil": "Valid Until 08/01/2026",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
       "title": "Celebrity Cruises - MILITARY $$ Savings",
       "description": "SERVICE MEMBERS SAVE WITH CELEBRITY CRUISES - USA and CANADA Celebrity Cruises thanks you for your service.\nAll military members, active, retired and veterans, qualify for these special savings.\nSavings are per person, for first and second guest, and are based on type of stateroom:\n$25 (per person) ...",
-      "validUntil": "Valid Until 04/30/2027",
+      "validUntil": "Valid Until 08/01/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -172,19 +202,9 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
-      "title": "Disney Cruise Line 50% Off Kids",
-      "description": "DISNEY CRUISE LINE BIG SAVINGS FOR KIDS! SAVE UP TO 50% OFF VOYAGE FARES.  \nGather the kids and set sail on a magical adventure with Together at Seas Savings! \nBook by June 14, 2026, and get 50% off the voyage fare for up to 3 kids (ages 17 and younger) on select Disney Cruise Line sailings with the...",
-      "validUntil": "Valid Until 06/14/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "Expedia TAAP - Mid Year Sale - Save up to 20% off",
-      "description": "EXPEDIA TAAP MID-YEAR SALE UP TO 20% OFF. \n \n\nKick off your summer earnings! \nSave at least 20% on thousands of hotels for travel until November 30, 2026 up to 20% off thousands of hotels worldwide.\nBig discounts. Huge choice. Major earnings. With Expedia TAAP, you can trust you’re giving travelers ...",
-      "validUntil": "Valid Until 06/15/2026",
+      "title": "Delta Vacations - Skymiles and Medallion Members Save",
+      "description": "DELTA VACATIONS ON SALE - MEDALLION MEMBERS SAVE UP TO $250 DOLLARS OFF\nThis summer save when you book getaways to select destinations all in one place with Delta Vacations.  Your Cruise Brothers Travel Specialitst will help you plan your next vacation to the Caribbean, Mexico, Hawaii, South Pacific...",
+      "validUntil": "Valid Until 07/31/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -195,26 +215,6 @@
       "title": "Explora Journeys - Free Private Shore Excursion or Onboard Credit",
       "description": "Clients will receive either up to $300 Onboard Credit per cabin OR a FREE Small Group Excursion & Private Cocktail Party on select sailings through May 2028 at NO COST TO AGENT!\nUse images below to advertise offer on social media.",
       "validUntil": "Valid Until 11/30/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "Holland America - Travel by Sea Sale - Free Extras",
-      "description": "Holland America Summer Sale is going on now! Prepaid Gratuities, Beverage package, WIFI and more!\nPlan today with Have It ALL savings + Free Kids on select dates and Reduced Deposits\n\nBONUS: Caribbean Only Verandah Staterooms & Suites (Guests 1 & 2) Onboard Credit:\n7-day itineraries: $150 Onboard Cr...",
-      "validUntil": "Valid Until 07/23/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "HVN Collection - Homes and Villas - Bonus Commission",
-      "description": "EARN UP TO $2,500 IN BONUS COMMISSION WHEN MAKING YOUR NEXT HOME OR VILLA BOOKING WITH HVN\nElevated Private Rentals Everywhere in the World. Feel at home in the world with havens  combining the best of hospitality & home. From storybook cottages to seaside villas, every haven is customized for you a...",
-      "validUntil": "Valid Until 06/15/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -262,26 +262,6 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
-      "title": "NCL - Destination Hawaii - Plan Ahead!",
-      "description": "Destination Hawaii - OPEN FOR BOOKINGS THROUGH MARCH 2028!\n\nFall Early Savings 2027 - Weekly departures September 4, 11, 18, 2027 from $2,384* Inside stateroom, from $2,664* Ocean Views - per person.\n7-nights Norwegian Pride of America -  Sailing round-trip Honolulu to Kona, Hilo with Maui and Kauai...",
-      "validUntil": "Valid Until 06/15/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "NCL - It's Better in the Bahamas - Bring the Family",
-      "description": "The Bahamas are calling - ANSWER\n\nSometimes all it takes is sunshine and open water to change your mood. On an NCL cruise to The Bahamas, that feeling is immediate, and you’ll be kicking back on a beach in no time. Whether it’s a quick getaway or a week-long sailing, we make it easy to get into vaca...",
-      "validUntil": "Valid Until 06/15/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
       "title": "Norwegian Cruise Line 50% Off + Free Extras - Onboard Credit",
       "description": "NCL Cruises 50% OFF + Free at Sea\n\nIt's time to book your next getaway with 50% off all Norwegian Cruises, plus free unlimited bar*, free specialty dining* and more with Free at Sea™, and kids sail free on select dates.\nNCL FREE AT SEA: For a limited time, enjoy 50% off pax 1 & 2 and more incredible...",
       "validUntil": "Valid Until 06/22/2026",
@@ -314,7 +294,7 @@
     {
       "title": "Oceania Cruises - Your World Included",
       "description": "OCEANIA CRUISES YOUR WORLD INCLUDED - EVERGREEN OFFER WITH EVEN MORE EXTRAS\nGratuities are a rich addition to our abundance of Your World Included amenities: Our people make the difference – they work for your smile, not for your tip.\nGourmet Specialty Restaurants: a variety of distinctive, open-sea...",
-      "validUntil": "Valid Until 06/30/2026",
+      "validUntil": "Valid Until 07/31/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -352,29 +332,9 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
-      "title": "Princess Cruises - Discover the World - Dollars Off",
-      "description": "PRINCESS CRUISES – DISCOVER THE WORLD SALE: BIG SAVINGS FOR YOU AND YOUR FAMILY!\n\n\nWhether you heat things up island hopping, soak in the culture on a European escapade, or play it cool in Alaska, these savings will have you smiling with up to 40% off fares and up to $400 off instantly.\nBring your w...",
-      "validUntil": "Valid Until 06/15/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
       "title": "Princess Cruises EUROPE On Sale",
       "description": "PRINCESS CRUISES 2028 EUROPE  EARLY BOOKING BONUS SAVINGS AND SHIPBOARD CREDIT!\nPrincess Cruises is delighted to unveil our most comprehensive Europe program ever, featuring an extraordinary collection of voyages across Northern Europe, the Mediterranean, and Transatlantic for Summer 2028 — includin...",
       "validUntil": "Valid Until 10/12/2026",
-      "isFeatured": false,
-      "category": "unknown",
-      "bookingLinks": [],
-      "allLinks": [],
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
-    },
-    {
-      "title": "Railbookers Italy and Amtrak Vacations On Sale",
-      "description": "Italy Week with Railbookers\n \nCelebrate Italy Week with Railbookers and unlock exclusive savings on unforgettable rail vacations across Italy and beyond. From the rolling hills of Tuscany and the canals of Venice to iconic journeys aboard the Venice Simplon-Orient-Express, your clients can save up t...",
-      "validUntil": "Valid Until 06/13/2026",
       "isFeatured": false,
       "category": "unknown",
       "bookingLinks": [],
@@ -432,6 +392,16 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
+      "title": "Seabourn Luxury Ocean and Expedition Cruising - Dollars Off, Onboard Credit",
+      "description": "SEABOURN SAVINGS - UP TO $1,000 SHIPBOARD CREDIT*\n\nYou can enhance your voyage with up to $1,000USD shipboard credit* on select voyages, personalizing your time on board, from spa treatments to shore excursions and more.  \nYou can sail to yacht harbors in Japan, Southeast Asia and the Caribbean, or ...",
+      "validUntil": "Valid Until 07/07/2026",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
       "title": "SILVERSEA Luxury Cruises - Bonus Extras from Cruise Brothers",
       "description": "Clients will receive up to $300 Onboard Credit per per person OR a FREE Small Group Excursion & Private Cocktail Party OR In Suite Champagne and Cavier Experience on select sailings through February 2028 at NO COST TO AGENT!  \n\nUse images below to advertise offer on social media.",
       "validUntil": "Valid Until 10/30/2026",
@@ -462,8 +432,18 @@
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
     },
     {
+      "title": "VIATOR 10% OFF All Sightseeing Tours",
+      "description": "VIATOR SUMMER SALE - DOLLARS OFF\n\n\n\nSave 10% on memorable experiences for your clients.Use code SUMMERSAVE10 at checkout for 10% off.The code can be used for client or personal travel, booked directly on travelagents.viator.com.No limit—use the code as many times as you’d like!Planning the perfect t...",
+      "validUntil": "Valid Until 07/09/2026",
+      "isFeatured": false,
+      "category": "unknown",
+      "bookingLinks": [],
+      "allLinks": [],
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/"
+    },
+    {
       "title": "Viking Cruises - Bonus Onboard Credit",
-      "description": "Clients will receive $200 Onboard Credit cabin on select sailings through November 2026 at NO COST TO AGENT! Use images below to advertise offer on social media.",
+      "description": "Clients will receive $200 Onboard Credit cabin on select sailings through November 2026 at NO COST TO AGENT! Use images above or attached to advertise offer on social media.",
       "validUntil": "Valid Until 08/20/2026",
       "isFeatured": false,
       "category": "unknown",
@@ -504,17 +484,43 @@
   ],
   "priceAdvantages": [
     {
-      "groupId": "55213",
+      "groupId": "52758",
+      "shipName": "Quantum of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "23 Night Transpacific Cruise",
+      "departurePort": "BNE",
+      "nights": "22",
+      "sailDate": "April 11, 2027",
+      "startingPrice": "1677.25",
+      "priceAdvantage": "$1469",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52758/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+    },
+    {
+      "groupId": "55173",
       "shipName": "Hero of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
       "departurePort": "",
       "nights": "",
-      "sailDate": "Dec. 11, 2027",
-      "startingPrice": "1777.70",
-      "priceAdvantage": "$456",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55213/",
+      "sailDate": "April 8, 2028",
+      "startingPrice": "2145.43",
+      "priceAdvantage": "$481",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55173/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
+    },
+    {
+      "groupId": "53856",
+      "shipName": "Celebrity Edge",
+      "vendor": "Celebrity Cruises",
+      "itinerary": "16 Night Tahitian Treasures Cruise",
+      "departurePort": "SYD",
+      "nights": "15",
+      "sailDate": "April 19, 2028",
+      "startingPrice": "2927.02",
+      "priceAdvantage": "$575",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/53856/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
       "groupId": "53432",
@@ -525,21 +531,34 @@
       "nights": "16",
       "sailDate": "May 12, 2027",
       "startingPrice": "1121.04",
-      "priceAdvantage": "$1100",
+      "priceAdvantage": "$1119",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/53432/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/"
     },
     {
-      "groupId": "52428",
-      "shipName": "Jewel of the Seas",
+      "groupId": "52536",
+      "shipName": "Navigator of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "17 Night Tokyo To Los Angeles Cruise",
+      "departurePort": "TYO",
+      "nights": "16",
+      "sailDate": "May 12, 2027",
+      "startingPrice": "1121.04",
+      "priceAdvantage": "$1119",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52536/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "55213",
+      "shipName": "Hero of the Seas",
       "vendor": "Royal Caribbean …",
       "itinerary": "",
       "departurePort": "",
       "nights": "",
-      "sailDate": "April 11, 2027",
-      "startingPrice": "1203.48",
-      "priceAdvantage": "$305",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/52428/",
+      "sailDate": "Dec. 11, 2027",
+      "startingPrice": "1777.70",
+      "priceAdvantage": "$628",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55213/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
@@ -553,110 +572,6 @@
       "startingPrice": "1191.51",
       "priceAdvantage": "$305",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/50468/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "55173",
-      "shipName": "Hero of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "April 8, 2028",
-      "startingPrice": "2145.43",
-      "priceAdvantage": "$481",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/55173/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "51015",
-      "shipName": "Vision of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 4, 2026",
-      "startingPrice": "$386",
-      "priceAdvantage": "$32",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51015/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "42724",
-      "shipName": "Brilliance of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "7 Night Southern Caribbean Cruise",
-      "departurePort": "SJU",
-      "nights": "7",
-      "sailDate": "Dec. 6, 2026",
-      "startingPrice": "$775",
-      "priceAdvantage": "$195",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42724/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "50250",
-      "shipName": "Freedom of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 7, 2026",
-      "startingPrice": "$601",
-      "priceAdvantage": "$276",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50250/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "51016",
-      "shipName": "Vision of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 7, 2026",
-      "startingPrice": "$463",
-      "priceAdvantage": "$113",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51016/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "51017",
-      "shipName": "Vision of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 11, 2026",
-      "startingPrice": "$386",
-      "priceAdvantage": "$32",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51017/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "42808",
-      "shipName": "Brilliance of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "7 Night Southern Caribbean Cruise",
-      "departurePort": "SJU",
-      "nights": "7",
-      "sailDate": "Dec. 13, 2026",
-      "startingPrice": "$784",
-      "priceAdvantage": "$172",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42808/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
-      "groupId": "51018",
-      "shipName": "Vision of the Seas",
-      "vendor": "Royal Caribbean …",
-      "itinerary": "",
-      "departurePort": "",
-      "nights": "",
-      "sailDate": "Dec. 14, 2026",
-      "startingPrice": "$426",
-      "priceAdvantage": "$40",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51018/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
@@ -686,19 +601,6 @@
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
-      "groupId": "44696",
-      "shipName": "Norwegian Gem",
-      "vendor": "Norwegian Cruise…",
-      "itinerary": "7 Nights Caribbean -",
-      "departurePort": "JAX",
-      "nights": "7",
-      "sailDate": "Dec. 27, 2026",
-      "startingPrice": "$1161",
-      "priceAdvantage": "$192",
-      "detailUrl": "https://www.cbagenttools.com/groups/view_group/44696/",
-      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
-    },
-    {
       "groupId": "49651",
       "shipName": "Norwegian Gem",
       "vendor": "Norwegian Cruise…",
@@ -709,6 +611,19 @@
       "startingPrice": "$1161",
       "priceAdvantage": "$192",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/49651/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "44696",
+      "shipName": "Norwegian Gem",
+      "vendor": "Norwegian Cruise…",
+      "itinerary": "7 Nights Caribbean -",
+      "departurePort": "JAX",
+      "nights": "7",
+      "sailDate": "Dec. 27, 2026",
+      "startingPrice": "$1161",
+      "priceAdvantage": "$192",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/44696/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
     {
@@ -733,7 +648,7 @@
       "nights": "6",
       "sailDate": "Jan. 3, 2027",
       "startingPrice": "$725",
-      "priceAdvantage": "$184",
+      "priceAdvantage": "$264",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/43595/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     },
@@ -1255,6 +1170,110 @@
       "startingPrice": "$506",
       "priceAdvantage": "$36",
       "detailUrl": "https://www.cbagenttools.com/groups/view_group/50189/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "51036",
+      "shipName": "Vision of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 1, 2027",
+      "startingPrice": "$477",
+      "priceAdvantage": "$2",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51036/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "50351",
+      "shipName": "Grandeur of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 4, 2027",
+      "startingPrice": "$451",
+      "priceAdvantage": "$147",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50351/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "43360",
+      "shipName": "Radiance of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "7 Night Southern Caribbean Cruise",
+      "departurePort": "SJU",
+      "nights": "7",
+      "sailDate": "March 6, 2027",
+      "startingPrice": "$805",
+      "priceAdvantage": "$140",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/43360/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "50465",
+      "shipName": "Jewel of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 7, 2027",
+      "startingPrice": "$1154",
+      "priceAdvantage": "$293",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50465/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "42848",
+      "shipName": "Brilliance of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "7 Night Southern Caribbean Cruise",
+      "departurePort": "SJU",
+      "nights": "7",
+      "sailDate": "March 7, 2027",
+      "startingPrice": "$762",
+      "priceAdvantage": "$110",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/42848/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "50352",
+      "shipName": "Grandeur of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 8, 2027",
+      "startingPrice": "$528",
+      "priceAdvantage": "$115",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/50352/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "54547",
+      "shipName": "Jewel of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 8, 2027",
+      "startingPrice": "$525",
+      "priceAdvantage": "$60",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/54547/",
+      "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
+    },
+    {
+      "groupId": "51038",
+      "shipName": "Vision of the Seas",
+      "vendor": "Royal Caribbean …",
+      "itinerary": "",
+      "departurePort": "",
+      "nights": "",
+      "sailDate": "March 8, 2027",
+      "startingPrice": "$477",
+      "priceAdvantage": "$2",
+      "detailUrl": "https://www.cbagenttools.com/groups/view_group/51038/",
       "sourceUrl": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on"
     }
   ]

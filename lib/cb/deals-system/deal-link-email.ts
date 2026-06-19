@@ -24,6 +24,23 @@ export interface SendDealLinkEmailResult {
   error?: string;
 }
 
+function emailTripTitle(deal: PublicDealPage): string {
+  const shipName = deal.facts.shipName?.trim();
+  if (shipName && shipName !== "Confirmed at booking") return shipName;
+  return deal.title;
+}
+
+function emailTripSummaryLine(deal: PublicDealPage): string {
+  const parts = [
+    emailTripTitle(deal),
+    deal.facts.cruiseLine,
+    deal.facts.destination,
+  ]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  return parts.join(" · ");
+}
+
 /**
  * Sends the booking link for a public Deal to the given email address via
  * Klaviyo. Returns `delivered: false` (with `error`) on any failure so the
@@ -42,6 +59,8 @@ export async function sendDealLinkEmail(
       properties: {
         deal_id: deal.id,
         deal_title: deal.title,
+        email_trip_title: emailTripTitle(deal),
+        email_trip_summary_line: emailTripSummaryLine(deal),
         ship_name: deal.facts.shipName,
         cruise_line: deal.facts.cruiseLine,
         destination: deal.facts.destination,

@@ -1,8 +1,8 @@
 /**
- * Premium Deal Page — the master template a prospect lands on after clicking a
+ * Premium Deal Page â€” the master template a prospect lands on after clicking a
  * paid ad. Pixel-faithful translation of the Claude Design "Deal Page" handoff
  * (project LLI-Deal-Page). Renders purely from `DealLandingPageView`, with the
- * resolved/draft fork the design specifies — never fabricating a missing fact.
+ * resolved/draft fork the design specifies â€” never fabricating a missing fact.
  *
  * Editorial, calm, premium: Cormorant Garamond display + Source Sans 3 body,
  * cream/navy/gold palette, large imagery, one repeated primary CTA, sticky mobile
@@ -12,10 +12,11 @@
 
 import type { DealLandingPageView } from "@/lib/cb/deals-system/public-deal-projection";
 
+import { DealCtaActions } from "./deal-cta-actions";
 import { DealImageWithFallback } from "./deal-image-with-fallback";
 import { DealLandingPageEnhancements } from "./deal-landing-page-enhancements";
 
-// ── Design tokens (verbatim from the prototype) ────────────────────────────────
+// â”€â”€ Design tokens (verbatim from the prototype) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const C = {
   bg: "#FAF7F2",
   text: "#1A2530",
@@ -36,39 +37,6 @@ const C = {
 } as const;
 
 const serif = "'Cormorant Garamond',Georgia,serif";
-
-function CtaButton({
-  href,
-  label,
-  variant = "cream",
-}: {
-  href: string;
-  label: string;
-  variant?: "cream" | "navy";
-}) {
-  const isCream = variant === "cream";
-  return (
-    <a
-      href={href || "#pricing"}
-      target={href ? "_blank" : undefined}
-      rel={href ? "noreferrer" : undefined}
-      style={{
-        display: "inline-block",
-        background: isCream ? C.cream : C.navy,
-        color: isCream ? C.navy : C.bg,
-        fontWeight: 600,
-        fontSize: 15,
-        letterSpacing: "0.06em",
-        textTransform: "uppercase",
-        padding: "17px 34px",
-        borderRadius: 3,
-        textDecoration: "none",
-      }}
-    >
-      {label}
-    </a>
-  );
-}
 
 function Eyebrow({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
@@ -106,9 +74,9 @@ function SectionHeading({ children, center }: { children: React.ReactNode; cente
   );
 }
 
-export function DealLandingPage({ page }: { page: DealLandingPageView }) {
+export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLandingPageView }) {
   const { hero, chips, factBand, segments, itinerary, pricing, specials } = page;
-  const cta = page.ctaLabel || "Check Availability";
+  const cta = page.ctaLabel || "Book Now";
 
   return (
     <div
@@ -121,7 +89,12 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
         WebkitFontSmoothing: "antialiased",
       }}
     >
-      <DealLandingPageEnhancements fromPriceLabel={page.fromPriceLabel} ctaLabel={cta} bookingUrl={page.bookingUrl} />
+      <DealLandingPageEnhancements
+        dealId={dealId}
+        fromPriceLabel={page.fromPriceLabel}
+        ctaLabel={cta}
+        bookingUrl={page.bookingUrl}
+      />
 
       {/* ============ HERO ============ */}
       <section
@@ -201,8 +174,13 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
           >
             {hero.subhead}
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px 24px", marginTop: 32 }}>
-            <CtaButton href={page.bookingUrl} label={cta} variant="cream" />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 14, marginTop: 32 }}>
+            <DealCtaActions
+              dealId={dealId}
+              bookingUrl={page.bookingUrl}
+              primaryLabel={cta}
+                    tone="hero"
+            />
             <span style={{ fontSize: 15, color: "rgba(250,247,242,0.85)" }}>
               {page.fromPriceLabel ? (
                 <>
@@ -287,7 +265,7 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
             }}
           >
             {segments.map((seg, i) => {
-              const imageRight = i % 2 === 1; // 01 left, 02 right, …
+              const imageRight = i % 2 === 1; // 01 left, 02 right, â€¦
               return (
                 <div
                   key={seg.index}
@@ -382,7 +360,7 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
               <SectionHeading>Every stop, in order</SectionHeading>
               <p style={{ margin: 0, maxWidth: "48ch", fontSize: 17, lineHeight: 1.7, color: C.muted }}>
                 {itinerary.kind === "days"
-                  ? "The itinerary below runs in order — ports and sea days as the voyage unfolds."
+                  ? "The itinerary below runs in order â€” ports and sea days as the voyage unfolds."
                   : "The crossing calls at the ports below. The full day-by-day route is confirmed at booking."}
               </p>
             </div>
@@ -418,7 +396,16 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
                             {row.text}
                           </span>
                         ) : (
-                          <span style={{ fontSize: 17, fontWeight: 600, color: C.navy }}>{row.text}</span>
+                          <span>
+                            <span style={{ display: "block", fontSize: 17, fontWeight: 600, color: C.navy }}>
+                              {row.text}
+                            </span>
+                            {row.timing && (
+                              <span style={{ display: "block", marginTop: 2, fontSize: 13, color: C.muted }}>
+                                {row.timing}
+                              </span>
+                            )}
+                          </span>
                         )}
                       </div>
                     ))
@@ -520,7 +507,13 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-            <CtaButton href={page.bookingUrl} label={cta} variant="navy" />
+            <DealCtaActions
+              dealId={dealId}
+              bookingUrl={page.bookingUrl}
+              primaryLabel={cta}
+                    tone="light"
+              align="center"
+            />
           </div>
         </div>
       </section>
@@ -650,21 +643,13 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
           >
             {hero.subhead}
           </h2>
-          <CtaButton href={page.bookingUrl} label={cta} variant="cream" />
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "12px 32px" }}>
-            <a
-              href="mailto:?subject=A%20cruise%20worth%20a%20look&body=Thought%20of%20you%20%E2%80%94%20take%20a%20look%20at%20this%20crossing."
-              style={{ fontSize: 14, color: "rgba(245,239,230,0.72)", textDecoration: "underline", textUnderlineOffset: 3 }}
-            >
-              Email me this page
-            </a>
-            <a
-              href="/contact"
-              style={{ fontSize: 14, color: "rgba(245,239,230,0.72)", textDecoration: "underline", textUnderlineOffset: 3 }}
-            >
-              Request a callback
-            </a>
-          </div>
+          <DealCtaActions
+            dealId={dealId}
+            bookingUrl={page.bookingUrl}
+            primaryLabel={cta}
+                tone="dark"
+            align="center"
+          />
         </div>
       </section>
 
@@ -684,21 +669,12 @@ export function DealLandingPage({ page }: { page: DealLandingPageView }) {
           <p style={{ margin: 0, fontSize: 13, color: "rgba(245,239,230,0.55)" }}>
             Fares, availability, and offer terms are confirmed at booking.
           </p>
-          <a
-            href="#pricing"
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "rgba(245,239,230,0.85)",
-              textDecoration: "none",
-              borderBottom: "1px solid rgba(245,239,230,0.35)",
-              paddingBottom: 2,
-            }}
-          >
-            Check availability
-          </a>
+          <DealCtaActions
+            dealId={dealId}
+            bookingUrl={page.bookingUrl}
+            primaryLabel={cta}
+            tone="dark"
+          />
         </div>
       </footer>
     </div>

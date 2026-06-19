@@ -15,11 +15,15 @@
 
 import { useEffect, useState } from "react";
 
+import { DealCtaActions } from "./deal-cta-actions";
+
 export function DealLandingPageEnhancements({
+  dealId,
   fromPriceLabel,
   ctaLabel,
   bookingUrl,
 }: {
+  dealId: string;
   fromPriceLabel?: string;
   ctaLabel: string;
   bookingUrl: string;
@@ -54,7 +58,7 @@ export function DealLandingPageEnhancements({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  // Section reveal — below-fold only, safe visible fallback.
+  // Section reveal â€” below-fold only, safe visible fallback.
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (!("IntersectionObserver" in window) || els.length === 0) return;
@@ -75,7 +79,7 @@ export function DealLandingPageEnhancements({
       if (el.dataset.revealed) return;
       el.dataset.revealed = "1";
       const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.85) return; // already in view — never hide
+      if (r.top < window.innerHeight * 0.85) return; // already in view â€” never hide
       el.style.opacity = "0";
       el.style.transform = "translateY(20px)";
       el.style.transition =
@@ -100,12 +104,12 @@ export function DealLandingPageEnhancements({
         borderTop: "1px solid #E8E1D5",
         padding: "12px 16px",
         boxSizing: "border-box",
-        display: "flex",
-        alignItems: "center",
+        display: "grid",
+        gridTemplateColumns: "1fr",
         gap: 14,
       }}
     >
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B6873" }}>
           {fromPriceLabel ? "From" : "Fares"}
         </span>
@@ -113,26 +117,12 @@ export function DealLandingPageEnhancements({
           {fromPriceLabel ? `${fromPriceLabel} / person` : "Confirmed at booking"}
         </span>
       </div>
-      <a
-        href={bookingUrl || "#pricing"}
-        target={bookingUrl ? "_blank" : undefined}
-        rel={bookingUrl ? "noreferrer" : undefined}
-        style={{
-          display: "inline-block",
-          background: "#0F3042",
-          color: "#FAF7F2",
-          fontWeight: 600,
-          fontSize: 14,
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-          padding: "14px 22px",
-          borderRadius: 3,
-          textDecoration: "none",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {ctaLabel}
-      </a>
+      <DealCtaActions
+        dealId={dealId}
+        bookingUrl={bookingUrl}
+        primaryLabel={ctaLabel}
+        tone="mobile"
+      />
     </div>
   );
 }

@@ -2,7 +2,8 @@
  * POST /api/deals/link-request (Phase 11/12)
  *
  * A visitor wants the booking link for a specific Curated Deal. The route
- * always returns the booking URL so the CTA can open it immediately.
+ * returns the booking URL for backend/UI confirmation, but the email CTA should
+ * not open the booking portal. Only the Book now CTA opens `bookingUrl`.
  *
  * When an email address is supplied, the route also sends the link via
  * Klaviyo (Phase 12): it upserts a profile and tracks the

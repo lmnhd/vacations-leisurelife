@@ -33,12 +33,25 @@ function report(result: PulseRunResult): void {
     for (const c of result.perCampaign) {
         const e = c.engagement;
         console.log(`▸ ${c.name}  (${c.slug})`);
-        console.log(`    signups: ${e.verifiedSignups} verified · ${e.thresholdPercent}% to ${e.requiredCabins} cabins · ideas: ${e.guestIdeaCount}`);
+        console.log(`    signups: ${e.totalSignups} (${e.verifiedSignups} verified) · ${e.thresholdPercent}% to ${e.requiredCabins} cabins · ideas: ${e.guestIdeaCount}`);
         console.log(`    last guest msg: ${e.lastGuestMessageAt ?? 'never'}${e.daysSinceLastGuestMessage !== null ? ` (${e.daysSinceLastGuestMessage}d ago)` : ''}`
             + ` · expiry: ${e.daysToExpiry !== null ? `${e.daysToExpiry}d` : 'n/a'}`);
 
         if (c.skippedReason) {
             console.log(`    ⏭  skipped: ${c.skippedReason}\n`);
+            continue;
+        }
+        // Rate-capped: nothing posts, but show what WOULD fire once the window clears.
+        if (c.rateCappedReason) {
+            console.log(`    ⏳ rate-capped (${c.rateCappedReason})`);
+            if (c.decisions.length === 0) {
+                console.log(`       no decision pending — nothing would fire anyway\n`);
+            } else {
+                for (const d of c.decisions) {
+                    console.log(`       would fire: [${d.rule} → #${d.channel}, key=${d.dedupeKey}] ${d.reason}`);
+                }
+                console.log('');
+            }
             continue;
         }
         if (c.plans.length === 0) {

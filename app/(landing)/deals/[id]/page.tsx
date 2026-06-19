@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Anchor, CalendarDays, CheckCircle2, CircleDollarSign, Ship, Sparkles } from "lucide-react";
@@ -41,7 +41,7 @@ export default async function DealDetailPage({
     // When a funnel synthesis exists, render the premium master-template page
     // (the Claude Design "Deal Page"); otherwise fall back to the legacy layout.
     if (curated.designPage) {
-      return <DealLandingPage page={curated.designPage} />;
+      return <DealLandingPage dealId={curated.id} page={curated.designPage} />;
     }
     return <CuratedDealPage deal={curated} />;
   }
@@ -245,3 +245,5 @@ export default async function DealDetailPage({
     </div>
   );
 }
+
+

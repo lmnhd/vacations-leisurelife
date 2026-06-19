@@ -91,7 +91,7 @@ https://bookings.cbagenttools.com/swift/cruise/package/{PACKAGE_ID}?siid={AGENT_
 
 **Agent credentials:** Stored in `.env.local` as `CB_EMAIL` / `CB_PASSWORD`. Never hardcode.
 
-**Playwright automation:** The `OdysseusEngine` drives CBAT headlessly for automated booking. All Playwright scripts that interact with CBAT require operator browser session state — never run them autonomously. Give the command and ask the user to run it. See `.github/DOCS/PROCESSES/odysseus-playwright-automation.md`.
+**Playwright automation:** The `OdysseusEngine` drives CBAT headlessly for automated booking and inventory work. Agents may run CBAT / Playwright inventory checks, scrapes, link validation, and non-booking research autonomously when credentials/session state are available. The only hard approval boundary is any action that would create a hold, reservation, payment step, or real booking. See `.github/DOCS/PROCESSES/odysseus-playwright-automation.md`.
 
 **CRITICAL:** Always confirm with the user before running any script that executes a "Hold" or reservation action. Raising flags with Cruise Brothers is a real operational risk.
 
@@ -136,7 +136,7 @@ This skill is still a work in progress but contains the authoritative workflow, 
 
 | Phase | What happens | Key constraint |
 |---|---|---|
-| **Phase 1: Discovery** | Perplexity Sonar → GPT structured blueprints → CB inventory match → DynamoDB `DRAFT` | CB deals cache must be fresh; operator runs `scrape-cb-deals.ts` |
+| **Phase 1: Discovery** | Perplexity Sonar → GPT structured blueprints → CB inventory match → DynamoDB `DRAFT` | CB deals cache must be fresh; agents may run `scrape-cb-deals.ts` autonomously |
 | **Phase 2: Phase B** | CB live scrape + link validation + Odysseus retail link | Playwright — operator runs `run-phase-b.ts`; agent checks result via `scripts/agent/` |
 | **Phase 3: Brief** | Aesthetic brief, landing still bible, production bible, secondary research dossier | Dossier must exist before approving brief for media |
 | **Phase 4: Media** | Ship images → heroes → scenes → ads → TikTok video | One asset type per call; dossier is a hard gate |
@@ -144,7 +144,7 @@ This skill is still a work in progress but contains the authoritative workflow, 
 
 ### Hard Rules (always active)
 1. Never call `read_url_content` on localhost.
-2. Never run Playwright scripts autonomously — give the command, ask the user to run it.
+2. Agents may run Playwright scripts autonomously for inventory, pricing, validation, and non-booking research. Ask the user before any hold, reservation, payment, or booking action.
 3. Never assume the dev server is running — ask before making `fetch()` calls to localhost.
 4. One repair pass per layer — if a warning persists after one fix, escalate to the user.
 5. Never modify `lib/campaigns/**` pipeline code to force a fix — report failures and wait for instructions.

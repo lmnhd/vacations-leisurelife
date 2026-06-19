@@ -407,6 +407,12 @@ export interface Campaign {
     /** Optional short bio shown alongside the TC name in emails / dashboard. */
     tourConductorBio?: string;
 
+    /**
+     * Optional manual itinerary timeline for campaign pages when the operator has
+     * a confirmed day-by-day schedule that should be displayed directly.
+     */
+    manualItineraryTimeline?: string[];
+
     createdAt: string;
     updatedAt: string;
 }

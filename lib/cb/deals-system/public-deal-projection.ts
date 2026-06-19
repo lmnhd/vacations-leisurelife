@@ -19,6 +19,8 @@
  * passes eligible Deals.
  */
 
+import { resolvePortCode } from "@/lib/campaigns/landing/port-codes";
+
 import type { DealCtaKind } from "./campaign-types";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import {
@@ -42,7 +44,42 @@ function unique(values: string[]): string[] {
 }
 
 function splitPortList(values: string[]): string[] {
-  return unique(values.flatMap((value) => value.split("|").map((part) => part.trim())));
+  const parts = values.flatMap((value) => value.split("|").map((part) => part.trim()));
+  // Translate known port codes (e.g. "NYC" → "New York, NY", "SOU" → "Southampton,
+  // UK") to readable names for public display. Unknown values pass through unchanged.
+  // De-dupe AFTER resolving so two codes for the same city collapse to one entry.
+  return unique(
+    parts.filter(Boolean).map((part) => resolvePortCode(part) ?? part)
+  );
+}
+
+/** "15:30:00" → "3:30 PM". Returns undefined for missing/malformed times. */
+function formatClockTime(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  const m = /^(\d{1,2}):(\d{2})/.exec(trimmed);
+  if (!m) return undefined;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  if (!Number.isInteger(hour) || hour > 23 || !Number.isInteger(minute) || minute > 59) {
+    return undefined;
+  }
+  const period = hour < 12 ? "AM" : "PM";
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12}:${String(minute).padStart(2, "0")} ${period}`;
+}
+
+/** Combine arrival/departure times into a single readable label, or undefined. */
+function formatPortTiming(
+  arrivalTime: string | undefined,
+  departureTime: string | undefined
+): string | undefined {
+  const arrive = formatClockTime(arrivalTime);
+  const depart = formatClockTime(departureTime);
+  const parts: string[] = [];
+  if (arrive) parts.push(`Arrive ${arrive}`);
+  if (depart) parts.push(`Depart ${depart}`);
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 function looksLikeCruiseName(value: string | undefined): boolean {
@@ -66,10 +103,9 @@ function displayItineraryName(deal: CuratedOdysseusDeal): string {
 function displayDeparturePort(deal: CuratedOdysseusDeal, ports: string[]): string | undefined {
   const departure = deal.cruiseFacts.departurePort?.trim();
   if (!departure) return undefined;
-  if (departure.length === 3 && departure.toUpperCase() === departure && ports[0]) {
-    return ports[0];
-  }
-  return departure;
+  // Resolve a port code (e.g. "NYC", "SOU") to its readable name; fall back to the
+  // first itinerary port, then the raw value.
+  return resolvePortCode(departure) ?? ports[0] ?? departure;
 }
 
 function heroImageFor(deal: CuratedOdysseusDeal): string {
@@ -164,7 +200,10 @@ interface DealSegmentView {
 }
 
 type DealItineraryView =
-  | { kind: "days"; rows: Array<{ label: string; text: string; atSea?: boolean }> }
+  | {
+      kind: "days";
+      rows: Array<{ label: string; text: string; atSea?: boolean; timing?: string }>;
+    }
   | { kind: "ports"; ports: string[] };
 
 type DealPricingView =
@@ -407,17 +446,31 @@ export function buildDealLandingPageView(
   }).filter((s): s is DealSegmentView => s !== undefined);
 
   // ── Itinerary ────────────────────────────────────────────────────────────────
+  // Prefer the REAL day-by-day schedule (port names + arrival/departure times + sea
+  // days) captured from Odysseus. Fall back to deriving days from the coarse ports
+  // string, then to a flat ports list — never fabricate dates/times.
+  const realDays = f.dayByDayItinerary;
   const itinerary: DealItineraryView =
-    readiness === "resolved" && ports.length > 0
+    realDays && realDays.length > 0
       ? {
           kind: "days",
-          rows: ports.map((port, i) => ({
-            label: `Day ${i + 1}`,
-            text: port,
-            atSea: /at sea/i.test(port),
+          rows: realDays.map((d) => ({
+            label: `Day ${d.day}`,
+            text: d.atSea ? "At Sea" : d.portName || "—",
+            atSea: d.atSea,
+            timing: formatPortTiming(d.arrivalTime, d.departureTime),
           })),
         }
-      : { kind: "ports", ports };
+      : readiness === "resolved" && ports.length > 0
+        ? {
+            kind: "days",
+            rows: ports.map((port, i) => ({
+              label: `Day ${i + 1}`,
+              text: port,
+              atSea: /at sea/i.test(port),
+            })),
+          }
+        : { kind: "ports", ports };
 
   // ── Pricing ────────────────────────────────────────────────────────────────
   const currency = prices.currencyCode || "USD";
@@ -488,20 +541,38 @@ export function buildDealLandingPageView(
     itinerary,
     pricing,
     specials,
-    ctaLabel: "Check Availability",
+    ctaLabel: "Book Now",
     bookingUrl: deal.bookingUrl,
   };
 }
 
-export function projectPublicDealTile(deal: CuratedOdysseusDeal): PublicDealTile {
+export function projectPublicDealTile(
+  deal: CuratedOdysseusDeal,
+  synthesis?: DealFunnelSynthesis
+): PublicDealTile {
   const copy = deal.copyPackage;
   const shipName = displayShipName(deal);
+
+  // Prefer the operator-selected hero image from the funnel synthesis (the same
+  // pick the /deals/[id] page renders). Only fall back to the deterministic stock
+  // image when no synthesis / no selection exists.
+  const heroPick = synthesis
+    ? imageSetFor(
+        synthesis.candidates,
+        synthesis.heroImageId ?? synthesis.galleryIds[0],
+        ["hero", "destination"],
+        synthesis.galleryIds
+      )
+    : undefined;
+
   return {
     id: deal.id,
     href: `/deals/${encodeURIComponent(deal.id)}`,
     destination: destinationLabel(deal),
-    imageSrc: heroImageFor(deal),
-    imageAlt: `${shipName ?? deal.cruiseFacts.cruiseLine} — ${destinationLabel(deal)}`,
+    imageSrc: heroPick?.imageUrl ?? heroImageFor(deal),
+    imageAlt:
+      heroPick?.imageAlt ??
+      `${shipName ?? deal.cruiseFacts.cruiseLine} — ${destinationLabel(deal)}`,
     header1: displayItineraryName(deal),
     header2: shipName,
     shortSummary: copy?.shortTileCopy ?? deal.packaging.shortSummary,

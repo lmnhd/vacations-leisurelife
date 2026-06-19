@@ -18,6 +18,7 @@ import type {
   DealMediaPlan,
   DealPitchBrief,
 } from "./campaign-types";
+import type { DealItineraryDay } from "./deal-trip-manifest-types";
 import type { LinkBrokerHealth } from "./link-broker-types";
 import type { PromoApplicabilityResult } from "./promo-intelligence-types";
 import type {
@@ -48,6 +49,12 @@ export interface CuratedDealCruiseFacts {
   sailDateIso: string;
   departurePort?: string;
   portsOfCall: string[];
+  /**
+   * Real day-by-day schedule (port names, arrival/departure times, sea days) from
+   * the Odysseus itinerary-detail endpoint, when captured at resolve time. Drives
+   * the public deal page's "Every stop, in order" section.
+   */
+  dayByDayItinerary?: DealItineraryDay[];
   cabinPrices: CuratedDealCabinPrices;
   promoSignals: string[];
 }

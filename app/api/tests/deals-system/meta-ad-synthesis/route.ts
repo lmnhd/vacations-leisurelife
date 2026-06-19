@@ -21,7 +21,7 @@ import { NextResponse } from "next/server";
 import {
   buildDealMetaAdSynthesis,
   generateDealMetaAdCardImage,
-  loadDealFunnelSynthesisCache,
+  listDealFunnelSyntheses,
   loadDealMetaAdSynthesisCache,
   revertDealMetaAdCardImage,
   saveDealMetaAdSynthesisCache,
@@ -45,9 +45,9 @@ interface Body {
   historyIndex?: unknown;
 }
 
-function loadFunnelSyntheses(): DealFunnelSynthesis[] {
+async function loadFunnelSyntheses(): Promise<DealFunnelSynthesis[]> {
   try {
-    return loadDealFunnelSynthesisCache().syntheses;
+    return await listDealFunnelSyntheses();
   } catch {
     return [];
   }
@@ -67,7 +67,7 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    funnelSyntheses: loadFunnelSyntheses(),
+    funnelSyntheses: await loadFunnelSyntheses(),
     syntheses: loadSyntheses(),
   });
 }
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const funnelSynthesis = loadFunnelSyntheses().find((s) => s.id === funnelSynthesisId);
+    const funnelSynthesis = (await loadFunnelSyntheses()).find((s) => s.id === funnelSynthesisId);
     if (!funnelSynthesis) {
       return NextResponse.json(
         { ok: false, error: `No funnel synthesis found with id "${funnelSynthesisId}".` },

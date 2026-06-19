@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-16T21:26:10.382Z",
+  "generatedAtIso": "2026-06-18T20:42:59.398Z",
   "records": [
     {
       "id": "sample-link-broker-1636340-package-entry",
@@ -279,14 +279,14 @@
       "url": "https://bookings.cbagenttools.com/swift/cruise/package/1578937?siid=1049337&lang=1",
       "urlHash": "1b1511682660ac3be5ca964e",
       "source": "constructed",
-      "createdAtIso": "2026-06-16T21:26:10.382Z",
-      "updatedAtIso": "2026-06-16T21:26:10.382Z",
+      "createdAtIso": "2026-06-18T20:42:59.397Z",
+      "updatedAtIso": "2026-06-18T20:42:59.397Z",
       "health": {
         "status": "unknown",
         "failureReason": "Constructed link not yet browser-validated (Phase 3)."
       },
       "cruiseFingerprint": {
-        "cruiseLine": "Silversea",
+        "cruiseLine": "Cunard",
         "shipName": "Eastbound Transatlantic Crossing",
         "sailDateIso": "2027-01-02",
         "nights": 9

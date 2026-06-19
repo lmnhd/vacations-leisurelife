@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+﻿import fs from "fs/promises";
 
 import {
   DEALS_CACHE_PATHS,
@@ -414,7 +414,6 @@ function summarizeCallbacks(
     routing: [
       request.routing.emailNotified ? "email" : undefined,
       request.routing.dashboardQueued ? "dashboard" : undefined,
-      request.routing.crispNotified ? "crisp" : undefined,
     ].filter((value): value is string => Boolean(value)),
     statusHistory: request.statusHistory.map((entry) => ({ ...entry })),
   }));
@@ -640,3 +639,5 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
     ],
   };
 }
+
+

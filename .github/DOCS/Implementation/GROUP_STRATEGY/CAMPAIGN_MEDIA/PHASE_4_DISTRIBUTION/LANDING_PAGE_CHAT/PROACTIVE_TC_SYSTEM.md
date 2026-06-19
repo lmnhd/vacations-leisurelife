@@ -82,9 +82,23 @@ before anything goes public.
 
 | Rule | Fires when | Channel | Dedupe key |
 |---|---|---|---|
-| **milestone** | verified signups cross a multiple of 3 (3,6,9…) | main | `milestone:N` |
-| **loneliness** | signups ≤ 2 AND chat silent ≥ 3 days | main | `loneliness:<window>` (`far/soon/closing/open` from `expiresAt`) |
-| **encouragement** | signups > 2 AND ≤ 2 guest ideas AND chat silent ≥ 3 days | main | `encouragement:<tier>` (re-arms as the room grows) |
+| **milestone** | TOTAL signups cross a multiple of 3 (3,6,9…) | main | `milestone:N` |
+| **loneliness** | total signups ≤ 2 AND chat silent ≥ 3 days | main | `loneliness:<window>` (`far/soon/closing/open` from `expiresAt`) |
+| **encouragement** | total signups > 2 AND ≤ 2 guest ideas AND chat silent ≥ 3 days | main | `encouragement:<tier>` (re-arms as the room grows) |
+
+**Signup basis (decided 2026-06-18):** momentum rules count **total** waitlist
+entries (verified or not), so the Pulse matches the signup number shown on the
+discovery/conversion dashboard. The **threshold %** it reports stays
+**verified-only** (real launch math). The report shows both: `signups: 8 (5
+verified)`.
+
+**Eligibility + report scope:** a full sweep only scans
+`GATHERING_INTEREST`, non-archived, non-retired campaigns (mirrors the discovery
+view) — not the whole DynamoDB table. `--slug=<slug>` bypasses the filter so any
+campaign can be inspected by slug.
+
+**Rate-cap visibility:** a rate-capped campaign still shows *what would fire*
+once the 24h window clears (decision computed, generation/post skipped).
 
 - **Precedence:** at most one autonomous post per campaign per sweep; milestone
   wins (factual, time-sensitive).
@@ -107,6 +121,32 @@ exactly like the email scheduler keys off its event ledger.
 `PULSE_RATE_CAP_HOURS=24`, `SESSION_SCAN_LIMIT=200`.
 
 ---
+
+## 4a. Verified-only public threshold (fixed 2026-06-18)
+
+The public "% to launch" / "N guests" count was previously computed from **all**
+waitlist entries (`getCampaignWaitlistSummary().totalEntries`), so an unverified
+signup inflated the bar (e.g. Grand Costumed Promenade showed 8/88% when only 5
+were email-verified). Only verified entries actually count toward forming the CB
+group, and the auto-promotion to `THRESHOLD_MET` was already verified-gated in
+the `/verify` route — so the display disagreed with the real launch math.
+
+Fix: the public count is now **verified-only**, consistently on both the bar %
+*and* the count label (the earlier "7 entries · 50%" mismatch is avoided by
+counting verified on both sides, not by reverting to totals). Touched:
+
+- [view-model.ts](../../../../../../lib/campaigns/landing/view-model.ts) — uses
+  the already-fetched `verifiedSummary` for `threshold.*`, `buildFacts`, and the
+  threshold copy (`publicSummary = verifiedSummary ?? waitlistSummary`).
+- [waitlist/route.ts](../../../../../../app/api/groups/campaign/%5Bslug%5D/waitlist/route.ts)
+  — post-signup `progress` now reports verified `joinedEntries`/`percent`, with
+  raw `totalEntries` still exposed for pending-verification context.
+- [email-event-orchestrator.ts](../../../../../../lib/campaigns/email/email-event-orchestrator.ts)
+  — nurture email **display** % is verified-only; the day3/day7 send-timing
+  **gates** still key off raw total (decision: "align display only").
+
+`getVerifiedWaitlistSummary(slug)` (verified-only) vs
+`getCampaignWaitlistSummary(slug)` (all) are the two summary sources.
 
 ## 5. Data model notes
 

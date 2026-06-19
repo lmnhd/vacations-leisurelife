@@ -1,5 +1,5 @@
 import {
-  loadDealFunnelSynthesisCache,
+  listDealFunnelSyntheses,
   loadDealMetaAdSynthesisCache,
   type DealFunnelSynthesis,
   type DealMetaAdSynthesis,
@@ -9,10 +9,10 @@ import { MetaAdSynthesisView } from "./meta-ad-synthesis-view";
 
 export const dynamic = "force-dynamic";
 
-export default function MetaAdSynthesisPage() {
+export default async function MetaAdSynthesisPage() {
   let funnelSyntheses: DealFunnelSynthesis[] = [];
   try {
-    funnelSyntheses = loadDealFunnelSynthesisCache().syntheses;
+    funnelSyntheses = await listDealFunnelSyntheses();
   } catch {
     funnelSyntheses = [];
   }

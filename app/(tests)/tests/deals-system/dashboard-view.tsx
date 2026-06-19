@@ -147,10 +147,10 @@ export function DealsSystemDashboardView({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow · Step 1
+                Deal Workflow Â· Step 1
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">
-                Discovery — start from research
+                Discovery â€” start from research
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                 {data.discovery.hasSavedResearch
@@ -158,7 +158,7 @@ export function DealsSystemDashboardView({
                       data.discovery.researchCachedAt
                         ? ` (cached ${data.discovery.researchCachedAt})`
                         : ""
-                    }. Generate retail package ideas from it — ${data.discovery.ideaCount} idea(s) cached so far.`
+                    }. Generate retail package ideas from it â€” ${data.discovery.ideaCount} idea(s) cached so far.`
                   : "No saved discovery research yet. Run Group discovery research first, then generate retail package ideas here."}
               </p>
             </div>
@@ -166,14 +166,14 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/discovery"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
             >
-              Open Discovery →
+              Open Discovery â†’
             </a>
           </div>
 
           {data.discovery.angles.length > 0 && (
             <div className="mt-4 border-t border-cyan-400/15 pt-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
-                Discovery angles — pick one to manifest
+                Discovery angles â€” pick one to manifest
               </p>
               <ul className="mt-2 grid gap-2 md:grid-cols-2">
                 {data.discovery.angles.map((angle) => (
@@ -197,7 +197,7 @@ export function DealsSystemDashboardView({
                         href={`/tests/deals-system/trip-manifestation?angleId=${encodeURIComponent(angle.id)}`}
                         className="rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                       >
-                        Manifest →
+                        Manifest â†’
                       </a>
                     </div>
                   </li>
@@ -211,7 +211,7 @@ export function DealsSystemDashboardView({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow · Step 2
+                Deal Workflow Â· Step 2
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Trip Manifestation</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -229,14 +229,14 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/trip-manifestation"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
             >
-              Open Trip Manifestation →
+              Open Trip Manifestation â†’
             </a>
           </div>
 
           {data.discovery.manifests.length > 0 && (
             <div className="mt-4 border-t border-cyan-400/15 pt-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
-                Trip manifests — pick one to write ad copy
+                Trip manifests â€” pick one to write ad copy
               </p>
               <ul className="mt-2 grid gap-2 md:grid-cols-2">
                 {data.discovery.manifests.map((manifest) => (
@@ -249,20 +249,20 @@ export function DealsSystemDashboardView({
                         {manifest.sailingAngleTitle}
                       </p>
                       <p className="truncate text-[11px] text-slate-400">
-                        {manifest.cruiseLine} · {manifest.destination}
+                        {manifest.cruiseLine} Â· {manifest.destination}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {manifest.hasAdCopy && (
                         <span className="rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-200">
-                          ad copy ✓
+                          ad copy âœ“
                         </span>
                       )}
                       <a
                         href={`/tests/deals-system/copywriter?manifestId=${encodeURIComponent(manifest.id)}`}
                         className="rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                       >
-                        Write ad copy →
+                        Write ad copy â†’
                       </a>
                     </div>
                   </li>
@@ -276,11 +276,11 @@ export function DealsSystemDashboardView({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow · Step 3
+                Deal Workflow Â· Step 3
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Ad Copywriter</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Expand a manifest&apos;s creative brief + inventory into direct-response ad copy —
+                Expand a manifest&apos;s creative brief + inventory into direct-response ad copy â€”
                 a primary retail play plus aspirational upsells, with insider voice and embedded
                 targeting hooks.{" "}
                 {data.discovery.adCopyCount > 0
@@ -294,17 +294,17 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/copywriter"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
             >
-              Open Ad Copywriter →
+              Open Ad Copywriter â†’
             </a>
           </div>
         </section>
 
-        {/* Step 4 · Funnel Synthesis */}
+        {/* Step 4 Â· Funnel Synthesis */}
         <section className="rounded-2xl border border-fuchsia-400/25 bg-fuchsia-500/[0.06] p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-fuchsia-300">
-                Deal Workflow · Step 4
+                Deal Workflow Â· Step 4
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Funnel Synthesis</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -317,17 +317,17 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/funnel-synthesis"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-300/40 bg-fuchsia-400/15 px-5 text-sm font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/25"
             >
-              Open Funnel Synthesis →
+              Open Funnel Synthesis â†’
             </a>
           </div>
         </section>
 
-        {/* Step 5 · Publish */}
+        {/* Step 5 Â· Publish */}
         <section className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow · Step 5
+                Deal Workflow Â· Step 5
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Publish</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -340,17 +340,17 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/publish"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
             >
-              Open Publish →
+              Open Publish â†’
             </a>
           </div>
         </section>
 
-        {/* Step 6 · Meta Ad Synthesis */}
+        {/* Step 6 Â· Meta Ad Synthesis */}
         <section className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-300">
-                Deal Workflow · Step 6
+                Deal Workflow Â· Step 6
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Meta Ad Synthesis</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -363,7 +363,7 @@ export function DealsSystemDashboardView({
               href="/tests/deals-system/meta-ad-synthesis"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-violet-300/40 bg-violet-400/15 px-5 text-sm font-semibold text-violet-100 transition hover:bg-violet-400/25"
             >
-              Open Meta Ad Synthesis →
+              Open Meta Ad Synthesis â†’
             </a>
           </div>
         </section>
@@ -379,7 +379,7 @@ export function DealsSystemDashboardView({
 
         <CollapsiblePanel
           title="Deal Campaign Workbench"
-          eyebrow="Develop a Deal with AI — research, copy, ad, media, approval"
+          eyebrow="Develop a Deal with AI â€” research, copy, ad, media, approval"
         >
           <DealCampaignWorkbench deals={data.curatedDeals} promoOptions={data.promoOptions} />
         </CollapsiblePanel>
@@ -403,7 +403,7 @@ export function DealsSystemDashboardView({
           <Stat
             label="Callbacks"
             value={data.summary.callbackRequests}
-            note="Requests queued for email, Crisp, and dashboard workflow"
+            note="Requests queued for Pushover and dashboard workflow"
           />
         </div>
 

@@ -22,6 +22,7 @@ import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import {
     getCampaignWaitlistEntry,
     getCampaignWaitlistSummary,
+    getVerifiedWaitlistSummary,
     listCampaignWaitlistEntries,
 } from '@/lib/campaigns/waitlist-store';
 import { appendLeadEvent, listCampaignLeadEvents } from '@/lib/campaigns/conversion-store';
@@ -165,11 +166,18 @@ function getNurtureProgressGateWarning(stage: EmailEventStage, totalEntries: num
 }
 
 async function resolveContext(campaignSlug: string, email: string, includeLanding: boolean) {
-    const [campaign, lead, summary] = await Promise.all([
+    const [campaign, lead, totalSummary, verifiedSummary] = await Promise.all([
         getCampaignBlueprint(campaignSlug),
         getCampaignWaitlistEntry(campaignSlug, email),
         getCampaignWaitlistSummary(campaignSlug),
+        getVerifiedWaitlistSummary(campaignSlug),
     ]);
+
+    // Public-facing email copy (% to launch, "N joined") shows VERIFIED-only,
+    // matching the landing page. The day3/day7 progress GATES, however, still
+    // key off the raw total (see callers that read `totalSummary`) so send
+    // timing is unchanged. Decision: "align display only" (2026-06-18).
+    const summary = verifiedSummary;
 
     if (!campaign) {
         throw new Error(`[EmailOrchestrator] Campaign not found: ${campaignSlug}`);
@@ -191,7 +199,7 @@ async function resolveContext(campaignSlug: string, email: string, includeLandin
         }
     }
 
-    return { campaign, lead, summary, landing };
+    return { campaign, lead, summary, totalSummary, landing };
 }
 
 /** Default manifest collection URL is `${landing}/manifest`. */
@@ -215,7 +223,7 @@ export async function buildEmailEventPreview(
         phase5?: EmailEventOptions['phase5'];
     } = {},
 ): Promise<EmailEventPreview> {
-    const { campaign, lead, summary, landing } = await resolveContext(campaignSlug, email, true);
+    const { campaign, lead, summary, totalSummary, landing } = await resolveContext(campaignSlug, email, true);
 
     const requiredCabins = getPublicGroupCabinTarget(campaign);
     const percentOfThreshold = getPublicThresholdPercent(requiredCabins, summary.totalEntries);
@@ -262,7 +270,9 @@ export async function buildEmailEventPreview(
         }
     }
 
-    const nurtureGateWarning = getNurtureProgressGateWarning(stage, summary.totalEntries);
+    // Gate keys off RAW total entries so send timing is unchanged; only the
+    // displayed % (via `summary`, now verified) shifted. See resolveContext.
+    const nurtureGateWarning = getNurtureProgressGateWarning(stage, totalSummary.totalEntries);
     if (nurtureGateWarning) warnings.push(nurtureGateWarning);
 
     // Phase 2 stage-specific warnings.
@@ -314,7 +324,7 @@ export async function dispatchEmailEvent(
     stage: EmailEventStage,
     opts: EmailEventOptions = {},
 ): Promise<void> {
-    const { campaign, lead, summary, landing } = await resolveContext(campaignSlug, email, true);
+    const { campaign, lead, summary, totalSummary, landing } = await resolveContext(campaignSlug, email, true);
     const attribution = buildAttribution(campaignSlug);
 
     // Build a stable metadata bag used by every ledger write for this send.
@@ -344,7 +354,9 @@ export async function dispatchEmailEvent(
         if (opts.phase4.summary) baseMetadata.changeSummary = opts.phase4.summary;
     }
 
-    const nurtureGateWarning = getNurtureProgressGateWarning(stage, summary.totalEntries);
+    // Gate keys off RAW total entries so send timing is unchanged; only the
+    // displayed % (via `summary`, now verified) shifted. See resolveContext.
+    const nurtureGateWarning = getNurtureProgressGateWarning(stage, totalSummary.totalEntries);
     if (nurtureGateWarning && !opts.bypassNurtureGate) {
         await appendLeadEvent({
             campaignSlug,

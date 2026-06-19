@@ -1,5 +1,155 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-15T00:40:15.998Z",
-  "distributions": []
+  "generatedAtIso": "2026-06-19T21:32:17.325Z",
+  "distributions": [
+    {
+      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "dealId": "1578937",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "generatedAtIso": "2026-06-19T21:31:53.327Z",
+      "mode": "live",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1578937",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1578937",
+        "caption": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Zero GMs. Nine Nights. One Ocean.",
+            "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "The Ship's Library Is Your Table",
+            "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "NYC → Southampton. No Ports Between.",
+            "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Fill That Leuchtturm for Real",
+            "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "solo rpg",
+            "journaling game",
+            "thousand year old vampire",
+            "ironsworn",
+            "apothecaria",
+            "gm-less rpg",
+            "board game",
+            "role-playing game",
+            "writing",
+            "hobby",
+            "oracle tables",
+            "solo roleplaying"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003342470823",
+              "name": "Board games",
+              "sourceQuery": "board game",
+              "audienceSizeLowerBound": 87881277,
+              "audienceSizeUpperBound": 103348382
+            },
+            {
+              "id": "6003380576181",
+              "name": "Role-playing games",
+              "sourceQuery": "role-playing game",
+              "audienceSizeLowerBound": 152068967,
+              "audienceSizeUpperBound": 178833106
+            },
+            {
+              "id": "6003586608473",
+              "name": "Writing",
+              "sourceQuery": "writing",
+              "audienceSizeLowerBound": 341526028,
+              "audienceSizeUpperBound": 401634610
+            },
+            {
+              "id": "6003159994808",
+              "name": "Hobby",
+              "sourceQuery": "hobby",
+              "audienceSizeLowerBound": 328618596,
+              "audienceSizeUpperBound": 386455470
+            }
+          ],
+          "unresolvedQueries": [
+            "solo rpg",
+            "journaling game",
+            "thousand year old vampire",
+            "ironsworn",
+            "apothecaria",
+            "gm-less rpg",
+            "oracle tables",
+            "solo roleplaying"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003342470823",
+                    "name": "Board games"
+                  },
+                  {
+                    "id": "6003380576181",
+                    "name": "Role-playing games"
+                  },
+                  {
+                    "id": "6003586608473",
+                    "name": "Writing"
+                  },
+                  {
+                    "id": "6003159994808",
+                    "name": "Hobby"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (4): board game, role-playing game, writing, hobby"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1578937 — Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+        "adSetName": "[DRAFT] Deal 1578937 Audience",
+        "creativeName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife-carousel",
+        "adName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife"
+      },
+      "notes": [
+        "meta_ad_account_id=1612907296491359",
+        "meta_campaign_id=120246108476030142",
+        "meta_ad_set_id=120246108476150142",
+        "meta_ad_set_mode=dynamic",
+        "meta_ad_creative_id=27295692670085963",
+        "meta_ad_id=120246108482300142",
+        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246108482300142",
+        "meta_dispatched_at=2026-06-19T21:32:17.324Z",
+        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
+      ],
+      "metaCampaignId": "120246108476030142",
+      "metaAdSetId": "120246108476150142",
+      "metaAdSetMode": "dynamic",
+      "facebookCreativeId": "27295692670085963",
+      "facebookAdId": "120246108482300142",
+      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246108482300142"
+    }
+  ]
 }
