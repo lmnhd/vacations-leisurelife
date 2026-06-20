@@ -18,6 +18,7 @@ import {
   type RankOptions,
 } from "./package-lookup";
 import type { LinkBrokerCruiseFacts, LinkBrokerTravelerSetup } from "./types";
+import type { DayByDayItinerary } from "@/lib/services/odysseus/types";
 
 /** name -> vendorId, derived from CRUISE_LINE_NAMES (first id wins). */
 const VENDOR_ID_BY_NAME: Record<string, number> = (() => {
@@ -180,5 +181,44 @@ export async function lookupOdysseusPackages(
       candidates: [],
       diagnostics: [`Odysseus lookup failed: ${message}`],
     };
+  }
+}
+
+/**
+ * Fetch + normalize the real day-by-day itinerary for one Odysseus itinerary id,
+ * driving its own authenticated session. Operator-run and read-only: it only reads
+ * /nitroapi/v2/cruise/itinerary/{id}; it never books or holds.
+ *
+ * This is the SHARED capture used by both resolution paths — the auto-selected
+ * candidate inside `lookupOdysseusPackages`, and the operator-picked candidate in
+ * the ambiguous resolve flow — so neither path can silently skip enrichment.
+ *
+ * Best-effort by contract: returns null (never throws) on any failure or when the
+ * detail endpoint has no usable schedule, so callers keep the coarse ports intact
+ * and never fabricate a schedule.
+ */
+export async function captureDayByDayItinerary(
+  itineraryId: number | string
+): Promise<DayByDayItinerary | null> {
+  let releaseSession: (() => Promise<void>) | undefined;
+  try {
+    const { getOdysseusSession, releaseOdysseusSession } = await import(
+      "@/lib/services/odysseus/OdysseusSessionManager"
+    );
+    releaseSession = releaseOdysseusSession;
+    const { normalizeItineraryDetail } = await import("@/lib/services/odysseus/types");
+
+    const engine = await getOdysseusSession();
+    const detail = await engine.fetchItineraryDetail(itineraryId);
+    return normalizeItineraryDetail(detail);
+  } catch {
+    if (releaseSession) {
+      try {
+        await releaseSession();
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
   }
 }

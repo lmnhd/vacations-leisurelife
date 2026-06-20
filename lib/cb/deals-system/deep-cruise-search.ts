@@ -66,6 +66,13 @@ export interface SelectedDeal {
   departurePortCode?: string;
   arrivalPortCode?: string;
   portsOfCall?: string;
+  /**
+   * Odysseus itinerary id — the key to fetch the real day-by-day schedule later
+   * (GET /nitroapi/v2/cruise/itinerary/{id}). Threaded through discovery → grounded
+   * candidate → manifest so resolution can capture the per-day ports/times instead
+   * of leaving only the coarse ports string. See [[odysseus-itinerary-pricing-upstream]].
+   */
+  itineraryId?: number;
   cabinPricing?: PackageCabinPricing;
   /** Lowest populated cabin fare ("from" price), if any. */
   leadFare?: number;
@@ -349,6 +356,7 @@ export function scoreSailing(
     departurePortCode: result.itinerary?.departure?.code,
     arrivalPortCode: result.itinerary?.arrival?.code,
     portsOfCall: result.itinerary?.normalizedPortsOfCall || result.itinerary?.portsOfCalls || undefined,
+    itineraryId: result.itinerary?.id,
     cabinPricing,
     leadFare: value.leadFare,
     hasGroupRate,

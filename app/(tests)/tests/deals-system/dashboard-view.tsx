@@ -147,10 +147,10 @@ export function DealsSystemDashboardView({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow Â· Step 1
+                Deal Workflow · Step 1
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">
-                Discovery â€” start from research
+                Discovery — start from research
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                 {data.discovery.hasSavedResearch
@@ -158,7 +158,7 @@ export function DealsSystemDashboardView({
                       data.discovery.researchCachedAt
                         ? ` (cached ${data.discovery.researchCachedAt})`
                         : ""
-                    }. Generate retail package ideas from it â€” ${data.discovery.ideaCount} idea(s) cached so far.`
+                    }. Generate retail package ideas from it — ${data.discovery.ideaCount} idea(s) cached so far.`
                   : "No saved discovery research yet. Run Group discovery research first, then generate retail package ideas here."}
               </p>
             </div>
@@ -173,7 +173,7 @@ export function DealsSystemDashboardView({
           {data.discovery.angles.length > 0 && (
             <div className="mt-4 border-t border-cyan-400/15 pt-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
-                Discovery angles â€” pick one to manifest
+                Discovery angles — pick one to manifest
               </p>
               <ul className="mt-2 grid gap-2 md:grid-cols-2">
                 {data.discovery.angles.map((angle) => (
@@ -236,7 +236,7 @@ export function DealsSystemDashboardView({
           {data.discovery.manifests.length > 0 && (
             <div className="mt-4 border-t border-cyan-400/15 pt-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
-                Trip manifests â€” pick one to write ad copy
+                Trip manifests — pick one to write ad copy
               </p>
               <ul className="mt-2 grid gap-2 md:grid-cols-2">
                 {data.discovery.manifests.map((manifest) => (
@@ -276,11 +276,11 @@ export function DealsSystemDashboardView({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">
-                Deal Workflow Â· Step 3
+                Deal Workflow · Step 3
               </p>
               <h2 className="mt-1 text-lg font-semibold text-white">Ad Copywriter</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Expand a manifest&apos;s creative brief + inventory into direct-response ad copy â€”
+                Expand a manifest&apos;s creative brief + inventory into direct-response ad copy —
                 a primary retail play plus aspirational upsells, with insider voice and embedded
                 targeting hooks.{" "}
                 {data.discovery.adCopyCount > 0
@@ -379,7 +379,7 @@ export function DealsSystemDashboardView({
 
         <CollapsiblePanel
           title="Deal Campaign Workbench"
-          eyebrow="Develop a Deal with AI â€” research, copy, ad, media, approval"
+          eyebrow="Develop a Deal with AI — research, copy, ad, media, approval"
         >
           <DealCampaignWorkbench deals={data.curatedDeals} promoOptions={data.promoOptions} />
         </CollapsiblePanel>

@@ -58,36 +58,76 @@ export function DealLandingPageEnhancements({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  // Section reveal â€” below-fold only, safe visible fallback.
+  // Section reveal — below-fold only, safe visible fallback.
+  //
+  // Robustness (the body must NEVER stay invisible): SSR renders every block
+  // visible. We only hide a block to animate it in, and we guarantee three escape
+  // hatches so a block can never get stuck hidden:
+  //   1. Measure AFTER a paint (rAF) so layout/scroll is settled. On a Next soft
+  //      navigation the effect fires before the new page scrolls to top; measuring
+  //      a frame later avoids mis-hiding on-screen blocks (the "blank until refresh"
+  //      bug).
+  //   2. A hard safety timeout force-reveals everything after 1.2s no matter what
+  //      the observer does.
+  //   3. The observer reveals on intersection as the user scrolls.
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (!("IntersectionObserver" in window) || els.length === 0) return;
+    if (els.length === 0) return;
+
+    const reveal = (el: HTMLElement) => {
+      el.style.opacity = "1";
+      el.style.transform = "translateY(0px)";
+    };
+
+    // No IntersectionObserver -> leave everything visible (original fallback).
+    if (!("IntersectionObserver" in window)) {
+      els.forEach(reveal);
+      return;
+    }
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const el = entry.target as HTMLElement;
-            el.style.opacity = "1";
-            el.style.transform = "translateY(0px)";
-            io.unobserve(el);
+            reveal(entry.target as HTMLElement);
+            io.unobserve(entry.target);
           }
         });
       },
       { threshold: 0.12 }
     );
-    els.forEach((el) => {
-      if (el.dataset.revealed) return;
-      el.dataset.revealed = "1";
-      const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.85) return; // already in view â€” never hide
-      el.style.opacity = "0";
-      el.style.transform = "translateY(20px)";
-      el.style.transition =
-        "opacity 600ms cubic-bezier(0.22,1,0.36,1), transform 600ms cubic-bezier(0.22,1,0.36,1)";
-      io.observe(el);
+
+    let safety: number | undefined;
+    // Defer setup until after the first paint so getBoundingClientRect() reflects
+    // the settled layout/scroll position of the freshly navigated page.
+    const raf = window.requestAnimationFrame(() => {
+      els.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        // Already in (or near) view -> never hide it.
+        if (r.top < window.innerHeight * 0.85) {
+          reveal(el);
+          return;
+        }
+        el.style.opacity = "0";
+        el.style.transform = "translateY(20px)";
+        el.style.transition =
+          "opacity 600ms cubic-bezier(0.22,1,0.36,1), transform 600ms cubic-bezier(0.22,1,0.36,1)";
+        io.observe(el);
+      });
+      // Last-resort: reveal everything still hidden after a short delay, so no
+      // block can ever be stranded invisible (e.g. if a scroll event is missed).
+      safety = window.setTimeout(() => els.forEach(reveal), 1200);
     });
-    return () => io.disconnect();
-  }, []);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      if (safety !== undefined) window.clearTimeout(safety);
+      io.disconnect();
+    };
+    // Re-run per deal: on a soft navigation between deal pages this component can
+    // stay mounted while only props change, so keying on dealId ensures the new
+    // page's [data-reveal] blocks get wired up (otherwise they'd never reveal).
+  }, [dealId]);
 
   if (!isMobile) return null;
 

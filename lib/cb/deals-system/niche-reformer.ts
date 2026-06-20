@@ -196,6 +196,7 @@ function dealToGroundedCandidate(deal: SelectedDeal, resolvedAtIso: string): Dea
     nights: deal.nights ?? undefined,
     departurePortCode: deal.departurePortCode,
     portsOfCall: deal.portsOfCall,
+    itineraryId: deal.itineraryId,
     // The deal is real by construction; carry the deal-quality score as its
     // confidence and the per-signal reasons as the grounding rationale.
     confidence: deal.qualityScore,

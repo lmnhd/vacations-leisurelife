@@ -90,6 +90,23 @@ export const PORT_CODES: Readonly<Record<string, string>> = {
     HKG: 'Hong Kong',
     SIN: 'Singapore',
     BKK: 'Bangkok (Laem Chabang), Thailand',
+    // ── Panama Canal / Pacific South America ─────────────────────────────────
+    PNMC: 'Panama Canal Transit',
+    GYE: 'Guayaquil, Ecuador',
+    BLVR: 'Puerto Bolívar, Ecuador',
+    CALL: 'Callao (Lima), Peru',
+    GSM1: 'General San Martín (Paracas), Peru',
+    IQQ: 'Iquique, Chile',
+    // ── South Pacific / French Polynesia ─────────────────────────────────────
+    IPC: 'Easter Island (Isla de Pascua), Chile',
+    AUQ: 'Atuona (Hiva Oa), Marquesas, French Polynesia',
+    FAV: 'Fakarava, Tuamotus, French Polynesia',
+    PPT: 'Papeete, Tahiti, French Polynesia',
+    // Best-guess mappings — verify against the Odysseus itinerary before treating
+    // as authoritative (geographically inferred from the surrounding route):
+    '8048': 'Fuerte Amador (Panama City), Panama', // numeric internal code, post-Canal call
+    THAE: 'Mangareva (Gambier Islands), French Polynesia',
+    AVTR: 'Avatoru (Rangiroa), Tuamotus, French Polynesia',
     // ── Common CB / Royal Caribbean internal codes ───────────────────────────
     MET: 'At Sea',          // CB internal: "sea day" waypoint
     SEA2: 'At Sea',

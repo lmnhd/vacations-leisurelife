@@ -170,12 +170,12 @@ PART 1: THE PUBLIC LANDING PAGE (Broad Market Appeal)
 - Tone: sophisticated, relaxed, premium — "a great cruise with great perks".
 - Rule: COMPLETELY REMOVE all hyper-specific niche vocabulary. Kill every reference to the subculture's hobby, props, brands, in-jokes, and personas. A standard retail traveler, or a partner who is NOT into the niche, must read this and think "this looks like an incredible upscale cruise."
 - Keep the VIBE the ad promised (peace, ocean views, quiet sophisticated spaces, unhurried dining, atmospheric ports) but strip the jargon.
-- Structure: write short, evocative paragraphs (MAXIMUM 3 sentences each) designed to sit next to premium imagery, broken down exactly by these ship segments, in this order:
-  1. cabins  (heading "The Cabins")
-  2. lounges (heading "The Lounges")
-  3. atrium  (heading "The Atrium")
-  4. dining  (heading "The Dining Rooms")
-  5. excursions (heading "The Excursions")
+- Structure: write short, evocative paragraphs (MAXIMUM 3 sentences each) designed to sit next to premium imagery, broken down exactly by these ship segments, in this order. Use these exact headings (clean, premium, and campaign-agnostic — true for any cruise):
+  1. cabins  (heading "Your Space at Sea")
+  2. lounges (heading "Room to Unwind")
+  3. atrium  (heading "First Impressions")
+  4. dining  (heading "A Table for Every Night")
+  5. excursions (heading "Where You'll Step Ashore")
 - Also write a broad heroHeadline and a one-line heroSubhead with NO niche jargon.
 
 PART 2: THE META CAROUSEL AD (Hyper-Niche Target)

@@ -283,18 +283,18 @@ check("hero tries selected thumbnail before other fallbacks",
 check("text-only-waived deal still uses selected synthesis hero image",
   projectPublicDealPage(approved, synthesisFor(approved.id)).designPage?.hero.imageUrl === "https://img.example.com/img-hero.jpg");
 check("five segments in fixed order", resolvedPage?.segments.length === 5 &&
-  resolvedPage?.segments[0].heading === "The Cabins" &&
-  resolvedPage?.segments[4].heading === "The Excursions");
+  resolvedPage?.segments[0].heading === "Your Space at Sea" &&
+  resolvedPage?.segments[4].heading === "Where You'll Step Ashore");
 check("segment images resolve from per-segment imageId",
   resolvedPage?.segments.every((s) => typeof s.imageUrl === "string" && s.imageUrl.length > 0) === true);
 check("segment image alt text is public-safe, not source-page title",
-  resolvedPage?.segments.find((s) => s.heading === "The Atrium")?.imageAlt === "Atrium aboard the ship");
+  resolvedPage?.segments.find((s) => s.heading === "First Impressions")?.imageAlt === "Atrium aboard the ship");
 check("segment image carries same-category fallback images",
-  resolvedPage?.segments.find((s) => s.heading === "The Excursions")?.imageFallbacks?.some((image) =>
+  resolvedPage?.segments.find((s) => s.heading === "Where You'll Step Ashore")?.imageFallbacks?.some((image) =>
     image.imageUrl === "https://img.example.com/img-excursions-backup.jpg"
   ) === true);
 check("segment image tries selected thumbnail before category fallbacks",
-  resolvedPage?.segments.find((s) => s.heading === "The Excursions")?.imageFallbacks?.[0]?.imageUrl ===
+  resolvedPage?.segments.find((s) => s.heading === "Where You'll Step Ashore")?.imageFallbacks?.[0]?.imageUrl ===
     "https://img.example.com/img-excursions-t.jpg");
 check("segment index labels are 01..05",
   resolvedPage?.segments.map((s) => s.index).join(",") === "01,02,03,04,05");

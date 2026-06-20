@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-18T20:42:59.398Z",
+  "generatedAtIso": "2026-06-20T17:00:04.503Z",
   "records": [
     {
       "id": "sample-link-broker-1636340-package-entry",
@@ -225,14 +225,14 @@
       "url": "https://bookings.cbagenttools.com/swift/cruise/package/1582993?siid=1049337&lang=1",
       "urlHash": "bc75b7104acb54c922238ac3",
       "source": "constructed",
-      "createdAtIso": "2026-06-16T18:18:53.296Z",
-      "updatedAtIso": "2026-06-16T18:18:53.296Z",
+      "createdAtIso": "2026-06-20T17:00:04.503Z",
+      "updatedAtIso": "2026-06-20T17:00:04.503Z",
       "health": {
         "status": "unknown",
         "failureReason": "Constructed link not yet browser-validated (Phase 3)."
       },
       "cruiseFingerprint": {
-        "cruiseLine": "Regent",
+        "cruiseLine": "Seabourn",
         "shipName": "35-Day World Cruise: Panama Canal Crossing & Polynesia",
         "sailDateIso": "2027-01-05",
         "nights": 35

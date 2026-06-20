@@ -53,6 +53,12 @@ export interface DealDiscoveryGroundedCandidate {
   nights?: number;
   departurePortCode?: string;
   portsOfCall?: string;
+  /**
+   * Odysseus itinerary id captured at grounding time — the key to fetch the real
+   * day-by-day schedule at resolution (so the public page shows per-day ports/times,
+   * not just a coarse port list). Optional for back-compat with pre-existing angles.
+   */
+  itineraryId?: number;
   /** 0..1 ranker confidence — gated at >= MATCH_CONFIDENCE_THRESHOLD to be accepted. */
   confidence: number;
   reasons: string[];

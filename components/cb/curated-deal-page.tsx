@@ -28,7 +28,7 @@ import type { PublicDealPage } from "@/lib/cb/deals-system/public-deal-projectio
  * Email me the link: opens an inline email form, then calls
  *   POST /api/deals/link-request with { dealId, email }. The response reports
  *   whether the Klaviyo email send (Phase 12) actually went out.
- * Request a callback: calls POST /api/deals/callback-request â€” stores the request
+ * Request a callback: calls POST /api/deals/callback-request — stores the request
  *   queues the request for the operator dashboard and sends an admin Pushover notification.
  *
  * Email me the link captures only an email address. Callback captures name,
@@ -160,7 +160,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <p className="max-w-2xl text-lg leading-8 text-white/82">{deal.heroSummary}</p>
                 {deal.textOnlyLaunchWaived && (
                   <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur">
-                    Images coming soon â€” book now while rates are available.
+                    Images coming soon — book now while rates are available.
                   </p>
                 )}
               </div>
@@ -224,7 +224,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                     className="w-full rounded-full font-semibold"
                   >
                     {isLinkSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLinkSubmitting ? "Sendingâ€¦" : "Send me the link"}
+                    {isLinkSubmitting ? "Sending…" : "Send me the link"}
                   </Button>
                 </form>
               )}
@@ -288,14 +288,14 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                     {isSubmitting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isSubmitting ? "Sendingâ€¦" : "Send request"}
+                    {isSubmitting ? "Sending…" : "Send request"}
                   </Button>
                 </form>
               )}
 
               {callbackState === "done" && (
                 <p className="text-sm text-emerald-300">
-                  Request received â€” an agent will be in touch.
+                  Request received — an agent will be in touch.
                 </p>
               )}
               {(callbackState === "error" || linkState === "error") && !linkError && (
@@ -453,7 +453,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
 
               {callbackState === "done" && (
                 <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  Request received â€” an agent will be in touch.
+                  Request received — an agent will be in touch.
                 </p>
               )}
               {linkState === "sent" && (

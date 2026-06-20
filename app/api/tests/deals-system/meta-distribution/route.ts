@@ -110,7 +110,12 @@ export async function POST(request: Request) {
 
   // ── dispatch ─────────────────────────────────────────────────────────────
   if (action === "dispatch") {
-    const mode: DealMetaDistributionMode = body.mode === "live" ? "live" : "simulate";
+    const mode: DealMetaDistributionMode =
+      body.mode === "live"
+        ? "live"
+        : body.mode === "organic_page_only"
+          ? "organic_page_only"
+          : "simulate";
     try {
       const plan = await planDealMetaDistribution(synthesis, deal);
       const distribution = await dispatchDealMetaDistribution(synthesis, plan, mode);

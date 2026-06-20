@@ -59,6 +59,7 @@ interface ApproveResponse {
   error?: string;
   deal?: CuratedOdysseusDeal;
   approved?: boolean;
+  gates?: { id: string; label: string; passed: boolean; detail: string; blocking: boolean }[];
   blockingFailures?: { id: string; label: string; passed: boolean; detail: string; blocking: boolean }[];
 }
 
@@ -167,6 +168,7 @@ export function PublishView({
       const data = (await res.json()) as ApproveResponse;
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Failed.");
       if (data.deal) applyDealUpdate(data.deal);
+      if (data.gates) setGates(data.gates);
       setMessage({ tone: "ok", text: "Link health set to valid." });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
@@ -188,6 +190,7 @@ export function PublishView({
       const data = (await res.json()) as ApproveResponse;
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Failed.");
       if (data.deal) applyDealUpdate(data.deal);
+      if (data.gates) setGates(data.gates);
       setExpirationOverride(expiresOnIso || null);
       setMessage({
         tone: "ok",
@@ -219,7 +222,12 @@ export function PublishView({
       });
       const data = (await res.json()) as ApproveResponse;
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Approval failed.");
-      if (data.deal) applyDealUpdate(data.deal);
+      if (data.deal) {
+        applyDealUpdate(data.deal);
+        // The approve evaluation re-derives gates on the deal — surface them so the
+        // gate list matches the decision (a blocking gate may now pass).
+        if (data.deal.operatorApproval?.gates) setGates(data.deal.operatorApproval.gates);
+      }
       if (data.approved) {
         setMessage({ tone: "ok", text: "Deal approved and now LIVE on the homepage!" });
       } else {

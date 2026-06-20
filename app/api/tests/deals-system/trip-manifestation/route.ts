@@ -73,6 +73,10 @@ async function resolveManifestAgainstInventory(
     nights: g.nights ?? null,
     departurePortCode: g.departurePortCode,
     portsOfCall: g.portsOfCall,
+    // Forward the itinerary id captured at grounding so resolveCandidateOntoManifest
+    // can fetch the real day-by-day schedule. Absent on pre-existing angles (then the
+    // resolve path keeps coarse ports — re-run discovery to capture it).
+    itinerary: g.itineraryId ? { itineraryId: g.itineraryId } : undefined,
     confidence: g.confidence,
     reasons: g.reasons,
   };

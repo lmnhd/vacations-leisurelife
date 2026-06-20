@@ -118,7 +118,11 @@ export const DEAL_LANDING_SEGMENT_KEYS: readonly DealLandingSegmentKey[] = [
 
 export interface DealLandingSegment {
   segment: DealLandingSegmentKey;
-  /** Short title shown above the paragraph (e.g. "The Cabins"). */
+  /**
+   * Short title shown above the paragraph. Note: the public projection overrides
+   * this with a canonical, campaign-agnostic heading per segment (e.g. cabins →
+   * "Your Space at Sea") — see SEGMENT_HEADINGS in public-deal-projection.ts.
+   */
   heading: string;
   /** <=3 sentence broad-appeal paragraph, jargon stripped. */
   body: string;

@@ -30,6 +30,7 @@ import {
   createMetaCampaign,
   getMetaAdsConfig,
   buildMetaAdsReviewUrl,
+  publishFacebookPagePost,
   type MetaAdsConfig,
 } from "@/lib/integrations/meta-ads";
 import {
@@ -347,6 +348,56 @@ export async function dispatchDealMetaDistribution(
         ...plan.targeting.warnings.map((w) => `targeting_warning=${w}`),
       ],
     };
+  }
+
+  if (mode === "organic_page_only") {
+    const config = getMetaAdsConfig();
+    if (!config) {
+      return {
+        ...base,
+        status: "error",
+        error: "Missing META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, or META_PAGE_ID.",
+      };
+    }
+    if (plan.cards.length === 0) {
+      return {
+        ...base,
+        status: "error",
+        error: "No ready carousel cards to publish. Generate at least one card image first.",
+      };
+    }
+
+    try {
+      const result = await publishFacebookPagePost(config, {
+        message: `${plan.caption}
+
+${plan.destinationUrl}`.trim(),
+        imageUrls: plan.cards.map((card) => card.imageUrl),
+        imageUrl: plan.cards[0]?.imageUrl,
+        published: true,
+      });
+
+      return {
+        ...base,
+        status: "dispatched",
+        facebookPagePostId: result.postId,
+        notes: [
+          `facebook_page_id=${config.pageId}`,
+          `facebook_page_post_id=${result.postId}`,
+          `facebook_page_published=${result.published}`,
+          `facebook_page_media_type=${plan.cards.length > 1 ? "multi_image" : "single_image"}`,
+          `facebook_page_card_count=${plan.cards.length}`,
+          `facebook_page_destination_url=${plan.destinationUrl}`,
+          `facebook_page_dispatched_at=${new Date().toISOString()}`,
+        ],
+      };
+    } catch (error: unknown) {
+      return {
+        ...base,
+        status: "error",
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   // ── live ─────────────────────────────────────────────────────────────────

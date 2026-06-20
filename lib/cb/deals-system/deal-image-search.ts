@@ -62,13 +62,28 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
 }
 
+/**
+ * Short, stable hash of a string (FNV-1a, base36). Used to make a candidate id
+ * that depends on the image url rather than its position in the result list, so
+ * re-searching the same category/query can't mint colliding ids for distinct
+ * images (every consumer de-dupes by imageUrl — the id must agree).
+ */
+function hash(value: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    h ^= value.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
 function toCandidates(
   results: Awaited<ReturnType<ImageSearchFn>>["results"],
   query: string,
   category: DealImageCategory
 ): DealImageCandidate[] {
-  return results.map((r, i) => ({
-    id: `img-${category}-${slug(query)}-${i}`,
+  return results.map((r) => ({
+    id: `img-${category}-${slug(query)}-${hash(r.imageUrl)}`,
     imageUrl: r.imageUrl,
     thumbnailUrl: r.thumbnailUrl,
     contextUrl: r.contextUrl,

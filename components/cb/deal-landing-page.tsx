@@ -1,8 +1,8 @@
 /**
- * Premium Deal Page â€” the master template a prospect lands on after clicking a
+ * Premium Deal Page — the master template a prospect lands on after clicking a
  * paid ad. Pixel-faithful translation of the Claude Design "Deal Page" handoff
  * (project LLI-Deal-Page). Renders purely from `DealLandingPageView`, with the
- * resolved/draft fork the design specifies â€” never fabricating a missing fact.
+ * resolved/draft fork the design specifies — never fabricating a missing fact.
  *
  * Editorial, calm, premium: Cormorant Garamond display + Source Sans 3 body,
  * cream/navy/gold palette, large imagery, one repeated primary CTA, sticky mobile
@@ -74,9 +74,168 @@ function SectionHeading({ children, center }: { children: React.ReactNode; cente
   );
 }
 
+// ── Itinerary calendar ──────────────────────────────────────────────────────
+type ItineraryDayRow = {
+  label: string;
+  text: string;
+  atSea?: boolean;
+  timing?: string;
+  dateIso?: string;
+  day?: number;
+};
+
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+/** UTC-stable parse of a "YYYY-MM-DD" date (noon UTC to dodge TZ drift). */
+function parseDateIso(iso: string): Date | null {
+  const d = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Renders the voyage as month calendar grids (weeks as rows, Sun–Sat columns),
+ * one cell per real date, port days filled with the port name + arrival/departure
+ * times and sea days shown lightly. Returns null when no row carries a date, so
+ * the caller falls back to the plain day list (legacy deals, coarse ports).
+ */
+function ItineraryCalendar({ rows }: { rows: ItineraryDayRow[] }) {
+  const dated = rows
+    .map((r) => ({ row: r, date: r.dateIso ? parseDateIso(r.dateIso) : null }))
+    .filter((x): x is { row: ItineraryDayRow; date: Date } => x.date !== null);
+  if (dated.length === 0) return null;
+
+  // Bucket days by calendar month (UTC), keyed by year-month for stable order.
+  const months = new Map<string, { year: number; month: number; days: Map<number, ItineraryDayRow> }>();
+  for (const { row, date } of dated) {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const key = `${year}-${month}`;
+    const bucket = months.get(key) ?? { year, month, days: new Map<number, ItineraryDayRow>() };
+    bucket.days.set(date.getUTCDate(), row);
+    months.set(key, bucket);
+  }
+  const ordered = [...months.values()].sort((a, b) => a.year - b.year || a.month - b.month);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "clamp(28px, 4vw, 44px)" }}>
+      {ordered.map(({ year, month, days }) => {
+        const first = new Date(Date.UTC(year, month, 1));
+        const startWeekday = first.getUTCDay(); // 0 = Sunday
+        const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+        const monthLabel = first.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+        // Leading blanks + day cells, padded to whole weeks.
+        const cells: Array<number | null> = [
+          ...Array.from({ length: startWeekday }, () => null),
+          ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+        ];
+        while (cells.length % 7 !== 0) cells.push(null);
+
+        return (
+          <div key={`${year}-${month}`}>
+            <p
+              style={{
+                margin: "0 0 12px",
+                fontFamily: serif,
+                fontSize: 22,
+                fontWeight: 600,
+                color: C.navy,
+                letterSpacing: "0.01em",
+              }}
+            >
+              {monthLabel}
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, 1fr)",
+                gap: 1,
+                background: C.border,
+                border: `1px solid ${C.border}`,
+                borderRadius: 4,
+                overflow: "hidden",
+              }}
+            >
+              {WEEKDAY_LABELS.map((wd) => (
+                <div
+                  key={wd}
+                  style={{
+                    background: C.cream,
+                    padding: "8px 6px",
+                    textAlign: "center",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: C.gold,
+                  }}
+                >
+                  {wd}
+                </div>
+              ))}
+              {cells.map((dayNum, i) => {
+                const row = dayNum ? days.get(dayNum) : undefined;
+                const isPort = Boolean(row && !row.atSea);
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      background: dayNum ? (isPort ? C.surface : C.bg) : C.cream,
+                      minHeight: 92,
+                      padding: "8px 9px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                    }}
+                  >
+                    {dayNum && (
+                      <>
+                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: row ? C.navy : C.mutedLight }}>
+                            {dayNum}
+                          </span>
+                          {row?.day != null && (
+                            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mutedLight }}>
+                              Day {row.day}
+                            </span>
+                          )}
+                        </div>
+                        {row && isPort ? (
+                          <>
+                            <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.3, color: C.navy }}>
+                              {row.text}
+                            </span>
+                            {row.timing && (
+                              <span style={{ fontSize: 10.5, lineHeight: 1.35, color: C.muted }}>{row.timing}</span>
+                            )}
+                          </>
+                        ) : row ? (
+                          <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: 13, color: C.mutedLight }}>
+                            At Sea
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLandingPageView }) {
   const { hero, chips, factBand, segments, itinerary, pricing, specials } = page;
   const cta = page.ctaLabel || "Book Now";
+  // Render the day-by-day schedule as a month calendar when the rows carry real
+  // dates; otherwise fall back to the vertical list (legacy deals, coarse ports).
+  const hasCalendarDates =
+    itinerary.kind === "days" && itinerary.rows.some((r) => Boolean(r.dateIso));
+  const itineraryCalendar = hasCalendarDates ? (
+    <ItineraryCalendar rows={(itinerary as { rows: ItineraryDayRow[] }).rows} />
+  ) : null;
 
   return (
     <div
@@ -265,7 +424,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
             }}
           >
             {segments.map((seg, i) => {
-              const imageRight = i % 2 === 1; // 01 left, 02 right, â€¦
+              const imageRight = i % 2 === 1; // 01 left, 02 right, …
               return (
                 <div
                   key={seg.index}
@@ -344,101 +503,116 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
             boxSizing: "border-box",
           }}
         >
-          <div
-            data-reveal="1"
-            style={{
-              maxWidth: 1160,
-              margin: "0 auto",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
-              gap: "clamp(40px, 6vw, 88px)",
-              alignItems: "start",
-            }}
-          >
-            <div>
-              <Eyebrow>The Route</Eyebrow>
-              <SectionHeading>Every stop, in order</SectionHeading>
-              <p style={{ margin: 0, maxWidth: "48ch", fontSize: 17, lineHeight: 1.7, color: C.muted }}>
-                {itinerary.kind === "days"
-                  ? "The itinerary below runs in order â€” ports and sea days as the voyage unfolds."
-                  : "The crossing calls at the ports below. The full day-by-day route is confirmed at booking."}
-              </p>
+          {itinerary.kind === "days" && itineraryCalendar ? (
+            // Calendar view: heading on top, calendar spans the full width below to
+            // consolidate the horizontal space (vs. the long vertical list).
+            <div data-reveal="1" style={{ maxWidth: 1160, margin: "0 auto" }}>
+              <div style={{ maxWidth: 640, marginBottom: "clamp(32px, 4vw, 48px)" }}>
+                <Eyebrow>The Route</Eyebrow>
+                <SectionHeading>Every stop, in order</SectionHeading>
+                <p style={{ margin: 0, maxWidth: "52ch", fontSize: 17, lineHeight: 1.7, color: C.muted }}>
+                  The full voyage, day by day — ports and sea days laid out on the calendar below.
+                </p>
+              </div>
+              {itineraryCalendar}
             </div>
-            <div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {itinerary.kind === "days"
-                  ? itinerary.rows.map((row, i) => (
-                      <div
-                        key={`${row.label}-${i}`}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "88px 1fr",
-                          gap: 16,
-                          padding: "15px 0",
-                          borderTop: `1px solid ${C.border}`,
-                          borderBottom: i === itinerary.rows.length - 1 ? `1px solid ${C.border}` : undefined,
-                          alignItems: "baseline",
-                        }}
-                      >
-                        <span
+          ) : (
+            <div
+              data-reveal="1"
+              style={{
+                maxWidth: 1160,
+                margin: "0 auto",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+                gap: "clamp(40px, 6vw, 88px)",
+                alignItems: "start",
+              }}
+            >
+              <div>
+                <Eyebrow>The Route</Eyebrow>
+                <SectionHeading>Every stop, in order</SectionHeading>
+                <p style={{ margin: 0, maxWidth: "48ch", fontSize: 17, lineHeight: 1.7, color: C.muted }}>
+                  {itinerary.kind === "days"
+                    ? "The itinerary below runs in order — ports and sea days as the voyage unfolds."
+                    : "The crossing calls at the ports below. The full day-by-day route is confirmed at booking."}
+                </p>
+              </div>
+              <div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {itinerary.kind === "days"
+                    ? itinerary.rows.map((row, i) => (
+                        <div
+                          key={`${row.label}-${i}`}
                           style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: row.atSea ? C.mutedLight : C.gold,
+                            display: "grid",
+                            gridTemplateColumns: "88px 1fr",
+                            gap: 16,
+                            padding: "15px 0",
+                            borderTop: `1px solid ${C.border}`,
+                            borderBottom: i === itinerary.rows.length - 1 ? `1px solid ${C.border}` : undefined,
+                            alignItems: "baseline",
                           }}
                         >
-                          {row.label}
-                        </span>
-                        {row.atSea ? (
-                          <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: 18, color: C.muted }}>
-                            {row.text}
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                              color: row.atSea ? C.mutedLight : C.gold,
+                            }}
+                          >
+                            {row.label}
                           </span>
-                        ) : (
-                          <span>
-                            <span style={{ display: "block", fontSize: 17, fontWeight: 600, color: C.navy }}>
+                          {row.atSea ? (
+                            <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: 18, color: C.muted }}>
                               {row.text}
                             </span>
-                            {row.timing && (
-                              <span style={{ display: "block", marginTop: 2, fontSize: 13, color: C.muted }}>
-                                {row.timing}
+                          ) : (
+                            <span>
+                              <span style={{ display: "block", fontSize: 17, fontWeight: 600, color: C.navy }}>
+                                {row.text}
                               </span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  : itinerary.ports.map((port, i) => (
-                      <div
-                        key={`${port}-${i}`}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "88px 1fr",
-                          gap: 16,
-                          padding: "15px 0",
-                          borderTop: `1px solid ${C.border}`,
-                          borderBottom: i === itinerary.ports.length - 1 ? `1px solid ${C.border}` : undefined,
-                          alignItems: "baseline",
-                        }}
-                      >
-                        <span
+                              {row.timing && (
+                                <span style={{ display: "block", marginTop: 2, fontSize: 13, color: C.muted }}>
+                                  {row.timing}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    : itinerary.ports.map((port, i) => (
+                        <div
+                          key={`${port}-${i}`}
                           style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: C.gold,
+                            display: "grid",
+                            gridTemplateColumns: "88px 1fr",
+                            gap: 16,
+                            padding: "15px 0",
+                            borderTop: `1px solid ${C.border}`,
+                            borderBottom: i === itinerary.ports.length - 1 ? `1px solid ${C.border}` : undefined,
+                            alignItems: "baseline",
                           }}
                         >
-                          Port
-                        </span>
-                        <span style={{ fontSize: 17, fontWeight: 600, color: C.navy }}>{port}</span>
-                      </div>
-                    ))}
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                              color: C.gold,
+                            }}
+                          >
+                            Port
+                          </span>
+                          <span style={{ fontSize: 17, fontWeight: 600, color: C.navy }}>{port}</span>
+                        </div>
+                      ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </section>
       )}
 

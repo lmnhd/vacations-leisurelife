@@ -25,6 +25,13 @@ interface Candidate {
   confidence: number;
   reasons: string[];
   departurePortCode?: string;
+  /**
+   * Structured itinerary from the Odysseus result. Carried through opaquely so the
+   * itineraryId survives round-trip and the resolve handler can capture the real
+   * day-by-day schedule for the operator-picked candidate. Do not strip it when
+   * sending the candidate back to { action: "resolve_candidate" }.
+   */
+  itinerary?: Record<string, unknown>;
 }
 
 type LookupStatus = "confident_match" | "ambiguous" | "no_match" | "lookup_failed";

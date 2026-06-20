@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-19T21:32:17.325Z",
+  "generatedAtIso": "2026-06-19T22:27:05.300Z",
   "distributions": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
       "dealId": "1578937",
       "sourceMetaAdSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "generatedAtIso": "2026-06-19T21:31:53.327Z",
-      "mode": "live",
+      "generatedAtIso": "2026-06-19T22:26:44.871Z",
+      "mode": "organic_page_only",
       "status": "dispatched",
       "plan": {
         "dealId": "1578937",
@@ -47,8 +47,8 @@
             "ironsworn",
             "apothecaria",
             "gm-less rpg",
+            "tabletop games",
             "board game",
-            "role-playing game",
             "writing",
             "hobby",
             "oracle tables",
@@ -61,13 +61,6 @@
               "sourceQuery": "board game",
               "audienceSizeLowerBound": 87881277,
               "audienceSizeUpperBound": 103348382
-            },
-            {
-              "id": "6003380576181",
-              "name": "Role-playing games",
-              "sourceQuery": "role-playing game",
-              "audienceSizeLowerBound": 152068967,
-              "audienceSizeUpperBound": 178833106
             },
             {
               "id": "6003586608473",
@@ -91,6 +84,7 @@
             "ironsworn",
             "apothecaria",
             "gm-less rpg",
+            "tabletop games",
             "oracle tables",
             "solo roleplaying"
           ],
@@ -108,10 +102,6 @@
                     "name": "Board games"
                   },
                   {
-                    "id": "6003380576181",
-                    "name": "Role-playing games"
-                  },
-                  {
                     "id": "6003586608473",
                     "name": "Writing"
                   },
@@ -125,7 +115,7 @@
           },
           "adSetMode": "dynamic",
           "warnings": [
-            "AI-resolved parent nodes (4): board game, role-playing game, writing, hobby"
+            "AI-resolved parent nodes (5): tabletop games, board game, writing, pen and paper, hobby"
           ]
         },
         "campaignName": "[DRAFT] Deal 1578937 — Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
@@ -134,22 +124,15 @@
         "adName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife"
       },
       "notes": [
-        "meta_ad_account_id=1612907296491359",
-        "meta_campaign_id=120246108476030142",
-        "meta_ad_set_id=120246108476150142",
-        "meta_ad_set_mode=dynamic",
-        "meta_ad_creative_id=27295692670085963",
-        "meta_ad_id=120246108482300142",
-        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246108482300142",
-        "meta_dispatched_at=2026-06-19T21:32:17.324Z",
-        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122118316052816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1578937",
+        "facebook_page_dispatched_at=2026-06-19T22:27:05.299Z"
       ],
-      "metaCampaignId": "120246108476030142",
-      "metaAdSetId": "120246108476150142",
-      "metaAdSetMode": "dynamic",
-      "facebookCreativeId": "27295692670085963",
-      "facebookAdId": "120246108482300142",
-      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246108482300142"
+      "facebookPagePostId": "1071836329342347_122118316052816807"
     }
   ]
 }

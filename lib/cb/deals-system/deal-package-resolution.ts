@@ -295,6 +295,31 @@ export async function resolveCandidateOntoManifest(
     diagnostics.push(`broker error: ${brokerError instanceof Error ? brokerError.message : String(brokerError)}`);
   }
 
+  // Capture the REAL day-by-day itinerary for the operator-picked candidate. The
+  // ambiguous-resolve path hands back un-enriched ranked candidates (the auto-select
+  // enrichment in odysseus-lookup only ran for ranked.selected), so without this the
+  // resolved package keeps only the coarse ports string and the public page can show
+  // nothing but a deduped port list. Best-effort: a failure leaves coarse data intact.
+  const itineraryId = candidate.itinerary?.itineraryId;
+  if (itineraryId && !candidate.itinerary?.dayByDay) {
+    try {
+      const { captureDayByDayItinerary } = await import("@/lib/cb/link-broker/odysseus-lookup");
+      const dayByDay = await captureDayByDayItinerary(itineraryId);
+      if (dayByDay) {
+        candidate.itinerary = { ...candidate.itinerary, dayByDay };
+        diagnostics.push(`Captured day-by-day itinerary (${dayByDay.days.length} day node(s)) for ${candidate.packageId}.`);
+      } else {
+        diagnostics.push(`Itinerary detail unavailable for ${candidate.packageId}; kept coarse ports only.`);
+      }
+    } catch (err) {
+      diagnostics.push(
+        `Itinerary detail capture failed for ${candidate.packageId}: ${err instanceof Error ? err.message : String(err)}.`
+      );
+    }
+  } else if (!itineraryId) {
+    diagnostics.push(`No itinerary id on picked candidate ${candidate.packageId}; cannot capture day-by-day schedule.`);
+  }
+
   const updatedManifest = applyResolvedPackage(manifest, {
     candidate,
     siid,

@@ -273,7 +273,12 @@ function ImageSetPanel({
   const byCategory = useMemo(() => {
     const map = new Map<DealImageCategory, DealImageCandidate[]>();
     for (const cat of DEAL_IMAGE_CATEGORIES) map.set(cat, []);
+    // Drop any duplicate-id candidates defensively — older caches were written
+    // with positional ids that could collide, and a duplicate React key throws.
+    const seenIds = new Set<string>();
     for (const c of synthesis.candidates) {
+      if (seenIds.has(c.id)) continue;
+      seenIds.add(c.id);
       const list = map.get(c.category) ?? map.set(c.category, []).get(c.category)!;
       list.push(c);
     }
@@ -501,6 +506,12 @@ export function FunnelSynthesisView({
     () => syntheses.find((s) => s.id === activeId) ?? null,
     [syntheses, activeId]
   );
+  // Only the selected ad copy's syntheses — the tab row must not surface another
+  // ad copy's funnel, or the picker and the panels below would disagree.
+  const visibleSyntheses = useMemo(
+    () => syntheses.filter((s) => s.sourceAdCopyId === selectedAdCopyId),
+    [syntheses, selectedAdCopyId]
+  );
 
   function applySynthesis(s: DealFunnelSynthesis) {
     setSyntheses((prev) => {
@@ -514,10 +525,10 @@ export function FunnelSynthesisView({
 
   function selectAdCopy(adCopyId: string) {
     setSelectedAdCopyId(adCopyId);
-    const matchingId = firstSynthesisIdForAdCopy(syntheses, adCopyId);
-    if (matchingId) {
-      setActiveId(matchingId);
-    }
+    // Point the active synthesis at this ad copy's synthesis — or clear it if
+    // none exists yet, so the panels below don't keep showing the previously
+    // selected ad copy's funnel.
+    setActiveId(firstSynthesisIdForAdCopy(syntheses, adCopyId));
   }
 
   async function post(body: Record<string, unknown>): Promise<SynthResponse> {
@@ -690,10 +701,10 @@ export function FunnelSynthesisView({
         </button>
       </section>
 
-      {/* Synthesis tabs */}
-      {syntheses.length > 0 && (
+      {/* Synthesis tabs — scoped to the selected ad copy */}
+      {visibleSyntheses.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {syntheses.map((s) => (
+          {visibleSyntheses.map((s) => (
             <button
               key={s.id}
               type="button"

@@ -537,7 +537,7 @@ function validateDealMetaDistribution(d: unknown, i: number, errors: string[]): 
     errors.push(`distributions[${i}].sourceMetaAdSynthesisId missing`);
   }
   if (!isIsoDate(m.generatedAtIso)) errors.push(`distributions[${i}].generatedAtIso must be an ISO date`);
-  if (!["simulate", "live"].includes(String(m.mode))) {
+  if (!["simulate", "live", "organic_page_only"].includes(String(m.mode))) {
     errors.push(`distributions[${i}].mode invalid: ${String(m.mode)}`);
   }
   if (!["planned", "dispatched", "error"].includes(String(m.status))) {

@@ -26,6 +26,7 @@ import { NextResponse } from "next/server";
 import {
   approveCuratedDeal,
   assembleCuratedDealFromManifest,
+  evaluateApprovalGates,
   getCuratedDeal,
   listDealTripManifests,
   loadDealAdCopyCache,
@@ -57,6 +58,31 @@ function ok(deal: CuratedOdysseusDeal, extra: Record<string, unknown> = {}) {
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ ok: false, error }, { status });
+}
+
+/**
+ * After mutating a deal's gate-relevant state (link health, expiration), re-derive
+ * the approval gates so the operator-facing gate list, the persisted
+ * `operatorApproval.gates`, and the deal's own fields all agree. This is NOT an
+ * approval decision, so status/decision metadata is preserved — only the gate
+ * snapshot is refreshed.
+ */
+function withRefreshedGates(deal: CuratedOdysseusDeal): CuratedOdysseusDeal {
+  const gates = evaluateApprovalGates(deal, {
+    textOnlyLaunchWaived: deal.operatorApproval?.textOnlyLaunchWaived,
+  });
+  return {
+    ...deal,
+    operatorApproval: {
+      dealId: deal.id,
+      status: deal.operatorApproval?.status ?? "needs_review",
+      updatedAtIso: deal.operatorApproval?.updatedAtIso ?? new Date().toISOString(),
+      decidedBy: deal.operatorApproval?.decidedBy ?? "system",
+      decisionNote: deal.operatorApproval?.decisionNote,
+      textOnlyLaunchWaived: deal.operatorApproval?.textOnlyLaunchWaived ?? false,
+      gates,
+    },
+  };
 }
 
 export async function POST(request: Request) {
@@ -120,16 +146,16 @@ export async function POST(request: Request) {
 
     if (action === "set_link_valid") {
       const nowIso = new Date().toISOString();
-      const updated: CuratedOdysseusDeal = {
+      const updated = withRefreshedGates({
         ...existing,
         linkHealth: {
           status: "valid",
           lastVerifiedAtIso: nowIso,
           capturedAtIso: existing.linkHealth.capturedAtIso ?? nowIso,
         },
-      };
+      });
       await upsertCuratedDealRecord(updated);
-      return ok(updated);
+      return ok(updated, { gates: updated.operatorApproval?.gates ?? [] });
     }
 
     if (action === "set_expiration") {
@@ -140,14 +166,15 @@ export async function POST(request: Request) {
         return bad(`"${expiresOnIso}" is not a valid date. Use YYYY-MM-DD or a full ISO timestamp.`);
       }
 
-      const updated: CuratedOdysseusDeal = { ...existing };
+      const mutated: CuratedOdysseusDeal = { ...existing };
       if (expiresOnIso) {
-        updated.expiresOnIso = expiresOnIso;
+        mutated.expiresOnIso = expiresOnIso;
       } else {
-        delete updated.expiresOnIso;
+        delete mutated.expiresOnIso;
       }
+      const updated = withRefreshedGates(mutated);
       await upsertCuratedDealRecord(updated);
-      return ok(updated);
+      return ok(updated, { gates: updated.operatorApproval?.gates ?? [] });
     }
 
     // action === "approve"

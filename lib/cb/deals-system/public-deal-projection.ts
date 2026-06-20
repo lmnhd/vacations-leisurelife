@@ -202,7 +202,16 @@ interface DealSegmentView {
 type DealItineraryView =
   | {
       kind: "days";
-      rows: Array<{ label: string; text: string; atSea?: boolean; timing?: string }>;
+      rows: Array<{
+        label: string;
+        text: string;
+        atSea?: boolean;
+        timing?: string;
+        /** Calendar date for this voyage day (sail date + dayOffset), when derivable. */
+        dateIso?: string;
+        /** 1-based voyage day number, when known (drives the calendar grid). */
+        day?: number;
+      }>;
     }
   | { kind: "ports"; ports: string[] };
 
@@ -353,12 +362,35 @@ function longDate(iso: string | undefined): string | undefined {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 }
 
+/**
+ * The calendar date for voyage day N = sail date + (N - 1) days, as "YYYY-MM-DD"
+ * (UTC-stable). This is a deterministic derivation of an existing fact (cruise day
+ * N IS that date), not a fabricated one. Returns undefined when the sail date is
+ * missing/unparseable so the page falls back to the plain day list.
+ */
+function voyageDayDateIso(sailDateIso: string | undefined, day: number): string | undefined {
+  if (!sailDateIso || !Number.isFinite(day) || day < 1) return undefined;
+  const base = new Date(/^\d{4}-\d{2}-\d{2}$/.test(sailDateIso) ? `${sailDateIso}T12:00:00Z` : sailDateIso);
+  if (Number.isNaN(base.getTime())) return undefined;
+  base.setUTCDate(base.getUTCDate() + (day - 1));
+  return base.toISOString().slice(0, 10);
+}
+
+/**
+ * Canonical landing-page section headings — a fixed editorial standard: clean,
+ * premium, and deliberately CAMPAIGN-AGNOSTIC. Each reads true for ANY cruise
+ * (luxury, family, party, adventure, expedition) — no assumed amenity (e.g. a
+ * veranda) and no single mood. These are authoritative for the five known segment
+ * keys and intentionally OVERRIDE the per-deal heading the LLM produces, so every
+ * deal page speaks in the same voice. The page pairs each with its "01".."05"
+ * eyebrow index (see DealSegmentView.index).
+ */
 const SEGMENT_HEADINGS: Record<string, string> = {
-  cabins: "The Cabins",
-  lounges: "The Lounges",
-  atrium: "The Atrium",
-  dining: "The Dining Rooms",
-  excursions: "The Excursions",
+  cabins: "Your Space at Sea",
+  lounges: "Room to Unwind",
+  atrium: "First Impressions",
+  dining: "A Table for Every Night",
+  excursions: "Where You'll Step Ashore",
 };
 
 /**
@@ -439,7 +471,9 @@ export function buildDealLandingPageView(
     if (!seg) return undefined;
     return {
       index: String(i + 1).padStart(2, "0"),
-      heading: seg.heading || SEGMENT_HEADINGS[key] || key,
+      // Canonical editorial heading wins for the five known segments (overrides the
+      // LLM's per-deal heading); fall back to the deal's heading only for unknowns.
+      heading: SEGMENT_HEADINGS[key] || seg.heading || key,
       body: seg.body,
       ...imageSetFor(candidates, seg.imageId, [key]),
     };
@@ -454,12 +488,49 @@ export function buildDealLandingPageView(
     realDays && realDays.length > 0
       ? {
           kind: "days",
-          rows: realDays.map((d) => ({
-            label: `Day ${d.day}`,
-            text: d.atSea ? "At Sea" : d.portName || "—",
-            atSea: d.atSea,
-            timing: formatPortTiming(d.arrivalTime, d.departureTime),
-          })),
+          // One row per voyage DAY. Odysseus emits multiple nodes for a single day
+          // (e.g. Panama Canal enter/cruise/exit, or a tender port spanning two
+          // calls) — collapse them so the calendar shows one cell per date. A port
+          // node always wins over a sea-day node for that day's label.
+          rows: (() => {
+            const byDay = new Map<number, { port?: string; atSea: boolean; timings: string[] }>();
+            for (const d of realDays) {
+              const entry = byDay.get(d.day) ?? { atSea: true, timings: [] };
+              if (!d.atSea && d.portName && d.portName !== "—") {
+                // First real port name for the day wins; keep it stable.
+                entry.port = entry.port ?? d.portName;
+                entry.atSea = false;
+              }
+              const timing = formatPortTiming(d.arrivalTime, d.departureTime);
+              if (timing && !entry.timings.includes(timing)) entry.timings.push(timing);
+              byDay.set(d.day, entry);
+            }
+            const sorted = [...byDay.entries()].sort((a, b) => a[0] - b[0]);
+            return sorted.map(([day, e], i) => {
+              // Odysseus sometimes repeats the same port + arrival time on the day
+              // after a docking (e.g. an overnight call before disembarkation) —
+              // same port, same arrival, no departure on either day. Label the
+              // repeat as disembarkation rather than implying the ship arrived twice.
+              const prev = i > 0 ? sorted[i - 1][1] : undefined;
+              const isRepeatArrival =
+                !e.atSea &&
+                prev &&
+                !prev.atSea &&
+                prev.port === e.port &&
+                e.timings.length === 1 &&
+                prev.timings.length === 1 &&
+                e.timings[0] === prev.timings[0] &&
+                e.timings[0].startsWith("Arrive");
+              return {
+                label: `Day ${day}`,
+                day,
+                dateIso: voyageDayDateIso(f.sailDateIso, day),
+                text: e.atSea ? "At Sea" : e.port || "—",
+                atSea: e.atSea,
+                timing: isRepeatArrival ? "Disembarkation" : e.timings.join(" · ") || undefined,
+              };
+            });
+          })(),
         }
       : readiness === "resolved" && ports.length > 0
         ? {

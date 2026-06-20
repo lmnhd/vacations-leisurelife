@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-18T21:07:46.138Z",
+  "generatedAtIso": "2026-06-20T17:14:05.974Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -59,6 +59,65 @@
         "appliedPromos": [],
         "promoStrategy": "No promotional records survived prefiltering for this sailing, so there are no line-sponsored perks or discount levers to layer into the pitch. That said, the angle doesn't need a promo crutch — its power lives in the irreducible value of nine nights and seven consecutive sea days aboard a ship whose built environment already functions as the ultimate solo-play sanctum. The absence of a flashy \"free drinks package\" or \"onboard credit\" offer actually reinforces the narrative: this isn't a deal-stacked mass-market cruise dressed up for hobbyists. It's a purposeful booking made by someone who understands that the passage itself is the product. If Cunard releases any applicable promotions closer to the sail date — early-saver fares, solo-traveller supplements, or onboard credit offers for transatlantic voyages — those should be flagged and folded in immediately. Until then, the strategy is straightforward: lead with the singular, non-replicable nature of the experience and let the niche's own value calculus (cost per uninterrupted analog hour, measured against the price of any comparable creative residency ashore) do the persuasion work.",
         "manifestReasoning": "This verified sailing checks every box the angle requires, and several it didn't explicitly ask for. The sailing departs January 2, 2027 — the day after New Year's, meaning the target audience escapes the holiday social gauntlet at the earliest structurally possible moment. Nine nights with only NYC and Southampton as port calls means roughly seven full, unbroken sea days in the mid-winter North Atlantic — exactly the extended liminal corridor the angle's creative-retreat promise depends on. No port interruptions means no pressure to \"go see something\"; every morning begins at a writing desk or library chair instead of a tender queue.\n\nThe ship is Cunard's transatlantic vessel — which in practice means Queen Mary 2, the only ship in the world running a scheduled liner service across the Atlantic. This is not incidental; it is the single most important onboard-asset match. QM2 carries the largest library at sea (~8,000 volumes), with dedicated reading rooms, writing desks, and the kind of wood-paneled, soft-lit quiet lounges that define the aesthetic this niche romanticizes. The enrichment programme — guest lecturers, planetarium shows, the ritual cadence of afternoon tea in the Queens Room — provides exactly the natural rhythm breaks between deep journaling sessions that the angle specifies, without demanding social participation.\n\nJanuary timing delivers the atmospheric conditions the pitch leans on: short daylight hours that make interior spaces glow, dramatic grey Atlantic skies visible through panoramic windows, and off-season passenger counts that translate to emptier lounges and more available library seating. Mid-ocean Wi-Fi limitations on a transatlantic crossing are a structural reality, not a marketing spin — the ship is genuinely beyond reliable satellite coverage for meaningful stretches, which enforces the analog disconnection that is the entire premise.\n\nStaterooms include writing desks; balcony cabins offer a private outdoor space (bundled up in January, but atmospherically powerful for the kind of person who wants to roll oracle dice while watching the Atlantic horizon). Every physical and temporal requirement the angle articulates — quiet space, good light, permission to sit for hours, no mandatory social programming, a multi-day unbroken passage — is native to this specific sailing on this specific ship at this specific time of year. The manifest match is as close to perfect as inventory allows."
+      }
+    },
+    {
+      "id": "unified-manifest-twenty-one-sea-days-zero-unsolved-locks-seabourn",
+      "generatedAtIso": "2026-06-20T17:14:05.971Z",
+      "sourceAngleId": "angle-twenty-one-sea-days-zero-unsolved-locks",
+      "sourceManifestId": "manifest-twenty-one-sea-days-zero-unsolved-locks-seabourn",
+      "sailingAngleTitle": "Twenty-One Sea Days, Zero Unsolved Locks",
+      "creativeBrief": {
+        "isolatedNiche": "Sequential Discovery and Mechanical Puzzle Solvers",
+        "angle": {
+          "sailingAngleTitle": "Twenty-One Sea Days, Zero Unsolved Locks",
+          "theCorePitch": "A 35-night passage from Miami through the Panama Canal locks and across the Pacific to Polynesia, aboard a 450-guest ship with more sea days than port calls. Bring your brass. Bring your burrs. Bring that Eric Fuller box you've been saving for the right stretch of uninterrupted hours. Twenty-one days of open ocean, wood-paneled observation lounges, and the kind of sustained quiet focus that turns a stubborn blind mechanism into a solved one. The swap economy alone justifies the crossing — cycle your entire collection through trusted hands who actually understand what 'sequential discovery' means, compare solve times over a scotch in the library, and spend the long Pacific transit wrestling with someone else's trick lock while the Marquesas slowly resolve on the horizon.",
+          "visualAnchor": "A machined brass sequential discovery puzzle resting on a dark velvet mat, set on a polished wood table beside a crystal glass — behind it, floor-to-ceiling ocean through the observation lounge windows, nothing but blue Pacific horizon.",
+          "targetAudienceDescriptor": "Affluent mechanical puzzle collectors and sequential discovery solvers who invest in bespoke machined brass, exotic wood puzzles, and IPP-adjacent exchange culture — people who own velvet mats and understand why losing a single ball bearing is catastrophic.",
+          "relevantKeywords": [
+            "sequential discovery puzzle",
+            "trick lock",
+            "IPP puzzle exchange",
+            "mechanical puzzle solver",
+            "burr puzzle",
+            "Hanayama",
+            "puzzle swap",
+            "bespoke machined brass"
+          ],
+          "destinationAndTimeOfYearHints": "January departure from Miami transiting the Panama Canal, then south along the Pacific coast of South America (Ecuador, Peru, Chile) before a multi-day open-ocean crossing through the Marquesas and Tuamotus to Papeete, Tahiti. Peak Northern Hemisphere winter — ideal timing for affluent retirees and semi-retired professionals to take a sustained 35-night voyage. The heavy sea-day profile (21 of 35 nights) creates an unbroken rhythm of focused solving time unavailable in any land-based context.",
+          "onboardAssetRequirements": "Seabourn's intimate scale (~450 guests) provides the quiet, acoustically controlled environment essential for puzzle work — the Observation Bar, library, and Card Room offer stable, well-lit surfaces away from wind and vibration. No infrastructure buildout required. Solvers bring their own puzzles, velvet mats, and zip-lock component bags. The ship's existing wood-paneled lounges and soft lighting already match the aesthetic expectations of this high-end collector demographic. Standard stateroom safes accommodate high-value sealed puzzles during port days."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Seabourn",
+          "departurePortHint": "MIA",
+          "nights": 35,
+          "itineraryName": "35-Night Transatlantic Crossing",
+          "portsOfCall": [
+            "MIA|PNMC|8048|GYE|BLVR|CALL|GSM1|IQQ|IPC|THAE|AUQ|FAV|AVTR|PPT"
+          ],
+          "destination": "Transatlantic Crossing",
+          "sailWindow": {
+            "latestIso": "2027-01-05",
+            "rationale": "Grounded on a verified sailing departing 2027-01-05.",
+            "earliestIso": "2027-01-05"
+          },
+          "suggestedBriefId": "brief-twenty-one-sea-days-zero-unsolved-locks",
+          "suggestedDealId": "deal-seabourn-transatlantic-crossing-twenty-one-sea-days-zero-unsolved-locks"
+        },
+        "lookupQuery": {
+          "date": "2027-01-05",
+          "port": "MIA",
+          "line": "Seabourn",
+          "nights": 35,
+          "destination": "Transatlantic Crossing",
+          "ship": "35-Day World Cruise: Panama Canal Crossing & Polynesia",
+          "windowDays": 0
+        },
+        "appliedPromos": [],
+        "promoStrategy": "No promo records survived prefiltering for this sailing, so there are zero externally-sourced discount or perk claims to layer into the pitch. That's actually congruent with the angle's insider voice: the value proposition here was never about a deal — it's about access to a specific, irreplaceable environmental condition (21 uninterrupted sea days on a 450-guest ship with library-quiet lounges and stable surfaces) that simply doesn't exist anywhere else on the calendar. The price is the price for a 35-night ultra-premium passage, and the target collector already understands that scarcity of the right solving environment commands whatever it commands. If promotional offers surface closer to sailing — Seabourn periodically releases shipboard credit, prepaid gratuity, or veranda upgrade incentives on longer voyages — those should be evaluated and folded in as sweeteners that lower the effective per-sea-day cost, reinforcing the \"you're paying for focused hours, not port stamps\" framing. Until then, the angle stands on its own merits without leaning on any discount claim.",
+        "manifestReasoning": "The verified sailing checks every box the angle demands. Ship identity: Seabourn's vessel on this itinerary carries roughly 450 guests — the intimate headcount that guarantees quiet observation lounges, an uncrowded library, and a Card Room where a solver can spread a velvet mat and work an N-move sequential discovery piece without interruption or vibration from adjacent foot traffic. Sail date: January 5, 2027, peak Northern Hemisphere winter, the exact window when affluent retirees and semi-retired professionals are most willing and able to commit to a 35-night voyage — no school-holiday crowd dilution, no summer-vacation energy. Nights and sea-day ratio: 35 nights with a port list of 14 stops (including embarkation at Miami) yields approximately 21 sea days — the precise figure cited in the angle. That ratio is extraordinary; it means three out of every five days are open ocean with zero scheduling pressure, delivering the kind of sustained, multi-hour solving blocks that turn a stubborn trick lock from frustrating to solved. Route logic: The transit through the Canal locks followed by Pacific-coast stops in Ecuador, Peru, and Chile, then the long open-ocean crossing through the Marquesas and Tuamotus to Papeete, front-loads the port calls and back-loads the deepest unbroken sea-day stretches — exactly when solvers will have completed their initial swap rounds and be settling into unfamiliar puzzles acquired from fellow passengers. Onboard assets: Seabourn's existing wood-paneled Observation Bar, library, and Card Room provide stable, well-lit, acoustically controlled surfaces — no buildout, no rigging, no negotiation with the cruise line required. Standard stateroom safes accommodate high-value sealed puzzles during the handful of port days. Every structural requirement of the angle is fulfilled by the sailing as it actually exists in inventory."
       }
     }
   ]

@@ -238,7 +238,7 @@ function ImageLightbox({
 function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }) {
   const [distribution, setDistribution] = useState<DealMetaDistribution | null>(null);
   const [plan, setPlan] = useState<DealMetaDistributionPlan | null>(null);
-  const [mode, setMode] = useState<"simulate" | "live">("simulate");
+  const [mode, setMode] = useState<"simulate" | "live" | "organic_page_only">("simulate");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
@@ -301,7 +301,9 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
             ? data.distribution.error ?? "Dispatch reported an error."
             : mode === "live"
               ? "Live draft created in Meta Ads Manager (paused) and Instagram (if configured)."
-              : "Simulated — no Graph API calls made beyond read-only interest search.",
+              : mode === "organic_page_only"
+                ? "Organic Facebook Page post published from the ready card set. No ad draft was touched."
+                : "Simulated - no Graph API calls made beyond read-only interest search.",
       });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
@@ -316,9 +318,9 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
         Step 9 · Push carousel to Meta
       </p>
       <p className="mt-1 text-[11px] text-slate-400">
-        Creates a new Meta Campaign + Ad Set for this deal, a Facebook carousel ad
-        (paused draft), and an Instagram Graph carousel post from the {readyCount} ready
-        card{readyCount === 1 ? "" : "s"}.
+        Build a Meta delivery plan from the {readyCount} ready card{readyCount === 1 ? "" : "s"}.
+        You can simulate, create the paused ad + Instagram draft, or publish an organic
+        Facebook Page post only.
       </p>
 
       {readyCount === 0 && (
@@ -355,7 +357,16 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
               mode === "live" ? "bg-rose-400/20 text-rose-100" : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            Live
+            Live ad
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("organic_page_only")}
+            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] transition ${
+              mode === "organic_page_only" ? "bg-blue-400/20 text-blue-100" : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            Organic page
           </button>
         </div>
 
@@ -366,10 +377,18 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
           className={`inline-flex h-9 items-center justify-center rounded-lg border px-4 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
             mode === "live"
               ? "border-rose-300/40 bg-rose-400/10 text-rose-100 hover:bg-rose-400/20"
-              : "border-emerald-300/40 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20"
+              : mode === "organic_page_only"
+                ? "border-blue-300/40 bg-blue-400/10 text-blue-100 hover:bg-blue-400/20"
+                : "border-emerald-300/40 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20"
           }`}
         >
-          {busy ? "Working…" : mode === "live" ? "Dispatch live (creates paused draft)" : "Dispatch (simulate)"}
+          {busy
+            ? "Working..."
+            : mode === "live"
+              ? "Dispatch live (creates paused draft)"
+              : mode === "organic_page_only"
+                ? "Publish organic Facebook post only"
+                : "Dispatch (simulate)"}
         </button>
       </div>
 
@@ -408,6 +427,9 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
           <p className="mt-1">
             <span className="font-semibold text-slate-200">Cards:</span> {plan.cards.length} ready image(s)
           </p>
+          <p className="mt-1 text-slate-400">
+            Organic Facebook Page mode publishes the ready card set as a multi-image Page post when more than one card is ready.
+          </p>
         </div>
       )}
 
@@ -428,6 +450,9 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
             </span>{" "}
             ({distribution.mode}) at {new Date(distribution.generatedAtIso).toLocaleString()}
           </p>
+          {distribution.facebookPagePostId && !distribution.reviewUrl && (
+            <p className="mt-1 text-slate-400">Organic Facebook Page post id: {distribution.facebookPagePostId}</p>
+          )}
           {distribution.reviewUrl && (
             <p className="mt-1">
               <a
@@ -538,6 +563,22 @@ export function MetaAdSynthesisView({
     [funnelSyntheses, selectedFunnelId]
   );
   const active = useMemo(() => syntheses.find((s) => s.id === activeId) ?? null, [syntheses, activeId]);
+  // A meta-ad synthesis is 1:1 with its funnel (it shares the funnel's id), so the
+  // tab row and panels must only show the selected funnel's synthesis — never a
+  // different funnel's, or the picker and the panels below would disagree.
+  const visibleSyntheses = useMemo(
+    () => syntheses.filter((s) => s.sourceFunnelSynthesisId === selectedFunnelId),
+    [syntheses, selectedFunnelId]
+  );
+
+  function selectFunnel(funnelId: string) {
+    setSelectedFunnelId(funnelId);
+    // Surface this funnel's already-loaded synthesis if one exists, or clear the
+    // active panel so a previously selected funnel's synthesis stops displaying.
+    const existing = syntheses.find((s) => s.sourceFunnelSynthesisId === funnelId) ?? null;
+    setActiveId(existing?.id ?? null);
+    setPromptDraft(existing?.promptTemplate ?? "");
+  }
 
   async function post(body: Record<string, unknown>): Promise<SynthResponse> {
     const res = await fetch("/api/tests/deals-system/meta-ad-synthesis", {
@@ -744,7 +785,7 @@ export function MetaAdSynthesisView({
               <li key={s.id}>
                 <button
                   type="button"
-                  onClick={() => setSelectedFunnelId(s.id)}
+                  onClick={() => selectFunnel(s.id)}
                   className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
                     selectedFunnelId === s.id
                       ? "border-cyan-300/60 bg-cyan-400/10"
@@ -777,10 +818,10 @@ export function MetaAdSynthesisView({
         </button>
       </section>
 
-      {/* Synthesis tabs */}
-      {syntheses.length > 0 && (
+      {/* Synthesis tabs — scoped to the selected funnel */}
+      {visibleSyntheses.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {syntheses.map((s) => (
+          {visibleSyntheses.map((s) => (
             <button
               key={s.id}
               type="button"

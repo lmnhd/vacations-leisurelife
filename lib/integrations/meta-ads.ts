@@ -25,6 +25,7 @@ export interface MetaAdsConfig {
     adAccountId: string;
     adSetId?: string;
     pageId: string;
+    pageAccessToken?: string;
     instagramActorId?: string;
 }
 
@@ -154,11 +155,32 @@ async function postMetaGraphForm<TResponse>(
     return payload as TResponse;
 }
 
+async function resolvePageAccessToken(config: MetaAdsConfig): Promise<string> {
+    if (config.pageAccessToken) {
+        return config.pageAccessToken;
+    }
+
+    const page = await readMetaNode<{ access_token?: string }>(
+        config.pageId,
+        config.accessToken,
+        'access_token',
+    );
+
+    if (!page.access_token) {
+        throw new Error(
+            'Meta Page access token unavailable. Set META_PAGE_ACCESS_TOKEN or use a token that can read the Page access token.',
+        );
+    }
+
+    return page.access_token;
+}
+
 export function getMetaAdsConfig(): MetaAdsConfig | null {
     const accessToken = process.env.META_ACCESS_TOKEN?.trim();
     const adAccountId = process.env.META_AD_ACCOUNT_ID?.trim();
     const adSetId = process.env.META_AD_SET_ID?.trim();
     const pageId = process.env.META_PAGE_ID?.trim();
+    const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
     const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID?.trim();
 
     if (!accessToken || !adAccountId || !pageId) {
@@ -170,6 +192,7 @@ export function getMetaAdsConfig(): MetaAdsConfig | null {
         adAccountId,
         pageId,
         ...(adSetId ? { adSetId } : {}),
+        ...(pageAccessToken ? { pageAccessToken } : {}),
         ...(instagramActorId ? { instagramActorId } : {}),
     };
 }
@@ -189,6 +212,8 @@ export interface FacebookPagePostInput {
     message: string;
     /** Optional public image URL. When present the post is created via /photos. */
     imageUrl?: string;
+    /** Optional ordered public image URLs for a multi-image Page post. */
+    imageUrls?: string[];
     /** Optional outbound link (e.g. the campaign landing URL) for /feed posts. */
     link?: string;
     /**
@@ -202,6 +227,8 @@ export interface FacebookPagePostInput {
 /**
  * Publish (or stage) an organic post to the configured Facebook Page.
  *
+ * - With multiple images: POST /{page-id}/photos unpublished for each image,
+ *   then POST /{page-id}/feed { message, attached_media[], published }.
  * - With an image: POST /{page-id}/photos { url, caption, published }.
  *   Returns the photo's parent post id when available, else the photo id.
  * - Without an image: POST /{page-id}/feed { message, link?, published }.
@@ -214,11 +241,53 @@ export async function publishFacebookPagePost(
     input: FacebookPagePostInput,
 ): Promise<{ postId: string; published: boolean }> {
     const published = input.published ?? false;
+    const multiImageUrls = (input.imageUrls ?? []).filter((url) => url.trim().length > 0);
+    const pageAccessToken = await resolvePageAccessToken(config);
+
+    if (multiImageUrls.length > 1) {
+        const mediaIds: string[] = [];
+
+        for (const url of multiImageUrls) {
+            const media = await postMetaGraphForm<{ id?: string }>(
+                `${config.pageId}/photos`,
+                pageAccessToken,
+                {
+                    url,
+                    published: 'false',
+                },
+            );
+
+            if (!media.id) {
+                throw new Error('Facebook Page /photos did not return an unpublished media id');
+            }
+            mediaIds.push(media.id);
+        }
+
+        const attachedMediaEntries = mediaIds.map((id, index) => [
+            `attached_media[${index}]`,
+            JSON.stringify({ media_fbid: id }),
+        ] as const);
+
+        const response = await postMetaGraphForm<{ id: string }>(
+            `${config.pageId}/feed`,
+            pageAccessToken,
+            {
+                message: input.message,
+                published: String(published),
+                ...Object.fromEntries(attachedMediaEntries),
+                ...(input.link ? { link: input.link } : {}),
+            },
+        );
+        if (!response.id) {
+            throw new Error('Facebook Page /feed did not return a multi-image post id');
+        }
+        return { postId: response.id, published };
+    }
 
     if (input.imageUrl) {
         const response = await postMetaGraphForm<{ id: string; post_id?: string }>(
             `${config.pageId}/photos`,
-            config.accessToken,
+            pageAccessToken,
             {
                 url: input.imageUrl,
                 caption: input.message,
@@ -234,7 +303,7 @@ export async function publishFacebookPagePost(
 
     const response = await postMetaGraphForm<{ id: string }>(
         `${config.pageId}/feed`,
-        config.accessToken,
+        pageAccessToken,
         {
             message: input.message,
             published: String(published),

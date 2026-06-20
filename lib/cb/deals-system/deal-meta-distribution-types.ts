@@ -16,7 +16,7 @@
  * Graph API). The operator flips a live toggle to actually dispatch.
  */
 
-export type DealMetaDistributionMode = "simulate" | "live";
+export type DealMetaDistributionMode = "simulate" | "live" | "organic_page_only";
 
 export type DealMetaDistributionStatus =
   | "planned"
@@ -77,6 +77,7 @@ export interface DealMetaDistribution {
   metaAdSetMode?: "dynamic" | "static_fallback";
   facebookCreativeId?: string;
   facebookAdId?: string;
+  facebookPagePostId?: string;
   instagramCarouselContainerId?: string;
   instagramMediaId?: string;
   reviewUrl?: string;
