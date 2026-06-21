@@ -455,10 +455,14 @@ check(
     !allText(screenshotBugPage).includes("fallback line")
 );
 
-const seabournQuestDeal: CuratedOdysseusDeal = {
+const staleShipDeal: CuratedOdysseusDeal = {
   ...manifestKeyedDeal,
   id: "1582993",
   packageId: "1582993",
+  angleResearch: {
+    ...manifestKeyedDeal.angleResearch!,
+    amenityHighlights: [],
+  },
   cruiseFacts: {
     ...manifestKeyedDeal.cruiseFacts,
     cruiseLine: "Seabourn",
@@ -471,25 +475,25 @@ const seabournQuestDeal: CuratedOdysseusDeal = {
     cabinPrices: { outside: 18523, balcony: 23353, suite: 45023, currencyCode: "USD" },
   },
 };
-const seabournQuestProjection = projectPublicDealPage(seabournQuestDeal, manifestKeyedSynthesis);
+const staleShipProjection = projectPublicDealPage(staleShipDeal, manifestKeyedSynthesis);
 check(
-  "known package resolves itinerary-title ship to Seabourn Quest",
-  seabournQuestProjection.facts.shipName === "Seabourn Quest",
-  seabournQuestProjection.facts.shipName
+  "stale itinerary-title ship is not displayed as a false vessel",
+  staleShipProjection.facts.shipName === "Confirmed at booking",
+  staleShipProjection.facts.shipName
 );
 check(
-  "known package resolves display cruise line",
-  seabournQuestProjection.facts.cruiseLine === "Seabourn Cruise Line",
-  seabournQuestProjection.facts.cruiseLine
+  "stale itinerary-title ship keeps the source cruise line without package overrides",
+  staleShipProjection.facts.cruiseLine === "Seabourn",
+  staleShipProjection.facts.cruiseLine
 );
 check(
-  "known package design page fact band shows the vessel, not itinerary",
-  seabournQuestProjection.designPage?.factBand.some((f) => f.label === "Ship" && f.value === "Seabourn Quest") === true
+  "stale itinerary-title ship does not create a first-image vessel label",
+  staleShipProjection.designPage?.vesselLabel === undefined
 );
 check(
-  "known package design page exposes a first-image vessel label",
-  seabournQuestProjection.designPage?.vesselLabel === "Seabourn Quest · Seabourn Cruise Line",
-  seabournQuestProjection.designPage?.vesselLabel
+  "stale itinerary-title ship displays only the booking-confirmation fallback",
+  staleShipProjection.designPage?.factBand.some((f) => f.label === "Ship" && f.value === "Confirmed at booking") === true,
+  staleShipProjection.designPage?.vesselLabel
 );
 
 const queenMaryDeal: CuratedOdysseusDeal = {
@@ -501,7 +505,7 @@ const queenMaryDeal: CuratedOdysseusDeal = {
     cruiseLine: "Cunard",
     itineraryName: "Eastbound Transatlantic Crossing",
     title: "Eastbound Transatlantic Crossing",
-    shipName: "Eastbound Transatlantic Crossing",
+    shipName: "Queen Mary 2",
     sailDateIso: "2027-01-02",
     nights: 9,
     portsOfCall: ["NYC | SOU"],
@@ -510,12 +514,12 @@ const queenMaryDeal: CuratedOdysseusDeal = {
 };
 const queenMaryProjection = projectPublicDealPage(queenMaryDeal, manifestKeyedSynthesis);
 check(
-  "known Cunard package resolves itinerary-title ship to Queen Mary 2",
+  "stored Cunard ship name displays as the vessel",
   queenMaryProjection.facts.shipName === "Queen Mary 2",
   queenMaryProjection.facts.shipName
 );
 check(
-  "known Cunard package exposes a first-image vessel label",
+  "stored Cunard ship name exposes a first-image vessel label",
   queenMaryProjection.designPage?.vesselLabel === "Queen Mary 2 · Cunard",
   queenMaryProjection.designPage?.vesselLabel
 );

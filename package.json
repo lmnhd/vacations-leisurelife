@@ -22,6 +22,7 @@
     "extract-cb-promo-intelligence": "npx tsx --env-file=.env.local scripts/extract-cb-promo-intelligence.ts",
     "lookup-odysseus-package": "npx tsx --env-file=.env.local scripts/lookup-odysseus-package.ts",
     "backfill-deal-itinerary": "npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts",
+    "backfill-deal-ship-identity": "npx tsx --env-file=.env.local scripts/backfill-deal-ship-identity.ts --",
     "deep-cruise-search": "npx tsx --env-file=.env.local scripts/deep-cruise-search.ts",
     "verify-cruise-line-ids": "npx tsx --env-file=.env.local scripts/verify-cruise-line-ids.ts",
     "tc-pulse": "npx tsx --env-file=.env.local scripts/tc-pulse.ts -- --live",

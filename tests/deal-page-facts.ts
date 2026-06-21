@@ -202,28 +202,28 @@ check("itinerary surfaced with map", resolved.itinerary?.mapPath === "/maps/x1.p
 check("ports come from resolved itinerary", resolved.portsOfCall[0] === "Fort Lauderdale");
 check("booking url carried", resolved.bookingUrl === "https://bookings.example/pkg-9");
 
-console.log("\nassembleDealPageFacts (known ship correction):");
-const seabournManifest = baseManifest();
-seabournManifest.resolvedPackage = {
+console.log("\nassembleDealPageFacts (resolved real ship identity):");
+const cunardManifest = baseManifest();
+cunardManifest.resolvedPackage = {
   resolvedAtIso: GEN_AT,
   source: "operator_package_lookup",
-  packageId: "1582993",
-  cruiseName: "35-Day World Cruise: Panama Canal Crossing & Polynesia",
-  cruiseLine: "Seabourn",
-  shipName: "35-Day World Cruise: Panama Canal Crossing & Polynesia",
-  sailDateIso: "2027-01-05",
-  nights: 35,
-  departurePortCode: "MIA",
+  packageId: "1578937",
+  cruiseName: "Eastbound Transatlantic Crossing",
+  cruiseLine: "Cunard",
+  shipName: "Queen Mary 2",
+  sailDateIso: "2027-01-02",
+  nights: 9,
+  departurePortCode: "NYC",
   confidence: 0.83,
   reasons: ["verified package"],
   siid: "1049337",
-  bookingUrl: "https://bookings.example/1582993",
-  cabinPricing: { outside: 18523, balcony: 23353, suite: 45023, currencyCode: "USD", leadFare: 18523 },
+  bookingUrl: "https://bookings.example/1578937",
+  cabinPricing: { inside: 889, outside: 1179, balcony: 1319, suite: 4299, currencyCode: "USD", leadFare: 889 },
   lookupDiagnostics: [],
 };
-const seabournFacts = assembleDealPageFacts(seabournManifest, [promo]);
-check("known package corrects ship from itinerary title", seabournFacts.shipName === "Seabourn Quest", seabournFacts.shipName);
-check("known package corrects cruise line display", seabournFacts.cruiseLine === "Seabourn Cruise Line", seabournFacts.cruiseLine);
+const cunardFacts = assembleDealPageFacts(cunardManifest, [promo]);
+check("resolved package real ship name is surfaced", cunardFacts.shipName === "Queen Mary 2", cunardFacts.shipName);
+check("resolved package cruise line display is surfaced", cunardFacts.cruiseLine === "Cunard", cunardFacts.cruiseLine);
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
