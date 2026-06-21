@@ -80,6 +80,13 @@ export type CruisePackage = z.infer<typeof CruisePackageSchema>;
 export type CruiseShipInfo = z.infer<typeof CruiseShipInfoSchema>;
 export type CruiseResult = z.infer<typeof CruiseResultSchema>;
 
+export interface PackagePageSummary {
+    packageId: string;
+    cruiseLine?: string;
+    shipName?: string;
+    title?: string;
+}
+
 // ── Itinerary detail (per-day schedule) ──────────────────────────────────────
 // The search result's `itinerary` only carries a coarse ports-of-call STRING.
 // The real day-by-day schedule (port names, arrival/departure times, sea days)

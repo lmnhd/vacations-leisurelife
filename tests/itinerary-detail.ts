@@ -100,6 +100,7 @@ const candidateWithSchedule: RankedPackageCandidate = {
   cruiseCode: "RC7",
   cruiseName: "7 Night Eastern Caribbean",
   cruiseLine: "Royal Caribbean",
+  shipName: "Wonder of the Seas",
   sailDateIso: "2026-11-08",
   nights: 7,
   departurePortCode: "XPC",
@@ -125,6 +126,7 @@ const candidateWithSchedule: RankedPackageCandidate = {
 const reparsed = parseRankedCandidate(JSON.parse(JSON.stringify(candidateWithSchedule)));
 check("parseRankedCandidate preserves the day-by-day schedule", reparsed?.itinerary?.dayByDay?.days.length === 3, JSON.stringify(reparsed?.itinerary?.dayByDay?.days?.length));
 check("parseRankedCandidate preserves the itinerary id", reparsed?.itinerary?.itineraryId === 479966);
+check("parseRankedCandidate preserves package-page ship name", reparsed?.shipName === "Wonder of the Seas", reparsed?.shipName);
 
 // Lands on the manifest's resolvedPackage in the stored (flat day[]) shape.
 const baseManifest = { id: "m1", assembleDraft: { portsOfCall: [] } } as unknown as DealTripManifest;
@@ -134,6 +136,7 @@ const resolved = applyResolvedPackage(baseManifest, {
 });
 const storedDays = resolved.resolvedPackage?.itinerary?.dayByDay;
 check("resolved package carries flat day-by-day array", Array.isArray(storedDays) && storedDays.length === 3, JSON.stringify(storedDays?.length));
+check("resolved package stores the real ship name", resolved.resolvedPackage?.shipName === "Wonder of the Seas", resolved.resolvedPackage?.shipName);
 check("stored schedule keeps the port name", storedDays?.[2]?.portName === "San Juan, Puerto Rico", storedDays?.[2]?.portName);
 check("stored schedule keeps arrival/departure times", storedDays?.[2]?.arrivalTime === "10:30:00" && storedDays?.[2]?.departureTime === "18:00:00");
 

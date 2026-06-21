@@ -24,6 +24,10 @@ import type {
   CbPromoIntelligenceRecord,
   PromoApplicabilityResult,
 } from "./promo-intelligence-types";
+import {
+  resolvedPackageShipName,
+  resolveCruiseLineForPackage,
+} from "./ship-identity";
 
 /** One promo/special, reduced to what is safe to render publicly. */
 export interface DealPagePromo {
@@ -172,8 +176,8 @@ export function assembleDealPageFacts(
   return {
     readiness: resolved ? "resolved" : "draft",
     notes,
-    cruiseLine: resolved?.cruiseLine ?? draft.cruiseLine,
-    shipName: resolved?.shipName,
+    cruiseLine: resolveCruiseLineForPackage(resolved?.packageId, resolved?.cruiseLine ?? draft.cruiseLine),
+    shipName: resolvedPackageShipName(resolved),
     shipClassHint: draft.shipClassHint,
     itineraryName: draft.itineraryName,
     destination: draft.destination,

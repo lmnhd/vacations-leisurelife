@@ -210,6 +210,7 @@ function parseRankedCandidateFromScript(x: Record<string, unknown>): RankedPacka
     cruiseCode: typeof x.cruiseCode === "string" ? x.cruiseCode : "",
     cruiseName: x.cruiseName,
     cruiseLine: typeof x.cruiseLine === "string" ? x.cruiseLine : undefined,
+    shipName: typeof x.shipName === "string" ? x.shipName : undefined,
     sailDateIso: x.sailDateIso,
     nights: typeof x.nights === "number" ? x.nights : null,
     departurePortCode: typeof x.departurePortCode === "string" ? x.departurePortCode : undefined,
@@ -272,7 +273,7 @@ export async function resolveCandidateOntoManifest(
         cruise: {
           packageId: candidate.packageId,
           cruiseLine: candidate.cruiseLine,
-          shipName: candidate.cruiseName,
+          shipName: candidate.shipName ?? candidate.cruiseName,
           sailDate: candidate.sailDateIso,
           nights: candidate.nights ?? undefined,
         },
@@ -318,6 +319,33 @@ export async function resolveCandidateOntoManifest(
     }
   } else if (!itineraryId) {
     diagnostics.push(`No itinerary id on picked candidate ${candidate.packageId}; cannot capture day-by-day schedule.`);
+  }
+
+  if (!candidate.shipName) {
+    let releaseSession: (() => Promise<void>) | undefined;
+    try {
+      const { getOdysseusSession, releaseOdysseusSession } = await import("@/lib/services/odysseus/OdysseusSessionManager");
+      releaseSession = releaseOdysseusSession;
+      const engine = await getOdysseusSession();
+      const summary = await engine.fetchPackagePageSummary(candidate.packageId, siid);
+      if (summary?.shipName) {
+        candidate.shipName = summary.shipName;
+        if (summary.cruiseLine) candidate.cruiseLine = summary.cruiseLine;
+        diagnostics.push(
+          `Captured package-page ship identity for ${candidate.packageId}: ${summary.cruiseLine ? `${summary.cruiseLine}: ` : ""}${summary.shipName}.`
+        );
+      } else {
+        diagnostics.push(`Package page did not expose a ship identity for ${candidate.packageId}; kept search result identity.`);
+      }
+    } catch (err) {
+      diagnostics.push(
+        `Package-page ship identity fetch failed for ${candidate.packageId}: ${err instanceof Error ? err.message : String(err)}.`
+      );
+    } finally {
+      if (releaseSession) {
+        await releaseSession().catch(() => undefined);
+      }
+    }
   }
 
   const updatedManifest = applyResolvedPackage(manifest, {

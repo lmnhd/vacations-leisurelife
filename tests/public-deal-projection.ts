@@ -455,6 +455,71 @@ check(
     !allText(screenshotBugPage).includes("fallback line")
 );
 
+const seabournQuestDeal: CuratedOdysseusDeal = {
+  ...manifestKeyedDeal,
+  id: "1582993",
+  packageId: "1582993",
+  cruiseFacts: {
+    ...manifestKeyedDeal.cruiseFacts,
+    cruiseLine: "Seabourn",
+    itineraryName: "35-Day World Cruise: Panama Canal Crossing & Polynesia",
+    title: "35-Day World Cruise: Panama Canal Crossing & Polynesia",
+    shipName: "35-Day World Cruise: Panama Canal Crossing & Polynesia",
+    sailDateIso: "2027-01-05",
+    nights: 35,
+    portsOfCall: ["MIA | PNMC | GYE | CALL | PPT"],
+    cabinPrices: { outside: 18523, balcony: 23353, suite: 45023, currencyCode: "USD" },
+  },
+};
+const seabournQuestProjection = projectPublicDealPage(seabournQuestDeal, manifestKeyedSynthesis);
+check(
+  "known package resolves itinerary-title ship to Seabourn Quest",
+  seabournQuestProjection.facts.shipName === "Seabourn Quest",
+  seabournQuestProjection.facts.shipName
+);
+check(
+  "known package resolves display cruise line",
+  seabournQuestProjection.facts.cruiseLine === "Seabourn Cruise Line",
+  seabournQuestProjection.facts.cruiseLine
+);
+check(
+  "known package design page fact band shows the vessel, not itinerary",
+  seabournQuestProjection.designPage?.factBand.some((f) => f.label === "Ship" && f.value === "Seabourn Quest") === true
+);
+check(
+  "known package design page exposes a first-image vessel label",
+  seabournQuestProjection.designPage?.vesselLabel === "Seabourn Quest · Seabourn Cruise Line",
+  seabournQuestProjection.designPage?.vesselLabel
+);
+
+const queenMaryDeal: CuratedOdysseusDeal = {
+  ...manifestKeyedDeal,
+  id: "1578937",
+  packageId: "1578937",
+  cruiseFacts: {
+    ...manifestKeyedDeal.cruiseFacts,
+    cruiseLine: "Cunard",
+    itineraryName: "Eastbound Transatlantic Crossing",
+    title: "Eastbound Transatlantic Crossing",
+    shipName: "Eastbound Transatlantic Crossing",
+    sailDateIso: "2027-01-02",
+    nights: 9,
+    portsOfCall: ["NYC | SOU"],
+    cabinPrices: { inside: 859.48, outside: 1149.48, balcony: 1289.48, suite: 4269.48, currencyCode: "USD" },
+  },
+};
+const queenMaryProjection = projectPublicDealPage(queenMaryDeal, manifestKeyedSynthesis);
+check(
+  "known Cunard package resolves itinerary-title ship to Queen Mary 2",
+  queenMaryProjection.facts.shipName === "Queen Mary 2",
+  queenMaryProjection.facts.shipName
+);
+check(
+  "known Cunard package exposes a first-image vessel label",
+  queenMaryProjection.designPage?.vesselLabel === "Queen Mary 2 · Cunard",
+  queenMaryProjection.designPage?.vesselLabel
+);
+
 const safePromoDeal: CuratedOdysseusDeal = {
   ...manifestKeyedDeal,
   promoApplicability: [

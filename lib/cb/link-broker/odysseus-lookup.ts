@@ -133,6 +133,35 @@ export async function lookupOdysseusPackages(
     const ranked = rankPackageCandidates(facts, results, options);
     ranked.diagnostics.unshift(...searchNotes);
 
+    if (ranked.selected) {
+      try {
+        const summary = await engine.fetchPackagePageSummary(
+          ranked.selected.packageId,
+          process.env.CB_AGENT_SIID ?? "1049337"
+        );
+        if (summary?.shipName) {
+          ranked.selected.shipName = summary.shipName;
+          if (summary.cruiseLine) ranked.selected.cruiseLine = summary.cruiseLine;
+          const match = ranked.candidates.find((c) => c.packageId === ranked.selected!.packageId);
+          if (match) {
+            match.shipName = summary.shipName;
+            if (summary.cruiseLine) match.cruiseLine = summary.cruiseLine;
+          }
+          ranked.diagnostics.push(
+            `Captured package-page ship identity for ${ranked.selected.packageId}: ${summary.cruiseLine ? `${summary.cruiseLine}: ` : ""}${summary.shipName}.`
+          );
+        } else {
+          ranked.diagnostics.push(
+            `Package page did not expose a ship identity for ${ranked.selected.packageId}; kept search result identity.`
+          );
+        }
+      } catch (err) {
+        ranked.diagnostics.push(
+          `Package-page ship identity fetch failed for ${ranked.selected.packageId}: ${err instanceof Error ? err.message : String(err)}.`
+        );
+      }
+    }
+
     // Enrich the SELECTED candidate with the real day-by-day itinerary. The search
     // API only gives a coarse ports-of-call string; the per-day schedule (port
     // names, arrival/departure times, sea days) lives at a separate endpoint keyed

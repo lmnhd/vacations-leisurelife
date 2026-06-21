@@ -1,21 +1,25 @@
 /**
- * Operator-run backfill: capture the REAL day-by-day itinerary for an already
- * published Deal that was resolved before the itinerary-capture pipeline existed.
+ * Operator-run backfill: capture the REAL day-by-day itinerary AND cabin pricing
+ * for an already published Deal that was resolved before those capture steps
+ * existed in the pipeline.
  *
- * Such deals carry only the coarse ports-of-call STRING, so the public page can
- * render nothing but a deduped port list. The full per-day schedule (port names,
- * arrival/departure times, sea days) lives at /nitroapi/v2/cruise/itinerary/{id}.
- * This script:
+ * Such deals carry only the coarse ports-of-call STRING and no cabin prices, so
+ * the public page can render nothing but a deduped port list and a "draft"
+ * pricing fallback. The full per-day schedule (port names, arrival/departure
+ * times, sea days) lives at /nitroapi/v2/cruise/itinerary/{id}; cabin pricing
+ * comes from the same search result that recovers the itinerary id. This script:
  *   1. loads the curated Deal (+ its trip manifest) from the live store,
  *   2. drives a read-only Odysseus search for the sailing to recover its
- *      itinerary id (deals resolved pre-pipeline never stored one),
+ *      itinerary id and cabin pricing (deals resolved pre-pipeline never stored
+ *      either),
  *   3. fetches + normalizes the day-by-day schedule for that id,
- *   4. writes it back onto the Deal's cruiseFacts (and the manifest's resolved
- *      package) so /deals/[id] renders the real itinerary immediately.
+ *   4. writes both back onto the Deal's cruiseFacts (and the manifest's resolved
+ *      package) so /deals/[id] renders the real itinerary and real prices
+ *      immediately.
  *
  * Read-only against Odysseus (search + itinerary detail only — never books/holds).
- * Idempotent: a deal that already has a day-by-day schedule is left untouched
- * unless --force is passed.
+ * Idempotent: a deal that already has a day-by-day schedule AND cabin pricing is
+ * left untouched unless --force is passed.
  *
  * Usage:
  *   npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts --deal 1582993
@@ -37,6 +41,7 @@ import {
   lookupOdysseusPackages,
 } from "../lib/cb/link-broker/odysseus-lookup";
 import { releaseOdysseusSession } from "../lib/services/odysseus/OdysseusSessionManager";
+import type { PackageCabinPricing } from "../lib/cb/link-broker/package-lookup";
 import type { CuratedOdysseusDeal } from "../lib/cb/deals-system/curated-deal-types";
 import type { DealTripManifest } from "../lib/cb/deals-system/deal-trip-manifest-types";
 
@@ -95,8 +100,15 @@ async function main(): Promise<void> {
   console.log(`Deal: ${deal.id} | package ${deal.packageId} | ${deal.cruiseFacts.shipName ?? deal.cruiseFacts.cruiseLine}`);
   console.log(`  sail ${deal.cruiseFacts.sailDateIso ?? "?"} | ${deal.cruiseFacts.nights ?? "?"} nights`);
 
-  if (deal.cruiseFacts.dayByDayItinerary && deal.cruiseFacts.dayByDayItinerary.length > 0 && !force) {
-    console.log(`  Already has ${deal.cruiseFacts.dayByDayItinerary.length} day node(s). Pass --force to recapture. Nothing to do.`);
+  const hasDays = Boolean(deal.cruiseFacts.dayByDayItinerary && deal.cruiseFacts.dayByDayItinerary.length > 0);
+  const hasPricing = [
+    deal.cruiseFacts.cabinPrices.inside,
+    deal.cruiseFacts.cabinPrices.outside,
+    deal.cruiseFacts.cabinPrices.balcony,
+    deal.cruiseFacts.cabinPrices.suite,
+  ].some((v) => typeof v === "number" && v > 0);
+  if (hasDays && hasPricing && !force) {
+    console.log(`  Already has ${deal.cruiseFacts.dayByDayItinerary!.length} day node(s) and cabin pricing. Pass --force to recapture. Nothing to do.`);
     return;
   }
 
@@ -109,6 +121,7 @@ async function main(): Promise<void> {
   // ── Recover the itinerary id via a live search ─────────────────────────────
   sweepOrphanedAutomationChrome();
   let itineraryId: number | undefined;
+  let cabinPricing: PackageCabinPricing | undefined;
   try {
     console.log(`  Searching Odysseus for the sailing to recover its itinerary id…`);
     const lookup = await lookupOdysseusPackages({
@@ -121,6 +134,7 @@ async function main(): Promise<void> {
     const match =
       lookup.candidates.find((c) => c.packageId === deal!.packageId) ?? lookup.selected ?? lookup.candidates[0];
     itineraryId = match?.itinerary?.itineraryId;
+    cabinPricing = match?.cabinPricing;
     if (match && match.packageId !== deal.packageId) {
       console.warn(`  ⚠ Exact package ${deal.packageId} not in results; using closest match ${match.packageId}.`);
     }
@@ -137,6 +151,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   console.log(`  Itinerary id: ${itineraryId}`);
+  if (cabinPricing) {
+    console.log(
+      `  ✓ Recovered cabin pricing: ${["inside", "outside", "balcony", "suite"]
+        .filter((k) => typeof cabinPricing![k as keyof PackageCabinPricing] === "number")
+        .map((k) => `${k} $${(cabinPricing![k as keyof PackageCabinPricing] as number).toLocaleString()}`)
+        .join(", ")} ${cabinPricing.currencyCode}`
+    );
+  } else {
+    console.warn("  ⚠ Search returned no cabin pricing for this sailing; leaving pricing untouched (no fabrication).");
+  }
 
   // ── Capture + normalize the real day-by-day schedule ───────────────────────
   const dayByDay = await captureDayByDayItinerary(itineraryId);
@@ -156,13 +180,25 @@ async function main(): Promise<void> {
     return;
   }
 
-  // ── Write back: the page reads the schedule from the Deal's cruiseFacts ─────
+  // ── Write back: the page reads the schedule + prices from the Deal's cruiseFacts ──
   const updatedDeal: CuratedOdysseusDeal = {
     ...deal,
-    cruiseFacts: { ...deal.cruiseFacts, dayByDayItinerary: flatDays },
+    cruiseFacts: {
+      ...deal.cruiseFacts,
+      dayByDayItinerary: flatDays,
+      cabinPrices: cabinPricing
+        ? {
+            inside: cabinPricing.inside,
+            outside: cabinPricing.outside,
+            balcony: cabinPricing.balcony,
+            suite: cabinPricing.suite,
+            currencyCode: cabinPricing.currencyCode,
+          }
+        : deal.cruiseFacts.cabinPrices,
+    },
   };
   await upsertCuratedDealRecord(updatedDeal);
-  console.log(`  ✓ Patched curated deal ${deal.id} cruiseFacts.dayByDayItinerary.`);
+  console.log(`  ✓ Patched curated deal ${deal.id} cruiseFacts.dayByDayItinerary${cabinPricing ? " + cabinPrices" : ""}.`);
 
   // Keep the manifest's resolved package in sync so a future re-assembly carries it.
   if (manifest?.resolvedPackage) {
@@ -171,10 +207,11 @@ async function main(): Promise<void> {
       resolvedPackage: {
         ...manifest.resolvedPackage,
         itinerary: { ...manifest.resolvedPackage.itinerary, dayByDay: flatDays },
+        cabinPricing: cabinPricing ?? manifest.resolvedPackage.cabinPricing,
       },
     };
     await upsertDealTripManifestRecord(updatedManifest);
-    console.log(`  ✓ Patched trip manifest ${manifest.id} resolvedPackage.itinerary.dayByDay.`);
+    console.log(`  ✓ Patched trip manifest ${manifest.id} resolvedPackage.itinerary.dayByDay${cabinPricing ? " + cabinPricing" : ""}.`);
   }
 
   console.log(`Done. Reload /deals/${dealId} — the itinerary should now render Day 1..${flatDays.length}.`);

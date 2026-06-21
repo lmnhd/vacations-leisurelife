@@ -2,70 +2,50 @@
   "cookies": [
     {
       "name": "CBAT-STICKY-LB",
-      "value": "\"Cg8xMC4xMzYuNTcuNDc6ODAQ2vewIA==\"",
+      "value": "\"Cg8xMC4xMzYuNTcuNDc6ODAQ262xIA==\"",
       "domain": "www.cbagenttools.com",
       "path": "/",
-      "expires": 1782081632.951063,
+      "expires": 1782088545.897138,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
-      "name": "_gid",
-      "value": "GA1.2.576961794.1781995235",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1782081635,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_gat_gtag_UA_149507583_1",
-      "value": "1",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1781995295,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_ga",
-      "value": "GA1.1.410909161.1781995235",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1816555241.405821,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "csrftoken",
-      "value": "7DrM0ejzjBwgDZTdHwdkwl8ECoJrGX5B",
+      "value": "cY09SP5T4RlxFC5BBITQWiX3SsCkVv0J",
       "domain": "www.cbagenttools.com",
       "path": "/",
-      "expires": 1813444837.866058,
+      "expires": 1813451748.564842,
       "httpOnly": false,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "sessionid",
-      "value": "ikzclb8t2odwwbcrrghm591h6msxxqe1",
+      "value": "t1tg5pfx5i6u0fpa5pne30zyszdrbujq",
       "domain": "www.cbagenttools.com",
       "path": "/",
-      "expires": 1782168036.337153,
+      "expires": 1782174948.246162,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "_ga_DPV9B4D4T2",
-      "value": "GS2.1.s1781995235$o1$g1$t1781995241$j54$l0$h0",
+      "value": "GS2.1.s1782002154$o1$g0$t1782002154$j60$l0$h0",
       "domain": ".cbagenttools.com",
       "path": "/",
-      "expires": 1816555241.405495,
+      "expires": 1816562154.96995,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.726124511.1782002155",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1816562154.970311,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"

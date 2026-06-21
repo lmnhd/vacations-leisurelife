@@ -29,6 +29,11 @@ import {
   type DealImageCandidate,
 } from "./deal-page-design-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
+import {
+  looksLikeCruiseItineraryName,
+  publicDealCruiseLine,
+  publicDealShipName,
+} from "./ship-identity";
 
 /** Deterministic destination-themed fallback image (curated Deals carry no asset yet). */
 const FALLBACK_HERO_IMAGES = [
@@ -82,21 +87,16 @@ function formatPortTiming(
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
-function looksLikeCruiseName(value: string | undefined): boolean {
-  const lower = value?.toLowerCase() ?? "";
-  return lower.includes(" cruise from ") || lower.includes(" ending in ") || lower.includes("-night ");
-}
-
 function displayShipName(deal: CuratedOdysseusDeal): string | undefined {
-  const shipName = deal.cruiseFacts.shipName?.trim();
-  if (shipName && !looksLikeCruiseName(shipName)) return shipName;
+  const shipName = publicDealShipName(deal);
+  if (shipName) return shipName;
   const shipHint = deal.angleResearch?.amenityHighlights[0]?.trim();
-  return shipHint || undefined;
+  return shipHint && !looksLikeCruiseItineraryName(shipHint) ? shipHint : undefined;
 }
 
 function displayItineraryName(deal: CuratedOdysseusDeal): string {
   const shipName = deal.cruiseFacts.shipName?.trim();
-  if (shipName && looksLikeCruiseName(shipName)) return shipName;
+  if (shipName && looksLikeCruiseItineraryName(shipName)) return shipName;
   return deal.cruiseFacts.itineraryName || deal.cruiseFacts.title;
 }
 
@@ -242,6 +242,8 @@ export interface DealLandingPageView {
   readiness: "resolved" | "draft";
   eyebrow: string;
   hero: { headline: string; subhead: string; imageUrl?: string; imageAlt?: string; imageFallbacks?: DealImageView[] };
+  /** Resolved vessel label rendered over the first selected image. */
+  vesselLabel?: string;
   chips: string[];
   fromPriceLabel?: string;
   factBand: DealFactEntry[];
@@ -413,6 +415,8 @@ export function buildDealLandingPageView(
   const prices = f.cabinPrices;
   const ports = splitPortList(f.portsOfCall);
   const shipName = displayShipName(deal);
+  const cruiseLine = publicDealCruiseLine(deal);
+  const vesselLabel = shipName ? `${shipName} · ${cruiseLine}` : undefined;
   const itineraryName = displayItineraryName(deal);
   const departurePort = displayDeparturePort(deal, ports);
   const hasPricing = [prices.inside, prices.outside, prices.balcony, prices.suite].some(
@@ -444,7 +448,7 @@ export function buildDealLandingPageView(
       chips.push(`${departurePort} → ${last}`);
     }
     factBand.push(
-      { label: "Cruise Line", value: f.cruiseLine },
+      { label: "Cruise Line", value: cruiseLine },
       ...(shipName ? [{ label: "Ship", value: shipName }] : []),
       ...(departurePort ? [{ label: "Departs From", value: departurePort }] : []),
       ...(longDate(f.sailDateIso) ? [{ label: "Sail Date", value: longDate(f.sailDateIso) as string }] : []),
@@ -597,7 +601,7 @@ export function buildDealLandingPageView(
 
   return {
     readiness,
-    eyebrow: `${f.cruiseLine} · ${itineraryName}`,
+    eyebrow: `${cruiseLine} · ${itineraryName}`,
     hero: {
       headline: lp.heroHeadline,
       subhead: lp.heroSubhead,
@@ -605,6 +609,7 @@ export function buildDealLandingPageView(
       imageAlt: heroPick.imageAlt,
       imageFallbacks: heroPick.imageFallbacks,
     },
+    vesselLabel,
     chips,
     fromPriceLabel,
     factBand,
@@ -674,7 +679,7 @@ export function projectPublicDealPage(
     textOnlyLaunchWaived: deal.operatorApproval?.textOnlyLaunchWaived ?? false,
     positioningStatement: deal.targetingDemographic?.researchSummary.positioningStatement,
     facts: {
-      cruiseLine: deal.cruiseFacts.cruiseLine,
+      cruiseLine: publicDealCruiseLine(deal),
       shipName: shipName ?? "Confirmed at booking",
       destination: destinationLabel(deal),
       nights: deal.cruiseFacts.nights,

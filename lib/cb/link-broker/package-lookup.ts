@@ -92,6 +92,8 @@ export interface RankedPackageCandidate {
   cruiseCode: string;
   cruiseName: string;
   cruiseLine?: string;
+  /** Real vessel name from the booking package page when available. */
+  shipName?: string;
   shipId?: number;
   sailDateIso: string;
   nights: number | null;

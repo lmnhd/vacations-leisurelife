@@ -34,6 +34,10 @@ import type {
 } from "./campaign-types";
 import { defaultDealExpiresOnIso, evaluateApprovalGates } from "./curated-deal-assembly";
 import type { DealAngleResearch, DealTargetingDemographic } from "./research-types";
+import {
+  resolvedPackageShipName,
+  resolveCruiseLineForPackage,
+} from "./ship-identity";
 
 export interface AssembleFromManifestInput {
   manifest: DealTripManifest;
@@ -68,26 +72,18 @@ function splitPortList(values: string[]): string[] {
   return uniqueNonEmpty(values.flatMap((value) => value.split("|").map((part) => part.trim())));
 }
 
-function looksLikeCruiseName(value: string | undefined): boolean {
-  const lower = value?.toLowerCase() ?? "";
-  return lower.includes(" cruise from ") || lower.includes(" ending in ") || lower.includes("-night ");
-}
-
 function buildCruiseFacts(manifest: DealTripManifest): CuratedDealCruiseFacts {
   const d = manifest.assembleDraft;
   const r = manifest.resolvedPackage;
   const cabinPricing = r?.cabinPricing;
   const cruiseName = r?.cruiseName?.trim();
-  const rawShipName = r?.shipName?.trim();
-  const shipName = rawShipName && !looksLikeCruiseName(rawShipName)
-    ? rawShipName
-    : d.shipClassHint ?? "";
+  const shipName = resolvedPackageShipName(r, d.shipClassHint) ?? "";
   const resolvedPorts = r?.itinerary?.portsOfCall
     ? splitPortList([r.itinerary.portsOfCall])
     : [];
   return {
     title: cruiseName || d.itineraryName,
-    cruiseLine: r?.cruiseLine ?? d.cruiseLine,
+    cruiseLine: resolveCruiseLineForPackage(r?.packageId, r?.cruiseLine ?? d.cruiseLine),
     shipName,
     itineraryName: cruiseName || d.itineraryName,
     nights: r?.nights ?? d.nights ?? 0,

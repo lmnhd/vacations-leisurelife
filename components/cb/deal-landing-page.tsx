@@ -16,7 +16,7 @@ import { DealCtaActions } from "./deal-cta-actions";
 import { DealImageWithFallback } from "./deal-image-with-fallback";
 import { DealLandingPageEnhancements } from "./deal-landing-page-enhancements";
 
-// â”€â”€ Design tokens (verbatim from the prototype) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Design tokens (verbatim from the prototype) ──────────────────────────────
 const C = {
   bg: "#FAF7F2",
   text: "#1A2530",
@@ -437,7 +437,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
                     direction: imageRight ? "rtl" : "ltr",
                   }}
                 >
-                  <figure style={{ margin: 0, direction: "ltr" }}>
+                  <figure style={{ margin: 0, direction: "ltr", position: "relative" }}>
                     {seg.imageUrl ? (
                       <DealImageWithFallback
                         primary={{ imageUrl: seg.imageUrl, imageAlt: seg.imageAlt }}
@@ -452,6 +452,28 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
                     ) : (
                       <div style={{ width: "100%", aspectRatio: "4 / 3", background: C.border, borderRadius: 4 }} />
                     )}
+                    {i === 0 && page.vesselLabel ? (
+                      <figcaption
+                        style={{
+                          position: "absolute",
+                          left: 18,
+                          bottom: 18,
+                          maxWidth: "calc(100% - 36px)",
+                          padding: "8px 12px",
+                          borderRadius: 4,
+                          background: "rgba(11,36,51,0.84)",
+                          color: C.cream,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                          lineHeight: 1.35,
+                          textTransform: "uppercase",
+                          boxShadow: "0 8px 28px rgba(0,0,0,0.26)",
+                        }}
+                      >
+                        {page.vesselLabel}
+                      </figcaption>
+                    ) : null}
                   </figure>
                   <div style={{ direction: "ltr" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>

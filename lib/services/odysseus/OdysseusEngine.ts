@@ -1,7 +1,7 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CruiseSearchCriteria, CruiseResult, ItineraryDetail, ItineraryDetailSchema } from './types';
+import { CruiseSearchCriteria, CruiseResult, ItineraryDetail, ItineraryDetailSchema, PackagePageSummary } from './types';
 
 // Store state locally in the project root for now
 // When moving to Render, this could be stored in Redis or an S3 bucket
@@ -424,6 +424,80 @@ export class OdysseusEngine {
             return detail.data;
         } catch (err) {
             console.warn('[OdysseusEngine] Failed to parse itinerary detail response:', err instanceof Error ? err.message : err);
+            return null;
+        }
+    }
+
+    /**
+     * Read the public package page summary for the selected package.
+     *
+     * The cruise search API often exposes only an itinerary/product title in
+     * `name` ("Eastbound Transatlantic Crossing"), while the package page itself
+     * renders the actual vessel in the breadcrumb ("Cunard: Queen Mary 2") and
+     * ship card. This method is read-only: it opens the package page and extracts
+     * visible identity text, with no form submission, hold, or reservation step.
+     */
+    async fetchPackagePageSummary(packageId: string | number, siid: string = '1049337'): Promise<PackagePageSummary | null> {
+        const page = this.odysseusPage;
+        if (!page) throw new Error('Engine not initialized or Odysseus tab not opened.');
+
+        const pid = String(packageId).trim();
+        if (!pid) return null;
+
+        const packageUrl = `https://bookings.cbagenttools.com/swift/cruise/package/${encodeURIComponent(pid)}?siid=${encodeURIComponent(siid)}&lang=1`;
+        console.log(`[OdysseusEngine] Reading package page summary: ${packageUrl}`);
+
+        try {
+            await page.goto(packageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+            await page.evaluate("window.__name = window.__name || function (f) { return f; };");
+
+            const raw = await page.evaluate((id: string) => {
+                const clean = (value: string | null | undefined) => (value ?? '').trim();
+                const text = clean(document.body?.innerText);
+                const lines = text
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .filter((line) => line.length > 0);
+
+                const breadcrumb = lines.find((line) =>
+                    line.includes('|') && line.includes(':') && line.toLowerCase().includes('nights')
+                );
+                const titleLine = lines.find((line) =>
+                    line.includes('|') && line.includes(':') && line.includes(',')
+                );
+                const lineWithShip = breadcrumb ?? titleLine;
+                let cruiseLine = '';
+                let shipName = '';
+
+                if (lineWithShip) {
+                    const parts = lineWithShip.split('|').map((part) => part.trim()).filter(Boolean);
+                    const lineShipPart = parts.find((part) => part.includes(':'));
+                    if (lineShipPart) {
+                        const pair = lineShipPart.split(':').map((part) => part.trim());
+                        cruiseLine = pair[0] ?? '';
+                        shipName = pair.slice(1).join(':').trim();
+                    }
+                }
+
+                if (!shipName) {
+                    const shipIconLineIndex = lines.findIndex((line) => line.toLowerCase().includes('ship'));
+                    if (shipIconLineIndex >= 0 && lines[shipIconLineIndex + 1]) {
+                        shipName = lines[shipIconLineIndex + 1];
+                    }
+                }
+
+                return {
+                    packageId: id,
+                    cruiseLine: cruiseLine || undefined,
+                    shipName: shipName || undefined,
+                    title: lineWithShip || undefined,
+                };
+            }, pid);
+
+            return raw;
+        } catch (error) {
+            console.warn(`[OdysseusEngine] Package page summary failed for ${pid}:`, error instanceof Error ? error.message : error);
             return null;
         }
     }
