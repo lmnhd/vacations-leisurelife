@@ -10,16 +10,12 @@
  * Output: { ok: true, request: AgentCallbackRequest } | { ok: false, error: string }
  */
 
-import * as fs from "node:fs";
-
 import { NextResponse } from "next/server";
 
-import { DEALS_CACHE_PATHS, emptyCallbackRequestsCache } from "@/lib/cb/deals-system/caches";
+import { updateCallbackRequestStatus } from "@/lib/cb/deals-system/callback-request-store";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
-import type {
-  AgentCallbackRequestsCache,
-  AgentCallbackStatus,
-} from "@/lib/cb/deals-system/callback-request-types";
+import type { AgentCallbackStatus } from "@/lib/cb/deals-system/callback-request-types";
+import { appendDealEvent } from "@/lib/cb/deals-system/deal-events-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,24 +30,6 @@ const VALID_STATUSES: AgentCallbackStatus[] = ["new", "assigned", "contacted", "
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function loadCallbackCache(): AgentCallbackRequestsCache {
-  const path = DEALS_CACHE_PATHS.callbackRequests;
-  if (!fs.existsSync(path)) return emptyCallbackRequestsCache();
-  try {
-    return JSON.parse(fs.readFileSync(path, "utf8")) as AgentCallbackRequestsCache;
-  } catch {
-    return emptyCallbackRequestsCache();
-  }
-}
-
-function saveCallbackCache(cache: AgentCallbackRequestsCache): void {
-  fs.writeFileSync(
-    DEALS_CACHE_PATHS.callbackRequests,
-    `${JSON.stringify(cache, null, 2)}\n`,
-    "utf8"
-  );
 }
 
 export async function POST(request: Request) {
@@ -80,27 +58,25 @@ export async function POST(request: Request) {
 
   const note = str(body.note);
 
-  const cache = loadCallbackCache();
-  const index = cache.requests.findIndex((req) => req.id === requestId);
-  if (index === -1) {
+  const updated = await updateCallbackRequestStatus({
+    requestId,
+    status: status as AgentCallbackStatus,
+    note,
+  });
+  if (!updated) {
     return NextResponse.json({ ok: false, error: `No callback request found with id "${requestId}".` }, { status: 404 });
   }
 
-  const nowIso = new Date().toISOString();
-  const existing = cache.requests[index];
-  const updated = {
-    ...existing,
-    status: status as AgentCallbackStatus,
-    routing: { ...existing.routing, dashboardQueued: false },
-    statusHistory: [
-      ...existing.statusHistory,
-      { status: status as AgentCallbackStatus, changedAtIso: nowIso, note },
-    ],
-  };
-
-  cache.requests[index] = updated;
-  cache.generatedAtIso = nowIso;
-  saveCallbackCache(cache);
+  // Mirror operator status changes onto the deal's activity timeline.
+  if (status === "contacted" || status === "closed") {
+    await appendDealEvent({
+      dealId: updated.deal.dealId,
+      eventType: status === "contacted" ? "callback_contacted" : "callback_closed",
+      attribution: {},
+      email: updated.visitor.email,
+      metadata: { requestId },
+    });
+  }
 
   return NextResponse.json({ ok: true, request: updated });
 }

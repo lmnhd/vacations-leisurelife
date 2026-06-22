@@ -5,6 +5,7 @@ import { Anchor, CalendarDays, CheckCircle2, CircleDollarSign, Ship, Sparkles } 
 
 import { CuratedDealPage } from "@/components/cb/curated-deal-page";
 import { DealLandingPage } from "@/components/cb/deal-landing-page";
+import { DealViewBeacon } from "@/components/cb/deal-view-beacon";
 import { LandingFooter } from "@/components/landing-footer";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { Button } from "@/components/ui/button";
@@ -41,9 +42,19 @@ export default async function DealDetailPage({
     // When a funnel synthesis exists, render the premium master-template page
     // (the Claude Design "Deal Page"); otherwise fall back to the legacy layout.
     if (curated.designPage) {
-      return <DealLandingPage dealId={curated.id} page={curated.designPage} />;
+      return (
+        <>
+          <DealViewBeacon dealId={curated.id} />
+          <DealLandingPage dealId={curated.id} page={curated.designPage} />
+        </>
+      );
     }
-    return <CuratedDealPage deal={curated} />;
+    return (
+      <>
+        <DealViewBeacon dealId={curated.id} />
+        <CuratedDealPage deal={curated} />
+      </>
+    );
   }
 
   const deal = await getStoredCbDealDetailById(id);

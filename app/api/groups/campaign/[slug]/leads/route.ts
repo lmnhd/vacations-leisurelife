@@ -95,8 +95,13 @@ export async function GET(
         listCampaignWaitlistEntries(slug),
         listCampaignLeadEvents(slug),
     ]);
-    const funnel = computeFunnelSummary(leads);
-    const traffic = computeLandingTrafficSummary(events, leads);
+    // The leads table itself shows every signup (verified or not) — operators
+    // need visibility into everyone who's signed up. But the funnel counts and
+    // TC Pulse copy are verified-only, so unverified burner-email signups don't
+    // inflate the number quoted back to guests.
+    const verifiedLeads = leads.filter((entry) => entry.emailVerified === true);
+    const funnel = computeFunnelSummary(verifiedLeads);
+    const traffic = computeLandingTrafficSummary(events, verifiedLeads);
     const latestEvents = buildLatestEventMap(events);
     const eventsByEmail = buildEventsByEmail(events);
     const dashboardLeads: LeadDashboardRow[] = leads.map((lead) => {

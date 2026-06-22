@@ -22,6 +22,7 @@ import {
     Ship,
     Sun,
     Target,
+    Trash2,
     TrendingUp,
     Users,
     X,
@@ -632,6 +633,7 @@ function ChatPanel({ slug }: { slug: string }) {
     const [draft, setDraft] = useState('');
     const [posting, setPosting] = useState(false);
     const [postError, setPostError] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const scrollRef = useState<HTMLDivElement | null>(null);
     const [scrollEl, setScrollEl] = scrollRef;
 
@@ -710,6 +712,30 @@ function ChatPanel({ slug }: { slug: string }) {
         }
     }
 
+    async function handleDelete(messageId: string) {
+        if (deletingId) return;
+        setDeletingId(messageId);
+        const prior = messages;
+        setMessages((cur) => cur.filter((m) => m.id !== messageId));
+
+        try {
+            const res = await fetch(`/api/groups/campaign/${slug}/chat/operator`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ turnId: messageId }),
+            });
+            const data = (await res.json()) as { success?: boolean; error?: string };
+            if (!res.ok || !data.success) {
+                throw new Error(data.error ?? 'Failed to delete message.');
+            }
+        } catch (err) {
+            setPostError(err instanceof Error ? err.message : 'Failed to delete message.');
+            setMessages(prior);
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
     return (
         <Panel className="flex h-[calc(100vh-220px)] flex-col">
             <PanelHeader
@@ -747,7 +773,7 @@ function ChatPanel({ slug }: { slug: string }) {
                     visible.map((m) => {
                         const isAssistant = m.role === 'assistant';
                         return (
-                            <div key={m.id} className={cn('flex flex-col gap-1', isAssistant ? 'items-start' : 'items-end')}>
+                            <div key={m.id} className={cn('group flex flex-col gap-1', isAssistant ? 'items-start' : 'items-end')}>
                                 <div className="flex items-center gap-2">
                                     <span className={cn(
                                         'text-[10px] font-semibold uppercase tracking-wider',
@@ -761,15 +787,28 @@ function ChatPanel({ slug }: { slug: string }) {
                                         <span className="text-[10px] text-slate-300 dark:text-slate-600">{new Date(m.createdAt).toLocaleString()}</span>
                                     )}
                                 </div>
-                                <div className={cn(
-                                    'max-w-[80%] rounded-xl px-3.5 py-2 text-sm leading-relaxed',
-                                    m.isStarterMessage
-                                        ? 'border border-slate-200 bg-slate-50 italic text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300'
-                                        : isAssistant
-                                            ? 'border border-indigo-200 bg-indigo-50 text-slate-800 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-slate-100'
-                                            : 'bg-slate-800 text-white dark:bg-slate-700',
-                                )}>
-                                    {m.content}
+                                <div className="flex max-w-[80%] items-start gap-1.5">
+                                    <div className={cn(
+                                        'rounded-xl px-3.5 py-2 text-sm leading-relaxed',
+                                        m.isStarterMessage
+                                            ? 'border border-slate-200 bg-slate-50 italic text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300'
+                                            : isAssistant
+                                                ? 'border border-indigo-200 bg-indigo-50 text-slate-800 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-slate-100'
+                                                : 'bg-slate-800 text-white dark:bg-slate-700',
+                                    )}>
+                                        {m.content}
+                                    </div>
+                                    {!m.isStarterMessage && (
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleDelete(m.id)}
+                                            disabled={deletingId === m.id}
+                                            title="Delete message"
+                                            className="mt-1 shrink-0 rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100 disabled:opacity-50 dark:text-slate-600 dark:hover:text-rose-400"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

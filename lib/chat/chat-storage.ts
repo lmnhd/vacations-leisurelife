@@ -1,4 +1,5 @@
 import {
+    DeleteCommand,
     GetCommand,
     PutCommand,
     QueryCommand,
@@ -171,6 +172,23 @@ export class ChatStorageService {
 
         const conversationItems = result.Items ?? [];
         return conversationItems as Array<Record<string, unknown>>;
+    }
+
+    /**
+     * Delete one conversation turn by its session-scoped GSI projection (PK + SK
+     * come straight off a `getConversationTurnsBySession` item — turns don't carry
+     * their own PK/SK as separate lookup keys, so callers must pass the item back).
+     */
+    public async deleteConversationTurn(input: { PK: string; SK: string }): Promise<void> {
+        await chatDynamoDocumentClient.send(
+            new DeleteCommand({
+                TableName: CONVERSATIONS_TABLE_NAME,
+                Key: {
+                    PK: input.PK,
+                    SK: input.SK,
+                },
+            })
+        );
     }
 
     public async injectTestState(input: {

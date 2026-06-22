@@ -2,15 +2,14 @@
 
 import {
   DEALS_CACHE_PATHS,
-  emptyCallbackRequestsCache,
   emptyLinkBrokerCache,
 } from "./caches";
-import type { AgentCallbackRequestsCache } from "./callback-request-types";
+import { listAllCallbackRequests } from "./callback-request-store";
+import type { AgentCallbackRequest } from "./callback-request-types";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import type { LinkBrokerCache } from "./link-broker-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
-  validateCallbackRequestsCache,
   validateLinkBrokerCache,
   type ValidationResult,
 } from "./validate";
@@ -24,6 +23,7 @@ import { getSavedDiscoveryResearchStatus } from "./discovery-research-source";
 import { loadDealDiscoveryIdeasCache } from "./deal-discovery-cache";
 import { loadDealAdCopyCache } from "./deal-ad-copy-cache";
 import { listCuratedDeals, listDealTripManifests, listPromoRecords } from "./deals-dynamo-store";
+import { computeDealActivitySummary, listDealEvents } from "./deal-events-store";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 
 type CacheKey = keyof typeof DEALS_CACHE_PATHS;
@@ -35,13 +35,6 @@ interface CacheRead<T> {
   exists: boolean;
   modifiedAtIso?: string;
   validation: ValidationResult<T>;
-}
-
-export interface DealsSystemPhaseStatus {
-  phase: string;
-  name: string;
-  status: "complete" | "foundation" | "pending" | "blocked";
-  evidence: string;
 }
 
 export interface DealsSystemPromoSummary {
@@ -112,6 +105,19 @@ export interface DealsSystemCuratedDealSummary {
   pinned: boolean;
   hidden: boolean;
   agentOnlyNotes: string[];
+  /** Reach + contact-action roll-up from the deal events partition. */
+  activity: DealsSystemDealActivity;
+}
+
+export interface DealsSystemDealActivity {
+  totalViews: number;
+  uniqueSessions: number;
+  engagedViews: number;
+  bookNowClicks: number;
+  linkRequests: number;
+  callbackRequests: number;
+  totalActions: number;
+  lastActivityAtIso?: string;
 }
 
 export interface DealsSystemLinkBrokerSummary {
@@ -210,7 +216,6 @@ export interface DealsSystemDashboardData {
     ok: boolean;
     errors: string[];
   }>;
-  phases: DealsSystemPhaseStatus[];
   promoRecords: DealsSystemPromoSummary[];
   /** Lightweight {id,title} list for attaching promos in the assembly form. */
   promoOptions: Array<{ id: string; title: string; vendor: string }>;
@@ -302,7 +307,20 @@ function traceSummary(
   };
 }
 
-function summarizeDeal(deal: CuratedOdysseusDeal): DealsSystemCuratedDealSummary {
+const EMPTY_DEAL_ACTIVITY: DealsSystemDealActivity = {
+  totalViews: 0,
+  uniqueSessions: 0,
+  engagedViews: 0,
+  bookNowClicks: 0,
+  linkRequests: 0,
+  callbackRequests: 0,
+  totalActions: 0,
+};
+
+function summarizeDeal(
+  deal: CuratedOdysseusDeal,
+  activity: DealsSystemDealActivity = EMPTY_DEAL_ACTIVITY
+): DealsSystemCuratedDealSummary {
   const gates =
     deal.operatorApproval?.gates ??
     evaluateApprovalGates(deal, {
@@ -357,6 +375,7 @@ function summarizeDeal(deal: CuratedOdysseusDeal): DealsSystemCuratedDealSummary
     pinned: Boolean(deal.operatorVisibility?.pinned),
     hidden: Boolean(deal.operatorVisibility?.hidden),
     agentOnlyNotes: deal.agentOnlyNotes ?? [],
+    activity,
   };
 }
 
@@ -396,9 +415,9 @@ function summarizeLinkBroker(cache: LinkBrokerCache): DealsSystemLinkBrokerSumma
 }
 
 function summarizeCallbacks(
-  cache: AgentCallbackRequestsCache
+  requests: AgentCallbackRequest[]
 ): DealsSystemCallbackRequestSummary[] {
-  return cache.requests.map((request) => ({
+  return requests.map((request) => ({
     id: request.id,
     status: request.status,
     ctaSource: request.ctaSource,
@@ -419,113 +438,15 @@ function summarizeCallbacks(
   }));
 }
 
-function buildPhases(
-  promoRecords: CbPromoIntelligenceRecord[],
-  curatedDeals: CuratedOdysseusDeal[],
-  linkCache: LinkBrokerCache,
-  callbackCache: AgentCallbackRequestsCache
-): DealsSystemPhaseStatus[] {
-  const publishableDeals = curatedDeals.filter(isDealHomepageEligible).length;
-  const dealsInDevelopment = curatedDeals.filter(
-    (deal) => deal.copyPackage || deal.adStructure || deal.mediaPlan
-  ).length;
-  const validLinks = linkCache.records.filter((record) => record.health.status === "valid").length;
-  const extractionSucceeded = promoRecords.filter(
-    (record) => record.diagnostics.status === "succeeded"
-  ).length;
-  return [
-    {
-      phase: "0-1",
-      name: "Guardrails and schemas",
-      status: "complete",
-      evidence:
-        "Cache contracts and validators are available for promo, curated deal, Link Broker, and callback resources.",
-    },
-    {
-      phase: "2-3",
-      name: "Link Broker backbone",
-      status: linkCache.records.length > 0 ? "complete" : "pending",
-      evidence: `${linkCache.records.length} cached link record(s), ${validLinks} currently valid.`,
-    },
-    {
-      phase: "4-5",
-      name: "Promo intelligence",
-      status: promoRecords.length > 0 ? "complete" : "pending",
-      evidence: `${promoRecords.length} promo record(s), ${extractionSucceeded} extracted successfully.`,
-    },
-    {
-      phase: "5A",
-      name: "Retail discovery adapter",
-      status: "foundation",
-      evidence:
-        "Group Discovery research can be adapted into retail Deal angle inputs without creating Group campaigns.",
-    },
-    {
-      phase: "6",
-      name: "Package lookup",
-      status: linkCache.records.length > 0 ? "foundation" : "pending",
-      evidence:
-        "Lookup outputs can now feed Link Broker records; live operator runs still determine current CB/Odysseus state.",
-    },
-    {
-      phase: "7-8",
-      name: "Trip research and targeting",
-      status: curatedDeals.some((deal) => deal.angleResearch || deal.targetingDemographic)
-        ? "complete"
-        : "foundation",
-      evidence:
-        "Research and Targeting-Demographic contracts exist; curated package resources are not yet attached to real Deals.",
-    },
-    {
-      phase: "9",
-      name: "Curated Deal assembly",
-      status:
-        publishableDeals > 0 ? "complete" : dealsInDevelopment > 0 ? "foundation" : "pending",
-      evidence: `${dealsInDevelopment} Deal(s) in development, ${publishableDeals} publishable. A Deal must be bookable, link-valid, AND operator-approved before homepage use.`,
-    },
-    {
-      phase: "9A",
-      name: "Campaign workbench",
-      status: dealsInDevelopment > 0 ? "complete" : "foundation",
-      evidence:
-        "Research, copy, ad structure, media plan, and the operator approval gate run as independent, rerunnable stages in this workbench.",
-    },
-    {
-      phase: "10",
-      name: "Homepage Deals integration",
-      status: publishableDeals > 0 ? "foundation" : "blocked",
-      evidence:
-        publishableDeals > 0
-          ? "Publishable Deals exist for rendering work."
-          : "Blocked by publishing gate: no bookable Deal with valid link health yet.",
-    },
-    {
-      phase: "13",
-      name: "CTA operations",
-      status: callbackCache.requests.length > 0 ? "complete" : "foundation",
-      evidence:
-        callbackCache.requests.length > 0
-          ? `${callbackCache.requests.length} callback request(s) currently cached. The operator workbench shows visitor contact info and supports marking requests contacted/closed.`
-          : "Book now, Email me the booking link, and Request an agent callback are wired up. No callback requests have arrived yet.",
-    },
-  ];
-}
-
 export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboardData> {
-  const [linkRead, callbackRead, promoRecords, curatedDeals] = await Promise.all([
+  const [linkRead, callbackRequests, promoRecords, curatedDeals] = await Promise.all([
     readCache("linkBroker", "Link Broker", emptyLinkBrokerCache(), validateLinkBrokerCache),
-    readCache(
-      "callbackRequests",
-      "Agent Callback Requests",
-      emptyCallbackRequestsCache(),
-      validateCallbackRequestsCache
-    ),
+    listAllCallbackRequests().catch(() => [] as AgentCallbackRequest[]),
     listPromoRecords().catch(() => []),
     listCuratedDeals().catch(() => []),
   ]);
 
   const linkCache = cacheValue(linkRead, emptyLinkBrokerCache());
-  const callbackCache = cacheValue(callbackRead, emptyCallbackRequestsCache());
   const publishableDeals = curatedDeals.filter(isDealHomepageEligible);
   const extractedPromos = promoRecords.filter(
     (record) => record.diagnostics.status === "succeeded"
@@ -555,6 +476,25 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
   // Ad copy points at the unified manifest id, which is `unified-<tripManifestId>`.
   const adCopiedManifestIds = new Set(
     adCopies.map((a) => a.sourceUnifiedManifestId.replace(/^unified-/, ""))
+  );
+
+  // Per-deal activity roll-up (reach + contact actions) from the events store.
+  const dealActivityById = new Map<string, DealsSystemDealActivity>();
+  await Promise.all(
+    curatedDeals.map(async (deal) => {
+      const events = await listDealEvents(deal.id);
+      const s = computeDealActivitySummary(deal.id, events);
+      dealActivityById.set(deal.id, {
+        totalViews: s.totalViews,
+        uniqueSessions: s.uniqueSessions,
+        engagedViews: s.engagedViews,
+        bookNowClicks: s.bookNowClicks,
+        linkRequests: s.linkRequests,
+        callbackRequests: s.callbackRequests,
+        totalActions: s.totalActions,
+        lastActivityAtIso: s.lastActivityAtIso,
+      });
+    })
   );
 
   return {
@@ -587,7 +527,7 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
       publishableDeals: publishableDeals.length,
       linkBrokerRecords: linkCache.records.length,
       validLinks: linkCache.records.filter((record) => record.health.status === "valid").length,
-      callbackRequests: callbackCache.requests.length,
+      callbackRequests: callbackRequests.length,
     },
     caches: [
       {
@@ -612,25 +552,23 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
         errors: linkRead.validation.errors,
       },
       {
-        key: callbackRead.key,
-        label: callbackRead.label,
-        path: callbackRead.path,
-        exists: callbackRead.exists,
-        modifiedAtIso: callbackRead.modifiedAtIso,
-        ok: callbackRead.validation.ok,
-        errors: callbackRead.validation.errors,
+        key: "callbackRequests",
+        label: "Agent Callback Requests",
+        ok: true,
+        errors: [],
       },
     ],
-    phases: buildPhases(promoRecords, curatedDeals, linkCache, callbackCache),
     promoRecords: promoRecords.map(summarizePromo),
     promoOptions: promoRecords.map((record) => ({
       id: record.id,
       title: record.title,
       vendor: record.vendor,
     })),
-    curatedDeals: curatedDeals.map(summarizeDeal),
+    curatedDeals: curatedDeals.map((deal) =>
+      summarizeDeal(deal, dealActivityById.get(deal.id) ?? EMPTY_DEAL_ACTIVITY)
+    ),
     linkBrokerRecords: summarizeLinkBroker(linkCache),
-    callbackRequests: summarizeCallbacks(callbackCache),
+    callbackRequests: summarizeCallbacks(callbackRequests),
     nextActions: [
       "Assemble real Curated Deals from package lookup + Link Broker output + promo applicability.",
       "Attach package-specific Trip Research and Targeting-Demographic resources.",

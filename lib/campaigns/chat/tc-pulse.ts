@@ -53,13 +53,13 @@ export interface CampaignEngagement {
     name: string;
     sessionId: string;
     status: Campaign['status'];
-    /**
-     * Total waitlist entries — verified or not. This is the milestone +
-     * engagement basis so the Pulse matches the signup number shown in the
-     * discovery/conversion dashboard.
-     */
+    /** Total waitlist entries — verified or not. Internal/debug only; never quoted publicly. */
     totalSignups: number;
-    /** Verified signups only — drives the public threshold %, which gates real launch. */
+    /**
+     * Verified signups only — the milestone + engagement basis, and what drives
+     * the public threshold %. Matches the (verified-only) conversion dashboard
+     * lead count, so the Tour Conductor never cites unverified burner signups.
+     */
     verifiedSignups: number;
     thresholdPercent: number;
     requiredCabins: number;
@@ -204,10 +204,9 @@ async function readEngagement(campaign: Campaign, now: number): Promise<Campaign
 export function evaluateRules(e: CampaignEngagement): PulseDecision[] {
     const decisions: PulseDecision[] = [];
 
-    // Signup basis for momentum rules = TOTAL entries (verified or not), so the
-    // Pulse matches the signup count shown on the dashboard. The threshold % it
-    // reports stays verified-only (real launch math).
-    const signups = e.totalSignups;
+    // Signup basis for momentum rules = verified entries only, matching the
+    // (verified-only) conversion dashboard lead count and the threshold % math.
+    const signups = e.verifiedSignups;
 
     // Rule 1 — MILESTONE: every Nth signup, deduped by the exact count.
     if (signups >= MILESTONE_EVERY) {
@@ -218,8 +217,7 @@ export function evaluateRules(e: CampaignEngagement): PulseDecision[] {
                 rule: 'milestone',
                 channel: 'main',
                 dedupeKey: key,
-                reason: `${signups} signups crossed the ${milestone}-signup mark`
-                    + (e.verifiedSignups !== signups ? ` (${e.verifiedSignups} verified).` : '.'),
+                reason: `${signups} verified signups crossed the ${milestone}-signup mark.`,
             });
         }
     }
@@ -271,7 +269,7 @@ function buildPrompt(rule: PulseRuleId, e: CampaignEngagement): string {
     const shared = [
         `You are the Tour Conductor — the warm, lightly witty host of the shared chat for the group cruise campaign "${e.name}".`,
         `Write ONE short message (1-3 sentences) to post into the #main channel. No greeting headers, no signature, no emoji spam (at most one).`,
-        `Context: ${e.totalSignups} guests have joined (${e.thresholdPercent}% toward ${e.requiredCabins} cabins).`,
+        `Context: ${e.verifiedSignups} guests have joined (${e.thresholdPercent}% toward ${e.requiredCabins} cabins).`,
         e.guestIdeaCount > 0 ? `The idea board has ${e.guestIdeaCount} guest ideas.` : `The idea board is empty so far.`,
     ];
 

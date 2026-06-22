@@ -18,15 +18,11 @@
  * includes supplied contact details so the operator can call back immediately.
  */
 
-import * as fs from "node:fs";
-
 import { NextResponse } from "next/server";
 
-import { DEALS_CACHE_PATHS, emptyCallbackRequestsCache } from "@/lib/cb/deals-system/caches";
-import type {
-  AgentCallbackRequest,
-  AgentCallbackRequestsCache,
-} from "@/lib/cb/deals-system/callback-request-types";
+import { appendCallbackRequest } from "@/lib/cb/deals-system/callback-request-store";
+import type { AgentCallbackRequest } from "@/lib/cb/deals-system/callback-request-types";
+import { appendDealEvent } from "@/lib/cb/deals-system/deal-events-store";
 import { getPublicDealPageById } from "@/lib/cb/deals-system/public-deals";
 import { sendAdminPushNotification } from "@/lib/pushover";
 
@@ -43,24 +39,6 @@ interface Body {
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function loadCallbackCache(): AgentCallbackRequestsCache {
-  const path = DEALS_CACHE_PATHS.callbackRequests;
-  if (!fs.existsSync(path)) return emptyCallbackRequestsCache();
-  try {
-    return JSON.parse(fs.readFileSync(path, "utf8")) as AgentCallbackRequestsCache;
-  } catch {
-    return emptyCallbackRequestsCache();
-  }
-}
-
-function saveCallbackCache(cache: AgentCallbackRequestsCache): void {
-  fs.writeFileSync(
-    DEALS_CACHE_PATHS.callbackRequests,
-    `${JSON.stringify(cache, null, 2)}\n`,
-    "utf8"
-  );
 }
 
 export async function POST(request: Request) {
@@ -125,10 +103,16 @@ export async function POST(request: Request) {
     ],
   };
 
-  const cache = loadCallbackCache();
-  cache.requests.push(callbackRequest);
-  cache.generatedAtIso = nowIso;
-  saveCallbackCache(cache);
+  await appendCallbackRequest(callbackRequest);
+
+  // Record the contact action on the deal's activity timeline (best-effort).
+  await appendDealEvent({
+    dealId,
+    eventType: "callback_requested",
+    attribution: {},
+    email,
+    metadata: { ctaSource: "request_callback", ...(phone ? { hasPhone: "true" } : {}) },
+  });
 
   const emailLine = email ? `Email: ${email}` : "Email: not provided";
   const phoneLine = phone ? `Phone: ${phone}` : "Phone: not provided";

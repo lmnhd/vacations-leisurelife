@@ -9,10 +9,10 @@ export default async function DealsSystemDashboardPage() {
     <DealsSystemDashboardView
       data={data}
       eyebrow="Deals Operator Workbench"
-      heading="Run Deals scripts, look up packages, and inspect publish readiness"
-      description="Operator-facing tools for the Home Page Deals pipeline: safe validation tests, promo intelligence refresh, promo extraction, Odysseus package lookup, Link Broker cache inspection, and the gate that decides whether a Deal can appear publicly."
+      heading="Build a homepage Deal from discovery to launch"
+      description="The operator console for the Home Page Deals pipeline. Pipeline walks a Deal from discovery research to launch-ready Meta creative; Operator Tools runs scripts and lookups; Inventory shows assembled Deals, promos, and links; Ops & Health covers homepage readiness, callbacks, and cache state."
       refreshHref="/tests/deals-system"
-      refreshLabel="Refresh cache view"
+      refreshLabel="Refresh data"
     />
   );
 }

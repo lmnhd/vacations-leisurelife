@@ -23,6 +23,7 @@
 
 import { NextResponse } from "next/server";
 
+import { appendDealEvent } from "@/lib/cb/deals-system/deal-events-store";
 import { sendDealLinkEmail } from "@/lib/cb/deals-system/deal-link-email";
 import { getPublicDealPageById } from "@/lib/cb/deals-system/public-deals";
 
@@ -63,11 +64,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Deal not found or not available." }, { status: 404 });
   }
 
+  // Record the contact action so it shows in the deal's activity timeline.
+  // Best-effort — tracking never blocks the visitor's link.
+  await appendDealEvent({
+    dealId,
+    eventType: "link_requested",
+    attribution: {},
+    email,
+    metadata: { ctaSource: "email_link" },
+  });
+
   if (!email) {
     return NextResponse.json({ ok: true, url: deal.bookingUrl });
   }
 
   const result = await sendDealLinkEmail(deal, email);
+
+  if (result.delivered) {
+    await appendDealEvent({
+      dealId,
+      eventType: "link_email_sent",
+      attribution: {},
+      email,
+      metadata: { ctaSource: "email_link" },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     url: deal.bookingUrl,
