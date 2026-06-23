@@ -163,6 +163,9 @@ export function DealCampaignWorkbench({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // Existing Deals are collapsed by default so the assemble form for a NEW
+  // Deal isn't buried under unrelated staged-development cards.
+  const [showExistingDeals, setShowExistingDeals] = useState(false);
 
   // Assembly form state.
   const [dealId, setDealId] = useState("deal-rcl-southern-caribbean-1619969");
@@ -181,6 +184,15 @@ export function DealCampaignWorkbench({
   const [textOnly, setTextOnly] = useState(false);
   const [decisionNote, setDecisionNote] = useState("");
   const [showAllPromos, setShowAllPromos] = useState(false);
+
+  // Ship finder — auto-fills the assembly fields below from a live Odysseus
+  // lookup instead of hand-typing cruise line / ship / dates / ports.
+  const [findLine, setFindLine] = useState("");
+  const [findShip, setFindShip] = useState("");
+  const [findDate, setFindDate] = useState("");
+  const [finding, setFinding] = useState(false);
+  const [findError, setFindError] = useState<string | null>(null);
+  const [findStatus, setFindStatus] = useState<string | null>(null);
 
   const visiblePromoOptions = useMemo(
     () => promoOptions.filter((promo) => cruiseLineMatches(cruiseLine, promo.vendor)),
@@ -257,6 +269,71 @@ export function DealCampaignWorkbench({
     );
   }
 
+  // Runs the same live Odysseus lookup the Trip Manifestation pipeline step
+  // uses, then auto-fills the assembly fields below from the matched cruise —
+  // package id, cruise line, ship, sail date, nights, departure port, and
+  // ports of call — instead of hand-typing all ten.
+  async function findShipAndFill() {
+    if (!findLine.trim() && !findShip.trim()) {
+      setFindError("Enter at least a cruise line or ship name.");
+      return;
+    }
+    setFinding(true);
+    setFindError(null);
+    setFindStatus(null);
+    try {
+      const response = await fetch("/api/tests/deals-system/lookup-package", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          line: findLine.trim() || undefined,
+          ship: findShip.trim() || undefined,
+          date: findDate.trim() || undefined,
+          structured: true,
+        }),
+      });
+      const payload = (await response.json()) as {
+        ok: boolean;
+        status?: string;
+        message?: string;
+        cruiseFacts?: {
+          packageId: string;
+          cruiseLine: string;
+          shipName: string;
+          title: string;
+          nights?: number;
+          sailDateIso: string;
+          departurePort?: string;
+          ports: string;
+          confidence: number;
+        } | null;
+      };
+      if (!response.ok || !payload.ok || !payload.cruiseFacts) {
+        throw new Error(payload.message ?? "No matching sailing found.");
+      }
+
+      const f = payload.cruiseFacts;
+      setPackageId(f.packageId);
+      setCruiseLine(f.cruiseLine || findLine.trim());
+      setShipName(f.shipName || findShip.trim());
+      setTitle(f.title);
+      if (f.nights) setNights(String(f.nights));
+      setSailDate(f.sailDateIso);
+      if (f.departurePort) setDeparturePort(f.departurePort);
+      if (f.ports) setPorts(f.ports);
+
+      setFindStatus(
+        payload.status === "confident_match"
+          ? `Matched: ${f.title} (${Math.round(f.confidence * 100)}% confidence). Fields below filled in — review before assembling.`
+          : `Best available match used: ${f.title}. Confidence was low — double-check the fields below.`
+      );
+    } catch (err) {
+      setFindError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFinding(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {message && (
@@ -282,6 +359,48 @@ export function DealCampaignWorkbench({
           stage generated. The fields below are pre-filled with the recommended first real Deal (RCL
           Southern Caribbean, package 1619969) — only change them when assembling a different package.
         </p>
+
+        <div className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Find ship — auto-fill from a live lookup
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            Runs the same Odysseus lookup Trip Manifestation uses, then fills in package id, cruise
+            line, ship, sail date, nights, departure port, and ports of call below. Review before
+            assembling.
+          </p>
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <input
+              className={inputClassName()}
+              value={findLine}
+              onChange={(e) => setFindLine(e.target.value)}
+              placeholder="Cruise line, e.g. Royal Caribbean"
+            />
+            <input
+              className={inputClassName()}
+              value={findShip}
+              onChange={(e) => setFindShip(e.target.value)}
+              placeholder="Ship, e.g. Liberty of the Seas"
+            />
+            <input
+              className={inputClassName()}
+              value={findDate}
+              onChange={(e) => setFindDate(e.target.value)}
+              placeholder="Sail date YYYY-MM-DD (optional)"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={finding}
+            onClick={() => void findShipAndFill()}
+            className="mt-3 inline-flex h-9 items-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-4 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-wait disabled:opacity-60"
+          >
+            {finding ? "Searching..." : "Find ship"}
+          </button>
+          {findError && <p className="mt-2 text-xs text-rose-300">{findError}</p>}
+          {findStatus && <p className="mt-2 text-xs text-emerald-200">{findStatus}</p>}
+        </div>
+
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Field label="Deal id">
             <input className={inputClassName()} value={dealId} onChange={(e) => setDealId(e.target.value)} placeholder="Deal id" />
@@ -403,8 +522,30 @@ export function DealCampaignWorkbench({
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
           No Curated Deals yet. Assemble one above, then run each stage and the approval gate here.
         </div>
+      ) : !showExistingDeals ? (
+        <button
+          type="button"
+          onClick={() => setShowExistingDeals(true)}
+          className="flex w-full items-center justify-between rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-left text-sm text-slate-400 transition hover:border-white/25 hover:text-slate-200"
+        >
+          <span>
+            {deals.length} existing Curated Deal{deals.length === 1 ? "" : "s"} hidden — staged
+            development for deals already in progress.
+          </span>
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">
+            Show existing deals
+          </span>
+        </button>
       ) : (
-        deals.map((deal) => (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowExistingDeals(false)}
+            className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 underline decoration-dotted hover:text-slate-300"
+          >
+            Hide existing deals
+          </button>
+          {deals.map((deal) => (
           <div key={deal.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -706,7 +847,8 @@ export function DealCampaignWorkbench({
               </p>
             </div>
           </div>
-        ))
+          ))}
+        </>
       )}
     </div>
   );

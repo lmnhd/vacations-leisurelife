@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-19T22:27:05.300Z",
+  "generatedAtIso": "2026-06-22T23:36:04.170Z",
   "distributions": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
       "dealId": "1578937",
       "sourceMetaAdSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "generatedAtIso": "2026-06-19T22:26:44.871Z",
-      "mode": "organic_page_only",
+      "generatedAtIso": "2026-06-22T23:29:00.510Z",
+      "mode": "live",
       "status": "dispatched",
       "plan": {
         "dealId": "1578937",
@@ -47,12 +47,12 @@
             "ironsworn",
             "apothecaria",
             "gm-less rpg",
-            "tabletop games",
             "board game",
             "writing",
-            "hobby",
+            "stationery",
             "oracle tables",
-            "solo roleplaying"
+            "solo roleplaying",
+            "analog journaling"
           ],
           "resolvedInterests": [
             {
@@ -70,11 +70,11 @@
               "audienceSizeUpperBound": 401634610
             },
             {
-              "id": "6003159994808",
-              "name": "Hobby",
-              "sourceQuery": "hobby",
-              "audienceSizeLowerBound": 328618596,
-              "audienceSizeUpperBound": 386455470
+              "id": "6003102605840",
+              "name": "Stationery",
+              "sourceQuery": "stationery",
+              "audienceSizeLowerBound": 37487568,
+              "audienceSizeUpperBound": 44085380
             }
           ],
           "unresolvedQueries": [
@@ -84,9 +84,9 @@
             "ironsworn",
             "apothecaria",
             "gm-less rpg",
-            "tabletop games",
             "oracle tables",
-            "solo roleplaying"
+            "solo roleplaying",
+            "analog journaling"
           ],
           "targeting": {
             "geo_locations": {
@@ -106,8 +106,8 @@
                     "name": "Writing"
                   },
                   {
-                    "id": "6003159994808",
-                    "name": "Hobby"
+                    "id": "6003102605840",
+                    "name": "Stationery"
                   }
                 ]
               }
@@ -115,7 +115,7 @@
           },
           "adSetMode": "dynamic",
           "warnings": [
-            "AI-resolved parent nodes (5): tabletop games, board game, writing, pen and paper, hobby"
+            "AI-resolved parent nodes (4): board game, writing, arts and crafts, stationery"
           ]
         },
         "campaignName": "[DRAFT] Deal 1578937 — Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
@@ -124,15 +124,144 @@
         "adName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife"
       },
       "notes": [
+        "meta_ad_account_id=1612907296491359",
+        "meta_campaign_id=120246363096960142",
+        "meta_ad_set_id=120246363097290142",
+        "meta_ad_set_mode=dynamic",
+        "meta_ad_creative_id=1037239948875106",
+        "meta_ad_id=120246363112770142",
+        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246363112770142",
+        "meta_dispatched_at=2026-06-22T23:30:14.196Z",
+        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
+      ],
+      "metaCampaignId": "120246363096960142",
+      "metaAdSetId": "120246363097290142",
+      "metaAdSetMode": "dynamic",
+      "facebookCreativeId": "1037239948875106",
+      "facebookAdId": "120246363112770142",
+      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246363112770142"
+    },
+    {
+      "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
+      "dealId": "1582993",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
+      "generatedAtIso": "2026-06-22T23:35:46.027Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1582993",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1582993",
+        "caption": "Forty unbroken hours with that sealed sequential discovery piece you've been saving. No vibration. No interruption. Just the mechanism.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "21 Sea Days. 35-Night Passage.",
+            "primaryText": "Forty unbroken hours with that sealed sequential discovery piece you've been saving. No vibration. No interruption. Just the mechanism.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card0-1782171104468.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "Eric Fuller Box? Bring It.",
+            "primaryText": "Stable walnut surfaces, soft library lighting, and zero poolside bass. 35 nights of acoustically controlled solving you can't get on land.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card1-1782171096850.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Miami → Panama → Polynesia",
+            "primaryText": "35 nights, ~450 guests, 14 ports. By Day 12 the casuals are gone — cycle your collection through solvers who know what N-move means.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card2-1782171093338.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Better Than Any IPP Weekend",
+            "primaryText": "Swap trick locks & burrs over scotch on the Pacific crossing. More focused solving hours in 35 nights than a year of puzzle retreats.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card3-1782171092174.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "sequential discovery puzzle",
+            "mechanical puzzle",
+            "trick lock",
+            "burr puzzle",
+            "hanayama puzzle",
+            "ipp puzzle exchange",
+            "puzzles",
+            "games",
+            "hobbies",
+            "puzzle swap",
+            "bespoke machined brass",
+            "eric fuller puzzles"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6815220394860",
+              "name": "Puzzles and brainteasers",
+              "sourceQuery": "puzzles",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6003070856229",
+              "name": "Games",
+              "sourceQuery": "games",
+              "audienceSizeLowerBound": 1242865136,
+              "audienceSizeUpperBound": 1461609400
+            }
+          ],
+          "unresolvedQueries": [
+            "sequential discovery puzzle",
+            "mechanical puzzle",
+            "trick lock",
+            "burr puzzle",
+            "hanayama puzzle",
+            "ipp puzzle exchange",
+            "hobbies",
+            "puzzle swap",
+            "bespoke machined brass",
+            "eric fuller puzzles"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6815220394860",
+                    "name": "Puzzles and brainteasers"
+                  },
+                  {
+                    "id": "6003070856229",
+                    "name": "Games"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (3): puzzles, games, hobbies"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1582993 — Twenty-One Sea Days, Zero Unsolved Locks",
+        "adSetName": "[DRAFT] Deal 1582993 Audience",
+        "creativeName": "deal-1582993-funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3-carousel",
+        "adName": "deal-1582993-funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3"
+      },
+      "notes": [
         "facebook_page_id=1071836329342347",
-        "facebook_page_post_id=1071836329342347_122118316052816807",
+        "facebook_page_post_id=1071836329342347_122118678194816807",
         "facebook_page_published=true",
         "facebook_page_media_type=multi_image",
         "facebook_page_card_count=4",
-        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1578937",
-        "facebook_page_dispatched_at=2026-06-19T22:27:05.299Z"
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1582993",
+        "facebook_page_dispatched_at=2026-06-22T23:36:04.169Z"
       ],
-      "facebookPagePostId": "1071836329342347_122118316052816807"
+      "facebookPagePostId": "1071836329342347_122118678194816807"
     }
   ]
 }

@@ -3,7 +3,10 @@ import { promisify } from "node:util";
 
 import { NextResponse } from "next/server";
 
+import { resolvePortCode } from "@/lib/campaigns/landing/port-codes";
+import { runOdysseusLookup } from "@/lib/cb/deals-system/deal-package-resolution";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
+import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,6 +22,8 @@ interface LookupRequestBody {
   port?: unknown;
   windowDays?: unknown;
   buildLink?: unknown;
+  /** When true, skip the raw stdout/stderr transcript and return parsed cruise facts instead. */
+  structured?: unknown;
 }
 
 interface ExecFailure extends Error {
@@ -48,6 +53,30 @@ function quoteShell(value: string): string {
   return `"${value.replace(/(["^&|<>%])/g, "^$1")}"`;
 }
 
+/**
+ * Cruise facts shaped for the Campaign Workbench's "Source & assemble" form —
+ * the same fields the Trip Manifestation pipeline step resolves automatically
+ * from a grounded discovery angle, surfaced here for a one-off manual lookup.
+ */
+function candidateToCruiseFacts(candidate: RankedPackageCandidate) {
+  const departurePort = candidate.departurePortCode
+    ? resolvePortCode(candidate.departurePortCode) ?? candidate.departurePortCode
+    : undefined;
+
+  return {
+    packageId: candidate.packageId,
+    cruiseLine: candidate.cruiseLine ?? "",
+    shipName: candidate.shipName ?? "",
+    title: candidate.cruiseName,
+    nights: candidate.nights ?? undefined,
+    sailDateIso: candidate.sailDateIso,
+    departurePort,
+    ports: candidate.portsOfCall ?? "",
+    confidence: candidate.confidence,
+    reasons: candidate.reasons,
+  };
+}
+
 export async function POST(request: Request) {
   const blocked = blockInProduction();
   if (blocked) return blocked;
@@ -67,12 +96,51 @@ export async function POST(request: Request) {
   const nights = optionalNumber(body.nights);
   const windowDays = optionalNumber(body.windowDays);
   const buildLink = body.buildLink === true;
+  const structured = body.structured === true;
 
   if (!line && !ship) {
     return NextResponse.json(
       { error: "Provide at least a cruise line or ship name." },
       { status: 400 }
     );
+  }
+
+  // Structured mode: reuse the same one-call lookup the Trip Manifestation
+  // pipeline step already trusts (lib/cb/deals-system/deal-package-resolution),
+  // so the Workbench's "Find ship" control returns parsed cruise facts instead
+  // of a stdout transcript the operator would otherwise re-type by hand.
+  if (structured) {
+    const startedAtIso = new Date().toISOString();
+    const startedAt = Date.now();
+    const lookup = await runOdysseusLookup(
+      { line: line ?? "", ship, destination: destination ?? "", date, nights, port, windowDays: windowDays ?? 7 },
+      { bestEffort: true }
+    );
+
+    if (!lookup.ok || !lookup.result) {
+      return NextResponse.json({
+        ok: false,
+        command: lookup.command,
+        startedAtIso,
+        finishedAtIso: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+        message: lookup.error ?? "Lookup failed.",
+        diagnostics: lookup.diagnostics,
+      });
+    }
+
+    const { result } = lookup;
+    return NextResponse.json({
+      ok: true,
+      command: lookup.command,
+      startedAtIso,
+      finishedAtIso: new Date().toISOString(),
+      durationMs: Date.now() - startedAt,
+      status: result.status,
+      cruiseFacts: result.selected ? candidateToCruiseFacts(result.selected) : null,
+      candidates: result.candidates.map(candidateToCruiseFacts),
+      diagnostics: [...lookup.diagnostics, ...result.diagnostics],
+    });
   }
 
   const args: string[] = [];

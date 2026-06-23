@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-19T20:17:12.643Z",
+  "generatedAtIso": "2026-06-22T23:31:54.436Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -52,6 +52,60 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFill That Leuchtturm for Real\nIronsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-19T20:16:49.012Z",
+          "previousImages": []
+        }
+      ]
+    },
+    {
+      "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
+      "dealId": "1582993",
+      "generatedAtIso": "2026-06-22T23:30:15.026Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
+      "sailingAngleTitle": "Twenty-One Sea Days, Zero Unsolved Locks",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "21 Sea Days. 35-Night Passage.",
+          "primaryText": "Forty unbroken hours with that sealed sequential discovery piece you've been saving. No vibration. No interruption. Just the mechanism.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card0-1782171104468.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n21 Sea Days. 35-Night Passage.\nForty unbroken hours with that sealed sequential discovery piece you've been saving. No vibration. No interruption. Just the mechanism.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-22T23:31:44.468Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "Eric Fuller Box? Bring It.",
+          "primaryText": "Stable walnut surfaces, soft library lighting, and zero poolside bass. 35 nights of acoustically controlled solving you can't get on land.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card1-1782171096850.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nEric Fuller Box? Bring It.\nStable walnut surfaces, soft library lighting, and zero poolside bass. 35 nights of acoustically controlled solving you can't get on land.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-22T23:31:36.850Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "Miami → Panama → Polynesia",
+          "primaryText": "35 nights, ~450 guests, 14 ports. By Day 12 the casuals are gone — cycle your collection through solvers who know what N-move means.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card2-1782171093338.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nMiami → Panama → Polynesia\n35 nights, ~450 guests, 14 ports. By Day 12 the casuals are gone — cycle your collection through solvers who know what N-move means.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-22T23:31:33.338Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "Better Than Any IPP Weekend",
+          "primaryText": "Swap trick locks & burrs over scotch on the Pacific crossing. More focused solving hours in 35 nights than a year of puzzle retreats.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1582993/meta-ad-synthesis/funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3/card3-1782171092174.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nBetter Than Any IPP Weekend\nSwap trick locks & burrs over scotch on the Pacific crossing. More focused solving hours in 35 nights than a year of puzzle retreats.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-22T23:31:32.174Z",
           "previousImages": []
         }
       ]

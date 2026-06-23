@@ -38,26 +38,44 @@ function Panel({
   eyebrow,
   children,
   action,
+  defaultOpen = false,
 }: {
   title: string;
   eyebrow?: string;
   children: ReactNode;
   action?: ReactNode;
+  defaultOpen?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-950/70 shadow-2xl shadow-black/20">
       <div className="flex items-center justify-between gap-4 px-5 py-4">
-        <div>
-          {eyebrow && (
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-              {eyebrow}
-            </p>
-          )}
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          className="flex flex-1 items-center gap-3 text-left transition hover:opacity-80"
+        >
+          <svg
+            className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-90" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <div>
+            {eyebrow && (
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                {eyebrow}
+              </p>
+            )}
+            <h2 className="text-lg font-semibold text-white">{title}</h2>
+          </div>
+        </button>
         {action}
       </div>
-      <div className="border-t border-white/10 px-5 py-4">{children}</div>
+      {isOpen && <div className="border-t border-white/10 px-5 py-4">{children}</div>}
     </section>
   );
 }
@@ -192,6 +210,7 @@ function StepCard({
   children?: ReactNode;
 }) {
   const a = accents[accent];
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -214,7 +233,26 @@ function StepCard({
           {cta} →
         </a>
       </div>
-      {children}
+      {children && (
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <button
+            type="button"
+            onClick={() => setIsOpen((open) => !open)}
+            className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:text-slate-200"
+          >
+            <svg
+              className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            {isOpen ? "Hide details" : "Show details"}
+          </button>
+          {isOpen && <div className="mt-2">{children}</div>}
+        </div>
+      )}
     </section>
   );
 }
