@@ -5,9 +5,8 @@
  * resolved/draft fork the design specifies — never fabricating a missing fact.
  *
  * Editorial, calm, premium: Cormorant Garamond display + Source Sans 3 body,
- * cream/navy/gold palette, large imagery, one repeated primary CTA, sticky mobile
- * bar. Mobile-first; AA contrast; lazy below-fold imagery with explicit aspect
- * ratios.
+ * cream/navy/gold palette and large imagery. Mobile-first; AA contrast; lazy
+ * below-fold imagery with explicit aspect ratios.
  */
 
 import type { DealLandingPageView } from "@/lib/cb/deals-system/public-deal-projection";
@@ -279,12 +278,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
         WebkitFontSmoothing: "antialiased",
       }}
     >
-      <DealLandingPageEnhancements
-        dealId={dealId}
-        fromPriceLabel={page.fromPriceLabel}
-        ctaLabel={cta}
-        bookingUrl={page.bookingUrl}
-      />
+      <DealLandingPageEnhancements dealId={dealId} />
 
       {/* ============ HERO ============ */}
       <section
@@ -857,15 +851,6 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               </p>
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-            <DealCtaActions
-              dealId={dealId}
-              bookingUrl={page.bookingUrl}
-              primaryLabel={cta}
-              tone="light"
-              align="center"
-            />
-          </div>
         </div>
       </section>
 
@@ -905,27 +890,16 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer style={{ background: C.navyDark, padding: "28px 24px 92px", boxSizing: "border-box" }}>
+      <footer style={{ background: C.navyDark, padding: "28px 24px", boxSizing: "border-box" }}>
         <div
           style={{
             maxWidth: 1160,
             margin: "0 auto",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px 24px",
           }}
         >
           <p style={{ margin: 0, fontSize: 13, color: "rgba(245,239,230,0.55)" }}>
             Fares, availability, and offer terms are confirmed at booking.
           </p>
-          <DealCtaActions
-            dealId={dealId}
-            bookingUrl={page.bookingUrl}
-            primaryLabel={cta}
-            tone="dark"
-          />
         </div>
       </footer>
     </div>
