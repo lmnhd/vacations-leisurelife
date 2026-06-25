@@ -28,7 +28,10 @@ import {
   type DealFunnelSynthesis,
   type DealImageCandidate,
 } from "./deal-page-design-types";
-import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
+import type {
+  CbPromoIntelligenceRecord,
+  PromoApplicabilityResult,
+} from "./promo-intelligence-types";
 import {
   looksLikeCruiseItineraryName,
   publicDealCruiseLine,
@@ -121,6 +124,20 @@ function priceFromLabel(deal: CuratedOdysseusDeal): string | undefined {
     .filter((value): value is number => typeof value === "number" && value > 0)
     .sort((a, b) => a - b)[0];
   return lowest ? `$${lowest.toLocaleString()} ${prices.currencyCode}` : undefined;
+}
+
+function publicPromoApplicability(
+  applicability: PromoApplicabilityResult[]
+): PromoApplicabilityResult[] {
+  const likely = applicability.filter((promo) => promo.status === "likely_applicable");
+  if (likely.length > 0) return likely;
+
+  // Workbench selections remain review-qualified until an operator approves the
+  // Deal. The public loader already enforces that approval gate, so retain the
+  // selected offer here instead of silently dropping its consumer-safe language.
+  return applicability.filter(
+    (promo) => promo.status === "possibly_applicable_needs_review"
+  );
 }
 
 export interface PublicDealCta {
@@ -577,8 +594,9 @@ export function buildDealLandingPageView(
 
   // ── Specials / promos ────────────────────────────────────────────────────────
   const recordsById = promoRecordById(promoRecords);
-  const specials: DealSpecialView[] = (deal.promoApplicability ?? [])
-    .filter((p) => p.status === "likely_applicable")
+  const specials: DealSpecialView[] = publicPromoApplicability(
+    deal.promoApplicability ?? []
+  )
     .map((p) => {
       const record = recordsById.get(p.promoRecordId);
       const qualifiedClaims = record?.marketingUse.publicClaimsNeedsQualifier ?? [];

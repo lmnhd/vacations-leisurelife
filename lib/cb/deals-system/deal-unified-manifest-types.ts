@@ -16,20 +16,53 @@ import type { SailingAngleProfile } from "./deal-discovery-types";
 import type {
   DealManifestAssembleDraft,
   DealManifestLookupQuery,
+  DealManifestTargetingSeeds,
 } from "./deal-trip-manifest-types";
-import type { PromoApplicabilityResult } from "./promo-intelligence-types";
+import type {
+  CbPromoDollarSaving,
+  CbPromoFreeGuestOffer,
+  CbPromoOnboardCredit,
+  CbPromoPercentDiscount,
+  PromoApplicabilityResult,
+} from "./promo-intelligence-types";
 
 /** Step 1 half — the creative brief (the "why" + the voice). */
 export interface DealUnifiedCreativeBrief {
   isolatedNiche: string;
+  researchRationale?: string;
+  successLogic?: string;
+  audienceSignals?: string[];
   angle: SailingAngleProfile;
 }
 
 /** Step 2 half — the inventory + promo manifest (the "what / where / perks"). */
+export interface DealUnifiedPromotionBrief {
+  promoRecordId: string;
+  title: string;
+  vendor: string;
+  bookingWindow: string;
+  sailingWindow: string;
+  offerTypes: string[];
+  publicClaimsAllowed: string[];
+  publicClaimsNeedsQualifier: string[];
+  visitorFriendlySummary: string;
+  suggestedAngles: string[];
+  cautionFlags: string[];
+  percentDiscounts: CbPromoPercentDiscount[];
+  dollarSavings: CbPromoDollarSaving[];
+  onboardCredits: CbPromoOnboardCredit[];
+  freeGuestOffers: CbPromoFreeGuestOffer[];
+  exclusions: string[];
+  applicableProducts: string[];
+  applicableMarkets: string[];
+}
+
 export interface DealUnifiedInventoryManifest {
   assembleDraft: DealManifestAssembleDraft;
   lookupQuery: DealManifestLookupQuery;
+  targetingSeeds?: DealManifestTargetingSeeds;
   appliedPromos: PromoApplicabilityResult[];
+  promotionBriefs: DealUnifiedPromotionBrief[];
   promoStrategy: string;
   manifestReasoning: string;
 }

@@ -305,6 +305,7 @@ check("resolved from-price reflects the lowest cabin fare", resolvedPage?.fromPr
 check("resolved itinerary lists every port as days",
   resolvedPage?.itinerary.kind === "days" && resolvedPage.itinerary.rows.length === approved.cruiseFacts.portsOfCall.length);
 check("designPage carries the booking url", resolvedPage?.bookingUrl === approved.bookingUrl);
+check("deal without an attached promo has no offer cards", resolvedPage?.specials.length === 0);
 check("designPage never leaks the agent-only note",
   !allText(resolvedPage).includes("tc credit") && !allText(resolvedPage).includes("group economics"));
 
@@ -548,6 +549,38 @@ check(
   !allText(safePromoPage).includes("vendor match") &&
     !allText(safePromoPage).includes("operator should never") &&
     !allText(safePromoPage).includes("do not headline")
+);
+
+const workbenchPromoDeal: CuratedOdysseusDeal = {
+  ...manifestKeyedDeal,
+  promoApplicability: [
+    {
+      promoRecordId: promoRecord.id,
+      status: "possibly_applicable_needs_review",
+      matchedOn: ["Operator-selected Workbench promo"],
+      assumptions: ["Confirm final eligibility in the booking portal"],
+      warnings: ["Keep all public claims qualified"],
+    },
+  ],
+};
+const workbenchPromoPage = projectPublicDealPage(
+  workbenchPromoDeal,
+  manifestKeyedSynthesis,
+  [promoRecord]
+).designPage;
+check(
+  "operator-selected Workbench promo appears when it is the only attached offer",
+  workbenchPromoPage?.specials.length === 1
+);
+check(
+  "Workbench promo uses the stored visitor-safe summary",
+  workbenchPromoPage?.specials[0]?.summary ===
+    promoRecord.marketingUse.visitorFriendlySummary
+);
+check(
+  "Workbench promo does not expose review internals",
+  !allText(workbenchPromoPage).includes("operator-selected workbench promo") &&
+    !allText(workbenchPromoPage).includes("keep all public claims qualified")
 );
 
 // Draft fork: a deal with no ship/date/pricing must show graceful fallbacks and

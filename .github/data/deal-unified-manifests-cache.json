@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-20T17:14:05.974Z",
+  "generatedAtIso": "2026-06-24T00:55:23.785Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -118,6 +118,431 @@
         "appliedPromos": [],
         "promoStrategy": "No promo records survived prefiltering for this sailing, so there are zero externally-sourced discount or perk claims to layer into the pitch. That's actually congruent with the angle's insider voice: the value proposition here was never about a deal — it's about access to a specific, irreplaceable environmental condition (21 uninterrupted sea days on a 450-guest ship with library-quiet lounges and stable surfaces) that simply doesn't exist anywhere else on the calendar. The price is the price for a 35-night ultra-premium passage, and the target collector already understands that scarcity of the right solving environment commands whatever it commands. If promotional offers surface closer to sailing — Seabourn periodically releases shipboard credit, prepaid gratuity, or veranda upgrade incentives on longer voyages — those should be evaluated and folded in as sweeteners that lower the effective per-sea-day cost, reinforcing the \"you're paying for focused hours, not port stamps\" framing. Until then, the angle stands on its own merits without leaning on any discount claim.",
         "manifestReasoning": "The verified sailing checks every box the angle demands. Ship identity: Seabourn's vessel on this itinerary carries roughly 450 guests — the intimate headcount that guarantees quiet observation lounges, an uncrowded library, and a Card Room where a solver can spread a velvet mat and work an N-move sequential discovery piece without interruption or vibration from adjacent foot traffic. Sail date: January 5, 2027, peak Northern Hemisphere winter, the exact window when affluent retirees and semi-retired professionals are most willing and able to commit to a 35-night voyage — no school-holiday crowd dilution, no summer-vacation energy. Nights and sea-day ratio: 35 nights with a port list of 14 stops (including embarkation at Miami) yields approximately 21 sea days — the precise figure cited in the angle. That ratio is extraordinary; it means three out of every five days are open ocean with zero scheduling pressure, delivering the kind of sustained, multi-hour solving blocks that turn a stubborn trick lock from frustrating to solved. Route logic: The transit through the Canal locks followed by Pacific-coast stops in Ecuador, Peru, and Chile, then the long open-ocean crossing through the Marquesas and Tuamotus to Papeete, front-loads the port calls and back-loads the deepest unbroken sea-day stretches — exactly when solvers will have completed their initial swap rounds and be settling into unfamiliar puzzles acquired from fellow passengers. Onboard assets: Seabourn's existing wood-paneled Observation Bar, library, and Card Room provide stable, well-lit, acoustically controlled surfaces — no buildout, no rigging, no negotiation with the cruise line required. Standard stateroom safes accommodate high-value sealed puzzles during the handful of port days. Every structural requirement of the angle is fulfilled by the sailing as it actually exists in inventory."
+      }
+    },
+    {
+      "id": "unified-manifest-workbench-14-nights-spain-portugal-solar-eclipse-celebrity-apex-1543049",
+      "generatedAtIso": "2026-06-23T22:06:03.634Z",
+      "expiresOnIso": "2026-09-21",
+      "sourceAngleId": "angle-workbench-14-nights-spain-portugal-solar-eclipse-celebrity-apex-1543049",
+      "sourceManifestId": "manifest-workbench-14-nights-spain-portugal-solar-eclipse-celebrity-apex-1543049",
+      "sailingAngleTitle": "No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex",
+      "creativeBrief": {
+        "isolatedNiche": "UK-based cruisers aged 45–70 who prefer the ease of a no-fly departure from Southampton. They may be first-time Celebrity guests trading up from mainstream lines, or seasoned cruisers who value premium ships and hassle-free embarkation from a home port.",
+        "angle": {
+          "sailingAngleTitle": "No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex",
+          "theCorePitch": "No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex: Celebrity Apex on 14 Nights Spain & Portugal Solar Eclipse gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "A clean lifestyle hero of Celebrity Apex's iconic Magic Carpet cantilevered platform at sunset, with a couple toasting as a Mediterranean coastline glows in the background. Overlaid text highlights 'Southampton → Mediterranean → Southampton.' Bright, aspirational tones — warm sunset orange against the ship's sleek white profile.",
+          "targetAudienceDescriptor": "UK-based cruisers aged 45–70 who prefer the ease of a no-fly departure from Southampton. They may be first-time Celebrity guests trading up from mainstream lines, or seasoned cruisers who value premium ships and hassle-free embarkation from a home port.",
+          "relevantKeywords": [
+            "cruise from Southampton 2026",
+            "no-fly Mediterranean cruise",
+            "Celebrity Apex Southampton",
+            "Southampton cruise holidays",
+            "UK departure cruise Mediterranean",
+            "premium cruise from England",
+            "14 night cruise from Southampton",
+            "Celebrity Cruises UK sailings"
+          ],
+          "destinationAndTimeOfYearHints": "14 Nights Spain & Portugal Solar Eclipse departing 2026-08-01.",
+          "onboardAssetRequirements": "Celebrity Apex ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Celebrity Cruises",
+          "departurePortHint": "Southampton",
+          "nights": 14,
+          "itineraryName": "14 Nights Spain & Portugal Solar Eclipse",
+          "portsOfCall": [
+            "Porto",
+            "Lisbon",
+            "Palma de Mallorca",
+            "Barcelona",
+            "Ibiza",
+            "Malaga",
+            "La Coruna",
+            "Bilbao"
+          ],
+          "destination": "Porto",
+          "sailWindow": {
+            "latestIso": "2026-08-01",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2026-08-01"
+          },
+          "suggestedBriefId": "brief-14-nights-spain-portugal-solar-eclipse-celebrity-apex",
+          "suggestedDealId": "deal-celebrity-celebrity-apex-1543049"
+        },
+        "lookupQuery": {
+          "date": "2026-08-01",
+          "port": "Southampton",
+          "line": "Celebrity Cruises",
+          "nights": 14,
+          "destination": "Porto",
+          "ship": "Celebrity Apex",
+          "windowDays": 0
+        },
+        "appliedPromos": [],
+        "promotionBriefs": [],
+        "promoStrategy": "No promo was selected during the workbench handoff; copywriting should sell \"No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex\" without perk or savings claims.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex. Targeting angle: UK-based cruisers aged 45–70 who prefer the ease of a no-fly departure from Southampton. They may be first-time Celebrity guests trading up from mainstream lines, or seasoned cruisers who value premium ships and hassle-free embarkation from a home port.."
+      }
+    },
+    {
+      "id": "unified-manifest-workbench-7-night-alaska-dawes-glacier-cruise-celebrity-edge-1543052",
+      "generatedAtIso": "2026-06-24T00:55:23.782Z",
+      "expiresOnIso": "2026-09-22",
+      "sourceAngleId": "angle-workbench-7-night-alaska-dawes-glacier-cruise-celebrity-edge-1543052",
+      "sourceManifestId": "manifest-workbench-7-night-alaska-dawes-glacier-cruise-celebrity-edge-1543052",
+      "sailingAngleTitle": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+      "creativeBrief": {
+        "isolatedNiche": "Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.",
+        "angle": {
+          "sailingAngleTitle": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+          "theCorePitch": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer: Celebrity Edge on 7 Night Alaska Dawes Glacier Cruise gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "An intimate couple's moment on a private veranda aboard Celebrity Edge, holding warm drinks and gazing at the blue ice of Dawes Glacier in Endicott Arm. Moody, cinematic lighting with soft fog and evergreen-covered fjord walls. A clean lower-third banner reads 'Select Sailings May Qualify for 2nd Guest Savings.'",
+          "targetAudienceDescriptor": "Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.",
+          "relevantKeywords": [
+            "Alaska cruise for couples 2026",
+            "Celebrity Edge glacier cruise",
+            "Seattle to Alaska cruise",
+            "Endicott Arm Dawes Glacier",
+            "premium Alaska cruise",
+            "couples cruise deals",
+            "Celebrity Cruises summer sale",
+            "7 night Alaska cruise",
+            "Alaska Inside Passage cruise",
+            "luxury Alaska vacation"
+          ],
+          "destinationAndTimeOfYearHints": "7 Night Alaska Dawes Glacier Cruise departing 2026-07-24.",
+          "onboardAssetRequirements": "Celebrity Edge ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Celebrity Cruises",
+          "departurePortHint": "Seattle, WA",
+          "nights": 7,
+          "itineraryName": "7 Night Alaska Dawes Glacier Cruise",
+          "portsOfCall": [
+            "Seattle",
+            "Washington",
+            "Ketchikan",
+            "Alaska",
+            "Endicott Arm & Dawes Glacier",
+            "Juneau",
+            "Alaska",
+            "Skagway",
+            "Alaska",
+            "Alaska Inside Passage",
+            "Victoria",
+            "British Columbia",
+            "Seattle",
+            "Washington"
+          ],
+          "destination": "Seattle",
+          "sailWindow": {
+            "latestIso": "2026-07-24",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2026-07-24"
+          },
+          "suggestedBriefId": "brief-7-night-alaska-dawes-glacier-cruise",
+          "suggestedDealId": "deal-celebrity-cruises-7-night-alaska-dawes-glacier-cruise-1543052"
+        },
+        "lookupQuery": {
+          "date": "2026-07-24",
+          "port": "Seattle, WA",
+          "line": "Celebrity Cruises",
+          "nights": 7,
+          "destination": "Seattle",
+          "ship": "Celebrity Edge",
+          "windowDays": 0
+        },
+        "appliedPromos": [
+          {
+            "promoRecordId": "cbpromo-2837",
+            "matchedOn": [
+              "Celebrity Cruises",
+              "2026-07-24"
+            ],
+            "assumptions": [
+              "Selected by the operator in the Campaign Workbench."
+            ],
+            "status": "possibly_applicable_needs_review",
+            "warnings": [
+              "Confirm promo eligibility before publishing public copy."
+            ]
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "cbpromo-2837",
+            "title": "Celebrity Cruises - SUMMER SALE - Dollars Off, Onboard Credit",
+            "vendor": "Celebrity Cruises",
+            "bookingWindow": "Must be booked between 06/02/2026 and 07/27/2026",
+            "sailingWindow": "For sailings on or between 06/03/2026 and 05/10/2028",
+            "offerTypes": [
+              "second_guest_discount",
+              "dollars_off",
+              "onboard_credit",
+              "free_extra_guests",
+              "instant_savings"
+            ],
+            "publicClaimsAllowed": [
+              "Select sailings may qualify for 2nd guest savings.",
+              "Select sailings may qualify for bonus stateroom savings.",
+              "Select sailings may qualify for bonus onboard credit.",
+              "Select sailings may qualify for free 3rd, 4th, and 5th guest cruise fares."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "2nd guest savings depend on deposit type, with separate refundable and non-refundable rate offers.",
+              "Free 3rd/4th/5th guest fares apply only on select sailing dates and are not applicable to suites.",
+              "Bonus savings vary by booking day window, voyage length, and stateroom category.",
+              "Bonus onboard credit varies by booking day window, voyage length, and stateroom category.",
+              "Weekend Flash Sales vary by destination: Alaska, Caribbean or Europe.",
+              "Bonus offers apply within the stated booking and sailing windows and final eligibility depends on the booking portal."
+            ],
+            "visitorFriendlySummary": "Celebrity Summer Sale sailings may qualify for second guest savings, bonus stateroom savings, onboard credit, or even free 3rd, 4th, and 5th guest fares on select departures. Offers vary by sailing, cabin, voyage length, booking timing, and deposit type, with final pricing and eligible perks confirmed in the booking portal.",
+            "suggestedAngles": [
+              "Second guest savings on select Celebrity sailings.",
+              "Stateroom savings that may vary by cabin and voyage length.",
+              "Thursday sailings booking angle focused on possible onboard credit.",
+              "Family offer angle for select sailings with free 3rd/4th/5th guest fares.",
+              "Short booking-window urgency around weekly bonus timing."
+            ],
+            "cautionFlags": [
+              "Do not advertise a flat savings or onboard credit amount without noting voyage length, stateroom category, and booking day window.",
+              "Do not imply free extra guests apply to suites.",
+              "Do not present GroupX or single supplement combinability as available for BOGO promos.",
+              "Do not imply bonus offers include Galapagos or Celebrity River Cruises.",
+              "'Those who want to participate' is not a standard market definition and should not be used in consumer-facing copy."
+            ],
+            "percentDiscounts": [
+              {
+                "appliesTo": "2nd Guest",
+                "rawText": "75% off the 2nd Guest – Non-Refundable Deposit Rates",
+                "depositType": "non_refundable",
+                "percentOff": 75
+              },
+              {
+                "appliesTo": "2nd Guest",
+                "rawText": "50% off the 2nd Guest – Refundable Deposit Rates",
+                "depositType": "refundable",
+                "percentOff": 50
+              }
+            ],
+            "dollarSavings": [
+              {
+                "appliesTo": "Per Stateroom bonus savings",
+                "amountUsd": 700,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "Bonus Savings Up to $700 Per Stateroom – Weekly Friday to Monday"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus savings",
+                "amountUsd": 600,
+                "bookingDayWindow": "Weekly Tuesday to Wednesday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "Bonus Savings Up to $600 Per Stateroom – Weekly Tuesday to Wednesday"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 100,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$100 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 200,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$200 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 350,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$350 Sky Suite and Above"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 150,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$150 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 300,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$300 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom savings",
+                "amountUsd": 700,
+                "bookingDayWindow": "Weekly Friday to Monday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$700 Sky Suite and Above"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 50,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$50 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 150,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$150 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 300,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$300 Sky Suite and Above"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 100,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$100 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 250,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$250 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom Tuesday to Wednesday bonus savings",
+                "amountUsd": 600,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$600 Sky Suite and Above"
+              },
+              {
+                "appliesTo": "Per Stateroom instant savings",
+                "amountUsd": 100,
+                "bookingDayWindow": "Select Friday to Monday",
+                "rawText": "Weekend Flash Sales (WFS) – $100 Instant Savings Per Stateroom - Select Friday to Monday (varies by destination: Alaska, Caribbean or Europe)"
+              },
+              {
+                "appliesTo": "Per Stateroom instant savings",
+                "amountUsd": 100,
+                "bookingDayWindow": "Tuesday to Wednesday",
+                "rawText": "Book Now Bonus (BNB) - $100 Instant Savings Per Stateroom – Tuesday to Wednesday"
+              }
+            ],
+            "onboardCredits": [
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 600,
+                "bookingDayWindow": "Weekly Thursday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "Bonus Onboard Credit Up to $600 Per Stateroom – Weekly Thursday"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 50,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$50 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 150,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$150 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 300,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "3 to 5 Nights",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$300 Sky Suite and Above"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 100,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Inside or Ocean View Stateroom",
+                "rawText": "$100 Inside or Ocean View Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 250,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Veranda, Concierge Class or AquaClass Stateroom",
+                "rawText": "$250 Veranda, Concierge Class or AquaClass Stateroom"
+              },
+              {
+                "appliesTo": "Per Stateroom bonus onboard credit",
+                "amountUsd": 600,
+                "bookingDayWindow": "Thursday",
+                "voyageLength": "6 Nights or Longer",
+                "cabinCategory": "Sky Suite and Above",
+                "rawText": "$600 Sky Suite and Above"
+              }
+            ],
+            "freeGuestOffers": [
+              {
+                "guestNumbers": "3rd/4th/5th",
+                "rawText": "Free 3rd/4th/5th Guest Cruise Fares on select sailing dates. not applicable to suites.",
+                "excludedCabins": [
+                  "suites"
+                ]
+              }
+            ],
+            "exclusions": [
+              "Free 3rd/4th/5th Guest Cruise Fares are not applicable to suites.",
+              "All except Galapagos sailings.",
+              "Bonus offers are applicable to All products (except Galapagos and Celebrity River Cruises)."
+            ],
+            "applicableProducts": [
+              "All except Galapagos sailings, including 9-Night and longer 2026 Alaska Cruisetours on Celebrity Summit and 2027 Alaska Cruisetours on Celebrity Solstice.",
+              "Applicable to All products (except Galapagos and Celebrity River Cruises) Bonus offers are applicable to prevailing or closed group standard or GroupX rates that are named during the booking period."
+            ],
+            "applicableMarkets": [
+              "US",
+              "Canada",
+              "Latin America",
+              "those who want to participate"
+            ]
+          }
+        ],
+        "promoStrategy": "Use selected promo intelligence to support \"See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer\" with qualified, public-safe language.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer. Targeting angle: Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.."
       }
     }
   ]

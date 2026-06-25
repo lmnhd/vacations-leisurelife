@@ -7,6 +7,10 @@ import { resolvePortCode } from "@/lib/campaigns/landing/port-codes";
 import { runOdysseusLookup } from "@/lib/cb/deals-system/deal-package-resolution";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
+import {
+  getOdysseusSession,
+  releaseOdysseusSession,
+} from "@/lib/services/odysseus/OdysseusSessionManager";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +18,7 @@ export const runtime = "nodejs";
 const execAsync = promisify(exec);
 
 interface LookupRequestBody {
+  packageId?: unknown;
   line?: unknown;
   ship?: unknown;
   date?: unknown;
@@ -47,6 +52,14 @@ function optionalNumber(value: unknown): number | undefined {
   if (value === undefined || value === null || value === "") return undefined;
   const num = typeof value === "number" ? value : Number(value);
   return Number.isFinite(num) && num > 0 ? num : undefined;
+}
+
+function digitsOnly(value: string): string {
+  let result = "";
+  for (const char of value) {
+    if (char >= "0" && char <= "9") result += char;
+  }
+  return result;
 }
 
 function quoteShell(value: string): string {
@@ -89,6 +102,8 @@ export async function POST(request: Request) {
   }
 
   const line = optionalString(body.line);
+  const packageIdInput = optionalString(body.packageId);
+  const packageId = packageIdInput ? digitsOnly(packageIdInput) : undefined;
   const ship = optionalString(body.ship);
   const date = optionalString(body.date);
   const destination = optionalString(body.destination);
@@ -98,9 +113,71 @@ export async function POST(request: Request) {
   const buildLink = body.buildLink === true;
   const structured = body.structured === true;
 
+  if (packageIdInput && !packageId) {
+    return NextResponse.json({ error: "Package number must contain digits." }, { status: 400 });
+  }
+
+  if (packageId) {
+    const startedAtIso = new Date().toISOString();
+    const startedAt = Date.now();
+    try {
+      const engine = await getOdysseusSession();
+      const summary = await engine.fetchPackagePageSummary(
+        packageId,
+        process.env.CB_AGENT_SIID ?? "1049337"
+      );
+      if (!summary?.title || !summary.sailDateIso) {
+        return NextResponse.json({
+          ok: false,
+          startedAtIso,
+          finishedAtIso: new Date().toISOString(),
+          durationMs: Date.now() - startedAt,
+          message: `Package ${packageId} was not found or did not return complete sailing facts.`,
+        });
+      }
+
+      const departurePort = summary.departurePortCode
+        ? resolvePortCode(summary.departurePortCode) ?? summary.departurePortCode
+        : undefined;
+
+      return NextResponse.json({
+        ok: true,
+        startedAtIso,
+        finishedAtIso: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+        status: "package_match",
+        cruiseFacts: {
+          packageId,
+          cruiseLine: summary.cruiseLine ?? "",
+          shipName: summary.shipName ?? "",
+          title: summary.title,
+          nights: summary.nights,
+          sailDateIso: summary.sailDateIso,
+          departurePort,
+          ports: summary.portsOfCall?.split("|").map((port) => port.trim()).filter(Boolean).join(", ") ?? "",
+          cabinPricing: summary.cabinPricing,
+          confidence: 1,
+          reasons: ["Exact package number match"],
+        },
+        candidates: [],
+        diagnostics: [`Loaded exact Odysseus package ${packageId}.`],
+      });
+    } catch (error) {
+      return NextResponse.json({
+        ok: false,
+        startedAtIso,
+        finishedAtIso: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      await releaseOdysseusSession().catch(() => undefined);
+    }
+  }
+
   if (!line && !ship) {
     return NextResponse.json(
-      { error: "Provide at least a cruise line or ship name." },
+      { error: "Enter a package number, cruise line, or ship name." },
       { status: 400 }
     );
   }

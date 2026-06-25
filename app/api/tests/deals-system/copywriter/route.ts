@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import {
   assembleDealUnifiedManifest,
   generateDealAdCopy,
+  getPromoRecordsByIds,
   listDealTripManifests,
   loadDealAdCopyCache,
   loadDealDiscoveryIdeasCache,
@@ -181,7 +182,20 @@ export async function POST(request: Request) {
 
   try {
     // (1) deterministic unify — persist the artifact for traceability.
-    const unified = assembleDealUnifiedManifest(angle, tripManifest);
+    const applicablePromoIds = tripManifest.appliedPromos
+      .filter(
+        (promo) =>
+          promo.status === "likely_applicable" ||
+          promo.status === "possibly_applicable_needs_review"
+      )
+      .map((promo) => promo.promoRecordId);
+    const promoRecords =
+      applicablePromoIds.length > 0
+        ? await getPromoRecordsByIds(applicablePromoIds)
+        : [];
+    const unified = assembleDealUnifiedManifest(angle, tripManifest, {
+      promoRecords,
+    });
     saveDealUnifiedManifestsCache(
       upsertDealUnifiedManifest(loadDealUnifiedManifestsCache(), unified)
     );

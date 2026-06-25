@@ -2,6 +2,7 @@ import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CruiseSearchCriteria, CruiseResult, ItineraryDetail, ItineraryDetailSchema, PackagePageSummary } from './types';
+import { extractPackagePageCabinPricing } from './package-page-pricing';
 
 // Store state locally in the project root for now
 // When moving to Render, this could be stored in Redis or an S3 bucket
@@ -448,6 +449,7 @@ export class OdysseusEngine {
         console.log(`[OdysseusEngine] Reading package page summary: ${packageUrl}`);
 
         try {
+            const interceptStart = this.interceptedData.length;
             await page.goto(packageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
             await page.evaluate("window.__name = window.__name || function (f) { return f; };");
@@ -495,7 +497,88 @@ export class OdysseusEngine {
                 };
             }, pid);
 
-            return raw;
+            const packageResponse = this.interceptedData
+                .slice(interceptStart)
+                .find((entry) => {
+                    if (!entry || typeof entry !== 'object') return false;
+                    const url = typeof entry.url === 'string' ? entry.url : '';
+                    if (!url.includes('/nitroapi/v2/cruise?')) return false;
+                    const payload = entry.payload;
+                    if (!payload || typeof payload !== 'object') return false;
+                    const data = payload.data;
+                    if (!data || typeof data !== 'object' || !Array.isArray(data.list)) return false;
+                    return data.list.some((item: unknown) => {
+                        if (!item || typeof item !== 'object') return false;
+                        return String((item as { id?: unknown }).id ?? '') === pid;
+                    });
+                });
+
+            const list = packageResponse?.payload?.data?.list;
+            const packageRecord = Array.isArray(list)
+                ? list.find((item: unknown) => {
+                    if (!item || typeof item !== 'object') return false;
+                    return String((item as { id?: unknown }).id ?? '') === pid;
+                })
+                : undefined;
+
+            if (!packageRecord || typeof packageRecord !== 'object') {
+                return raw;
+            }
+
+            const record = packageRecord as {
+                name?: unknown;
+                startDateTime?: unknown;
+                cruiseDuration?: unknown;
+                prices?: unknown;
+                itinerary?: {
+                    duration?: unknown;
+                    departure?: { code?: unknown };
+                    portsOfCalls?: unknown;
+                };
+            };
+
+            const monthNumbers: Record<string, string> = {
+                Jan: '01',
+                Feb: '02',
+                Mar: '03',
+                Apr: '04',
+                May: '05',
+                Jun: '06',
+                Jul: '07',
+                Aug: '08',
+                Sep: '09',
+                Oct: '10',
+                Nov: '11',
+                Dec: '12',
+            };
+            const sourceDate = typeof record.startDateTime === 'string' ? record.startDateTime.trim() : '';
+            const dateParts = sourceDate.split('-');
+            const sailDateIso =
+                dateParts.length === 3 && monthNumbers[dateParts[1]]
+                    ? `${dateParts[2]}-${monthNumbers[dateParts[1]]}-${dateParts[0].padStart(2, '0')}`
+                    : undefined;
+            const duration =
+                typeof record.cruiseDuration === 'number'
+                    ? record.cruiseDuration
+                    : typeof record.itinerary?.duration === 'number'
+                      ? record.itinerary.duration
+                      : undefined;
+
+            return {
+                ...raw,
+                title: typeof record.name === 'string' && record.name.trim() ? record.name.trim() : raw.title,
+                sailDateIso,
+                nights: duration,
+                departurePortCode:
+                    typeof record.itinerary?.departure?.code === 'string'
+                        ? record.itinerary.departure.code
+                        : undefined,
+                portsOfCall:
+                    typeof record.itinerary?.portsOfCalls === 'string'
+                        ? record.itinerary.portsOfCalls
+                        : undefined,
+                cabinPricing: extractPackagePageCabinPricing(record.prices),
+            };
         } catch (error) {
             console.warn(`[OdysseusEngine] Package page summary failed for ${pid}:`, error instanceof Error ? error.message : error);
             return null;

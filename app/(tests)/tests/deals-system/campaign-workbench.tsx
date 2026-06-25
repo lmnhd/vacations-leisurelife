@@ -11,7 +11,7 @@ function DealStatusExplainer({ deal }: { deal: any }) {
 
   if (deal.packageId === "0000000") {
     explanation =
-      "This is a test/sample Deal with a fake package ID (0000000). It exists to demonstrate that the publishing gate works — it will never book because the package is not real. You can ignore this Deal.";
+      "This is a test/sample Deal with a fake package ID (0000000). It exists to demonstrate that the publishing gate works - it will never book because the package is not real. You can ignore this Deal.";
     tone = "info";
   } else if (deal.approvalStatus === "needs_review") {
     explanation =
@@ -59,12 +59,18 @@ function DealStatusExplainer({ deal }: { deal: any }) {
 import type {
   DealsSystemApprovalGateSummary,
   DealsSystemCuratedDealSummary,
+  DealsSystemStageReviewSummary,
 } from "@/lib/cb/deals-system/dashboard-data";
+import {
+  assessPromoHandoff,
+  type PromoHandoffAssessment,
+} from "@/lib/cb/deals-system/promo-handoff-assessment";
 
 interface PromoOption {
   id: string;
   title: string;
   vendor: string;
+  applicableMarkets: string[];
 }
 
 interface ApiResponse {
@@ -72,6 +78,19 @@ interface ApiResponse {
   error?: string;
   approved?: boolean;
   blockingFailures?: Array<{ label: string; detail: string }>;
+  nextUrl?: string;
+  angleOptions?: GeneratedAngleOption[];
+  modelId?: string;
+  warnings?: string[];
+  handoffAssessment?: PromoHandoffAssessment;
+}
+
+interface GeneratedAngleOption {
+  campaignAngle: string;
+  targetAudience: string;
+  visualAngle: string;
+  targetingKeywords: string[];
+  rationale: string;
 }
 
 const STAGES: Array<{ id: string; label: string; description: string; isPhase9B?: boolean }> = [
@@ -143,14 +162,325 @@ function GateRow({ gate }: { gate: DealsSystemApprovalGateSummary }) {
               : "bg-amber-500/20 text-amber-200"
         }`}
       >
-        {gate.passed ? "✓" : "✕"}
+        {gate.passed ? "+" : "x"}
       </span>
       <span className="text-slate-300">
         <span className="font-semibold text-white">{gate.label}</span>
-        {!gate.blocking && <span className="ml-1 text-slate-500">(advisory)</span>} — {gate.detail}
+        {!gate.blocking && <span className="ml-1 text-slate-500">(advisory)</span>} - {gate.detail}
       </span>
     </li>
   );
+}
+
+function formatMarketLabel(value: PromoHandoffAssessment["inferredAudienceMarket"]): string {
+  if (value === "UK") return "United Kingdom";
+  if (value === "US") return "United States";
+  if (value === "CA") return "Canada";
+  if (value === "LATAM") return "Latin America";
+  return "Not inferred";
+}
+
+function HandoffStatusBadge({ assessment }: { assessment: PromoHandoffAssessment }) {
+  let className = "border-emerald-400/35 bg-emerald-500/10 text-emerald-200";
+  let label = "promo attached";
+  if (assessment.status === "no_promo_selected") {
+    className = "border-amber-400/35 bg-amber-500/10 text-amber-200";
+    label = "no promo selected";
+  } else if (assessment.status === "promo_market_unknown") {
+    className = "border-amber-400/35 bg-amber-500/10 text-amber-200";
+    label = "market needs review";
+  } else if (assessment.status === "promo_market_mismatch") {
+    className = "border-rose-400/35 bg-rose-500/10 text-rose-200";
+    label = "market mismatch";
+  }
+  return (
+    <span
+      className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function StageReviewDrawer({
+  label,
+  ready,
+  review,
+}: {
+  label: string;
+  ready: boolean;
+  review?: DealsSystemStageReviewSummary;
+}) {
+  return (
+    <details className="rounded-lg border border-white/10 bg-black/20 p-3">
+      <summary className="cursor-pointer list-none">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-white">{label}</p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              {ready ? review?.title ?? "Ready" : "Not generated yet"}
+            </p>
+          </div>
+          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] ${
+            ready
+              ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
+              : "border-white/10 bg-white/5 text-slate-500"
+          }`}>
+            {ready ? "ready" : "missing"}
+          </span>
+        </div>
+      </summary>
+      {review ? (
+        <div className="mt-3 space-y-3">
+          {review.generator && (
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              Source: {review.generator}
+            </p>
+          )}
+          {review.bullets.length > 0 && (
+            <ul className="space-y-1 text-xs leading-5 text-slate-300">
+              {review.bullets.map((item, idx) => (
+                <li key={`${label}-bullet-${idx}`}>- {item}</li>
+              ))}
+            </ul>
+          )}
+          {review.details.length > 0 && (
+            <div className="space-y-2">
+              {review.details.map((detail) => (
+                <div key={`${label}-${detail.label}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    {detail.label}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-300">{detail.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          This stage has not been generated for the selected Deal record.
+        </p>
+      )}
+    </details>
+  );
+}
+
+function isAsciiLetterOrDigit(char: string) {
+  if (!char) return false;
+  const code = char.toLowerCase().charCodeAt(0);
+  return (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
+}
+
+function normalizeLooseText(value: string): string {
+  let out = "";
+  let lastWasSpace = false;
+  for (const rawChar of value.toLowerCase()) {
+    if (isAsciiLetterOrDigit(rawChar)) {
+      out += rawChar;
+      lastWasSpace = false;
+      continue;
+    }
+    if (!lastWasSpace) {
+      out += " ";
+      lastWasSpace = true;
+    }
+  }
+  return out.trim();
+}
+
+function slugifyText(value: string): string {
+  let out = "";
+  let lastWasDash = false;
+  for (const rawChar of value.toLowerCase()) {
+    if (isAsciiLetterOrDigit(rawChar)) {
+      out += rawChar;
+      lastWasDash = false;
+      continue;
+    }
+    if (!lastWasDash && out.length > 0) {
+      out += "-";
+      lastWasDash = true;
+    }
+  }
+  while (out.endsWith("-")) out = out.slice(0, -1);
+  return out;
+}
+
+function keepDigits(value: string): string {
+  let out = "";
+  for (const char of value) {
+    if (char >= "0" && char <= "9") out += char;
+  }
+  return out;
+}
+
+function findFirstUrl(value: string): string | null {
+  for (const token of value.split(" ")) {
+    const trimmed = token.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+function packageIdFromUrl(value: string): string {
+  const marker = "/package/";
+  const idx = value.indexOf(marker);
+  if (idx < 0) return "";
+  const tail = value.slice(idx + marker.length);
+  let out = "";
+  for (const char of tail) {
+    if (char >= "0" && char <= "9") {
+      out += char;
+      continue;
+    }
+    break;
+  }
+  return out;
+}
+
+function toIsoDate(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.length >= 10 && trimmed[4] === "-" && trimmed[7] === "-") {
+    return trimmed.slice(0, 10);
+  }
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return trimmed;
+  const yyyy = parsed.getUTCFullYear();
+  const mm = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function labelMatches(label: string, options: string[]): boolean {
+  const normalized = normalizeLooseText(label);
+  return options.some((option) => normalized === option || normalized.startsWith(`${option} `));
+}
+
+function buildSuggestedDealId(cruiseLine: string, title: string, packageId: string): string {
+  const lineSlug = slugifyText(cruiseLine);
+  const titleSlug = slugifyText(title);
+  const parts = ["deal", lineSlug || "cruise", titleSlug || "sailing"];
+  if (packageId) parts.push(packageId);
+  return parts.filter(Boolean).join("-");
+}
+
+function buildSuggestedBriefId(title: string, shipName: string): string {
+  const titleSlug = slugifyText(title);
+  const shipSlug = slugifyText(shipName);
+  return ["brief", titleSlug || shipSlug || "curated-cruise"].filter(Boolean).join("-");
+}
+
+interface ImportedWorkbenchDraft {
+  packageId: string;
+  cruiseLine: string;
+  shipName: string;
+  title: string;
+  nights: string;
+  sailDate: string;
+  departurePort: string;
+  ports: string;
+  bookingUrl: string;
+  promoHint: string;
+}
+
+function parseWorkbenchImport(text: string): ImportedWorkbenchDraft {
+  const draft: ImportedWorkbenchDraft = {
+    packageId: "",
+    cruiseLine: "",
+    shipName: "",
+    title: "",
+    nights: "",
+    sailDate: "",
+    departurePort: "",
+    ports: "",
+    bookingUrl: "",
+    promoHint: "",
+  };
+
+  const normalizedLines = text.split("\r").join("").split("\n");
+  for (const rawLine of normalizedLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const url = findFirstUrl(line);
+    if (url && !draft.bookingUrl && url.includes("bookings.cbagenttools.com")) {
+      draft.bookingUrl = url;
+      if (!draft.packageId) {
+        const packageId = packageIdFromUrl(url);
+        if (packageId) draft.packageId = packageId;
+      }
+    }
+
+    const separator = line.indexOf(":");
+    if (separator < 0) continue;
+    const label = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (!value) continue;
+
+    if (labelMatches(label, ["package id", "package", "pid"])) {
+      draft.packageId = keepDigits(value) || draft.packageId;
+      continue;
+    }
+    if (labelMatches(label, ["cruise line", "line", "vendor"])) {
+      draft.cruiseLine = value;
+      continue;
+    }
+    if (labelMatches(label, ["ship", "ship name"])) {
+      draft.shipName = value;
+      continue;
+    }
+    if (labelMatches(label, ["title", "itinerary", "title itinerary", "sailing"])) {
+      draft.title = value;
+      continue;
+    }
+    if (labelMatches(label, ["nights", "night"])) {
+      draft.nights = keepDigits(value) || draft.nights;
+      continue;
+    }
+    if (labelMatches(label, ["sail date", "date"])) {
+      draft.sailDate = toIsoDate(value);
+      continue;
+    }
+    if (labelMatches(label, ["departure port", "port"])) {
+      draft.departurePort = value;
+      continue;
+    }
+    if (labelMatches(label, ["ports of call", "ports", "route"])) {
+      draft.ports = value.split("|").join(", ");
+      continue;
+    }
+    if (labelMatches(label, ["promo", "promotion"])) {
+      draft.promoHint = value;
+      continue;
+    }
+    if (labelMatches(label, ["booking url", "share booking url", "captured share booking url", "url"])) {
+      const foundUrl = findFirstUrl(value);
+      if (foundUrl) draft.bookingUrl = foundUrl;
+    }
+  }
+
+  return draft;
+}
+
+function findPromoMatches(
+  promoOptions: PromoOption[],
+  cruiseLine: string,
+  importText: string,
+  promoHint: string
+): string[] {
+  const searchPool = normalizeLooseText(`${importText}\n${promoHint}`);
+  const exactMatches = promoOptions
+    .filter((promo) => searchPool.includes(normalizeLooseText(promo.title)))
+    .map((promo) => promo.id);
+  if (exactMatches.length > 0) return exactMatches;
+
+  const vendorMatches = promoOptions.filter((promo) => cruiseLineMatches(cruiseLine, promo.vendor));
+  if (vendorMatches.length === 1) return [vendorMatches[0].id];
+  return [];
 }
 
 export function DealCampaignWorkbench({
@@ -163,29 +493,46 @@ export function DealCampaignWorkbench({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
-  // Existing Deals are collapsed by default so the assemble form for a NEW
-  // Deal isn't buried under unrelated staged-development cards.
-  const [showExistingDeals, setShowExistingDeals] = useState(false);
+  const [selectedDealId, setSelectedDealId] = useState(deals[0]?.id ?? "");
 
   // Assembly form state.
-  const [dealId, setDealId] = useState("deal-rcl-southern-caribbean-1619969");
-  const [briefId, setBriefId] = useState("brief-southern-caribbean-warm-escape");
-  const [packageId, setPackageId] = useState("1619969");
+  const [dealId, setDealId] = useState("");
+  const [briefId, setBriefId] = useState("");
+  const [packageId, setPackageId] = useState("");
   const [siid, setSiid] = useState("1049337");
-  const [title, setTitle] = useState("6 Night Southern Caribbean Cruise");
-  const [cruiseLine, setCruiseLine] = useState("Royal Caribbean");
-  const [shipName, setShipName] = useState("Liberty of the Seas");
-  const [nights, setNights] = useState("6");
-  const [sailDate, setSailDate] = useState("2026-11-08");
-  const [departurePort, setDeparturePort] = useState("Fort Lauderdale");
-  const [ports, setPorts] = useState("Perfect Day at CocoCay, Aruba, Curacao");
+  const [title, setTitle] = useState("");
+  const [cruiseLine, setCruiseLine] = useState("");
+  const [shipName, setShipName] = useState("");
+  const [nights, setNights] = useState("");
+  const [sailDate, setSailDate] = useState("");
+  const [departurePort, setDeparturePort] = useState("");
+  const [ports, setPorts] = useState("");
+  const [cabinPrices, setCabinPrices] = useState<{
+    inside?: number;
+    outside?: number;
+    balcony?: number;
+    suite?: number;
+    currencyCode: string;
+    leadFare?: number;
+  }>({ currencyCode: "USD" });
   const [bookingUrl, setBookingUrl] = useState("");
-  const [selectedPromos, setSelectedPromos] = useState<string[]>([]);
+  const [assemblySelectedPromos, setAssemblySelectedPromos] = useState<string[]>([]);
+  const [selectedDealPromos, setSelectedDealPromos] = useState<string[]>(deals[0]?.promoApplicabilityIds ?? []);
   const [textOnly, setTextOnly] = useState(false);
   const [decisionNote, setDecisionNote] = useState("");
   const [showAllPromos, setShowAllPromos] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [packageLookupId, setPackageLookupId] = useState("");
+  const [campaignAngle, setCampaignAngle] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [visualAngle, setVisualAngle] = useState("");
+  const [targetingKeywords, setTargetingKeywords] = useState("");
+  const [angleOptions, setAngleOptions] = useState<GeneratedAngleOption[]>([]);
+  const [angleStatus, setAngleStatus] = useState<string | null>(null);
 
-  // Ship finder — auto-fills the assembly fields below from a live Odysseus
+  // Ship finder - auto-fills the assembly fields below from a live Odysseus
   // lookup instead of hand-typing cruise line / ship / dates / ports.
   const [findLine, setFindLine] = useState("");
   const [findShip, setFindShip] = useState("");
@@ -201,6 +548,54 @@ export function DealCampaignWorkbench({
   const otherPromoOptions = useMemo(
     () => promoOptions.filter((promo) => !cruiseLineMatches(cruiseLine, promo.vendor)),
     [promoOptions, cruiseLine]
+  );
+  const selectedDeal = deals.find((deal) => deal.id === selectedDealId) ?? deals[0];
+  const selectedDealVisiblePromoOptions = useMemo(
+    () =>
+      selectedDeal
+        ? promoOptions.filter((promo) => cruiseLineMatches(selectedDeal.cruiseLine, promo.vendor))
+        : [],
+    [promoOptions, selectedDeal]
+  );
+  const selectedDealOtherPromoOptions = useMemo(
+    () =>
+      selectedDeal
+        ? promoOptions.filter((promo) => !cruiseLineMatches(selectedDeal.cruiseLine, promo.vendor))
+        : [],
+    [promoOptions, selectedDeal]
+  );
+  const selectedPromoRecords = useMemo(
+    () => promoOptions.filter((promo) => selectedDealPromos.includes(promo.id)),
+    [promoOptions, selectedDealPromos]
+  );
+  const selectedDealCruiseLinePromoCount = useMemo(
+    () =>
+      selectedDeal
+        ? promoOptions.filter((promo) => cruiseLineMatches(selectedDeal.cruiseLine, promo.vendor)).length
+        : 0,
+    [promoOptions, selectedDeal]
+  );
+  const handoffAssessment = useMemo(
+    () =>
+      assessPromoHandoff({
+        cruiseLine: selectedDeal?.cruiseLine,
+        campaignAngle: campaignAngle.trim(),
+        targetAudience: targetAudience.trim(),
+        targetingKeywords: targetingKeywords
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        selectedPromos: selectedPromoRecords,
+        cruiseLinePromoCount: selectedDealCruiseLinePromoCount,
+      }),
+    [
+      campaignAngle,
+      selectedDeal,
+      selectedDealCruiseLinePromoCount,
+      selectedPromoRecords,
+      targetAudience,
+      targetingKeywords,
+    ]
   );
 
   async function call(body: Record<string, unknown>, busyKey: string) {
@@ -230,12 +625,93 @@ export function DealCampaignWorkbench({
       } else {
         setMessage({ tone: "ok", text: "Done. Cache updated." });
       }
+      if (payload.nextUrl) {
+        window.location.href = payload.nextUrl;
+        return;
+      }
       router.refresh();
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     } finally {
       setBusy(null);
     }
+  }
+
+  async function generateAnglesForDeal(deal: DealsSystemCuratedDealSummary) {
+    const key = `${deal.id}:generate_angles`;
+    setBusy(key);
+    setMessage(null);
+    setAngleStatus(null);
+    try {
+      const response = await fetch("/api/tests/deals-system/curated-deal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate_angles",
+          dealId: deal.id,
+          promoRecordIds: selectedDealPromos,
+        }),
+      });
+      const payload = (await response.json()) as ApiResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? `Request failed (${response.status}).`);
+      }
+      const nextOptions = payload.angleOptions ?? [];
+      setAngleOptions(nextOptions);
+      if (nextOptions[0]) {
+        applyAngleOption(nextOptions[0]);
+      }
+      setAngleStatus(
+        nextOptions.length > 0
+          ? `Generated ${nextOptions.length} angle options${payload.modelId ? ` with ${payload.modelId}` : ""}.`
+          : "No angle options returned."
+      );
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function applyAngleOption(option: GeneratedAngleOption) {
+    setCampaignAngle(option.campaignAngle);
+    setTargetAudience(option.targetAudience);
+    setVisualAngle(option.visualAngle);
+    setTargetingKeywords(option.targetingKeywords.join(", "));
+  }
+
+  function continueInPipeline(deal: DealsSystemCuratedDealSummary) {
+    if (handoffAssessment.blockingIssues.length > 0) {
+      setMessage({
+        tone: "error",
+        text: `Cannot continue yet. ${handoffAssessment.blockingIssues.join(" ")}`,
+      });
+      return;
+    }
+    if (handoffAssessment.warnings.length > 0) {
+      const shouldProceed = window.confirm(
+        [
+          "Pipeline handoff warnings:",
+          "",
+          ...handoffAssessment.warnings.map((warning) => `- ${warning}`),
+          "",
+          "Continue anyway?",
+        ].join("\n")
+      );
+      if (!shouldProceed) return;
+    }
+    void call(
+      {
+        action: "send_to_pipeline",
+        dealId: deal.id,
+        promoRecordIds: selectedDealPromos,
+        campaignAngle: campaignAngle.trim(),
+        targetAudience: targetAudience.trim(),
+        visualAngle: visualAngle.trim(),
+        targetingKeywords: targetingKeywords.trim(),
+      },
+      `${deal.id}:send_to_pipeline`
+    );
   }
 
   function assemble() {
@@ -247,7 +723,7 @@ export function DealCampaignWorkbench({
         packageId: packageId.trim(),
         siid: siid.trim(),
         bookingUrl: bookingUrl.trim() || undefined,
-        promoRecordIds: selectedPromos,
+        promoRecordIds: assemblySelectedPromos,
         cruiseFacts: {
           title,
           cruiseLine,
@@ -257,25 +733,97 @@ export function DealCampaignWorkbench({
           sailDateIso: sailDate,
           departurePort,
           portsOfCall: ports.split(",").map((p) => p.trim()).filter(Boolean),
+          cabinPrices,
         },
       },
       "assemble"
     );
   }
 
-  function togglePromo(id: string) {
-    setSelectedPromos((prev) =>
+  function toggleAssemblyPromo(id: string) {
+    setAssemblySelectedPromos((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   }
 
+  function toggleSelectedDealPromo(id: string) {
+    setSelectedDealPromos((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  }
+
+  function importFoundSailing() {
+    const parsed = parseWorkbenchImport(importText);
+    const hasCoreFields =
+      parsed.packageId ||
+      parsed.title ||
+      parsed.shipName ||
+      parsed.cruiseLine ||
+      parsed.sailDate;
+
+    if (!hasCoreFields) {
+      setImportError(
+        "Paste a small key:value block first, such as Cruise line, Ship, Title, Sail date, Package ID, and Promo."
+      );
+      setImportStatus(null);
+      return;
+    }
+
+    setImportError(null);
+
+    if (parsed.packageId) setPackageId(parsed.packageId);
+    if (parsed.cruiseLine) {
+      setCruiseLine(parsed.cruiseLine);
+      setFindLine(parsed.cruiseLine);
+    }
+    if (parsed.shipName) {
+      setShipName(parsed.shipName);
+      setFindShip(parsed.shipName);
+    }
+    if (parsed.title) setTitle(parsed.title);
+    if (parsed.nights) setNights(parsed.nights);
+    if (parsed.sailDate) {
+      setSailDate(parsed.sailDate);
+      setFindDate(parsed.sailDate);
+    }
+    if (parsed.departurePort) setDeparturePort(parsed.departurePort);
+    if (parsed.ports) setPorts(parsed.ports);
+    if (parsed.bookingUrl) setBookingUrl(parsed.bookingUrl);
+
+    const nextCruiseLine = parsed.cruiseLine || cruiseLine;
+    const nextTitle = parsed.title || title;
+    const nextShipName = parsed.shipName || shipName;
+    const nextPackageId = parsed.packageId || packageId;
+    setDealId(buildSuggestedDealId(nextCruiseLine, nextTitle, nextPackageId));
+    setBriefId(buildSuggestedBriefId(nextTitle, nextShipName));
+
+    const promoMatches = findPromoMatches(
+      promoOptions,
+      nextCruiseLine,
+      importText,
+      parsed.promoHint
+    );
+    if (promoMatches.length > 0) {
+      setAssemblySelectedPromos(promoMatches);
+    }
+
+    const appliedPromoText =
+      promoMatches.length > 0
+        ? ` Attached ${promoMatches.length} matching promo${promoMatches.length === 1 ? "" : "s"}.`
+        : "";
+    setImportStatus(
+      `Imported the pasted sailing into the workbench fields.${appliedPromoText} Review the values, then assemble or run the live lookup if you want Odysseus to confirm them.`
+    );
+  }
+
   // Runs the same live Odysseus lookup the Trip Manifestation pipeline step
-  // uses, then auto-fills the assembly fields below from the matched cruise —
+  // uses, then auto-fills the assembly fields below from the matched cruise -
   // package id, cruise line, ship, sail date, nights, departure port, and
-  // ports of call — instead of hand-typing all ten.
-  async function findShipAndFill() {
-    if (!findLine.trim() && !findShip.trim()) {
-      setFindError("Enter at least a cruise line or ship name.");
+  // ports of call - instead of hand-typing all ten.
+  async function findShipAndFill(options?: { packageId?: string }) {
+    const exactPackageId = keepDigits(options?.packageId ?? "");
+    if (!exactPackageId && !findLine.trim() && !findShip.trim()) {
+      setFindError("Enter a package number, cruise line, or ship name.");
       return;
     }
     setFinding(true);
@@ -286,6 +834,7 @@ export function DealCampaignWorkbench({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          packageId: exactPackageId || undefined,
           line: findLine.trim() || undefined,
           ship: findShip.trim() || undefined,
           date: findDate.trim() || undefined,
@@ -305,6 +854,14 @@ export function DealCampaignWorkbench({
           sailDateIso: string;
           departurePort?: string;
           ports: string;
+          cabinPricing?: {
+            inside?: number;
+            outside?: number;
+            balcony?: number;
+            suite?: number;
+            currencyCode: string;
+            leadFare?: number;
+          };
           confidence: number;
         } | null;
       };
@@ -314,6 +871,7 @@ export function DealCampaignWorkbench({
 
       const f = payload.cruiseFacts;
       setPackageId(f.packageId);
+      setPackageLookupId(f.packageId);
       setCruiseLine(f.cruiseLine || findLine.trim());
       setShipName(f.shipName || findShip.trim());
       setTitle(f.title);
@@ -321,11 +879,32 @@ export function DealCampaignWorkbench({
       setSailDate(f.sailDateIso);
       if (f.departurePort) setDeparturePort(f.departurePort);
       if (f.ports) setPorts(f.ports);
+      setCabinPrices(f.cabinPricing ?? { currencyCode: "USD" });
+      setDealId(
+        buildSuggestedDealId(
+          f.cruiseLine || findLine.trim(),
+          f.title,
+          f.packageId
+        )
+      );
+      setBriefId(buildSuggestedBriefId(f.title, f.shipName || findShip.trim()));
+
+      const autoPromos = findPromoMatches(
+        promoOptions,
+        f.cruiseLine || findLine.trim(),
+        `${f.cruiseLine}\n${f.title}`,
+        ""
+      );
+      if (autoPromos.length > 0) {
+        setAssemblySelectedPromos(autoPromos);
+      }
 
       setFindStatus(
-        payload.status === "confident_match"
-          ? `Matched: ${f.title} (${Math.round(f.confidence * 100)}% confidence). Fields below filled in — review before assembling.`
-          : `Best available match used: ${f.title}. Confidence was low — double-check the fields below.`
+        payload.status === "package_match"
+          ? `Loaded exact package ${f.packageId}: ${f.title}. Review the auto-filled fields below, then assemble the Deal.`
+          : payload.status === "confident_match"
+          ? `Matched: ${f.title} (${Math.round(f.confidence * 100)}% confidence). Fields below filled in - review before assembling.`
+          : `Best available match used: ${f.title}. Confidence was low - double-check the fields below.`
       );
     } catch (err) {
       setFindError(err instanceof Error ? err.message : String(err));
@@ -351,18 +930,99 @@ export function DealCampaignWorkbench({
       {/* Stage 1: Source and assembly */}
       <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-          1 · Source &amp; assemble
+          1 - Source &amp; assemble
         </p>
         <p className="mt-1 text-sm text-slate-400">
           Convert a package candidate into a <span className="font-semibold text-white">needs_review</span>{" "}
-          Curated Deal. This never publishes on its own — it always lands in review with every campaign
-          stage generated. The fields below are pre-filled with the recommended first real Deal (RCL
-          Southern Caribbean, package 1619969) — only change them when assembling a different package.
+          Curated Deal. This never publishes on its own - it always lands in review with every campaign
+          stage generated. Start with the package number below and the sailing details will be filled
+          automatically for review.
         </p>
+
+        <div className="mt-4 rounded-lg border border-cyan-300/30 bg-cyan-500/10 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200">
+            Start with a package number
+          </p>
+          <p className="mt-1 text-sm leading-5 text-slate-300">
+            Enter the Odysseus package number. We will load the cruise line, ship, title,
+            sail date, nights, departure port, itinerary, and matching promotion choices.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input
+              className={`${inputClassName()} sm:max-w-xs`}
+              inputMode="numeric"
+              value={packageLookupId}
+              onChange={(e) => setPackageLookupId(keepDigits(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && packageLookupId.trim() && !finding) {
+                  e.preventDefault();
+                  void findShipAndFill({ packageId: packageLookupId });
+                }
+              }}
+              placeholder="Package number, e.g. 1543052"
+            />
+            <button
+              type="button"
+              disabled={finding || !packageLookupId.trim()}
+              onClick={() => void findShipAndFill({ packageId: packageLookupId })}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-cyan-200/50 bg-cyan-300/15 px-5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {finding ? "Loading package..." : "Load package"}
+            </button>
+          </div>
+          {findError && <p className="mt-2 text-xs text-rose-300">{findError}</p>}
+          {findStatus && <p className="mt-2 text-xs text-emerald-200">{findStatus}</p>}
+        </div>
+
+        <details className="mt-4 rounded-lg border border-white/10 bg-black/10">
+          <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-slate-300">
+            Advanced intake options
+          </summary>
+          <div className="border-t border-white/10 p-3">
+        <div className="rounded-lg border border-violet-400/20 bg-violet-500/5 p-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-violet-300">
+            Import found sailing - paste a structured note from research or chat
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            Paste a short key:value block and we will fill the workbench for you. Best results:
+            Cruise line, Ship, Title, Sail date, Nights, Departure port, Ports of call, Package ID,
+            Promo, and an optional booking URL.
+          </p>
+          <textarea
+            className="mt-3 min-h-[148px] w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-300/60"
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            placeholder={[
+              "Cruise line: Celebrity Cruises",
+              "Ship: Celebrity Apex",
+              "Title: 14 Nights Spain & Portugal Solar Eclipse",
+              "Sail date: 2026-08-01",
+              "Nights: 14",
+              "Departure port: Southampton",
+              "Ports of call: Porto, Lisbon, Palma de Mallorca, Barcelona, Ibiza, Malaga, La Coruna, Bilbao",
+              "Package ID: 1543049",
+              "Promo: Celebrity Cruises - SUMMER SALE - Dollars Off, Onboard Credit",
+            ].join("\n")}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={importFoundSailing}
+              className="inline-flex h-9 items-center rounded-lg border border-violet-300/40 bg-violet-400/10 px-4 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
+            >
+              Import into workbench
+            </button>
+            <p className="text-[11px] leading-4 text-slate-500">
+              This path is for facts we already found. The live lookup below is still the best follow-up for confirmation.
+            </p>
+          </div>
+          {importError && <p className="mt-2 text-xs text-rose-300">{importError}</p>}
+          {importStatus && <p className="mt-2 text-xs text-emerald-200">{importStatus}</p>}
+        </div>
 
         <div className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-            Find ship — auto-fill from a live lookup
+            Find ship - auto-fill from a live lookup
           </p>
           <p className="mt-1 text-xs leading-5 text-slate-400">
             Runs the same Odysseus lookup Trip Manifestation uses, then fills in package id, cruise
@@ -397,9 +1057,9 @@ export function DealCampaignWorkbench({
           >
             {finding ? "Searching..." : "Find ship"}
           </button>
-          {findError && <p className="mt-2 text-xs text-rose-300">{findError}</p>}
-          {findStatus && <p className="mt-2 text-xs text-emerald-200">{findStatus}</p>}
         </div>
+          </div>
+        </details>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Field label="Deal id">
@@ -438,7 +1098,7 @@ export function DealCampaignWorkbench({
           <Field
             label="Captured Share booking URL"
             className="xl:col-span-4"
-            help={`Optional. Leave blank to auto-build a booking link from the Package id and SIID — its link health starts as "unknown" until verified. Paste a link here only after capturing it from the cruise line site's "Share" button; that marks it as operator-verified.`}
+            help={`Optional. Leave blank to auto-build a booking link from the Package id and SIID - its link health starts as "unknown" until verified. Paste a link here only after capturing it from the cruise line site's "Share" button; that marks it as operator-verified.`}
           >
             <input className={inputClassName()} value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} placeholder="Leave blank to auto-construct from Package id / SIID" />
           </Field>
@@ -459,9 +1119,9 @@ export function DealCampaignWorkbench({
                 <button
                   key={promo.id}
                   type="button"
-                  onClick={() => togglePromo(promo.id)}
+                  onClick={() => toggleAssemblyPromo(promo.id)}
                   className={`rounded-full border px-3 py-1 text-xs transition ${
-                    selectedPromos.includes(promo.id)
+                    assemblySelectedPromos.includes(promo.id)
                       ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
                       : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
                   }`}
@@ -490,9 +1150,9 @@ export function DealCampaignWorkbench({
                       <button
                         key={promo.id}
                         type="button"
-                        onClick={() => togglePromo(promo.id)}
+                        onClick={() => toggleAssemblyPromo(promo.id)}
                         className={`rounded-full border px-3 py-1 text-xs transition ${
-                          selectedPromos.includes(promo.id)
+                          assemblySelectedPromos.includes(promo.id)
                             ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
                             : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
                         }`}
@@ -522,30 +1182,52 @@ export function DealCampaignWorkbench({
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
           No Curated Deals yet. Assemble one above, then run each stage and the approval gate here.
         </div>
-      ) : !showExistingDeals ? (
-        <button
-          type="button"
-          onClick={() => setShowExistingDeals(true)}
-          className="flex w-full items-center justify-between rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-left text-sm text-slate-400 transition hover:border-white/25 hover:text-slate-200"
-        >
-          <span>
-            {deals.length} existing Curated Deal{deals.length === 1 ? "" : "s"} hidden — staged
-            development for deals already in progress.
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">
-            Show existing deals
-          </span>
-        </button>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowExistingDeals(false)}
-            className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 underline decoration-dotted hover:text-slate-300"
-          >
-            Hide existing deals
-          </button>
-          {deals.map((deal) => (
+      ) : selectedDeal ? (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <Field
+                label={`Existing Curated Deals (${deals.length})`}
+                help="Pick one deal to stage, verify, approve, pin, or hide."
+                className="lg:max-w-2xl lg:flex-1"
+              >
+                <select
+                  className={inputClassName()}
+                  value={selectedDeal.id}
+                  onChange={(e) => {
+                    setSelectedDealId(e.target.value);
+                    const nextDeal = deals.find((deal) => deal.id === e.target.value);
+                    setSelectedDealPromos(nextDeal?.promoApplicabilityIds ?? []);
+                    setAngleOptions([]);
+                    setAngleStatus(null);
+                    setCampaignAngle("");
+                    setTargetAudience("");
+                    setVisualAngle("");
+                    setTargetingKeywords("");
+                  }}
+                >
+                  {deals.map((deal) => (
+                    <option key={deal.id} value={deal.id}>
+                      {deal.title} - {deal.cruiseLine} - {deal.sailDateIso} - package {deal.packageId} - id {deal.id}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div className="flex flex-wrap gap-2">
+                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${selectedDeal.publishable ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200" : "border-rose-400/35 bg-rose-500/10 text-rose-200"}`}>
+                  {selectedDeal.publishable ? "homepage eligible" : "not public"}
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-200">
+                  approval: {selectedDeal.approvalStatus}
+                </span>
+                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${selectedDeal.linkHealth === "valid" ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200" : "border-amber-400/35 bg-amber-500/10 text-amber-200"}`}>
+                  link: {selectedDeal.linkHealth}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {[selectedDeal].map((deal) => (
           <div key={deal.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -553,17 +1235,9 @@ export function DealCampaignWorkbench({
                 <p className="mt-1 text-xs text-slate-400">
                   {deal.cruiseLine} | {deal.shipName} | {deal.sailDateIso} | package {deal.packageId}
                 </p>
+                <p className="mt-1 break-all text-[11px] text-slate-500">id: {deal.id}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${deal.publishable ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200" : "border-rose-400/35 bg-rose-500/10 text-rose-200"}`}>
-                  {deal.publishable ? "homepage eligible" : "not public"}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-200">
-                  approval: {deal.approvalStatus}
-                </span>
-                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${deal.linkHealth === "valid" ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200" : "border-amber-400/35 bg-amber-500/10 text-amber-200"}`}>
-                  link: {deal.linkHealth}
-                </span>
                 {deal.pinned && (
                   <span className="rounded-full border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-200">
                     pinned
@@ -633,6 +1307,19 @@ export function DealCampaignWorkbench({
               >
                 Request operator CBAT capture
               </button>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => {
+                  if (!window.confirm(`Delete this Deal record?\n\nTitle: ${deal.title}\nPackage: ${deal.packageId}\nID: ${deal.id}\n\nThis deletes only the currently selected Deal record.`)) {
+                    return;
+                  }
+                  void call({ action: "delete", dealId: deal.id }, `${deal.id}:delete`);
+                }}
+                className="inline-flex h-8 items-center rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/20 disabled:opacity-50"
+              >
+                Delete Deal
+              </button>
             </div>
 
             {deal.agentOnlyNotes.length > 0 && (
@@ -643,10 +1330,232 @@ export function DealCampaignWorkbench({
               </ul>
             )}
 
+            <div className="mt-4 rounded-lg border border-fuchsia-400/20 bg-fuchsia-500/5 p-3">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-fuchsia-300">
+                    Pipeline handoff - generate ad and targeting angles
+                  </p>
+                  <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+                    Generate campaign angles from this selected sailing and attached promo intelligence, choose one,
+                    then continue in the stronger pipeline for copy and finalization.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <HandoffStatusBadge assessment={handoffAssessment} />
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => void generateAnglesForDeal(deal)}
+                    className="inline-flex h-9 items-center rounded-lg border border-fuchsia-300/40 bg-fuchsia-400/10 px-4 text-xs font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/20 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {busy === `${deal.id}:generate_angles` ? "Generating..." : "Generate angles"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      busy !== null ||
+                      !campaignAngle.trim() ||
+                      !targetAudience.trim() ||
+                      handoffAssessment.blockingIssues.length > 0
+                    }
+                    onClick={() => continueInPipeline(deal)}
+                    className="inline-flex h-9 items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-4 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {busy === `${deal.id}:send_to_pipeline` ? "Opening pipeline..." : "Continue in pipeline"}
+                  </button>
+                </div>
+              </div>
+
+              {angleStatus && <p className="mt-2 text-xs text-emerald-200">{angleStatus}</p>}
+
+              <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                  Promo selection for this selected deal
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Choose the promo for <span className="text-slate-200">{deal.cruiseLine}</span> here. This is
+                  separate from the assembly form above.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedDealVisiblePromoOptions.map((promo) => (
+                    <button
+                      key={`${deal.id}-${promo.id}`}
+                      type="button"
+                      onClick={() => toggleSelectedDealPromo(promo.id)}
+                      className={`rounded-full border px-3 py-1 text-xs transition ${
+                        selectedDealPromos.includes(promo.id)
+                          ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+                          : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
+                      }`}
+                    >
+                      {promo.vendor}: {promo.title}
+                    </button>
+                  ))}
+                  {selectedDealVisiblePromoOptions.length === 0 && (
+                    <p className="text-xs text-slate-500">
+                      No promo intelligence found for {deal.cruiseLine} yet.
+                    </p>
+                  )}
+                </div>
+                {selectedDealOtherPromoOptions.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPromos((value) => !value)}
+                      className="text-[11px] text-slate-500 underline decoration-dotted hover:text-slate-300"
+                    >
+                      {showAllPromos
+                        ? "Hide other cruise lines"
+                        : `Show ${selectedDealOtherPromoOptions.length} more from other cruise lines`}
+                    </button>
+                    {showAllPromos && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedDealOtherPromoOptions.map((promo) => (
+                          <button
+                            key={`${deal.id}-other-${promo.id}`}
+                            type="button"
+                            onClick={() => toggleSelectedDealPromo(promo.id)}
+                            className={`rounded-full border px-3 py-1 text-xs transition ${
+                              selectedDealPromos.includes(promo.id)
+                                ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+                                : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
+                            }`}
+                          >
+                            {promo.vendor}: {promo.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Inferred audience market
+                    </p>
+                    <p className="mt-1 text-xs text-slate-200">
+                      {formatMarketLabel(handoffAssessment.inferredAudienceMarket)}
+                    </p>
+                    {handoffAssessment.inferredAudienceEvidence.length > 0 && (
+                      <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                        {handoffAssessment.inferredAudienceEvidence.join(" ")}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Attached promos
+                    </p>
+                    {handoffAssessment.selectedPromoTitles.length > 0 ? (
+                      <ul className="mt-1 space-y-1 text-xs leading-5 text-slate-200">
+                        {handoffAssessment.selectedPromoTitles.map((title) => (
+                          <li key={`${deal.id}-${title}`}>- {title}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-400">
+                        None selected. The pipeline will build a no-promo manifest.
+                      </p>
+                    )}
+                    <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                      Matching cruise-line promos in workbench: {handoffAssessment.matchingCruiseLinePromoCount}
+                    </p>
+                  </div>
+                </div>
+
+                {handoffAssessment.warnings.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">
+                      Warnings
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-100">
+                      {handoffAssessment.warnings.map((warning, idx) => (
+                        <li key={`${deal.id}-handoff-warning-${idx}`}>- {warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {handoffAssessment.blockingIssues.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-rose-400/25 bg-rose-500/10 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-200">
+                      Blocking issues
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs leading-5 text-rose-100">
+                      {handoffAssessment.blockingIssues.map((warning, idx) => (
+                        <li key={`${deal.id}-handoff-block-${idx}`}>- {warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {angleOptions.length > 0 && (
+                <div className="mt-3 grid gap-2 lg:grid-cols-3">
+                  {angleOptions.map((option, idx) => {
+                    const selected = campaignAngle === option.campaignAngle;
+                    return (
+                      <button
+                        key={`${deal.id}-angle-${idx}`}
+                        type="button"
+                        onClick={() => applyAngleOption(option)}
+                        className={`rounded-lg border p-3 text-left transition ${
+                          selected
+                            ? "border-fuchsia-300/60 bg-fuchsia-400/15"
+                            : "border-white/10 bg-black/20 hover:border-fuchsia-300/40"
+                        }`}
+                      >
+                        <p className="text-xs font-semibold text-white">{option.campaignAngle}</p>
+                        <p className="mt-1 text-[11px] leading-4 text-slate-400">{option.targetAudience}</p>
+                        <p className="mt-2 text-[11px] leading-4 text-fuchsia-100">{option.rationale}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <Field label="Campaign angle / ad hook">
+                  <input
+                    className={inputClassName()}
+                    value={campaignAngle}
+                    onChange={(e) => setCampaignAngle(e.target.value)}
+                    placeholder="Generate options, then select or edit one"
+                  />
+                </Field>
+                <Field label="Target audience / targeting angle">
+                  <input
+                    className={inputClassName()}
+                    value={targetAudience}
+                    onChange={(e) => setTargetAudience(e.target.value)}
+                    placeholder="Buyer profile, household, or interest cluster"
+                  />
+                </Field>
+                <Field label="Visual angle">
+                  <input
+                    className={inputClassName()}
+                    value={visualAngle}
+                    onChange={(e) => setVisualAngle(e.target.value)}
+                    placeholder="Hero/ad imagery concept"
+                  />
+                </Field>
+                <Field label="Targeting keywords">
+                  <input
+                    className={inputClassName()}
+                    value={targetingKeywords}
+                    onChange={(e) => setTargetingKeywords(e.target.value)}
+                    placeholder="Comma separated keywords"
+                  />
+                </Field>
+              </div>
+            </div>
+
             {/* 2-5: Stage runners */}
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                2–5 · Run stages independently
+                2-5 - Run stages independently
               </p>
               <div className="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-6">
                 {STAGES.map((stage) => {
@@ -658,7 +1567,7 @@ export function DealCampaignWorkbench({
                     (stage.id === "ad_structure" && deal.hasAdStructure) ||
                     (stage.id === "media" && deal.hasMediaPlan);
 
-                  // Enforce the research → targeting → pitch → copy/ad/media
+                  // Enforce the research -> targeting -> pitch -> copy/ad/media
                   // sequence in the UI so prerequisites are never silently
                   // auto-generated out of order.
                   let prereqReason: string | null = null;
@@ -682,7 +1591,7 @@ export function DealCampaignWorkbench({
                       title={prereqReason ?? undefined}
                       onClick={() =>
                         void call(
-                          { action: "stage", dealId: deal.id, stage: stage.id, promoRecordIds: selectedPromos },
+                          { action: "stage", dealId: deal.id, stage: stage.id, promoRecordIds: selectedDealPromos },
                           key
                         )
                       }
@@ -691,7 +1600,7 @@ export function DealCampaignWorkbench({
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-white">{stage.label}</span>
                         <span className={`text-[10px] ${present ? "text-emerald-300" : "text-slate-500"}`}>
-                          {present ? "ready" : "—"}
+                          {present ? "ready" : "-"}
                         </span>
                       </div>
                       {stage.isPhase9B && (
@@ -714,20 +1623,61 @@ export function DealCampaignWorkbench({
                 })}
               </div>
 
-              {/* AI transparency: per-stage prompt + response (Visual Verification) */}
-              {deal.aiTraces.length > 0 && (
+              <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.025] p-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Review generated stage outputs
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Use this before deleting one of two similar Deal records.
+                  </p>
+                </div>
+                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  <StageReviewDrawer
+                    label="Trip research"
+                    ready={deal.hasAngleResearch}
+                    review={deal.stageReviews.research}
+                  />
+                  <StageReviewDrawer
+                    label="Targeting"
+                    ready={deal.hasTargetingDemographic}
+                    review={deal.stageReviews.targeting}
+                  />
+                  <StageReviewDrawer
+                    label="Sales pitch"
+                    ready={deal.hasPitchBrief}
+                    review={deal.stageReviews.pitch}
+                  />
+                  <StageReviewDrawer
+                    label="Deal copy"
+                    ready={deal.hasCopyPackage}
+                    review={deal.stageReviews.copy}
+                  />
+                  <StageReviewDrawer
+                    label="Ad structure"
+                    ready={deal.hasAdStructure}
+                    review={deal.stageReviews.adStructure}
+                  />
+                  <StageReviewDrawer
+                    label="Media plan"
+                    ready={deal.hasMediaPlan}
+                    review={deal.stageReviews.media}
+                  />
+                </div>
+              </div>
+
+              {/* AI transparency: show raw prompts only for actual model-generated stages. */}
+              {deal.aiTraces.some((trace) => trace.generator === "gpt") && (
                 <div className="mt-3 space-y-2">
-                  {deal.aiTraces.map((trace) => (
+                  {deal.aiTraces.filter((trace) => trace.generator === "gpt").map((trace) => (
                     <details
                       key={`${deal.id}-trace-${trace.stage}`}
                       className="rounded-lg border border-white/10 bg-black/20 p-2"
                     >
                       <summary className="cursor-pointer text-[11px] font-semibold text-slate-300">
-                        AI debug · {trace.stage}{" "}
+                        AI generation debug - {trace.stage}{" "}
                         <span className="text-slate-500">
-                          {trace.generator === "gpt"
-                            ? `(${trace.model ?? "gpt"}${trace.latencyMs != null ? ` · ${trace.latencyMs}ms` : ""})`
-                            : `(${trace.generator})`}
+                          ({trace.model ?? "gpt"}{trace.latencyMs != null ? ` - ${trace.latencyMs}ms` : ""})
                         </span>
                       </summary>
                       {trace.promptSent && (
@@ -761,21 +1711,21 @@ export function DealCampaignWorkbench({
                   {deal.pitchVoiceWarnings.length > 0 && (
                     <ul className="mt-2 space-y-1 text-[11px] leading-4 text-amber-200">
                       {deal.pitchVoiceWarnings.map((warning) => (
-                        <li key={warning}>⚠ {warning}</li>
+                        <li key={warning}>! {warning}</li>
                       ))}
                     </ul>
                   )}
                 </div>
               ) : (
                 <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-amber-200">
-                  No pitch brief yet — run the <span className="font-semibold">Sales pitch</span> stage before generating copy.
+                  No pitch brief yet - run the <span className="font-semibold">Sales pitch</span> stage before generating copy.
                 </div>
               )}
 
               {deal.publicCopyRedFlags.length > 0 && (
                 <ul className="mt-3 space-y-1 text-xs leading-5 text-amber-100">
                   {deal.publicCopyRedFlags.map((flag) => (
-                    <li key={flag}>⚠ {flag}</li>
+                    <li key={flag}>! {flag}</li>
                   ))}
                 </ul>
               )}
@@ -784,7 +1734,18 @@ export function DealCampaignWorkbench({
             {/* Booking URL */}
             <div className="mt-4 rounded-lg border border-blue-400/20 bg-blue-500/5 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-400">Booking URL</p>
-              <p className="mt-2 break-all text-xs font-mono text-blue-200">{deal.bookingUrl || "none"}</p>
+              {deal.bookingUrl ? (
+                <a
+                  href={deal.bookingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 block break-all text-xs font-mono text-blue-200 underline decoration-blue-300/60 underline-offset-4 transition hover:text-blue-100"
+                >
+                  {deal.bookingUrl}
+                </a>
+              ) : (
+                <p className="mt-2 break-all text-xs font-mono text-blue-200">none</p>
+              )}
               <p className="mt-2 text-[11px] leading-4 text-slate-400">
                 This is the link visitors will use to book. If blank, a constructed package link was created automatically. If filled, it's an operator-captured link from the cruise line's Share button.
               </p>
@@ -793,7 +1754,7 @@ export function DealCampaignWorkbench({
             {/* 6: Approval gate */}
             <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                6 · Approval &amp; publish gate
+                6 - Approval &amp; publish gate
               </p>
               <ul className="mt-2 space-y-1">
                 {deal.approvalGates.map((gate) => (
@@ -843,13 +1804,13 @@ export function DealCampaignWorkbench({
               </div>
               <p className="mt-2 text-[11px] leading-4 text-slate-500">
                 Approval only succeeds when every blocking gate passes. A valid booking link alone is never
-                enough — the operator must approve before the homepage can render this Deal.
+                enough - the operator must approve before the homepage can render this Deal.
               </p>
             </div>
           </div>
           ))}
-        </>
-      )}
+        </div>
+      ) : null}
     </div>
   );
 }

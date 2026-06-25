@@ -18,6 +18,7 @@
 import { rankPackageCandidates } from "../lib/cb/link-broker/package-lookup";
 import type { CruiseResult } from "../lib/services/odysseus/types";
 import type { LinkBrokerCruiseFacts } from "../lib/cb/link-broker";
+import { extractPackagePageCabinPricing } from "../lib/services/odysseus/package-page-pricing";
 
 let passed = 0;
 let failed = 0;
@@ -74,6 +75,21 @@ function makeResult(opts: {
 }
 
 console.log("Phase 6 - Odysseus package-lookup ranker\n");
+
+const packagePagePricing = extractPackagePageCabinPricing([
+  {
+    currencyCode: "USD",
+    items: [
+      { name: "Balcony", value: 2268 },
+      { name: "Inside", value: 1420 },
+      { code: "CruiseTax", value: 346.17 },
+      { code: "BalconyPortCharge", value: 315 },
+    ],
+  },
+]);
+check("package-page pricing captures cabin fares", packagePagePricing?.balcony === 2268);
+check("package-page pricing ignores taxes as cabin fares", packagePagePricing?.leadFare === 1420);
+check("package-page pricing ignores cabin-labeled port charges", packagePagePricing?.balcony === 2268);
 
 // --- Exact ship + sail date -> confident ---
 console.log("Exact ship + sail date:");

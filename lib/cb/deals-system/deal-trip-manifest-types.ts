@@ -108,6 +108,20 @@ export interface DealManifestLookupQuery {
 }
 
 /**
+ * Optional structured targeting hints carried with the manifest so later stages
+ * can build stronger platform targeting without re-guessing the operator's
+ * audience intent from freeform copy alone.
+ */
+export interface DealManifestTargetingSeeds {
+  inferredMarket?: string;
+  geoFocus: string[];
+  personaSignals: string[];
+  metaInterestSeeds: string[];
+  metaBehaviorSignals: string[];
+  excludedAudienceSignals: string[];
+}
+
+/**
  * The real, resolved package for this manifest. Under inventory-first Discovery the
  * packageId is already known from angle.groundedCandidate; resolving the booking link
  * for it (via the link broker) stamps this object on. Every field here comes from a
@@ -167,9 +181,11 @@ export interface DealTripManifest {
   manifestReasoning: string;
   /** What the operator pastes into Package Lookup to resolve packageId + link. */
   lookupQuery: DealManifestLookupQuery;
+  /** Optional structured audience hints for downstream targeting + ad routing. */
+  targetingSeeds?: DealManifestTargetingSeeds;
 
   /**
-   * Step 4 — Resolve. Written ONLY when the operator runs the lookupQuery
+   * Step 4 - Resolve. Written ONLY when the operator runs the lookupQuery
    * through the live Package Lookup and picks a real candidate. Never written
    * by the model.
    */

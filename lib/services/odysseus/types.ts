@@ -80,11 +80,25 @@ export type CruisePackage = z.infer<typeof CruisePackageSchema>;
 export type CruiseShipInfo = z.infer<typeof CruiseShipInfoSchema>;
 export type CruiseResult = z.infer<typeof CruiseResultSchema>;
 
+export interface PackagePageCabinPricing {
+    inside?: number;
+    outside?: number;
+    balcony?: number;
+    suite?: number;
+    currencyCode: string;
+    leadFare?: number;
+}
+
 export interface PackagePageSummary {
     packageId: string;
     cruiseLine?: string;
     shipName?: string;
     title?: string;
+    sailDateIso?: string;
+    nights?: number;
+    departurePortCode?: string;
+    portsOfCall?: string;
+    cabinPricing?: PackagePageCabinPricing;
 }
 
 // ── Itinerary detail (per-day schedule) ──────────────────────────────────────

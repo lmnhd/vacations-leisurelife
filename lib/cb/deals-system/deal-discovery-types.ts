@@ -74,6 +74,12 @@ export interface DealDiscoveryIdea {
   sourceResearchCachedAt?: string;
   /** The isolated niche identity this angle was derived from (Step 1). */
   isolatedNiche: string;
+  /** Internal rationale for why this angle deserves targeting attention. */
+  researchRationale?: string;
+  /** Commercial + psychological reason this angle should convert. */
+  successLogic?: string;
+  /** Concrete signals the downstream targeting system can mine for interests. */
+  audienceSignals?: string[];
   /** The direct-response sailing angle (Step 2 output). */
   sailingAngleProfile: SailingAngleProfile;
   /**

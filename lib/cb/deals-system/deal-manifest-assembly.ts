@@ -33,11 +33,16 @@ import type {
   DealPitchBrief,
 } from "./campaign-types";
 import { defaultDealExpiresOnIso, evaluateApprovalGates } from "./curated-deal-assembly";
-import type { DealAngleResearch, DealTargetingDemographic } from "./research-types";
+import type {
+  DealAngleResearch,
+  DealResearchCruiseCandidate,
+  DealTargetingDemographic,
+} from "./research-types";
 import {
   resolvedPackageShipName,
   resolveCruiseLineForPackage,
 } from "./ship-identity";
+import { generateDealTargetingDemographic } from "./targeting-demographic";
 
 export interface AssembleFromManifestInput {
   manifest: DealTripManifest;
@@ -226,62 +231,120 @@ function buildAngleResearch(manifest: DealTripManifest): DealAngleResearch {
   };
 }
 
-function buildTargetingDemographic(adCopy: DealAdCopy): DealTargetingDemographic {
+function buildResearchCandidate(manifest: DealTripManifest): DealResearchCruiseCandidate {
+  const facts = buildCruiseFacts(manifest);
+  const firstPort = facts.portsOfCall[0] ?? "";
+  return {
+    id: manifest.id,
+    cruiseLine: facts.cruiseLine,
+    shipName: facts.shipName,
+    itineraryName: facts.itineraryName,
+    destination: manifest.assembleDraft.destination || firstPort || facts.itineraryName,
+    nights: facts.nights,
+    sailDateIso: facts.sailDateIso,
+    departurePort: facts.departurePort,
+    portsOfCall: facts.portsOfCall,
+    shipFeatures: uniqueNonEmpty([manifest.assembleDraft.shipClassHint ?? "", facts.shipName]),
+    amenities: uniqueNonEmpty([manifest.assembleDraft.shipClassHint ?? ""]),
+  };
+}
+
+function buildTargetingDemographic(
+  manifest: DealTripManifest,
+  angleResearch: DealAngleResearch,
+  adCopy: DealAdCopy
+): DealTargetingDemographic {
   const first = adCopy.variants[0];
   const hooks = first?.adPlatformTargetingHooks;
-  return {
+  const candidate = buildResearchCandidate(manifest);
+  const base = generateDealTargetingDemographic({
     dealId: "",
     packageId: "",
+    candidate,
+    angleResearch,
+    generatedAtIso: adCopy.generatedAtIso,
+  });
+  const adInterestKeywords = uniqueNonEmpty(
+    adCopy.variants.flatMap((variant) => variant.adPlatformTargetingHooks.interestKeywords ?? [])
+  );
+  const adHeadlines = uniqueNonEmpty(adCopy.variants.map((variant) => variant.headline));
+  const voiceWarnings = uniqueNonEmpty(adCopy.variants.flatMap((variant) => variant.voiceWarnings));
+  const targetingSeeds = manifest.targetingSeeds;
+  const personaSignals = targetingSeeds?.personaSignals ?? [];
+  const geoSignals = targetingSeeds?.geoFocus ?? [];
+  const seedInterests = targetingSeeds?.metaInterestSeeds ?? [];
+  const seedBehaviors = targetingSeeds?.metaBehaviorSignals ?? [];
+  const excludedAudienceSignals = targetingSeeds?.excludedAudienceSignals ?? [];
+
+  return {
+    ...base,
     generatedAtIso: adCopy.generatedAtIso,
     primaryAudience: {
-      label: adCopy.targetAudienceTag,
-      description: hooks?.demographicTargeting ?? "",
-      whyThisCruiseFits: adCopy.campaignName,
-      emotionalDrivers: [],
-      likelyObjections: [],
+      ...base.primaryAudience,
+      label: adCopy.targetAudienceTag || base.primaryAudience.label,
+      description: hooks?.demographicTargeting || base.primaryAudience.description,
     },
-    secondaryAudiences: [],
     nicheKeywords: {
-      lifestyle: hooks?.interestKeywords ?? [],
-      destination: [],
-      shipExperience: [],
-      amenities: [],
-      eventsAndSeasonality: [],
-      trendSignals: [],
-      exclusionKeywords: [],
+      ...base.nicheKeywords,
+      lifestyle: uniqueNonEmpty([
+        ...personaSignals,
+        ...adInterestKeywords,
+        ...base.nicheKeywords.lifestyle,
+      ]).slice(0, 18),
+      destination: uniqueNonEmpty([...geoSignals, ...base.nicheKeywords.destination]).slice(0, 18),
     },
     channelTargeting: {
+      ...base.channelTargeting,
       meta: {
-        interestClusters: hooks?.interestKeywords ?? [],
-        behaviorSignals: [],
-        creativeHooks: adCopy.variants.map((v) => v.headline),
-        audienceWarnings: adCopy.variants.flatMap((v) => v.voiceWarnings),
+        ...base.channelTargeting.meta,
+        interestClusters: uniqueNonEmpty([
+          ...seedInterests,
+          ...personaSignals,
+          ...adInterestKeywords,
+          ...base.channelTargeting.meta.interestClusters,
+          ...geoSignals,
+        ]).slice(0, 18),
+        behaviorSignals: uniqueNonEmpty([
+          ...seedBehaviors,
+          ...base.channelTargeting.meta.behaviorSignals,
+        ]).slice(0, 10),
+        creativeHooks: uniqueNonEmpty([
+          ...adHeadlines,
+          ...base.channelTargeting.meta.creativeHooks,
+        ]).slice(0, 8),
+        audienceWarnings: uniqueNonEmpty([
+          ...base.channelTargeting.meta.audienceWarnings,
+          ...excludedAudienceSignals,
+          ...voiceWarnings,
+        ]),
       },
       google: {
-        searchThemes: hooks?.interestKeywords ?? [],
-        keywordIdeas: hooks?.interestKeywords ?? [],
-        negativeKeywords: [],
-        landingPageIntentNotes: [],
-      },
-      tiktok: {
-        creatorAngles: [],
-        trendHooks: [],
-        shortVideoConcepts: [],
+        ...base.channelTargeting.google,
+        searchThemes: uniqueNonEmpty([
+          ...seedInterests,
+          ...adInterestKeywords,
+          ...base.channelTargeting.google.searchThemes,
+        ]).slice(0, 20),
+        keywordIdeas: uniqueNonEmpty([
+          ...personaSignals,
+          ...geoSignals,
+          ...adInterestKeywords,
+          ...base.channelTargeting.google.keywordIdeas,
+        ]).slice(0, 24),
       },
       email: {
-        segmentIdeas: [],
-        subjectLineAngles: adCopy.variants.map((v) => v.headline),
-        personalizationNotes: [],
+        ...base.channelTargeting.email,
+        subjectLineAngles: uniqueNonEmpty([
+          ...adHeadlines,
+          ...base.channelTargeting.email.subjectLineAngles,
+        ]).slice(0, 8),
       },
     },
     researchSummary: {
-      primaryInsight: adCopy.campaignName,
-      whyNow: "",
-      competitorBlindSpot: "",
+      ...base.researchSummary,
+      primaryInsight: first?.headline ?? adCopy.campaignName,
       positioningStatement: adCopy.campaignName,
     },
-    sources: [],
-    confidence: { score: 0.75, strengths: [], risks: [], needsHumanReview: [] },
   };
 }
 
@@ -397,7 +460,7 @@ export function assembleCuratedDealFromManifest(
   adStructure.packageId = packageId;
 
   const angleResearch = buildAngleResearch(manifest);
-  const targetingDemographic = buildTargetingDemographic(adCopy);
+  const targetingDemographic = buildTargetingDemographic(manifest, angleResearch, adCopy);
   targetingDemographic.dealId = dealId;
   targetingDemographic.packageId = packageId;
 

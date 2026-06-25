@@ -11,13 +11,40 @@ import * as fs from "fs";
 import { DEALS_CACHE_PATHS, emptyDealUnifiedManifestsCache } from "./caches";
 import type { DealDiscoveryIdea } from "./deal-discovery-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
+import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import type {
   DealUnifiedManifest,
   DealUnifiedManifestsCache,
+  DealUnifiedPromotionBrief,
 } from "./deal-unified-manifest-types";
 import { validateDealUnifiedManifestsCache } from "./validate";
 
 const CACHE_PATH = DEALS_CACHE_PATHS.dealUnifiedManifests;
+
+function buildPromotionBrief(
+  record: CbPromoIntelligenceRecord
+): DealUnifiedPromotionBrief {
+  return {
+    promoRecordId: record.id,
+    title: record.title,
+    vendor: record.vendor,
+    bookingWindow: record.bookingWindow.rawText,
+    sailingWindow: record.sailingWindow.rawText,
+    offerTypes: record.extracted.offerTypes,
+    publicClaimsAllowed: record.marketingUse.publicClaimsAllowed,
+    publicClaimsNeedsQualifier: record.marketingUse.publicClaimsNeedsQualifier,
+    visitorFriendlySummary: record.marketingUse.visitorFriendlySummary,
+    suggestedAngles: record.marketingUse.suggestedAngles,
+    cautionFlags: record.marketingUse.cautionFlags,
+    percentDiscounts: record.extracted.percentDiscounts,
+    dollarSavings: record.extracted.dollarSavings,
+    onboardCredits: record.extracted.onboardCredits,
+    freeGuestOffers: record.extracted.freeGuestOffers,
+    exclusions: record.extracted.exclusions,
+    applicableProducts: record.extracted.applicableProducts,
+    applicableMarkets: record.extracted.applicableMarkets,
+  };
+}
 
 /**
  * Stitch a discovery angle + its trip manifest into a unified manifest. Pure — both
@@ -26,9 +53,25 @@ const CACHE_PATH = DEALS_CACHE_PATHS.dealUnifiedManifests;
 export function assembleDealUnifiedManifest(
   angle: DealDiscoveryIdea,
   tripManifest: DealTripManifest,
-  options: { generatedAtIso?: string } = {}
+  options: {
+    generatedAtIso?: string;
+    promoRecords?: CbPromoIntelligenceRecord[];
+  } = {}
 ): DealUnifiedManifest {
   const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
+  const applicablePromoIds = new Set(
+    tripManifest.appliedPromos
+      .filter(
+        (promo) =>
+          promo.status === "likely_applicable" ||
+          promo.status === "possibly_applicable_needs_review"
+      )
+      .map((promo) => promo.promoRecordId)
+  );
+  const promotionBriefs = (options.promoRecords ?? [])
+    .filter((record) => applicablePromoIds.has(record.id))
+    .map(buildPromotionBrief);
+
   return {
     id: `unified-${tripManifest.id}`,
     generatedAtIso,
@@ -38,12 +81,17 @@ export function assembleDealUnifiedManifest(
     sailingAngleTitle: angle.sailingAngleProfile.sailingAngleTitle,
     creativeBrief: {
       isolatedNiche: angle.isolatedNiche,
+      researchRationale: angle.researchRationale,
+      successLogic: angle.successLogic,
+      audienceSignals: angle.audienceSignals,
       angle: angle.sailingAngleProfile,
     },
     inventoryManifest: {
       assembleDraft: tripManifest.assembleDraft,
       lookupQuery: tripManifest.lookupQuery,
+      targetingSeeds: tripManifest.targetingSeeds,
       appliedPromos: tripManifest.appliedPromos,
+      promotionBriefs,
       promoStrategy: tripManifest.promoStrategy,
       manifestReasoning: tripManifest.manifestReasoning,
     },

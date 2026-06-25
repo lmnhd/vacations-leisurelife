@@ -108,7 +108,7 @@ const adCopySchema = z.object({
 const SYSTEM_PROMPT = `You are an elite, direct-response direct-to-consumer (DTC) copywriting agent. Your sole purpose is to synthesize a hyper-targeted Creative Brief with live Inventory/Promotional data to write high-converting retail ad copy.
 
 ### INPUTS TO PROCESS:
-1. {{CREATIVE_BRIEF_JSON}}: Contains the isolated niche, core question answer, insider vocabulary, visual anchor, and target audience data.
+1. {{CREATIVE_BRIEF_JSON}}: Contains the isolated niche, core question answer, insider vocabulary, visual anchor, target audience data, and any attached internal targeting rationale / audience signals.
 2. {{INVENTORY_MANIFEST_JSON}}: Contains the live cruise line, ship class, itinerary, dates, promotions, and critical booking window deadlines.
 
 ### STRICT AD COPY RULES:
@@ -117,6 +117,8 @@ const SYSTEM_PROMPT = `You are an elite, direct-response direct-to-consumer (DTC
 3. NO MASS-GROUP OR ISOLATED TRAVELER TRAPS: Pitch this as a self-contained retail vacation for an individual, a couple, or a single household. Do not use terms like "group cruise," "organized meetups," "clubs," or "mass gatherings." Never alienate travelers who may want to bring a spouse or partner, but keep the core focus on the personal passion.
 4. BANNED TRAVEL-AGENT PLATITUDES: You are strictly forbidden from using generic industry buzzwords. Ban these words completely: "paradise", "escape", "unwind", "cruising", "hidden gem", "luxury for less", "magnificent", "breathtaking".
 5. INTEGRATE THE PROMO LEGALLY & LIFESTYLE-WISE:
+   - If promotionBriefs contains an applicable promotion, the primary variant MUST use it. "none" is forbidden for the primary variant in that case.
+   - Use the supplied public claims and qualifiers. Never claim that no promotion or onboard credit applies when a promotion brief is present.
    - Translate generic incentives into the subculture's lifestyle (e.g., reframe Onboard Credit as a specific lifestyle subsidy matching their props/hobbies).
    - Append mandatory, clear-cut discretionary disclaimers at the bottom of the body copy regarding select sailings, stateroom dependencies, and live lookup availability to protect the platform.
 
@@ -129,6 +131,9 @@ Return a single valid JSON object: campaignName, targetAudienceTag, primaryPromo
 function buildPrompt(unified: DealUnifiedManifest, variantCount: number): string {
   const brief = {
     isolatedNiche: unified.creativeBrief.isolatedNiche,
+    researchRationale: unified.creativeBrief.researchRationale,
+    successLogic: unified.creativeBrief.successLogic,
+    audienceSignals: unified.creativeBrief.audienceSignals,
     ...unified.creativeBrief.angle,
   };
   const inventory = unified.inventoryManifest;
@@ -141,6 +146,7 @@ ${JSON.stringify(
       assembleDraft: inventory.assembleDraft,
       lookupQuery: inventory.lookupQuery,
       appliedPromos: inventory.appliedPromos,
+      promotionBriefs: inventory.promotionBriefs,
       promoStrategy: inventory.promoStrategy,
       manifestReasoning: inventory.manifestReasoning,
     },
@@ -170,6 +176,19 @@ export async function generateDealAdCopy(
   const { unifiedManifest } = options;
   const variantCount = Math.min(Math.max(options.variantCount ?? 2, 1), 5);
   const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
+  const applicablePromos = unifiedManifest.inventoryManifest.appliedPromos.filter(
+    (promo) =>
+      promo.status === "likely_applicable" ||
+      promo.status === "possibly_applicable_needs_review"
+  );
+  const promotionBriefs =
+    unifiedManifest.inventoryManifest.promotionBriefs ?? [];
+
+  if (applicablePromos.length > 0 && promotionBriefs.length === 0) {
+    throw new Error(
+      "Applicable promotion ids are attached, but their promotion records could not be loaded. Refresh promotion intelligence before writing ad copy."
+    );
+  }
 
   const prompt = buildPrompt(unifiedManifest, variantCount);
   const startedAt = Date.now();
@@ -193,7 +212,7 @@ export async function generateDealAdCopy(
   // Promo ids the copywriter may reference: those in the unified manifest + "none".
   const allowedPromoIds = new Set([
     "none",
-    ...unifiedManifest.inventoryManifest.appliedPromos.map((p) => p.promoRecordId),
+    ...promotionBriefs.map((promo) => promo.promoRecordId),
   ]);
   const rejectedPromoIds: string[] = [];
 
@@ -218,6 +237,34 @@ export async function generateDealAdCopy(
   const primaryPromoApplied = allowedPromoIds.has(result.object.primaryPromoApplied)
     ? result.object.primaryPromoApplied
     : variants[0]?.promoApplied ?? "none";
+
+  if (
+    promotionBriefs.length > 0 &&
+    (primaryPromoApplied === "none" || variants[0]?.promoApplied === "none")
+  ) {
+    throw new Error(
+      "The copywriter omitted the attached promotion from the primary ad variant. No ad copy was saved."
+    );
+  }
+
+  const falseNoPromoPhrases = [
+    "no promotion",
+    "no promotional",
+    "no onboard credit",
+    "no special offer",
+    "no special promotion",
+  ];
+  if (
+    promotionBriefs.length > 0 &&
+    variants.some((variant) => {
+      const publicCopy = `${variant.bodyCopy} ${variant.pricingDisclaimers}`.toLowerCase();
+      return falseNoPromoPhrases.some((phrase) => publicCopy.includes(phrase));
+    })
+  ) {
+    throw new Error(
+      "The copywriter contradicted the attached promotion by claiming no offer applies. No ad copy was saved."
+    );
+  }
 
   const adCopy: DealAdCopy = {
     id: `adcopy-${slugify(`${result.object.campaignName}-${unifiedManifest.sourceManifestId}`) || unifiedManifest.id}`,

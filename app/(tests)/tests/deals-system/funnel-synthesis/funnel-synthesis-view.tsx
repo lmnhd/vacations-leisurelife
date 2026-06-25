@@ -10,6 +10,7 @@ import {
   type DealFunnelSynthesis,
   type DealImageCandidate,
   type DealImageCategory,
+  type DealLandingSegmentKey,
   type DealLandingSegment,
 } from "@/lib/cb/deals-system/deal-page-design-types";
 
@@ -216,12 +217,17 @@ function ImageThumb({
   synthesis,
   onToggleGallery,
   onPickHero,
+  onAssignLandingImage,
   busy,
 }: {
   c: DealImageCandidate;
   synthesis: DealFunnelSynthesis;
   onToggleGallery: (id: string) => void;
   onPickHero: (id: string) => void;
+  onAssignLandingImage: (
+    id: string,
+    target: "hero" | DealLandingSegmentKey
+  ) => void;
   busy: boolean;
 }) {
   const inGallery = synthesis.galleryIds.includes(c.id);
@@ -245,13 +251,31 @@ function ImageThumb({
           type="button"
           disabled={busy}
           onClick={() => onPickHero(c.id)}
-          className={`absolute bottom-0.5 left-0.5 rounded px-1 text-[9px] font-bold transition ${
+          className={`absolute left-1 top-1 rounded px-1.5 py-0.5 text-[9px] font-bold shadow-sm transition ${
             isHero ? "bg-amber-400 text-black" : "bg-black/70 text-slate-200 hover:bg-black/90"
           }`}
         >
           {isHero ? "★ hero" : "hero?"}
         </button>
       )}
+      <select
+        aria-label={`Use ${c.title ?? "image"} on landing page`}
+        disabled={busy}
+        value=""
+        onChange={(event) => {
+          const target = event.target.value as "hero" | DealLandingSegmentKey;
+          if (target) onAssignLandingImage(c.id, target);
+        }}
+        className="mt-1.5 h-7 w-full rounded border border-white/10 bg-slate-950 px-1 text-[9px] text-slate-200 outline-none transition hover:border-cyan-300/40 disabled:opacity-50"
+      >
+        <option value="">Use on page...</option>
+        <option value="hero">Hero image</option>
+        {synthesis.landingPage.segments.map((segment) => (
+          <option key={segment.segment} value={segment.segment}>
+            {segment.heading}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -260,12 +284,17 @@ function ImageSetPanel({
   synthesis,
   onToggleGallery,
   onPickHero,
+  onAssignLandingImage,
   onSearchMore,
   busy,
 }: {
   synthesis: DealFunnelSynthesis;
   onToggleGallery: (id: string) => void;
   onPickHero: (id: string) => void;
+  onAssignLandingImage: (
+    id: string,
+    target: "hero" | DealLandingSegmentKey
+  ) => void;
   /** category omitted = re-search the whole diversified pool. */
   onSearchMore: (category?: DealImageCategory) => void;
   busy: boolean;
@@ -336,6 +365,7 @@ function ImageSetPanel({
                         synthesis={synthesis}
                         onToggleGallery={onToggleGallery}
                         onPickHero={onPickHero}
+                        onAssignLandingImage={onAssignLandingImage}
                         busy={busy}
                       />
                     ))}
@@ -614,6 +644,24 @@ export function FunnelSynthesisView({
     void selectImages({ galleryIds: next, heroImageId });
   }
 
+  function assignLandingImage(
+    id: string,
+    target: "hero" | DealLandingSegmentKey
+  ) {
+    if (!active) return;
+    const galleryIds = active.galleryIds.includes(id)
+      ? active.galleryIds
+      : [...active.galleryIds, id];
+    if (target === "hero") {
+      void selectImages({ galleryIds, heroImageId: id });
+      return;
+    }
+    void selectImages({
+      galleryIds,
+      segmentImageIds: { [target]: id },
+    });
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -746,6 +794,7 @@ export function FunnelSynthesisView({
               busy={busy}
               onToggleGallery={toggleGallery}
               onPickHero={(id) => void selectImages({ heroImageId: id })}
+              onAssignLandingImage={assignLandingImage}
               onSearchMore={(category) => void searchMore(category)}
             />
           </div>

@@ -75,6 +75,37 @@ function SectionHeading({ children, center }: { children: React.ReactNode; cente
 }
 
 // ── Itinerary calendar ──────────────────────────────────────────────────────
+function BookNowQuickLink({ center }: { center?: boolean }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: center ? "center" : "flex-start",
+        margin: center ? "28px 0 20px" : "8px 0 18px",
+      }}
+    >
+      <a
+        href="#book-now"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 7,
+          color: C.gold,
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textDecoration: "none",
+          textTransform: "uppercase",
+          borderBottom: `1px solid ${C.goldRule}`,
+          paddingBottom: 3,
+        }}
+      >
+        Book now <span aria-hidden="true">&darr;</span>
+      </a>
+    </div>
+  );
+}
+
 type ItineraryDayRow = {
   label: string;
   text: string;
@@ -287,6 +318,15 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
         />
         <div
           style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(90deg, rgba(7,22,32,0.72) 0%, rgba(7,22,32,0.58) 28%, rgba(7,22,32,0.24) 54%, rgba(7,22,32,0) 78%)",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
             position: "relative",
             width: "100%",
             maxWidth: 1160,
@@ -304,6 +344,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               color: C.goldLight,
+              textShadow: "0 2px 12px rgba(0,0,0,0.72)",
             }}
           >
             {page.eyebrow}
@@ -318,6 +359,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               letterSpacing: "-0.01em",
               maxWidth: "19ch",
               textWrap: "balance",
+              textShadow: "0 3px 20px rgba(0,0,0,0.78), 0 1px 2px rgba(0,0,0,0.9)",
             }}
           >
             {hero.headline}
@@ -329,6 +371,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               lineHeight: 1.55,
               maxWidth: "54ch",
               color: "rgba(250,247,242,0.88)",
+              textShadow: "0 2px 12px rgba(0,0,0,0.82)",
             }}
           >
             {hero.subhead}
@@ -340,7 +383,13 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               primaryLabel={cta}
                     tone="hero"
             />
-            <span style={{ fontSize: 15, color: "rgba(250,247,242,0.85)" }}>
+            <span
+              style={{
+                fontSize: 15,
+                color: "rgba(250,247,242,0.9)",
+                textShadow: "0 2px 10px rgba(0,0,0,0.82)",
+              }}
+            >
               {page.fromPriceLabel ? (
                 <>
                   Fares from{" "}
@@ -365,6 +414,8 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     color: "rgba(250,247,242,0.92)",
+                    background: "rgba(8,23,33,0.18)",
+                    boxShadow: "0 4px 18px rgba(0,0,0,0.12)",
                   }}
                 >
                   {chip}
@@ -509,6 +560,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
                 </div>
               );
             })}
+            <BookNowQuickLink center />
           </div>
         </section>
       )}
@@ -635,84 +687,9 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               </div>
             </div>
           )}
+          <BookNowQuickLink center />
         </section>
       )}
-
-      {/* ============ PRICING ============ */}
-      <section id="pricing" style={{ padding: "clamp(72px, 9vw, 120px) 24px", boxSizing: "border-box" }}>
-        <div data-reveal="1" style={{ maxWidth: 760, margin: "0 auto" }}>
-          <Eyebrow center>Fares</Eyebrow>
-          <SectionHeading center>Choose your cabin</SectionHeading>
-          {pricing.kind === "table" ? (
-            <>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>
-                {pricing.rows.map((row, i) => (
-                  <div
-                    key={row.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      justifyContent: "space-between",
-                      gap: 16,
-                      padding: "20px 28px",
-                      background: row.lead ? C.priceRow : undefined,
-                      borderTop: i === 0 ? undefined : `1px solid ${C.border}`,
-                    }}
-                  >
-                    <span style={{ fontSize: 17, fontWeight: 600, color: C.navy }}>
-                      {row.label}
-                      {row.lead && (
-                        <span
-                          style={{
-                            marginLeft: 10,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: C.gold,
-                          }}
-                        >
-                          Lead fare
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: row.lead ? 20 : 18,
-                        fontWeight: row.lead ? 600 : 400,
-                        color: row.lead ? C.navy : C.text,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {row.price}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p style={{ margin: "16px 0 0", fontSize: 13, color: C.muted, textAlign: "center" }}>{pricing.footnote}</p>
-            </>
-          ) : (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "44px 32px", textAlign: "center" }}>
-              <p style={{ margin: "0 0 10px", fontFamily: serif, fontSize: 26, fontWeight: 600, color: C.navy }}>
-                Fares for this sailing are confirmed live
-              </p>
-              <p style={{ margin: "0 auto", maxWidth: "46ch", fontSize: 16, lineHeight: 1.65, color: C.muted }}>
-                Pricing for this voyage hasn&rsquo;t been published yet. Current fares and availability resolve the moment
-                you check &mdash; no obligation.
-              </p>
-            </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-            <DealCtaActions
-              dealId={dealId}
-              bookingUrl={page.bookingUrl}
-              primaryLabel={cta}
-                    tone="light"
-              align="center"
-            />
-          </div>
-        </div>
-      </section>
 
       {/* ============ SPECIALS / OFFER ============ */}
       {specials.length > 0 && (
@@ -816,13 +793,91 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
         </section>
       )}
 
+      {/* ============ PRICING ============ */}
+      <section id="pricing" style={{ padding: "clamp(72px, 9vw, 120px) 24px", boxSizing: "border-box" }}>
+        <div data-reveal="1" style={{ maxWidth: 760, margin: "0 auto" }}>
+          <Eyebrow center>Fares</Eyebrow>
+          <SectionHeading center>Choose your cabin</SectionHeading>
+          {pricing.kind === "table" ? (
+            <>
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden" }}>
+                {pricing.rows.map((row, i) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      padding: "20px 28px",
+                      background: row.lead ? C.priceRow : undefined,
+                      borderTop: i === 0 ? undefined : `1px solid ${C.border}`,
+                    }}
+                  >
+                    <span style={{ fontSize: 17, fontWeight: 600, color: C.navy }}>
+                      {row.label}
+                      {row.lead && (
+                        <span
+                          style={{
+                            marginLeft: 10,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            color: C.gold,
+                          }}
+                        >
+                          Lead fare
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: row.lead ? 20 : 18,
+                        fontWeight: row.lead ? 600 : 400,
+                        color: row.lead ? C.navy : C.text,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.price}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p style={{ margin: "16px 0 0", fontSize: 13, color: C.muted, textAlign: "center" }}>{pricing.footnote}</p>
+            </>
+          ) : (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "44px 32px", textAlign: "center" }}>
+              <p style={{ margin: "0 0 10px", fontFamily: serif, fontSize: 26, fontWeight: 600, color: C.navy }}>
+                Fares for this sailing are confirmed live
+              </p>
+              <p style={{ margin: "0 auto", maxWidth: "46ch", fontSize: 16, lineHeight: 1.65, color: C.muted }}>
+                Pricing for this voyage hasn&rsquo;t been published yet. Current fares and availability resolve the moment
+                you check &mdash; no obligation.
+              </p>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+            <DealCtaActions
+              dealId={dealId}
+              bookingUrl={page.bookingUrl}
+              primaryLabel={cta}
+              tone="light"
+              align="center"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ============ CTA BLOCK ============ */}
       <section
+        id="book-now"
         style={{
           background: C.navy,
           color: C.cream,
           padding: "clamp(88px, 11vw, 140px) 24px",
           boxSizing: "border-box",
+          scrollMarginTop: 24,
           textAlign: "center",
         }}
       >

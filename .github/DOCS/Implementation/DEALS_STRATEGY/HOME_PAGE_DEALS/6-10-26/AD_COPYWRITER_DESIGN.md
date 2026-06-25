@@ -129,9 +129,24 @@ no-selection ad copy is a no-op (defaults to the primary the model wrote first).
 
 ## Guardrails enforced in code (not just the prompt)
 
+- **Promotion context snapshot.** The unified manifest includes `promotionBriefs`
+  for every applicable promo. Each brief carries public-safe claims, required
+  qualifiers, booking and sailing windows, structured discount/OBC tiers,
+  exclusions, suggested angles, and caution flags. The copywriter is never asked
+  to infer an offer from a promo id alone.
+- **Promo-backed campaigns fail closed.** If an applicable promo is attached but
+  its source record cannot be loaded, Step 3 stops before generation. When a
+  promotion brief is present, the primary variant must use that promo and may not
+  claim that no promotion or onboard credit applies.
+- **Workbench handoff preflight.** The Campaign Workbench now assesses the
+  selected promo set before handing a sailing into Step 3. It surfaces whether
+  the handoff will be no-promo, whether promo markets are unknown, and blocks
+  obvious market mismatches such as a United Kingdom / Southampton angle paired
+  with a US-only promotion. That keeps bad manifests out of the copywriter
+  instead of relying on Step 3 to discover the problem after generation.
 - **Banned-vocabulary scan.** `validateAdCopyVoice` regex-scans every variant's
   headline / bodyCopy / callToAction for the banned terms and writes any hits to
-  `voiceWarnings`. It is **surfaced, never auto-fixed** — consistent with
+  `voiceWarnings`. It is **surfaced, never auto-fixed** - consistent with
   `validateSailingAngleProfile` (Step 1) and the manifest no-fabrication checks (Step 2).
 - **Promo-id hallucination drop.** Allowed promo ids = the unified manifest's
   `appliedPromos` plus the literal `"none"`. Any `promoApplied` the model invents is

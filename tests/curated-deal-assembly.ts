@@ -13,6 +13,7 @@
 import {
   approveCuratedDeal,
   assembleCuratedDeal,
+  assembleCuratedDealFromManifest,
   defaultDealExpiresOnIso,
   evaluateApprovalGates,
   isDealExpired,
@@ -23,6 +24,8 @@ import {
   type AssembleCuratedDealInput,
   type CbPromoIntelligenceRecord,
   type CuratedOdysseusDeal,
+  type DealAdCopy,
+  type DealTripManifest,
 } from "../lib/cb/deals-system";
 import { installDealsAiStub } from "./deals-ai-stub";
 
@@ -111,6 +114,107 @@ const promoRecord: CbPromoIntelligenceRecord = {
   diagnostics: { status: "succeeded", notes: [], warnings: [] },
 };
 
+const manifestAssemblyManifest: DealTripManifest = {
+  id: "manifest-workbench-alaska-edge",
+  generatedAtIso: GEN_AT,
+  generator: "gpt",
+  sourceAngleId: "angle-workbench-alaska-edge",
+  isolatedNiche: "Luxury Alaska suite shoppers",
+  sailingAngleTitle: "Suite-level Alaska glacier play",
+  assembleDraft: {
+    suggestedDealId: "deal-alaska-edge",
+    suggestedBriefId: "brief-alaska-edge",
+    cruiseLine: "Celebrity Cruises",
+    itineraryName: "7 Night Alaska Dawes Glacier Cruise",
+    destination: "Alaska",
+    nights: 7,
+    sailWindow: {
+      earliestIso: "2026-07-24",
+      latestIso: "2026-07-24",
+      rationale: "Exact sailing selected by operator.",
+    },
+    departurePortHint: "Seattle",
+    portsOfCall: ["Ketchikan", "Endicott Arm & Dawes Glacier", "Juneau", "Skagway"],
+    shipClassHint: "Celebrity Edge",
+  },
+  appliedPromos: [],
+  promoStrategy: "Lead with the July Summer Sale suite perks where supportable.",
+  manifestReasoning:
+    "Created from an operator-selected Alaska sailing for suite buyers who care about glacier viewing and premium ship comfort.",
+  lookupQuery: {
+    line: "Celebrity Cruises",
+    ship: "Celebrity Edge",
+    destination: "Alaska",
+    date: "2026-07-24",
+    nights: 7,
+    port: "Seattle",
+    windowDays: 0,
+  },
+  targetingSeeds: {
+    inferredMarket: "US",
+    geoFocus: ["Seattle", "Pacific Northwest travel", "Alaska travel"],
+    personaSignals: ["suite shoppers", "premium cruise travelers", "milestone travel planners"],
+    metaInterestSeeds: ["Alaska travel", "Celebrity Cruises", "Sky Suite", "Seattle departures"],
+    metaBehaviorSignals: ["responds to limited-time travel offers", "compares premium vacation value"],
+    excludedAudienceSignals: ["Avoid broad cruise-interest targeting as the only audience."],
+  },
+  resolvedPackage: {
+    resolvedAtIso: GEN_AT,
+    source: "operator_package_lookup",
+    packageId: "1543052",
+    cruiseName: "7 Night Alaska Dawes Glacier Cruise",
+    cruiseLine: "Celebrity Cruises",
+    shipName: "Celebrity Edge",
+    sailDateIso: "2026-07-24",
+    nights: 7,
+    departurePortCode: "Seattle",
+    confidence: 1,
+    reasons: ["Operator selected the exact package."],
+    siid: "1049337",
+    bookingUrl: "https://bookings.cbagenttools.com/swift/cruise/package/1543052?siid=1049337&lang=1",
+    bookingLinkClass: "constructed_package_url",
+    linkHealth: { status: "unknown", failureReason: "Not yet validated." },
+    cabinPricing: {
+      suite: 4899,
+      balcony: 2399,
+      currencyCode: "USD",
+    },
+    itinerary: {
+      durationNights: 7,
+      departurePortCode: "Seattle",
+      portsOfCall: "Seattle | Ketchikan | Endicott Arm & Dawes Glacier | Juneau | Skagway",
+      normalizedPortsOfCall: "Seattle, Ketchikan, Endicott Arm & Dawes Glacier, Juneau, Skagway",
+    },
+    lookupDiagnostics: ["Resolved from workbench handoff."],
+  },
+};
+
+const manifestAssemblyAdCopy: DealAdCopy = {
+  id: "adcopy-alaska-edge",
+  generatedAtIso: GEN_AT,
+  generator: "gpt",
+  sourceUnifiedManifestId: "unified-manifest-workbench-alaska-edge",
+  campaignName: "See Dawes Glacier from Celebrity Edge",
+  targetAudienceTag: "Couples aged 40-65 seeking premium Alaska cruise experiences",
+  primaryPromoApplied: "none",
+  variants: [
+    {
+      promoApplied: "none",
+      variantLabel: "Primary retail play",
+      headline: "Sky Suite. Dawes Glacier. July 24.",
+      bodyCopy:
+        "Your private veranda when Edge noses into Endicott Arm - no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.",
+      pricingDisclaimers: "Fares vary by cabin and availability. Confirm live pricing before booking.",
+      callToAction: "Check availability",
+      adPlatformTargetingHooks: {
+        demographicTargeting: "Adults 40-65 with high household income who respond to premium cruise and milestone-travel messaging.",
+        interestKeywords: ["Celebrity Cruises", "Celebrity Edge", "Alaska cruise", "Sky Suite", "Seattle cruise"],
+      },
+      voiceWarnings: [],
+    },
+  ],
+};
+
 async function main(): Promise<void> {
 console.log("Phase 9 / 9A - Curated Deal assembly + approval gate\n");
 
@@ -179,6 +283,38 @@ check(
     ["book_now", "email_link", "request_callback"].every((kind) =>
       deal.copyPackage?.ctaCopy.some((c) => c.kind === kind)
     )
+);
+
+console.log("\nManifest assembly targeting:");
+const assembledFromManifest = assembleCuratedDealFromManifest({
+  manifest: manifestAssemblyManifest,
+  adCopy: manifestAssemblyAdCopy,
+});
+check(
+  "manifest assembly keeps Meta interest hooks from ad copy",
+  (assembledFromManifest.targetingDemographic?.channelTargeting.meta.interestClusters ?? []).includes("Sky Suite")
+);
+check(
+  "manifest assembly adds richer destination terms beyond ad copy hooks",
+  (assembledFromManifest.targetingDemographic?.channelTargeting.meta.interestClusters ?? []).includes("Alaska")
+);
+check(
+  "manifest assembly restores Meta behavior signals",
+  (assembledFromManifest.targetingDemographic?.channelTargeting.meta.behaviorSignals ?? []).includes(
+    "responds to limited-time travel offers"
+  )
+);
+check(
+  "manifest assembly restores seasonality keywords",
+  (assembledFromManifest.targetingDemographic?.nicheKeywords.eventsAndSeasonality ?? []).some((term) =>
+    term.includes("2026-07-24")
+  )
+);
+check(
+  "manifest assembly keeps manifest targeting seeds in Meta interests",
+  (assembledFromManifest.targetingDemographic?.channelTargeting.meta.interestClusters ?? []).includes(
+    "Seattle departures"
+  )
 );
 
 // --- THE CORE GATE: valid link is NOT enough to publish -----------------------

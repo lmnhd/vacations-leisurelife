@@ -22,6 +22,7 @@ import {
   validateAdCopyVoice,
   validateDealAdCopyCache,
   withSelectedVariantPrimary,
+  type CbPromoIntelligenceRecord,
   type DealDiscoveryIdea,
   type DealTripManifest,
 } from "../lib/cb/deals-system";
@@ -49,6 +50,15 @@ const angle: DealDiscoveryIdea = {
   generatedAtIso: GEN_AT,
   generator: "gpt",
   isolatedNiche: "The Solo Journaling Tabletop Roleplayer",
+  researchRationale:
+    "Workbench or discovery evidence pointed to analog journaling, solo RPG, and quiet-luxury repositioning cues as the best-fit overlap.",
+  successLogic:
+    "This audience responds when the sailing feels like a private creative tool rather than a generic vacation, especially on long sea-day itineraries.",
+  audienceSignals: [
+    "Targeting seeds center solo rpg journaling, Leuchtturm1917 notebooks, and polyhedral dice culture.",
+    "Long sea-day repositioning routes align with buyers who want quiet time and private writing space.",
+    "Balcony-forward premium cabins matter more here than generic family-ship entertainment.",
+  ],
   sailingAngleProfile: {
     sailingAngleTitle: "Roll the Dice, Write the Wake",
     theCorePitch: "Your campaign has been stuck for two months because the house won't stop interrupting you.",
@@ -111,6 +121,82 @@ const tripManifest: DealTripManifest = {
     port: "Fort Lauderdale",
     windowDays: 60,
   },
+  targetingSeeds: {
+    inferredMarket: "US",
+    geoFocus: ["Fort Lauderdale", "Transatlantic travel"],
+    personaSignals: ["solo journaling rpg buyers", "quiet-luxury cruise shoppers"],
+    metaInterestSeeds: ["solo rpg journaling", "Leuchtturm1917 notebooks", "balcony cabins"],
+    metaBehaviorSignals: ["saves slow-travel inspiration", "engages with niche hobby identity content"],
+    excludedAudienceSignals: ["Avoid broad cruise-interest targeting as the only audience."],
+  },
+};
+
+const promoRecord: CbPromoIntelligenceRecord = {
+  id: "cbpromo-test",
+  source: "cb_agent_tools_todays_view",
+  sourceUrl: "https://www.cbagenttools.com/marketing/todaysview/",
+  detailUrl: "https://www.cbagenttools.com/marketing/promotion/test/",
+  capturedAtIso: GEN_AT,
+  title: "Celebrity Summer Sale",
+  vendor: "Celebrity Cruises",
+  bookingWindow: {
+    startsOn: "2026-06-02",
+    endsOn: "2026-07-27",
+    rawText: "Book June 2 through July 27, 2026.",
+  },
+  sailingWindow: {
+    startsOn: "2026-06-03",
+    endsOn: "2028-05-10",
+    rawText: "Select sailings June 3, 2026 through May 10, 2028.",
+  },
+  promotionDetailsRaw: "Up to 75% off the second guest on qualifying rates.",
+  agentInstructionsRaw: "Qualify all claims and verify live availability.",
+  keyFeaturesRaw: "Premium cruise experience.",
+  applicableSailingsRaw: "Select Celebrity sailings.",
+  applicableProductsRaw: "Most products except Galapagos.",
+  applicableMarketsRaw: "US and participating markets.",
+  supportingFiles: [],
+  extracted: {
+    offerTypes: ["second_guest_discount", "onboard_credit"],
+    percentDiscounts: [
+      {
+        appliesTo: "second guest",
+        percentOff: 75,
+        depositType: "non_refundable",
+        rawText: "75% off second guest on non-refundable deposit rates.",
+      },
+    ],
+    dollarSavings: [],
+    onboardCredits: [
+      {
+        amountUsd: 600,
+        appliesTo: "per stateroom",
+        voyageLength: "6_plus_nights",
+        cabinCategory: "Sky Suite and above",
+        bookingDayWindow: "Thursday",
+        rawText: "Up to $600 onboard credit per stateroom on Thursday.",
+      },
+    ],
+    freeGuestOffers: [],
+    combinability: { rawRules: [] },
+    exclusions: ["Galapagos"],
+    applicableProducts: ["Celebrity ocean cruises"],
+    applicableMarkets: ["US"],
+  },
+  marketingUse: {
+    publicClaimsAllowed: ["Second guest savings are available on select sailings."],
+    publicClaimsNeedsQualifier: ["Up to 75% off the second guest on qualifying rates."],
+    agentOnlyNotes: ["Verify deposit type."],
+    suggestedAngles: ["Use the second-guest offer for couples."],
+    cautionFlags: ["Savings depend on rate and stateroom category."],
+    bestMatchedDealBriefs: [],
+    visitorFriendlySummary: "Select Celebrity sailings may include second-guest savings.",
+  },
+  diagnostics: {
+    status: "succeeded",
+    notes: [],
+    warnings: [],
+  },
 };
 
 async function main(): Promise<void> {
@@ -118,15 +204,46 @@ async function main(): Promise<void> {
 
   // --- Unify (deterministic) -------------------------------------------------
   console.log("Unified manifest:");
-  const unified = assembleDealUnifiedManifest(angle, tripManifest, { generatedAtIso: GEN_AT });
+  const unified = assembleDealUnifiedManifest(angle, tripManifest, {
+    generatedAtIso: GEN_AT,
+    promoRecords: [promoRecord],
+  });
   check("unified carries the creative brief angle", unified.creativeBrief.angle.sailingAngleTitle === angle.sailingAngleProfile.sailingAngleTitle);
   check("unified carries the isolated niche", unified.creativeBrief.isolatedNiche === angle.isolatedNiche);
+  check("unified carries research rationale", unified.creativeBrief.researchRationale === angle.researchRationale);
+  check("unified carries success logic", unified.creativeBrief.successLogic === angle.successLogic);
+  check("unified carries audience signals", (unified.creativeBrief.audienceSignals ?? []).length === angle.audienceSignals?.length);
   check("unified carries the inventory draft", unified.inventoryManifest.assembleDraft.cruiseLine === "Celebrity Cruises");
+  check(
+    "unified carries targeting seeds",
+    unified.inventoryManifest.targetingSeeds?.metaInterestSeeds.includes("solo rpg journaling") === true
+  );
   check("unified carries the applied promos", unified.inventoryManifest.appliedPromos.length === 1);
+  check(
+    "unified carries public-safe promotion claims",
+    unified.inventoryManifest.promotionBriefs[0]?.publicClaimsAllowed.length === 1
+  );
   check("unified id derives from the manifest", unified.id === `unified-${tripManifest.id}`);
 
   // --- Copywriter ------------------------------------------------------------
   console.log("\nAd copy generation:");
+  let missingPromoContextRejected = false;
+  try {
+    await generateDealAdCopy({
+      unifiedManifest: assembleDealUnifiedManifest(angle, tripManifest, {
+        generatedAtIso: GEN_AT,
+      }),
+      variantCount: 2,
+      generatedAtIso: GEN_AT,
+    });
+  } catch {
+    missingPromoContextRejected = true;
+  }
+  check(
+    "applicable promo without its source record fails closed",
+    missingPromoContextRejected
+  );
+
   const { adCopy, rejectedPromoIds } = await generateDealAdCopy({
     unifiedManifest: unified,
     variantCount: 2,

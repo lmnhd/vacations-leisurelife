@@ -161,6 +161,31 @@ The platform **must not** collect payments locally. No Stripe pre-authorizations
 
 ---
 
+## 6A. Retail Deal Campaign System
+
+Agents building, researching, reviewing, or publishing retail cruise Deal campaigns must use the workspace Deal skill.
+
+### Mandatory Pre-Read Order
+
+1. `.github/skills/deal-campaign-generation/SKILL.md` - entry point and hard rules
+2. `.github/skills/deal-campaign-generation/AGENT_ENV.md` - safe execution and booking boundaries
+3. `.github/skills/deal-campaign-generation/DEAL_PROCESS_MEMORY.md` - operator-recorded corrections
+4. `.github/skills/deal-campaign-generation/WORKFLOW.md` - promotion-led and inventory-first workflows
+
+### Use the Deal Campaign Skill
+
+Invoke `.github/skills/deal-campaign-generation/SKILL.md` when an agent is asked to:
+
+- find or shortlist real cruise packages for a Deal
+- apply CB promotion intelligence to a sailing
+- work in the Deal Campaign Workbench or Deals pipeline
+- generate Deal angles, targeting, ad copy, funnel assets, or Curated Deals
+- review duplicates, readiness, approval gates, or homepage eligibility
+
+The skill keeps agency inventory lookup, promotion applicability, market fit, pipeline handoff, and approval-gated publication aligned across sessions.
+
+---
+
 ## 7. Repository Operating Rules
 
 - Do not start, stop, restart, or background persistent dev servers or watchers unless the user explicitly asks in the current turn.

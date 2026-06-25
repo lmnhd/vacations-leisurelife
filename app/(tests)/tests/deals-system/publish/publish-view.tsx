@@ -11,6 +11,11 @@ import type {
 /** Default public-visibility window: 90 days from today, as a YYYY-MM-DD date. */
 const DEFAULT_EXPIRY_DAYS = 90;
 
+interface DealLiveness {
+  live: boolean;
+  reason: string;
+}
+
 function defaultExpiryDate(): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() + DEFAULT_EXPIRY_DAYS);
@@ -30,11 +35,11 @@ function dealIsExpired(expiresOnIso: string | undefined, now = new Date()): bool
 
 /**
  * Is this deal LIVE on the homepage right now? Mirrors `isDealHomepageEligible`
- * (the server-side single source of truth) — kept inline so this client component
+ * (the server-side single source of truth) - kept inline so this client component
  * does not pull the deals-system barrel (and the AWS SDK) into the browser bundle.
  * Returns the live flag plus the first blocking reason for an operator-facing cue.
  */
-function dealLiveness(deal: CuratedOdysseusDeal): { live: boolean; reason: string } {
+function dealLiveness(deal: CuratedOdysseusDeal): DealLiveness {
   if (deal.operatorVisibility?.hidden) return { live: false, reason: "Manually hidden" };
   if (deal.operatorApproval?.status !== "approved") {
     return { live: false, reason: "Not approved yet" };
@@ -45,6 +50,45 @@ function dealLiveness(deal: CuratedOdysseusDeal): { live: boolean; reason: strin
   }
   if (dealIsExpired(deal.expiresOnIso)) return { live: false, reason: "Expired" };
   return { live: true, reason: "Live on the homepage" };
+}
+
+function dealFreshnessIso(deal: CuratedOdysseusDeal): string {
+  return deal.operatorApproval?.updatedAtIso ?? deal.capturedAtIso ?? "";
+}
+
+function dealManifestAffinity(deal: CuratedOdysseusDeal, manifestId: string): number {
+  const notes = [...(deal.agentOnlyNotes ?? []), ...(deal.copyPackage?.agentOnlyNotes ?? [])];
+  return notes.some((note) => note.includes(manifestId) || note.includes(`unified-${manifestId}`))
+    ? 1
+    : 0;
+}
+
+function chooseBestDealForManifest(
+  manifestId: string,
+  packageDeals: CuratedOdysseusDeal[]
+): CuratedOdysseusDeal | null {
+  if (!packageDeals.length) return null;
+
+  return [...packageDeals].sort((a, b) => {
+    const livenessDelta = Number(dealLiveness(b).live) - Number(dealLiveness(a).live);
+    if (livenessDelta !== 0) return livenessDelta;
+
+    const affinityDelta = dealManifestAffinity(b, manifestId) - dealManifestAffinity(a, manifestId);
+    if (affinityDelta !== 0) return affinityDelta;
+
+    const approvalDelta =
+      Number(b.operatorApproval?.status === "approved") -
+      Number(a.operatorApproval?.status === "approved");
+    if (approvalDelta !== 0) return approvalDelta;
+
+    const statusDelta = Number(b.status === "bookable") - Number(a.status === "bookable");
+    if (statusDelta !== 0) return statusDelta;
+
+    const freshnessDelta = dealFreshnessIso(b).localeCompare(dealFreshnessIso(a));
+    if (freshnessDelta !== 0) return freshnessDelta;
+
+    return a.id.localeCompare(b.id);
+  })[0] ?? null;
 }
 
 interface PublishResponse {
@@ -88,11 +132,23 @@ export function PublishView({
   // so the picker badges and preview reflect the new state without a page reload.
   const [dealOverrides, setDealOverrides] = useState<Record<string, CuratedOdysseusDeal>>({});
 
-  /** Latest known version of a deal: a session override wins over the server snapshot. */
-  const dealByPackageId = useMemo(() => {
-    const map = new Map<string, CuratedOdysseusDeal>();
-    for (const d of deals) map.set(d.packageId, d);
-    for (const d of Object.values(dealOverrides)) map.set(d.packageId, d);
+  /** Latest known deal records grouped by package id. */
+  const dealsByPackageId = useMemo(() => {
+    const map = new Map<string, CuratedOdysseusDeal[]>();
+    const allDeals = [...deals, ...Object.values(dealOverrides)];
+
+    for (const deal of allDeals) {
+      const existing = map.get(deal.packageId);
+      if (!existing) {
+        map.set(deal.packageId, [deal]);
+        continue;
+      }
+
+      const matchIndex = existing.findIndex((candidate) => candidate.id === deal.id);
+      if (matchIndex >= 0) existing[matchIndex] = deal;
+      else existing.push(deal);
+    }
+
     return map;
   }, [deals, dealOverrides]);
 
@@ -115,8 +171,14 @@ export function PublishView({
 
   const existingDeal = useMemo(() => {
     if (!selectedManifest?.resolvedPackage) return null;
-    return dealByPackageId.get(selectedManifest.resolvedPackage.packageId) ?? null;
-  }, [dealByPackageId, selectedManifest]);
+    const packageDeals = dealsByPackageId.get(selectedManifest.resolvedPackage.packageId) ?? [];
+    return chooseBestDealForManifest(selectedManifest.id, packageDeals);
+  }, [dealsByPackageId, selectedManifest]);
+
+  const existingDealMatches = useMemo(() => {
+    if (!selectedManifest?.resolvedPackage) return [];
+    return dealsByPackageId.get(selectedManifest.resolvedPackage.packageId) ?? [];
+  }, [dealsByPackageId, selectedManifest]);
 
   const previewDeal = assembledDeal ?? existingDeal;
 
@@ -196,7 +258,7 @@ export function PublishView({
         tone: "ok",
         text: expiresOnIso
           ? `Deal will stop appearing publicly after ${expiresOnIso}.`
-          : "Expiration cleared — deal no longer auto-expires.",
+          : "Expiration cleared - deal no longer auto-expires.",
       });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
@@ -224,7 +286,7 @@ export function PublishView({
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Approval failed.");
       if (data.deal) {
         applyDealUpdate(data.deal);
-        // The approve evaluation re-derives gates on the deal — surface them so the
+        // The approve evaluation re-derives gates on the deal - surface them so the
         // gate list matches the decision (a blocking gate may now pass).
         if (data.deal.operatorApproval?.gates) setGates(data.deal.operatorApproval.gates);
       }
@@ -246,7 +308,7 @@ export function PublishView({
       <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-300">
-            Deal Workflow · Step 5
+            Deal Workflow - Step 5
           </p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">Publish</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
@@ -258,7 +320,7 @@ export function PublishView({
           href="/tests/deals-system"
           className="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]"
         >
-          ← Back to Deals dashboard
+          Back to Deals dashboard
         </a>
       </div>
 
@@ -283,13 +345,16 @@ export function PublishView({
         </p>
         {resolvedManifests.length === 0 ? (
           <p className="mt-2 text-sm text-amber-200">
-            No resolved manifests yet. Resolve a manifest in Step 2 · Trip Manifestation first.
+            No resolved manifests yet. Resolve a manifest in Step 2 - Trip Manifestation first.
           </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {manifests.map((m) => {
+              const manifestDeals = m.resolvedPackage
+                ? dealsByPackageId.get(m.resolvedPackage.packageId) ?? []
+                : [];
               const manifestDeal = m.resolvedPackage
-                ? dealByPackageId.get(m.resolvedPackage.packageId) ?? null
+                ? chooseBestDealForManifest(m.id, manifestDeals)
                 : null;
               const liveness = manifestDeal ? dealLiveness(manifestDeal) : null;
               return (
@@ -319,7 +384,7 @@ export function PublishView({
                         {m.sailingAngleTitle}
                       </span>
                       <span className="block text-[11px] text-slate-400">
-                        {m.isolatedNiche} · {m.assembleDraft.cruiseLine} · {m.assembleDraft.destination}
+                        {m.isolatedNiche} - {m.assembleDraft.cruiseLine} - {m.assembleDraft.destination}
                       </span>
                     </span>
                     {liveness?.live ? (
@@ -329,7 +394,7 @@ export function PublishView({
                       </span>
                     ) : manifestDeal ? (
                       <span className="rounded-full border border-slate-500/40 bg-slate-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300">
-                        not live
+                        {manifestDeals.length > 1 ? `not live (${manifestDeals.length})` : "not live"}
                       </span>
                     ) : m.resolvedPackage ? (
                       <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200">
@@ -358,7 +423,7 @@ export function PublishView({
               {matchingAdCopy ? (
                 <>
                   <p className="mt-1 text-sm text-emerald-200">
-                    {matchingAdCopy.campaignName} · {matchingAdCopy.variants.length} variant(s) · id{" "}
+                    {matchingAdCopy.campaignName} - {matchingAdCopy.variants.length} variant(s) - id{" "}
                     {matchingAdCopy.id}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-400">
@@ -367,10 +432,7 @@ export function PublishView({
                       {matchingAdCopy.variants[matchingAdCopy.selectedVariantIndex ?? 0]?.variantLabel}
                     </span>
                     {matchingAdCopy.selectedVariantIndex === undefined && (
-                      <span className="text-amber-300">
-                        {" "}
-                        — defaulting to primary; pick one in Step 3 to lock it in.
-                      </span>
+                      <span className="text-amber-300"> - defaulting to primary; pick one in Step 3 to lock it in.</span>
                     )}
                   </p>
                 </>
@@ -389,11 +451,16 @@ export function PublishView({
                   onClick={() => void publish()}
                   className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {busy ? "Assembling…" : "Assemble Deal"}
+                  {busy ? "Assembling..." : "Assemble Deal"}
                 </button>
               )}
             </div>
           </div>
+          {!!existingDeal && existingDealMatches.length > 1 && (
+            <p className="mt-3 text-[11px] text-amber-200">
+              {`This package has ${existingDealMatches.length} deal records. The publish screen is using "${existingDeal.id}" because it currently ranks highest for live/approved status.`}
+            </p>
+          )}
         </section>
       )}
 
@@ -415,7 +482,7 @@ export function PublishView({
                       : "border-amber-400/30 bg-amber-500/10"
                 }`}
               >
-                <span className="mt-0.5 text-lg">{g.passed ? "✓" : g.blocking ? "✗" : "⚠"}</span>
+                <span className="mt-0.5 text-lg">{g.passed ? "OK" : g.blocking ? "X" : "!"}</span>
                 <div>
                   <p className="text-xs font-semibold text-white">{g.label}</p>
                   <p className="text-[11px] text-slate-400">{g.detail}</p>
@@ -440,7 +507,7 @@ export function PublishView({
               className="inline-flex h-10 items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-4 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {previewDeal?.operatorApproval?.status === "approved"
-                ? "✓ Approved"
+                ? "Approved"
                 : "Approve for homepage"}
             </button>
           </div>
@@ -458,7 +525,7 @@ export function PublishView({
               : "border-white/10 bg-slate-950/70"
           }`}
         >
-          {/* Persistent live-status banner — survives reloads (derived from the deal). */}
+          {/* Persistent live-status banner - survives reloads (derived from the deal). */}
           <div
             className={`mb-4 flex items-center gap-3 rounded-xl border px-4 py-3 ${
               liveness.live
@@ -559,7 +626,7 @@ export function PublishView({
             </p>
             <p className="mt-1 text-[11px] leading-5 text-slate-400">
               {currentExpiresOnIso
-                ? `Set to "${currentExpiresOnIso}" — the deal disappears from the homepage and its detail page after that date.`
+                ? `Set to "${currentExpiresOnIso}" - the deal disappears from the homepage and its detail page after that date.`
                 : `Defaults to ${DEFAULT_EXPIRY_DAYS} days from today (${defaultExpiryDate()}). Every deal expires; adjust the date below if needed.`}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">

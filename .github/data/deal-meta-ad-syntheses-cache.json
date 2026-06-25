@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-22T23:31:54.436Z",
+  "generatedAtIso": "2026-06-24T18:25:12.384Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -106,6 +106,60 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nBetter Than Any IPP Weekend\nSwap trick locks & burrs over scotch on the Pacific crossing. More focused solving hours in 35 nights than a year of puzzle retreats.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-22T23:31:32.174Z",
+          "previousImages": []
+        }
+      ]
+    },
+    {
+      "id": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "dealId": "1543052",
+      "generatedAtIso": "2026-06-24T18:20:39.607Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "sailingAngleTitle": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "Sky Suite. Dawes Glacier. July 24.",
+          "primaryText": "Your private veranda when Edge noses into Endicott Arm — no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card0-1782325494418.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nSky Suite. Dawes Glacier. July 24.\nYour private veranda when Edge noses into Endicott Arm — no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-24T18:24:54.418Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "2nd Guest Up to 75% Off",
+          "primaryText": "Summer Sale suite math: up to 75% off the second fare (non-refundable deposit). Sky Suite & above, book by 07/27. Select sailings.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card1-1782325498846.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n2nd Guest Up to 75% Off\nSummer Sale suite math: up to 75% off the second fare (non-refundable deposit). Sky Suite & above, book by 07/27. Select sailings.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-24T18:24:58.846Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "$600 OBC — Do the Math",
+          "primaryText": "Helicopter glacier landing in Skagway + Luminae tasting menu + spa thermal suite — and you're still in the black. 7 nights.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card2-1782325507773.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n$600 OBC — Do the Math\nHelicopter glacier landing in Skagway + Luminae tasting menu + spa thermal suite — and you're still in the black. 7 nights.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-24T18:25:07.773Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "The Milestone Sailing, Sorted",
+          "primaryText": "Anniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card3-1782325485506.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Milestone Sailing, Sorted\nAnniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-24T18:24:45.505Z",
           "previousImages": []
         }
       ]

@@ -234,6 +234,15 @@ function validateDealDiscoveryIdea(idea: unknown, i: number, errors: string[]): 
   if (typeof x.isolatedNiche !== "string" || !x.isolatedNiche) {
     errors.push(`ideas[${i}].isolatedNiche missing`);
   }
+  if (x.researchRationale !== undefined && typeof x.researchRationale !== "string") {
+    errors.push(`ideas[${i}].researchRationale must be a string when present`);
+  }
+  if (x.successLogic !== undefined && typeof x.successLogic !== "string") {
+    errors.push(`ideas[${i}].successLogic must be a string when present`);
+  }
+  if (x.audienceSignals !== undefined && (!Array.isArray(x.audienceSignals) || x.audienceSignals.length === 0)) {
+    errors.push(`ideas[${i}].audienceSignals must be a non-empty array when present`);
+  }
   if (!isRecord(x.sailingAngleProfile)) {
     errors.push(`ideas[${i}].sailingAngleProfile missing`);
     return;
@@ -362,6 +371,14 @@ function validateDealUnifiedManifest(manifest: unknown, i: number, errors: strin
   }
   if (!isRecord(m.inventoryManifest) || !isRecord((m.inventoryManifest as Record<string, unknown>).assembleDraft)) {
     errors.push(`manifests[${i}].inventoryManifest.assembleDraft missing`);
+  } else {
+    const inventory = m.inventoryManifest as Record<string, unknown>;
+    if (
+      inventory.promotionBriefs !== undefined &&
+      !Array.isArray(inventory.promotionBriefs)
+    ) {
+      errors.push(`manifests[${i}].inventoryManifest.promotionBriefs must be an array`);
+    }
   }
 }
 

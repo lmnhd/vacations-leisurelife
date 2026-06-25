@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-22T23:36:04.170Z",
+  "generatedAtIso": "2026-06-25T01:11:38.291Z",
   "distributions": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -262,6 +262,195 @@
         "facebook_page_dispatched_at=2026-06-22T23:36:04.169Z"
       ],
       "facebookPagePostId": "1071836329342347_122118678194816807"
+    },
+    {
+      "id": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "dealId": "1543052",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "generatedAtIso": "2026-06-25T01:11:08.987Z",
+      "mode": "live",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1543052",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1543052",
+        "caption": "Your private veranda when Edge noses into Endicott Arm — no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Sky Suite. Dawes Glacier. July 24.",
+            "primaryText": "Your private veranda when Edge noses into Endicott Arm — no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card0-1782325494418.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "2nd Guest Up to 75% Off",
+            "primaryText": "Summer Sale suite math: up to 75% off the second fare (non-refundable deposit). Sky Suite & above, book by 07/27. Select sailings.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card1-1782325498846.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "$600 OBC — Do the Math",
+            "primaryText": "Helicopter glacier landing in Skagway + Luminae tasting menu + spa thermal suite — and you're still in the black. 7 nights.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card2-1782325507773.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "The Milestone Sailing, Sorted",
+            "primaryText": "Anniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/meta-ad-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/card3-1782325485506.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "celebrity edge",
+            "alaska",
+            "seattle",
+            "whale watching",
+            "national parks",
+            "conde nast traveler",
+            "photograph",
+            "spa",
+            "anniversary",
+            "fine dining",
+            "retirement",
+            "glacier"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003059329044",
+              "name": "Alaska",
+              "sourceQuery": "alaska",
+              "audienceSizeLowerBound": 61552678,
+              "audienceSizeUpperBound": 72385950
+            },
+            {
+              "id": "6003089343592",
+              "name": "Seattle Mariners",
+              "sourceQuery": "seattle",
+              "audienceSizeLowerBound": 20049149,
+              "audienceSizeUpperBound": 23577800
+            },
+            {
+              "id": "6003112249068",
+              "name": "National Parks Traveler",
+              "sourceQuery": "national parks",
+              "audienceSizeLowerBound": 149608,
+              "audienceSizeUpperBound": 175940
+            },
+            {
+              "id": "6003070150915",
+              "name": "Condé Nast Traveler",
+              "sourceQuery": "conde nast traveler",
+              "resolvedQuery": "nast traveler",
+              "audienceSizeLowerBound": 6108911,
+              "audienceSizeUpperBound": 7184080
+            },
+            {
+              "id": "6003231864010",
+              "name": "Photograph",
+              "sourceQuery": "photograph",
+              "audienceSizeLowerBound": 473940986,
+              "audienceSizeUpperBound": 557354600
+            },
+            {
+              "id": "6003254590688",
+              "name": "Spas",
+              "sourceQuery": "spa",
+              "audienceSizeLowerBound": 588815610,
+              "audienceSizeUpperBound": 692447158
+            },
+            {
+              "id": "6003155254305",
+              "name": "Anniversary",
+              "sourceQuery": "anniversary",
+              "audienceSizeLowerBound": 9504872,
+              "audienceSizeUpperBound": 11177730
+            },
+            {
+              "id": "6003022208356",
+              "name": "Retirement community",
+              "sourceQuery": "retirement",
+              "audienceSizeLowerBound": 7556641,
+              "audienceSizeUpperBound": 8886610
+            }
+          ],
+          "unresolvedQueries": [
+            "celebrity edge",
+            "whale watching",
+            "fine dining"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003059329044",
+                    "name": "Alaska"
+                  },
+                  {
+                    "id": "6003089343592",
+                    "name": "Seattle Mariners"
+                  },
+                  {
+                    "id": "6003112249068",
+                    "name": "National Parks Traveler"
+                  },
+                  {
+                    "id": "6003070150915",
+                    "name": "Condé Nast Traveler"
+                  },
+                  {
+                    "id": "6003231864010",
+                    "name": "Photograph"
+                  },
+                  {
+                    "id": "6003254590688",
+                    "name": "Spas"
+                  },
+                  {
+                    "id": "6003155254305",
+                    "name": "Anniversary"
+                  },
+                  {
+                    "id": "6003022208356",
+                    "name": "Retirement community"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (4): photograph, food and drink, spa, anniversary"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1543052 — See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+        "adSetName": "[DRAFT] Deal 1543052 Audience",
+        "creativeName": "deal-1543052-funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings--carousel",
+        "adName": "deal-1543052-funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-"
+      },
+      "notes": [
+        "meta_ad_account_id=1612907296491359",
+        "meta_campaign_id=120246515816360142",
+        "meta_ad_set_id=120246515816710142",
+        "meta_ad_set_mode=dynamic",
+        "meta_ad_creative_id=1295506455903953",
+        "meta_ad_id=120246515818680142",
+        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246515818680142",
+        "meta_dispatched_at=2026-06-25T01:11:38.290Z",
+        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
+      ],
+      "metaCampaignId": "120246515816360142",
+      "metaAdSetId": "120246515816710142",
+      "metaAdSetMode": "dynamic",
+      "facebookCreativeId": "1295506455903953",
+      "facebookAdId": "120246515818680142",
+      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246515818680142"
     }
   ]
 }

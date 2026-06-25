@@ -70,6 +70,16 @@ export interface DealsSystemStageAiTrace {
   rawResponse?: string;
 }
 
+export interface DealsSystemStageReviewSummary {
+  title: string;
+  generator?: string;
+  bullets: string[];
+  details: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
 export interface DealsSystemCuratedDealSummary {
   id: string;
   title: string;
@@ -94,6 +104,14 @@ export interface DealsSystemCuratedDealSummary {
   hasMediaPlan: boolean;
   mediaReadiness: string;
   publicCopyRedFlags: string[];
+  stageReviews: {
+    research?: DealsSystemStageReviewSummary;
+    targeting?: DealsSystemStageReviewSummary;
+    pitch?: DealsSystemStageReviewSummary;
+    copy?: DealsSystemStageReviewSummary;
+    adStructure?: DealsSystemStageReviewSummary;
+    media?: DealsSystemStageReviewSummary;
+  };
   /** Customer-voice warnings on the pitch brief (analyst-voice leaks). */
   pitchVoiceWarnings: string[];
   /** AI provenance for each generated stage, for the workbench debug panels. */
@@ -105,6 +123,7 @@ export interface DealsSystemCuratedDealSummary {
   pinned: boolean;
   hidden: boolean;
   agentOnlyNotes: string[];
+  promoApplicabilityIds: string[];
   /** Reach + contact-action roll-up from the deal events partition. */
   activity: DealsSystemDealActivity;
 }
@@ -218,7 +237,7 @@ export interface DealsSystemDashboardData {
   }>;
   promoRecords: DealsSystemPromoSummary[];
   /** Lightweight {id,title} list for attaching promos in the assembly form. */
-  promoOptions: Array<{ id: string; title: string; vendor: string }>;
+  promoOptions: Array<{ id: string; title: string; vendor: string; applicableMarkets: string[] }>;
   curatedDeals: DealsSystemCuratedDealSummary[];
   linkBrokerRecords: DealsSystemLinkBrokerSummary[];
   callbackRequests: DealsSystemCallbackRequestSummary[];
@@ -307,6 +326,112 @@ function traceSummary(
   };
 }
 
+function joinList(values: string[] | undefined): string {
+  return (values ?? []).filter(Boolean).join(", ");
+}
+
+function stageReviewSummaries(deal: CuratedOdysseusDeal): DealsSystemCuratedDealSummary["stageReviews"] {
+  const research = deal.angleResearch
+    ? {
+        title: deal.angleResearch.recommendedPrimaryAngle.title,
+        generator: deal.angleResearch.generator ?? "deterministic_scaffold",
+        bullets: [
+          deal.angleResearch.recommendedPrimaryAngle.publicCopyHook,
+          deal.angleResearch.recommendedPrimaryAngle.whyThisFeelsExclusive,
+          ...deal.angleResearch.destinationHooks.slice(0, 3),
+        ].filter(Boolean),
+        details: [
+          { label: "Rationale", value: deal.angleResearch.recommendedPrimaryAngle.rationale },
+          { label: "Audience angles", value: joinList(deal.angleResearch.nicheAudienceAngles.slice(0, 5)) },
+          { label: "Guardrails", value: joinList(deal.angleResearch.factualGuardrails.slice(0, 4)) },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  const targeting = deal.targetingDemographic
+    ? {
+        title: deal.targetingDemographic.primaryAudience.label,
+        generator: deal.targetingDemographic.generator ?? "deterministic_scaffold",
+        bullets: [
+          deal.targetingDemographic.primaryAudience.description,
+          deal.targetingDemographic.primaryAudience.whyThisCruiseFits,
+          ...deal.targetingDemographic.primaryAudience.emotionalDrivers.slice(0, 3),
+        ].filter(Boolean),
+        details: [
+          { label: "Meta interests", value: joinList(deal.targetingDemographic.channelTargeting.meta.interestClusters.slice(0, 6)) },
+          { label: "Google themes", value: joinList(deal.targetingDemographic.channelTargeting.google.searchThemes.slice(0, 6)) },
+          { label: "Risks", value: joinList(deal.targetingDemographic.confidence.risks.slice(0, 4)) },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  const pitch = deal.pitchBrief
+    ? {
+        title: deal.pitchBrief.primaryHook,
+        generator: deal.pitchBrief.generator,
+        bullets: [
+          deal.pitchBrief.tripSummary,
+          deal.pitchBrief.audienceStatement,
+          deal.pitchBrief.curatedReason,
+          ...deal.pitchBrief.sellingFacts,
+        ].filter(Boolean),
+        details: [
+          { label: "Internal rationale", value: deal.pitchBrief.researchRationale },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  const copy = deal.copyPackage
+    ? {
+        title: deal.copyPackage.shortTileCopy,
+        generator: deal.copyPackage.generator,
+        bullets: [
+          ...deal.copyPackage.headlineOptions.slice(0, 3),
+          deal.copyPackage.heroCopy,
+          ...deal.copyPackage.whyThisTrip.slice(0, 3),
+        ].filter(Boolean),
+        details: [
+          { label: "Offer lines", value: joinList(deal.copyPackage.offerLines.map((line) => line.text).slice(0, 4)) },
+          { label: "CTA labels", value: joinList(deal.copyPackage.ctaCopy.map((cta) => cta.label)) },
+          { label: "Red flags", value: joinList(deal.copyPackage.publicCopyRedFlags) },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  const adStructure = deal.adStructure
+    ? {
+        title: deal.adStructure.campaignThesis,
+        generator: deal.adStructure.generator,
+        bullets: [
+          ...deal.adStructure.creativeHypotheses.slice(0, 3),
+          ...deal.adStructure.channels.map((channel) => `${channel.channel}: ${channel.primaryAngle}`).slice(0, 4),
+        ].filter(Boolean),
+        details: [
+          { label: "Niche keywords", value: joinList(deal.adStructure.nicheKeywords.slice(0, 8)) },
+          { label: "Offer proof", value: joinList(deal.adStructure.offerProofPoints.slice(0, 4)) },
+          { label: "Negative keywords", value: joinList(deal.adStructure.negativeKeywords.slice(0, 6)) },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  const media = deal.mediaPlan
+    ? {
+        title: `Media readiness: ${deal.mediaPlan.readiness}`,
+        generator: deal.mediaPlan.generator,
+        bullets: [
+          ...deal.mediaPlan.visualDirection.slice(0, 4),
+          ...deal.mediaPlan.shortVideoConcepts.map((concept) => `${concept.concept}: ${concept.hook}`).slice(0, 3),
+        ].filter(Boolean),
+        details: [
+          { label: "Image slots", value: joinList(deal.mediaPlan.imageSlots.map((slot) => `${slot.slot}: ${slot.purpose}`)) },
+          { label: "Required assets", value: joinList(deal.mediaPlan.requiredSourceAssets.slice(0, 8)) },
+        ].filter((item) => item.value),
+      }
+    : undefined;
+
+  return { research, targeting, pitch, copy, adStructure, media };
+}
+
 const EMPTY_DEAL_ACTIVITY: DealsSystemDealActivity = {
   totalViews: 0,
   uniqueSessions: 0,
@@ -358,6 +483,7 @@ function summarizeDeal(
     hasMediaPlan: Boolean(deal.mediaPlan),
     mediaReadiness: deal.mediaPlan?.readiness ?? "not_started",
     publicCopyRedFlags: deal.copyPackage?.publicCopyRedFlags ?? [],
+    stageReviews: stageReviewSummaries(deal),
     pitchVoiceWarnings: deal.pitchBrief ? validatePitchBriefVoice(deal.pitchBrief) : [],
     aiTraces,
     approvalGates: gates.map((gate) => ({
@@ -375,6 +501,7 @@ function summarizeDeal(
     pinned: Boolean(deal.operatorVisibility?.pinned),
     hidden: Boolean(deal.operatorVisibility?.hidden),
     agentOnlyNotes: deal.agentOnlyNotes ?? [],
+    promoApplicabilityIds: (deal.promoApplicability ?? []).map((promo) => promo.promoRecordId),
     activity,
   };
 }
@@ -563,6 +690,7 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
       id: record.id,
       title: record.title,
       vendor: record.vendor,
+      applicableMarkets: record.extracted.applicableMarkets,
     })),
     curatedDeals: curatedDeals.map((deal) =>
       summarizeDeal(deal, dealActivityById.get(deal.id) ?? EMPTY_DEAL_ACTIVITY)

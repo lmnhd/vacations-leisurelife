@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-18T20:40:19.032Z",
+  "generatedAtIso": "2026-06-24T00:55:05.379Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -148,6 +148,86 @@
         "rawResponse": "{\n  \"nicheFits\": true,\n  \"fitConfidence\": 0.78,\n  \"fitReasoning\": \"This 35-night Seabourn sailing from Miami to Papeete — transiting the Panama Canal, hugging the South American Pacific coast, then crossing into French Polynesia — features approximately 21 sea days. That's an extraordinary volume of uninterrupted, distraction-free time aboard a small, ultra-refined ship (~450 guests) with wood-paneled lounges, an extensive library, and intimate public spaces designed for quiet sophistication rather than mega-ship spectacle. The Sequential Discovery and Mechanical Puzzle Solver niche maps onto this sailing with genuine, high-conviction alignment for several reasons: (1) The sheer number of sea days creates a sustained, captive environment ideal for the continuous puzzle-swap loop — exchanging a $300 SD puzzle at breakfast, working it all day, returning it at dinner to discuss internals. Twenty-one sea days is enough to cycle through a serious personal collection multiple times over. (2) Seabourn's intimate ship size and refined atmosphere — small guest counts, quiet observation lounges, well-appointed library spaces, the Observation Bar — directly mirrors the \\\"Jewel of the Seas\\\" best-fit environment described in the research, but arguably surpasses it in acoustic calm, low passenger density, and sophistication. (3) The demographic alignment is strong: this is a $18,500+ sailing attracting affluent, intellectually curious adults — precisely the high-net-worth collector profile that spends $150-$2,000 on bespoke machined puzzles and attends the invite-only IPP. (4) The Panama Canal transit itself is a feat of sequential mechanical engineering — a lock-by-lock progression that rhymes perfectly with the sequential discovery ethos without needing to be forced. (5) The long ocean crossing to Polynesia provides the sustained isolation that amplifies deep focus. The fit is not perfect only because the research's ship-fit section specifically recommended Radiance-class vessels, and Seabourn is a different product tier — but arguably a superior one for this demographic's preferences.\",\n  \"isolatedNiche\": \"Sequential Discovery and Mechanical Puzzle Solvers\",\n  \"angle\": {\n    \"sailingAngleTitle\": \"Twenty-One Sea Days, Zero Unsolved Locks\",\n    \"theCorePitch\": \"A 35-night passage from Miami through the Panama Canal locks and across the Pacific to Polynesia, aboard a 450-guest ship with more sea days than port calls. Bring your brass. Bring your burrs. Bring that Eric Fuller box you've been saving for the right stretch of uninterrupted hours. Twenty-one days of open ocean, wood-paneled observation lounges, and the kind of sustained quiet focus that turns a stubborn blind mechanism into a solved one. The swap economy alone justifies the crossing — cycle your entire collection through trusted hands who actually understand what 'sequential discovery' means, compare solve times over a scotch in the library, and spend the long Pacific transit wrestling with someone else's trick lock while the Marquesas slowly resolve on the horizon.\",\n    \"visualAnchor\": \"A machined brass sequential discovery puzzle resting on a dark velvet mat, set on a polished wood table beside a crystal glass — behind it, floor-to-ceiling ocean through the observation lounge windows, nothing but blue Pacific horizon.\",\n    \"targetAudienceDescriptor\": \"Affluent mechanical puzzle collectors and sequential discovery solvers who invest in bespoke machined brass, exotic wood puzzles, and IPP-adjacent exchange culture — people who own velvet mats and understand why losing a single ball bearing is catastrophic.\",\n    \"relevantKeywords\": [\n      \"sequential discovery puzzle\",\n      \"trick lock\",\n      \"IPP puzzle exchange\",\n      \"mechanical puzzle solver\",\n      \"burr puzzle\",\n      \"Hanayama\",\n      \"puzzle swap\",\n      \"bespoke machined brass\"\n    ],\n    \"destinationAndTimeOfYearHints\": \"January departure from Miami transiting the Panama Canal, then south along the Pacific coast of South America (Ecuador, Peru, Chile) before a multi-day open-ocean crossing through the Marquesas and Tuamotus to Papeete, Tahiti. Peak Northern Hemisphere winter — ideal timing for affluent retirees and semi-retired professionals to take a sustained 35-night voyage. The heavy sea-day profile (21 of 35 nights) creates an unbroken rhythm of focused solving time unavailable in any land-based context.\",\n    \"onboardAssetRequirements\": \"Seabourn's intimate scale (~450 guests) provides the quiet, acoustically controlled environment essential for puzzle work — the Observation Bar, library, and Card Room offer stable, well-lit surfaces away from wind and vibration. No infrastructure buildout required. Solvers bring their own puzzles, velvet mats, and zip-lock component bags. The ship's existing wood-paneled lounges and soft lighting already match the aesthetic expectations of this high-end collector demographic. Standard stateroom safes accommodate high-value sealed puzzles during port days.\"\n  }\n}",
         "latencyMs": 40445,
         "generatedAtIso": "2026-06-18T20:39:38.586Z"
+      }
+    },
+    {
+      "id": "angle-workbench-14-nights-spain-portugal-solar-eclipse-celebrity-apex-1543049",
+      "generatedAtIso": "2026-06-23T22:05:49.513Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "UK-based cruisers aged 45–70 who prefer the ease of a no-fly departure from Southampton. They may be first-time Celebrity guests trading up from mainstream lines, or seasoned cruisers who value premium ships and hassle-free embarkation from a home port.",
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex",
+        "theCorePitch": "No Flights Required — Sail Roundtrip Southampton to the Mediterranean on Celebrity Apex: Celebrity Apex on 14 Nights Spain & Portugal Solar Eclipse gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "A clean lifestyle hero of Celebrity Apex's iconic Magic Carpet cantilevered platform at sunset, with a couple toasting as a Mediterranean coastline glows in the background. Overlaid text highlights 'Southampton → Mediterranean → Southampton.' Bright, aspirational tones — warm sunset orange against the ship's sleek white profile.",
+        "targetAudienceDescriptor": "UK-based cruisers aged 45–70 who prefer the ease of a no-fly departure from Southampton. They may be first-time Celebrity guests trading up from mainstream lines, or seasoned cruisers who value premium ships and hassle-free embarkation from a home port.",
+        "relevantKeywords": [
+          "cruise from Southampton 2026",
+          "no-fly Mediterranean cruise",
+          "Celebrity Apex Southampton",
+          "Southampton cruise holidays",
+          "UK departure cruise Mediterranean",
+          "premium cruise from England",
+          "14 night cruise from Southampton",
+          "Celebrity Cruises UK sailings"
+        ],
+        "destinationAndTimeOfYearHints": "14 Nights Spain & Portugal Solar Eclipse departing 2026-08-01.",
+        "onboardAssetRequirements": "Celebrity Apex ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-06-23T22:05:49.513Z",
+        "packageId": "1543049",
+        "cruiseName": "14 Nights Spain & Portugal Solar Eclipse",
+        "cruiseLine": "Celebrity Cruises",
+        "sailDateIso": "2026-08-01",
+        "nights": 14,
+        "departurePortCode": "Southampton",
+        "portsOfCall": "Porto | Lisbon | Palma de Mallorca | Barcelona | Ibiza | Malaga | La Coruna | Bilbao",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-7-night-alaska-dawes-glacier-cruise-celebrity-edge-1543052",
+      "generatedAtIso": "2026-06-24T00:55:05.361Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.",
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+        "theCorePitch": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer: Celebrity Edge on 7 Night Alaska Dawes Glacier Cruise gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "An intimate couple's moment on a private veranda aboard Celebrity Edge, holding warm drinks and gazing at the blue ice of Dawes Glacier in Endicott Arm. Moody, cinematic lighting with soft fog and evergreen-covered fjord walls. A clean lower-third banner reads 'Select Sailings May Qualify for 2nd Guest Savings.'",
+        "targetAudienceDescriptor": "Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.",
+        "relevantKeywords": [
+          "Alaska cruise for couples 2026",
+          "Celebrity Edge glacier cruise",
+          "Seattle to Alaska cruise",
+          "Endicott Arm Dawes Glacier",
+          "premium Alaska cruise",
+          "couples cruise deals",
+          "Celebrity Cruises summer sale",
+          "7 night Alaska cruise",
+          "Alaska Inside Passage cruise",
+          "luxury Alaska vacation"
+        ],
+        "destinationAndTimeOfYearHints": "7 Night Alaska Dawes Glacier Cruise departing 2026-07-24.",
+        "onboardAssetRequirements": "Celebrity Edge ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-06-24T00:55:05.361Z",
+        "packageId": "1543052",
+        "cruiseName": "7 Night Alaska Dawes Glacier Cruise",
+        "cruiseLine": "Celebrity Cruises",
+        "sailDateIso": "2026-07-24",
+        "nights": 7,
+        "departurePortCode": "Seattle, WA",
+        "portsOfCall": "Seattle | Washington | Ketchikan | Alaska | Endicott Arm & Dawes Glacier | Juneau | Alaska | Skagway | Alaska | Alaska Inside Passage | Victoria | British Columbia | Seattle | Washington",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
       }
     }
   ]
