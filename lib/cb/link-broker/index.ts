@@ -44,10 +44,15 @@ export {
   checkCbLink,
   checkCbSwiftLink,
   checkCbFetchLink,
+  scrapeBookingPagePricing,
+  scrapeLiveBookingPagePricing,
 } from "./browser-validate";
 export type {
   LinkCheckOutcome,
   ValidateBrokerLinkOptions,
+  BookingPageCabinPrices,
+  ScrapeBookingPagePricingOutcome,
+  ScrapeLiveBookingPagePricingOptions,
 } from "./browser-validate";
 
 // Lower-level builders and cache helpers (internal, but exported for tests and

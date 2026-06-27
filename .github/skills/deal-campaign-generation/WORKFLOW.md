@@ -151,6 +151,19 @@ Confirm every blocking gate:
 
 Only then may the Deal become homepage eligible.
 
+## Maintenance: Cabin Pricing Drift
+
+Cabin pricing is captured once when a Deal is resolved (Phase A3/B3) and never auto-refreshes. Real cruise pricing moves (promotions expire, fares reprice), so a published Deal's displayed price can silently drift from what CB Agent Tools' live booking page actually charges.
+
+1. Scrape the Deal's own `bookingUrl` for its live "Pricing From" cabin-tier block, via either:
+   - the dashboard's **Pricing Check** panel (Tools tab) — pick the Deal, click "Check live pricing", review the per-tier table.
+   - `npm run check-deal-pricing -- --deal <dealId>` for a CLI check (or with no `--deal` to sweep every published Deal).
+2. This reads the exact page a guest sees — not a re-derived Odysseus search result. An earlier version matched by `packageId` from a fresh search, but Odysseus can re-index/re-rate the same sailing under a new id between searches, which made matching unreliable; reading the booking page directly avoids that.
+3. Both paths are read-only by default — they report stored vs. live price per cabin tier and flag anything outside tolerance. Neither writes anything on its own.
+4. To correct a mismatch: in the dashboard panel, click "Apply live price" on the specific tier you've reviewed. This patches only that one tier on that one Deal's `cruiseFacts.cabinPrices` — never a batch, never silent.
+5. Do not apply a correction the operator hasn't seen. Show the stored number, the live number, and the delta before writing.
+6. If the booking page can't be scraped (link broken, page structure changed, every tier shows "-"), the check reports that and skips comparison rather than guessing.
+
 ## Repair Rules
 
 - Repair the narrowest upstream source once.

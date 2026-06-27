@@ -5,6 +5,8 @@ import type { CSSProperties, FormEvent } from "react";
 
 import { ExternalLink, Loader2, Mail, Phone } from "lucide-react";
 
+import { postDealEvent } from "./deal-analytics";
+
 const palette = {
   cream: "#F5EFE6",
   navy: "#0F3042",
@@ -213,6 +215,13 @@ export function DealCtaActions({
           href={bookingUrl || "#pricing"}
           target={bookingUrl ? "_blank" : undefined}
           rel={bookingUrl ? "noreferrer" : undefined}
+          onClick={() => {
+            // sendBeacon (postDealEvent's primary path) is unaffected by the
+            // target="_blank" navigation this same click triggers — it's
+            // designed to survive page/tab lifecycle changes, unlike a plain
+            // fetch which the browser can abort before completion.
+            if (bookingUrl) postDealEvent(dealId, "book_now_click");
+          }}
           style={{ ...buttonBase(tone, true), width: isMobile ? "100%" : undefined }}
         >
           <ExternalLink size={16} aria-hidden="true" />

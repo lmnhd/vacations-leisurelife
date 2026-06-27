@@ -1,0 +1,4 @@
+interface:
+  display_name: "Campaign Manifest Builder"
+  short_description: "Build Group or Deal campaigns to review-ready state"
+  default_prompt: "Use $campaign-manifest-builder to turn this campaign idea or sailing into a review-ready Group or Deal campaign."

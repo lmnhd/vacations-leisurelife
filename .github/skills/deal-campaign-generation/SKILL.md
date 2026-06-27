@@ -1,6 +1,6 @@
 ---
 name: deal-campaign-generation
-description: Orchestrate fast, approval-gated Leisure Life retail cruise Deal campaigns. Use when an agent must find real Odysseus sailings, evaluate or attach CB promotions, import a sailing into the Deal Campaign Workbench, generate advertising and targeting angles, continue through the Deals pipeline, review copy and funnel assets, resolve duplicates, or prepare a Curated Deal for operator approval and publication.
+description: Orchestrate fast, approval-gated Leisure Life retail cruise Deal campaigns. Use when an agent must find real Odysseus sailings, evaluate or attach CB promotions, import a sailing into the Deal Campaign Workbench, generate advertising and targeting angles, continue through the Deals pipeline, review copy and funnel assets, resolve duplicates, check or correct a published Deal's cabin pricing against the live Odysseus search, or prepare a Curated Deal for operator approval and publication.
 ---
 
 # Deal Campaign Generation
@@ -71,6 +71,7 @@ A campaign is ready to advance only when:
 
 - Deal system dashboard and labs: `http://localhost:3000/tests/deals-system`
 - Campaign Workbench: the `Deal Campaign Workbench` section on the Deals dashboard
+- Pricing Check: the `Pricing Check` panel in the dashboard's Tools tab (or `npm run check-deal-pricing`) — see "Maintenance: Cabin Pricing Drift" in [WORKFLOW.md](./WORKFLOW.md)
 - Public preview: `http://localhost:3000/deals/<deal-id>`
 
 Do not call localhost until the operator confirms the dev server is running.

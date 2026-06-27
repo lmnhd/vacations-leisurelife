@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "generatedAtIso": "2026-06-26T23:30:41.139Z",
+  "syntheses": [
+    {
+      "id": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "dealId": "1543052",
+      "generatedAtIso": "2026-06-26T23:21:02.395Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
+      "sailingAngleTitle": "See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer",
+      "businessName": "LeisureLife Interactive",
+      "headline": "Sky Suite. Dawes Glacier. July",
+      "longHeadline": "Your private veranda when Edge noses into Endicott Arm — no jockeying for rail space on De",
+      "description": "A suite-level Alaska sailing from Seattle — summer 2026, limited availability.",
+      "promptTemplate": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative.\nEach image should be wildly different.\nUse only 1 balcony scene.\n Balconies should look like a nice metallic Cruise ship balcony ONLY:\n{{HEADLINE}}\n{{LONG_HEADLINE}}",
+      "images": [
+        {
+          "aspect": "landscape_1_91x1",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/google-ads-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/landscape_1_91x1-1782516619447.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative.\nEach image should be wildly different.\nUse only 1 balcony scene.\n Balconies should look like a nice metallic Cruise ship balcony ONLY:\nSky Suite. Dawes Glacier. July\nYour private veranda when Edge noses into Endicott Arm — no jockeying for rail space on De\n\nDo not render any text, words, logos, or graphic overlays in the image\nDo not display the entire ship\nShow interiors minimally\nNo 'HOME' aesthetics\nNo bedrooms, kitchens, bathrooms, or living rooms",
+          "generatedAtIso": "2026-06-26T23:30:19.447Z",
+          "previousImages": []
+        },
+        {
+          "aspect": "square_1x1",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1543052/google-ads-synthesis/funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-/square_1x1-1782516639717.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative.\nEach image should be wildly different.\nUse only 1 balcony scene.\n Balconies should look like a nice metallic Cruise ship balcony ONLY:\nSky Suite. Dawes Glacier. July\nYour private veranda when Edge noses into Endicott Arm — no jockeying for rail space on De\n\nDo not render any text, words, logos, or graphic overlays in the image\nDo not display the entire ship\nShow interiors minimally\nNo 'HOME' aesthetics\nNo bedrooms, kitchens, bathrooms, or living rooms",
+          "generatedAtIso": "2026-06-26T23:30:39.717Z",
+          "previousImages": []
+        }
+      ],
+      "operatorPlacements": []
+    }
+  ]
+}

@@ -15,6 +15,11 @@ import type { DealAdCopyCache, DealAdCopy } from "./deal-ad-copy-types";
 import type { DealFunnelSynthesisCache, DealFunnelSynthesis } from "./deal-page-design-types";
 import type { DealMetaAdSynthesisCache, DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { DealMetaDistributionCache, DealMetaDistribution } from "./deal-meta-distribution-types";
+import type { DealGoogleAdsSynthesisCache, DealGoogleAdsSynthesis } from "./deal-google-ads-synthesis-types";
+import type {
+  DealGoogleAdsDistributionCache,
+  DealGoogleAdsDistribution,
+} from "./deal-google-ads-distribution-types";
 import type { LinkBrokerCache, LinkBrokerRecord } from "./link-broker-types";
 import type { AgentCallbackRequestsCache } from "./callback-request-types";
 
@@ -577,5 +582,108 @@ export function validateDealMetaDistributionCache(
   }
   return errors.length === 0
     ? { ok: true, value: value as unknown as DealMetaDistributionCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealGoogleAdsImage(asset: unknown, i: number, errors: string[]): void {
+  if (!isRecord(asset)) {
+    errors.push(`images[${i}] is not an object`);
+    return;
+  }
+  if (!["landscape_1_91x1", "square_1x1"].includes(String(asset.aspect))) {
+    errors.push(`images[${i}].aspect invalid: ${String(asset.aspect)}`);
+  }
+  if (!["pending", "generating", "ready", "error"].includes(String(asset.status))) {
+    errors.push(`images[${i}].status invalid: ${String(asset.status)}`);
+  }
+}
+
+function validateDealGoogleAdsSynthesis(s: unknown, i: number, errors: string[]): void {
+  if (!isRecord(s)) {
+    errors.push(`syntheses[${i}] is not an object`);
+    return;
+  }
+  const m = s as Partial<DealGoogleAdsSynthesis>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`syntheses[${i}].id missing`);
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`syntheses[${i}].generatedAtIso must be an ISO date`);
+  if (typeof m.sourceFunnelSynthesisId !== "string" || !m.sourceFunnelSynthesisId) {
+    errors.push(`syntheses[${i}].sourceFunnelSynthesisId missing`);
+  }
+  if (typeof m.businessName !== "string" || !m.businessName) {
+    errors.push(`syntheses[${i}].businessName missing`);
+  }
+  if (typeof m.headline !== "string" || !m.headline) errors.push(`syntheses[${i}].headline missing`);
+  if (typeof m.longHeadline !== "string" || !m.longHeadline) {
+    errors.push(`syntheses[${i}].longHeadline missing`);
+  }
+  if (typeof m.description !== "string" || !m.description) {
+    errors.push(`syntheses[${i}].description missing`);
+  }
+  if (typeof m.promptTemplate !== "string" || !m.promptTemplate) {
+    errors.push(`syntheses[${i}].promptTemplate missing`);
+  }
+  if (!Array.isArray(m.images) || m.images.length !== 2) {
+    errors.push(`syntheses[${i}].images must be an array of exactly 2 entries`);
+  } else {
+    m.images.forEach((asset, j) => validateDealGoogleAdsImage(asset, j, errors));
+  }
+  // Optional for backward compatibility with syntheses cached before this field
+  // existed; loadDealGoogleAdsSynthesisCache defaults it to [] when absent.
+  if (m.operatorPlacements !== undefined && !Array.isArray(m.operatorPlacements)) {
+    errors.push(`syntheses[${i}].operatorPlacements must be an array when present`);
+  }
+}
+
+export function validateDealGoogleAdsSynthesisCache(
+  value: unknown
+): ValidationResult<DealGoogleAdsSynthesisCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "syntheses", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.syntheses)) {
+    v.syntheses.forEach((s, i) => validateDealGoogleAdsSynthesis(s, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealGoogleAdsSynthesisCache, errors }
+    : { ok: false, errors };
+}
+
+function validateDealGoogleAdsDistribution(d: unknown, i: number, errors: string[]): void {
+  if (!isRecord(d)) {
+    errors.push(`distributions[${i}] is not an object`);
+    return;
+  }
+  const m = d as Partial<DealGoogleAdsDistribution>;
+  if (typeof m.id !== "string" || !m.id) errors.push(`distributions[${i}].id missing`);
+  if (typeof m.dealId !== "string" || !m.dealId) errors.push(`distributions[${i}].dealId missing`);
+  if (typeof m.sourceGoogleAdsSynthesisId !== "string" || !m.sourceGoogleAdsSynthesisId) {
+    errors.push(`distributions[${i}].sourceGoogleAdsSynthesisId missing`);
+  }
+  if (!isIsoDate(m.generatedAtIso)) errors.push(`distributions[${i}].generatedAtIso must be an ISO date`);
+  if (!["simulate", "live"].includes(String(m.mode))) {
+    errors.push(`distributions[${i}].mode invalid: ${String(m.mode)}`);
+  }
+  if (!["planned", "dispatched", "error"].includes(String(m.status))) {
+    errors.push(`distributions[${i}].status invalid: ${String(m.status)}`);
+  }
+  if (!isRecord(m.plan)) errors.push(`distributions[${i}].plan missing`);
+  if (!Array.isArray(m.notes)) errors.push(`distributions[${i}].notes must be an array`);
+}
+
+export function validateDealGoogleAdsDistributionCache(
+  value: unknown
+): ValidationResult<DealGoogleAdsDistributionCache> {
+  const errors: string[] = [];
+  if (!checkBase(value, "distributions", errors)) {
+    return { ok: false, errors };
+  }
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.distributions)) {
+    v.distributions.forEach((d, i) => validateDealGoogleAdsDistribution(d, i, errors));
+  }
+  return errors.length === 0
+    ? { ok: true, value: value as unknown as DealGoogleAdsDistributionCache, errors }
     : { ok: false, errors };
 }

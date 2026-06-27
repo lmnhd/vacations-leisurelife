@@ -186,6 +186,27 @@ The skill keeps agency inventory lookup, promotion applicability, market fit, pi
 
 ---
 
+## 6B. Agentic Campaign Manifest Builder
+
+When the operator supplies a campaign opportunity and wants an agent to assemble the existing pipeline state instead of manually starting from the first UI step, use:
+
+`.github/skills/campaign-manifest-builder/SKILL.md`
+
+Invoke it for requests such as:
+
+- turn a holiday angle or niche idea into a review-ready campaign
+- build from an exact cruise sailing, package id, CB group, promotion, or strong CBAT deal
+- reconstruct or complete Group or Deal manifests by using existing APIs or store contracts
+- continue a campaign that moves intermittently between UI work and agent work
+- hand the operator directly to the next meaningful approval or image-selection checkpoint
+
+This skill routes the intake, chooses the nearest valid pipeline insertion point, assembles state through the existing Group or Deal systems, and preserves approval boundaries. It does not replace the lane skills:
+
+- Group execution remains governed by `.github/skills/campaign-generation/SKILL.md`.
+- Deal execution remains governed by `.github/skills/deal-campaign-generation/SKILL.md`.
+
+---
+
 ## 7. Repository Operating Rules
 
 - Do not start, stop, restart, or background persistent dev servers or watchers unless the user explicitly asks in the current turn.

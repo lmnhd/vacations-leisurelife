@@ -8,6 +8,7 @@ import { DEALS_SYSTEM_OPERATOR_ACTIONS } from "@/lib/cb/deals-system/operator-ac
 import { CallbackRequestsPanel } from "./callback-requests-panel";
 import { DealActivityPanel } from "./deal-activity-panel";
 import { DealCampaignWorkbench } from "./campaign-workbench";
+import { DealPricingCheckPanel } from "./deal-pricing-check-panel";
 import { DealsSystemControls } from "./controls";
 import { PackageLookupControl } from "./package-lookup-control";
 
@@ -189,6 +190,10 @@ const accents = {
   violet: {
     eyebrow: "text-violet-300",
     cta: "border-violet-300/40 bg-violet-400/15 text-violet-100 hover:bg-violet-400/25",
+  },
+  amber: {
+    eyebrow: "text-amber-300",
+    cta: "border-amber-300/40 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25",
   },
 } as const;
 
@@ -415,6 +420,15 @@ function PipelineTab({ data }: { data: DealsSystemDashboardData }) {
         cta="Open Meta Ad Synthesis"
         description="Turn a published deal's landing page + carousel copy into ready-to-launch Meta ad creative (primary text, headlines, descriptions, and the carousel card set) for the ad platform. Coming soon."
       />
+
+      <StepCard
+        step={7}
+        accent="amber"
+        title="Google Ads Synthesis"
+        href="/tests/deals-system/google-ads-synthesis"
+        cta="Open Google Ads Synthesis"
+        description="Turn the funnel synthesis's lead carousel card into a Google Responsive Display Ad — headline/long headline/description text fields plus landscape and square creative — then build a targeting plan and dispatch a PAUSED draft straight into Google Ads Manager."
+      />
     </div>
   );
 }
@@ -424,6 +438,10 @@ function ToolsTab({ data }: { data: DealsSystemDashboardData }) {
     <div className="space-y-4">
       <Panel title="Script Runner" eyebrow="Run allowlisted npm scripts">
         <DealsSystemControls actions={[...DEALS_SYSTEM_OPERATOR_ACTIONS]} />
+      </Panel>
+
+      <Panel title="Pricing Check" eyebrow="Compare published vs. live cabin pricing, correct drift tier-by-tier">
+        <DealPricingCheckPanel />
       </Panel>
 
       <Panel title="Package Lookup" eyebrow="Resolve cruise facts to Odysseus packages">

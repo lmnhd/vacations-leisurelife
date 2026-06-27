@@ -1,58 +1,53 @@
 Emphasize urgency. 
 Not too busy. 
 
-After creating the Meta Ad campaign and uploading it and checking the targeting, the targeting seems kind of thin to me. This is based off of an ad developed with the new WorkSpace workflow instead of the normal discovery pipeline. Is something missing here, or do we need to optimize the targeting process? 
 
-Here is the ad copy for this campaign:
-Card 1
-ready
-🔓 lock
-Sky Suite. Dawes Glacier. July 24.
-headline 34/40
+GOOGLE
 
-Your private veranda when Edge noses into Endicott Arm — no jockeying for rail space on Deck 15. 7-night Alaska RT Seattle.
+Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative:
+{{HEADLINE}}
+{{LONG_HEADLINE}}
 
-primary text 123/125
+Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative.
+Each image should be wildly different.
+Use only 1 balcony scene.
+ Balconies should look like a nice metallilc Cruise ship balcony ONLY:
+{{HEADLINE}}
+{{LONG_HEADLINE}}
 
-Sky Suite. Dawes Glacier. July 24.
-Regenerate image
-Prompt preview
-Card 2
-ready
-🔓 lock
-2nd Guest Up to 75% Off
-headline 23/40
 
-Summer Sale suite math: up to 75% off the second fare (non-refundable deposit). Sky Suite & above, book by 07/27. Select sailings.
 
-primary text 130/125
 
-2nd Guest Up to 75% Off
-Regenerate image
-Prompt preview
-Card 3
-ready
-🔓 lock
-$600 OBC — Do the Math
-headline 22/40
+Do not render any text, words, logos, or graphic overlays in the image
+×
+Do not display the entire ship
+×
+Show interiors minimally
+×
+No 'HOME' aesthetics
+×
+No bedrooms, kitchens, bathrooms, or living rooms
 
-Helicopter glacier landing in Skagway + Luminae tasting menu + spa thermal suite — and you're still in the black. 7 nights.
 
-primary text 123/125
+Meta
 
-$600 OBC — Do the Math
-Regenerate image
-Prompt preview
-Card 4
-ready
-🔓 lock
-The Milestone Sailing, Sorted
-headline 29/40
+Generate a vivid, artistic display-ad scene promoting the following Cruise Package — composition and mood should sell the package on their own, no text or words rendered in the image:
+{{HEADLINE}}
+{{LONG_HEADLINE}}
 
-Anniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.
 
-primary text 124/125
 
-The Milestone Sailing, Sorted
-Regenerate image
-Prompt preview
+
+
+
+
+
+
+
+
+
+
+
+____________________________
+## Ideas
+1. Cruise as a gift - "Buy her this for your next anniversary"

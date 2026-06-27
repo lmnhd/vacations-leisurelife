@@ -6,10 +6,10 @@ Read this before running scripts or local API calls.
 
 | Class | Examples | Rule |
 |---|---|---|
-| Read-only CB/Odysseus automation | `lookup-odysseus-package`, `deep-cruise-search`, promo scrape, link validation | Allowed autonomously for research and validation. Stop before any hold, reservation, payment, or booking action. |
+| Read-only CB/Odysseus automation | `lookup-odysseus-package`, `deep-cruise-search`, promo scrape, link validation, `check-deal-pricing` | Allowed autonomously for research and validation. Stop before any hold, reservation, payment, or booking action. |
 | Pure tests and local validation | `test:deals-system:all`, stage-specific `test:*` scripts, TypeScript checks | Safe to run autonomously. |
 | Local HTTP routes | `/api/tests/deals-system/*` and browser labs | Use only after the user confirms the dev server is running. Do not start it yourself. |
-| Cache-mutating campaign actions | Discovery generation, manifest creation, copy generation, publish assembly | Allowed when they are the requested campaign workflow. State what record or cache will be created or updated. |
+| Cache-mutating campaign actions | Discovery generation, manifest creation, copy generation, publish assembly, applying a cabin-pricing correction | Allowed when they are the requested campaign workflow. State what record or cache will be created or updated. For a pricing correction specifically, show the operator the stored vs. live numbers for that tier before applying it — never apply silently. |
 
 ## Reliable Commands
 
@@ -27,6 +27,15 @@ npm run extract-cb-promo-intelligence
 # Validate the Deals system.
 npm run test:deals-system:all
 npx tsc --noEmit --pretty false
+
+# Check a published Deal's cabin pricing against its live booking page
+# (scrapes the Deal's own bookingUrl, not a fresh search — Odysseus can
+# re-index a sailing under a new packageId between searches, which made
+# search-based matching unreliable). Flag-only — never writes. Compare
+# against the dashboard's Pricing Check panel (Tools tab) for the same
+# check + a one-click per-tier apply.
+npm run check-deal-pricing -- --deal 1543052
+npm run check-deal-pricing                      # all published deals
 ```
 
 Use narrower stage tests during iteration. Run the aggregate Deals suite after workflow or contract changes.
