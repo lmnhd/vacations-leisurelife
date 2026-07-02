@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-24T00:55:05.379Z",
+  "generatedAtIso": "2026-06-27T22:16:19.582Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -227,6 +227,56 @@
         "confidence": 1,
         "reasons": [
           "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-regent-buenos-aires-antarctic-overture",
+      "generatedAtIso": "2026-06-27T22:16:19.182Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "agent-promo-intake",
+      "isolatedNiche": "Affluent US and Canada travelers who want Antarctica-adjacent scenery without sacrificing ultra-luxury comfort, and who respond to cultural immersion when the land portion feels as curated as the ship.",
+      "researchRationale": "The selected sailing turns Buenos Aires from a transit city into the emotional gateway for Patagonia, Antarctic scenic cruising, the Falklands, Uruguay, and the South Atlantic. The free land program gives the campaign a tangible reason to act before the booking deadline.",
+      "successLogic": "This audience is already considering high-value bucket-list travel. The campaign works because it reframes the offer as a richer journey, not a discount: Buenos Aires culture plus Regent-level South Atlantic exploration on one resolved package.",
+      "audienceSignals": [
+        "Luxury cruise repeaters considering expedition-like scenery without expedition-ship tradeoffs.",
+        "Couples planning a milestone winter escape from North America.",
+        "Travelers drawn to tango, wine, Patagonia, Antarctic waters, and the Falklands.",
+        "Regent prospects who value included luxury and curated land experiences."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+        "theCorePitch": "Begin with Argentina's cultural pulse, then sail Regent's all-suite luxury toward Patagonia, Antarctic scenic cruising, the Falklands, Uruguay, and back to Buenos Aires.",
+        "visualAnchor": "Tango-lit Buenos Aires evenings, Iguazu-scale mist and rainforest drama, white Antarctic water, penguin-country shorelines, polished Regent suite luxury, and South Atlantic horizons.",
+        "targetAudienceDescriptor": "Affluent couples and luxury travelers in the US and Canada who want a grand South America voyage with cultural depth before or after the cruise.",
+        "relevantKeywords": [
+          "Regent Seven Seas South America",
+          "Buenos Aires luxury cruise",
+          "Antarctica scenic cruising",
+          "Patagonia cruise",
+          "free land program",
+          "ultra luxury cruise",
+          "Falkland Islands cruise",
+          "Iguazu Falls trip"
+        ],
+        "destinationAndTimeOfYearHints": "February 2027 South America sailing from Buenos Aires during the Southern Hemisphere summer.",
+        "onboardAssetRequirements": "Use Seven Seas Mariner luxury suite, dining, lounge, and deck assets; pair with Buenos Aires, Patagonia, Falklands, Antarctic scenic cruising, Montevideo, and Punta del Este imagery."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-06-27T22:16:19.182Z",
+        "packageId": "1523892",
+        "cruiseName": "Colossal Coastlines",
+        "cruiseLine": "Regent Seven Seas",
+        "sailDateIso": "2027-02-02",
+        "nights": 18,
+        "departurePortCode": "BUE",
+        "portsOfCall": "Buenos Aires | Puerto Madryn | Punta Arenas | Ushuaia | Cruising the Drake Passage | Half Moon Island | Admiralty Bay | Elephant Island | Stanley | Punta del Este | Montevideo | Buenos Aires",
+        "confidence": 0.85,
+        "reasons": [
+          "Exact sail date matched Odysseus lookup.",
+          "18-night duration matched promo flyer.",
+          "Cruise line matched Regent Seven Seas.",
+          "Package page confirmed Seven Seas Mariner ship identity."
         ]
       }
     }

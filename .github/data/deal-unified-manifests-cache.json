@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-24T00:55:23.785Z",
+  "generatedAtIso": "2026-06-27T23:15:07.583Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -543,6 +543,195 @@
         ],
         "promoStrategy": "Use selected promo intelligence to support \"See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer\" with qualified, public-safe language.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: See Dawes Glacier from Celebrity Edge — Seattle Roundtrip, 7 Nights, with Possible 2nd Guest Savings This Summer. Targeting angle: Couples aged 40–65, dual-income households with $100K+ income, interested in premium cruise experiences and natural wonders. Target people who have cruised before (Caribbean or Mediterranean) but have not yet done Alaska, as well as anniversary or milestone-celebration planners. Pacific Northwest residents or those with easy access to Seattle.."
+      }
+    },
+    {
+      "id": "unified-manifest-regent-buenos-aires-antarctic-overture-1523892",
+      "generatedAtIso": "2026-06-27T23:15:07.580Z",
+      "expiresOnIso": "2026-08-31",
+      "sourceAngleId": "angle-regent-buenos-aires-antarctic-overture",
+      "sourceManifestId": "manifest-regent-buenos-aires-antarctic-overture-1523892",
+      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+      "creativeBrief": {
+        "isolatedNiche": "Affluent US and Canada travelers who want Antarctica-adjacent scenery without sacrificing ultra-luxury comfort, and who respond to cultural immersion when the land portion feels as curated as the ship.",
+        "researchRationale": "The selected sailing turns Buenos Aires from a transit city into the emotional gateway for Patagonia, Antarctic scenic cruising, the Falklands, Uruguay, and the South Atlantic. The free land program gives the campaign a tangible reason to act before the booking deadline.",
+        "successLogic": "This audience is already considering high-value bucket-list travel. The campaign works because it reframes the offer as a richer journey, not a discount: Buenos Aires culture plus Regent-level South Atlantic exploration on one resolved package.",
+        "audienceSignals": [
+          "Luxury cruise repeaters considering expedition-like scenery without expedition-ship tradeoffs.",
+          "Couples planning a milestone winter escape from North America.",
+          "Travelers drawn to tango, wine, Patagonia, Antarctic waters, and the Falklands.",
+          "Regent prospects who value included luxury and curated land experiences."
+        ],
+        "angle": {
+          "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+          "theCorePitch": "Begin with Argentina's cultural pulse, then sail Regent's all-suite luxury toward Patagonia, Antarctic scenic cruising, the Falklands, Uruguay, and back to Buenos Aires.",
+          "visualAnchor": "Tango-lit Buenos Aires evenings, Iguazu-scale mist and rainforest drama, white Antarctic water, penguin-country shorelines, polished Regent suite luxury, and South Atlantic horizons.",
+          "targetAudienceDescriptor": "Affluent couples and luxury travelers in the US and Canada who want a grand South America voyage with cultural depth before or after the cruise.",
+          "relevantKeywords": [
+            "Regent Seven Seas South America",
+            "Buenos Aires luxury cruise",
+            "Antarctica scenic cruising",
+            "Patagonia cruise",
+            "free land program",
+            "ultra luxury cruise",
+            "Falkland Islands cruise",
+            "Iguazu Falls trip"
+          ],
+          "destinationAndTimeOfYearHints": "February 2027 South America sailing from Buenos Aires during the Southern Hemisphere summer.",
+          "onboardAssetRequirements": "Use Seven Seas Mariner luxury suite, dining, lounge, and deck assets; pair with Buenos Aires, Patagonia, Falklands, Antarctic scenic cruising, Montevideo, and Punta del Este imagery."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Regent Seven Seas",
+          "departurePortHint": "Buenos Aires",
+          "nights": 18,
+          "itineraryName": "Colossal Coastlines",
+          "portsOfCall": [
+            "Buenos Aires",
+            "Puerto Madryn",
+            "Punta Arenas",
+            "Ushuaia",
+            "Cruising the Drake Passage",
+            "Half Moon Island",
+            "Admiralty Bay",
+            "Elephant Island",
+            "Stanley",
+            "Punta del Este",
+            "Montevideo",
+            "Buenos Aires"
+          ],
+          "destination": "South America and Antarctic scenic cruising",
+          "sailWindow": {
+            "latestIso": "2027-02-02",
+            "rationale": "Exact sail date selected from the Regent Iconic Explorations promo list.",
+            "earliestIso": "2027-02-02"
+          },
+          "suggestedBriefId": "brief-regent-buenos-aires-antarctic-overture",
+          "suggestedDealId": "regent-buenos-aires-antarctic-overture-1523892"
+        },
+        "lookupQuery": {
+          "date": "2027-02-02",
+          "port": "BUE",
+          "line": "Regent Seven Seas",
+          "nights": 18,
+          "destination": "South America and Antarctic scenic cruising",
+          "ship": "Seven Seas Mariner",
+          "windowDays": 2
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "Buenos Aires",
+            "Patagonia",
+            "Ushuaia",
+            "Antarctic scenic cruising",
+            "Falkland Islands",
+            "Uruguay"
+          ],
+          "metaInterestSeeds": [
+            "Regent Seven Seas Cruises",
+            "Luxury travel",
+            "Buenos Aires",
+            "Patagonia",
+            "Antarctica travel",
+            "Iguazu Falls",
+            "Falkland Islands",
+            "Tango"
+          ],
+          "inferredMarket": "US",
+          "personaSignals": [
+            "Affluent couples",
+            "Luxury cruise repeat guests",
+            "Bucket-list South America travelers",
+            "Travelers seeking cultural immersion before or after a cruise"
+          ],
+          "excludedAudienceSignals": [
+            "Budget cruise shoppers",
+            "Families needing third-guest promo eligibility",
+            "Travelers outside US and Canada for this offer"
+          ],
+          "metaBehaviorSignals": [
+            "International luxury travel planners",
+            "Cruise vacation shoppers",
+            "High-value trip researchers",
+            "Responds to limited-time travel offers"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "promoRecordId": "rssc-iconic-explorations-free-land-2026-2027",
+            "matchedOn": [
+              "Regent Seven Seas",
+              "Seven Seas Mariner",
+              "2027-02-02",
+              "18-night roundtrip Buenos Aires appears in the operator-provided promo list."
+            ],
+            "assumptions": [
+              "Guest market is US or Canada.",
+              "Booking occurs before August 31, 2026.",
+              "Land program inventory remains available."
+            ],
+            "status": "likely_applicable",
+            "warnings": [
+              "Confirm promo code ICONIC and land program availability before quoting publicly.",
+              "Do not present this as guaranteed until Regent confirms eligibility for the booking."
+            ]
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "rssc-iconic-explorations-free-land-2026-2027",
+            "title": "Regent Seven Seas Iconic Explorations - Free Pre- or Post-Cruise Land Program",
+            "vendor": "Regent Seven Seas",
+            "bookingWindow": "New reservations made June 1, 2026 through August 31, 2026.",
+            "sailingWindow": "Select 2026-2027 Exotic Voyages listed in the Iconic Explorations promotion.",
+            "offerTypes": [
+              "suite_perk",
+              "other"
+            ],
+            "publicClaimsAllowed": [
+              "Free pre- or post-cruise land program available on select Regent Seven Seas exotic voyages.",
+              "Guests 1 and 2 may receive one included land program on eligible sailings.",
+              "Book by August 31, 2026 for this Iconic Explorations offer."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Offer is capacity controlled and applies only to select voyages.",
+              "Eligibility, combinability, and availability must be confirmed at booking.",
+              "US and Canada residency restrictions apply."
+            ],
+            "visitorFriendlySummary": "On select Regent Seven Seas exotic voyages, eligible guests 1 and 2 may receive a free pre- or post-cruise land program when booking by August 31, 2026, subject to availability and terms.",
+            "suggestedAngles": [
+              "Make Buenos Aires the opening act, not just the airport.",
+              "Antarctic-edge luxury with a cultural land chapter included.",
+              "A voyage that starts with tango, wine, and Iguazu-scale drama before Patagonia and the Falklands."
+            ],
+            "cautionFlags": [
+              "Do not imply all sailings qualify.",
+              "Do not guarantee land program availability without live confirmation.",
+              "Do not market to non-US/non-Canada residents."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "Guests 3 or more are not eligible for the free land program.",
+              "Valid only for residents of the US and Canada.",
+              "New reservations only.",
+              "Select voyages only."
+            ],
+            "applicableProducts": [
+              "Select 2026-2027 Regent Seven Seas Exotic Voyages",
+              "All suite categories"
+            ],
+            "applicableMarkets": [
+              "US",
+              "CA"
+            ]
+          }
+        ],
+        "promoStrategy": "Lead with the free pre- or post-cruise land program as the reason this ultra-luxury voyage feels complete before guests even step aboard. Use qualified language: eligible guests may receive one land program on this select sailing when booked by August 31, 2026, subject to availability and terms.",
+        "manifestReasoning": "This sailing has the strongest campaign shape because the ship, date, duration, route, price, and day-by-day itinerary were resolved from Odysseus, and the Regent promo adds an emotionally legible Buenos Aires land chapter to an already bucket-list South Atlantic route."
       }
     }
   ]

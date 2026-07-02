@@ -1,6 +1,6 @@
 ---
 name: deal-campaign-generation
-description: Orchestrate fast, approval-gated Leisure Life retail cruise Deal campaigns. Use when an agent must find real Odysseus sailings, evaluate or attach CB promotions, import a sailing into the Deal Campaign Workbench, generate advertising and targeting angles, continue through the Deals pipeline, review copy and funnel assets, resolve duplicates, check or correct a published Deal's cabin pricing against the live Odysseus search, or prepare a Curated Deal for operator approval and publication.
+description: Orchestrate fast, approval-gated Leisure Life retail cruise Deal campaigns. Use when an agent must find real Odysseus sailings, evaluate or attach CB promotions, import a sailing into the Deal Campaign Workbench, generate advertising and targeting angles, continue through the Deals pipeline, review copy and funnel assets, resolve duplicates, check or correct a published Deal's cabin pricing against the live Odysseus search, or prepare a Curated Deal for operator approval and publication. Campaign-only requests may skip discovery/manifestation and start from an existing sailing, an operator-chosen angle, or a manually selected promo.
 ---
 
 # Deal Campaign Generation
@@ -19,12 +19,25 @@ Use `.github/DOCS/Implementation/DEALS_STRATEGY/HOME_PAGE_DEALS/6-10-26/STATUS.m
 
 ## 2. Core Operating Model
 
-A Deal campaign has two valid starts:
+A Deal campaign has one pipeline and multiple entry points. Every entry point
+must converge on the nearest valid shared artifact, usually a `DealTripManifest`,
+so the operator and agents can continue through the same copywriter, funnel,
+publish, Meta, and Google surfaces.
+
+Valid starts:
 
 - **Promotion-led fast path:** Start with a current CB promotion, find eligible real sailings, select one, import it into the Workbench, attach the promotion, generate angles, and continue in the pipeline.
 - **Inventory-first discovery path:** Sweep real inventory, score strong deals, reform an honest niche around a selected sailing, manifest the trip, write promo-aware copy, synthesize the funnel, and publish through the approval gate.
 
+- **Campaign-only curated path:** If the operator already has a sailing, angle, or promo, use the Deal Campaign Workbench to lock the hook, persist it to the Curated Deal record, and continue directly through pitch, copy, ad structure, media, and approval. Do not force a discovery or Trip Manifestation step unless the operator explicitly wants one.
+
+- **Agent-completed partial path:** If an agent has already produced enough facts, angle, promo context, or package data to skip earlier UI work, normalize that work into the next real pipeline artifact and hand the operator to that point. Do not make the operator redo discovery or manifestation just because the UI labels are sequential.
+
 Prefer the promotion-led fast path when the user already has a sale, vendor, date range, destination constraint, or candidate sailing. Prefer inventory-first Discovery when the user wants the system to discover the opportunity.
+
+The key engineering rule: discovery and manifestation are adapters into the
+pipeline, not mandatory rituals. If package facts and a campaign hook already
+exist, create or update the manifest and send the operator to Copywriter.
 
 ## 3. Hard Rules
 
@@ -74,5 +87,6 @@ A campaign is ready to advance only when:
 - Pricing Check: the `Pricing Check` panel in the dashboard's Tools tab (or `npm run check-deal-pricing`) — see "Maintenance: Cabin Pricing Drift" in [WORKFLOW.md](./WORKFLOW.md)
 - Public preview: `http://localhost:3000/deals/<deal-id>`
 
-Do not call localhost until the operator confirms the dev server is running.
+Curated Deals appear in the Deals dashboard under the `Curated Deals` inventory panel and inside the Deal Campaign Workbench. Trip Manifestation is for discovery-first inputs and should not be used as the main entry point for a campaign-only request.
 
+Do not call localhost until the operator confirms the dev server is running.

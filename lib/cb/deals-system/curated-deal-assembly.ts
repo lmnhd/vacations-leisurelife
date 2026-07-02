@@ -30,6 +30,7 @@ import {
 import type {
   DealApprovalGate,
   DealApprovalState,
+  DealCampaignStrategy,
 } from "./campaign-types";
 import type {
   CuratedDealCruiseFacts,
@@ -86,6 +87,7 @@ export interface AssembleCuratedDealInput {
   bookingUrlSource?: CuratedOdysseusDeal["bookingUrlSource"];
   linkHealth?: LinkBrokerHealth;
   retailBrief?: RetailDiscoveryBrief;
+  campaignStrategy?: DealCampaignStrategy;
   angleResearch?: DealAngleResearch;
   targetingDemographic?: DealTargetingDemographic;
   promoRecords?: CbPromoIntelligenceRecord[];
@@ -135,6 +137,7 @@ function stageInputs(
     dealId: input.dealId,
     packageId: input.packageId,
     cruiseFacts: input.cruiseFacts,
+    campaignStrategy: input.campaignStrategy,
     angleResearch,
     targetingDemographic,
     promoRecords: input.promoRecords,
@@ -152,6 +155,12 @@ function buildScoring(deal: Partial<CuratedOdysseusDeal>): CuratedDealScoring {
     reasons.push("Has trip angle research.");
   } else {
     warnings.push("No angle research attached.");
+  }
+  if (deal.campaignStrategy?.campaignAngle) {
+    score += 5;
+    reasons.push("Has locked campaign hook.");
+  } else {
+    warnings.push("No campaign hook saved from the workbench.");
   }
   if (deal.targetingDemographic) {
     score += 20;
@@ -351,6 +360,7 @@ export async function assembleCuratedDeal(
     dealId: input.dealId,
     packageId: input.packageId,
     cruiseFacts: input.cruiseFacts,
+    campaignStrategy: input.campaignStrategy,
     angleResearch,
     targetingDemographic,
     promoRecords: input.promoRecords,
@@ -377,6 +387,7 @@ export async function assembleCuratedDeal(
     packageId: input.packageId,
     linkHealth,
     angleResearch,
+    campaignStrategy: input.campaignStrategy,
     targetingDemographic,
     pitchBrief,
     copyPackage,
@@ -406,6 +417,7 @@ export async function assembleCuratedDeal(
     cruiseFacts: input.cruiseFacts,
     scoring: buildScoring(partial),
     packaging: buildPackaging(input.cruiseFacts, partial),
+    campaignStrategy: input.campaignStrategy,
     promoApplicability: input.promoApplicability,
     angleResearch,
     targetingDemographic,
@@ -469,6 +481,7 @@ export async function runDealCampaignStage(
       dealId: deal.id,
       packageId: deal.packageId,
       cruiseFacts: deal.cruiseFacts,
+      campaignStrategy: deal.campaignStrategy,
       angleResearch: next.angleResearch,
       targetingDemographic: next.targetingDemographic,
       promoRecords: input.promoRecords,
@@ -481,6 +494,7 @@ export async function runDealCampaignStage(
         dealId: deal.id,
         packageId: deal.packageId,
         cruiseFacts: deal.cruiseFacts,
+        campaignStrategy: deal.campaignStrategy,
         angleResearch: next.angleResearch,
         targetingDemographic: next.targetingDemographic,
         promoRecords: input.promoRecords,
@@ -492,6 +506,7 @@ export async function runDealCampaignStage(
       dealId: deal.id,
       packageId: deal.packageId,
       cruiseFacts: deal.cruiseFacts,
+      campaignStrategy: deal.campaignStrategy,
       angleResearch: next.angleResearch,
       targetingDemographic: next.targetingDemographic,
       promoRecords: input.promoRecords,

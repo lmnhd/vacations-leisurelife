@@ -96,6 +96,12 @@ export interface DealsSystemCuratedDealSummary {
   hasAngleResearch: boolean;
   hasTargetingDemographic: boolean;
   hasPitchBrief: boolean;
+  hasCampaignStrategy: boolean;
+  campaignAngle?: string;
+  targetAudience?: string;
+  visualAngle?: string;
+  targetingKeywords: string[];
+  campaignStrategySavedAtIso?: string;
   pitchPrimaryHook?: string;
   pitchTripSummary?: string;
   pitchGenerator?: string;
@@ -475,6 +481,12 @@ function summarizeDeal(
     hasAngleResearch: Boolean(deal.angleResearch),
     hasTargetingDemographic: Boolean(deal.targetingDemographic),
     hasPitchBrief: Boolean(deal.pitchBrief),
+    hasCampaignStrategy: Boolean(deal.campaignStrategy),
+    campaignAngle: deal.campaignStrategy?.campaignAngle,
+    targetAudience: deal.campaignStrategy?.targetAudience,
+    visualAngle: deal.campaignStrategy?.visualAngle,
+    targetingKeywords: deal.campaignStrategy?.targetingKeywords ?? [],
+    campaignStrategySavedAtIso: deal.campaignStrategy?.savedAtIso,
     pitchPrimaryHook: deal.pitchBrief?.primaryHook,
     pitchTripSummary: deal.pitchBrief?.tripSummary,
     pitchGenerator: deal.pitchBrief?.generator,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function DealStatusExplainer({ deal }: { deal: any }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -598,6 +598,16 @@ export function DealCampaignWorkbench({
     ]
   );
 
+  useEffect(() => {
+    if (!selectedDeal) return;
+    setSelectedDealPromos(selectedDeal.promoApplicabilityIds ?? []);
+    setCampaignAngle(selectedDeal.campaignAngle ?? "");
+    setTargetAudience(selectedDeal.targetAudience ?? "");
+    setVisualAngle(selectedDeal.visualAngle ?? "");
+    setTargetingKeywords(selectedDeal.targetingKeywords?.join(", ") ?? "");
+    setAngleStatus(null);
+  }, [selectedDealId]);
+
   async function call(body: Record<string, unknown>, busyKey: string) {
     setBusy(busyKey);
     setMessage(null);
@@ -650,6 +660,13 @@ export function DealCampaignWorkbench({
           action: "generate_angles",
           dealId: deal.id,
           promoRecordIds: selectedDealPromos,
+          campaignAngle: campaignAngle.trim(),
+          targetAudience: targetAudience.trim(),
+          visualAngle: visualAngle.trim(),
+          targetingKeywords: targetingKeywords
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
         }),
       });
       const payload = (await response.json()) as ApiResponse;
@@ -660,6 +677,17 @@ export function DealCampaignWorkbench({
       setAngleOptions(nextOptions);
       if (nextOptions[0]) {
         applyAngleOption(nextOptions[0]);
+        await call(
+          {
+            action: "save_strategy",
+            dealId: deal.id,
+            campaignAngle: nextOptions[0].campaignAngle,
+            targetAudience: nextOptions[0].targetAudience,
+            visualAngle: nextOptions[0].visualAngle,
+            targetingKeywords: nextOptions[0].targetingKeywords,
+          },
+          `${deal.id}:save_strategy`
+        );
       }
       setAngleStatus(
         nextOptions.length > 0
@@ -678,6 +706,23 @@ export function DealCampaignWorkbench({
     setTargetAudience(option.targetAudience);
     setVisualAngle(option.visualAngle);
     setTargetingKeywords(option.targetingKeywords.join(", "));
+  }
+
+  function saveCampaignStrategy(deal: DealsSystemCuratedDealSummary) {
+    void call(
+      {
+        action: "save_strategy",
+        dealId: deal.id,
+        campaignAngle: campaignAngle.trim(),
+        targetAudience: targetAudience.trim(),
+        visualAngle: visualAngle.trim(),
+        targetingKeywords: targetingKeywords
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+      },
+      `${deal.id}:save_strategy`
+    );
   }
 
   function continueInPipeline(deal: DealsSystemCuratedDealSummary) {
@@ -1334,11 +1379,11 @@ export function DealCampaignWorkbench({
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-fuchsia-300">
-                    Pipeline handoff - generate ad and targeting angles
+                    Pipeline entry - normalize into a manifest
                   </p>
                   <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
-                    Generate campaign angles from this selected sailing and attached promo intelligence, choose one,
-                    then continue in the stronger pipeline for copy and finalization.
+                    Generate or edit the campaign angle, lock it to this sailing, then create the
+                    manifest that the copywriter, funnel, publish, and ad steps already use.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1362,7 +1407,7 @@ export function DealCampaignWorkbench({
                     onClick={() => continueInPipeline(deal)}
                     className="inline-flex h-9 items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-4 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {busy === `${deal.id}:send_to_pipeline` ? "Opening pipeline..." : "Continue in pipeline"}
+                    {busy === `${deal.id}:send_to_pipeline` ? "Creating manifest..." : "Create manifest and open copywriter"}
                   </button>
                 </div>
               </div>
@@ -1549,6 +1594,43 @@ export function DealCampaignWorkbench({
                     placeholder="Comma separated keywords"
                   />
                 </Field>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
+                <div className="min-w-[240px] flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">
+                    Saved campaign hook
+                  </p>
+                  {selectedDeal.campaignAngle ? (
+                    <div className="mt-1 text-xs leading-5 text-slate-300">
+                      <p className="font-semibold text-white">{selectedDeal.campaignAngle}</p>
+                      {selectedDeal.targetAudience && <p className="mt-1">{selectedDeal.targetAudience}</p>}
+                      {selectedDeal.visualAngle && <p className="mt-1 text-slate-500">Visual: {selectedDeal.visualAngle}</p>}
+                      {selectedDeal.targetingKeywords.length > 0 && (
+                        <p className="mt-1 text-slate-500">
+                          Keywords: {selectedDeal.targetingKeywords.join(", ")}
+                        </p>
+                      )}
+                      {selectedDeal.campaignStrategySavedAtIso && (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Saved {selectedDeal.campaignStrategySavedAtIso}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">No hook has been locked to this deal yet.</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy !== null || !selectedDeal}
+                    onClick={() => saveCampaignStrategy(selectedDeal!)}
+                    className="inline-flex h-9 items-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-4 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {busy === `${selectedDeal?.id}:save_strategy` ? "Saving..." : "Lock campaign hook"}
+                  </button>
+                </div>
               </div>
             </div>
 

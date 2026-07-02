@@ -2,6 +2,8 @@
 
 Choose the entry path that matches the user's intent, then converge on the same promo-aware pipeline and approval gate.
 
+The Deals workflow is manifest-centered. Discovery, Trip Manifestation, package-number intake, promo-led intake, and agent-generated campaign briefs are all entry adapters. Once the system has a real sailing plus a usable campaign hook, create or update the `DealTripManifest` and hand the operator to the next appropriate shared stage, usually Copywriter.
+
 ## Path A: Promotion-Led Fast Campaign
 
 Use this when the user names a promotion, cruise line, date window, region, departure constraint, or candidate sailing.
@@ -99,7 +101,7 @@ Reference: `.github/DOCS/Implementation/DEALS_STRATEGY/HOME_PAGE_DEALS/6-10-26/T
 
 ## Converged Pipeline
 
-Both paths continue here.
+All paths continue here. Do not make the operator redo earlier stages when an agent or human has already supplied enough trustworthy inputs to create the shared manifest.
 
 ### Phase C1: Write Promo-Aware Ad Copy
 
@@ -170,4 +172,3 @@ Cabin pricing is captured once when a Deal is resolved (Phase A3/B3) and never a
 - Re-run the affected downstream stage.
 - If the same warning persists, stop and ask the operator.
 - Do not patch public copy to conceal a broken manifest, promo mismatch, or unresolved package.
-

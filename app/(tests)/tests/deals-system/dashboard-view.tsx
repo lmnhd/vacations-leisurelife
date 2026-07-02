@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { type DealsSystemDashboardData } from "@/lib/cb/deals-system/dashboard-data";
@@ -268,6 +269,14 @@ function PipelineTab({ data }: { data: DealsSystemDashboardData }) {
   return (
     <div className="space-y-4">
       <StepCard
+        step={0}
+        accent="violet"
+        title="Campaign-only - start from an existing sailing"
+        href="/tests/deals-system?tab=tools#deal-campaign-workbench"
+        cta="Open Workbench"
+        description="Use this when you already have a sailing, hook, or promo. Skip discovery and Trip Manifestation, then lock the hook in the Deal Campaign Workbench and continue directly through pitch, copy, ad structure, media, and approval."
+      />
+      <StepCard
         step={1}
         title="Discovery — start from research"
         href="/tests/deals-system/discovery"
@@ -326,9 +335,9 @@ function PipelineTab({ data }: { data: DealsSystemDashboardData }) {
         cta="Open Trip Manifestation"
         description={
           <>
-            Turn a discovery angle into a deal-package: correlate it with the CB promo
-            intelligence to manifest the cruise line, destination, sail window, and applicable
-            perks that pre-fill Source &amp; Assemble.{" "}
+            Discovery-first only. Turn a discovery angle into a deal-package: correlate it with
+            the CB promo intelligence to manifest the cruise line, destination, sail window, and
+            applicable perks that pre-fill Source &amp; Assemble.{" "}
             {data.discovery.manifestCount > 0
               ? `${data.discovery.manifestCount} manifest(s) cached.`
               : data.discovery.ideaCount > 0
@@ -448,12 +457,15 @@ function ToolsTab({ data }: { data: DealsSystemDashboardData }) {
         <PackageLookupControl />
       </Panel>
 
+      <div id="deal-campaign-workbench">
       <Panel
         title="Deal Campaign Workbench"
+        defaultOpen
         eyebrow="Develop a Deal with AI — research, copy, ad, media, approval"
       >
         <DealCampaignWorkbench deals={data.curatedDeals} promoOptions={data.promoOptions} />
       </Panel>
+    </div>
     </div>
   );
 }
@@ -484,9 +496,32 @@ function CuratedDealCard({ deal }: { deal: CuratedDealSummary }) {
         <Badge tone={deal.hasTargetingDemographic ? "ok" : "pending"}>
           targeting {deal.hasTargetingDemographic ? "yes" : "missing"}
         </Badge>
+        <Badge tone={deal.hasCampaignStrategy ? "ok" : "pending"}>
+          hook {deal.hasCampaignStrategy ? "saved" : "missing"}
+        </Badge>
         {deal.pinned && <Badge tone="ok">pinned</Badge>}
         {deal.hidden && <Badge tone="error">hidden</Badge>}
       </div>
+      {deal.hasCampaignStrategy && (
+        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3 text-xs text-slate-300">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Locked campaign hook
+          </p>
+          <p className="mt-1 font-semibold text-white">{deal.campaignAngle}</p>
+          {deal.targetAudience && <p className="mt-1 text-slate-400">{deal.targetAudience}</p>}
+          {deal.visualAngle && <p className="mt-1 text-slate-500">Visual: {deal.visualAngle}</p>}
+          {deal.targetingKeywords.length > 0 && (
+            <p className="mt-1 text-slate-500">
+              Keywords: {deal.targetingKeywords.join(", ")}
+            </p>
+          )}
+          {deal.campaignStrategySavedAtIso && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              Saved {formatDateTime(deal.campaignStrategySavedAtIso)}
+            </p>
+          )}
+        </div>
+      )}
       {deal.warnings.length > 0 && (
         <ul className="mt-3 space-y-1 text-xs leading-5 text-amber-100">
           {deal.warnings.map((warning) => (
@@ -734,7 +769,13 @@ export function DealsSystemDashboardView({
   refreshHref: string;
   refreshLabel: string;
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("pipeline");
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: TabId =
+    requestedTab === "tools" || requestedTab === "inventory" || requestedTab === "health"
+      ? requestedTab
+      : "pipeline";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const tabCounts: Record<TabId, number | null> = {
     pipeline: null,

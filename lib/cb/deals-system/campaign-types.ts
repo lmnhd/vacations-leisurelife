@@ -71,6 +71,22 @@ export interface DealPitchBrief {
   aiTrace?: DealAiGenerationTrace;
 }
 
+/**
+ * Operator-selected campaign hook/state saved on the Deal record.
+ *
+ * This is the persisted version of the workbench's campaign angle / target
+ * audience / visual angle / keyword inputs. It lets the operator lock the
+ * campaign promise in DynamoDB and reload it in the UI instead of treating it
+ * as ephemeral form state.
+ */
+export interface DealCampaignStrategy {
+  campaignAngle: string;
+  targetAudience: string;
+  visualAngle: string;
+  targetingKeywords: string[];
+  savedAtIso: string;
+}
+
 /** A single CTA option surfaced publicly on a Deal page. */
 export type DealCtaKind = "book_now" | "email_link" | "request_callback";
 

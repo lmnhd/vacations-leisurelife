@@ -19,6 +19,7 @@
  */
 
 import type { DealCopyOfferLine } from "./campaign-types";
+import type { DealCampaignStrategy } from "./campaign-types";
 import type { CuratedDealCruiseFacts } from "./curated-deal-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import type {
@@ -76,6 +77,8 @@ export interface CampaignStageInputs {
   dealId: string;
   packageId: string;
   cruiseFacts: CuratedDealCruiseFacts;
+  /** Operator-selected campaign hook/voice, persisted on the Deal record. */
+  campaignStrategy?: DealCampaignStrategy;
   angleResearch?: DealAngleResearch;
   targetingDemographic?: DealTargetingDemographic;
   /** Promo records whose extracted claims feed offer copy and proof points. */

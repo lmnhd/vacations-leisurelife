@@ -398,7 +398,7 @@ export async function generateDealPitchBriefAi(
   input: CampaignStageInputs
 ): Promise<DealPitchBrief> {
   const generatedAtIso = nowIso(input);
-  const { angleResearch, targetingDemographic } = input;
+  const { angleResearch, targetingDemographic, campaignStrategy } = input;
 
   const system = `You write the customer-voice pitch brief that sits between internal
 research and public copy. Your job is to find the ONE emotional hook that makes this
@@ -409,6 +409,17 @@ ${CUSTOMER_VOICE_RULES}
 ${GUARDRAILS}`;
 
   const prompt = `${factsBlock(input)}
+
+${
+  campaignStrategy
+    ? `Operator-selected campaign hook to preserve:
+Hook: ${campaignStrategy.campaignAngle}
+Audience: ${campaignStrategy.targetAudience}
+Visual angle: ${campaignStrategy.visualAngle}
+Targeting keywords: ${campaignStrategy.targetingKeywords.join(", ")}
+Do not invent a different central promise.`
+    : "No operator-selected campaign hook was saved yet."
+}
 
 ${
   angleResearch
@@ -453,10 +464,14 @@ Write:
     generator: "gpt",
     tripSummary: object.tripSummary,
     audienceStatement: object.audienceStatement,
-    primaryHook: object.primaryHook,
-    curatedReason: object.curatedReason,
+    primaryHook: campaignStrategy?.campaignAngle.trim() || object.primaryHook,
+    curatedReason: campaignStrategy
+      ? `${object.curatedReason} Operator-selected campaign hook: ${campaignStrategy.campaignAngle}.`
+      : object.curatedReason,
     sellingFacts,
-    researchRationale: object.researchRationale,
+    researchRationale: campaignStrategy
+      ? `${object.researchRationale} Operator-selected campaign hook: ${campaignStrategy.campaignAngle}.`
+      : object.researchRationale,
     aiTrace: trace,
   };
 }

@@ -1,146 +1,7 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-25T01:11:38.291Z",
+  "generatedAtIso": "2026-06-28T01:09:32.496Z",
   "distributions": [
-    {
-      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "dealId": "1578937",
-      "sourceMetaAdSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "generatedAtIso": "2026-06-22T23:29:00.510Z",
-      "mode": "live",
-      "status": "dispatched",
-      "plan": {
-        "dealId": "1578937",
-        "destinationUrl": "https://leisurelifeinteractive.net/deals/1578937",
-        "caption": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
-        "cards": [
-          {
-            "cardIndex": 0,
-            "headline": "Zero GMs. Nine Nights. One Ocean.",
-            "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
-            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png"
-          },
-          {
-            "cardIndex": 1,
-            "headline": "The Ship's Library Is Your Table",
-            "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
-            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png"
-          },
-          {
-            "cardIndex": 2,
-            "headline": "NYC → Southampton. No Ports Between.",
-            "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
-            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png"
-          },
-          {
-            "cardIndex": 3,
-            "headline": "Fill That Leuchtturm for Real",
-            "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
-            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png"
-          }
-        ],
-        "targeting": {
-          "interestQueries": [
-            "solo rpg",
-            "journaling game",
-            "thousand year old vampire",
-            "ironsworn",
-            "apothecaria",
-            "gm-less rpg",
-            "board game",
-            "writing",
-            "stationery",
-            "oracle tables",
-            "solo roleplaying",
-            "analog journaling"
-          ],
-          "resolvedInterests": [
-            {
-              "id": "6003342470823",
-              "name": "Board games",
-              "sourceQuery": "board game",
-              "audienceSizeLowerBound": 87881277,
-              "audienceSizeUpperBound": 103348382
-            },
-            {
-              "id": "6003586608473",
-              "name": "Writing",
-              "sourceQuery": "writing",
-              "audienceSizeLowerBound": 341526028,
-              "audienceSizeUpperBound": 401634610
-            },
-            {
-              "id": "6003102605840",
-              "name": "Stationery",
-              "sourceQuery": "stationery",
-              "audienceSizeLowerBound": 37487568,
-              "audienceSizeUpperBound": 44085380
-            }
-          ],
-          "unresolvedQueries": [
-            "solo rpg",
-            "journaling game",
-            "thousand year old vampire",
-            "ironsworn",
-            "apothecaria",
-            "gm-less rpg",
-            "oracle tables",
-            "solo roleplaying",
-            "analog journaling"
-          ],
-          "targeting": {
-            "geo_locations": {
-              "countries": [
-                "US"
-              ]
-            },
-            "flexible_spec": [
-              {
-                "interests": [
-                  {
-                    "id": "6003342470823",
-                    "name": "Board games"
-                  },
-                  {
-                    "id": "6003586608473",
-                    "name": "Writing"
-                  },
-                  {
-                    "id": "6003102605840",
-                    "name": "Stationery"
-                  }
-                ]
-              }
-            ]
-          },
-          "adSetMode": "dynamic",
-          "warnings": [
-            "AI-resolved parent nodes (4): board game, writing, arts and crafts, stationery"
-          ]
-        },
-        "campaignName": "[DRAFT] Deal 1578937 — Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
-        "adSetName": "[DRAFT] Deal 1578937 Audience",
-        "creativeName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife-carousel",
-        "adName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife"
-      },
-      "notes": [
-        "meta_ad_account_id=1612907296491359",
-        "meta_campaign_id=120246363096960142",
-        "meta_ad_set_id=120246363097290142",
-        "meta_ad_set_mode=dynamic",
-        "meta_ad_creative_id=1037239948875106",
-        "meta_ad_id=120246363112770142",
-        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246363112770142",
-        "meta_dispatched_at=2026-06-22T23:30:14.196Z",
-        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
-      ],
-      "metaCampaignId": "120246363096960142",
-      "metaAdSetId": "120246363097290142",
-      "metaAdSetMode": "dynamic",
-      "facebookCreativeId": "1037239948875106",
-      "facebookAdId": "120246363112770142",
-      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246363112770142"
-    },
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
       "dealId": "1582993",
@@ -451,6 +312,319 @@
       "facebookCreativeId": "1295506455903953",
       "facebookAdId": "120246515818680142",
       "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120246515818680142"
+    },
+    {
+      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "dealId": "1578937",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "generatedAtIso": "2026-06-28T01:07:36.827Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1578937",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1578937",
+        "caption": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Zero GMs. Nine Nights. One Ocean.",
+            "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "The Ship's Library Is Your Table",
+            "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "NYC → Southampton. No Ports Between.",
+            "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Fill That Leuchtturm for Real",
+            "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "solo rpg",
+            "journaling game",
+            "thousand year old vampire",
+            "ironsworn",
+            "apothecaria",
+            "gm-less rpg",
+            "role-playing games",
+            "board game",
+            "writing",
+            "hobbies",
+            "oracle tables",
+            "solo roleplaying"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003380576181",
+              "name": "Role-playing games",
+              "sourceQuery": "role-playing games",
+              "audienceSizeLowerBound": 152068967,
+              "audienceSizeUpperBound": 178833106
+            },
+            {
+              "id": "6003342470823",
+              "name": "Board games",
+              "sourceQuery": "board game",
+              "audienceSizeLowerBound": 87881277,
+              "audienceSizeUpperBound": 103348382
+            },
+            {
+              "id": "6003586608473",
+              "name": "Writing",
+              "sourceQuery": "writing",
+              "audienceSizeLowerBound": 341526028,
+              "audienceSizeUpperBound": 401634610
+            }
+          ],
+          "unresolvedQueries": [
+            "solo rpg",
+            "journaling game",
+            "thousand year old vampire",
+            "ironsworn",
+            "apothecaria",
+            "gm-less rpg",
+            "hobbies",
+            "oracle tables",
+            "solo roleplaying"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003380576181",
+                    "name": "Role-playing games"
+                  },
+                  {
+                    "id": "6003342470823",
+                    "name": "Board games"
+                  },
+                  {
+                    "id": "6003586608473",
+                    "name": "Writing"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (4): role-playing games, board game, writing, hobbies"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1578937 — Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+        "adSetName": "[DRAFT] Deal 1578937 Audience",
+        "creativeName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife-carousel",
+        "adName": "deal-1578937-funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122119360658816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1578937",
+        "facebook_page_dispatched_at=2026-06-28T01:07:53.396Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122119360658816807"
+    },
+    {
+      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "dealId": "1523892",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "generatedAtIso": "2026-06-28T01:09:16.467Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1523892",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1523892",
+        "caption": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Free Buenos Aires Land Program",
+            "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "Drake Passage. Heard It. Feel It.",
+            "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Falklands + Penguins + Patagonia",
+            "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "All-Inclusive Means All of It",
+            "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "buenos aires",
+            "patagonia",
+            "iguazu falls",
+            "falkland islands",
+            "tango",
+            "affluent couples",
+            "dance",
+            "luxury goods",
+            "couples",
+            "nature",
+            "photography",
+            "bucket-list south america travelers"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003258965702",
+              "name": "Buenos Aires",
+              "sourceQuery": "buenos aires",
+              "audienceSizeLowerBound": 172967653,
+              "audienceSizeUpperBound": 203409960
+            },
+            {
+              "id": "6003413530453",
+              "name": "Patagonia",
+              "sourceQuery": "patagonia",
+              "audienceSizeLowerBound": 15838137,
+              "audienceSizeUpperBound": 18625650
+            },
+            {
+              "id": "6003455616083",
+              "name": "Tango",
+              "sourceQuery": "tango",
+              "audienceSizeLowerBound": 11896232,
+              "audienceSizeUpperBound": 13989970
+            },
+            {
+              "id": "6003423342191",
+              "name": "Dance",
+              "sourceQuery": "dance",
+              "audienceSizeLowerBound": 545935068,
+              "audienceSizeUpperBound": 642019640
+            },
+            {
+              "id": "6007828099136",
+              "name": "Luxury goods",
+              "sourceQuery": "luxury goods",
+              "audienceSizeLowerBound": 673653435,
+              "audienceSizeUpperBound": 792216440
+            },
+            {
+              "id": "6003584622107",
+              "name": "Couples Retreat",
+              "sourceQuery": "couples",
+              "audienceSizeLowerBound": 542040,
+              "audienceSizeUpperBound": 637440
+            },
+            {
+              "id": "6003359996821",
+              "name": "Nature (science)",
+              "sourceQuery": "nature",
+              "audienceSizeLowerBound": 815391156,
+              "audienceSizeUpperBound": 958900000
+            },
+            {
+              "id": "6003899195666",
+              "name": "Photography",
+              "sourceQuery": "photography",
+              "audienceSizeLowerBound": 1117351836,
+              "audienceSizeUpperBound": 1314005760
+            }
+          ],
+          "unresolvedQueries": [
+            "iguazu falls",
+            "falkland islands",
+            "affluent couples"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003258965702",
+                    "name": "Buenos Aires"
+                  },
+                  {
+                    "id": "6003413530453",
+                    "name": "Patagonia"
+                  },
+                  {
+                    "id": "6003455616083",
+                    "name": "Tango"
+                  },
+                  {
+                    "id": "6003423342191",
+                    "name": "Dance"
+                  },
+                  {
+                    "id": "6007828099136",
+                    "name": "Luxury goods"
+                  },
+                  {
+                    "id": "6003584622107",
+                    "name": "Couples Retreat"
+                  },
+                  {
+                    "id": "6003359996821",
+                    "name": "Nature (science)"
+                  },
+                  {
+                    "id": "6003899195666",
+                    "name": "Photography"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (5): dance, luxury goods, couples, nature, photography"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1523892 — Buenos Aires as the Overture to the Edge of Antarctica",
+        "adSetName": "[DRAFT] Deal 1523892 Audience",
+        "creativeName": "deal-1523892-funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas--carousel",
+        "adName": "deal-1523892-funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122119361000816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1523892",
+        "facebook_page_dispatched_at=2026-06-28T01:09:32.495Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122119361000816807"
     }
   ]
 }

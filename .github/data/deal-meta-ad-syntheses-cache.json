@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-24T18:25:12.384Z",
+  "generatedAtIso": "2026-06-27T23:41:40.353Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -160,6 +160,60 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Milestone Sailing, Sorted\nAnniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-24T18:24:45.505Z",
+          "previousImages": []
+        }
+      ]
+    },
+    {
+      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "dealId": "1523892",
+      "generatedAtIso": "2026-06-27T23:37:54.455Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "Free Buenos Aires Land Program",
+          "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFree Buenos Aires Land Program\nTango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:25.467Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "Drake Passage. Heard It. Feel It.",
+          "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nDrake Passage. Heard It. Feel It.\nHalf Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:29.833Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "Falklands + Penguins + Patagonia",
+          "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFalklands + Penguins + Patagonia\nStanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:30.337Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "All-Inclusive Means All of It",
+          "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:32.572Z",
           "previousImages": []
         }
       ]

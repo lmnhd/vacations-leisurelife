@@ -16,6 +16,7 @@ import type {
   DealApprovalState,
   DealCopyPackage,
   DealMediaPlan,
+  DealCampaignStrategy,
   DealPitchBrief,
 } from "./campaign-types";
 import type { DealItineraryDay } from "./deal-trip-manifest-types";
@@ -108,6 +109,8 @@ export interface CuratedOdysseusDeal {
   promoApplicability?: PromoApplicabilityResult[];
   /** Trip research backing the chosen angle. */
   angleResearch?: DealAngleResearch;
+  /** Locked operator campaign hook saved from the workbench. */
+  campaignStrategy?: DealCampaignStrategy;
   /** Package-specific targeting resource, generated before ad packaging. */
   targetingDemographic?: DealTargetingDemographic;
   /**

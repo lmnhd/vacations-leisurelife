@@ -49,6 +49,7 @@ import {
   type AssembleCuratedDealInput,
   type CuratedDealCruiseFacts,
   type CuratedOdysseusDeal,
+  type DealCampaignStrategy,
   type DealCampaignStage,
   type DealAdStructure,
   type DealAngleResearch,
@@ -185,6 +186,25 @@ interface PipelineStrategyInput {
   targetingKeywords?: string[];
 }
 
+function buildCampaignStrategy(input: PipelineStrategyInput): DealCampaignStrategy | undefined {
+  const campaignAngle = str(input.campaignAngle);
+  const targetAudience = str(input.targetAudience);
+  const visualAngle = str(input.visualAngle);
+  const targetingKeywords = input.targetingKeywords
+    ? input.targetingKeywords.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  if (!campaignAngle && !targetAudience && !visualAngle && targetingKeywords.length === 0) {
+    return undefined;
+  }
+  return {
+    campaignAngle: campaignAngle ?? "",
+    targetAudience: targetAudience ?? "",
+    visualAngle: visualAngle ?? "",
+    targetingKeywords,
+    savedAtIso: new Date().toISOString(),
+  };
+}
+
 function inferGeoFocusFromCruiseFacts(deal: CuratedOdysseusDeal): string[] {
   const facts = deal.cruiseFacts;
   const departure = facts.departurePort?.trim();
@@ -318,6 +338,7 @@ function buildAnglePrompt(
   promoRecords: Awaited<ReturnType<typeof getPromoRecordsByIds>>
 ): string {
   const facts = deal.cruiseFacts;
+  const lockedHook = deal.campaignStrategy;
   return `Generate three differentiated advertising angle packages for this real cruise sailing.
 
 Sailing facts:
@@ -330,6 +351,13 @@ Departure port: ${facts.departurePort ?? ""}
 Ports of call: ${facts.portsOfCall.join(", ")}
 Package ID: ${deal.packageId}
 Booking link status: ${deal.linkHealth.status}
+
+${lockedHook ? `Locked operator campaign hook to preserve:
+Hook: ${lockedHook.campaignAngle}
+Audience: ${lockedHook.targetAudience}
+Visual angle: ${lockedHook.visualAngle}
+Targeting keywords: ${lockedHook.targetingKeywords.join(", ")}
+Do not invent a different central promise.` : ""}
 
 Promo context:
 ${buildPromoContext(promoRecords)}
@@ -764,23 +792,30 @@ function buildScaffoldPitchBrief(input: {
   cruiseFacts: CuratedDealCruiseFacts;
   targetingDemographic: DealTargetingDemographic;
   angleResearch: DealAngleResearch;
+  campaignStrategy?: DealCampaignStrategy;
 }): DealPitchBrief {
-  const { dealId, packageId, cruiseFacts, targetingDemographic, angleResearch } = input;
+  const { dealId, packageId, cruiseFacts, targetingDemographic, angleResearch, campaignStrategy } = input;
   return {
     dealId,
     packageId,
     generatedAtIso: angleResearch.generatedAtIso,
     generator: "deterministic_scaffold",
     tripSummary: cruiseFacts.title,
-    audienceStatement: targetingDemographic.primaryAudience.label,
-    primaryHook: angleResearch.recommendedPrimaryAngle.publicCopyHook,
-    curatedReason: angleResearch.recommendedPrimaryAngle.whyThisFeelsExclusive,
+    audienceStatement: campaignStrategy?.targetAudience?.trim() || targetingDemographic.primaryAudience.label,
+    primaryHook:
+      campaignStrategy?.campaignAngle?.trim() || angleResearch.recommendedPrimaryAngle.publicCopyHook,
+    curatedReason:
+      campaignStrategy?.campaignAngle?.trim()
+        ? `${angleResearch.recommendedPrimaryAngle.whyThisFeelsExclusive} Operator hook: ${campaignStrategy.campaignAngle.trim()}`
+        : angleResearch.recommendedPrimaryAngle.whyThisFeelsExclusive,
     sellingFacts: [
       cruiseFacts.shipName,
       cruiseFacts.departurePort ?? cruiseFacts.itineraryName,
       cruiseFacts.portsOfCall[0] ?? cruiseFacts.itineraryName,
     ],
-    researchRationale: "Workbench scaffold built from manually imported sailing facts.",
+    researchRationale: campaignStrategy?.campaignAngle?.trim()
+      ? `Workbench scaffold built from manually imported sailing facts. Locked hook: ${campaignStrategy.campaignAngle.trim()}`
+      : "Workbench scaffold built from manually imported sailing facts.",
   };
 }
 
@@ -1012,6 +1047,7 @@ function stageWorkbenchDeal(
       cruiseFacts: existing.cruiseFacts,
       targetingDemographic: next.targetingDemographic,
       angleResearch: next.angleResearch,
+      campaignStrategy: existing.campaignStrategy,
     });
   } else {
     next.angleResearch =
@@ -1037,6 +1073,7 @@ function stageWorkbenchDeal(
         cruiseFacts: existing.cruiseFacts,
         targetingDemographic: next.targetingDemographic,
         angleResearch: next.angleResearch,
+        campaignStrategy: existing.campaignStrategy,
       });
     const copyPackage =
       next.copyPackage ??
@@ -1122,11 +1159,13 @@ function assembleWorkbenchDeal(input: AssembleCuratedDealInput): CuratedOdysseus
     cruiseFacts: input.cruiseFacts,
     targetingDemographic,
     angleResearch,
+    campaignStrategy: input.campaignStrategy,
   });
   const partial: Partial<CuratedOdysseusDeal> = {
     packageId: input.packageId,
     linkHealth,
     angleResearch,
+    campaignStrategy: input.campaignStrategy,
     targetingDemographic,
     pitchBrief,
   };
@@ -1148,6 +1187,7 @@ function assembleWorkbenchDeal(input: AssembleCuratedDealInput): CuratedOdysseus
     cruiseFacts: input.cruiseFacts,
     scoring: buildScoring(partial),
     packaging: buildPackaging(input.cruiseFacts, partial),
+    campaignStrategy: input.campaignStrategy,
     promoApplicability: input.promoApplicability,
     angleResearch,
     targetingDemographic,
@@ -1206,6 +1246,12 @@ export async function POST(request: Request) {
         siid: str(body.siid) ?? process.env.CB_AGENT_SIID ?? "1049337",
         cruiseFacts,
         bookingUrl: str(body.bookingUrl),
+        campaignStrategy: buildCampaignStrategy({
+          campaignAngle: str(body.campaignAngle),
+          targetAudience: str(body.targetAudience),
+          visualAngle: str(body.visualAngle),
+          targetingKeywords: splitKeywordList(body.targetingKeywords),
+        }),
         promoRecords: promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [],
       };
       const deal = assembleWorkbenchDeal(input);
@@ -1247,14 +1293,42 @@ export async function POST(request: Request) {
       return ok(updated);
     }
 
+    if (action === "save_strategy") {
+      const strategy =
+        buildCampaignStrategy({
+          campaignAngle: str(body.campaignAngle),
+          targetAudience: str(body.targetAudience),
+          visualAngle: str(body.visualAngle),
+          targetingKeywords: splitKeywordList(body.targetingKeywords),
+        }) ?? existing.campaignStrategy;
+      const updated: CuratedOdysseusDeal = {
+        ...existing,
+        campaignStrategy: strategy,
+      };
+      await upsertCuratedDealRecord(updated);
+      return ok(updated);
+    }
+
     if (action === "generate_angles") {
       const promoRecords = promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [];
+      const strategy = buildCampaignStrategy({
+        campaignAngle: str(body.campaignAngle),
+        targetAudience: str(body.targetAudience),
+        visualAngle: str(body.visualAngle),
+        targetingKeywords: splitKeywordList(body.targetingKeywords),
+      });
+      const updated: CuratedOdysseusDeal = strategy
+        ? { ...existing, campaignStrategy: strategy }
+        : existing;
+      if (strategy) {
+        await upsertCuratedDealRecord(updated);
+      }
       const handoffAssessment = buildPromoHandoffAssessment({
-        deal: existing,
+        deal: updated,
         promoRecords,
       });
-      const generated = await generateAngleOptions(existing, promoRecords);
-      return ok(existing, {
+      const generated = await generateAngleOptions(updated, promoRecords);
+      return ok(updated, {
         angleOptions: generated.angles,
         modelId: generated.modelId,
         warnings: [...generated.warnings, ...handoffAssessment.warnings],
@@ -1264,12 +1338,12 @@ export async function POST(request: Request) {
 
     if (action === "send_to_pipeline") {
       const promoRecords = promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [];
-      const strategy = {
+      const strategy = buildCampaignStrategy({
         campaignAngle: str(body.campaignAngle),
         targetAudience: str(body.targetAudience),
         visualAngle: str(body.visualAngle),
         targetingKeywords: splitKeywordList(body.targetingKeywords),
-      };
+      }) ?? existing.campaignStrategy;
       const handoffAssessment = buildPromoHandoffAssessment({
         deal: existing,
         promoRecords,
@@ -1277,6 +1351,10 @@ export async function POST(request: Request) {
       });
       if (handoffAssessment.blockingIssues.length > 0) {
         return bad(`Promo handoff blocked. ${handoffAssessment.blockingIssues.join(" ")}`);
+      }
+      const updated = strategy ? { ...existing, campaignStrategy: strategy } : existing;
+      if (strategy) {
+        await upsertCuratedDealRecord(updated);
       }
       const existingPromoApplicability = existing.promoApplicability ?? [];
       const promoApplicability =
@@ -1297,12 +1375,12 @@ export async function POST(request: Request) {
                 }
             )
           : existingPromoApplicability;
-      const pipeline = buildPipelineArtifacts(existing, promoApplicability, strategy, promoRecords);
+      const pipeline = buildPipelineArtifacts(updated, promoApplicability, strategy, promoRecords);
       saveDealDiscoveryIdeasCache(
         upsertDealDiscoveryIdea(loadDealDiscoveryIdeasCache(), pipeline.idea)
       );
       await upsertDealTripManifestRecord(pipeline.manifest);
-      return ok(existing, {
+      return ok(updated, {
         angleId: pipeline.idea.id,
         manifestId: pipeline.manifest.id,
         handoffAssessment,
