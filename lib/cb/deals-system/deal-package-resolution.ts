@@ -318,7 +318,33 @@ export async function resolveCandidateOntoManifest(
       );
     }
   } else if (!itineraryId) {
-    diagnostics.push(`No itinerary id on picked candidate ${candidate.packageId}; cannot capture day-by-day schedule.`);
+    // The search result carried no itinerary id — recover it from the package
+    // page itself, which is keyed by the stable packageId and stays consistent
+    // even when the search index no longer surfaces the sailing. This closes
+    // the silent gap where a healthy-looking deal shipped without its calendar.
+    try {
+      const { capturePackagePageTruth } = await import("@/lib/cb/link-broker/odysseus-lookup");
+      const truth = await capturePackagePageTruth(candidate.packageId, siid);
+      diagnostics.push(...(truth?.diagnostics ?? []));
+      if (truth?.dayByDay) {
+        candidate.itinerary = {
+          ...candidate.itinerary,
+          itineraryId: truth.summary.itineraryId,
+          dayByDay: truth.dayByDay,
+        };
+        diagnostics.push(
+          `Recovered day-by-day itinerary (${truth.dayByDay.days.length} day node(s)) for ${candidate.packageId} via its package page.`
+        );
+      } else {
+        diagnostics.push(
+          `No itinerary id on picked candidate ${candidate.packageId} and the package page yielded no schedule; kept coarse ports only.`
+        );
+      }
+    } catch (err) {
+      diagnostics.push(
+        `Package-page itinerary recovery failed for ${candidate.packageId}: ${err instanceof Error ? err.message : String(err)}.`
+      );
+    }
   }
 
   if (!candidate.shipName) {

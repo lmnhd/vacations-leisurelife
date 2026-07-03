@@ -531,6 +531,7 @@ export class OdysseusEngine {
                 cruiseDuration?: unknown;
                 prices?: unknown;
                 itinerary?: {
+                    id?: unknown;
                     duration?: unknown;
                     departure?: { code?: unknown };
                     portsOfCalls?: unknown;
@@ -578,6 +579,10 @@ export class OdysseusEngine {
                         ? record.itinerary.portsOfCalls
                         : undefined,
                 cabinPricing: extractPackagePageCabinPricing(record.prices),
+                itineraryId:
+                    typeof record.itinerary?.id === 'number' && Number.isFinite(record.itinerary.id)
+                        ? record.itinerary.id
+                        : undefined,
             };
         } catch (error) {
             console.warn(`[OdysseusEngine] Package page summary failed for ${pid}:`, error instanceof Error ? error.message : error);

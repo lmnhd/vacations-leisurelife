@@ -18,7 +18,7 @@ import {
   type RankOptions,
 } from "./package-lookup";
 import type { LinkBrokerCruiseFacts, LinkBrokerTravelerSetup } from "./types";
-import type { DayByDayItinerary } from "@/lib/services/odysseus/types";
+import type { DayByDayItinerary, PackagePageSummary } from "@/lib/services/odysseus/types";
 
 /** name -> vendorId, derived from CRUISE_LINE_NAMES (first id wins). */
 const VENDOR_ID_BY_NAME: Record<string, number> = (() => {
@@ -248,6 +248,82 @@ export async function captureDayByDayItinerary(
         /* ignore */
       }
     }
+    return null;
+  }
+}
+
+export interface PackagePageTruth {
+  summary: PackagePageSummary;
+  /** Present when the page exposed an itinerary id AND the detail fetch succeeded. */
+  dayByDay?: DayByDayItinerary;
+  diagnostics: string[];
+}
+
+/**
+ * Capture a sailing's facts straight off its own CB Swift package page, keyed
+ * by the STABLE packageId in the deal's booking URL — identity, live cabin
+ * pricing, and the full day-by-day schedule (via the itinerary id the page's
+ * API payload exposes).
+ *
+ * This is the preferred data path over `lookupOdysseusPackages`: the search
+ * index re-ranks, re-windows, and sometimes cannot re-find a sailing it
+ * previously returned (close-in departures, partial category sell-outs),
+ * while the package page keeps working for as long as the sailing is
+ * bookable — it is the exact page a guest lands on from the deal's CTA.
+ *
+ * Operator-run and read-only: navigates the package page + reads
+ * /nitroapi/v2/cruise/itinerary/{id}; never books, holds, or submits.
+ * Returns null only when the package page itself yields nothing (gone/renamed
+ * package); a missing day-by-day alone still returns the summary so callers
+ * can keep whatever truth was recoverable.
+ */
+export async function capturePackagePageTruth(
+  packageId: string,
+  siid?: string
+): Promise<PackagePageTruth | null> {
+  const diagnostics: string[] = [];
+  let releaseSession: (() => Promise<void>) | undefined;
+  try {
+    const { getOdysseusSession, releaseOdysseusSession } = await import(
+      "@/lib/services/odysseus/OdysseusSessionManager"
+    );
+    releaseSession = releaseOdysseusSession;
+    const { normalizeItineraryDetail } = await import("@/lib/services/odysseus/types");
+
+    const engine = await getOdysseusSession();
+    const summary = await engine.fetchPackagePageSummary(packageId, siid);
+    if (!summary) {
+      diagnostics.push(`Package page yielded no summary for ${packageId}.`);
+      return null;
+    }
+    diagnostics.push(
+      `Package page summary for ${packageId}: ${summary.shipName ?? summary.title ?? "?"}, sail ${summary.sailDateIso ?? "?"}.`
+    );
+
+    if (!summary.itineraryId) {
+      diagnostics.push(`Package page payload carried no itinerary id; day-by-day not captured.`);
+      return { summary, diagnostics };
+    }
+
+    const detail = await engine.fetchItineraryDetail(summary.itineraryId);
+    const dayByDay = normalizeItineraryDetail(detail);
+    if (dayByDay) {
+      diagnostics.push(`Captured ${dayByDay.days.length} day node(s) via itinerary ${summary.itineraryId}.`);
+    } else {
+      diagnostics.push(`Itinerary detail ${summary.itineraryId} returned no usable schedule.`);
+    }
+    return { summary, dayByDay: dayByDay ?? undefined, diagnostics };
+  } catch (error) {
+    if (releaseSession) {
+      try {
+        await releaseSession();
+      } catch {
+        /* ignore */
+      }
+    }
+    diagnostics.push(
+      `Package page capture failed for ${packageId}: ${error instanceof Error ? error.message : String(error)}.`
+    );
     return null;
   }
 }

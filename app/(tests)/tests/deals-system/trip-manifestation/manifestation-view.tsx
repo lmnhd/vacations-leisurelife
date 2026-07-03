@@ -118,6 +118,16 @@ function ResolvedPackagePanel({ manifest }: { manifest: DealTripManifest }) {
           <Labeled label="Ports of call" value={r.itinerary.normalizedPortsOfCall} />
         </div>
       )}
+      {!r.itinerary?.dayByDay || r.itinerary.dayByDay.length === 0 ? (
+        <p className="mt-2 text-[11px] text-amber-200">
+          ⚠ No day-by-day itinerary captured — the public page will show a coarse
+          port list instead of the calendar. Backfill with{" "}
+          <code className="text-cyan-300">
+            npm run backfill-deal-itinerary -- --deal {r.packageId}
+          </code>
+          .
+        </p>
+      ) : null}
       {r.bookingUrl ? (
         <div className="mt-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Booking link</p>

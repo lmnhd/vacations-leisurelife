@@ -16,6 +16,7 @@ import {
   assembleCuratedDealFromManifest,
   defaultDealExpiresOnIso,
   evaluateApprovalGates,
+  hasDealSailed,
   isDealExpired,
   isDealHomepageEligible,
   rejectCuratedDeal,
@@ -223,7 +224,25 @@ const deal = await assembleCuratedDeal({ ...baseInput, promoRecords: [promoRecor
 
 console.log("Assembly:");
 check("deal id carried through", deal.id === baseInput.dealId);
-check("expiration date carried through", deal.expiresOnIso === baseInput.expiresOnIso);
+// The fixture's expiry (2999-01-01) is later than the sail date, so assembly
+// caps it: a deal can never be sold after its own departure.
+check(
+  "expiration later than the sail date is capped at the sail date",
+  deal.expiresOnIso === baseInput.cruiseFacts.sailDateIso,
+  deal.expiresOnIso
+);
+{
+  const dealEarlyExpiry = await assembleCuratedDeal({
+    ...baseInput,
+    expiresOnIso: "2026-08-01",
+    promoRecords: [promoRecord],
+  });
+  check(
+    "expiration earlier than the sail date passes through unchanged",
+    dealEarlyExpiry.expiresOnIso === "2026-08-01",
+    dealEarlyExpiry.expiresOnIso
+  );
+}
 
 // --- Expiration is non-optional: defaults to exactly 90 days from assembly -------
 {
@@ -368,6 +387,33 @@ const expiredApprovedDeal: CuratedOdysseusDeal = {
 };
 check("expired approved deal is not homepage eligible", !isDealHomepageEligible(expiredApprovedDeal));
 check("missing expiration keeps legacy approved deal eligible", isDealHomepageEligible({ ...approved.deal, expiresOnIso: undefined }));
+
+// Sailed-departure guard: independent of expiresOnIso, so legacy deals whose
+// stored expiry outlives the departure (pre-cap assemblies) still drop off.
+check(
+  "deal is not sailed through end of its sail date",
+  !hasDealSailed(approved.deal, new Date("2026-11-08T23:59:59.999Z"))
+);
+check(
+  "deal has sailed the day after departure",
+  hasDealSailed(approved.deal, new Date("2026-11-09T00:00:00.000Z"))
+);
+check(
+  "missing sail date never counts as sailed",
+  !hasDealSailed(
+    { cruiseFacts: { ...approved.deal.cruiseFacts, sailDateIso: "" } },
+    new Date("2999-01-01T00:00:00.000Z")
+  )
+);
+const sailedDeal: CuratedOdysseusDeal = {
+  ...approved.deal,
+  expiresOnIso: "2999-01-01",
+  cruiseFacts: { ...approved.deal.cruiseFacts, sailDateIso: "2000-01-01" },
+};
+check(
+  "sailed deal is not homepage eligible even with a far-future expiry",
+  !isDealHomepageEligible(sailedDeal)
+);
 
 // --- Schema validator enforces the approval gate ------------------------------
 console.log("\nSchema validator enforcement:");

@@ -674,8 +674,11 @@ export function buildDealLandingPageView(
       : readiness === "resolved" && ports.length > 0
         ? {
             kind: "days",
+            // The coarse ports string carries stops (often mixed with region
+            // names), not voyage days — a 7-night sailing can list 10 entries.
+            // Label them "Stop N" so we never imply a fabricated day count.
             rows: ports.map((port, i) => ({
-              label: `Day ${i + 1}`,
+              label: `Stop ${i + 1}`,
               text: port,
               atSea: /at sea/i.test(port),
             })),

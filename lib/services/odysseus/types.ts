@@ -99,6 +99,13 @@ export interface PackagePageSummary {
     departurePortCode?: string;
     portsOfCall?: string;
     cabinPricing?: PackagePageCabinPricing;
+    /**
+     * Odysseus itinerary id recovered from the package page's own API payload —
+     * the key to /nitroapi/v2/cruise/itinerary/{id}. Lets callers capture the
+     * day-by-day schedule keyed off the STABLE packageId in the booking URL,
+     * without depending on the search index re-finding the sailing.
+     */
+    itineraryId?: number;
 }
 
 // ── Itinerary detail (per-day schedule) ──────────────────────────────────────

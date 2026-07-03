@@ -407,8 +407,12 @@ export async function assembleCuratedDeal(
     briefId: input.briefId,
     capturedAtIso: generatedAtIso,
     // Expiration is non-optional: default to exactly DEFAULT_DEAL_EXPIRY_DAYS (90)
-    // days from assembly when the operator does not supply one.
-    expiresOnIso: input.expiresOnIso?.trim() || defaultDealExpiresOnIso(generatedAtIso),
+    // days from assembly when the operator does not supply one — capped at the
+    // sail date, since a deal can never be sold after its own departure.
+    expiresOnIso: capExpiryAtSailDate(
+      input.expiresOnIso?.trim() || defaultDealExpiresOnIso(generatedAtIso),
+      input.cruiseFacts.sailDateIso
+    ),
     packageId: input.packageId,
     siid: input.siid,
     bookingUrl,
@@ -623,6 +627,22 @@ export function defaultDealExpiresOnIso(fromIso: string = new Date().toISOString
   return expires.toISOString().slice(0, 10);
 }
 
+/**
+ * A deal can never be sold after its own departure: when the sail date is known
+ * and earlier than the proposed expiry, the sail date wins. Dates compare as
+ * plain YYYY-MM-DD strings (both sides are date-only), and an absent/unparseable
+ * sail date leaves the expiry untouched.
+ */
+export function capExpiryAtSailDate(
+  expiresOnIso: string,
+  sailDateIso: string | undefined
+): string {
+  const sail = sailDateIso?.trim();
+  if (!sail || !/^\d{4}-\d{2}-\d{2}$/.test(sail)) return expiresOnIso;
+  const expiry = expiresOnIso.slice(0, 10);
+  return sail < expiry ? sail : expiresOnIso;
+}
+
 function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {
   const trimmed = expiresOnIso?.trim();
   if (!trimmed) return undefined;
@@ -668,6 +688,21 @@ export function isDealExpired(
 }
 
 /**
+ * True once the deal's sailing has departed (sail date passed, end-of-day UTC).
+ * Guards independently of `expiresOnIso`: the stored expiry defaults to 90 days
+ * from assembly and (before 2026-07) was never capped at the sail date, so a
+ * deal could outlive its own departure by weeks. A missing/unparseable sail
+ * date returns false — never hide a deal on absent data.
+ */
+export function hasDealSailed(
+  deal: Pick<CuratedOdysseusDeal, "cruiseFacts">,
+  now = new Date()
+): boolean {
+  const sailedAt = dealExpiryDate(deal.cruiseFacts.sailDateIso);
+  return sailedAt ? now.getTime() > sailedAt.getTime() : false;
+}
+
+/**
  * Single source of truth for homepage eligibility. The homepage filter must use
  * this; never re-derive the rule inline.
  */
@@ -677,6 +712,7 @@ export function isDealHomepageEligible(deal: CuratedOdysseusDeal): boolean {
     deal.operatorApproval?.status === "approved" &&
     deal.linkHealth.status === "valid" &&
     !isDealExpired(deal) &&
+    !hasDealSailed(deal) &&
     !deal.operatorVisibility?.hidden
   );
 }

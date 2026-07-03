@@ -5,26 +5,28 @@
  *
  * Such deals carry only the coarse ports-of-call STRING and no cabin prices, so
  * the public page can render nothing but a deduped port list and a "draft"
- * pricing fallback. The full per-day schedule (port names, arrival/departure
- * times, sea days) lives at /nitroapi/v2/cruise/itinerary/{id}; cabin pricing
- * comes from the same search result that recovers the itinerary id. This script:
+ * pricing fallback. This script:
  *   1. loads the curated Deal (+ its trip manifest) from the live store,
- *   2. drives a read-only Odysseus search for the sailing to recover its
- *      itinerary id and cabin pricing (deals resolved pre-pipeline never stored
- *      either),
- *   3. fetches + normalizes the day-by-day schedule for that id,
- *   4. writes both back onto the Deal's cruiseFacts (and the manifest's resolved
- *      package) so /deals/[id] renders the real itinerary and real prices
- *      immediately.
+ *   2. PREFERRED: reads the deal's OWN CB Swift package page (stable packageId
+ *      from the booking URL) to recover the itinerary id, day-by-day schedule,
+ *      and live cabin pricing — the search index re-ranks/re-windows and often
+ *      cannot re-find close-in sailings it previously returned, while the
+ *      package page keeps working for as long as the sailing is bookable,
+ *   3. FALLBACK: drives a read-only Odysseus search when the package page
+ *      yields nothing (gone/renamed package),
+ *   4. writes the schedule + pricing back onto the Deal's cruiseFacts (and the
+ *      manifest's resolved package) so /deals/[id] renders them immediately.
  *
- * Read-only against Odysseus (search + itinerary detail only — never books/holds).
- * Idempotent: a deal that already has a day-by-day schedule AND cabin pricing is
- * left untouched unless --force is passed.
+ * Read-only against Odysseus (package page + itinerary detail + search — never
+ * books/holds). Idempotent: a deal that already has a day-by-day schedule AND
+ * cabin pricing is left untouched unless --force is passed.
  *
  * Usage:
  *   npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts --deal 1582993
  *   npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts --deal 1582993 --force
  *   npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts --deal 1582993 --dry-run
+ *   # --accept-closest: only for the search FALLBACK, when the exact package id
+ *   # is gone and you have verified the top candidate is the same sailing.
  */
 
 import { execSync } from "node:child_process";
@@ -38,11 +40,12 @@ import {
 } from "../lib/cb/deals-system/deals-dynamo-store";
 import {
   captureDayByDayItinerary,
+  capturePackagePageTruth,
   lookupOdysseusPackages,
 } from "../lib/cb/link-broker/odysseus-lookup";
 import { releaseOdysseusSession } from "../lib/services/odysseus/OdysseusSessionManager";
 import type { PackageCabinPricing } from "../lib/cb/link-broker/package-lookup";
-import type { CuratedOdysseusDeal } from "../lib/cb/deals-system/curated-deal-types";
+import type { CuratedOdysseusDeal, DealItineraryDay } from "../lib/cb/deals-system/curated-deal-types";
 import type { DealTripManifest } from "../lib/cb/deals-system/deal-trip-manifest-types";
 
 function arg(name: string): string | undefined {
@@ -118,25 +121,37 @@ async function main(): Promise<void> {
     console.warn(`  ⚠ No trip manifest matched package ${deal.packageId}; will patch the deal only.`);
   }
 
-  // ── Recover the itinerary id via a live search ─────────────────────────────
   sweepOrphanedAutomationChrome();
-  let itineraryId: number | undefined;
+  let flatDays: DealItineraryDay[] | undefined;
   let cabinPricing: PackageCabinPricing | undefined;
+
+  // ── Preferred: read the deal's OWN package page (stable packageId) ─────────
+  // The search index re-ranks/re-windows and often cannot re-find close-in
+  // sailings it previously returned; the package page the deal's bookingUrl
+  // points at keeps working for as long as the sailing is bookable.
   try {
-    console.log(`  Searching Odysseus for the sailing to recover its itinerary id…`);
-    const lookup = await lookupOdysseusPackages({
-      cruiseLine: deal.cruiseFacts.cruiseLine,
-      shipName: deal.cruiseFacts.shipName ?? undefined,
-      sailDate: deal.cruiseFacts.sailDateIso ?? undefined,
-      nights: deal.cruiseFacts.nights ?? undefined,
-    });
-    lookup.diagnostics.forEach((d) => console.log(`    · ${d}`));
-    const match =
-      lookup.candidates.find((c) => c.packageId === deal!.packageId) ?? lookup.selected ?? lookup.candidates[0];
-    itineraryId = match?.itinerary?.itineraryId;
-    cabinPricing = match?.cabinPricing;
-    if (match && match.packageId !== deal.packageId) {
-      console.warn(`  ⚠ Exact package ${deal.packageId} not in results; using closest match ${match.packageId}.`);
+    console.log(`  Reading the deal's own package page (package ${deal.packageId}, siid ${deal.siid})…`);
+    const truth = await capturePackagePageTruth(deal.packageId, deal.siid);
+    if (truth) {
+      truth.diagnostics.forEach((d) => console.log(`    · ${d}`));
+      const pageSail = truth.summary.sailDateIso;
+      const dealSail = deal.cruiseFacts.sailDateIso?.trim();
+      if (pageSail && dealSail && pageSail !== dealSail) {
+        // Throw (not process.exit) so the finally still releases the session.
+        throw new Error(
+          `Package page shows sail date ${pageSail} but the deal says ${dealSail} — ` +
+            `the package id may have been reused for a different sailing. Aborting (no data fabricated).`
+        );
+      }
+      if (truth.dayByDay && truth.dayByDay.days.length > 0) {
+        flatDays = truth.dayByDay.days.map((d) => ({ ...d }));
+        console.log(`  ✓ Captured ${flatDays.length} day node(s) from the package page.`);
+      }
+      if (truth.summary.cabinPricing) {
+        cabinPricing = truth.summary.cabinPricing;
+      }
+    } else {
+      console.warn(`  ⚠ Package page yielded nothing for ${deal.packageId}; falling back to a search.`);
     }
   } finally {
     try {
@@ -146,11 +161,71 @@ async function main(): Promise<void> {
     }
   }
 
-  if (!itineraryId) {
-    console.error("  ✗ Could not recover an itinerary id from the search — cannot capture the schedule. Aborting (no data fabricated).");
-    process.exit(1);
+  // ── Fallback: recover the itinerary id via a live search ───────────────────
+  if (!flatDays) {
+    let itineraryId: number | undefined;
+    try {
+      console.log(`  Searching Odysseus for the sailing to recover its itinerary id…`);
+      const lookup = await lookupOdysseusPackages({
+        cruiseLine: deal.cruiseFacts.cruiseLine,
+        shipName: deal.cruiseFacts.shipName ?? undefined,
+        sailDate: deal.cruiseFacts.sailDateIso ?? undefined,
+        nights: deal.cruiseFacts.nights ?? undefined,
+      });
+      lookup.diagnostics.forEach((d) => console.log(`    · ${d}`));
+      if (lookup.candidates.length > 0) {
+        console.log(`  Candidates returned by the search:`);
+        for (const c of lookup.candidates) {
+          console.log(
+            `    - ${c.packageId}  ${c.shipName ?? c.cruiseName}  sail ${c.sailDateIso}  ${c.nights ?? "?"}n  ` +
+              `dep ${c.departurePortCode ?? "?"}  conf ${c.confidence.toFixed(2)}  ` +
+              `ports: ${c.itinerary?.normalizedPortsOfCall ?? c.portsOfCall ?? "?"}`
+          );
+        }
+      }
+      const exact = lookup.candidates.find((c) => c.packageId === deal!.packageId);
+      const match = exact ?? lookup.selected ?? lookup.candidates[0];
+      if (match && match.packageId !== deal.packageId) {
+        // A different package means a different sailing — its schedule and pricing
+        // would be flatly wrong for this deal. Never adopt it implicitly; the
+        // operator must opt in per-run after eyeballing the candidate list above.
+        if (!flag("accept-closest")) {
+          // Throw (not process.exit) so the finally below still releases the
+          // Odysseus session — exiting here would leak the automation browser.
+          throw new Error(
+            `Exact package ${deal.packageId} not in results; closest is ${match.packageId} ` +
+              `(${match.shipName ?? match.cruiseName}, sail ${match.sailDateIso}). ` +
+              `Refusing to write another sailing's itinerary/pricing onto this deal. ` +
+              `Re-run with --accept-closest ONLY if you've verified the candidate above is the same sailing under a new package id.`
+          );
+        }
+        console.warn(`  ⚠ Exact package ${deal.packageId} not in results; using closest match ${match.packageId} (--accept-closest).`);
+      }
+      itineraryId = match?.itinerary?.itineraryId;
+      cabinPricing = cabinPricing ?? match?.cabinPricing;
+    } finally {
+      try {
+        await releaseOdysseusSession();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (!itineraryId) {
+      console.error("  ✗ Could not recover an itinerary id from the package page or the search — cannot capture the schedule. Aborting (no data fabricated).");
+      process.exit(1);
+    }
+    console.log(`  Itinerary id: ${itineraryId}`);
+
+    // ── Capture + normalize the real day-by-day schedule ─────────────────────
+    const dayByDay = await captureDayByDayItinerary(itineraryId);
+    if (!dayByDay || dayByDay.days.length === 0) {
+      console.error(`  ✗ Itinerary detail endpoint returned no usable schedule for ${itineraryId}. Aborting.`);
+      process.exit(1);
+    }
+    flatDays = dayByDay.days.map((d) => ({ ...d }));
   }
-  console.log(`  Itinerary id: ${itineraryId}`);
+
   if (cabinPricing) {
     console.log(
       `  ✓ Recovered cabin pricing: ${["inside", "outside", "balcony", "suite"]
@@ -159,16 +234,9 @@ async function main(): Promise<void> {
         .join(", ")} ${cabinPricing.currencyCode}`
     );
   } else {
-    console.warn("  ⚠ Search returned no cabin pricing for this sailing; leaving pricing untouched (no fabrication).");
+    console.warn("  ⚠ No cabin pricing recovered for this sailing; leaving pricing untouched (no fabrication).");
   }
 
-  // ── Capture + normalize the real day-by-day schedule ───────────────────────
-  const dayByDay = await captureDayByDayItinerary(itineraryId);
-  if (!dayByDay || dayByDay.days.length === 0) {
-    console.error(`  ✗ Itinerary detail endpoint returned no usable schedule for ${itineraryId}. Aborting.`);
-    process.exit(1);
-  }
-  const flatDays = dayByDay.days.map((d) => ({ ...d }));
   console.log(`  ✓ Captured ${flatDays.length} day node(s): Day ${flatDays[0].day} … Day ${flatDays[flatDays.length - 1].day}`);
   console.log(`    e.g. Day ${flatDays[0].day}: ${flatDays[0].atSea ? "At Sea" : flatDays[0].portName}`);
 
