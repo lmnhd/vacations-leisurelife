@@ -274,6 +274,16 @@ function ItineraryCalendar({ rows }: { rows: ItineraryDayRow[] }) {
 export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLandingPageView }) {
   const { hero, chips, factBand, segments, itinerary, pricing, specials } = page;
   const cta = page.ctaLabel || "Book Now";
+  const promoCheck =
+    specials.length > 0
+      ? {
+          label: "Check bonus offer",
+          panelTitle: "Check today's eligible offer",
+          defaultNote:
+            "Please check today's eligible bonus offer for this sailing before quoting final availability.",
+          promoNotes: specials.map((special) => special.title),
+        }
+      : undefined;
   // Render the day-by-day schedule as a month calendar when the rows carry real
   // dates; otherwise fall back to the vertical list (legacy deals, coarse ports).
   const hasCalendarDates =
@@ -390,7 +400,8 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
               dealId={dealId}
               bookingUrl={page.bookingUrl}
               primaryLabel={cta}
-                    tone="hero"
+              tone="hero"
+              promoCheck={promoCheck}
             />
             <span
               style={{
@@ -900,8 +911,9 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
             dealId={dealId}
             bookingUrl={page.bookingUrl}
             primaryLabel={cta}
-                tone="dark"
+            tone="dark"
             align="center"
+            promoCheck={promoCheck}
           />
         </div>
       </section>

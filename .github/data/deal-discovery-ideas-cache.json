@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-27T22:16:19.582Z",
+  "generatedAtIso": "2026-07-03T18:04:38.247Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -277,6 +277,55 @@
           "18-night duration matched promo flyer.",
           "Cruise line matched Regent Seven Seas.",
           "Package page confirmed Seven Seas Mariner ship identity."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-oceania-vista-dutchman-s-caribbean-oceania-vista-1584138",
+      "generatedAtIso": "2026-07-03T18:04:38.244Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.\". Grounding facts: Oceania Vista | 2026-11-11 | Miami | Miami, George Town, Falmouth. Promo context considered: Oceania Cruises Oceania Cruises - Your World Included | Oceania fares may include elevated onboard amenities under Your World Included. | Valid Until 07/31/2026.",
+      "successLogic": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent. can convert because this is a real Oceania Vista sailing on 2026-11-11, not a generic cruise sale. The attached Oceania Cruises - Your World Included gives the audience a timely reason to act.",
+      "audienceSignals": [
+        "Real sailing selected in the Campaign Workbench: Oceania Vista on Oceania Cruises, 14 nights, sailing 2026-11-11.",
+        "Concrete itinerary signal: Miami roundtrip, Miami, George Town, Falmouth, Oranjestad.",
+        "Operator-selected audience angle: Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent..",
+        "Targeting seeds chosen for this sailing: Oceania Vista Caribbean, luxury Caribbean cruise November, ABC islands cruise, small ship luxury cruise, Aruba Curacao cruise, Oceania Cruises 2026."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
+        "theCorePitch": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.: Oceania Vista on Dutchman's Caribbean gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "Split-frame hero: one side shows Oceania Vista's intimate pool deck at golden hour with calm turquoise sea, the other side features the pastel waterfront of Willemstad, Curaçao. Muted warm color palette, linen-and-teak textures, no crowds visible. Overlay text in elegant serif font emphasizing 14 nights and November 2026.",
+        "targetAudienceDescriptor": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent.",
+        "relevantKeywords": [
+          "Oceania Vista Caribbean",
+          "luxury Caribbean cruise November",
+          "ABC islands cruise",
+          "small ship luxury cruise",
+          "Aruba Curacao cruise",
+          "Oceania Cruises 2026",
+          "refined Caribbean vacation",
+          "14-night Caribbean cruise",
+          "Oceania Vista 2026",
+          "couples luxury cruise"
+        ],
+        "destinationAndTimeOfYearHints": "Dutchman's Caribbean departing 2026-11-11.",
+        "onboardAssetRequirements": "Oceania Vista ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-03T18:04:38.244Z",
+        "packageId": "1584138",
+        "cruiseName": "Oceania Vista - Dutchman's Caribbean",
+        "cruiseLine": "Oceania Cruises",
+        "sailDateIso": "2026-11-11",
+        "nights": 14,
+        "departurePortCode": "Miami",
+        "portsOfCall": "Miami | George Town | Falmouth | Oranjestad | Willemstad | St. George's | Bridgetown | Castries | Basseterre | Miami",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
         ]
       }
     }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-27T23:41:40.353Z",
+  "generatedAtIso": "2026-07-03T18:33:47.980Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -215,6 +215,40 @@
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-27T23:41:32.572Z",
           "previousImages": []
+        }
+      ]
+    },
+    {
+      "id": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "dealId": "1584138",
+      "generatedAtIso": "2026-07-03T18:33:47.978Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "ABC Islands — Actually on the Map",
+          "primaryText": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+          "status": "pending"
+        },
+        {
+          "cardIndex": 1,
+          "headline": "1,200 Guests, Not 5,000",
+          "primaryText": "No tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
+          "status": "pending"
+        },
+        {
+          "cardIndex": 2,
+          "headline": "Your World Included — No Gotchas",
+          "primaryText": "Jacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
+          "status": "pending"
+        },
+        {
+          "cardIndex": 3,
+          "headline": "Nov 11 Sailing — Sweet Spot Timing",
+          "primaryText": "Past hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
+          "status": "pending"
         }
       ]
     }

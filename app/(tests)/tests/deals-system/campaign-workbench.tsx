@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 function DealStatusExplainer({ deal }: { deal: any }) {
@@ -491,9 +491,15 @@ export function DealCampaignWorkbench({
   promoOptions: PromoOption[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedDealId = searchParams.get("dealId");
+  const initialDealId =
+    requestedDealId && deals.some((deal) => deal.id === requestedDealId)
+      ? requestedDealId
+      : deals[0]?.id ?? "";
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
-  const [selectedDealId, setSelectedDealId] = useState(deals[0]?.id ?? "");
+  const [selectedDealId, setSelectedDealId] = useState(initialDealId);
 
   // Assembly form state.
   const [dealId, setDealId] = useState("");
@@ -517,7 +523,9 @@ export function DealCampaignWorkbench({
   }>({ currencyCode: "USD" });
   const [bookingUrl, setBookingUrl] = useState("");
   const [assemblySelectedPromos, setAssemblySelectedPromos] = useState<string[]>([]);
-  const [selectedDealPromos, setSelectedDealPromos] = useState<string[]>(deals[0]?.promoApplicabilityIds ?? []);
+  const [selectedDealPromos, setSelectedDealPromos] = useState<string[]>(
+    deals.find((deal) => deal.id === initialDealId)?.promoApplicabilityIds ?? []
+  );
   const [textOnly, setTextOnly] = useState(false);
   const [decisionNote, setDecisionNote] = useState("");
   const [showAllPromos, setShowAllPromos] = useState(false);
@@ -597,6 +605,14 @@ export function DealCampaignWorkbench({
       targetingKeywords,
     ]
   );
+
+  useEffect(() => {
+    if (!requestedDealId) return;
+    const requestedDeal = deals.find((deal) => deal.id === requestedDealId);
+    if (!requestedDeal) return;
+    setSelectedDealId(requestedDeal.id);
+    setSelectedDealPromos(requestedDeal.promoApplicabilityIds ?? []);
+  }, [requestedDealId, deals]);
 
   useEffect(() => {
     if (!selectedDeal) return;

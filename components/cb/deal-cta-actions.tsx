@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 
-import { ExternalLink, Loader2, Mail, Phone } from "lucide-react";
+import { ExternalLink, Gift, Loader2, Mail, Phone } from "lucide-react";
 
 import { postDealEvent } from "./deal-analytics";
 
@@ -26,10 +26,17 @@ interface DealCtaActionsProps {
   primaryLabel: string;
   tone?: Tone;
   align?: "left" | "center";
+  promoCheck?: {
+    label: string;
+    panelTitle: string;
+    defaultNote: string;
+    promoNotes: string[];
+  };
 }
 
 type LinkState = "idle" | "form" | "submitting" | "sent" | "not_sent" | "error";
 type CallbackState = "idle" | "form" | "submitting" | "done" | "error";
+type CallbackMode = "standard" | "promo_check";
 
 function buttonBase(tone: Tone, primary: boolean): CSSProperties {
   const onDark = tone === "hero" || tone === "dark";
@@ -109,6 +116,7 @@ export function DealCtaActions({
   primaryLabel,
   tone = "light",
   align = "left",
+  promoCheck,
 }: DealCtaActionsProps) {
   const [linkState, setLinkState] = useState<LinkState>("idle");
   const [linkEmail, setLinkEmail] = useState("");
@@ -119,6 +127,7 @@ export function DealCtaActions({
   const [callbackPhone, setCallbackPhone] = useState("");
   const [callbackNotes, setCallbackNotes] = useState("");
   const [callbackError, setCallbackError] = useState("");
+  const [callbackMode, setCallbackMode] = useState<CallbackMode>("standard");
 
   const isMobile = tone === "mobile";
   const stackActions = isMobile;
@@ -156,6 +165,12 @@ export function DealCtaActions({
     }
   }
 
+  function openCallbackForm(mode: CallbackMode) {
+    setCallbackMode(mode);
+    setCallbackError("");
+    setCallbackState(callbackState === "form" && callbackMode === mode ? "idle" : "form");
+  }
+
   async function handleCallbackSubmit(event: FormEvent) {
     event.preventDefault();
     if (!callbackEmail.trim() && !callbackPhone.trim()) {
@@ -165,6 +180,11 @@ export function DealCtaActions({
 
     setCallbackError("");
     setCallbackState("submitting");
+    const isPromoCheck = callbackMode === "promo_check" && promoCheck;
+    const notes = [
+      isPromoCheck ? promoCheck.defaultNote : undefined,
+      callbackNotes.trim() || undefined,
+    ].filter((note): note is string => Boolean(note));
     try {
       const res = await fetch("/api/deals/callback-request", {
         method: "POST",
@@ -174,7 +194,9 @@ export function DealCtaActions({
           name: callbackName.trim() || undefined,
           email: callbackEmail.trim() || undefined,
           phone: callbackPhone.trim() || undefined,
-          notes: callbackNotes.trim() || undefined,
+          notes: notes.length > 0 ? notes.join("\n\n") : undefined,
+          ctaSource: isPromoCheck ? "promo_check" : "request_callback",
+          promoNotes: isPromoCheck ? promoCheck.promoNotes : undefined,
         }),
       });
       const data = (await res.json()) as { ok: boolean; requestId?: string; error?: string };
@@ -238,13 +260,32 @@ export function DealCtaActions({
         </button>
         <button
           type="button"
-          onClick={() => setCallbackState(callbackState === "form" ? "idle" : "form")}
+          onClick={() => openCallbackForm("standard")}
           disabled={callbackState === "submitting"}
           style={{ ...buttonBase(tone, false), width: isMobile ? "100%" : undefined }}
         >
-          {callbackState === "submitting" ? <Loader2 size={16} aria-hidden="true" /> : <Phone size={16} aria-hidden="true" />}
-          {callbackState === "done" ? "Request received" : "Request callback"}
+          {callbackState === "submitting" && callbackMode === "standard" ? (
+            <Loader2 size={16} aria-hidden="true" />
+          ) : (
+            <Phone size={16} aria-hidden="true" />
+          )}
+          {callbackState === "done" && callbackMode === "standard" ? "Request received" : "Request callback"}
         </button>
+        {promoCheck ? (
+          <button
+            type="button"
+            onClick={() => openCallbackForm("promo_check")}
+            disabled={callbackState === "submitting"}
+            style={{ ...buttonBase(tone, false), width: isMobile ? "100%" : undefined }}
+          >
+            {callbackState === "submitting" && callbackMode === "promo_check" ? (
+              <Loader2 size={16} aria-hidden="true" />
+            ) : (
+              <Gift size={16} aria-hidden="true" />
+            )}
+            {callbackState === "done" && callbackMode === "promo_check" ? "Request received" : promoCheck.label}
+          </button>
+        ) : null}
       </div>
 
       {linkState === "form" || linkState === "submitting" ? (
@@ -270,18 +311,33 @@ export function DealCtaActions({
       {callbackState === "form" || callbackState === "submitting" ? (
         <form onSubmit={handleCallbackSubmit} style={{ ...panelStyle(tone), alignSelf: align === "center" ? "center" : "flex-start" }}>
           <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: helperColor(tone) }}>
-            Request an agent callback
+            {callbackMode === "promo_check" && promoCheck ? promoCheck.panelTitle : "Request an agent callback"}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input type="text" value={callbackName} onChange={(event) => setCallbackName(event.target.value)} placeholder="Your name (optional)" style={inputStyle(tone)} />
             <input type="email" value={callbackEmail} onChange={(event) => setCallbackEmail(event.target.value)} placeholder="Email address" style={inputStyle(tone)} />
             <input type="tel" value={callbackPhone} onChange={(event) => setCallbackPhone(event.target.value)} placeholder="Phone (optional)" style={inputStyle(tone)} />
-            <textarea value={callbackNotes} onChange={(event) => setCallbackNotes(event.target.value)} placeholder="Anything helpful for the agent? (optional)" rows={3} style={{ ...inputStyle(tone), resize: "vertical", fontFamily: "inherit" }} />
+            <textarea
+              value={callbackNotes}
+              onChange={(event) => setCallbackNotes(event.target.value)}
+              placeholder={
+                callbackMode === "promo_check"
+                  ? "Anything helpful for checking eligibility? (optional)"
+                  : "Anything helpful for the agent? (optional)"
+              }
+              rows={3}
+              style={{ ...inputStyle(tone), resize: "vertical", fontFamily: "inherit" }}
+            />
+            {callbackMode === "promo_check" && promoCheck && promoCheck.promoNotes.length > 0 ? (
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: helperColor(tone) }}>
+                We'll ask an agent to verify the attached offer before quoting final availability.
+              </p>
+            ) : null}
           </div>
           {callbackError ? <p style={{ margin: "9px 0 0", fontSize: 13, color: "#C2410C" }}>{callbackError}</p> : null}
           <button type="submit" disabled={callbackState === "submitting"} style={{ ...buttonBase(tone, true), width: "100%", marginTop: 12 }}>
             {callbackState === "submitting" ? <Loader2 size={16} aria-hidden="true" /> : <Phone size={16} aria-hidden="true" />}
-            {callbackState === "submitting" ? "Sending" : "Send request"}
+            {callbackState === "submitting" ? "Sending" : callbackMode === "promo_check" ? "Check offer" : "Send request"}
           </button>
         </form>
       ) : null}
@@ -304,5 +360,3 @@ export function DealCtaActions({
     </div>
   );
 }
-
-

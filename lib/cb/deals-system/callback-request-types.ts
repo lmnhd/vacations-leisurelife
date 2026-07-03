@@ -15,7 +15,8 @@ export type AgentCallbackStatus = "new" | "assigned" | "contacted" | "closed";
 export type AgentCallbackCtaSource =
   | "book_now"
   | "email_link"
-  | "request_callback";
+  | "request_callback"
+  | "promo_check";
 
 export interface AgentCallbackRequest {
   id: string;

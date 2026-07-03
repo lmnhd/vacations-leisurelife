@@ -265,9 +265,72 @@ function StepCard({
 
 // ─── Tab bodies ──────────────────────────────────────────────────────────────
 
+function ReviewQueue({ deals }: { deals: CuratedDealSummary[] }) {
+  const reviewDeals = deals.filter(
+    (deal) =>
+      deal.approvalStatus === "needs_review" ||
+      deal.status === "needs_review" ||
+      deal.blockingGateFailures > 0
+  );
+
+  if (reviewDeals.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-2xl border border-amber-300/25 bg-amber-500/10 p-5">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200">
+            Review queue
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-white">
+            {reviewDeals.length} Deal{reviewDeals.length === 1 ? "" : "s"} need operator review
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-50/80">
+            These records are in the system but are not homepage eligible yet. Open one to run
+            stages, inspect gates, verify the link, and approve or reject it.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3">
+        {reviewDeals.map((deal) => (
+          <article
+            key={deal.id}
+            className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-4 lg:flex-row lg:items-center lg:justify-between"
+          >
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-semibold text-white">{deal.title}</h3>
+              <p className="mt-1 text-xs text-amber-50/70">
+                {deal.cruiseLine} | {deal.shipName} | {deal.sailDateIso} | package {deal.packageId}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Badge>{deal.status}</Badge>
+                <Badge tone={deal.linkHealth === "valid" ? "ok" : "pending"}>
+                  link {deal.linkHealth}
+                </Badge>
+                <Badge tone={deal.blockingGateFailures > 0 ? "blocked" : "ok"}>
+                  {deal.blockingGateFailures} blocking gate{deal.blockingGateFailures === 1 ? "" : "s"}
+                </Badge>
+              </div>
+            </div>
+            <a
+              href={`/tests/deals-system?tab=tools&dealId=${encodeURIComponent(deal.id)}#deal-campaign-workbench`}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-amber-200/50 bg-amber-300/15 px-4 text-sm font-semibold text-amber-50 transition hover:bg-amber-300/25"
+            >
+              Review Deal
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PipelineTab({ data }: { data: DealsSystemDashboardData }) {
   return (
     <div className="space-y-4">
+      <ReviewQueue deals={data.curatedDeals} />
       <StepCard
         step={0}
         accent="violet"

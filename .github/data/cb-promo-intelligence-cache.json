@@ -1,69 +1,14 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-29T20:47:38.473Z",
+  "generatedAtIso": "2026-07-03T16:26:00.919Z",
   "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
   "records": [
-    {
-      "id": "cbpromo-2458",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2458/",
-      "capturedAtIso": "2026-06-29T20:47:38.473Z",
-      "title": "Free Pre-Paid Gratuities for Select Sailings for Latitudes only (Balcony & Above) for new bookings July 8th & 9th. Open to new guests to NCL, new bookings only July 10th - 16th.*",
-      "vendor": "Norwegian Cruise Line",
-      "bookingWindow": {
-        "startsOn": "2025-11-05",
-        "endsOn": "2026-07-16",
-        "rawText": "Must be booked between 11/05/2025 and 07/16/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-05-05",
-        "endsOn": "2028-04-30",
-        "rawText": "For sailings on or between 05/05/2026 and 04/30/2028"
-      },
-      "promotionDetailsRaw": "NCL Cruises 50% OFF + Free at Sea\n\n\n\n\n\nIt's time to book your next getaway with 50% off all Norwegian Cruises, plus free unlimited bar*, free specialty dining* and more with Free at Sea, and kids sail free on select dates.\n\nNCL FREE AT SEA: For a limited time, enjoy 50% off pax 1 & 2 and more incredible perks, including an unlimited beverage package, specialty dining, excursion credits, and high-speed Wi-Fi. ASk about Buy First Guest Air and Second Guest flies free*\n\nFree Pre-Paid Gratuities for Select Sailings for Latitudes only (Balcony & Above) for new bookings July 8th & 9th. Open to new guests to NCL, new bookings only July 10th - 16th.*\n\nExplore ancient ruins in Europe, marvel at Alaska’s glaciers, or bask in the Caribbean sun. Visit the all new Great Stirrup Cay Bahamas - new pier, walk off the ship to paradise.This limited-time offer won’t last long, so book your dream vacation today on award-winning ships and experience more like never before.\n\nReduced Deposit balconies and below only. Applicable for sailings of three days or longer. Does apply to Sail Away rates!\n\nSelect Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids\n\n****************************************************************\n\nNCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)\n\nNCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)\n\n*****************************************************************************\n\n*Air schedule is not provided until 30-45 days before sailing date. No requests. Transfers, taxes are additional. No guarantee 2 cabins traveling together will be on same flights. Offer valid on 4-night or longer, Club Balcony or below.\n\n*Free prepaid service gratuities applicable to guests 1 & 2. Not applicable to Sail Away fares. Available on most sailing dates",
-      "agentInstructionsRaw": "Beverage package not available on Great Stirrup Cay unless Free at Sea Plus is purchased for a slight upcharge from Free at Sea. See norwegiancentral.com for other additions on Free at Sea Plus. Unlimited Open Bar package includes a wide selection of spirits, cocktails, wine by the glass, and bottled or draft beer up to $15 per drink. https://www.ncl.com/cruise-deals/promotion-terms#free-at-sea Upcoming New Hawaii State Government Tax. For your awareness, effective for sailings embarking January 1, 2026, forward, Hawaii will expand its Transient Accommodations Tax (TAT), traditionally applied to hotels and other land-based accommodations, to now include all cruise ship passengers. For cruises that include visits to Hawaii and embark on or after January 1, 2026, a tax of 14% (11% State TAT and 3% County surcharge) will be applied based on the portion of the cruise fare associated with time spent in Hawaiian ports. MIL, Teacher not applicable to groups\n\n \n\nJuly Pulse 1: Vacations from USD $499 (CAD $699) + Free At Sea + Kids Sail Free\n\nSecondary Offer: 50% Off All Cruises\n\nCruiseNext Offer: Double Up, Balcony and Above | Sailings 90+ Days Out & 3+ Days Duration\n\nCruiseFirst Offer: $250 for $500 | Sailings 90+ Days Out & 6+ Days Duration (July 7th Only)\n\nJul. 1-7, 2026\n\n \n \n\nJuly Pulse 2 - Semi-Annual Latitudes Early Access: 50% Off All Cruises+ Free At Sea\n\nSecondary Offer: Free Pre-Paid Gratuities for Select Sailings for Latitudes only (Balcony & Above)\n\nCruiseNext Offer: Double Up, Balcony and Above | Sailings 90+ Days Out & 3+ Days Duration\n\nJul. 8-9, 2026\n\n \n \n\nJuly Pulse 3 - Semi-Annual Sale: 50% Off All Cruises+ Free At Sea\n\nSecondary Offer: Free Pre-Paid Gratuities for Select Sailings  (Balcony & Above)\n\nCruiseNext Offer: Double Up, Balcony and Above | Sailings 90+ Days Out & 3+ Days Duration\n\nJul. 10-16, 2026",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
-        "dollarSavings": [],
-        "onboardCredits": [],
-        "freeGuestOffers": [],
-        "combinability": {
-          "rawRules": []
-        },
-        "exclusions": [],
-        "applicableProducts": [],
-        "applicableMarkets": []
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
-      },
-      "diagnostics": {
-        "status": "needs_review",
-        "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
-        ],
-        "warnings": []
-      }
-    },
     {
       "id": "cbpromo-2883",
       "source": "cb_agent_tools_todays_view",
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
       "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2883/",
-      "capturedAtIso": "2026-06-29T20:47:38.473Z",
+      "capturedAtIso": "2026-07-03T16:25:24.132Z",
       "title": "Delta Vacations - Skymiles and Medallion Members Save",
       "vendor": "Delta Vacations/MLT",
       "bookingWindow": {
@@ -84,31 +29,132 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
+        "offerTypes": [
+          "dollars_off",
+          "other"
+        ],
         "percentDiscounts": [],
-        "dollarSavings": [],
+        "dollarSavings": [
+          {
+            "amountUsd": 250,
+            "appliesTo": "Medallion Members flight and hotel package bookings of $7,000 or more",
+            "voyageLength": "Minimum 4-night stay required",
+            "cabinCategory": "",
+            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
+            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
+          },
+          {
+            "amountUsd": 150,
+            "appliesTo": "Medallion Members flight and hotel package bookings of $4,000 – $6,999",
+            "voyageLength": "Minimum 4-night stay required",
+            "cabinCategory": "",
+            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
+            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
+          },
+          {
+            "amountUsd": 100,
+            "appliesTo": "Medallion Members flight and hotel package bookings of $1,500 – $3,999",
+            "voyageLength": "Minimum 4-night stay required",
+            "cabinCategory": "",
+            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
+            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
+          },
+          {
+            "amountUsd": 50,
+            "appliesTo": "Medallion Members flight and hotel package bookings of up to $1,499",
+            "voyageLength": "Minimum 4-night stay required",
+            "cabinCategory": "",
+            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
+            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
+          },
+          {
+            "amountUsd": 250,
+            "appliesTo": "Medallion Members per flight and hotel package using promo code SMMED26",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "Book by July 31, 2026",
+            "rawText": "When you use a travel agent Medallion® Members save up to $250 per flight and hotel package using promo code SMMED26"
+          },
+          {
+            "amountUsd": 200,
+            "appliesTo": "SkyMiles Members per flight and hotel package using promo code SMSUMMER26",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "Book by July 31, 2026",
+            "rawText": "SkyMiles® Members save up to $200 per flight and hotel package using promo code SMSUMMER26."
+          }
+        ],
         "onboardCredits": [],
         "freeGuestOffers": [],
         "combinability": {
-          "rawRules": []
+          "groupRates": false,
+          "rawRules": [
+            "Offer is not applicable to airfare; for groups of 10 or more people; and is not retroactive."
+          ]
         },
-        "exclusions": [],
-        "applicableProducts": [],
-        "applicableMarkets": []
+        "exclusions": [
+          "Reservations that include only flights on other airlines do not qualify.",
+          "Offer is not applicable to airfare; for groups of 10 or more people; and is not retroactive."
+        ],
+        "applicableProducts": [
+          "Delta Vacations package that includes a flight and hotel",
+          "For air-inclusive packages, offer is valid on reservations that include a minimum of one flight on Delta Air Lines®.",
+          "Package must include flight and hotel, plus any optional car rentals, transfers, excursions and/or activities."
+        ],
+        "applicableMarkets": [
+          "from any Delta Vacations origin in the U.S. to any Delta Vacations destination within the U.S. (including Alaska and Hawai’i), Canada, Mexico, the Caribbean or Central America"
+        ]
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select Delta Vacations flight-and-hotel packages may qualify for member savings when booked through a travel advisor.",
+          "Eligible Medallion Members may qualify for tiered package savings on select Delta Vacations bookings.",
+          "Eligible SkyMiles Members may qualify for package savings on select Delta Vacations bookings.",
+          "Travel during June 1 – November 30, 2026 may qualify, subject to package and membership requirements."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Medallion Members may qualify for up to $250 off per flight and hotel package with promo code SMMED26.",
+          "SkyMiles Members may qualify for up to $200 off per flight and hotel package with promo code SMSUMMER26.",
+          "Medallion Member savings depend on booking value tiers and require a minimum 4-night stay.",
+          "Eligible packages must include flight and hotel, and air-inclusive packages must include at least one Delta Air Lines flight.",
+          "Offer applies only when the primary passenger is a Medallion Member for the Medallion offer.",
+          "Offer is limited to eligible origins/destinations and the stated booking and travel windows."
+        ],
+        "agentOnlyNotes": [
+          "Use promo code SMMED26 for the Medallion Members offer.",
+          "Offer only valid if the Primary Passenger is a Medallion Member.",
+          "Minimum 4-night stay required.",
+          "For air-inclusive packages, offer is valid on reservations that include a minimum of one flight on Delta Air Lines®.",
+          "Reservations that include only flights on other airlines do not qualify.",
+          "No minimum purchase price required.",
+          "Maximum discount is $250 per booking; discount is a percentage of each eligible land component.",
+          "Offer is not applicable to airfare; for groups of 10 or more people; and is not retroactive.",
+          "Must be purchased through Delta Vacations."
+        ],
+        "suggestedAngles": [
+          "Member-only vacation package savings",
+          "Summer-to-fall travel savings on select Delta Vacations packages",
+          "Tiered savings for Medallion Members on longer package budgets",
+          "Advisor-booked Delta Vacations package offers"
+        ],
+        "cautionFlags": [
+          "Title and body mention SkyMiles savings, but the detailed agent terms supplied only fully outline the Medallion offer.",
+          "The savings are for flight-and-hotel packages, not cruises or standalone airfare.",
+          "'Up to' savings should not be advertised as guaranteed without tier and eligibility qualifiers.",
+          "Medallion savings require the primary passenger to be a Medallion Member.",
+          "Air-inclusive eligibility requires at least one Delta Air Lines flight; bookings with only other airlines do not qualify.",
+          "Groups of 10 or more are excluded.",
+          "Additional baggage charges, hotel/resort fees, or departure taxes may still apply."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Delta Vacations flight-and-hotel packages booked within the promotional window may qualify eligible Medallion or SkyMiles members for savings, depending on membership, package details, and travel dates. Final pricing, eligibility, and any applicable promo code requirements are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: dollars_off, other.",
+          "Public claims: 4, needs-qualifier: 6, caution flags: 7."
         ],
         "warnings": []
       }
@@ -118,7 +164,7 @@
       "source": "cb_agent_tools_todays_view",
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
       "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2793/",
-      "capturedAtIso": "2026-06-29T20:47:38.473Z",
+      "capturedAtIso": "2026-07-03T16:25:24.132Z",
       "title": "Margaritaville at Sea - 50% Off, Kids Free - July 4th Flash Sale",
       "vendor": "Margaritaville at Sea",
       "bookingWindow": {
@@ -139,41 +185,108 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [],
-        "percentDiscounts": [],
+        "offerTypes": [
+          "second_guest_discount",
+          "free_extra_guests",
+          "other"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "cruise fares",
+            "percentOff": 50,
+            "rawText": "50% off cruise fares"
+          },
+          {
+            "appliesTo": "drink packages",
+            "percentOff": 50,
+            "rawText": "Up To 50% Off Drink Packages"
+          },
+          {
+            "appliesTo": "cruise fares on select dates",
+            "percentOff": 50,
+            "rawText": "50% off Cruise Fares on select dates."
+          }
+        ],
         "dollarSavings": [],
         "onboardCredits": [],
-        "freeGuestOffers": [],
+        "freeGuestOffers": [
+          {
+            "guestNumbers": "3rd & 4th guests",
+            "rawText": "3rd & 4th Guests Sail Free"
+          },
+          {
+            "guestNumbers": "3rd and 4th guests",
+            "rawText": "Kids Sail Free now on Beachcomber: $0 fare for 3rd and 4th guests when they are between 3 and 12 years old at the time of departure, traveling in a stateroom with a minimum of two paying guests."
+          }
+        ],
         "combinability": {
-          "rawRules": []
+          "cruiseOnly": false,
+          "rawRules": [
+            "Offer is combinable with other current promotions, unless otherwise stated."
+          ]
         },
-        "exclusions": [],
+        "exclusions": [
+          "Offer does not include taxes, fees, port expenses, or any onboard charges."
+        ],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [],
-        "publicClaimsNeedsQualifier": [],
-        "agentOnlyNotes": [],
-        "suggestedAngles": [],
-        "cautionFlags": [],
+        "publicClaimsAllowed": [
+          "Select sailings may qualify for reduced cruise fares.",
+          "Select sailings may qualify for kids sail free offers.",
+          "Some bookings may qualify for complimentary stateroom upgrades.",
+          "Select bookings may qualify for discounted drink packages."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "50% off cruise fares on select dates.",
+          "Up to 50% off drink packages.",
+          "Kids Sail Free on select dates.",
+          "3rd and 4th guests may sail free on Beachcomber when they are between 3 and 12 years old at departure and travel in a stateroom with a minimum of two paying guests.",
+          "Complimentary stateroom upgrades may be offered only on eligible ships and cabin categories, and may be within the same category or on an eligible category upgrade."
+        ],
+        "agentOnlyNotes": [
+          "Offer does not include taxes, fees, port expenses, or any onboard charges.",
+          "Reduced and discounted fares are reflected in the advertised pricing and do not require a coupon code.",
+          "Offer is combinable with other current promotions, unless otherwise stated.",
+          "All offers are subject to availability and may change at any time.",
+          "For Paradise: eligible for upgrade from Interior to Ocean View.",
+          "For Islander: eligible for upgrade from Interior to Ocean View, or from Ocean View to Balcony.",
+          "For Beachcomber: eligible for upgrade from Interior to Ocean View."
+        ],
+        "suggestedAngles": [
+          "Family cruise savings on select sailings",
+          "Kids-sail-free messaging with date and age qualifiers",
+          "Value-focused summer cruise promotion",
+          "Potential stateroom upgrade opportunity on eligible ships"
+        ],
+        "cautionFlags": [
+          "Promotion title says 'July 4th Flash Sale' and details say 'Book June 22 - July 7th,' which conflicts with the stated booking window of 04/01/2026 to 08/31/2026.",
+          "Kids Sail Free is limited to select dates.",
+          "The detailed kids-free terms provided are only for Beachcomber and only for 3rd and 4th guests ages 3 to 12 traveling with at least two paying guests.",
+          "Drink package discount is stated as 'Up To 50% Off,' so the maximum discount should not be advertised as guaranteed.",
+          "Complimentary stateroom upgrades are limited by ship and cabin eligibility.",
+          "Advertised fares exclude taxes, fees, port expenses, and onboard charges."
+        ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": ""
+        "visitorFriendlySummary": "Select Margaritaville at Sea sailings may qualify for family-friendly offers like reduced fares, kids sail free opportunities, discounted drink packages, and possible stateroom upgrades. Availability and final pricing, taxes, and eligible perks are confirmed in the booking portal."
       },
       "diagnostics": {
-        "status": "needs_review",
+        "status": "succeeded",
+        "model": "gpt-5.4",
         "notes": [
-          "Raw capture only; structured extraction pending Phase 5."
+          "Offers: second_guest_discount, free_extra_guests, other.",
+          "Public claims: 4, needs-qualifier: 5, caution flags: 6."
         ],
         "warnings": []
       }
     }
   ],
   "diagnostics": {
-    "promotionLinksFound": 3,
-    "detailPagesScraped": 3,
-    "extractionSucceeded": 0,
-    "extractionNeedsReview": 3,
+    "promotionLinksFound": 2,
+    "detailPagesScraped": 2,
+    "extractionSucceeded": 2,
+    "extractionNeedsReview": 0,
     "supportingFilesFound": 0,
     "errors": []
   }

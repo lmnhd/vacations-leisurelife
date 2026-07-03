@@ -9,7 +9,8 @@
  * Email delivery and the operator dashboard land in Phase 12/13.
  *
  * Input:
- *   { dealId: string, name?: string, email?: string, phone?: string, notes?: string }
+ *   { dealId: string, name?: string, email?: string, phone?: string, notes?: string,
+ *     ctaSource?: "request_callback" | "promo_check", promoNotes?: string[] }
  *
  * Output:
  *   { ok: true, requestId: string } | { ok: false, error: string }
@@ -35,10 +36,19 @@ interface Body {
   email?: unknown;
   phone?: unknown;
   notes?: unknown;
+  ctaSource?: unknown;
+  promoNotes?: unknown;
 }
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => str(item))
+    .filter((item): item is string => Boolean(item));
 }
 
 export async function POST(request: Request) {
@@ -58,6 +68,9 @@ export async function POST(request: Request) {
   const email = str(body.email);
   const phone = str(body.phone);
   const notes = str(body.notes);
+  const requestedSource = str(body.ctaSource);
+  const ctaSource = requestedSource === "promo_check" ? "promo_check" : "request_callback";
+  const submittedPromoNotes = stringList(body.promoNotes);
 
   if (!email && !phone) {
     return NextResponse.json(
@@ -73,12 +86,17 @@ export async function POST(request: Request) {
 
   const nowIso = new Date().toISOString();
   const requestId = `cbr-${dealId}-${Date.now()}`;
+  const dealPromoNotes = [
+    ...submittedPromoNotes,
+    ...(deal.designPage?.specials ?? []).map((special) => special.title),
+    ...(deal.offerLines ?? []),
+  ].filter((note, index, all) => all.indexOf(note) === index);
 
   const callbackRequest: AgentCallbackRequest = {
     id: requestId,
     createdAtIso: nowIso,
     status: "new",
-    ctaSource: "request_callback",
+    ctaSource,
     visitor: {
       name,
       email,
@@ -91,6 +109,7 @@ export async function POST(request: Request) {
       cruiseLine: deal.facts.cruiseLine,
       shipName: deal.facts.shipName,
       sailDateIso: deal.facts.sailDateLabel,
+      promoNotes: dealPromoNotes,
     },
     linkHealthStatus: "valid",
     brokerLinkUrl: deal.bookingUrl,
@@ -111,15 +130,16 @@ export async function POST(request: Request) {
     eventType: "callback_requested",
     attribution: {},
     email,
-    metadata: { ctaSource: "request_callback", ...(phone ? { hasPhone: "true" } : {}) },
+    metadata: { ctaSource, ...(phone ? { hasPhone: "true" } : {}) },
   });
 
   const emailLine = email ? `Email: ${email}` : "Email: not provided";
   const phoneLine = phone ? `Phone: ${phone}` : "Phone: not provided";
   const nameLine = name ? `Name: ${name}` : "Name: not provided";
+  const promoLine = ctaSource === "promo_check" ? "\nRequest: check eligible bonus offer" : "";
   try {
     await sendAdminPushNotification(
-      `Callback request - ${deal.title}\n${nameLine}\n${emailLine}\n${phoneLine}\nDeal: ${dealId}`,
+      `Callback request - ${deal.title}${promoLine}\n${nameLine}\n${emailLine}\n${phoneLine}\nDeal: ${dealId}`,
       {
         priority: "1",
         title: "Leisure Life Callback Request",
