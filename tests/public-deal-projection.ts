@@ -25,6 +25,7 @@ import {
   type CbPromoIntelligenceRecord,
   type CuratedOdysseusDeal,
   type DealFunnelSynthesis,
+  type DealMetaAdSynthesis,
 } from "../lib/cb/deals-system";
 import { installDealsAiStub } from "./deals-ai-stub";
 
@@ -601,6 +602,172 @@ check("draft has no from-price label", draftPage?.fromPriceLabel === undefined);
 check("draft itinerary falls back to named ports", draftPage?.itinerary.kind === "ports");
 check("draft fact band marks ship/date confirmed at booking",
   draftPage?.factBand.some((e) => e.value === "Confirmed at booking") === true);
+
+// --- Ad-cards showcase (Step 8 Meta carousel -> hero-adjacent section) --------
+console.log("\nAd-cards showcase:");
+
+function metaAdSynthesisFor(
+  dealId: string,
+  cardStatuses: Array<"ready" | "pending" | "error">,
+  primaryTextByIndex?: Record<number, string>
+): DealMetaAdSynthesis {
+  return {
+    id: `metaad-${dealId}`,
+    dealId,
+    generatedAtIso: GEN_AT,
+    sourceFunnelSynthesisId: dealId,
+    sailingAngleTitle: "Sea Days Roll Differently",
+    promptTemplate: "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+    cards: cardStatuses.map((status, i) => ({
+      cardIndex: i,
+      headline: `Card ${i} Headline`,
+      primaryText: primaryTextByIndex?.[i] ?? `Card ${i} primary text.`,
+      status,
+      imageUrl: status === "ready" ? `https://img.example.com/card${i}.png` : undefined,
+    })),
+  };
+}
+
+const fourReadySynthesis = metaAdSynthesisFor(approved.id, ["ready", "ready", "ready", "ready"]);
+const pageWithAdCards = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  fourReadySynthesis
+).designPage;
+check(
+  "designPage carries adCards when 4 cards are ready",
+  pageWithAdCards?.adCards !== undefined
+);
+check(
+  "adCards includes all 4 ready cards in cardIndex order",
+  pageWithAdCards?.adCards?.cards.length === 4 &&
+    pageWithAdCards.adCards.cards[0].headline === "Card 0 Headline" &&
+    pageWithAdCards.adCards.cards[3].headline === "Card 3 Headline"
+);
+check(
+  "adCards layout is one of the three known layouts",
+  ["quilt", "tab-spotlight", "editorial-mosaic"].includes(pageWithAdCards?.adCards?.layout ?? "")
+);
+
+const partialReadySynthesis = metaAdSynthesisFor(approved.id, ["ready", "pending", "error", "ready"]);
+const pageWithPartialAdCards = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  partialReadySynthesis
+).designPage;
+check(
+  "adCards omits pending/error cards, keeping only ready ones",
+  pageWithPartialAdCards?.adCards?.cards.length === 2 &&
+    pageWithPartialAdCards.adCards.cards.every((c) => c.imageUrl.includes("card"))
+);
+
+const singleReadySynthesis = metaAdSynthesisFor(approved.id, ["ready", "pending", "error", "error"]);
+const pageWithSingleAdCard = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  singleReadySynthesis
+).designPage;
+check(
+  "adCards is omitted entirely when fewer than 2 cards are ready",
+  pageWithSingleAdCard?.adCards === undefined
+);
+
+const pageWithoutMetaAdSynthesis = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id)
+).designPage;
+check(
+  "adCards is omitted when no meta ad synthesis exists for the deal",
+  pageWithoutMetaAdSynthesis?.adCards === undefined
+);
+
+const layoutRunA = projectPublicDealPage(approved, synthesisFor(approved.id), [], fourReadySynthesis).designPage;
+const layoutRunB = projectPublicDealPage(approved, synthesisFor(approved.id), [], fourReadySynthesis).designPage;
+check(
+  "adCards layout is deterministic for the same deal id",
+  layoutRunA?.adCards?.layout === layoutRunB?.adCards?.layout
+);
+
+const jargonSynthesis = metaAdSynthesisFor(approved.id, ["ready", "ready"], {
+  0: "Roll your d10 where no one's FaceTiming three feet away in this dungeon-quiet library.",
+  1: "A great Southern Caribbean sailing with onboard credit and premium suites.",
+});
+const pageWithJargonAdCards = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  jargonSynthesis
+).designPage;
+check(
+  "adCards omits bodyText for a card whose primaryText fails the broad-appeal check",
+  pageWithJargonAdCards?.adCards?.cards[0]?.bodyText === undefined
+);
+check(
+  "adCards keeps bodyText for a card whose primaryText passes the broad-appeal check",
+  pageWithJargonAdCards?.adCards?.cards[1]?.bodyText ===
+    "A great Southern Caribbean sailing with onboard credit and premium suites."
+);
+check(
+  "adCards never leaks a jargon-failing card's raw primaryText anywhere in the view",
+  !allText(pageWithJargonAdCards?.adCards).includes("facetiming")
+);
+
+// --- Ad-cards eyebrow/heading: real promo vs. no-promo fallback --------------
+console.log("\nAd-cards eyebrow/heading (promo-aware copy):");
+
+const noPromoAdSynthesis = metaAdSynthesisFor(approved.id, ["ready", "ready"]);
+const noPromoAdCardsPage = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  noPromoAdSynthesis
+).designPage;
+check(
+  "no real promo -> eyebrow is NOT 'Special Offers!'",
+  noPromoAdCardsPage?.adCards?.eyebrow !== "Special Offers!",
+  noPromoAdCardsPage?.adCards?.eyebrow
+);
+check(
+  "no real promo -> heading borrows the lead ad card's own headline",
+  noPromoAdCardsPage?.adCards?.heading === "Card 0 Headline",
+  noPromoAdCardsPage?.adCards?.heading
+);
+
+const realPromoAdSynthesis = metaAdSynthesisFor(safePromoDeal.id, ["ready", "ready"]);
+const realPromoAdCardsPage = projectPublicDealPage(
+  safePromoDeal,
+  manifestKeyedSynthesis,
+  [promoRecord],
+  realPromoAdSynthesis
+).designPage;
+check(
+  "real promo attached -> eyebrow stays 'Special Offers!'",
+  realPromoAdCardsPage?.adCards?.eyebrow === "Special Offers!",
+  realPromoAdCardsPage?.adCards?.eyebrow
+);
+check(
+  "real promo attached -> heading stays the default offer copy",
+  realPromoAdCardsPage?.adCards?.heading === "What makes this offer special…",
+  realPromoAdCardsPage?.adCards?.heading
+);
+
+const jargonLeadSynthesis = metaAdSynthesisFor(approved.id, ["ready", "ready"], {
+  0: "Roll your d10 in the dungeon-quiet library where no one's FaceTiming.",
+});
+const jargonLeadPage = projectPublicDealPage(
+  approved,
+  synthesisFor(approved.id),
+  [],
+  { ...jargonLeadSynthesis, cards: jargonLeadSynthesis.cards.map((c, i) => (i === 0 ? { ...c, headline: "Roll Your D10 in the Dungeon" } : c)) }
+).designPage;
+check(
+  "no real promo + jargon-failing lead headline -> falls back to the generic heading",
+  jargonLeadPage?.adCards?.heading === "Why This Sailing",
+  jargonLeadPage?.adCards?.heading
+);
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 if (failed > 0) {

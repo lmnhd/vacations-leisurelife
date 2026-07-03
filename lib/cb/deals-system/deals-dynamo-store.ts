@@ -22,6 +22,7 @@ import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
 import type { CuratedOdysseusDeal, OdysseusDealBrief } from "./curated-deal-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
+import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 
 const TABLE_NAME = process.env.DEALS_SYSTEM_TABLE_NAME ?? "lll-deals-system";
@@ -175,6 +176,22 @@ export async function upsertDealFunnelSynthesisRecord(
   synthesis: DealFunnelSynthesis
 ): Promise<void> {
   return putItem(`SYNTHESIS#${synthesis.id}`, synthesis);
+}
+
+// ── Deal Meta Ad Syntheses (Step 8 — Meta carousel card images) ─────────────
+
+export async function getDealMetaAdSynthesis(id: string): Promise<DealMetaAdSynthesis | null> {
+  return getItem<DealMetaAdSynthesis>(`METAADSYNTH#${id}`);
+}
+
+export async function listDealMetaAdSyntheses(): Promise<DealMetaAdSynthesis[]> {
+  return scanByPrefix<DealMetaAdSynthesis>("METAADSYNTH#");
+}
+
+export async function upsertDealMetaAdSynthesisRecord(
+  synthesis: DealMetaAdSynthesis
+): Promise<void> {
+  return putItem(`METAADSYNTH#${synthesis.id}`, synthesis);
 }
 
 // ── Promo Intelligence Records ───────────────────────────────────────────────

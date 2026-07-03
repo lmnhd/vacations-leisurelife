@@ -24,6 +24,7 @@
     "backfill-deal-itinerary": "npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts",
     "check-deal-pricing": "npx tsx --env-file=.env.local scripts/check-deal-pricing.ts",
     "backfill-deal-ship-identity": "npx tsx --env-file=.env.local scripts/backfill-deal-ship-identity.ts --",
+    "backfill-deal-meta-ad-synthesis-dynamo": "npx tsx --env-file=.env.local scripts/backfill-deal-meta-ad-synthesis-dynamo.ts",
     "deep-cruise-search": "npx tsx --env-file=.env.local scripts/deep-cruise-search.ts",
     "verify-cruise-line-ids": "npx tsx --env-file=.env.local scripts/verify-cruise-line-ids.ts",
     "tc-pulse": "npx tsx --env-file=.env.local scripts/tc-pulse.ts -- --live",

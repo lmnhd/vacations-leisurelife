@@ -11,12 +11,15 @@ const HERO_IMAGE_URL =
 export const LandingHero = ({ hasDeals = false }: { hasDeals?: boolean }) => {
   return (
     <div>
-      <div className="image-container max-h-[800px] overflow-hidden">
+      {/* min-h reserves room for the bottom-anchored content below regardless
+          of the image's own aspect ratio (was clipping on mobile). */}
+      <div className="image-container relative min-h-[560px] sm:min-h-[620px] md:min-h-[720px] max-h-[800px] overflow-hidden">
         <Image
           alt="Luxury cruise ship on turquoise waters"
-          width={2070}
-          height={800}
           src={HERO_IMAGE_URL}
+          fill
+          sizes="100vw"
+          className="object-cover"
           priority
         />
 

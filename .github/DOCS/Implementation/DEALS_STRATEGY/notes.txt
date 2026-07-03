@@ -61,3 +61,11 @@ The idea is to 'Jazz Up' the sales pitch and imagery/aesthetic of the landing pa
 
 We need to first brainstorm some ingenious design patterns for incorporating all of the ad and media copy generated for the ads into the landing page. Mobile first design!
 I need you to put on your design hat and come up with some fresh ideas that will really spice Up Our Sales Flow!
+
+
+For deals that don't have actual promotions Attached, we need to change the language:
+"Special Offers!
+
+What makes this offer special…"
+
+To something from the funnel ad copy. I will leave it to you to find the best messaging from the copy to use.

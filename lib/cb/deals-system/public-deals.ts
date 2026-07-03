@@ -15,11 +15,13 @@
 import { isDealHomepageEligible } from "./curated-deal-assembly";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
+import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
   listCuratedDeals,
   listDealFunnelSyntheses,
+  listDealMetaAdSyntheses,
   listDealTripManifests,
   listPromoRecords,
 } from "./deals-dynamo-store";
@@ -116,6 +118,16 @@ export function findDealFunnelSynthesisForDeal(
   );
 }
 
+export function findDealMetaAdSynthesisForDeal(
+  deal: CuratedOdysseusDeal,
+  syntheses: DealMetaAdSynthesis[]
+): DealMetaAdSynthesis | undefined {
+  const keys = new Set(dealFunnelSynthesisLookupKeys(deal));
+  return syntheses.find((s) =>
+    keys.has(s.dealId) || keys.has(s.id) || keys.has(s.sourceFunnelSynthesisId)
+  );
+}
+
 export function findDealTripManifestForDeal(
   deal: CuratedOdysseusDeal,
   manifests: DealTripManifest[]
@@ -189,6 +201,24 @@ async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<De
 }
 
 /**
+ * Load the Meta ad synthesis (Step 8) for a deal, resilient to a missing/malformed
+ * store (returns undefined so the page simply omits the ad-cards showcase rather
+ * than crashing). Matched the same way as the funnel synthesis, since both are
+ * keyed to the same manifest/ad-copy trace.
+ */
+async function loadMetaAdSynthesisForDeal(
+  deal: CuratedOdysseusDeal
+): Promise<DealMetaAdSynthesis | undefined> {
+  let syntheses: DealMetaAdSynthesis[];
+  try {
+    syntheses = await listDealMetaAdSyntheses();
+  } catch {
+    return undefined;
+  }
+  return findDealMetaAdSynthesisForDeal(deal, syntheses);
+}
+
+/**
  * Public deal page projection by id. Returns null when the Deal does not exist
  * OR is not homepage-eligible, so a non-approved / non-valid-link Deal renders as
  * notFound instead of leaking. When a funnel synthesis exists for the deal, the
@@ -202,6 +232,7 @@ export async function getPublicDealPageById(id: string): Promise<PublicDealPage 
   const manifest = await loadTripManifestForDeal(deal);
   const hydratedDeal = hydrateDealFromManifest(deal, manifest);
   const synthesis = await loadFunnelSynthesisForDeal(hydratedDeal);
+  const metaAdSynthesis = await loadMetaAdSynthesisForDeal(hydratedDeal);
   const promoRecords = await loadPromoRecords();
-  return projectPublicDealPage(hydratedDeal, synthesis, promoRecords);
+  return projectPublicDealPage(hydratedDeal, synthesis, promoRecords, metaAdSynthesis);
 }

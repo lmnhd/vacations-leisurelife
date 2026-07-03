@@ -11,6 +11,7 @@
 
 import type { DealLandingPageView } from "@/lib/cb/deals-system/public-deal-projection";
 
+import { DealAdCardsShowcase } from "./deal-ad-cards-showcase";
 import { DealCtaActions } from "./deal-cta-actions";
 import { DealImageWithFallback } from "./deal-image-with-fallback";
 import { DealLandingPageEnhancements } from "./deal-landing-page-enhancements";
@@ -174,80 +175,94 @@ function ItineraryCalendar({ rows }: { rows: ItineraryDayRow[] }) {
             >
               {monthLabel}
             </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(7, 1fr)",
-                gap: 1,
-                background: C.border,
-                border: `1px solid ${C.border}`,
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              {WEEKDAY_LABELS.map((wd) => (
-                <div
-                  key={wd}
-                  style={{
-                    background: C.cream,
-                    padding: "8px 6px",
-                    textAlign: "center",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: C.gold,
-                  }}
-                >
-                  {wd}
-                </div>
-              ))}
-              {cells.map((dayNum, i) => {
-                const row = dayNum ? days.get(dayNum) : undefined;
-                const isPort = Boolean(row && !row.atSea);
-                return (
+            <div style={{ overflowX: "auto" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                  gap: 1,
+                  background: C.border,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  minWidth: 480,
+                }}
+              >
+                {WEEKDAY_LABELS.map((wd) => (
                   <div
-                    key={i}
+                    key={wd}
                     style={{
-                      background: dayNum ? (isPort ? C.surface : C.bg) : C.cream,
-                      minHeight: 92,
-                      padding: "8px 9px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
+                      background: C.cream,
+                      padding: "8px 4px",
+                      textAlign: "center",
+                      fontSize: "clamp(9px, 2.4vw, 11px)",
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: C.gold,
                     }}
                   >
-                    {dayNum && (
-                      <>
-                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: row ? C.navy : C.mutedLight }}>
+                    {wd}
+                  </div>
+                ))}
+                {cells.map((dayNum, i) => {
+                  const row = dayNum ? days.get(dayNum) : undefined;
+                  const isPort = Boolean(row && !row.atSea);
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: dayNum ? (isPort ? C.surface : C.bg) : C.cream,
+                        minHeight: "clamp(64px, 18vw, 92px)",
+                        padding: "clamp(5px, 1.6vw, 8px) clamp(4px, 1.6vw, 9px)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 3,
+                        minWidth: 0,
+                      }}
+                    >
+                      {dayNum && (
+                        <>
+                          <span style={{ fontSize: "clamp(11px, 2.8vw, 13px)", fontWeight: 700, color: row ? C.navy : C.mutedLight }}>
                             {dayNum}
                           </span>
-                          {row?.day != null && (
-                            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.mutedLight }}>
-                              Day {row.day}
+                          {row && isPort ? (
+                            <>
+                              <span
+                                style={{
+                                  fontSize: "clamp(10px, 2.6vw, 12.5px)",
+                                  fontWeight: 600,
+                                  lineHeight: 1.25,
+                                  color: C.navy,
+                                  overflowWrap: "break-word",
+                                }}
+                              >
+                                {row.text}
+                              </span>
+                              {row.timing && (
+                                <span
+                                  style={{
+                                    fontSize: "clamp(8.5px, 2vw, 10.5px)",
+                                    lineHeight: 1.3,
+                                    color: C.muted,
+                                    overflowWrap: "break-word",
+                                  }}
+                                >
+                                  {row.timing}
+                                </span>
+                              )}
+                            </>
+                          ) : row ? (
+                            <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: "clamp(11px, 2.8vw, 13px)", color: C.mutedLight }}>
+                              At Sea
                             </span>
-                          )}
-                        </div>
-                        {row && isPort ? (
-                          <>
-                            <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.3, color: C.navy }}>
-                              {row.text}
-                            </span>
-                            {row.timing && (
-                              <span style={{ fontSize: 10.5, lineHeight: 1.35, color: C.muted }}>{row.timing}</span>
-                            )}
-                          </>
-                        ) : row ? (
-                          <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: 13, color: C.mutedLight }}>
-                            At Sea
-                          </span>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         );
@@ -419,6 +434,8 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
           )}
         </div>
       </section>
+
+      {page.adCards ? <DealAdCardsShowcase view={page.adCards} /> : null}
 
       {/* ============ TRUST / FACT BAND ============ */}
       {factBand.length > 0 && (

@@ -26,10 +26,26 @@ import {
   revertDealMetaAdCardImage,
   saveDealMetaAdSynthesisCache,
   upsertDealMetaAdSynthesis,
+  upsertDealMetaAdSynthesisRecord,
   type DealFunnelSynthesis,
   type DealMetaAdSynthesis,
 } from "@/lib/cb/deals-system";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
+
+/**
+ * Mirror every write into the Dynamo store (deals-dynamo-store.ts) alongside the
+ * local JSON cache, matching the funnel-synthesis route's pattern — production
+ * (/deals/[id]) reads Dynamo only, so a synthesis never reaches real visitors
+ * until it's mirrored here. Best-effort: a Dynamo failure must never block the
+ * operator's local-cache workflow.
+ */
+async function mirrorToDynamo(synthesis: DealMetaAdSynthesis): Promise<void> {
+  try {
+    await upsertDealMetaAdSynthesisRecord(synthesis);
+  } catch (error) {
+    console.error("[meta-ad-synthesis] Failed to mirror synthesis to Dynamo:", error);
+  }
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -107,6 +123,7 @@ export async function POST(request: Request) {
       const synthesis = buildDealMetaAdSynthesis(funnelSynthesis);
       const cache = upsertDealMetaAdSynthesis(loadDealMetaAdSynthesisCache(), synthesis);
       saveDealMetaAdSynthesisCache(cache);
+      await mirrorToDynamo(synthesis);
       return NextResponse.json({ ok: true, synthesis, syntheses: cache.syntheses });
     } catch (error) {
       return NextResponse.json(
@@ -138,6 +155,7 @@ export async function POST(request: Request) {
       const updated: DealMetaAdSynthesis = { ...existing, promptTemplate };
       const nextCache = upsertDealMetaAdSynthesis(cache, updated);
       saveDealMetaAdSynthesisCache(nextCache);
+      await mirrorToDynamo(updated);
       return NextResponse.json({ ok: true, synthesis: updated });
     } catch (error) {
       return NextResponse.json(
@@ -192,6 +210,7 @@ export async function POST(request: Request) {
     try {
       const updatedCard = await generateDealMetaAdCardImage(existing, cardIndex, promptSuffix);
       const synthesis = mergeCardIntoLatest(updatedCard);
+      await mirrorToDynamo(synthesis);
       return NextResponse.json({ ok: true, synthesis });
     } catch (error) {
       // Persist the error onto the card so the operator sees it without losing
@@ -207,6 +226,7 @@ export async function POST(request: Request) {
       };
       try {
         synthesis = mergeCardIntoLatest(failedCard);
+        await mirrorToDynamo(synthesis);
       } catch {
         // best-effort persistence of the error state
       }
@@ -246,6 +266,7 @@ export async function POST(request: Request) {
         cards: existing.cards.map((c) => (c.cardIndex === cardIndex ? revertedCard : c)),
       };
       saveDealMetaAdSynthesisCache(upsertDealMetaAdSynthesis(cache, synthesis));
+      await mirrorToDynamo(synthesis);
       return NextResponse.json({ ok: true, synthesis });
     } catch (error) {
       return NextResponse.json(

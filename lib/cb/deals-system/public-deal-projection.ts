@@ -23,6 +23,8 @@ import { resolvePortCode } from "@/lib/campaigns/landing/port-codes";
 
 import type { DealCtaKind } from "./campaign-types";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
+import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
+import { validateLandingBroadAppeal } from "./deal-page-design-generator";
 import {
   DEAL_LANDING_SEGMENT_KEYS,
   type DealFunnelSynthesis,
@@ -250,6 +252,43 @@ interface DealSpecialView {
   bookByLabel?: string;
 }
 
+/** One ready Meta ad-carousel card, projected for the public ad-cards showcase. */
+export interface DealAdCardView {
+  headline: string;
+  imageUrl: string;
+  /**
+   * The card's primaryText, present only when it passes the same broad-appeal
+   * jargon check the landing-page copy itself is validated against
+   * (`validateLandingBroadAppeal`). Carousel body copy is written hyper-niche
+   * by design (Step 7), so a card that fails the check omits this field rather
+   * than leaking insider vocabulary onto the broad-market page — the headline
+   * and image still render either way.
+   */
+  bodyText?: string;
+}
+
+/**
+ * The three layout treatments the showcase component can render. Picked once per
+ * deal (see `pickAdCardsLayout`), not per page load, so a given deal's page keeps
+ * the same look across visits/deploys, while different deals in the same
+ * campaign wave naturally vary — the brand-nuance-per-campaign the operator asked
+ * for, without a random layout jumping around on refresh.
+ */
+export type DealAdCardsLayout = "quilt" | "tab-spotlight" | "editorial-mosaic";
+
+export interface DealAdCardsShowcaseView {
+  layout: DealAdCardsLayout;
+  /**
+   * "Special Offers!" when the deal carries a real attached promo (specials.
+   * length > 0); otherwise a validated-broad-appeal hook pulled from the lead
+   * ad card's own headline, so a deal with no actual discount never implies
+   * one just by sitting under an "offers" label.
+   */
+  eyebrow: string;
+  heading: string;
+  cards: DealAdCardView[];
+}
+
 /**
  * The premium Deal Page view model — everything the master-template component
  * renders, derived purely from the curated deal's facts + the funnel synthesis.
@@ -270,6 +309,13 @@ export interface DealLandingPageView {
   specials: DealSpecialView[];
   ctaLabel: string;
   bookingUrl: string;
+  /**
+   * The deal's Meta ad-carousel cards (Step 8), shown as a distinct section below
+   * the hero — never replacing it. Present only when at least one card has a
+   * ready image; a deal with no ad campaign yet simply omits this and the ship
+   * hero carries the page alone, as it does today.
+   */
+  adCards?: DealAdCardsShowcaseView;
 }
 
 function destinationLabel(deal: CuratedOdysseusDeal): string {
@@ -352,6 +398,77 @@ function imageSetFor(
   };
 }
 
+const AD_CARDS_LAYOUTS: DealAdCardsLayout[] = ["quilt", "tab-spotlight", "editorial-mosaic"];
+
+/**
+ * Deterministically pick one of the three ad-cards layouts from the deal id, so
+ * the choice is stable across renders/deploys for a given deal (no layout
+ * flicker on refresh) while still varying across the many deals running at
+ * once — the "campaign nuance" the operator wants without real randomness.
+ */
+function pickAdCardsLayout(dealId: string): DealAdCardsLayout {
+  let hash = 0;
+  for (let i = 0; i < dealId.length; i++) {
+    hash = (hash * 31 + dealId.charCodeAt(i)) | 0;
+  }
+  const index = Math.abs(hash) % AD_CARDS_LAYOUTS.length;
+  return AD_CARDS_LAYOUTS[index];
+}
+
+/**
+ * Project the deal's Meta ad-carousel (Step 8) into the public showcase view.
+ * Only "ready" cards (a generated image exists) are included; a card still
+ * pending/erroring is silently omitted rather than shown as a placeholder.
+ * Returns undefined when fewer than 2 cards are ready — a single stray image
+ * doesn't read as "the campaign," so the section doesn't mount for it.
+ */
+const AD_CARDS_DEFAULT_EYEBROW = "Special Offers!";
+const AD_CARDS_DEFAULT_HEADING = "What makes this offer special…";
+/** Fallback when even the lead card's own headline fails the broad-appeal check. */
+const AD_CARDS_FALLBACK_HEADING = "Why This Sailing";
+
+/**
+ * Project the deal's Meta ad-carousel (Step 8) into the public showcase view.
+ * Only "ready" cards (a generated image exists) are included; a card still
+ * pending/erroring is silently omitted rather than shown as a placeholder.
+ * Returns undefined when fewer than 2 cards are ready — a single stray image
+ * doesn't read as "the campaign," so the section doesn't mount for it.
+ *
+ * `hasRealPromo` mirrors the same gate the specials section below it uses
+ * (`specials.length > 0`): a deal with no attached promo record must never
+ * sit under an "offers" label implying a discount that isn't there, so it
+ * borrows the lead ad card's own (already broad-appeal-validated) headline
+ * instead.
+ */
+function buildAdCardsShowcase(
+  dealId: string,
+  metaAdSynthesis: DealMetaAdSynthesis | undefined,
+  hasRealPromo: boolean
+): DealAdCardsShowcaseView | undefined {
+  if (!metaAdSynthesis) return undefined;
+  const readyCards = metaAdSynthesis.cards
+    .slice()
+    .sort((a, b) => a.cardIndex - b.cardIndex)
+    .filter((card): card is typeof card & { imageUrl: string } => card.status === "ready" && Boolean(card.imageUrl))
+    .map((card) => ({
+      headline: card.headline,
+      imageUrl: card.imageUrl,
+      bodyText: validateLandingBroadAppeal(card.primaryText).length === 0 ? card.primaryText : undefined,
+    }));
+  if (readyCards.length < 2) return undefined;
+
+  const [lead] = readyCards;
+  const heading =
+    hasRealPromo || !lead
+      ? AD_CARDS_DEFAULT_HEADING
+      : validateLandingBroadAppeal(lead.headline).length === 0
+        ? lead.headline
+        : AD_CARDS_FALLBACK_HEADING;
+  const eyebrow = hasRealPromo ? AD_CARDS_DEFAULT_EYEBROW : "The Angle";
+
+  return { layout: pickAdCardsLayout(dealId), eyebrow, heading, cards: readyCards };
+}
+
 function promoRecordById(records: CbPromoIntelligenceRecord[]): Map<string, CbPromoIntelligenceRecord> {
   return new Map(records.map((record) => [record.id, record]));
 }
@@ -424,7 +541,8 @@ const SEGMENT_HEADINGS: Record<string, string> = {
 export function buildDealLandingPageView(
   deal: CuratedOdysseusDeal,
   synthesis: DealFunnelSynthesis | undefined,
-  promoRecords: CbPromoIntelligenceRecord[] = []
+  promoRecords: CbPromoIntelligenceRecord[] = [],
+  metaAdSynthesis?: DealMetaAdSynthesis
 ): DealLandingPageView | undefined {
   if (!synthesis) return undefined;
 
@@ -637,6 +755,7 @@ export function buildDealLandingPageView(
     specials,
     ctaLabel: "Book Now",
     bookingUrl: deal.bookingUrl,
+    adCards: buildAdCardsShowcase(deal.id, metaAdSynthesis, specials.length > 0),
   };
 }
 
@@ -679,7 +798,8 @@ export function projectPublicDealTile(
 export function projectPublicDealPage(
   deal: CuratedOdysseusDeal,
   synthesis?: DealFunnelSynthesis,
-  promoRecords: CbPromoIntelligenceRecord[] = []
+  promoRecords: CbPromoIntelligenceRecord[] = [],
+  metaAdSynthesis?: DealMetaAdSynthesis
 ): PublicDealPage {
   const copy = deal.copyPackage;
   const shipName = displayShipName(deal);
@@ -716,6 +836,6 @@ export function projectPublicDealPage(
       label: cta.label,
       supportingText: cta.supportingText,
     })),
-    designPage: buildDealLandingPageView(deal, synthesis, promoRecords),
+    designPage: buildDealLandingPageView(deal, synthesis, promoRecords, metaAdSynthesis),
   };
 }
