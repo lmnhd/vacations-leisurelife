@@ -314,6 +314,13 @@ async function main(): Promise<void> {
   cache = upsertDealAdCopy(cache, adCopy);
   cache = upsertDealAdCopy(cache, adCopy);
   check("upsert is idempotent on id", cache.adCopies.length === 1);
+  cache = upsertDealAdCopy(cache, {
+    ...adCopy,
+    id: `${adCopy.id}-rewrite`,
+    campaignName: `${adCopy.campaignName} rewrite`,
+  });
+  check("upsert replaces older copy for the same unified manifest", cache.adCopies.length === 1);
+  check("upsert keeps the latest rewritten ad copy", cache.adCopies[0].id === `${adCopy.id}-rewrite`);
   check("validator accepts the ad copy cache", validateDealAdCopyCache(cache).ok);
 
   const emptyVariant = {

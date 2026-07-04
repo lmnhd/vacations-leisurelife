@@ -126,6 +126,8 @@ Reference: `.github/DOCS/Implementation/DEALS_STRATEGY/HOME_PAGE_DEALS/6-10-26/F
 
 ### Phase C3: Assemble and Review the Curated Deal
 
+> **ID convention (mandatory):** the dealId IS the Odysseus packageId, verbatim (e.g. `1543052`). All derived entity ids (`manifest-…`, `adcopy-…`, `funnel-…`) lead with it and are built ONLY via the helpers in `lib/cb/deals-system/deal-ids.ts` — never hand-composed. See the 2026-07-04 entry in `DEAL_PROCESS_MEMORY.md`.
+
 1. Assemble the Curated Deal from the resolved manifest and selected ad copy.
 2. Keep it in `needs_review`.
 3. Review generated outputs, not just stage badges.

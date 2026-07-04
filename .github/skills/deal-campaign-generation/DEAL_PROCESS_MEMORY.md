@@ -79,3 +79,15 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: A promotion selected in the Workbench remained `possibly_applicable_needs_review`, so the public projection silently omitted it even after the Deal was operator-approved.
 - Operating rule: Prefer likely-applicable promos. When none exist, retain the operator-selected review-qualified promo and render only its public-safe summary, claims, structured offer terms, and booking window.
 - Refactor implication: Applicability review status must control qualification and approval, not erase an attached promotion from the final customer experience.
+
+## 2026-07-03 - Avoid vague agent-conversation CTAs
+
+- Trigger: Generated Royal Caribbean family Deal ads leaned on vague "Ask us" / freeform conversation language that was hard to reconcile with the actual landing-page mechanism.
+- Operating rule: Use concrete CTA language such as `Check eligibility`, `View this sailing`, `Send me the deal`, or `Request callback`. Keep promo uncertainty in qualified disclaimers and structured callback notes, not as the core ad promise.
+- Refactor implication: Promo summaries and copywriter prompts should frame review-qualified offers as eligibility checks with clear labels, not open-ended questions to an agent.
+
+## 2026-07-04 - Entity ids are built ONLY by deal-ids.ts; the dealId IS the Odysseus packageId
+
+- Trigger: Two different deals collapsed onto the same DynamoDB partition key and mixed together in the Step 9 Google Ads lab. Ids were built ad-hoc at each stage: the discovery pipeline slugged marketing titles (ignoring the real packageId it already had), seed scripts hand-typed their own formats, and downstream steps re-slugged parent ids with an 80-char slice that truncated away the disambiguating tail.
+- Operating rule: The Odysseus packageId (e.g. `1543052`) IS the dealId - verbatim, no prefix, no slug. Every derived entity id leads with that dealId and appends a bounded readable slug: `manifest-{dealId}-{slug}`, `adcopy-{dealId}-{slug}`, `funnel-{dealId}-{slug}`; Meta and Google Ads syntheses reuse the funnel id 1:1. NEVER hand-build an entity id in a seed script, generator, or agent step - import the builders from `lib/cb/deals-system/deal-ids.ts` (`buildTripManifestId`, `buildDealAdCopyId`, `buildFunnelSynthesisId`, `slugifyIdPart`). `assembleDraft.suggestedDealId` carries the bare packageId verbatim.
+- Refactor implication: Uniqueness must come from the leading dealId, never from a sliced slug tail. Any new entity type gets its builder added to deal-ids.ts first; a hand-composed template literal id in review is a defect. Legacy pre-2026-07 records keep their old ids (public pages match on the stable dealId field, so they still display).

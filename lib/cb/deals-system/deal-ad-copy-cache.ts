@@ -36,7 +36,11 @@ export function saveDealAdCopyCache(cache: DealAdCopyCache): void {
 }
 
 export function upsertDealAdCopy(cache: DealAdCopyCache, adCopy: DealAdCopy): DealAdCopyCache {
-  const adCopies = cache.adCopies.filter((existing) => existing.id !== adCopy.id);
+  const adCopies = cache.adCopies.filter(
+    (existing) =>
+      existing.id !== adCopy.id &&
+      existing.sourceUnifiedManifestId !== adCopy.sourceUnifiedManifestId
+  );
   adCopies.push(adCopy);
   return { ...cache, generatedAtIso: new Date().toISOString(), adCopies };
 }

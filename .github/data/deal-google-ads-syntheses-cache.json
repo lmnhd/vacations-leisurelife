@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-26T23:30:41.139Z",
+  "generatedAtIso": "2026-07-04T18:09:32.084Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
@@ -30,6 +30,39 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative.\nEach image should be wildly different.\nUse only 1 balcony scene.\n Balconies should look like a nice metallic Cruise ship balcony ONLY:\nSky Suite. Dawes Glacier. July\nYour private veranda when Edge noses into Endicott Arm — no jockeying for rail space on De\n\nDo not render any text, words, logos, or graphic overlays in the image\nDo not display the entire ship\nShow interiors minimally\nNo 'HOME' aesthetics\nNo bedrooms, kitchens, bathrooms, or living rooms",
           "generatedAtIso": "2026-06-26T23:30:39.717Z",
+          "previousImages": []
+        }
+      ],
+      "operatorPlacements": []
+    },
+    {
+      "id": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
+      "dealId": "1576786",
+      "generatedAtIso": "2026-07-04T17:41:33.806Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
+      "sailingAngleTitle": "February Family Escape",
+      "businessName": "LeisureLife Interactive",
+      "headline": "Feb 8 Balconies ≈ Inside Prici",
+      "longHeadline": "Allure of the Seas balcony fares are sitting dangerously close to inside rates right now.",
+      "description": "A winter escape built for families who want warm days, ocean views, and room to breathe.",
+      "promptTemplate": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative:\n{{HEADLINE}}\n{{LONG_HEADLINE}}",
+      "images": [
+        {
+          "aspect": "landscape_1_91x1",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/google-ads-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/landscape_1_91x1-1783186958296.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative:\nFeb 8 Balconies ≈ Inside Prici\nAllure of the Seas balcony fares are sitting dangerously close to inside rates right now.\n\nDo not render any text, words, logos, or graphic overlays in the image\nDo not display the entire ship\nShow interiors minimally\nNo 'HOME' aesthetics\nNo bedrooms, kitchens, bathrooms, or living rooms",
+          "generatedAtIso": "2026-07-04T17:42:38.296Z",
+          "previousImages": []
+        },
+        {
+          "aspect": "square_1x1",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/google-ads-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/square_1x1-1783186964443.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative:\nFeb 8 Balconies ≈ Inside Prici\nAllure of the Seas balcony fares are sitting dangerously close to inside rates right now.\n\nDo not render any text, words, logos, or graphic overlays in the image\nDo not display the entire ship\nShow interiors minimally\nNo 'HOME' aesthetics\nNo bedrooms, kitchens, bathrooms, or living rooms",
+          "generatedAtIso": "2026-07-04T17:42:44.443Z",
           "previousImages": []
         }
       ],

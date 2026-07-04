@@ -30,6 +30,7 @@ import {
   createMetaCampaign,
   getMetaAdsConfig,
   buildMetaAdsReviewUrl,
+  META_GRAPH_VERSION,
   publishFacebookPagePost,
   type MetaAdsConfig,
 } from "@/lib/integrations/meta-ads";
@@ -42,8 +43,6 @@ import {
   resolveInterestQueries,
   resolveMetaParentNodesForNiche,
 } from "@/lib/campaigns/distribution/platforms/meta-ads/interest-resolution-core";
-
-const GRAPH_VERSION = "v22.0";
 
 function getSiteBaseUrl(): string {
   const configured =
@@ -67,6 +66,264 @@ function buildMetaAdSetWindow(): { startTime: string; endTime: string } {
   return { startTime: start.toISOString(), endTime: end.toISOString() };
 }
 
+const DEAL_META_TRAVEL_PARENT_QUERIES = [
+  "Cruise Critic",
+  "Luxury travel",
+  "Travel + Leisure",
+  "Conde Nast Traveler",
+  "All-inclusive resort",
+  "Travel Agents and Booking",
+  "Adventure travel",
+  "Caribbean",
+];
+const DEAL_META_INTEREST_QUERY_LIMIT = 18;
+const DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES = [
+  "Travel + Leisure",
+  "Conde Nast Traveler",
+  "Oceania Cruises",
+  "Celebrity Cruises",
+  "Royal Caribbean",
+  "Royal Caribbean International",
+  "Allure of the Seas",
+  "Cruise Critic",
+  "Luxury Travel",
+  "Adventure travel",
+  "Travel content and inspiration",
+  "Travel attractions and activities",
+  "All-inclusive resort",
+  "FineDiningLovers",
+  "Travel Agents and Booking",
+  "Cruises",
+];
+
+const DEAL_META_CRUISE_LINE_INTERESTS = [
+  { name: "Oceania Cruises", lineTokens: ["oceania"] },
+  { name: "Celebrity Cruises", lineTokens: ["celebrity"] },
+  { name: "Royal Caribbean", lineTokens: ["royal caribbean"] },
+  { name: "Royal Caribbean International", lineTokens: ["royal caribbean"] },
+];
+
+function pushKnownMetaQuery(target: string[], candidate: string, max: number): boolean {
+  const normalized = normalizeTerm(candidate);
+  if (!normalized || target.some((existing) => normalizeTerm(existing) === normalized) || target.length >= max) {
+    return false;
+  }
+  target.push(candidate.trim());
+  return true;
+}
+
+function isDealCompatibleMetaInterest(deal: CuratedOdysseusDeal, candidate: string): boolean {
+  const normalizedCandidate = normalizeTerm(candidate);
+  if (!normalizedCandidate) return false;
+
+  const lineText = normalizeTerm(`${deal.cruiseFacts.cruiseLine} ${deal.cruiseFacts.shipName}`);
+  for (const knownLine of DEAL_META_CRUISE_LINE_INTERESTS) {
+    if (normalizeTerm(knownLine.name) !== normalizedCandidate) continue;
+    return knownLine.lineTokens.some((token) => lineText.includes(token));
+  }
+
+  return true;
+}
+
+function pushDealAwareMetaQuery(
+  deal: CuratedOdysseusDeal,
+  target: string[],
+  candidate: string,
+  max: number
+): boolean {
+  if (!isDealCompatibleMetaInterest(deal, candidate)) return false;
+  return pushKnownMetaQuery(target, candidate, max);
+}
+
+function dealSignalText(deal: CuratedOdysseusDeal, synthesis?: DealMetaAdSynthesis): string {
+  return [
+    deal.packaging.headline,
+    deal.packaging.shortSummary,
+    ...deal.packaging.highlights,
+    ...deal.packaging.bestFor,
+    deal.campaignStrategy?.campaignAngle,
+    deal.campaignStrategy?.targetAudience,
+    ...(deal.campaignStrategy?.targetingKeywords ?? []),
+    ...(deal.targetingDemographic?.channelTargeting.meta.interestClusters ?? []),
+    ...(deal.targetingDemographic?.channelTargeting.meta.creativeHooks ?? []),
+    ...(deal.targetingDemographic?.nicheKeywords.lifestyle ?? []),
+    ...(synthesis?.cards ?? []).flatMap((card) => [card.headline, card.primaryText]),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join(" ")
+    .toLowerCase();
+}
+
+function buildDealIntentQueries(deal: CuratedOdysseusDeal, synthesis?: DealMetaAdSynthesis): string[] {
+  const signalText = dealSignalText(deal, synthesis);
+  const queries: string[] = [];
+
+  if (
+    signalText.includes("nov") ||
+    signalText.includes("fall") ||
+    signalText.includes("autumn") ||
+    signalText.includes("hurricane") ||
+    signalText.includes("holiday")
+  ) {
+    pushDealAwareMetaQuery(deal, queries, "Travel + Leisure", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Conde Nast Traveler", DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+
+  if (
+    signalText.includes("crowd") ||
+    signalText.includes("1,200") ||
+    signalText.includes("1200") ||
+    signalText.includes("small ship") ||
+    signalText.includes("room to breathe")
+  ) {
+    pushDealAwareMetaQuery(deal, queries, "Oceania Cruises", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Cruise Critic", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Luxury Travel", DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+
+  if (
+    signalText.includes("included") ||
+    signalText.includes("inclusive") ||
+    signalText.includes("no surcharge") ||
+    signalText.includes("dining") ||
+    signalText.includes("nickel-and-dime")
+  ) {
+    pushDealAwareMetaQuery(deal, queries, "All-inclusive resort", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "FineDiningLovers", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Travel Agents and Booking", DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+
+  if (
+    signalText.includes("unique") ||
+    signalText.includes("itinerary") ||
+    signalText.includes("route") ||
+    signalText.includes("abc islands") ||
+    signalText.includes("actually on the map")
+  ) {
+    pushDealAwareMetaQuery(deal, queries, "Adventure travel", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Travel content and inspiration", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Travel attractions and activities", DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+
+  if (
+    signalText.includes("family") ||
+    signalText.includes("kids") ||
+    signalText.includes("grandparents") ||
+    signalText.includes("school") ||
+    signalText.includes("waterpark") ||
+    signalText.includes("perfect day") ||
+    signalText.includes("cococay")
+  ) {
+    pushDealAwareMetaQuery(deal, queries, "Royal Caribbean", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Cruises", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Caribbean", DEAL_META_INTEREST_QUERY_LIMIT);
+    pushDealAwareMetaQuery(deal, queries, "Travel attractions and activities", DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+
+  return queries;
+}
+
+function buildDealTravelParentQueries(deal: CuratedOdysseusDeal, synthesis?: DealMetaAdSynthesis): string[] {
+  const queries: string[] = [];
+  for (const query of buildDealIntentQueries(deal, synthesis)) {
+    pushDealAwareMetaQuery(deal, queries, query, DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+  pushDealAwareMetaQuery(deal, queries, deal.cruiseFacts.cruiseLine, DEAL_META_INTEREST_QUERY_LIMIT);
+  pushDealAwareMetaQuery(deal, queries, deal.cruiseFacts.shipName, DEAL_META_INTEREST_QUERY_LIMIT);
+  for (const port of deal.cruiseFacts.portsOfCall) {
+    pushDealAwareMetaQuery(deal, queries, port, DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+  for (const query of DEAL_META_TRAVEL_PARENT_QUERIES) {
+    pushDealAwareMetaQuery(deal, queries, query, DEAL_META_INTEREST_QUERY_LIMIT);
+  }
+  return queries;
+}
+
+function inferDealAgeMin(deal: CuratedOdysseusDeal): number | undefined {
+  const audienceText = [
+    deal.campaignStrategy?.targetAudience,
+    deal.targetingDemographic?.primaryAudience.label,
+    deal.targetingDemographic?.primaryAudience.description,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    audienceText.includes("50") ||
+    audienceText.includes("60") ||
+    audienceText.includes("70") ||
+    audienceText.includes("retire") ||
+    audienceText.includes("seasoned cruiser")
+  ) {
+    return 45;
+  }
+
+  return undefined;
+}
+
+function buildDealMetaTargetingBase(deal: CuratedOdysseusDeal): Record<string, unknown> {
+  const targeting: Record<string, unknown> = {
+    geo_locations: { countries: ["US"] },
+    targeting_automation: {
+      advantage_audience: 1,
+      individual_setting: { age: 1 },
+    },
+  };
+  const ageMin = inferDealAgeMin(deal);
+  if (ageMin) {
+    targeting.age_min = ageMin;
+  }
+  return targeting;
+}
+
+function withoutAgeSuggestion(targeting: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...targeting };
+  delete next.age_min;
+  delete next.age_max;
+  const automation = next.targeting_automation;
+  if (automation && typeof automation === "object" && !Array.isArray(automation)) {
+    const automationRecord = { ...(automation as Record<string, unknown>) };
+    delete automationRecord.individual_setting;
+    next.targeting_automation = automationRecord;
+  }
+  return next;
+}
+
+async function createDealMetaAdSetWithAgeRetry(
+  config: MetaAdsConfig,
+  input: {
+    name: string;
+    campaignId: string;
+    targeting: Record<string, unknown>;
+    dailyBudgetCents: number;
+    startTime: string;
+    endTime: string;
+  },
+  notes: string[]
+): Promise<string> {
+  try {
+    return await createMetaAdSet(config, {
+      ...input,
+      status: "PAUSED",
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (!reason.includes("1870188") || input.targeting.age_min === undefined) {
+      throw error;
+    }
+    notes.push(
+      `meta_age_suggestion_retry=${reason}`,
+      "meta_age_suggestion_removed=Meta rejected age_min with Advantage+ audience; retried without age_min."
+    );
+    return createMetaAdSet(config, {
+      ...input,
+      targeting: withoutAgeSuggestion(input.targeting),
+      status: "PAUSED",
+    });
+  }
+}
+
 /**
  * Build the deal's interest query list: niche interestClusters first (the
  * highest-signal, most specific terms), then AI-resolved broad "parent node"
@@ -76,6 +333,7 @@ function buildMetaAdSetWindow(): { startTime: string; endTime: string } {
  */
 async function buildDealInterestQueries(
   deal: CuratedOdysseusDeal,
+  synthesis: DealMetaAdSynthesis | undefined,
   resolveParentNodes: (nicheContext: string, seeds: string[]) => Promise<string[]>
 ): Promise<{ queries: string[]; parentNodes: string[] }> {
   const meta = deal.targetingDemographic?.channelTargeting.meta;
@@ -84,7 +342,7 @@ async function buildDealInterestQueries(
 
   const seedKeywords = (meta?.interestClusters ?? [])
     .map(normalizeTerm)
-    .filter((term) => term.length > 0 && !isGenericTerm(term));
+    .filter((term) => term.length > 0 && !isGenericTerm(term) && isDealCompatibleMetaInterest(deal, term));
 
   // Reserve room in the MAX_INTEREST_QUERIES budget for AI-resolved parent
   // nodes — they're the deliverability fallback for hyper-niche clusters
@@ -94,6 +352,11 @@ async function buildDealInterestQueries(
   const queries: string[] = [];
   for (const seed of seedKeywords) {
     pushUnique(queries, seed, seedBudget);
+  }
+
+  const travelParentQueries = buildDealTravelParentQueries(deal, synthesis);
+  for (const parent of travelParentQueries) {
+    pushDealAwareMetaQuery(deal, queries, parent, MAX_INTEREST_QUERIES);
   }
 
   const nicheContext = [
@@ -128,7 +391,7 @@ async function buildDealInterestQueries(
   appendInterestAtoms(queries, nicheKeywords?.amenities ?? [], MAX_INTEREST_QUERIES);
   appendInterestAtoms(queries, nicheKeywords?.trendSignals ?? [], MAX_INTEREST_QUERIES);
 
-  return { queries, parentNodes };
+  return { queries, parentNodes: [...travelParentQueries, ...parentNodes] };
 }
 
 /**
@@ -141,6 +404,7 @@ async function buildDealInterestQueries(
  */
 async function resolveDealMetaTargeting(
   deal: CuratedOdysseusDeal,
+  synthesis: DealMetaAdSynthesis,
   config: MetaAdsConfig | null
 ): Promise<DealMetaDistributionTargetingPreview> {
   const rawInterestClusters = deal.targetingDemographic?.channelTargeting.meta.interestClusters ?? [];
@@ -152,13 +416,17 @@ async function resolveDealMetaTargeting(
       interestQueries: [],
       resolvedInterests: [],
       unresolvedQueries: [],
-      targeting: { geo_locations: { countries: ["US"] } },
+      targeting: buildDealMetaTargetingBase(deal),
       adSetMode: "static_fallback",
       warnings,
     };
   }
 
-  const { queries: interestQueries, parentNodes } = await buildDealInterestQueries(deal, resolveMetaParentNodesForNiche);
+  const { queries: interestQueries, parentNodes } = await buildDealInterestQueries(
+    deal,
+    synthesis,
+    resolveMetaParentNodesForNiche
+  );
 
   if (!config) {
     warnings.push("Meta Ads is not configured (META_ACCESS_TOKEN/META_AD_ACCOUNT_ID/META_PAGE_ID); cannot resolve interests.");
@@ -166,38 +434,56 @@ async function resolveDealMetaTargeting(
       interestQueries,
       resolvedInterests: [],
       unresolvedQueries: interestQueries,
-      targeting: { geo_locations: { countries: ["US"] } },
+      targeting: buildDealMetaTargetingBase(deal),
       adSetMode: "static_fallback",
       warnings,
     };
   }
 
-  const resolution = await resolveInterestQueries(config, interestQueries);
+  const resolution = await resolveInterestQueries(config, interestQueries, {
+    allowGenericInterestNames: DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES,
+  });
   warnings.push(...resolution.warnings);
   if (parentNodes.length > 0) {
     warnings.push(`AI-resolved parent nodes (${parentNodes.length}): ${parentNodes.join(", ")}`);
   }
 
-  if (resolution.resolvedInterests.length === 0) {
+  const resolvedInterests = resolution.resolvedInterests.filter((interest) =>
+    isDealCompatibleMetaInterest(deal, interest.name)
+  );
+  const droppedResolvedInterests = resolution.resolvedInterests.filter(
+    (interest) => !isDealCompatibleMetaInterest(deal, interest.name)
+  );
+  if (droppedResolvedInterests.length > 0) {
+    warnings.push(
+      `Dropped cross-campaign Meta interests for ${deal.cruiseFacts.cruiseLine}: ${droppedResolvedInterests
+        .map((interest) => interest.name)
+        .join(", ")}`
+    );
+  }
+
+  if (resolvedInterests.length === 0) {
     warnings.push("No Meta interests resolved; using static ad set fallback.");
     return {
       interestQueries,
-      resolvedInterests: resolution.resolvedInterests,
+      resolvedInterests,
       unresolvedQueries: resolution.unresolvedQueries,
-      targeting: { geo_locations: { countries: ["US"] } },
+      targeting: buildDealMetaTargetingBase(deal),
       adSetMode: "static_fallback",
       warnings,
     };
   }
 
+  const targeting = buildDealMetaTargetingBase(deal);
+  targeting.flexible_spec = [
+    { interests: resolvedInterests.map((i) => ({ id: i.id, name: i.name })) },
+  ];
+
   return {
     interestQueries,
-    resolvedInterests: resolution.resolvedInterests,
+    resolvedInterests,
     unresolvedQueries: resolution.unresolvedQueries,
-    targeting: {
-      geo_locations: { countries: ["US"] },
-      flexible_spec: [{ interests: resolution.resolvedInterests.map((i) => ({ id: i.id, name: i.name })) }],
-    },
+    targeting,
     adSetMode: "dynamic",
     warnings,
   };
@@ -225,7 +511,7 @@ export async function planDealMetaDistribution(
   const caption = cards[0]?.primaryText ?? synthesis.sailingAngleTitle;
 
   const config = getMetaAdsConfig();
-  const targeting = await resolveDealMetaTargeting(deal, config);
+  const targeting = await resolveDealMetaTargeting(deal, synthesis, config);
 
   return {
     dealId: synthesis.dealId,
@@ -250,7 +536,7 @@ async function postMetaGraphForm<TResponse>(
     formData.append(key, value);
   }
 
-  const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${path}`, {
+  const response = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: formData.toString(),
@@ -277,7 +563,7 @@ async function uploadMetaImageHash(imageUrl: string, adAccountId: string, access
   formData.append("access_token", accessToken);
   formData.append("filename", blob, "ad_image.png");
 
-  const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/act_${adAccountId}/adimages`, {
+  const response = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/act_${adAccountId}/adimages`, {
     method: "POST",
     body: formData as unknown as BodyInit,
   });
@@ -427,32 +713,26 @@ ${plan.destinationUrl}`.trim(),
       const adSetWindow = buildMetaAdSetWindow();
       try {
         metaCampaignId = await createMetaCampaign(config, { name: plan.campaignName });
-        metaAdSetId = await createMetaAdSet(config, {
+        metaAdSetId = await createDealMetaAdSetWithAgeRetry(config, {
           name: plan.adSetName,
           campaignId: metaCampaignId,
           targeting: plan.targeting.targeting,
           dailyBudgetCents: getMetaDailyBudgetCents(),
           startTime: adSetWindow.startTime,
           endTime: adSetWindow.endTime,
-          status: "PAUSED",
-        });
+        }, notes);
       } catch (campaignError: unknown) {
         const reason = campaignError instanceof Error ? campaignError.message : String(campaignError);
         metaCampaignId = undefined;
         metaAdSetId = undefined;
-        if (config.adSetId) {
-          metaAdSetId = config.adSetId;
-          metaAdSetMode = "static_fallback";
-          notes.push(`dynamic_campaign_failed=${reason}`, "ad_set_mode=static_fallback");
-        } else {
-          throw new Error(`Dynamic campaign creation failed and META_AD_SET_ID fallback is not configured. Reason: ${reason}`);
-        }
+        throw new Error(
+          `Dynamic Deal campaign/ad set creation failed. Deal Meta dispatch does not reuse META_AD_SET_ID because archived fallback ad sets reject new ads. Reason: ${reason}`
+        );
       }
-    } else if (config.adSetId) {
-      metaAdSetId = config.adSetId;
-      notes.push("ad_set_mode=static_fallback");
     } else {
-      throw new Error("No Meta interests resolved and META_AD_SET_ID fallback is not configured.");
+      throw new Error(
+        "No Meta interests resolved. Deal Meta dispatch requires a fresh dynamic ad set and will not reuse META_AD_SET_ID."
+      );
     }
 
     // Upload each card image once; reuse the hash for both the Facebook

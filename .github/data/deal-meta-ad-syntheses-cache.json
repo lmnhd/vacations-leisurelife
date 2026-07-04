@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T18:33:47.980Z",
+  "generatedAtIso": "2026-07-03T20:42:21.128Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -221,7 +221,7 @@
     {
       "id": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
       "dealId": "1584138",
-      "generatedAtIso": "2026-07-03T18:33:47.978Z",
+      "generatedAtIso": "2026-07-03T19:49:46.168Z",
       "sourceFunnelSynthesisId": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
       "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
       "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
@@ -230,25 +230,45 @@
           "cardIndex": 0,
           "headline": "ABC Islands — Actually on the Map",
           "primaryText": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
-          "status": "pending"
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1783103884444.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+          "generatedAtIso": "2026-07-03T19:49:12.678Z",
+          "previousImages": []
         },
         {
           "cardIndex": 1,
           "headline": "1,200 Guests, Not 5,000",
           "primaryText": "No tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
-          "status": "pending"
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1783103887454.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
+          "generatedAtIso": "2026-07-03T19:49:12.678Z",
+          "previousImages": []
         },
         {
           "cardIndex": 2,
           "headline": "Your World Included — No Gotchas",
           "primaryText": "Jacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
-          "status": "pending"
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card2-1783103889695.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nYour World Included — No Gotchas\nJacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
+          "generatedAtIso": "2026-07-03T19:49:12.678Z",
+          "previousImages": []
         },
         {
           "cardIndex": 3,
           "headline": "Nov 11 Sailing — Sweet Spot Timing",
           "primaryText": "Past hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
-          "status": "pending"
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card3-1783103887899.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNov 11 Sailing — Sweet Spot Timing\nPast hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
+          "generatedAtIso": "2026-07-03T19:49:12.678Z",
+          "previousImages": []
         }
       ]
     }

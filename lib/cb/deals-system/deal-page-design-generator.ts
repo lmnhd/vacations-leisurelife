@@ -21,6 +21,7 @@ import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 
 import type { DealAiGenerationTrace } from "./campaign-types";
 import type { DealAdCopy, DealAdVariant } from "./deal-ad-copy-types";
+import { buildFunnelSynthesisId } from "./deal-ids";
 import {
   DEAL_LANDING_SEGMENT_KEYS,
   type DealCarouselAd,
@@ -43,10 +44,6 @@ type StructuredObjectFn = typeof generateStructuredObject;
 let structuredObjectFn: StructuredObjectFn = generateStructuredObject;
 export function __setFunnelSynthesisStructuredObjectGeneratorForTests(fn?: StructuredObjectFn): void {
   structuredObjectFn = fn ?? generateStructuredObject;
-}
-
-function slugify(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 
 // ── Landing-page jargon guard ─────────────────────────────────────────────────
@@ -328,9 +325,19 @@ export async function generateDealFunnelSynthesis(
     ],
   };
 
+  // The real Odysseus deal id is the stable, guaranteed-unique key. Prefer the
+  // explicitly-resolved options.dealId; fall back to stripping the manifest
+  // prefix only when a caller didn't pass one.
+  const resolvedDealId = options.dealId ?? adCopy.sourceUnifiedManifestId.replace(/^unified-/, "");
+
   const synthesis: DealFunnelSynthesis = {
-    id: `funnel-${slugify(adCopy.id)}`,
-    dealId: options.dealId ?? adCopy.sourceUnifiedManifestId.replace(/^unified-/, ""),
+    // Lead the id with the real dealId so it can NEVER collide with another
+    // deal, regardless of campaign-name length (the old
+    // slugify(campaignName-…).slice(0,80) scheme truncated away the
+    // disambiguator and mixed unrelated deals). buildFunnelSynthesisId also
+    // caps the human-readable slug tail so the id stays bounded.
+    id: buildFunnelSynthesisId(resolvedDealId, adCopy.campaignName),
+    dealId: resolvedDealId,
     generatedAtIso,
     generator: "gpt",
     sourceAdCopyId: adCopy.id,

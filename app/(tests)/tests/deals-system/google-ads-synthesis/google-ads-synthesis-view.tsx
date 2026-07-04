@@ -50,6 +50,20 @@ const ASPECT_LABEL: Record<DealGoogleAdsImageAspect, string> = {
   square_1x1: "Square (1:1 — 1200×1200)",
 };
 
+/**
+ * Collapse any two syntheses that share an id down to the last occurrence.
+ * Two entries with the same id break both the tab list's `.map(key={s.id})`
+ * and `key={active.id}` on the panels ("Encountered two children with the
+ * same key"). Ids are supposed to be per-deal-unique, but historic records
+ * generated under the old truncated-slug id scheme could collide, so we guard
+ * at every point the list enters component state.
+ */
+function dedupeById(list: DealGoogleAdsSynthesis[]): DealGoogleAdsSynthesis[] {
+  const byId = new Map<string, DealGoogleAdsSynthesis>();
+  for (const s of list) byId.set(s.id, s);
+  return [...byId.values()];
+}
+
 function ImagePanel({
   asset,
   promptTemplate,
@@ -594,6 +608,16 @@ function GoogleAdsDistributionPanel({ synthesis }: { synthesis: DealGoogleAdsSyn
         >
           {busy ? "Working..." : mode === "live" ? "Dispatch live (creates paused draft)" : "Dispatch (simulate)"}
         </button>
+
+        <a
+          href="/api/integrations/google/connect"
+          target="_blank"
+          rel="noreferrer"
+          title="Start the Google OAuth reconnect flow so you can refresh the stored access and refresh token."
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-300/40 bg-amber-400/10 px-4 text-[11px] font-semibold text-amber-100 transition hover:bg-amber-400/20"
+        >
+          Reconnect Google Ads
+        </a>
       </div>
 
       {message && (
@@ -698,7 +722,7 @@ export function GoogleAdsSynthesisView({
   initialSyntheses: DealGoogleAdsSynthesis[];
 }) {
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(funnelSyntheses[0]?.id ?? null);
-  const [syntheses, setSyntheses] = useState<DealGoogleAdsSynthesis[]>(initialSyntheses);
+  const [syntheses, setSyntheses] = useState<DealGoogleAdsSynthesis[]>(() => dedupeById(initialSyntheses));
   const [activeId, setActiveId] = useState<string | null>(initialSyntheses[0]?.id ?? null);
   const [fieldDraft, setFieldDraft] = useState<{
     businessName: string;
@@ -837,8 +861,26 @@ export function GoogleAdsSynthesisView({
     try {
       const data = await post({ action: "init", funnelSynthesisId: selectedFunnelId, force });
       if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Initialization failed.");
-      applySynthesis(data.synthesis);
-      if (data.syntheses) setSyntheses(data.syntheses);
+      // Use the server's authoritative list when provided (dedupe by id
+      // defensively — the store must never yield two entries with the same
+      // id, or the tab .map() and key={active.id} both break), otherwise
+      // fall back to merging just the returned synthesis. Do NOT both
+      // applySynthesis() AND setSyntheses(data.syntheses): that double-set
+      // raced and could leave a duplicate id in state.
+      const synthesis = data.synthesis;
+      if (data.syntheses) {
+        setSyntheses(dedupeById(data.syntheses));
+        setActiveId(synthesis.id);
+        setFieldDraft({
+          businessName: synthesis.businessName,
+          headline: synthesis.headline,
+          longHeadline: synthesis.longHeadline,
+          description: synthesis.description,
+          promptTemplate: synthesis.promptTemplate,
+        });
+      } else {
+        applySynthesis(synthesis);
+      }
       setMessage({
         tone: "ok",
         text: force
@@ -1311,6 +1353,7 @@ export function GoogleAdsSynthesisView({
           </section>
 
           <PlacementsPanel
+            key={`placements-${active.id}`}
             synthesis={active}
             onSynthesisUpdated={(s) =>
               setSyntheses((prev) => prev.map((existing) => (existing.id === s.id ? s : existing)))
@@ -1337,7 +1380,7 @@ export function GoogleAdsSynthesisView({
             ))}
           </div>
 
-          <GoogleAdsDistributionPanel synthesis={active} />
+          <GoogleAdsDistributionPanel key={`distribution-${active.id}`} synthesis={active} />
         </>
       )}
 

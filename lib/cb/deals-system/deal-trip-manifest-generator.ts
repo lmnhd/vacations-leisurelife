@@ -27,6 +27,7 @@ import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 
 import type { DealAiGenerationTrace } from "./campaign-types";
+import { buildTripManifestId } from "./deal-ids";
 import type { DealDiscoveryIdea } from "./deal-discovery-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import { prefilterPromoRecords } from "./promo-prefilter";
@@ -258,7 +259,10 @@ export async function generateDealTripManifest(
   // the deriveDestination/deriveItineraryName helpers above.
   const destination = deriveDestination(g);
   const itineraryName = deriveItineraryName(g, destination);
-  const manifestId = `manifest-${slugify(`${p.sailingAngleTitle}-${cruiseLine}`) || angle.id}`;
+  // Canonical id: leads with the REAL Odysseus packageId (see deal-ids.ts).
+  // The old title-based slug ignored the package number the pipeline already
+  // had, producing ids that couldn't be traced back to a bookable sailing.
+  const manifestId = buildTripManifestId(g.packageId, p.sailingAngleTitle);
   const portsOfCall = g.portsOfCall
     ? g.portsOfCall.split(/\s*[,>]\s*/).filter((port) => port.length > 0)
     : [];
@@ -271,7 +275,10 @@ export async function generateDealTripManifest(
     isolatedNiche: angle.isolatedNiche,
     sailingAngleTitle: p.sailingAngleTitle,
     assembleDraft: {
-      suggestedDealId: `deal-${slugify(`${cruiseLine}-${destination}-${p.sailingAngleTitle}`)}`,
+      // The dealId IS the Odysseus packageId (canonical rule — deal-ids.ts).
+      // Downstream steps (assemble, copywriter) read this verbatim instead of
+      // re-deriving an ad-hoc slug.
+      suggestedDealId: g.packageId,
       suggestedBriefId: `brief-${slugify(p.sailingAngleTitle)}`,
       cruiseLine,
       // shipClassHint was AI-written for imagery sourcing; no longer part of the

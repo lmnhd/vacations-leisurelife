@@ -23,6 +23,7 @@ import type {
   DealAdCopy,
   DealAdVariant,
 } from "./deal-ad-copy-types";
+import { buildDealAdCopyId, extractNumericDealId, slugifyIdPart } from "./deal-ids";
 import type { DealUnifiedManifest } from "./deal-unified-manifest-types";
 
 const COPYWRITER_MODEL = ModelName.CLAUDE_4_OPUS;
@@ -35,8 +36,24 @@ export function __setCopywriterStructuredObjectGeneratorForTests(fn?: Structured
   structuredObjectFn = fn ?? generateStructuredObject;
 }
 
-function slugify(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+/**
+ * Resolve the canonical dealId (= Odysseus packageId) for a unified manifest.
+ * New manifests carry it verbatim in assembleDraft.suggestedDealId (see
+ * deal-trip-manifest-generator + deal-ids.ts); legacy manifests embed it at
+ * the tail of sourceManifestId; hand-seeded manifests without a number fall
+ * back to the slugified manifest id — still unique per manifest, just longer.
+ */
+export function resolveManifestDealId(manifest: DealUnifiedManifest): string {
+  const suggested = manifest.inventoryManifest.assembleDraft?.suggestedDealId?.trim();
+  if (suggested && /^\d+$/.test(suggested)) return suggested;
+  return extractNumericDealId(manifest.sourceManifestId) ?? slugifyIdPart(manifest.sourceManifestId);
+}
+
+/** @deprecated Legacy signature kept for the id-migration script. New code
+ * should call resolveManifestDealId + buildDealAdCopyId (deal-ids.ts). */
+export function buildAdCopyId(campaignName: string, sourceManifestId: string): string {
+  const dealId = extractNumericDealId(sourceManifestId) ?? slugifyIdPart(sourceManifestId);
+  return buildDealAdCopyId(dealId, campaignName);
 }
 
 /**
@@ -267,7 +284,7 @@ export async function generateDealAdCopy(
   }
 
   const adCopy: DealAdCopy = {
-    id: `adcopy-${slugify(`${result.object.campaignName}-${unifiedManifest.sourceManifestId}`) || unifiedManifest.id}`,
+    id: buildDealAdCopyId(resolveManifestDealId(unifiedManifest), result.object.campaignName),
     generatedAtIso,
     generator: "gpt",
     sourceUnifiedManifestId: unifiedManifest.id,

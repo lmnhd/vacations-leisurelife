@@ -415,8 +415,13 @@ export async function resolveMetaParentNodesForNiche(
     }
 }
 
-export async function resolveInterestQuery(config: MetaAdsConfig, query: string): Promise<MetaResolvedInterest | null> {
-    const cacheKey = `${config.adAccountId}:${query}`;
+export async function resolveInterestQuery(
+    config: MetaAdsConfig,
+    query: string,
+    options: { allowGenericInterestNames?: string[] } = {},
+): Promise<MetaResolvedInterest | null> {
+    const allowedGenericNames = new Set((options.allowGenericInterestNames ?? []).map(normalizeTerm));
+    const cacheKey = `${config.adAccountId}:${query}:${Array.from(allowedGenericNames).sort().join('|')}`;
     if (interestCache.has(cacheKey)) {
         return interestCache.get(cacheKey) ?? null;
     }
@@ -426,7 +431,7 @@ export async function resolveInterestQuery(config: MetaAdsConfig, query: string)
     for (const candidateQuery of candidateQueries) {
         const results = await searchMetaAdInterests(config.accessToken, candidateQuery, 6);
         const scored = results
-            .filter((interest) => !isGenericTerm(interest.name))
+            .filter((interest) => !isGenericTerm(interest.name) || allowedGenericNames.has(normalizeTerm(interest.name)))
             .map((interest) => ({
                 interest,
                 score: scoreInterestResult(interest, candidateQuery),
@@ -461,6 +466,7 @@ export async function resolveInterestQuery(config: MetaAdsConfig, query: string)
 export async function resolveInterestQueries(
     config: MetaAdsConfig | undefined,
     queries: string[],
+    options: { allowGenericInterestNames?: string[] } = {},
 ): Promise<{ resolvedInterests: MetaResolvedInterest[]; unresolvedQueries: string[]; warnings: string[] }> {
     if (!config) {
         return {
@@ -478,7 +484,7 @@ export async function resolveInterestQueries(
     for (const query of queries) {
         if (resolvedInterests.length >= MAX_RESOLVED_INTERESTS) break;
         try {
-            const interest = await resolveInterestQuery(config, query);
+            const interest = await resolveInterestQuery(config, query, options);
             if (!interest) {
                 unresolvedQueries.push(query);
                 continue;

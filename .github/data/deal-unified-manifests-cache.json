@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T18:04:44.579Z",
+  "generatedAtIso": "2026-07-03T23:44:38.238Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -901,6 +901,287 @@
         ],
         "promoStrategy": "Use selected promo intelligence to support \"The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.\" with qualified, public-safe language.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.. Targeting angle: Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent.. Workbench-selected real sailing chosen for the angle \"The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.\". Grounding facts: Oceania Vista | 2026-11-11 | Miami | Miami, George Town, Falmouth. Promo context considered: Oceania Cruises Oceania Cruises - Your World Included | Oceania fares may include elevated onboard amenities under Your World Included. | Valid Until 07/31/2026."
+      }
+    },
+    {
+      "id": "unified-manifest-workbench-rcl-allure-perfect-day-family-1576786",
+      "generatedAtIso": "2026-07-03T23:35:45.160Z",
+      "expiresOnIso": "2026-07-31",
+      "sourceAngleId": "angle-workbench-rcl-allure-perfect-day-family-1576786",
+      "sourceManifestId": "manifest-workbench-rcl-allure-perfect-day-family-1576786",
+      "sailingAngleTitle": "February Family Escape",
+      "creativeBrief": {
+        "isolatedNiche": "US families, multigenerational travelers, and school-break planners looking for a February Caribbean cruise with a major resort-style ship, private-destination beach days, and a timely reason to book in July.",
+        "researchRationale": "The strongest winter family opportunity found in CB and Odysseus research pairs a major Royal Caribbean family ship with Perfect Day Cococay, a February school-year escape window, and a timely balcony/suite dining bonus candidate.",
+        "successLogic": "Families can understand this offer quickly: a real February sailing on Allure of the Seas, private-destination beach days, a balcony-value comparison, and a July eligibility deadline for the attached Royal Caribbean bonus dining offer.",
+        "audienceSignals": [
+          "Family cruises",
+          "Winter Caribbean escape",
+          "Perfect Day Cococay",
+          "Royal Caribbean private destination",
+          "Balcony upgrade value",
+          "Multigenerational vacation planning",
+          "Early booking vacation shoppers"
+        ],
+        "angle": {
+          "sailingAngleTitle": "February Family Escape",
+          "theCorePitch": "Get next winter's big family cruise on the calendar now: Allure of the Seas, Labadee, Jamaica, and Perfect Day Cococay in one warm-weather week. The current balcony pricing creates a strong upgrade story while the Royal Caribbean bonus-offer window gives families a concrete eligibility deadline.",
+          "visualAnchor": "Allure of the Seas at sea, Perfect Day Cococay color and waterpark energy, family pool-deck moments, and balcony-view Caribbean warmth.",
+          "targetAudienceDescriptor": "US families, multigenerational travelers, and school-break planners looking for a February Caribbean cruise with a major resort-style ship, private-destination beach days, and a timely reason to book in July.",
+          "relevantKeywords": [
+            "family cruises",
+            "Royal Caribbean",
+            "Allure of the Seas",
+            "Perfect Day Cococay",
+            "winter Caribbean cruise",
+            "February family vacation",
+            "kids sail free",
+            "cruise dining package",
+            "multigenerational vacation",
+            "Caribbean balcony cruise"
+          ],
+          "destinationAndTimeOfYearHints": "February 2027 Caribbean and Bahamas itinerary from Miami, positioned as a winter family escape booked seven months early.",
+          "onboardAssetRequirements": "Large Royal Caribbean resort ship, family entertainment, pools, dining variety, private-destination beach and waterpark assets, balcony value proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Royal Caribbean",
+          "departurePortHint": "Miami",
+          "nights": 6,
+          "itineraryName": "6 Night Western Caribbean & Perfect Day",
+          "portsOfCall": [
+            "Miami, Florida",
+            "Labadee, Haiti",
+            "Falmouth, Jamaica",
+            "Perfect Day Cococay, Bahamas",
+            "Miami, Florida"
+          ],
+          "destination": "Western Caribbean and Perfect Day Cococay",
+          "sailWindow": {
+            "latestIso": "2027-02-08",
+            "rationale": "Exact February 2027 sailing selected for a winter family early-booking campaign.",
+            "earliestIso": "2027-02-08"
+          },
+          "suggestedBriefId": "brief-rcl-allure-perfect-day-family-early-bird",
+          "suggestedDealId": "deal-rcl-allure-perfect-day-family-1576786"
+        },
+        "lookupQuery": {
+          "date": "2027-02-08",
+          "port": "Miami",
+          "line": "Royal Caribbean",
+          "nights": 6,
+          "destination": "Caribbean",
+          "ship": "Allure of the Seas",
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "Miami",
+            "Western Caribbean",
+            "Perfect Day Cococay",
+            "Labadee",
+            "Falmouth Jamaica"
+          ],
+          "metaInterestSeeds": [
+            "family cruises",
+            "Royal Caribbean",
+            "Allure of the Seas",
+            "Perfect Day Cococay",
+            "winter Caribbean cruise",
+            "February family vacation",
+            "kids sail free",
+            "cruise dining package",
+            "multigenerational vacation",
+            "Caribbean balcony cruise"
+          ],
+          "inferredMarket": "US",
+          "personaSignals": [
+            "families planning winter travel",
+            "multigenerational cruise shoppers",
+            "parents comparing Caribbean resort vacations",
+            "Royal Caribbean loyalists",
+            "balcony upgrade shoppers"
+          ],
+          "excludedAudienceSignals": [
+            "luxury-only adults-only travelers",
+            "solo backpacking",
+            "last-minute only"
+          ],
+          "metaBehaviorSignals": [
+            "responds to limited-time travel offers",
+            "compares family vacation value",
+            "engages with cruise line and private destination content"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-bonus-free-dining-2026-07-31",
+            "matchedOn": [
+              "Royal Caribbean line match",
+              "6-night sailing",
+              "Caribbean and Bahamas itinerary",
+              "2027-02-08 departure inside the listed sailing window",
+              "balcony and suite cabin tiers present"
+            ],
+            "assumptions": [
+              "Final eligibility depends on the rate selected and Cruise Brothers dining form handling."
+            ],
+            "status": "likely_applicable",
+            "warnings": [
+              "Do not promise the dining bonus until the operator verifies the booking conditions."
+            ]
+          },
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-july-specials-2026-07-31",
+            "matchedOn": [
+              "Royal Caribbean line match",
+              "family value angle match"
+            ],
+            "assumptions": [
+              "The current Royal July specials may still be visible in CB Agent Tools."
+            ],
+            "status": "possibly_applicable_needs_review",
+            "warnings": [
+              "Promo card has conflicting date language and needs live verification before public claims."
+            ]
+          },
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-early-booking-obc-2026-12-31",
+            "matchedOn": [
+              "Royal Caribbean line match",
+              "early booking angle match"
+            ],
+            "assumptions": [
+              "The sailing may be eligible under the early-booking OBC program."
+            ],
+            "status": "possibly_applicable_needs_review",
+            "warnings": [
+              "Exact onboard credit amount was not captured from the promo card."
+            ]
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-bonus-free-dining-2026-07-31",
+            "title": "Cruise Brothers BONUS Free Dining - Royal Caribbean",
+            "vendor": "Royal Caribbean",
+            "bookingWindow": "Valid Until 07/31/2026",
+            "sailingWindow": "Balcony or Suite on 6-night or longer Caribbean, Bermuda, Bahamas and West Coast/Mexico sailings departing August 17, 2026 - April 30, 2027.",
+            "offerTypes": [
+              "agency_special",
+              "other"
+            ],
+            "publicClaimsAllowed": [
+              "Cruise Brothers lists a Royal Caribbean bonus specialty dining offer for eligible balcony or suite bookings."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Bonus dining eligibility must be confirmed for the selected rate and stateroom category before booking."
+            ],
+            "visitorFriendlySummary": "Eligibility for the Royal Caribbean bonus specialty dining offer can be reviewed for qualifying balcony or suite bookings on this sailing.",
+            "suggestedAngles": [
+              "Book the balcony sweet spot while the Cruise Brothers dining bonus is available."
+            ],
+            "cautionFlags": [
+              "Operator must submit or confirm the dining form process and verify rate eligibility."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "Exact rate, cabin, and sailing eligibility must be confirmed at booking."
+            ],
+            "applicableProducts": [
+              "Royal Caribbean balcony or suite sailings of 6 nights or longer"
+            ],
+            "applicableMarkets": [
+              "US"
+            ]
+          },
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-july-specials-2026-07-31",
+            "title": "Royal Caribbean 30% Off, Free Guests, Mega Savings, Military Savings",
+            "vendor": "Royal Caribbean",
+            "bookingWindow": "Valid Until 07/31/2026; card text also says Book through July 7.",
+            "sailingWindow": "Eligible Royal Caribbean sailings; exact sailing list not included in the card excerpt.",
+            "offerTypes": [
+              "second_guest_discount",
+              "free_extra_guests",
+              "instant_savings",
+              "dollars_off"
+            ],
+            "publicClaimsAllowed": [
+              "Royal Caribbean July specials may add extra savings on eligible sailings."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Royal Caribbean July special eligibility must be confirmed against live rate and sailing rules before booking."
+            ],
+            "visitorFriendlySummary": "Current Royal Caribbean July special eligibility requires live rate and sailing review before any savings are quoted.",
+            "suggestedAngles": [
+              "A time-sensitive July family value check for 3rd and 4th guests."
+            ],
+            "cautionFlags": [
+              "The card has conflicting date language; do not claim this offer without live operator verification."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [
+              {
+                "guestNumbers": "3rd and 4th guests",
+                "rawText": "Free 3rd and 4th guests on eligible Royal Caribbean July specials; exact sailing eligibility needs review."
+              }
+            ],
+            "exclusions": [
+              "Exact rate, cabin, and sailing eligibility must be confirmed at booking."
+            ],
+            "applicableProducts": [
+              "Royal Caribbean eligible sailings"
+            ],
+            "applicableMarkets": [
+              "US"
+            ]
+          },
+          {
+            "promoRecordId": "cbtodays-royal-caribbean-early-booking-obc-2026-12-31",
+            "title": "Royal Caribbean Bonus Onboard Credit",
+            "vendor": "Royal Caribbean",
+            "bookingWindow": "Valid Until 12/31/2026",
+            "sailingWindow": "Early booking Royal Caribbean onboard credit program; exact sailing list not included in the card excerpt.",
+            "offerTypes": [
+              "onboard_credit"
+            ],
+            "publicClaimsAllowed": [
+              "Royal Caribbean has an early-booking onboard credit program for eligible bookings."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Early-booking onboard credit eligibility and amount must be confirmed against live rate and sailing rules before booking."
+            ],
+            "visitorFriendlySummary": "Royal Caribbean early-booking onboard credit eligibility requires live rate and sailing review before any credit amount is quoted.",
+            "suggestedAngles": [
+              "Book seven months ahead and check the early-booking onboard credit opportunity."
+            ],
+            "cautionFlags": [
+              "Exact onboard credit amount and eligibility were not present in the Today's Promos card excerpt."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "Exact rate, cabin, and sailing eligibility must be confirmed at booking."
+            ],
+            "applicableProducts": [
+              "Royal Caribbean eligible bookings"
+            ],
+            "applicableMarkets": [
+              "US"
+            ]
+          }
+        ],
+        "promoStrategy": "Lead with the Cruise Brothers Royal Caribbean bonus dining eligibility deadline for balcony or suite bookings. Keep all offer language specific and qualified; avoid vague agent-conversation CTAs.",
+        "manifestReasoning": "This package gives the campaign a strong family ship, two private-destination style beach days, a February winter-escape date, and a real July booking urgency mechanism through the Royal Caribbean bonus dining promo."
       }
     }
   ]

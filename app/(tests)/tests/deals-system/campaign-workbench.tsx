@@ -1288,6 +1288,67 @@ export function DealCampaignWorkbench({
             </div>
           </div>
 
+          {/* Sibling-record awareness: the pipeline's Publish step assembles a
+              FRESH deal record keyed by the package id and never updates the
+              "Source & assemble" staging record, so one sailing routinely has
+              two records. Without this banner a stale staging record reads as
+              "the deal isn't live" even while its sibling is on the homepage. */}
+          {(() => {
+            const siblings = deals.filter(
+              (d) => d.packageId === selectedDeal.packageId && d.id !== selectedDeal.id
+            );
+            if (siblings.length === 0) return null;
+            const liveSibling = siblings.find((d) => d.publishable);
+            return (
+              <div
+                className={`rounded-xl border p-4 text-sm ${
+                  liveSibling
+                    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+                    : "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                }`}
+              >
+                {liveSibling ? (
+                  <>
+                    <p className="font-semibold">
+                      A separate LIVE record exists for package {selectedDeal.packageId}.
+                    </p>
+                    <p className="mt-1 text-xs leading-5 opacity-90">
+                      The record you have selected ({selectedDeal.id}) is the staging record from
+                      &ldquo;Source &amp; assemble&rdquo; — its stages and gates stay empty by design. The
+                      published homepage deal is <span className="font-semibold">{liveSibling.id}</span>{" "}
+                      (approval: {liveSibling.approvalStatus}). Once the live record is confirmed good,
+                      this staging record can be deleted.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs leading-5">
+                    {siblings.length} other record(s) exist for package {selectedDeal.packageId} (
+                    {siblings.map((d) => d.id).join(", ")}) — none currently pass the homepage gate.
+                    Compare stage outputs before deleting one.
+                  </p>
+                )}
+                {liveSibling ? (
+                  <button
+                    type="button"
+                    className="mt-2 inline-flex h-8 items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20"
+                    onClick={() => {
+                      setSelectedDealId(liveSibling.id);
+                      setSelectedDealPromos(liveSibling.promoApplicabilityIds ?? []);
+                      setAngleOptions([]);
+                      setAngleStatus(null);
+                      setCampaignAngle("");
+                      setTargetAudience("");
+                      setVisualAngle("");
+                      setTargetingKeywords("");
+                    }}
+                  >
+                    Switch to the live record
+                  </button>
+                ) : null}
+              </div>
+            );
+          })()}
+
           {[selectedDeal].map((deal) => (
           <div key={deal.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">

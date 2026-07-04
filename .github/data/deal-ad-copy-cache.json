@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T18:05:35.822Z",
+  "generatedAtIso": "2026-07-03T23:50:22.996Z",
   "adCopies": [
     {
       "id": "adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manifest-seve",
@@ -373,6 +373,78 @@
         "latencyMs": 51239,
         "generatedAtIso": "2026-07-03T18:04:44.580Z"
       }
+    },
+    {
+      "id": "adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dining-check",
+      "generatedAtIso": "2026-07-03T23:35:45.163Z",
+      "generator": "gpt",
+      "sourceUnifiedManifestId": "unified-manifest-workbench-rcl-allure-perfect-day-family-1576786",
+      "campaignName": "February Family Escape - Allure of the Seas, Perfect Day Cococay & Bonus Dining Eligibility",
+      "targetAudienceTag": "US families and multigenerational travelers booking a February 2027 Caribbean cruise",
+      "primaryPromoApplied": "cbtodays-royal-caribbean-bonus-free-dining-2026-07-31",
+      "variants": [
+        {
+          "promoApplied": "cbtodays-royal-caribbean-bonus-free-dining-2026-07-31",
+          "variantLabel": "Primary - Balcony Value + Bonus Dining Eligibility",
+          "headline": "Allure of the Seas, February 8 - Lock In the Balcony Value Before the July 31 Dining Window Closes",
+          "bodyCopy": "February family trips get crowded fast: school calendars, winter sports, grandparents' PTO, and the usual scramble for cabins that actually fit everyone.\n\nAllure of the Seas sails from Miami on February 8, 2027 for a 6-night Western Caribbean & Perfect Day run: Labadee, Falmouth, and a full day at Perfect Day Cococay. It is a simple family pitch: a major Royal Caribbean ship, two warm-weather beach-destination days, and enough onboard variety for kids, parents, and grandparents to have different kinds of vacation on the same ship.\n\nThe balcony is the value play. Current Odysseus pricing has balcony close enough to inside pricing that families should compare the upgrade before settling for the lowest cabin. A balcony gives parents a private landing place after the kids crash, a morning view coming into port, and a better home base on a ship built for big days.\n\nCruise Brothers also lists a Royal Caribbean bonus specialty dining offer for eligible balcony or suite bookings on qualifying 6-night or longer sailings. That is not a guaranteed perk until the selected rate and cabin are verified, but it gives families a real reason to handle the eligibility check before the July 31 window closes.\n\nSix nights. Labadee. Jamaica. Perfect Day Cococay. A balcony-value sweet spot with a dining offer worth verifying before the deadline.",
+          "pricingDisclaimers": "Bonus specialty dining offer availability applies to select balcony and suite staterooms on eligible 6-night or longer Royal Caribbean Caribbean, Bermuda, Bahamas, and West Coast/Mexico sailings departing August 17, 2026 - April 30, 2027. Offer valid through 07/31/2026 or while supplies last. Exact rate, cabin category, sailing eligibility, dining form process, pricing, promotions, and stateroom availability must be confirmed at time of booking. This ad is not a guarantee of any specific price or promotion.",
+          "callToAction": "Check Bonus Dining Eligibility For This February 8 Sailing",
+          "adPlatformTargetingHooks": {
+            "demographicTargeting": "US adults 28-55, parents with children under 18, multigenerational family travel planners, household income $75K+",
+            "interestKeywords": [
+              "family cruises",
+              "Royal Caribbean",
+              "Allure of the Seas",
+              "Perfect Day Cococay",
+              "winter Caribbean cruise",
+              "February family vacation",
+              "kids cruise vacation",
+              "cruise dining package",
+              "multigenerational vacation",
+              "Caribbean balcony cruise",
+              "school break travel",
+              "family beach vacation",
+              "early booking cruise deals"
+            ]
+          },
+          "voiceWarnings": []
+        },
+        {
+          "promoApplied": "cbtodays-royal-caribbean-early-booking-obc-2026-12-31",
+          "variantLabel": "Aspirational Upsell - Suite + Early-Booking Credit Eligibility",
+          "headline": "Suite-Level February On Allure Of The Seas - Early Booking May Add Onboard Credit",
+          "bodyCopy": "If the trip includes grandparents, older kids, or a family that simply needs more room, the suite category turns the February 8 Allure of the Seas sailing into a more comfortable base for a six-night Caribbean week.\n\nThe itinerary is built for families: Miami, Labadee, Falmouth, Perfect Day Cococay, and enough sea time to actually use the ship. Suite space can matter on this kind of trip: easier mornings, less cabin traffic, and a better place to reset between pool decks, shows, beaches, and dinner.\n\nRoyal Caribbean also has an early-booking onboard credit program for eligible bookings. The exact amount and eligibility are not automatic, and they depend on the selected rate and stateroom category. But for families already considering a premium cabin, early booking gives the credit eligibility review a practical place in the decision.\n\nThis is the premium version of the same family play: get the February sailing on the calendar, compare suite availability before inventory tightens, and verify whether early-booking credit or bonus dining eligibility applies before finalizing.",
+          "pricingDisclaimers": "Early-booking onboard credit availability, amount, and eligibility must be confirmed at time of booking for this specific sailing and stateroom category. Bonus specialty dining offer applies to select balcony and suite staterooms on eligible sailings and is subject to Cruise Brothers operator verification and rate eligibility. All pricing, promotions, stateroom availability, and onboard credit amounts are subject to change and must be confirmed with a live availability check. This ad is not a guarantee of any specific price, onboard credit amount, or promotion.",
+          "callToAction": "Check Suite Availability And Early-Booking Credit Eligibility",
+          "adPlatformTargetingHooks": {
+            "demographicTargeting": "US adults 35-60, parents and grandparents, household income $120K+, multigenerational family travel planners, suite and premium cabin shoppers",
+            "interestKeywords": [
+              "Royal Caribbean suite",
+              "Allure of the Seas suite",
+              "multigenerational cruise",
+              "Perfect Day Cococay cabana",
+              "family cruise suite",
+              "winter Caribbean cruise",
+              "February family vacation",
+              "cruise onboard credit",
+              "early booking cruise",
+              "grandparent family travel",
+              "Caribbean family resort cruise",
+              "luxury family cruise"
+            ]
+          },
+          "voiceWarnings": []
+        }
+      ],
+      "aiTrace": {
+        "model": "claude-opus-4-6",
+        "promptSent": "Patched by operator request on 2026-07-03 to remove freeform agent-conversation framing from Allure family deal ad copy.",
+        "rawResponse": "{\"campaignName\":\"February Family Escape - Allure of the Seas, Perfect Day Cococay & Bonus Dining Eligibility\",\"targetAudienceTag\":\"US families and multigenerational travelers booking a February 2027 Caribbean cruise\",\"primaryPromoApplied\":\"cbtodays-royal-caribbean-bonus-free-dining-2026-07-31\",\"variants\":[{\"promoApplied\":\"cbtodays-royal-caribbean-bonus-free-dining-2026-07-31\",\"variantLabel\":\"Primary - Balcony Value + Bonus Dining Eligibility\",\"headline\":\"Allure of the Seas, February 8 - Lock In the Balcony Value Before the July 31 Dining Window Closes\",\"bodyCopy\":\"February family trips get crowded fast: school calendars, winter sports, grandparents' PTO, and the usual scramble for cabins that actually fit everyone.\\n\\nAllure of the Seas sails from Miami on February 8, 2027 for a 6-night Western Caribbean & Perfect Day run: Labadee, Falmouth, and a full day at Perfect Day Cococay. It is a simple family pitch: a major Royal Caribbean ship, two warm-weather beach-destination days, and enough onboard variety for kids, parents, and grandparents to have different kinds of vacation on the same ship.\\n\\nThe balcony is the value play. Current Odysseus pricing has balcony close enough to inside pricing that families should compare the upgrade before settling for the lowest cabin. A balcony gives parents a private landing place after the kids crash, a morning view coming into port, and a better home base on a ship built for big days.\\n\\nCruise Brothers also lists a Royal Caribbean bonus specialty dining offer for eligible balcony or suite bookings on qualifying 6-night or longer sailings. That is not a guaranteed perk until the selected rate and cabin are verified, but it gives families a real reason to handle the eligibility check before the July 31 window closes.\\n\\nSix nights. Labadee. Jamaica. Perfect Day Cococay. A balcony-value sweet spot with a dining offer worth verifying before the deadline.\",\"pricingDisclaimers\":\"Bonus specialty dining offer availability applies to select balcony and suite staterooms on eligible 6-night or longer Royal Caribbean Caribbean, Bermuda, Bahamas, and West Coast/Mexico sailings departing August 17, 2026 - April 30, 2027. Offer valid through 07/31/2026 or while supplies last. Exact rate, cabin category, sailing eligibility, dining form process, pricing, promotions, and stateroom availability must be confirmed at time of booking. This ad is not a guarantee of any specific price or promotion.\",\"callToAction\":\"Check Bonus Dining Eligibility For This February 8 Sailing\",\"adPlatformTargetingHooks\":{\"demographicTargeting\":\"US adults 28-55, parents with children under 18, multigenerational family travel planners, household income $75K+\",\"interestKeywords\":[\"family cruises\",\"Royal Caribbean\",\"Allure of the Seas\",\"Perfect Day Cococay\",\"winter Caribbean cruise\",\"February family vacation\",\"kids cruise vacation\",\"cruise dining package\",\"multigenerational vacation\",\"Caribbean balcony cruise\",\"school break travel\",\"family beach vacation\",\"early booking cruise deals\"]},\"voiceWarnings\":[]},{\"promoApplied\":\"cbtodays-royal-caribbean-early-booking-obc-2026-12-31\",\"variantLabel\":\"Aspirational Upsell - Suite + Early-Booking Credit Eligibility\",\"headline\":\"Suite-Level February On Allure Of The Seas - Early Booking May Add Onboard Credit\",\"bodyCopy\":\"If the trip includes grandparents, older kids, or a family that simply needs more room, the suite category turns the February 8 Allure of the Seas sailing into a more comfortable base for a six-night Caribbean week.\\n\\nThe itinerary is built for families: Miami, Labadee, Falmouth, Perfect Day Cococay, and enough sea time to actually use the ship. Suite space can matter on this kind of trip: easier mornings, less cabin traffic, and a better place to reset between pool decks, shows, beaches, and dinner.\\n\\nRoyal Caribbean also has an early-booking onboard credit program for eligible bookings. The exact amount and eligibility are not automatic, and they depend on the selected rate and stateroom category. But for families already considering a premium cabin, early booking gives the credit eligibility review a practical place in the decision.\\n\\nThis is the premium version of the same family play: get the February sailing on the calendar, compare suite availability before inventory tightens, and verify whether early-booking credit or bonus dining eligibility applies before finalizing.\",\"pricingDisclaimers\":\"Early-booking onboard credit availability, amount, and eligibility must be confirmed at time of booking for this specific sailing and stateroom category. Bonus specialty dining offer applies to select balcony and suite staterooms on eligible sailings and is subject to Cruise Brothers operator verification and rate eligibility. All pricing, promotions, stateroom availability, and onboard credit amounts are subject to change and must be confirmed with a live availability check. This ad is not a guarantee of any specific price, onboard credit amount, or promotion.\",\"callToAction\":\"Check Suite Availability And Early-Booking Credit Eligibility\",\"adPlatformTargetingHooks\":{\"demographicTargeting\":\"US adults 35-60, parents and grandparents, household income $120K+, multigenerational family travel planners, suite and premium cabin shoppers\",\"interestKeywords\":[\"Royal Caribbean suite\",\"Allure of the Seas suite\",\"multigenerational cruise\",\"Perfect Day Cococay cabana\",\"family cruise suite\",\"winter Caribbean cruise\",\"February family vacation\",\"cruise onboard credit\",\"early booking cruise\",\"grandparent family travel\",\"Caribbean family resort cruise\",\"luxury family cruise\"]},\"voiceWarnings\":[]}]}",
+        "latencyMs": 44362,
+        "generatedAtIso": "2026-07-03T23:35:45.163Z"
+      },
+      "selectedVariantIndex": 0
     }
   ]
 }

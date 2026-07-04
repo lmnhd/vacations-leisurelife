@@ -1,3 +1,5 @@
+export const META_GRAPH_VERSION = 'v23.0';
+
 interface MetaGraphErrorPayload {
     error?: {
         message?: string;
@@ -78,7 +80,7 @@ function buildMetaGraphUrl(path: string, accessToken: string, fields: string): s
         fields,
     });
 
-    return `https://graph.facebook.com/v22.0/${path}?${params.toString()}`;
+    return `https://graph.facebook.com/${META_GRAPH_VERSION}/${path}?${params.toString()}`;
 }
 
 function buildMetaGraphSearchUrl(accessToken: string, query: string, limit: number): string {
@@ -89,7 +91,7 @@ function buildMetaGraphSearchUrl(accessToken: string, query: string, limit: numb
         limit: String(limit),
     });
 
-    return `https://graph.facebook.com/v22.0/search?${params.toString()}`;
+    return `https://graph.facebook.com/${META_GRAPH_VERSION}/search?${params.toString()}`;
 }
 
 function graphErrorMessage(payload: unknown): string {
@@ -139,7 +141,7 @@ async function postMetaGraphForm<TResponse>(
         formData.append(key, value);
     }
 
-    const response = await fetch(`https://graph.facebook.com/v22.0/${path}`, {
+    const response = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${path}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -421,7 +423,7 @@ export async function createMetaCampaign(
     });
 
     const response = await fetch(
-        `https://graph.facebook.com/v22.0/act_${config.adAccountId}/campaigns`,
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/act_${config.adAccountId}/campaigns`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -266,15 +266,55 @@ function StepCard({
 // ─── Tab bodies ──────────────────────────────────────────────────────────────
 
 function ReviewQueue({ deals }: { deals: CuratedDealSummary[] }) {
+  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const reviewDeals = deals.filter(
-    (deal) =>
-      deal.approvalStatus === "needs_review" ||
-      deal.status === "needs_review" ||
-      deal.blockingGateFailures > 0
+    (deal) => {
+      if (removedIds.has(deal.id)) return false;
+      const isAlreadyLive =
+        deal.publishable || deal.status === "bookable" || deal.approvalStatus === "approved";
+      if (isAlreadyLive) return false;
+      return (
+        deal.approvalStatus === "needs_review" ||
+        deal.status === "needs_review" ||
+        deal.blockingGateFailures > 0
+      );
+    }
   );
 
   if (reviewDeals.length === 0) {
     return null;
+  }
+
+  async function removeDealFromReviewQueue(deal: CuratedDealSummary) {
+    const confirmed = window.confirm(
+      `Remove "${deal.title}" from the review queue?\n\nThis deletes the unapproved Curated Deal record from the Deals workbench. Published/bookable deals are filtered out of this queue automatically.`
+    );
+    if (!confirmed) return;
+
+    setRemovingId(deal.id);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/tests/deals-system/curated-deal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", dealId: deal.id }),
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? "Delete failed.");
+      }
+      setRemovedIds((previous) => new Set(previous).add(deal.id));
+      setMessage({ tone: "ok", text: `Removed "${deal.title}" from the review queue.` });
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setRemovingId(null);
+    }
   }
 
   return (
@@ -289,10 +329,21 @@ function ReviewQueue({ deals }: { deals: CuratedDealSummary[] }) {
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-50/80">
             These records are in the system but are not homepage eligible yet. Open one to run
-            stages, inspect gates, verify the link, and approve or reject it.
+            stages, inspect gates, verify the link, and approve, reject, or remove it.
           </p>
         </div>
       </div>
+      {message && (
+        <div
+          className={`mt-4 rounded-xl border px-3 py-2 text-sm ${
+            message.tone === "ok"
+              ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
+              : "border-rose-400/35 bg-rose-500/10 text-rose-100"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
       <div className="mt-4 grid gap-3">
         {reviewDeals.map((deal) => (
           <article
@@ -314,12 +365,22 @@ function ReviewQueue({ deals }: { deals: CuratedDealSummary[] }) {
                 </Badge>
               </div>
             </div>
-            <a
-              href={`/tests/deals-system?tab=tools&dealId=${encodeURIComponent(deal.id)}#deal-campaign-workbench`}
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-amber-200/50 bg-amber-300/15 px-4 text-sm font-semibold text-amber-50 transition hover:bg-amber-300/25"
-            >
-              Review Deal
-            </a>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <a
+                href={`/tests/deals-system?tab=tools&dealId=${encodeURIComponent(deal.id)}#deal-campaign-workbench`}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200/50 bg-amber-300/15 px-4 text-sm font-semibold text-amber-50 transition hover:bg-amber-300/25"
+              >
+                Review Deal
+              </a>
+              <button
+                type="button"
+                disabled={removingId === deal.id}
+                onClick={() => void removeDealFromReviewQueue(deal)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-300/40 bg-rose-400/10 px-4 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {removingId === deal.id ? "Removing..." : "Remove"}
+              </button>
+            </div>
           </article>
         ))}
       </div>

@@ -21,6 +21,7 @@ import { NextResponse } from "next/server";
 import {
   dispatchDealMetaDistribution,
   getCuratedDeal,
+  getDealMetaAdSynthesis,
   loadDealMetaAdSynthesisCache,
   loadDealMetaDistributionCache,
   planDealMetaDistribution,
@@ -41,12 +42,17 @@ interface Body {
   mode?: unknown;
 }
 
-function findSynthesis(synthesisId: string): DealMetaAdSynthesis | null {
+/** Dynamo is the single source of truth for Step 8 syntheses (same store the public page reads). */
+async function findSynthesis(synthesisId: string): Promise<DealMetaAdSynthesis | null> {
   try {
-    return loadDealMetaAdSynthesisCache().syntheses.find((s) => s.id === synthesisId) ?? null;
+    const synthesis = await getDealMetaAdSynthesis(synthesisId);
+    if (synthesis) return synthesis;
   } catch {
-    return null;
+    // Fall through to the local operator cache. Dynamo can be temporarily
+    // unreachable in the workbench, but that should not make Step 9 forget a
+    // synthesis the operator just generated.
   }
+  return loadDealMetaAdSynthesisCache().syntheses.find((synthesis) => synthesis.id === synthesisId) ?? null;
 }
 
 export async function GET(request: Request) {
@@ -59,7 +65,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
   }
 
-  const synthesis = findSynthesis(synthesisId);
+  const synthesis = await findSynthesis(synthesisId);
   if (!synthesis) {
     return NextResponse.json({ ok: false, error: `No meta ad synthesis found with id "${synthesisId}".` }, { status: 404 });
   }
@@ -85,7 +91,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
   }
 
-  const synthesis = findSynthesis(synthesisId);
+  const synthesis = await findSynthesis(synthesisId);
   if (!synthesis) {
     return NextResponse.json({ ok: false, error: `No meta ad synthesis found with id "${synthesisId}".` }, { status: 404 });
   }

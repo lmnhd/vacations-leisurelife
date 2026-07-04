@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-06-28T01:09:32.496Z",
+  "generatedAtIso": "2026-07-04T15:21:25.529Z",
   "distributions": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -625,6 +625,390 @@
         "facebook_page_dispatched_at=2026-06-28T01:09:32.495Z"
       ],
       "facebookPagePostId": "1071836329342347_122119361000816807"
+    },
+    {
+      "id": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "dealId": "1584138",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "generatedAtIso": "2026-07-03T20:43:30.628Z",
+      "mode": "live",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1584138",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1584138",
+        "caption": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "ABC Islands — Actually on the Map",
+            "primaryText": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1783103884444.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "1,200 Guests, Not 5,000",
+            "primaryText": "No tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1783103887454.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Your World Included — No Gotchas",
+            "primaryText": "Jacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card2-1783103889695.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Nov 11 Sailing — Sweet Spot Timing",
+            "primaryText": "Past hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card3-1783103887899.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "oceania vista 2026",
+            "oceania vista",
+            "willemstad curacao",
+            "Travel + Leisure",
+            "Condé Nast Traveler",
+            "Oceania Cruises",
+            "Cruise Critic",
+            "Luxury Travel",
+            "All-inclusive resort",
+            "FineDiningLovers",
+            "Travel Agents and Booking",
+            "Adventure travel"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003121064322",
+              "name": "Travel + Leisure",
+              "sourceQuery": "Travel + Leisure",
+              "audienceSizeLowerBound": 92425749,
+              "audienceSizeUpperBound": 108692681
+            },
+            {
+              "id": "6003070150915",
+              "name": "Condé Nast Traveler",
+              "sourceQuery": "Condé Nast Traveler",
+              "audienceSizeLowerBound": 6108911,
+              "audienceSizeUpperBound": 7184080
+            },
+            {
+              "id": "6003582463238",
+              "name": "Oceania Cruises",
+              "sourceQuery": "Oceania Cruises",
+              "audienceSizeLowerBound": 786632,
+              "audienceSizeUpperBound": 925080
+            },
+            {
+              "id": "6003148986134",
+              "name": "Cruise Critic",
+              "sourceQuery": "Cruise Critic",
+              "audienceSizeLowerBound": 1200059,
+              "audienceSizeUpperBound": 1411270
+            },
+            {
+              "id": "6003011087019",
+              "name": "Luxury Travel",
+              "sourceQuery": "Luxury Travel",
+              "audienceSizeLowerBound": 23080912,
+              "audienceSizeUpperBound": 27143153
+            },
+            {
+              "id": "6003491086831",
+              "name": "All-inclusive resort",
+              "sourceQuery": "All-inclusive resort",
+              "audienceSizeLowerBound": 7637202,
+              "audienceSizeUpperBound": 8981350
+            },
+            {
+              "id": "6011956651362",
+              "name": "FineDiningLovers",
+              "sourceQuery": "FineDiningLovers",
+              "audienceSizeLowerBound": 459209,
+              "audienceSizeUpperBound": 540030
+            },
+            {
+              "id": "6777460559594",
+              "name": "Travel Agents and Booking",
+              "sourceQuery": "Travel Agents and Booking",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            }
+          ],
+          "unresolvedQueries": [
+            "oceania vista 2026",
+            "oceania vista",
+            "willemstad curacao"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "age_min": 45,
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003121064322",
+                    "name": "Travel + Leisure"
+                  },
+                  {
+                    "id": "6003070150915",
+                    "name": "Condé Nast Traveler"
+                  },
+                  {
+                    "id": "6003582463238",
+                    "name": "Oceania Cruises"
+                  },
+                  {
+                    "id": "6003148986134",
+                    "name": "Cruise Critic"
+                  },
+                  {
+                    "id": "6003011087019",
+                    "name": "Luxury Travel"
+                  },
+                  {
+                    "id": "6003491086831",
+                    "name": "All-inclusive resort"
+                  },
+                  {
+                    "id": "6011956651362",
+                    "name": "FineDiningLovers"
+                  },
+                  {
+                    "id": "6777460559594",
+                    "name": "Travel Agents and Booking"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (20): Travel + Leisure, Condé Nast Traveler, Oceania Cruises, Cruise Critic, Luxury Travel, All-inclusive resort, FineDiningLovers, Travel Agents and Booking, Adventure travel, Travel content and inspiration, Travel attractions and activities, Oceania Vista, Caribbean, Aruba, Barbados, Curacao, Saint Lucia, Miami, luxury goods, boats"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1584138 — The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
+        "adSetName": "[DRAFT] Deal 1584138 Audience",
+        "creativeName": "deal-1584138-funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife-carousel",
+        "adName": "deal-1584138-funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife"
+      },
+      "notes": [
+        "meta_age_suggestion_retry=OAuthException code=100 subcode=1870188 You can add a higher minimum age as a suggestion instead when creating or editing an ad set.",
+        "meta_age_suggestion_removed=Meta rejected age_min with Advantage+ audience; retried without age_min.",
+        "meta_ad_account_id=1612907296491359",
+        "meta_campaign_id=120247008944570142",
+        "meta_ad_set_id=120247008944710142",
+        "meta_ad_set_mode=dynamic",
+        "meta_ad_creative_id=1629097564819222",
+        "meta_ad_id=120247008947090142",
+        "meta_review_url=https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120247008947090142",
+        "meta_dispatched_at=2026-07-03T20:43:52.231Z",
+        "instagram_graph_skipped=META_INSTAGRAM_ACTOR_ID not configured."
+      ],
+      "metaCampaignId": "120247008944570142",
+      "metaAdSetId": "120247008944710142",
+      "metaAdSetMode": "dynamic",
+      "facebookCreativeId": "1629097564819222",
+      "facebookAdId": "120247008947090142",
+      "reviewUrl": "https://adsmanager.facebook.com/adsmanager/manage/ads?act=1612907296491359&selected_ad_ids=120247008947090142"
+    },
+    {
+      "id": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
+      "dealId": "1576786",
+      "sourceMetaAdSynthesisId": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
+      "generatedAtIso": "2026-07-04T15:21:09.788Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1576786",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1576786",
+        "caption": "Allure of the Seas balcony fares are sitting dangerously close to inside rates right now. Lock the upgrade before it corrects.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Feb 8 Balconies ≈ Inside Pricing",
+            "primaryText": "Allure of the Seas balcony fares are sitting dangerously close to inside rates right now. Lock the upgrade before it corrects.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/meta-ad-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/card0-1783124299145.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "6-Night Western Caribbean Run",
+            "primaryText": "Labadee, Falmouth & a full day at Perfect Day Cococay. Three port days, warm water, zero school-calendar stress. Feb 8, 2027.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/meta-ad-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/card1-1783124300790.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Bonus Dining Window Closes 7/31",
+            "primaryText": "Eligible balcony & suite bookings may unlock a specialty dining perk on this 6-night sailing. Verify your cabin before it expires.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/meta-ad-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/card2-1783124299456.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Multigenerational? Book the Balcony.",
+            "primaryText": "Kids crash early. Grandparents need quiet mornings. A balcony gives everyone a private reset — worth it on a ship this big.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/meta-ad-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/card3-1783124303972.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "perfect day cococay",
+            "kids sail free",
+            "balcony upgrade shoppers",
+            "Cruise Critic",
+            "Luxury Travel",
+            "All-inclusive resort",
+            "FineDiningLovers",
+            "Travel Agents and Booking",
+            "Royal Caribbean",
+            "Cruises",
+            "Caribbean",
+            "Travel attractions and activities"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003148986134",
+              "name": "Cruise Critic",
+              "sourceQuery": "Cruise Critic",
+              "audienceSizeLowerBound": 1200059,
+              "audienceSizeUpperBound": 1411270
+            },
+            {
+              "id": "6003011087019",
+              "name": "Luxury Travel",
+              "sourceQuery": "Luxury Travel",
+              "audienceSizeLowerBound": 23080912,
+              "audienceSizeUpperBound": 27143153
+            },
+            {
+              "id": "6003491086831",
+              "name": "All-inclusive resort",
+              "sourceQuery": "All-inclusive resort",
+              "audienceSizeLowerBound": 7637202,
+              "audienceSizeUpperBound": 8981350
+            },
+            {
+              "id": "6011956651362",
+              "name": "FineDiningLovers",
+              "sourceQuery": "FineDiningLovers",
+              "audienceSizeLowerBound": 459209,
+              "audienceSizeUpperBound": 540030
+            },
+            {
+              "id": "6777460559594",
+              "name": "Travel Agents and Booking",
+              "sourceQuery": "Travel Agents and Booking",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6003114286300",
+              "name": "Royal Caribbean International",
+              "sourceQuery": "Royal Caribbean",
+              "audienceSizeLowerBound": 7343656,
+              "audienceSizeUpperBound": 8636140
+            },
+            {
+              "id": "6003225930699",
+              "name": "Cruises",
+              "sourceQuery": "Cruises",
+              "audienceSizeLowerBound": 172715314,
+              "audienceSizeUpperBound": 203113210
+            },
+            {
+              "id": "6795812983902",
+              "name": "Travel attractions and activities",
+              "sourceQuery": "Travel attractions and activities",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            }
+          ],
+          "unresolvedQueries": [
+            "perfect day cococay",
+            "kids sail free",
+            "balcony upgrade shoppers"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003148986134",
+                    "name": "Cruise Critic"
+                  },
+                  {
+                    "id": "6003011087019",
+                    "name": "Luxury Travel"
+                  },
+                  {
+                    "id": "6003491086831",
+                    "name": "All-inclusive resort"
+                  },
+                  {
+                    "id": "6011956651362",
+                    "name": "FineDiningLovers"
+                  },
+                  {
+                    "id": "6777460559594",
+                    "name": "Travel Agents and Booking"
+                  },
+                  {
+                    "id": "6003114286300",
+                    "name": "Royal Caribbean International"
+                  },
+                  {
+                    "id": "6003225930699",
+                    "name": "Cruises"
+                  },
+                  {
+                    "id": "6795812983902",
+                    "name": "Travel attractions and activities"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (17): Cruise Critic, Luxury Travel, All-inclusive resort, FineDiningLovers, Travel Agents and Booking, Royal Caribbean, Cruises, Caribbean, Travel attractions and activities, Allure of the Seas, Miami, Florida, Labadee, Haiti, Falmouth, Jamaica, Perfect Day Cococay, Bahamas, Travel + Leisure, Conde Nast Traveler, Adventure travel"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1576786 — February Family Escape",
+        "adSetName": "[DRAFT] Deal 1576786 Audience",
+        "creativeName": "deal-1576786-funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin-carousel",
+        "adName": "deal-1576786-funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122120126282816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1576786",
+        "facebook_page_dispatched_at=2026-07-04T15:21:25.527Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122120126282816807"
     }
   ]
 }

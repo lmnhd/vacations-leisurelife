@@ -28,6 +28,42 @@ import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 const TABLE_NAME = process.env.DEALS_SYSTEM_TABLE_NAME ?? "lll-deals-system";
 const SK = "METADATA";
 
+// ── Read-through cache ────────────────────────────────────────────────────────
+// scanByPrefix is a full-table Scan: DynamoDB bills for EVERY item in the
+// table on every call, and the public /deals pages (force-dynamic, fed by paid
+// ad traffic) issue several per page view. Measured 2026-07-04: ~28M consumed
+// RCUs in 14 days on lll-deals-system — ~99% redundant re-reads of a 3.7MB
+// dataset that changes a few times a day. This short-TTL in-process cache
+// collapses that to at most one scan per entity type per TTL window per warm
+// server instance. Any write through this module clears the cache, so
+// operator flows read their own writes immediately; cross-instance staleness
+// is bounded by the TTL.
+//   DEALS_STORE_CACHE_TTL_MS: override the window (default 60s; "0" disables).
+const CACHE_TTL_MS = Number(process.env.DEALS_STORE_CACHE_TTL_MS ?? "60000");
+const readCache = new Map<string, { at: number; value: unknown }>();
+
+function cacheGet<T>(key: string): T | undefined {
+  if (CACHE_TTL_MS <= 0) return undefined;
+  const hit = readCache.get(key);
+  if (!hit) return undefined;
+  if (Date.now() - hit.at > CACHE_TTL_MS) {
+    readCache.delete(key);
+    return undefined;
+  }
+  return hit.value as T;
+}
+
+function cacheSet(key: string, value: unknown): void {
+  if (CACHE_TTL_MS <= 0) return;
+  readCache.set(key, { at: Date.now(), value });
+}
+
+/** Drop every cached read. Called on any write through this module; exported
+ * for scripts/tests that mutate the table out-of-band. */
+export function clearDealsStoreReadCache(): void {
+  readCache.clear();
+}
+
 function isMissingTableError(error: unknown): boolean {
   return (
     error instanceof Error &&
@@ -37,14 +73,20 @@ function isMissingTableError(error: unknown): boolean {
 }
 
 async function getItem<T>(pk: string): Promise<T | null> {
+  const cached = cacheGet<T | null>(`get:${pk}`);
+  if (cached !== undefined) return cached;
   try {
     const response = await chatDynamoDocumentClient.send(
       new GetCommand({ TableName: TABLE_NAME, Key: { PK: pk, SK } })
     );
-    if (!response.Item) return null;
+    if (!response.Item) {
+      cacheSet(`get:${pk}`, null);
+      return null;
+    }
     const { PK, SK: _sk, ...data } = response.Item;
     void PK;
     void _sk;
+    cacheSet(`get:${pk}`, data);
     return data as T;
   } catch (error) {
     if (isMissingTableError(error)) {
@@ -60,6 +102,7 @@ async function putItem<T extends object>(pk: string, entity: T): Promise<void> {
     await chatDynamoDocumentClient.send(
       new PutCommand({ TableName: TABLE_NAME, Item: { PK: pk, SK, ...(entity as Record<string, unknown>) } })
     );
+    clearDealsStoreReadCache();
   } catch (error) {
     console.error(`[deals-dynamo-store] Failed to put ${pk}:`, error);
     throw error;
@@ -71,6 +114,7 @@ async function deleteItem(pk: string): Promise<void> {
     await chatDynamoDocumentClient.send(
       new DeleteCommand({ TableName: TABLE_NAME, Key: { PK: pk, SK } })
     );
+    clearDealsStoreReadCache();
   } catch (error) {
     console.error(`[deals-dynamo-store] Failed to delete ${pk}:`, error);
     throw error;
@@ -79,6 +123,8 @@ async function deleteItem(pk: string): Promise<void> {
 
 /** Paginated scan for every item whose PK starts with `prefix` and SK === METADATA. */
 async function scanByPrefix<T>(prefix: string): Promise<T[]> {
+  const cached = cacheGet<T[]>(`scan:${prefix}`);
+  if (cached !== undefined) return cached;
   try {
     const items: T[] = [];
     let lastEvaluatedKey: Record<string, unknown> | undefined;
@@ -102,6 +148,7 @@ async function scanByPrefix<T>(prefix: string): Promise<T[]> {
       lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
     } while (lastEvaluatedKey);
 
+    cacheSet(`scan:${prefix}`, items);
     return items;
   } catch (error) {
     if (isMissingTableError(error)) {
@@ -144,6 +191,11 @@ export async function upsertDealBriefRecord(brief: OdysseusDealBrief): Promise<v
   return putItem(`BRIEF#${brief.id}`, brief);
 }
 
+/** Delete a deal brief by id (expired-deal cleanup). */
+export async function deleteDealBriefRecord(id: string): Promise<void> {
+  return deleteItem(`BRIEF#${id}`);
+}
+
 // ── Deal Trip Manifests ──────────────────────────────────────────────────────
 
 export async function getDealTripManifest(id: string): Promise<DealTripManifest | null> {
@@ -178,6 +230,12 @@ export async function upsertDealFunnelSynthesisRecord(
   return putItem(`SYNTHESIS#${synthesis.id}`, synthesis);
 }
 
+/** Delete a funnel synthesis by id. Used by the id-format migration to remove
+ * an old-id record after it has been re-written under its new id. */
+export async function deleteDealFunnelSynthesisRecord(id: string): Promise<void> {
+  return deleteItem(`SYNTHESIS#${id}`);
+}
+
 // ── Deal Meta Ad Syntheses (Step 8 — Meta carousel card images) ─────────────
 
 export async function getDealMetaAdSynthesis(id: string): Promise<DealMetaAdSynthesis | null> {
@@ -192,6 +250,12 @@ export async function upsertDealMetaAdSynthesisRecord(
   synthesis: DealMetaAdSynthesis
 ): Promise<void> {
   return putItem(`METAADSYNTH#${synthesis.id}`, synthesis);
+}
+
+/** Delete a meta ad synthesis by id. Used by the id-format migration to remove
+ * an old-id record after it has been re-written under its new id. */
+export async function deleteDealMetaAdSynthesisRecord(id: string): Promise<void> {
+  return deleteItem(`METAADSYNTH#${id}`);
 }
 
 // ── Promo Intelligence Records ───────────────────────────────────────────────

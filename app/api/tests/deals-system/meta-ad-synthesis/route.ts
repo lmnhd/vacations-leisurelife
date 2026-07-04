@@ -14,6 +14,11 @@
  * POST { action: "generate_image", synthesisId, cardIndex }
  *   -> interpolate the template for this card and generate its image with
  *      gpt-image-2. Persist + return.
+ *
+ * Storage: DynamoDB (deals-dynamo-store) is the primary source of truth. The
+ * same store feeds public /deals/[id]. Successful writes are also mirrored into
+ * the local JSON cache so operator-only test routes can keep working through
+ * temporary Dynamo/DNS outages.
  */
 
 import { NextResponse } from "next/server";
@@ -21,30 +26,52 @@ import { NextResponse } from "next/server";
 import {
   buildDealMetaAdSynthesis,
   generateDealMetaAdCardImage,
-  listDealFunnelSyntheses,
+  getDealMetaAdSynthesis,
   loadDealMetaAdSynthesisCache,
+  listDealFunnelSyntheses,
+  listDealMetaAdSyntheses,
   revertDealMetaAdCardImage,
   saveDealMetaAdSynthesisCache,
-  upsertDealMetaAdSynthesis,
   upsertDealMetaAdSynthesisRecord,
+  upsertDealMetaAdSynthesis,
   type DealFunnelSynthesis,
   type DealMetaAdSynthesis,
 } from "@/lib/cb/deals-system";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
-/**
- * Mirror every write into the Dynamo store (deals-dynamo-store.ts) alongside the
- * local JSON cache, matching the funnel-synthesis route's pattern — production
- * (/deals/[id]) reads Dynamo only, so a synthesis never reaches real visitors
- * until it's mirrored here. Best-effort: a Dynamo failure must never block the
- * operator's local-cache workflow.
- */
-async function mirrorToDynamo(synthesis: DealMetaAdSynthesis): Promise<void> {
-  try {
-    await upsertDealMetaAdSynthesisRecord(synthesis);
-  } catch (error) {
-    console.error("[meta-ad-synthesis] Failed to mirror synthesis to Dynamo:", error);
-  }
+function mergeExistingGeneratedCards(
+  fresh: DealMetaAdSynthesis,
+  existing?: DealMetaAdSynthesis
+): DealMetaAdSynthesis {
+  if (!existing) return fresh;
+
+  return {
+    ...fresh,
+    generatedAtIso: existing.generatedAtIso,
+    promptTemplate: existing.promptTemplate || fresh.promptTemplate,
+    cards: fresh.cards.map((freshCard) => {
+      const existingCard = existing.cards.find((card) => card.cardIndex === freshCard.cardIndex);
+      if (
+        !existingCard ||
+        existingCard.headline !== freshCard.headline ||
+        existingCard.primaryText !== freshCard.primaryText ||
+        !existingCard.imageUrl
+      ) {
+        return freshCard;
+      }
+
+      return {
+        ...freshCard,
+        status: existingCard.status,
+        imageUrl: existingCard.imageUrl,
+        generator: existingCard.generator,
+        promptUsed: existingCard.promptUsed,
+        generatedAtIso: existingCard.generatedAtIso,
+        error: existingCard.error,
+        previousImages: existingCard.previousImages,
+      };
+    }),
+  };
 }
 
 export const dynamic = "force-dynamic";
@@ -69,12 +96,33 @@ async function loadFunnelSyntheses(): Promise<DealFunnelSynthesis[]> {
   }
 }
 
-function loadSyntheses(): DealMetaAdSynthesis[] {
+async function loadSyntheses(): Promise<DealMetaAdSynthesis[]> {
   try {
-    return loadDealMetaAdSynthesisCache().syntheses;
+    return await listDealMetaAdSyntheses();
   } catch {
-    return [];
+    return loadDealMetaAdSynthesisCache().syntheses;
   }
+}
+
+async function saveMetaAdSynthesis(synthesis: DealMetaAdSynthesis): Promise<void> {
+  await upsertDealMetaAdSynthesisRecord(synthesis);
+  try {
+    const cache = upsertDealMetaAdSynthesis(loadDealMetaAdSynthesisCache(), synthesis);
+    saveDealMetaAdSynthesisCache(cache);
+  } catch {
+    // The Dynamo write is authoritative; local mirroring is only a workbench
+    // fallback for temporary Dynamo/DNS outages.
+  }
+}
+
+async function findMetaAdSynthesis(synthesisId: string): Promise<DealMetaAdSynthesis | null> {
+  try {
+    const synthesis = await getDealMetaAdSynthesis(synthesisId);
+    if (synthesis) return synthesis;
+  } catch {
+    // Fall through to local mirror.
+  }
+  return loadDealMetaAdSynthesisCache().syntheses.find((synthesis) => synthesis.id === synthesisId) ?? null;
 }
 
 export async function GET() {
@@ -84,7 +132,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     funnelSyntheses: await loadFunnelSyntheses(),
-    syntheses: loadSyntheses(),
+    syntheses: await loadSyntheses(),
   });
 }
 
@@ -120,11 +168,10 @@ export async function POST(request: Request) {
     }
 
     try {
-      const synthesis = buildDealMetaAdSynthesis(funnelSynthesis);
-      const cache = upsertDealMetaAdSynthesis(loadDealMetaAdSynthesisCache(), synthesis);
-      saveDealMetaAdSynthesisCache(cache);
-      await mirrorToDynamo(synthesis);
-      return NextResponse.json({ ok: true, synthesis, syntheses: cache.syntheses });
+      const existing = (await findMetaAdSynthesis(funnelSynthesis.id)) ?? undefined;
+      const synthesis = mergeExistingGeneratedCards(buildDealMetaAdSynthesis(funnelSynthesis), existing);
+      await saveMetaAdSynthesis(synthesis);
+      return NextResponse.json({ ok: true, synthesis, syntheses: await loadSyntheses() });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },
@@ -143,8 +190,7 @@ export async function POST(request: Request) {
     if (!promptTemplate.trim()) {
       return NextResponse.json({ ok: false, error: "promptTemplate is required." }, { status: 400 });
     }
-    const cache = loadDealMetaAdSynthesisCache();
-    const existing = cache.syntheses.find((s) => s.id === synthesisId);
+    const existing = await findMetaAdSynthesis(synthesisId);
     if (!existing) {
       return NextResponse.json(
         { ok: false, error: `No meta ad synthesis found with id "${synthesisId}".` },
@@ -153,9 +199,7 @@ export async function POST(request: Request) {
     }
     try {
       const updated: DealMetaAdSynthesis = { ...existing, promptTemplate };
-      const nextCache = upsertDealMetaAdSynthesis(cache, updated);
-      saveDealMetaAdSynthesisCache(nextCache);
-      await mirrorToDynamo(updated);
+      await saveMetaAdSynthesis(updated);
       return NextResponse.json({ ok: true, synthesis: updated });
     } catch (error) {
       return NextResponse.json(
@@ -175,8 +219,7 @@ export async function POST(request: Request) {
     if (!Number.isInteger(cardIndex) || cardIndex < 0) {
       return NextResponse.json({ ok: false, error: "cardIndex must be a non-negative integer." }, { status: 400 });
     }
-    const cache = loadDealMetaAdSynthesisCache();
-    const existing = cache.syntheses.find((s) => s.id === synthesisId);
+    const existing = await findMetaAdSynthesis(synthesisId);
     if (!existing) {
       return NextResponse.json(
         { ok: false, error: `No meta ad synthesis found with id "${synthesisId}".` },
@@ -190,18 +233,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generation is slow (tens of seconds); re-read the cache just before
+    // Generation is slow (tens of seconds); re-read the record just before
     // merging so a parallel "generate all" doesn't clobber sibling cards'
     // updates written while this request was in flight.
     const existingSynthesis = existing;
-    function mergeCardIntoLatest(card: DealMetaAdSynthesis["cards"][number]): DealMetaAdSynthesis {
-      const latestCache = loadDealMetaAdSynthesisCache();
-      const latest = latestCache.syntheses.find((s) => s.id === synthesisId) ?? existingSynthesis;
+    async function mergeCardIntoLatest(
+      card: DealMetaAdSynthesis["cards"][number]
+    ): Promise<DealMetaAdSynthesis> {
+      const latest = (await findMetaAdSynthesis(synthesisId)) ?? existingSynthesis;
       const synthesis: DealMetaAdSynthesis = {
         ...latest,
         cards: latest.cards.map((c) => (c.cardIndex === cardIndex ? card : c)),
       };
-      saveDealMetaAdSynthesisCache(upsertDealMetaAdSynthesis(latestCache, synthesis));
+      await saveMetaAdSynthesis(synthesis);
       return synthesis;
     }
 
@@ -209,8 +253,7 @@ export async function POST(request: Request) {
 
     try {
       const updatedCard = await generateDealMetaAdCardImage(existing, cardIndex, promptSuffix);
-      const synthesis = mergeCardIntoLatest(updatedCard);
-      await mirrorToDynamo(synthesis);
+      const synthesis = await mergeCardIntoLatest(updatedCard);
       return NextResponse.json({ ok: true, synthesis });
     } catch (error) {
       // Persist the error onto the card so the operator sees it without losing
@@ -225,8 +268,7 @@ export async function POST(request: Request) {
         cards: existing.cards.map((c) => (c.cardIndex === cardIndex ? failedCard : c)),
       };
       try {
-        synthesis = mergeCardIntoLatest(failedCard);
-        await mirrorToDynamo(synthesis);
+        synthesis = await mergeCardIntoLatest(failedCard);
       } catch {
         // best-effort persistence of the error state
       }
@@ -251,8 +293,7 @@ export async function POST(request: Request) {
     if (!Number.isInteger(historyIndex) || historyIndex < 0) {
       return NextResponse.json({ ok: false, error: "historyIndex must be a non-negative integer." }, { status: 400 });
     }
-    const cache = loadDealMetaAdSynthesisCache();
-    const existing = cache.syntheses.find((s) => s.id === synthesisId);
+    const existing = await findMetaAdSynthesis(synthesisId);
     if (!existing) {
       return NextResponse.json(
         { ok: false, error: `No meta ad synthesis found with id "${synthesisId}".` },
@@ -265,8 +306,7 @@ export async function POST(request: Request) {
         ...existing,
         cards: existing.cards.map((c) => (c.cardIndex === cardIndex ? revertedCard : c)),
       };
-      saveDealMetaAdSynthesisCache(upsertDealMetaAdSynthesis(cache, synthesis));
-      await mirrorToDynamo(synthesis);
+      await saveMetaAdSynthesis(synthesis);
       return NextResponse.json({ ok: true, synthesis });
     } catch (error) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T18:04:38.247Z",
+  "generatedAtIso": "2026-07-03T23:44:38.234Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -281,24 +281,79 @@
       }
     },
     {
-      "id": "angle-workbench-oceania-vista-dutchman-s-caribbean-oceania-vista-1584138",
-      "generatedAtIso": "2026-07-03T18:04:38.244Z",
+      "id": "angle-workbench-rcl-allure-perfect-day-family-1576786",
+      "generatedAtIso": "2026-07-03T22:19:03.211Z",
       "generator": "gpt",
       "sourceResearchCachedAt": "workbench",
-      "isolatedNiche": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent.",
-      "researchRationale": "Workbench-selected real sailing chosen for the angle \"The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.\". Grounding facts: Oceania Vista | 2026-11-11 | Miami | Miami, George Town, Falmouth. Promo context considered: Oceania Cruises Oceania Cruises - Your World Included | Oceania fares may include elevated onboard amenities under Your World Included. | Valid Until 07/31/2026.",
-      "successLogic": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent. can convert because this is a real Oceania Vista sailing on 2026-11-11, not a generic cruise sale. The attached Oceania Cruises - Your World Included gives the audience a timely reason to act.",
+      "isolatedNiche": "US families, multigenerational travelers, and school-break planners looking for a February Caribbean cruise with a major resort-style ship, private-destination beach days, and a timely reason to book in July.",
+      "researchRationale": "The strongest winter family opportunity found in CB and Odysseus research pairs a major Royal Caribbean family ship with Perfect Day Cococay, a February school-year escape window, and a timely balcony/suite dining bonus candidate.",
+      "successLogic": "Families can understand this offer quickly: a real February sailing on Allure of the Seas, private-destination beach days, a balcony-value comparison, and a July eligibility deadline for the attached Royal Caribbean bonus dining offer.",
+      "audienceSignals": [
+        "Family cruises",
+        "Winter Caribbean escape",
+        "Perfect Day Cococay",
+        "Royal Caribbean private destination",
+        "Balcony upgrade value",
+        "Multigenerational vacation planning",
+        "Early booking vacation shoppers"
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "February Family Escape",
+        "theCorePitch": "Get next winter's big family cruise on the calendar now: Allure of the Seas, Labadee, Jamaica, and Perfect Day Cococay in one warm-weather week. The current balcony pricing creates a strong upgrade story while the Royal Caribbean bonus-offer window gives families a concrete eligibility deadline.",
+        "visualAnchor": "Allure of the Seas at sea, Perfect Day Cococay color and waterpark energy, family pool-deck moments, and balcony-view Caribbean warmth.",
+        "targetAudienceDescriptor": "US families, multigenerational travelers, and school-break planners looking for a February Caribbean cruise with a major resort-style ship, private-destination beach days, and a timely reason to book in July.",
+        "relevantKeywords": [
+          "family cruises",
+          "Royal Caribbean",
+          "Allure of the Seas",
+          "Perfect Day Cococay",
+          "winter Caribbean cruise",
+          "February family vacation",
+          "kids sail free",
+          "cruise dining package",
+          "multigenerational vacation",
+          "Caribbean balcony cruise"
+        ],
+        "destinationAndTimeOfYearHints": "February 2027 Caribbean and Bahamas itinerary from Miami, positioned as a winter family escape booked seven months early.",
+        "onboardAssetRequirements": "Large Royal Caribbean resort ship, family entertainment, pools, dining variety, private-destination beach and waterpark assets, balcony value proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-03T22:19:03.211Z",
+        "packageId": "1576786",
+        "cruiseName": "6 Night Western Caribbean & Perfect Day",
+        "cruiseLine": "Royal Caribbean",
+        "sailDateIso": "2027-02-08",
+        "nights": 6,
+        "departurePortCode": "MIA",
+        "portsOfCall": "Miami, Florida | Labadee, Haiti | Falmouth, Jamaica | Perfect Day Cococay, Bahamas | Miami, Florida",
+        "itineraryId": 575355,
+        "confidence": 1,
+        "reasons": [
+          "Exact Odysseus lookup matched package 1576786.",
+          "Package page captured ship identity: Allure of the Seas.",
+          "Day-by-day itinerary and cabin pricing were captured from Odysseus."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-oceania-vista-dutchman-s-caribbean-oceania-vista-1584138",
+      "generatedAtIso": "2026-07-03T23:23:03.507Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "Affluent couples aged 50–70 who have already cruised the mainstream Caribbean and are now seeking a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalty audiences, ABC-islands search intent, and lookalikes of past Oceania bookers. Secondary: seasoned cruisers researching November shoulder-season sailings to avoid peak-season crowds.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"14 nights through the ABCs, Grenada, Barbados & St. Lucia on Oceania Vista — the quiet luxury November Caribbean most travelers never think to search. Your fare may already include elevated dining, amenities, and onboard extras worth discovering before you book.\". Grounding facts: Oceania Vista | 2026-11-11 | Miami | Miami, George Town, Falmouth. Promo context considered: Oceania Cruises Oceania Cruises - Bonus Shipboard Credit | Select Oceania Cruises sailings may qualify for $250 shipboard credit per cabin. | Valid Until 09/30/2026.",
+      "successLogic": "Affluent couples aged 50–70 who have already cruised the mainstream Caribbean and are now seeking a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalty audiences, ABC-islands search intent, and lookalikes of past Oceania bookers. Secondary: seasoned cruisers researching November shoulder-season sailings to avoid peak-season crowds. can convert because this is a real Oceania Vista sailing on 2026-11-11, not a generic cruise sale. The attached Oceania Cruises - Bonus Shipboard Credit gives the audience a timely reason to act.",
       "audienceSignals": [
         "Real sailing selected in the Campaign Workbench: Oceania Vista on Oceania Cruises, 14 nights, sailing 2026-11-11.",
         "Concrete itinerary signal: Miami roundtrip, Miami, George Town, Falmouth, Oranjestad.",
-        "Operator-selected audience angle: Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent..",
+        "Operator-selected audience angle: Affluent couples aged 50–70 who have already cruised the mainstream Caribbean and are now seeking a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalty audiences, ABC-islands search intent, and lookalikes of past Oceania bookers. Secondary: seasoned cruisers researching November shoulder-season sailings to avoid peak-season crowds..",
         "Targeting seeds chosen for this sailing: Oceania Vista Caribbean, luxury Caribbean cruise November, ABC islands cruise, small ship luxury cruise, Aruba Curacao cruise, Oceania Cruises 2026."
       ],
       "sailingAngleProfile": {
-        "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
-        "theCorePitch": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.: Oceania Vista on Dutchman's Caribbean gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
-        "visualAnchor": "Split-frame hero: one side shows Oceania Vista's intimate pool deck at golden hour with calm turquoise sea, the other side features the pastel waterfront of Willemstad, Curaçao. Muted warm color palette, linen-and-teak textures, no crowds visible. Overlay text in elegant serif font emphasizing 14 nights and November 2026.",
-        "targetAudienceDescriptor": "Affluent couples aged 50–70 and seasoned cruisers who have done the mainstream Caribbean and now want a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalists, and ABC-islands search intent.",
+        "sailingAngleTitle": "14 nights through the ABCs, Grenada, Barbados & St. Lucia on Oceania Vista — the quiet luxury November Caribbean most travelers never think to search. Your fare may already include elevated dining, amenities, and onboard extras worth discovering before you book.",
+        "theCorePitch": "14 nights through the ABCs, Grenada, Barbados & St. Lucia on Oceania Vista — the quiet luxury November Caribbean most travelers never think to search. Your fare may already include elevated dining, amenities, and onboard extras worth discovering before you book.: Oceania Vista on Dutchman's Caribbean gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "Split-frame hero: left panel shows Oceania Vista's intimate pool deck at golden hour with calm turquoise sea and no crowds visible; right panel features the iconic pastel waterfront of Willemstad, Curaçao reflected in the harbor. Muted warm color palette with linen-and-teak textures throughout. Elegant serif overlay text reads '14 Nights · November 2026 · Oceania Vista' with a subtle secondary line: 'Amenities that may already be included in your fare.' No stock-photo energy — every element should feel curated and unhurried.",
+        "targetAudienceDescriptor": "Affluent couples aged 50–70 who have already cruised the mainstream Caribbean and are now seeking a refined, unhurried itinerary on a smaller luxury ship. Target via luxury travel interests, Oceania brand loyalty audiences, ABC-islands search intent, and lookalikes of past Oceania bookers. Secondary: seasoned cruisers researching November shoulder-season sailings to avoid peak-season crowds.",
         "relevantKeywords": [
           "Oceania Vista Caribbean",
           "luxury Caribbean cruise November",
@@ -315,7 +370,7 @@
         "onboardAssetRequirements": "Oceania Vista ship assets, destination imagery, itinerary map, and booking-link proof."
       },
       "groundedCandidate": {
-        "resolvedAtIso": "2026-07-03T18:04:38.244Z",
+        "resolvedAtIso": "2026-07-03T23:23:03.507Z",
         "packageId": "1584138",
         "cruiseName": "Oceania Vista - Dutchman's Caribbean",
         "cruiseLine": "Oceania Cruises",

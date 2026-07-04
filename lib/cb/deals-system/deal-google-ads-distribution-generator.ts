@@ -31,6 +31,7 @@ import { getGoogleAdsConfig } from "@/lib/integrations/google-ads";
 import { loadProviderToken } from "@/lib/integrations/provider-token-store";
 import {
   buildAdGroupCriterionOperations,
+  removeGoogleDisplayDraft,
   summarizeTargetingVerification,
   type AdGroupCriterionRow,
   type AdGroupRow,
@@ -378,6 +379,23 @@ export async function dispatchDealGoogleAdsDistribution(
       "landscape_1_91x1"
     );
     const squareAssetName = await uploadGoogleAdsImageAsset(customer, plan.squareImageUrl, `${assetBaseName}-square`, "square_1x1");
+
+    // Google rejects creating a campaign whose name matches an existing
+    // active/paused campaign (DUPLICATE_CAMPAIGN_NAME). campaignName is
+    // derived only from dealId + sailingAngleTitle, so a stale draft left
+    // over from an earlier partial/errored dispatch of this same deal
+    // collides with every retry. Self-heal: find and remove any existing
+    // campaign with this exact name before creating the new one.
+    const existingCampaignRows = (await customer.query(
+      `SELECT campaign.id FROM campaign WHERE campaign.name = '${plan.campaignName.replace(/'/g, "\\'")}' ` +
+        `AND campaign.status IN ('PAUSED', 'ENABLED')`
+    )) as Array<{ campaign?: { id?: string | number } }>;
+    for (const row of existingCampaignRows) {
+      const staleCampaignId = row.campaign?.id;
+      if (staleCampaignId === undefined || staleCampaignId === null) continue;
+      await removeGoogleDisplayDraft(String(staleCampaignId));
+      notes.push(`removed_stale_campaign_id=${staleCampaignId}`);
+    }
 
     const budgetRes = await customer.campaignBudgets.create([
       {
