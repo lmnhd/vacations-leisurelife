@@ -215,6 +215,31 @@ check(
     previewOverLength.targeting.negativeKeywords.includes("budget alaska cruise")
 );
 
+const dealWithNegativeKeywordConflict = buildDeal({
+  targetingDemographic: {
+    ...dealWithTargeting.targetingDemographic!,
+    channelTargeting: {
+      ...dealWithTargeting.targetingDemographic!.channelTargeting,
+      google: {
+        ...dealWithTargeting.targetingDemographic!.channelTargeting.google,
+        keywordIdeas: ["early booking cruise deals", "family cruise suite"],
+        searchThemes: ["royal caribbean"],
+        negativeKeywords: ["cruise deals", "cheap cruise"],
+      },
+    },
+  },
+});
+const previewNegativeConflict = buildGoogleTargetingPackageFromDeal(dealWithNegativeKeywordConflict);
+check(
+  "negative keyword conflicts are dropped before Google Ads dispatch",
+  !previewNegativeConflict.targeting.negativeKeywords.includes("cruise deals") &&
+    previewNegativeConflict.targeting.keywords.includes("early booking cruise deals")
+);
+check(
+  "negative keyword conflict warning names the blocked positive keyword",
+  previewNegativeConflict.warnings.some((w) => w.includes("cruise deals blocks early booking cruise deals"))
+);
+
 const previewNoTargeting = buildGoogleTargetingPackageFromDeal(dealWithoutTargeting);
 check("deal with no targetingDemographic produces empty keywords (not a throw)", previewNoTargeting.targeting.keywords.length === 0);
 check(
@@ -272,9 +297,92 @@ check(
   plan.targeting.targeting.placements.includes("reddit.com/r/alaskacruise")
 );
 
+const overLongEditedSynthesis = {
+  ...synthesisOneReady,
+  businessName: "LeisureLife Interactive Cruises".repeat(2),
+  headline: "Balconies â‰ˆ Inside Pricing".repeat(2),
+  longHeadline: "This premium sailing headline was edited past Google's long headline cap â€” with mojibake. ".repeat(3),
+  description: "This description was edited past Google's responsive display description cap. ".repeat(3),
+  sailingAngleTitle: "A very long campaign angle title for premium cruise shoppers ".repeat(8),
+};
+const cappedPlan = planDealGoogleAdsDistribution(overLongEditedSynthesis, dealWithTargeting);
+check("plan caps businessName before live dispatch", cappedPlan.businessName.length <= 25);
+check("plan caps headline before live dispatch", cappedPlan.headline.length <= 30);
+check("plan caps longHeadline before live dispatch", cappedPlan.longHeadline.length <= 90);
+check("plan caps description before live dispatch", cappedPlan.description.length <= 90);
+check("plan caps campaignName before live dispatch", cappedPlan.campaignName.length <= 255);
+check("plan caps businessName by UTF-8 bytes", Buffer.byteLength(cappedPlan.businessName, "utf8") <= 25);
+check("plan caps headline by UTF-8 bytes", Buffer.byteLength(cappedPlan.headline, "utf8") <= 30);
+check("plan caps longHeadline by UTF-8 bytes", Buffer.byteLength(cappedPlan.longHeadline, "utf8") <= 90);
+check("plan caps description by UTF-8 bytes", Buffer.byteLength(cappedPlan.description, "utf8") <= 90);
+check("plan caps campaignName by UTF-8 bytes", Buffer.byteLength(cappedPlan.campaignName, "utf8") <= 255);
+check("plan sanitizes mojibake before live dispatch", cappedPlan.headline.includes("approx.") && !cappedPlan.headline.includes("â"));
+
 // ── dispatchDealGoogleAdsDistribution (simulate) ──────────────────────────────
 
 async function runSimulateDispatch(): Promise<void> {
+  const oldFlyerPromptSynthesis = {
+    ...synthesisOneReady,
+    promptTemplate: "Generate a multi-image ad flyer showing composite images",
+    images: synthesisOneReady.images.map((img) => ({
+      ...img,
+      status: "ready" as const,
+      imageUrl: img.imageUrl ?? "https://r2.example/image.png",
+      promptUsed: "Generate a multi-image ad flyer showing composite images",
+    })),
+  };
+  const oldFlyerPromptPlan = planDealGoogleAdsDistribution(oldFlyerPromptSynthesis, dealWithTargeting);
+  const oldFlyerPromptDistribution = await dispatchDealGoogleAdsDistribution(
+    oldFlyerPromptSynthesis,
+    oldFlyerPromptPlan,
+    "live"
+  );
+  check("live dispatch blocks old flyer/collage image prompts before Google calls", oldFlyerPromptDistribution.status === "error");
+  check(
+    "old flyer/collage image prompt error tells the operator to regenerate",
+    oldFlyerPromptDistribution.error?.includes("replace or regenerate the flagged Google image asset") === true
+  );
+
+  const staleTemplateGallerySynthesis = {
+    ...synthesisOneReady,
+    promptTemplate: "Generate a multi-image ad flyer showing composite images",
+    images: synthesisOneReady.images.map((img) => ({
+      ...img,
+      status: "ready" as const,
+      imageUrl: img.imageUrl ?? "https://r2.example/gallery.png",
+      generator: "gallery_photo" as const,
+      promptUsed: undefined,
+    })),
+  };
+  const savedGoogleAdsEnv = {
+    GOOGLE_ADS_CLIENT_ID: process.env.GOOGLE_ADS_CLIENT_ID,
+    GOOGLE_ADS_CLIENT_SECRET: process.env.GOOGLE_ADS_CLIENT_SECRET,
+    GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+    GOOGLE_ADS_CUSTOMER_ID: process.env.GOOGLE_ADS_CUSTOMER_ID,
+    GOOGLE_ADS_REDIRECT_URI: process.env.GOOGLE_ADS_REDIRECT_URI,
+  };
+  delete process.env.GOOGLE_ADS_CLIENT_ID;
+  delete process.env.GOOGLE_ADS_CLIENT_SECRET;
+  delete process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  delete process.env.GOOGLE_ADS_CUSTOMER_ID;
+  delete process.env.GOOGLE_ADS_REDIRECT_URI;
+  const staleTemplateGalleryDistribution = await dispatchDealGoogleAdsDistribution(
+    staleTemplateGallerySynthesis,
+    planDealGoogleAdsDistribution(staleTemplateGallerySynthesis, dealWithTargeting),
+    "live"
+  );
+  for (const [key, value] of Object.entries(savedGoogleAdsEnv)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+  check(
+    "live dispatch does not block gallery photos because of a stale flyer prompt template",
+    staleTemplateGalleryDistribution.error?.startsWith("Missing Google Ads env vars") === true
+  );
+
   const distribution = await dispatchDealGoogleAdsDistribution(synthesisOneReady, plan, "simulate");
   check("simulate dispatch returns status planned", distribution.status === "planned");
   check("simulate dispatch does not populate campaignId", distribution.campaignId === undefined);

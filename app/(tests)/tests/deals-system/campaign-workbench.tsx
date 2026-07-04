@@ -1253,6 +1253,7 @@ export function DealCampaignWorkbench({
                 className="lg:max-w-2xl lg:flex-1"
               >
                 <select
+                 title="Pick a deal to stage, verify, approve, pin, or hide."
                   className={inputClassName()}
                   value={selectedDeal.id}
                   onChange={(e) => {

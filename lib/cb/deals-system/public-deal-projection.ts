@@ -423,7 +423,7 @@ function pickAdCardsLayout(dealId: string): DealAdCardsLayout {
  * doesn't read as "the campaign," so the section doesn't mount for it.
  */
 const AD_CARDS_DEFAULT_EYEBROW = "Special Offers!";
-const AD_CARDS_DEFAULT_HEADING = "What makes this offer special…";
+const AD_CARDS_DEFAULT_HEADING = "What makes this offer special...";
 /** Fallback when even the lead card's own headline fails the broad-appeal check. */
 const AD_CARDS_FALLBACK_HEADING = "Why This Sailing";
 
@@ -464,7 +464,7 @@ function buildAdCardsShowcase(
       : validateLandingBroadAppeal(lead.headline).length === 0
         ? lead.headline
         : AD_CARDS_FALLBACK_HEADING;
-  const eyebrow = hasRealPromo ? AD_CARDS_DEFAULT_EYEBROW : "The Angle";
+  const eyebrow = hasRealPromo ? AD_CARDS_DEFAULT_EYEBROW : "From the ad";
 
   return { layout: pickAdCardsLayout(dealId), eyebrow, heading, cards: readyCards };
 }

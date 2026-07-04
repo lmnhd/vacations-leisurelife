@@ -56,7 +56,10 @@ import {
   type DealFunnelSynthesis,
   type DealGoogleAdsSynthesis,
 } from "@/lib/cb/deals-system";
-import type { DealGoogleAdsImageAspect } from "@/lib/cb/deals-system/deal-google-ads-synthesis-types";
+import {
+  sanitizeGoogleAdsText,
+  type DealGoogleAdsImageAspect,
+} from "@/lib/cb/deals-system/deal-google-ads-synthesis-types";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 
 export const dynamic = "force-dynamic";
@@ -180,12 +183,12 @@ export async function POST(request: Request) {
     try {
       const updated: DealGoogleAdsSynthesis = {
         ...existing,
-        businessName: typeof body.businessName === "string" ? body.businessName : existing.businessName,
-        headline: typeof body.headline === "string" ? body.headline : existing.headline,
-        longHeadline: typeof body.longHeadline === "string" ? body.longHeadline : existing.longHeadline,
-        description: typeof body.description === "string" ? body.description : existing.description,
+        businessName: typeof body.businessName === "string" ? sanitizeGoogleAdsText(body.businessName) : existing.businessName,
+        headline: typeof body.headline === "string" ? sanitizeGoogleAdsText(body.headline) : existing.headline,
+        longHeadline: typeof body.longHeadline === "string" ? sanitizeGoogleAdsText(body.longHeadline) : existing.longHeadline,
+        description: typeof body.description === "string" ? sanitizeGoogleAdsText(body.description) : existing.description,
         promptTemplate:
-          typeof body.promptTemplate === "string" ? body.promptTemplate : existing.promptTemplate,
+          typeof body.promptTemplate === "string" ? sanitizeGoogleAdsText(body.promptTemplate) : existing.promptTemplate,
       };
       const nextCache = upsertDealGoogleAdsSynthesis(cache, updated);
       saveDealGoogleAdsSynthesisCache(nextCache);

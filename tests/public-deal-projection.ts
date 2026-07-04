@@ -731,6 +731,11 @@ check(
   noPromoAdCardsPage?.adCards?.eyebrow
 );
 check(
+  "no real promo -> eyebrow uses customer-facing ad-copy framing",
+  noPromoAdCardsPage?.adCards?.eyebrow === "From the ad",
+  noPromoAdCardsPage?.adCards?.eyebrow
+);
+check(
   "no real promo -> heading borrows the lead ad card's own headline",
   noPromoAdCardsPage?.adCards?.heading === "Card 0 Headline",
   noPromoAdCardsPage?.adCards?.heading
@@ -750,7 +755,7 @@ check(
 );
 check(
   "real promo attached -> heading stays the default offer copy",
-  realPromoAdCardsPage?.adCards?.heading === "What makes this offer special…",
+  realPromoAdCardsPage?.adCards?.heading === "What makes this offer special...",
   realPromoAdCardsPage?.adCards?.heading
 );
 

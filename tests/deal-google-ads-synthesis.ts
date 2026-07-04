@@ -29,6 +29,7 @@ import {
   capGoogleAdsText,
   emptyDealGoogleAdsSynthesisCache,
   interpolateGoogleAdsPrompt,
+  sanitizeGoogleAdsText,
   upsertDealGoogleAdsSynthesis,
   useDealGoogleAdsGalleryImage,
   validateDealGoogleAdsSynthesisCache,
@@ -138,12 +139,14 @@ check(
   synthesis.images.every((img) => img.status === "pending" && !img.imageUrl)
 );
 check(
-  "default prompt template is the multi-image composite flyer prompt",
-  /multi-image ad flyer/i.test(synthesis.promptTemplate)
+  "default prompt template asks for a single Google-safe scene",
+  synthesis.promptTemplate.toLowerCase().includes("one clean") &&
+    synthesis.promptTemplate.toLowerCase().includes("single coherent moment")
 );
 check(
-  "default prompt template relies on the negation rules panel (not its own wording) to keep text off the image",
-  !/no text or words rendered in the image/i.test(synthesis.promptTemplate)
+  "default prompt template forbids flyer and collage image formats",
+  synthesis.promptTemplate.toLowerCase().includes("do not make a collage") &&
+    synthesis.promptTemplate.toLowerCase().includes("flyer")
 );
 
 // ── description falls back to the lead card's primaryText when heroSubhead is absent ──
@@ -212,6 +215,11 @@ check(
   "capGoogleAdsText caps over-length text and trims trailing whitespace from the cut",
   capGoogleAdsText("This headline is definitely too long to fit", 20) ===
     "This headline is def".trimEnd()
+);
+check(
+  "sanitizeGoogleAdsText converts mojibake and Unicode punctuation before capping",
+  sanitizeGoogleAdsText("Balconies â‰ˆ Inside Pricing â€” limited time…") ===
+    "Balconies approx. Inside Pricing - limited time..."
 );
 
 // ── interpolateGoogleAdsPrompt ───────────────────────────────────────────────

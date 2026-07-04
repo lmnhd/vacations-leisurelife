@@ -75,6 +75,83 @@ function SectionHeading({ children, center }: { children: React.ReactNode; cente
 }
 
 // ── Itinerary calendar ──────────────────────────────────────────────────────
+function DealTopNav() {
+  return (
+    <nav
+      aria-label="Deal page navigation"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 3,
+        padding: "clamp(14px, 3vw, 22px) clamp(16px, 4vw, 32px)",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1160,
+          margin: "0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          minHeight: 50,
+        }}
+      >
+        <a
+          href="/"
+          aria-label="Leisure Life Interactive home"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            minWidth: 0,
+            textDecoration: "none",
+          }}
+        >
+          <img
+            src="/2026-1.png"
+            alt="Leisure Life Interactive"
+            style={{
+              display: "block",
+              width: "auto",
+              height: "clamp(38px, 9vw, 56px)",
+              maxWidth: "min(58vw, 260px)",
+              objectFit: "contain",
+              filter: "drop-shadow(0 3px 14px rgba(0,0,0,0.42))",
+            }}
+          />
+        </a>
+        <a
+          href="/#deals"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 40,
+            padding: "0 16px",
+            border: "1px solid rgba(250,247,242,0.48)",
+            borderRadius: 999,
+            background: "rgba(8,23,33,0.28)",
+            color: C.cream,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: "0.11em",
+            textDecoration: "none",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          More Deals
+        </a>
+      </div>
+    </nav>
+  );
+}
+
 function BookNowQuickLink({ center }: { center?: boolean }) {
   return (
     <div
@@ -316,6 +393,7 @@ export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLa
           background: C.navy,
         }}
       >
+        <DealTopNav />
         {hero.imageUrl ? (
           <DealImageWithFallback
             primary={{ imageUrl: hero.imageUrl, imageAlt: hero.imageAlt }}

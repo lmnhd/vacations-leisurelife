@@ -41,7 +41,7 @@ import {
 import type { GoogleTargetingPackage } from "@/lib/campaigns/distribution/platforms/google-ads/targeting";
 
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
-import type { DealGoogleAdsImageAspect, DealGoogleAdsSynthesis } from "./deal-google-ads-synthesis-types";
+import { sanitizeGoogleAdsText, type DealGoogleAdsImageAspect, type DealGoogleAdsSynthesis } from "./deal-google-ads-synthesis-types";
 import type {
   DealGoogleAdsDistribution,
   DealGoogleAdsDistributionMode,
@@ -55,6 +55,8 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
   "last minute cruise",
   "discount cruise",
 ];
+const GOOGLE_ADS_ENTITY_NAME_MAX = 255;
+const GOOGLE_ADS_AD_GROUP_SUFFIX = " - Group 1";
 
 function getSiteBaseUrl(): string {
   const configured =
@@ -98,6 +100,25 @@ function unique(values: string[]): string[] {
 const GOOGLE_ADS_KEYWORD_MAX_CHARS = 80;
 const GOOGLE_ADS_KEYWORD_MAX_WORDS = 10;
 
+function termTokens(keyword: string): string[] {
+  return keyword
+    .toLowerCase()
+    .split(" ")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+function negativeConflictsWithKeyword(negativeKeyword: string, keyword: string): boolean {
+  const negativeTokens = termTokens(negativeKeyword);
+  const keywordTokens = termTokens(keyword);
+  if (negativeTokens.length === 0 || keywordTokens.length === 0) return false;
+  return negativeTokens.every((token) => keywordTokens.includes(token));
+}
+
+function negativeConflictsWithAnyKeyword(negativeKeyword: string, keywords: string[]): string | undefined {
+  return keywords.find((keyword) => negativeConflictsWithKeyword(negativeKeyword, keyword));
+}
+
 function isValidGoogleAdsKeyword(keyword: string): boolean {
   return (
     keyword.length <= GOOGLE_ADS_KEYWORD_MAX_CHARS &&
@@ -118,7 +139,15 @@ export function buildGoogleTargetingPackageFromDeal(
   const keywords = allKeywords.filter(isValidGoogleAdsKeyword);
   const droppedKeywords = allKeywords.filter((k) => !isValidGoogleAdsKeyword(k));
   const allNegativeKeywords = unique([...(google?.negativeKeywords ?? []), ...DEFAULT_NEGATIVE_KEYWORDS]);
-  const negativeKeywords = allNegativeKeywords.filter(isValidGoogleAdsKeyword);
+  const validNegativeKeywords = allNegativeKeywords.filter(isValidGoogleAdsKeyword);
+  const negativeKeywordConflicts = validNegativeKeywords
+    .map((negativeKeyword) => ({ negativeKeyword, conflictingKeyword: negativeConflictsWithAnyKeyword(negativeKeyword, keywords) }))
+    .filter((conflict): conflict is { negativeKeyword: string; conflictingKeyword: string } =>
+      conflict.conflictingKeyword !== undefined
+    );
+  const negativeKeywords = validNegativeKeywords.filter(
+    (negativeKeyword) => !negativeKeywordConflicts.some((conflict) => conflict.negativeKeyword === negativeKeyword)
+  );
   const droppedNegativeKeywords = allNegativeKeywords.filter((k) => !isValidGoogleAdsKeyword(k));
   const placements = unique(operatorPlacements);
 
@@ -141,6 +170,14 @@ export function buildGoogleTargetingPackageFromDeal(
     warnings.push(
       `Dropped ${droppedNegativeKeywords.length} negative keyword(s) over Google's same criterion limit: ` +
         droppedNegativeKeywords.join(" | ")
+    );
+  }
+  if (negativeKeywordConflicts.length > 0) {
+    warnings.push(
+      `Dropped ${negativeKeywordConflicts.length} negative keyword(s) that would conflict with requested ` +
+        `positive keywords: ${negativeKeywordConflicts
+          .map((conflict) => `${conflict.negativeKeyword} blocks ${conflict.conflictingKeyword}`)
+          .join(" | ")}`
     );
   }
 
@@ -194,19 +231,32 @@ export function planDealGoogleAdsDistribution(
   return {
     dealId: synthesis.dealId,
     finalUrl,
-    businessName: synthesis.businessName,
-    headline: synthesis.headline,
-    longHeadline: synthesis.longHeadline,
-    description: synthesis.description,
+    businessName: cap(synthesis.businessName, 25),
+    headline: cap(synthesis.headline, 30),
+    longHeadline: cap(synthesis.longHeadline, 90),
+    description: cap(synthesis.description, 90),
     landscapeImageUrl: landscape?.status === "ready" ? landscape.imageUrl ?? "" : "",
     squareImageUrl: square?.status === "ready" ? square.imageUrl ?? "" : "",
     targeting,
-    campaignName: `[DRAFT] Deal ${synthesis.dealId} — ${synthesis.sailingAngleTitle}`,
+    campaignName: capGoogleAdsEntityName(`[DRAFT] Deal ${synthesis.dealId} - ${synthesis.sailingAngleTitle}`),
   };
 }
 
 function cap(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max).trimEnd() : text;
+  const clean = sanitizeGoogleAdsText(text);
+  if (Buffer.byteLength(clean, "utf8") <= max) return clean;
+  let capped = "";
+  for (const char of Array.from(clean)) {
+    const next = `${capped}${char}`;
+    if (Buffer.byteLength(next, "utf8") > max) break;
+    capped = next;
+  }
+  return capped.trimEnd();
+}
+
+function capGoogleAdsEntityName(text: string, suffix = ""): string {
+  const maxBaseLength = GOOGLE_ADS_ENTITY_NAME_MAX - Buffer.byteLength(suffix, "utf8");
+  return `${cap(text, maxBaseLength)}${suffix}`;
 }
 
 function extractId(resourceName: string): string {
@@ -271,6 +321,29 @@ export async function cropForGoogleAds(sourceBuffer: Buffer, aspect: DealGoogleA
     .resize(width, height, { fit: "cover", position: "attention" })
     .png()
     .toBuffer();
+}
+
+function hasOldFlyerPromptLanguage(text: string | undefined): boolean {
+  const lowered = text?.toLowerCase() ?? "";
+  return (
+    lowered.includes("multi-image") ||
+    lowered.includes("ad flyer") ||
+    lowered.includes("collage") ||
+    lowered.includes("split-panel") ||
+    lowered.includes("composite images") ||
+    lowered.includes("composite sheet")
+  );
+}
+
+function googleAdsImagePolicyWarnings(synthesis: DealGoogleAdsSynthesis): string[] {
+  const warnings: string[] = [];
+  for (const image of synthesis.images) {
+    if (image.status !== "ready") continue;
+    if (hasOldFlyerPromptLanguage(image.promptUsed)) {
+      warnings.push(`${image.aspect} was generated from a flyer/collage-style prompt`);
+    }
+  }
+  return warnings;
 }
 
 async function uploadGoogleAdsImageAsset(
@@ -338,6 +411,17 @@ export async function dispatchDealGoogleAdsDistribution(
     };
   }
 
+  const imagePolicyWarnings = googleAdsImagePolicyWarnings(synthesis);
+  if (imagePolicyWarnings.length > 0) {
+    return {
+      ...base,
+      status: "error",
+      error:
+        "Google Ads image policy preflight: replace or regenerate the flagged Google image asset(s) before live dispatch. " +
+        imagePolicyWarnings.join("; "),
+    };
+  }
+
   const config = getGoogleAdsConfig();
   if (!config) {
     return {
@@ -358,6 +442,7 @@ export async function dispatchDealGoogleAdsDistribution(
   }
 
   const notes: string[] = [];
+  let liveStage = "initializing Google Ads client";
 
   try {
     const googleAds = new GoogleAdsApi({
@@ -372,13 +457,20 @@ export async function dispatchDealGoogleAdsDistribution(
     });
 
     const assetBaseName = `ll-deal-${synthesis.dealId}-google-display-${Date.now()}`;
+    liveStage = "uploading landscape image asset";
     const landscapeAssetName = await uploadGoogleAdsImageAsset(
       customer,
       plan.landscapeImageUrl,
-      `${assetBaseName}-landscape`,
+      capGoogleAdsEntityName(assetBaseName, "-landscape"),
       "landscape_1_91x1"
     );
-    const squareAssetName = await uploadGoogleAdsImageAsset(customer, plan.squareImageUrl, `${assetBaseName}-square`, "square_1x1");
+    liveStage = "uploading square image asset";
+    const squareAssetName = await uploadGoogleAdsImageAsset(
+      customer,
+      plan.squareImageUrl,
+      capGoogleAdsEntityName(assetBaseName, "-square"),
+      "square_1x1"
+    );
 
     // Google rejects creating a campaign whose name matches an existing
     // active/paused campaign (DUPLICATE_CAMPAIGN_NAME). campaignName is
@@ -386,6 +478,7 @@ export async function dispatchDealGoogleAdsDistribution(
     // over from an earlier partial/errored dispatch of this same deal
     // collides with every retry. Self-heal: find and remove any existing
     // campaign with this exact name before creating the new one.
+    liveStage = "checking for stale campaign name";
     const existingCampaignRows = (await customer.query(
       `SELECT campaign.id FROM campaign WHERE campaign.name = '${plan.campaignName.replace(/'/g, "\\'")}' ` +
         `AND campaign.status IN ('PAUSED', 'ENABLED')`
@@ -393,13 +486,15 @@ export async function dispatchDealGoogleAdsDistribution(
     for (const row of existingCampaignRows) {
       const staleCampaignId = row.campaign?.id;
       if (staleCampaignId === undefined || staleCampaignId === null) continue;
+      liveStage = `removing stale campaign ${staleCampaignId}`;
       await removeGoogleDisplayDraft(String(staleCampaignId));
       notes.push(`removed_stale_campaign_id=${staleCampaignId}`);
     }
 
+    liveStage = "creating campaign budget";
     const budgetRes = await customer.campaignBudgets.create([
       {
-        name: `Budget ${plan.campaignName}`,
+        name: capGoogleAdsEntityName(`Budget ${plan.campaignName}`),
         amount_micros: 5_000_000,
         delivery_method: enums.BudgetDeliveryMethod.STANDARD,
         explicitly_shared: false,
@@ -408,6 +503,7 @@ export async function dispatchDealGoogleAdsDistribution(
     const budgetName = budgetRes.results[0]?.resource_name;
     if (!budgetName) throw new Error("Campaign budget creation returned no resource_name");
 
+    liveStage = "creating paused display campaign";
     const campaignRes = await customer.campaigns.create([
       {
         name: plan.campaignName,
@@ -422,9 +518,10 @@ export async function dispatchDealGoogleAdsDistribution(
     if (!campaignResourceName) throw new Error("Campaign creation returned no resource_name");
     const campaignId = extractId(campaignResourceName);
 
+    liveStage = "creating paused ad group";
     const adGroupRes = await customer.adGroups.create([
       {
-        name: `${plan.campaignName} - Group 1`,
+        name: capGoogleAdsEntityName(plan.campaignName, GOOGLE_ADS_AD_GROUP_SUFFIX),
         campaign: campaignResourceName,
         status: enums.AdGroupStatus.PAUSED,
         cpc_bid_micros: 1_000_000,
@@ -434,6 +531,7 @@ export async function dispatchDealGoogleAdsDistribution(
     if (!adGroupResourceName) throw new Error("Ad group creation returned no resource_name");
     const adGroupId = extractId(adGroupResourceName);
 
+    liveStage = "creating responsive display ad";
     const adRes = await customer.adGroupAds.create([
       {
         ad_group: adGroupResourceName,
@@ -441,10 +539,10 @@ export async function dispatchDealGoogleAdsDistribution(
         ad: {
           final_urls: [plan.finalUrl],
           responsive_display_ad: {
-            business_name: cap(plan.businessName, 25),
-            headlines: [{ text: cap(plan.headline, 30) }],
-            long_headline: { text: cap(plan.longHeadline, 90) },
-            descriptions: [{ text: cap(plan.description, 90) }],
+            business_name: plan.businessName,
+            headlines: [{ text: plan.headline }],
+            long_headline: { text: plan.longHeadline },
+            descriptions: [{ text: plan.description }],
             marketing_images: [{ asset: landscapeAssetName }],
             square_marketing_images: [{ asset: squareAssetName }],
           },
@@ -457,15 +555,19 @@ export async function dispatchDealGoogleAdsDistribution(
 
     const criterionOperations = buildAdGroupCriterionOperations(adGroupResourceName, plan.targeting.targeting);
     if (criterionOperations.length > 0) {
+      liveStage = "creating ad group targeting criteria";
       await customer.adGroupCriteria.create(criterionOperations as never);
     }
 
+    liveStage = "verifying campaign status";
     const campaignStatusRows = (await customer.query(
       `SELECT campaign.status FROM campaign WHERE campaign.resource_name = '${campaignResourceName}'`
     )) as CampaignStatusRow[];
+    liveStage = "verifying ad group";
     const adGroupRows = (await customer.query(
       `SELECT ad_group.id FROM ad_group WHERE ad_group.resource_name = '${adGroupResourceName}'`
     )) as AdGroupRow[];
+    liveStage = "verifying targeting criteria";
     const criterionRows = (await customer.query(
       `SELECT ad_group_criterion.type, ad_group_criterion.negative, ` +
         `ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, ` +
@@ -518,7 +620,7 @@ export async function dispatchDealGoogleAdsDistribution(
       ...base,
       status: "error",
       notes,
-      error: describeGoogleAdsError(error),
+      error: `${liveStage}: ${describeGoogleAdsError(error)}`,
     };
   }
 }

@@ -1043,11 +1043,22 @@ export default function ConversionPage() {
                                 </div>
                             </div>
                             <div className="px-6 pb-5">
-                                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                    <div
-                                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
-                                        style={{ width: `${thresholdPct}%` }}
-                                    />
+                                <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    {Array.from({ length: 20 }, (_, index) => {
+                                        const segmentThreshold = ((index + 1) / 20) * 100;
+                                        const filled = thresholdPct >= segmentThreshold;
+                                        return (
+                                            <span
+                                                key={index}
+                                                className={cn(
+                                                    'flex-1 rounded-full transition-colors duration-700',
+                                                    filled
+                                                        ? 'bg-gradient-to-r from-indigo-500 to-violet-500'
+                                                        : 'bg-transparent',
+                                                )}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </Panel>
@@ -1148,7 +1159,12 @@ export default function ConversionPage() {
                                     title="Lead Detail"
                                     description={selectedEmail ?? 'Select a lead to inspect'}
                                     action={selectedEmail ? (
-                                        <button onClick={() => handleSelectLead(selectedEmail)} className="text-slate-300 transition-colors hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400">
+                                        <button
+                                            onClick={() => handleSelectLead(selectedEmail)}
+                                            aria-label="Clear selected lead"
+                                            title="Clear selected lead"
+                                            className="text-slate-300 transition-colors hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400"
+                                        >
                                             <X className="h-4 w-4" />
                                         </button>
                                     ) : undefined}

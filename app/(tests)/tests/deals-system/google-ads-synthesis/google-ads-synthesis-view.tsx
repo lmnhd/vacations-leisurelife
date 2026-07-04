@@ -1202,6 +1202,8 @@ export function GoogleAdsSynthesisView({
                   type="text"
                   value={fieldDraft.businessName}
                   onChange={(e) => setFieldDraft((f) => ({ ...f, businessName: e.target.value }))}
+                  placeholder="Enter business name"
+                  title="Business name"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-slate-200 focus:border-amber-300/50 focus:outline-none"
                 />
                 <p className={`mt-1 text-[10px] ${businessNameOver ? "text-amber-300" : "text-slate-500"}`}>
@@ -1216,6 +1218,8 @@ export function GoogleAdsSynthesisView({
                   type="text"
                   value={fieldDraft.headline}
                   onChange={(e) => setFieldDraft((f) => ({ ...f, headline: e.target.value }))}
+                  placeholder="Enter headline"
+                  title="Headline"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-slate-200 focus:border-amber-300/50 focus:outline-none"
                 />
                 <p className={`mt-1 text-[10px] ${headlineOver ? "text-amber-300" : "text-slate-500"}`}>
@@ -1230,6 +1234,8 @@ export function GoogleAdsSynthesisView({
                   type="text"
                   value={fieldDraft.longHeadline}
                   onChange={(e) => setFieldDraft((f) => ({ ...f, longHeadline: e.target.value }))}
+                  placeholder="Enter long headline"
+                  title="Long headline"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-slate-200 focus:border-amber-300/50 focus:outline-none"
                 />
                 <p className={`mt-1 text-[10px] ${longHeadlineOver ? "text-amber-300" : "text-slate-500"}`}>
@@ -1244,6 +1250,8 @@ export function GoogleAdsSynthesisView({
                   value={fieldDraft.description}
                   onChange={(e) => setFieldDraft((f) => ({ ...f, description: e.target.value }))}
                   rows={2}
+                  placeholder="Enter description"
+                  title="Description"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs leading-5 text-slate-200 focus:border-amber-300/50 focus:outline-none"
                 />
                 <p className={`mt-1 text-[10px] ${descriptionOver ? "text-amber-300" : "text-slate-500"}`}>

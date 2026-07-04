@@ -29,6 +29,46 @@ export const GOOGLE_ADS_BUSINESS_NAME_MAX = 25;
 
 export const DEFAULT_GOOGLE_ADS_BUSINESS_NAME = "LeisureLife Interactive";
 
+const TEXT_REPLACEMENTS: Array<{ from: string; to: string }> = [
+  { from: "\u00e2\u20ac\u201d", to: "-" },
+  { from: "\u00e2\u20ac\u201c", to: "-" },
+  { from: "\u00e2\u20ac\u00a6", to: "..." },
+  { from: "\u00e2\u20ac\u02dc", to: "'" },
+  { from: "\u00e2\u20ac\u2122", to: "'" },
+  { from: "\u00e2\u20ac\u0153", to: '"' },
+  { from: "\u00e2\u20ac\u009d", to: '"' },
+  { from: "\u00e2\u2030\u02c6", to: "approx." },
+  { from: "\u00c2\u00b7", to: "-" },
+  { from: "\u00e2\u2020\u2019", to: "->" },
+  { from: "\u00c3\u2014", to: "x" },
+  { from: "\u00c3\u00a9", to: "e" },
+  { from: "\u00c3\u00a1", to: "a" },
+  { from: "\u00c3\u00ad", to: "i" },
+  { from: "\u00c3\u00b3", to: "o" },
+  { from: "\u00c3\u00ba", to: "u" },
+  { from: "\u2014", to: "-" },
+  { from: "\u2013", to: "-" },
+  { from: "\u2026", to: "..." },
+  { from: "\u2018", to: "'" },
+  { from: "\u2019", to: "'" },
+  { from: "\u201c", to: '"' },
+  { from: "\u201d", to: '"' },
+  { from: "\u2248", to: "approx." },
+  { from: "\u00b7", to: "-" },
+  { from: "\u2192", to: "->" },
+];
+
+export function sanitizeGoogleAdsText(text: string): string {
+  let clean = text;
+  for (const replacement of TEXT_REPLACEMENTS) {
+    clean = clean.split(replacement.from).join(replacement.to);
+  }
+  while (clean.includes("  ")) {
+    clean = clean.split("  ").join(" ");
+  }
+  return clean.trim();
+}
+
 /** A previously-generated (now superseded) image for an aspect slot, kept for revert. */
 export interface DealGoogleAdsImageHistoryEntry {
   imageUrl: string;
@@ -96,21 +136,24 @@ export interface DealGoogleAdsSynthesisCache {
   syntheses: DealGoogleAdsSynthesis[];
 }
 
-/** Default prompt template seeded for a new synthesis — no text-rendering instruction. */
+/** Default prompt template seeded for a new synthesis - no text-rendering instruction. */
 export const DEFAULT_GOOGLE_ADS_PROMPT_TEMPLATE =
-  "Generate a multi-image ad flyer showing 4 to 6 composite images displaying vivid artistic scenes or angles depicting elements from the narrative:\n{{HEADLINE}}\n{{LONG_HEADLINE}}";
+  "Generate one clean, natural photographic cruise advertising scene for a Google Responsive Display image asset. Show a single coherent moment from the cruise experience, with the main subject centered and easy to understand after cropping. Do not make a collage, flyer, split-panel layout, poster, graphic design, or composite sheet. Use the narrative only as scene direction:\n{{HEADLINE}}\n{{LONG_HEADLINE}}";
 
 export function interpolateGoogleAdsPrompt(
   template: string,
   synthesis: Pick<DealGoogleAdsSynthesis, "headline" | "longHeadline">
 ): string {
-  return template
-    .replace(/\{\{HEADLINE\}\}/g, synthesis.headline)
-    .replace(/\{\{LONG_HEADLINE\}\}/g, synthesis.longHeadline);
+  return sanitizeGoogleAdsText(template)
+    .split("{{HEADLINE}}")
+    .join(sanitizeGoogleAdsText(synthesis.headline))
+    .split("{{LONG_HEADLINE}}")
+    .join(sanitizeGoogleAdsText(synthesis.longHeadline));
 }
 
 function capText(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max).trimEnd() : text;
+  const clean = sanitizeGoogleAdsText(text);
+  return clean.length > max ? clean.slice(0, max).trimEnd() : clean;
 }
 
 export { capText as capGoogleAdsText };

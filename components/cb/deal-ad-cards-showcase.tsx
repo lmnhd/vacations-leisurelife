@@ -19,19 +19,14 @@ import Image from "next/image";
 
 import type { DealAdCardsShowcaseView, DealAdCardView } from "@/lib/cb/deals-system/public-deal-projection";
 
-const C = {
-  bg: "#FAF7F2",
-  navy: "#0F3042",
-  navyDark: "#0B2433",
-  surface: "#FFFFFF",
-  border: "#E8E1D5",
-  gold: "#8C6A3C",
-  goldRule: "#C9B286",
-  muted: "#5B6873",
-  cream: "#F5EFE6",
-} as const;
-
-const serif = "'Cormorant Garamond',Georgia,serif";
+const shellClass = "box-border border-y border-[#E8E1D5] bg-white px-6 py-[clamp(56px,7vw,96px)]";
+const innerClass = "mx-auto max-w-[1160px]";
+const kickerWrapClass = "mb-[clamp(28px,3.5vw,40px)] max-w-[640px]";
+const eyebrowClass = "mb-3.5 text-[13px] font-semibold uppercase tracking-[0.18em] text-[#8C6A3C]";
+const headingClass = "m-0 font-serif text-[clamp(26px,3vw,36px)] font-semibold leading-[1.15] text-[#0F3042]";
+const cardFigureClass = "relative aspect-square overflow-hidden rounded-[4px]";
+const captionClass =
+  "absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,rgba(8,23,33,0.86),transparent_75%)] text-[#F5EFE6]";
 
 /** Shorten a card headline to a tab label (~14 chars) without cutting mid-word. */
 function tabLabel(headline: string): string {
@@ -43,45 +38,19 @@ function tabLabel(headline: string): string {
 
 function SectionShell({ children }: { children: React.ReactNode }) {
   return (
-    <section
-      style={{
-        background: C.surface,
-        borderTop: `1px solid ${C.border}`,
-        borderBottom: `1px solid ${C.border}`,
-        padding: "clamp(56px, 7vw, 96px) 24px",
-        boxSizing: "border-box",
-      }}
-    >
-      <div style={{ maxWidth: 1160, margin: "0 auto" }}>{children}</div>
+    <section className={shellClass}>
+      <div className={innerClass}>{children}</div>
     </section>
   );
 }
 
 function SectionKicker({ eyebrow, heading }: { eyebrow: string; heading: string }) {
   return (
-    <div style={{ maxWidth: 640, marginBottom: "clamp(28px, 3.5vw, 40px)" }}>
-      <p
-        style={{
-          margin: "0 0 14px",
-          fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: C.gold,
-        }}
-      >
+    <div className={kickerWrapClass}>
+      <p className={eyebrowClass}>
         {eyebrow}
       </p>
-      <h2
-        style={{
-          margin: 0,
-          fontFamily: serif,
-          fontWeight: 600,
-          fontSize: "clamp(26px, 3vw, 36px)",
-          lineHeight: 1.15,
-          color: C.navy,
-        }}
-      >
+      <h2 className={headingClass}>
         {heading}
       </h2>
     </div>
@@ -93,38 +62,18 @@ function QuiltLayout({ eyebrow, heading, cards }: { eyebrow: string; heading: st
   return (
     <SectionShell>
       <SectionKicker eyebrow={eyebrow} heading={heading} />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
-          gap: "clamp(10px, 1.6vw, 18px)",
-        }}
-      >
+      <div className="grid gap-[clamp(10px,1.6vw,18px)] [grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))]">
         {cards.map((card, i) => (
-          <figure
-            key={`${card.imageUrl}-${i}`}
-            style={{ margin: 0, position: "relative", aspectRatio: "1 / 1", borderRadius: 4, overflow: "hidden" }}
-          >
+          <figure key={`${card.imageUrl}-${i}`} className={cardFigureClass}>
             <Image
               src={card.imageUrl}
               alt={card.headline}
               fill
               loading="lazy"
               sizes="(max-width: 700px) 50vw, 280px"
-              style={{ objectFit: "cover" }}
+              className="object-cover"
             />
-            <figcaption
-              style={{
-                position: "absolute",
-                inset: "auto 0 0 0",
-                padding: "10px 12px",
-                fontSize: 12.5,
-                fontWeight: 700,
-                lineHeight: 1.35,
-                color: C.cream,
-                background: "linear-gradient(to top, rgba(8,23,33,0.86), transparent 75%)",
-              }}
-            >
+            <figcaption className={`${captionClass} px-3 py-[10px] text-[12.5px] font-bold leading-[1.35]`}>
               {card.headline}
             </figcaption>
           </figure>
@@ -162,90 +111,40 @@ function EditorialMosaicLayout({
   return (
     <SectionShell>
       <SectionKicker eyebrow={eyebrow} heading={heading} />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
-          gap: "clamp(12px, 2vw, 20px)",
-          alignItems: "start",
-        }}
-      >
+      <div className="grid items-start gap-[clamp(12px,2vw,20px)] [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
         <div>
-          <figure
-            style={{ margin: 0, position: "relative", aspectRatio: "1 / 1", borderRadius: 4, overflow: "hidden" }}
-          >
+          <figure className={cardFigureClass}>
             <Image
               src={lead.imageUrl}
               alt={lead.headline}
               fill
               priority={false}
               sizes="(max-width: 860px) 100vw, 55vw"
-              style={{ objectFit: "cover" }}
+              className="object-cover"
             />
-            <figcaption
-              style={{
-                position: "absolute",
-                inset: "auto 0 0 0",
-                padding: "16px 20px",
-                fontFamily: serif,
-                fontSize: 20,
-                fontWeight: 600,
-                lineHeight: 1.25,
-                color: C.cream,
-                background: "linear-gradient(to top, rgba(8,23,33,0.86), transparent 75%)",
-              }}
-            >
+            <figcaption className={`${captionClass} px-5 py-4 font-serif text-[20px] font-semibold leading-[1.25]`}>
               {lead.headline}
             </figcaption>
           </figure>
           {lead.bodyText && (
-            <p
-              style={{
-                margin: "14px 4px 0",
-                fontSize: 16,
-                lineHeight: 1.65,
-                color: C.navy,
-                maxWidth: "56ch",
-              }}
-            >
+            <p className="mt-[14px] max-w-[56ch] px-1 text-[16px] leading-[1.65] text-[#0F3042]">
               {lead.bodyText}
             </p>
           )}
         </div>
         {rest.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-              gap: "clamp(8px, 1.4vw, 14px)",
-              alignContent: "start",
-            }}
-          >
+          <div className="grid content-start gap-[clamp(8px,1.4vw,14px)] [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))]">
             {rest.map((card, i) => (
-              <figure
-                key={`${card.imageUrl}-${i}`}
-                style={{ margin: 0, position: "relative", aspectRatio: "1 / 1", borderRadius: 4, overflow: "hidden" }}
-              >
+              <figure key={`${card.imageUrl}-${i}`} className={cardFigureClass}>
                 <Image
                   src={card.imageUrl}
                   alt={card.headline}
                   fill
                   loading="lazy"
                   sizes="(max-width: 700px) 33vw, 180px"
-                  style={{ objectFit: "cover" }}
+                  className="object-cover"
                 />
-                <figcaption
-                  style={{
-                    position: "absolute",
-                    inset: "auto 0 0 0",
-                    padding: "8px 10px",
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    lineHeight: 1.3,
-                    color: C.cream,
-                    background: "linear-gradient(to top, rgba(8,23,33,0.86), transparent 75%)",
-                  }}
-                >
+                <figcaption className={`${captionClass} px-[10px] py-2 text-[11.5px] font-bold leading-[1.3]`}>
                   {card.headline}
                 </figcaption>
               </figure>
@@ -273,89 +172,48 @@ function TabSpotlightLayout({
   return (
     <SectionShell>
       <SectionKicker eyebrow={eyebrow} heading={heading} />
-      <div
-        role="tablist"
-        aria-label="This sailing's ad angles"
-        style={{
-          display: "flex",
-          borderBottom: `1px solid ${C.border}`,
-          marginBottom: 20,
-          overflowX: "auto",
-        }}
-      >
+      <div role="tablist" aria-label="This sailing's ad angles" className="mb-5 flex overflow-x-auto border-b border-[#E8E1D5]">
         {cards.map((c, i) => (
-          <button
-            key={`${c.imageUrl}-${i}`}
-            type="button"
-            role="tab"
-            aria-selected={i === active}
-            onClick={() => setActive(i)}
-            style={{
-              flex: "1 0 auto",
-              minWidth: 110,
-              textAlign: "center",
-              padding: "12px 10px",
-              fontSize: 12.5,
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: i === active ? C.navy : C.muted,
-              background: "none",
-              border: "none",
-              borderBottom: i === active ? `2px solid ${C.gold}` : "2px solid transparent",
-              cursor: "pointer",
-            }}
-          >
-            {tabLabel(c.headline)}
-          </button>
+          i === active ? (
+            <button
+              key={`${c.imageUrl}-${i}`}
+              type="button"
+              role="tab"
+              aria-selected="true"
+              onClick={() => setActive(i)}
+              className="flex-[1_0_auto] min-w-[110px] cursor-pointer border-0 border-b-2 border-[#8C6A3C] bg-transparent px-2.5 py-3 text-center text-[12.5px] font-bold uppercase tracking-[0.04em] text-[#0F3042]"
+            >
+              {tabLabel(c.headline)}
+            </button>
+          ) : (
+            <button
+              key={`${c.imageUrl}-${i}`}
+              type="button"
+              role="tab"
+              aria-selected="false"
+              onClick={() => setActive(i)}
+              className="flex-[1_0_auto] min-w-[110px] cursor-pointer border-0 border-b-2 border-transparent bg-transparent px-2.5 py-3 text-center text-[12.5px] font-bold uppercase tracking-[0.04em] text-[#5B6873]"
+            >
+              {tabLabel(c.headline)}
+            </button>
+          )
         ))}
       </div>
-      <figure
-        style={{
-          margin: 0,
-          position: "relative",
-          width: "100%",
-          maxWidth: 640,
-          aspectRatio: "1 / 1",
-          borderRadius: 4,
-          overflow: "hidden",
-        }}
-      >
+      <figure className="relative m-0 aspect-square w-full max-w-[640px] overflow-hidden rounded-[4px]">
         <Image
           key={card.imageUrl}
           src={card.imageUrl}
           alt={card.headline}
           fill
           sizes="(max-width: 700px) 100vw, 640px"
-          style={{ objectFit: "cover" }}
+          className="object-cover"
         />
-        <figcaption
-          style={{
-            position: "absolute",
-            inset: "auto 0 0 0",
-            padding: "16px 20px",
-            fontFamily: serif,
-            fontSize: 20,
-            fontWeight: 600,
-            lineHeight: 1.25,
-            color: C.cream,
-            background: "linear-gradient(to top, rgba(8,23,33,0.86), transparent 75%)",
-          }}
-        >
+        <figcaption className={`${captionClass} px-5 py-4 font-serif text-[20px] font-semibold leading-[1.25]`}>
           {card.headline}
         </figcaption>
       </figure>
       {card.bodyText && (
-        <p
-          key={`${card.imageUrl}-body`}
-          style={{
-            margin: "16px 4px 0",
-            maxWidth: 640,
-            fontSize: 16,
-            lineHeight: 1.65,
-            color: C.navy,
-          }}
-        >
+        <p key={`${card.imageUrl}-body`} className="mt-4 max-w-[640px] px-1 text-[16px] leading-[1.65] text-[#0F3042]">
           {card.bodyText}
         </p>
       )}

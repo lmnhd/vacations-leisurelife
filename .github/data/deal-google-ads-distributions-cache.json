@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-04T19:40:40.172Z",
+  "generatedAtIso": "2026-07-04T20:12:59.953Z",
   "distributions": [
     {
       "id": "funnel-adcopy-celebrity-edge-dawes-glacier-seattle-rt-7n-summer-sale-2nd-guest-savings-",
@@ -118,18 +118,18 @@
       "id": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
       "dealId": "1576786",
       "sourceGoogleAdsSynthesisId": "funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin",
-      "generatedAtIso": "2026-07-04T19:40:25.098Z",
+      "generatedAtIso": "2026-07-04T20:12:44.660Z",
       "mode": "live",
-      "status": "error",
+      "status": "dispatched",
       "plan": {
         "dealId": "1576786",
         "finalUrl": "https://leisurelifeinteractive.net/deals/1576786",
         "businessName": "LeisureLife Interactive",
-        "headline": "Feb 8 Balconies ≈ Inside Prici",
-        "longHeadline": "Allure of the Seas balcony fares are sitting dangerously close to inside rates right now.",
-        "description": "A winter escape built for families who want warm days, ocean views, and room to breathe.",
-        "landscapeImageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/google-ads-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/landscape_1_91x1-1783186958296.png",
-        "squareImageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1576786/google-ads-synthesis/funnel-adcopy-february-family-escape-allure-of-the-seas-perfect-day-cococay-bonus-dinin/square_1x1-1783186964443.png",
+        "headline": "February Cruise Escape",
+        "longHeadline": "A warm Caribbean sailing with ocean views and island days.",
+        "description": "View this sailing and check current cabin options.",
+        "landscapeImageUrl": "https://static0.thetravelimages.com/wordpress/wp-content/uploads/2025/10/1-the-caribbean-bahamas.jpg?q=49&fit=crop&w=825&dpr=2",
+        "squareImageUrl": "https://static0.thetravelimages.com/wordpress/wp-content/uploads/2025/10/1-the-caribbean-bahamas.jpg?q=49&fit=crop&w=825&dpr=2",
         "targeting": {
           "targeting": {
             "keywords": [
@@ -209,10 +209,78 @@
             "No placements selected: search for real communities in the Step 9 lab (\"Search for real communities\") and pick from actual SerpAPI results. Placements are never auto-applied or guessed."
           ]
         },
-        "campaignName": "[DRAFT] Deal 1576786 — February Family Escape"
+        "campaignName": "[DRAFT] Deal 1576786 - February Family Escape"
       },
-      "notes": [],
-      "error": "Too long. ({\"string_length_error\":\"TOO_LONG\"})"
+      "notes": [
+        "removed_stale_campaign_id=24006553108",
+        "google_ads_customer_id=5578860884",
+        "google_ads_campaign_id=23997138867",
+        "google_ads_ad_group_id=196807079734",
+        "google_ads_ad_id=196807079734~815497755780",
+        "keywords_applied=29/29",
+        "negatives_applied=8/8",
+        "placements_applied=0/0",
+        "targeting_warning=No placements selected: search for real communities in the Step 9 lab (\"Search for real communities\") and pick from actual SerpAPI results. Placements are never auto-applied or guessed.",
+        "google_ads_dispatched_at=2026-07-04T20:12:59.952Z"
+      ],
+      "campaignId": "23997138867",
+      "adGroupId": "196807079734",
+      "adId": "196807079734~815497755780",
+      "reviewUrl": "https://ads.google.com/aw/campaigns?campaignId=23997138867&__c=4675548535",
+      "verification": {
+        "campaignStatus": "PAUSED",
+        "adGroupExists": true,
+        "requestedKeywords": 29,
+        "appliedKeywords": 29,
+        "appliedKeywordTexts": [
+          "miami",
+          "royal caribbean",
+          "family cruises",
+          "family beach vacation",
+          "western caribbean",
+          "falmouth jamaica",
+          "labadee",
+          "allure of the seas",
+          "winter caribbean cruise",
+          "kids sail free",
+          "allure of the seas suite",
+          "cruise onboard credit",
+          "early booking cruise deals",
+          "multigenerational vacation",
+          "february family vacation",
+          "royal caribbean suite",
+          "perfect day cococay",
+          "kids cruise vacation",
+          "school break travel",
+          "cruise dining package",
+          "family cruise suite",
+          "multigenerational cruise",
+          "parents comparing caribbean resort vacations",
+          "royal caribbean loyalists",
+          "perfect day cococay cabana",
+          "balcony upgrade shoppers",
+          "multigenerational cruise shoppers",
+          "families planning winter travel",
+          "caribbean balcony cruise"
+        ],
+        "requestedPlacements": 0,
+        "appliedPlacements": 0,
+        "appliedPlacementUrls": [],
+        "requestedNegatives": 8,
+        "appliedNegatives": 8,
+        "appliedNegativeTexts": [
+          "discount cruise",
+          "cheap cruise",
+          "free cruise",
+          "last minute cruise",
+          "cruise deals",
+          "cargo ship",
+          "cruise job",
+          "crew job"
+        ],
+        "matches": true,
+        "discrepancies": []
+      }
     }
   ]
 }
