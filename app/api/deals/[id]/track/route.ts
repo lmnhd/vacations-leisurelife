@@ -6,7 +6,7 @@
  * `deal_page_view`, `deal_engaged`, or `book_now_click` event against the deal's
  * events partition so the operator dashboard can show per-deal traffic.
  *
- * Only publicly eligible Deals are tracked (getPublicDealPageById gates on
+ * Only publicly eligible Deals are tracked (isPublicDealAvailableById gates on
  * bookable + approved + valid link). Tracking is best-effort and never fails
  * the request.
  *
@@ -20,7 +20,7 @@ import { z } from "zod";
 
 import { normalizeAttribution } from "@/lib/campaigns/lead-attribution";
 import { appendDealEvent } from "@/lib/cb/deals-system/deal-events-store";
-import { getPublicDealPageById } from "@/lib/cb/deals-system/public-deals";
+import { isPublicDealAvailableById } from "@/lib/cb/deals-system/public-deals";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -75,8 +75,8 @@ export async function POST(
 
   // Only publicly eligible deals are trackable — keeps the events partition
   // clean of noise from non-public ids.
-  const deal = await getPublicDealPageById(id);
-  if (!deal) {
+  const isPublicDeal = await isPublicDealAvailableById(id);
+  if (!isPublicDeal) {
     return NextResponse.json({ success: true, tracked: false, reason: "deal_not_public" });
   }
 
